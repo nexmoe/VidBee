@@ -30,6 +30,22 @@ jobs:
       - name: Install Dependencies
         run: pnpm install
 
+      - name: Download yt-dlp binaries
+        run: |
+          # Create resources directory if it doesn't exist
+          mkdir -p resources
+
+          # Download yt-dlp.exe for Windows
+          curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe -o resources/yt-dlp.exe
+
+          # Download yt-dlp for macOS (for cross-platform builds)
+          # curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos -o resources/yt-dlp_macos
+          # chmod +x resources/yt-dlp_macos
+
+          # Download yt-dlp for Linux (for cross-platform builds)
+          curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o resources/yt-dlp_linux
+          chmod +x resources/yt-dlp_linux
+
       - name: Type check
         run: pnpm run typecheck
 
