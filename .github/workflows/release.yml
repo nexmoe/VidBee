@@ -6,7 +6,7 @@ on:
       - v*.*.*
 
 jobs:
-  build:
+  release:
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -36,57 +36,33 @@ jobs:
       - name: Lint and format check
         run: pnpm run check
 
-      - name: Build Electron app
-        run: |
-          if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
-            pnpm run build:linux
-          elif [ "${{ matrix.os }}" == "macos-latest" ]; then
-            pnpm run build:mac
-          elif [ "${{ matrix.os }}" == "windows-latest" ]; then
-            pnpm run build:win
-          fi
-        shell: bash
+      # - name: build-linux
+      #   if: matrix.os == 'ubuntu-latest'
+      #   run: pnpm run build:linux
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+      # - name: build-mac
+      #   if: matrix.os == 'macos-latest'
+      #   run: pnpm run build:mac
+
+      - name: build-win
+        if: matrix.os == 'windows-latest'
+        run: pnpm run build:win
+
+      - name: release
+        uses: softprops/action-gh-release@v1
         with:
-          name: dist-${{ matrix.os }}
-          path: dist/
-
-  release:
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
-    steps:
-      - name: Check out Git repository
-        uses: actions/checkout@v4
-
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: dist/
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          draft: false
-          prerelease: false
-          generate_release_notes: true
+          draft: true
           files: |
-            dist-ubuntu-latest/*.AppImage
-            dist-ubuntu-latest/*.snap
-            dist-ubuntu-latest/*.deb
-            dist-ubuntu-latest/*.rpm
-            dist-ubuntu-latest/*.tar.gz
-            dist-ubuntu-latest/*.yml
-            dist-ubuntu-latest/*.blockmap
-            dist-macos-latest/*.dmg
-            dist-macos-latest/*.zip
-            dist-macos-latest/*.yml
-            dist-macos-latest/*.blockmap
-            dist-windows-latest/*.exe
-            dist-windows-latest/*.zip
-            dist-windows-latest/*.yml
-            dist-windows-latest/*.blockmap
+            dist/*.exe
+            dist/*.zip
+            dist/*.dmg
+            dist/*.AppImage
+            dist/*.snap
+            dist/*.deb
+            dist/*.rpm
+            dist/*.tar.gz
+            dist/*.yml
+            dist/*.blockmap
+        env:
+          GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+
