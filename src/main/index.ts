@@ -85,6 +85,72 @@ function setupDownloadEvents(): void {
   })
 }
 
+function initAutoUpdater(): void {
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('Skipping auto-updater initialization in development mode')
+    return
+  }
+
+  try {
+    console.log('Initializing auto-updater...')
+
+    log.transports.file.level = 'info'
+    autoUpdater.logger = log
+    autoUpdater.autoDownload = true
+    autoUpdater.autoInstallOnAppQuit = true
+
+    autoUpdater.on('update-available', (info) => {
+      log.info('Update available:', info.version)
+      console.log('Update available:', info.version)
+      mainWindow?.webContents.send('update:available', info)
+    })
+
+    autoUpdater.on('update-not-available', (info) => {
+      log.info('Update not available:', info.version)
+      console.log('Update not available:', info.version)
+      mainWindow?.webContents.send('update:not-available', info)
+    })
+
+    autoUpdater.on('error', (err) => {
+      log.error('Update error:', err)
+      console.error('Update error:', err)
+      mainWindow?.webContents.send('update:error', err.message)
+    })
+
+    autoUpdater.on('download-progress', (progressObj) => {
+      log.info('Download progress:', progressObj.percent)
+      console.log('Download progress:', progressObj.percent)
+      mainWindow?.webContents.send('update:download-progress', progressObj)
+    })
+
+    autoUpdater.on('update-downloaded', (info) => {
+      log.info('Update downloaded:', info.version)
+      console.log('Update downloaded:', info.version)
+      mainWindow?.webContents.send('update:downloaded', info)
+
+      if (mainWindow) {
+        mainWindow.webContents.send('update:show-notification', {
+          title: 'Update Ready',
+          body: `Version ${info.version} has been downloaded and will be installed on restart.`,
+          icon: 'app-icon'
+        })
+      }
+    })
+
+    if (settingsManager.get('autoUpdate')) {
+      log.info('Auto-update is enabled, checking for updates...')
+      console.log('Auto-update is enabled, checking for updates...')
+      void autoUpdater.checkForUpdatesAndNotify()
+    }
+
+    log.info('Auto-updater initialized successfully')
+    console.log('Auto-updater initialized successfully')
+  } catch (error) {
+    log.error('Failed to initialize auto-updater:', error)
+    console.error('Failed to initialize auto-updater:', error)
+  }
+}
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
@@ -110,83 +176,9 @@ app.whenReady().then(async () => {
     console.error('Failed to initialize yt-dlp:', error)
   }
 
-  // Initialize auto-updater (only in production)
-  if (process.env.NODE_ENV === 'production') {
-    try {
-      console.log('Initializing auto-updater...')
-
-      // Configure logging
-      log.transports.file.level = 'info'
-      autoUpdater.logger = log
-
-      // Configure auto-updater for production
-      autoUpdater.autoDownload = true // Auto download updates
-      autoUpdater.autoInstallOnAppQuit = true // Auto install on quit
-
-      // Set up event listeners
-      autoUpdater.on('update-available', (info) => {
-        log.info('Update available:', info.version)
-        console.log('Update available:', info.version)
-        // Send notification to renderer
-        mainWindow?.webContents.send('update:available', info)
-      })
-
-      autoUpdater.on('update-not-available', (info) => {
-        log.info('Update not available:', info.version)
-        console.log('Update not available:', info.version)
-        // Send notification to renderer
-        mainWindow?.webContents.send('update:not-available', info)
-      })
-
-      autoUpdater.on('error', (err) => {
-        log.error('Update error:', err)
-        console.error('Update error:', err)
-        // Send error to renderer
-        mainWindow?.webContents.send('update:error', err.message)
-      })
-
-      autoUpdater.on('download-progress', (progressObj) => {
-        log.info('Download progress:', progressObj.percent)
-        console.log('Download progress:', progressObj.percent)
-        // Send progress to renderer
-        mainWindow?.webContents.send('update:download-progress', progressObj)
-      })
-
-      autoUpdater.on('update-downloaded', (info) => {
-        log.info('Update downloaded:', info.version)
-        console.log('Update downloaded:', info.version)
-        // Send notification to renderer
-        mainWindow?.webContents.send('update:downloaded', info)
-
-        // Show system notification
-        if (mainWindow) {
-          mainWindow.webContents.send('update:show-notification', {
-            title: 'Update Ready',
-            body: `Version ${info.version} has been downloaded and will be installed on restart.`,
-            icon: 'app-icon'
-          })
-        }
-      })
-
-      // Check for updates on startup if auto-update is enabled
-      if (settingsManager.get('autoUpdate')) {
-        log.info('Auto-update is enabled, checking for updates...')
-        console.log('Auto-update is enabled, checking for updates...')
-        // Use checkForUpdatesAndNotify for automatic notifications
-        await autoUpdater.checkForUpdatesAndNotify()
-      }
-
-      log.info('Auto-updater initialized successfully')
-      console.log('Auto-updater initialized successfully')
-    } catch (error) {
-      log.error('Failed to initialize auto-updater:', error)
-      console.error('Failed to initialize auto-updater:', error)
-    }
-  } else {
-    console.log('Skipping auto-updater initialization in development mode')
-  }
-
   createWindow()
+
+  initAutoUpdater()
 
   // Create system tray
   createTray()
