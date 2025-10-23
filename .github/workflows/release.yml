@@ -1,0 +1,91 @@
+name: Build and Release Electron App
+
+on:
+  push:
+    tags:
+      - v*.*.*
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+
+      - name: Install Dependencies
+        run: pnpm install
+
+      - name: Type check
+        run: pnpm run typecheck
+
+      - name: Lint and format check
+        run: pnpm run check
+
+      - name: Build Electron app
+        run: |
+          if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
+            pnpm run build:linux
+          elif [ "${{ matrix.os }}" == "macos-latest" ]; then
+            pnpm run build:mac
+          elif [ "${{ matrix.os }}" == "windows-latest" ]; then
+            pnpm run build:win
+          fi
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.os }}
+          path: dist/
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            dist-ubuntu-latest/*.AppImage
+            dist-ubuntu-latest/*.snap
+            dist-ubuntu-latest/*.deb
+            dist-ubuntu-latest/*.rpm
+            dist-ubuntu-latest/*.tar.gz
+            dist-ubuntu-latest/*.yml
+            dist-ubuntu-latest/*.blockmap
+            dist-macos-latest/*.dmg
+            dist-macos-latest/*.zip
+            dist-macos-latest/*.yml
+            dist-macos-latest/*.blockmap
+            dist-windows-latest/*.exe
+            dist-windows-latest/*.zip
+            dist-windows-latest/*.yml
+            dist-windows-latest/*.blockmap

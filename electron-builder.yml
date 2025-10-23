@@ -1,0 +1,40 @@
+appId: com.vidbee
+productName: VidBee
+directories:
+  buildResources: build
+files:
+  - '!**/.vscode/*'
+  - '!src/*'
+  - '!electron.vite.config.{js,ts,mjs,cjs}'
+  - '!{.eslintcache,eslint.config.mjs,dev-app-update.yml,CHANGELOG.md}'
+  - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
+  - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+asarUnpack:
+  - resources/**
+win:
+  executableName: vidbee
+nsis:
+  artifactName: ${name}-${version}-setup.${ext}
+  shortcutName: ${productName}
+  uninstallDisplayName: ${productName}
+  createDesktopShortcut: always
+mac:
+  entitlementsInherit: build/entitlements.mac.plist
+  notarize: false
+dmg:
+  artifactName: ${name}-${version}.${ext}
+linux:
+  target:
+    - AppImage
+    - snap
+    - deb
+  maintainer: yourname@example.com
+  category: Utility
+appImage:
+  artifactName: ${name}-${version}.${ext}
+npmRebuild: false
+publish:
+  provider: generic
+  url: https://github.com/nexmoe/vidbee/releases/latest/download
+electronDownload:
+  mirror: https://npmmirror.com/mirrors/electron/

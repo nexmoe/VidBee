@@ -1,0 +1,9 @@
+# Ignore yt-dlp binaries (too large for git)
+yt-dlp.exe
+yt-dlp_macos
+yt-dlp_linux
+
+# But keep the README
+!README.md
+!.gitignore
+

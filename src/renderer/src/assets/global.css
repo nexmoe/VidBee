@@ -1,0 +1,12 @@
+@import 'tailwindcss';
+@import './theme.css';
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply text-foreground;
+  }
+}
+

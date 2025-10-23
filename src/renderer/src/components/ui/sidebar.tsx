@@ -1,0 +1,207 @@
+import { Button } from '@renderer/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@renderer/components/ui/dropdown-menu'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
+import { saveSettingAtom } from '@renderer/store/settings'
+import { useSetAtom } from 'jotai'
+import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
+import MingcuteCheckCircleFill from '~icons/mingcute/check-circle-fill'
+import MingcuteCheckCircleLine from '~icons/mingcute/check-circle-line'
+import MingcuteDownload3Fill from '~icons/mingcute/download-3-fill'
+import MingcuteDownload3Line from '~icons/mingcute/download-3-line'
+import MingcuteGlobeLine from '~icons/mingcute/globe-2-line'
+import MingcuteInformationFill from '~icons/mingcute/information-fill'
+import MingcuteInformationLine from '~icons/mingcute/information-line'
+import MingcuteSettingsFill from '~icons/mingcute/settings-3-fill'
+import MingcuteSettingsLine from '~icons/mingcute/settings-3-line'
+
+type Page = 'home' | 'settings' | 'about' | 'sites'
+
+interface NavigationItem {
+  id: Page
+  icon: {
+    active: React.ComponentType<{ className?: string }>
+    inactive: React.ComponentType<{ className?: string }>
+  }
+  label: string
+}
+
+interface SidebarProps {
+  currentPage: Page
+  onPageChange: (page: Page) => void
+}
+
+export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
+  const { t, i18n } = useTranslation()
+  const saveSetting = useSetAtom(saveSettingAtom)
+
+  const languageOptions = [
+    { value: 'en', label: 'English' },
+    { value: 'zh', label: '中文' }
+  ]
+
+  const navigationItems: NavigationItem[] = [
+    {
+      id: 'home',
+      icon: {
+        active: MingcuteDownload3Fill,
+        inactive: MingcuteDownload3Line
+      },
+      label: t('menu.download')
+    },
+    {
+      id: 'sites',
+      icon: {
+        active: MingcuteCheckCircleFill,
+        inactive: MingcuteCheckCircleLine
+      },
+      label: t('menu.supportedSites')
+    }
+  ]
+
+  const bottomNavigationItems: NavigationItem[] = [
+    {
+      id: 'settings',
+      icon: {
+        active: MingcuteSettingsFill,
+        inactive: MingcuteSettingsLine
+      },
+      label: t('menu.preferences')
+    },
+    {
+      id: 'about',
+      icon: {
+        active: MingcuteInformationFill,
+        inactive: MingcuteInformationLine
+      },
+      label: t('menu.about')
+    }
+  ]
+
+  const activeLanguageCode = (i18n.language ?? 'en').split('-')[0]
+  const currentLanguage =
+    languageOptions.find((option) => option.value === activeLanguageCode) ?? languageOptions[0]
+
+  const handleLanguageChange = async (value: string) => {
+    if (activeLanguageCode === value) {
+      return
+    }
+
+    await saveSetting({ key: 'language', value })
+    await i18n.changeLanguage(value)
+    toast.success(t('notifications.settingsSaved'))
+  }
+
+  const renderNavigationItem = (item: NavigationItem, showLabel = true) => {
+    const isActive = currentPage === item.id
+    const IconComponent = isActive ? item.icon.active : item.icon.inactive
+
+    return (
+      <div key={item.id} className="flex flex-col items-center gap-1">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onPageChange(item.id)}
+              className={`w-12 h-12 ${isActive ? 'bg-primary/10' : ''}`}
+            >
+              <IconComponent className={`h-5! w-5! ${isActive ? 'text-primary' : ''}`} />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="right">
+            <p>{item.label}</p>
+          </TooltipContent>
+        </Tooltip>
+        {showLabel && (
+          <span className="text-xs text-muted-foreground text-center leading-tight px-3">
+            {item.label}
+          </span>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <aside className="w-20 max-w-20 min-w-20 border-r border-border/60 bg-background/77 flex flex-col items-center py-4 gap-2">
+      {/* App Logo */}
+      <div className="flex flex-col items-center gap-1 py-4 mb-1">
+        <div className="w-12 h-12 flex items-center justify-center">
+          <img src="./app-icon.png" alt="VidBee" className="w-10 h-10" />
+        </div>
+        <span className="text-xs text-muted-foreground font-bold text-center leading-tight">
+          VidBee
+        </span>
+      </div>
+
+      {/* Navigation Items */}
+      {navigationItems.map((item) => renderNavigationItem(item))}
+
+      <div className="flex-1" />
+
+      {/* Language Selector */}
+      <div className="flex flex-col items-center gap-1">
+        <DropdownMenu>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="w-12 h-12">
+                  <MingcuteGlobeLine className="h-5! w-5!" />
+                </Button>
+              </DropdownMenuTrigger>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              <p>{t('settings.language')}</p>
+            </TooltipContent>
+          </Tooltip>
+          <DropdownMenuContent side="right" align="end">
+            {languageOptions.map((option) => {
+              const isActive = option.value === currentLanguage.value
+
+              return (
+                <DropdownMenuItem
+                  key={option.value}
+                  onClick={() => void handleLanguageChange(option.value)}
+                  className={isActive ? 'font-semibold' : undefined}
+                >
+                  {option.label}
+                </DropdownMenuItem>
+              )
+            })}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      {/* Bottom Navigation Items */}
+      {bottomNavigationItems.map((item) => {
+        const isActive = currentPage === item.id
+        const IconComponent = isActive ? item.icon.active : item.icon.inactive
+
+        return (
+          <div key={item.id} className="flex flex-col items-center gap-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => onPageChange(item.id)}
+                  className={`w-12 h-12 ${isActive ? 'bg-primary/10' : ''}`}
+                >
+                  <IconComponent className={`h-5! w-5! ${isActive ? 'text-primary' : ''}`} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                <p>{item.label}</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        )
+      })}
+    </aside>
+  )
+}
