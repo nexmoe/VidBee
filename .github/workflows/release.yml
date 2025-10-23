@@ -45,6 +45,7 @@ jobs:
           elif [ "${{ matrix.os }}" == "windows-latest" ]; then
             pnpm run build:win
           fi
+        shell: bash
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
