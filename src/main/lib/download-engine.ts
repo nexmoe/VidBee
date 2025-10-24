@@ -10,18 +10,18 @@ import type {
   PlaylistInfo,
   VideoFormat,
   VideoInfo
-} from '../shared/types'
-import { buildDownloadArgs } from './download-engine/args-builder'
+} from '../../shared/types'
+import { buildDownloadArgs } from '../download-engine/args-builder'
 import {
   findFormatByIdCandidates,
   parseSizeToBytes,
   resolveSelectedFormat
-} from './download-engine/format-utils'
-import { DownloadQueue } from './lib/download-queue'
-import { historyManager } from './lib/history-manager'
-import { ytdlpManager } from './lib/ytdlp-manager'
-import { settingsManager } from './settings'
-import { scopedLoggers } from './utils/logger'
+} from '../download-engine/format-utils'
+import { settingsManager } from '../settings'
+import { scopedLoggers } from '../utils/logger'
+import { DownloadQueue } from './download-queue'
+import { historyManager } from './history-manager'
+import { ytdlpManager } from './ytdlp-manager'
 
 interface DownloadProcess {
   controller: AbortController

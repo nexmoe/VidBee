@@ -6,7 +6,7 @@ import type {
   PlaylistInfo,
   VideoInfo
 } from '../../../shared/types'
-import { downloadEngine } from '../../download-engine'
+import { downloadEngine } from '../../lib/download-engine'
 
 class DownloadService extends IpcService {
   static readonly groupName = 'download'
