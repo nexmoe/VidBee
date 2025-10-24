@@ -48,6 +48,12 @@
     "shareSupport": "Recommend VidBee to your friends to support our growth and updates.",
     "shareTitle": "Spread the word",
     "shareDescription": "Share VidBee with your community in one click.",
+    "followAuthorActions": {
+      "follow": "Follow @nexmoex"
+    },
+    "followAuthorDescription": "Stay updated with the latest VidBee news and updates.",
+    "followAuthorSupport": "Follow the developer on X (Twitter) to get the latest updates and news about VidBee.",
+    "followAuthorTitle": "Follow the Developer",
     "shareActions": {
       "twitter": "Share on X (Twitter)",
       "facebook": "Share on Facebook",
@@ -175,6 +181,7 @@
     "noHistory": "No download history yet",
     "noHistoryDescription": "Your completed downloads will appear here",
     "openFile": "Open File",
+    "copyToClipboard": "Copy to clipboard",
     "openFileLocation": "Open File Location",
     "openFolder": "Open Folder",
     "openDownloadFolder": "Open Download Folder",
@@ -203,6 +210,7 @@
   },
   "notifications": {
     "copyFailed": "Failed to copy to clipboard",
+    "videoCopied": "Video copied to clipboard",
     "downloadCompleted": "Download completed",
     "downloadFailed": "Download failed",
     "downloadStarted": "Download started",

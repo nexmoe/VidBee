@@ -44,7 +44,7 @@ export function ImageWithPlaceholder({
   }
 
   return (
-    <div className={cn('relative', className)}>
+    <div className={cn('relative w-full h-full', className)}>
       {isLoading && (
         <div
           className={cn(

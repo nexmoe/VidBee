@@ -43,6 +43,12 @@
       "website": "官方网站",
       "websiteDescription": "产品亮点、路线图与社区动态。"
     },
+    "followAuthorActions": {
+      "follow": "关注 @nexmoex"
+    },
+    "followAuthorDescription": "获取 VidBee 的最新消息和更新。",
+    "followAuthorSupport": "在 X (Twitter) 上关注开发者，获取 VidBee 的最新更新和消息。",
+    "followAuthorTitle": "关注开发者",
     "resourcesDescription": "了解 VidBee 并保持关注的实用链接。",
     "resourcesTitle": "资源",
     "sourceCode": "源代码已开放",

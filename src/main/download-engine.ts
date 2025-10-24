@@ -2,225 +2,26 @@ import { EventEmitter } from 'node:events'
 import path from 'node:path'
 import type { YTDlpEventEmitter } from 'yt-dlp-wrap-plus'
 import type {
-  AppSettings,
   DownloadHistoryItem,
   DownloadItem,
   DownloadOptions,
   DownloadProgress,
-  OneClickQualityPreset,
   PlaylistDownloadOptions,
   PlaylistInfo,
   VideoFormat,
   VideoInfo
 } from '../shared/types'
+import { buildDownloadArgs } from './download-engine/args-builder'
+import {
+  findFormatByIdCandidates,
+  parseSizeToBytes,
+  resolveSelectedFormat
+} from './download-engine/format-utils'
 import { DownloadQueue } from './lib/download-queue'
 import { historyManager } from './lib/history-manager'
 import { ytdlpManager } from './lib/ytdlp-manager'
 import { settingsManager } from './settings'
-
-const qualityPresetToVideoHeight: Record<OneClickQualityPreset, number | null> = {
-  auto: null,
-  best: null,
-  good: 1080,
-  normal: 720,
-  bad: 480,
-  worst: 360
-}
-
-const qualityPresetToAudioAbr: Record<OneClickQualityPreset, number | null> = {
-  auto: null,
-  best: 320,
-  good: 256,
-  normal: 192,
-  bad: 128,
-  worst: 96
-}
-
-const selectVideoFormatForPreset = (
-  formats: VideoFormat[],
-  preset: OneClickQualityPreset
-): VideoFormat | undefined => {
-  if (formats.length === 0) {
-    return undefined
-  }
-
-  const sorted = [...formats].sort((a, b) => {
-    const heightDiff = (b.height ?? 0) - (a.height ?? 0)
-    if (heightDiff !== 0) return heightDiff
-    const fpsDiff = (b.fps ?? 0) - (a.fps ?? 0)
-    if (fpsDiff !== 0) return fpsDiff
-    return (b.tbr ?? 0) - (a.tbr ?? 0)
-  })
-
-  if (preset === 'worst') {
-    return sorted[sorted.length - 1] ?? sorted[0]
-  }
-
-  const heightLimit = qualityPresetToVideoHeight[preset]
-  if (!heightLimit) {
-    return sorted[0]
-  }
-
-  const withinLimit = sorted.find((format) => {
-    const height = format.height ?? 0
-    return height > 0 && height <= heightLimit
-  })
-
-  return withinLimit ?? sorted[0]
-}
-
-const selectAudioFormatForPreset = (
-  formats: VideoFormat[],
-  preset: OneClickQualityPreset
-): VideoFormat | undefined => {
-  if (formats.length === 0) {
-    return undefined
-  }
-
-  const sorted = [...formats].sort((a, b) => {
-    const bitrateDiff = (b.tbr ?? 0) - (a.tbr ?? 0)
-    if (bitrateDiff !== 0) return bitrateDiff
-    const sizeA = a.filesize ?? a.filesize_approx ?? 0
-    const sizeB = b.filesize ?? b.filesize_approx ?? 0
-    if (sizeB !== sizeA) return sizeB - sizeA
-    return 0
-  })
-
-  if (preset === 'worst') {
-    return sorted[sorted.length - 1] ?? sorted[0]
-  }
-
-  const abrLimit = qualityPresetToAudioAbr[preset]
-  if (!abrLimit) {
-    return sorted[0]
-  }
-
-  const withinLimit = sorted.find((format) => {
-    const bitrate = format.tbr ?? 0
-    return bitrate > 0 && bitrate <= abrLimit
-  })
-
-  return withinLimit ?? sorted[0]
-}
-
-const findFormatBySelector = (
-  formats: VideoFormat[],
-  selector?: string
-): VideoFormat | undefined => {
-  if (!selector) {
-    return undefined
-  }
-
-  const candidateIds = selector
-    .split('/')
-    .map((option) => option.split('+')[0].trim())
-    .filter((option) => option.length > 0)
-
-  for (const candidateId of candidateIds) {
-    const match = formats.find((format) => format.format_id === candidateId)
-    if (match) {
-      return match
-    }
-  }
-
-  return undefined
-}
-
-const findFormatByIdCandidates = (
-  formats: VideoFormat[],
-  rawFormatId: string | undefined
-): VideoFormat | undefined => {
-  if (!rawFormatId) {
-    return undefined
-  }
-
-  const parts = rawFormatId
-    .split('+')
-    .map((part) => part.trim())
-    .filter((part) => part.length > 0)
-
-  for (const part of parts) {
-    const match = formats.find((format) => format.format_id === part)
-    if (match) {
-      return match
-    }
-  }
-
-  return undefined
-}
-
-const parseSizeToBytes = (value?: string): number | undefined => {
-  if (!value) {
-    return undefined
-  }
-
-  const cleaned = value.trim().replace(/^~\s*/, '')
-  if (!cleaned) {
-    return undefined
-  }
-
-  const match = cleaned.match(/^([\d.,]+)\s*([KMGTP]?i?B)$/i)
-  if (!match) {
-    return undefined
-  }
-
-  const amount = Number(match[1].replace(/,/g, ''))
-  if (Number.isNaN(amount)) {
-    return undefined
-  }
-
-  const unit = match[2].toUpperCase()
-  const multipliers: Record<string, number> = {
-    B: 1,
-    KB: 1_000,
-    KIB: 1_024,
-    MB: 1_000_000,
-    MIB: 1_048_576,
-    GB: 1_000_000_000,
-    GIB: 1_073_741_824,
-    TB: 1_000_000_000_000,
-    TIB: 1_099_511_627_776
-  }
-
-  const multiplier = multipliers[unit]
-  if (!multiplier) {
-    return undefined
-  }
-
-  return Math.round(amount * multiplier)
-}
-
-const resolveSelectedFormat = (
-  formats: VideoFormat[],
-  options: DownloadOptions,
-  settings: AppSettings
-): VideoFormat | undefined => {
-  const directMatch = findFormatBySelector(formats, options.format)
-  if (directMatch) {
-    return directMatch
-  }
-
-  const preset = settings.oneClickQuality ?? 'auto'
-
-  if (options.type === 'video') {
-    const videoFormats = formats.filter(
-      (format) => format.video_ext !== 'none' && !!format.vcodec && format.vcodec !== 'none'
-    )
-    return selectVideoFormatForPreset(videoFormats, preset)
-  }
-
-  if (options.type === 'audio' || options.type === 'extract') {
-    const audioFormats = formats.filter(
-      (format) =>
-        !!format.acodec &&
-        format.acodec !== 'none' &&
-        (!format.video_ext || format.video_ext === 'none')
-    )
-    return selectAudioFormatForPreset(audioFormats, preset)
-  }
-
-  return undefined
-}
+import { scopedLoggers } from './utils/logger'
 
 interface DownloadProcess {
   controller: AbortController
@@ -284,16 +85,27 @@ class DownloadEngine extends EventEmitter {
         if (code === 0 && stdout) {
           try {
             const info = JSON.parse(stdout)
+            scopedLoggers.download.info('Successfully retrieved video info for:', url)
             resolve(info)
           } catch (error) {
+            scopedLoggers.download.error('Failed to parse video info for:', url, error)
             reject(new Error(`Failed to parse video info: ${error}`))
           }
         } else {
+          scopedLoggers.download.error(
+            'Failed to fetch video info for:',
+            url,
+            'Exit code:',
+            code,
+            'Error:',
+            stderr
+          )
           reject(new Error(stderr || 'Failed to fetch video info'))
         }
       })
 
       process.on('error', (error) => {
+        scopedLoggers.download.error('yt-dlp process error for:', url, error)
         reject(error)
       })
     })
@@ -373,7 +185,7 @@ class DownloadEngine extends EventEmitter {
     const endIndex = options.endIndex ? options.endIndex - 1 : playlistInfo.entries.length - 1
     const entriesToDownload = playlistInfo.entries.slice(startIndex, endIndex + 1)
 
-    console.log(
+    scopedLoggers.download.info(
       `Starting playlist download: ${entriesToDownload.length} videos from "${playlistInfo.title}"`
     )
 
@@ -440,6 +252,7 @@ class DownloadEngine extends EventEmitter {
   }
 
   private async executeDownload(id: string, options: DownloadOptions): Promise<void> {
+    scopedLoggers.download.info('Starting download execution for ID:', id, 'URL:', options.url)
     const ytdlp = ytdlpManager.getInstance()
     const settings = settingsManager.getAll()
     const downloadPath = options.outputPath || settings.downloadPath
@@ -455,12 +268,14 @@ class DownloadEngine extends EventEmitter {
     let actualFormat: string | null = null
     let actualQuality: string | null = null
     let actualCodec: string | null = null
+    let videoInfo: VideoInfo | undefined
 
     // First, get detailed video info to capture basic metadata and formats
     try {
-      const videoInfo = await this.getVideoInfo(options.url)
+      const info = await this.getVideoInfo(options.url)
+      videoInfo = info
 
-      availableFormats = Array.isArray(videoInfo.formats) ? videoInfo.formats : []
+      availableFormats = Array.isArray(info.formats) ? info.formats : []
       selectedFormat = resolveSelectedFormat(availableFormats, options, settings)
 
       if (selectedFormat) {
@@ -482,28 +297,28 @@ class DownloadEngine extends EventEmitter {
       }
 
       this.updateDownloadInfo(id, {
-        title: videoInfo.title,
-        thumbnail: videoInfo.thumbnail,
-        duration: videoInfo.duration,
-        description: videoInfo.description,
-        uploader: videoInfo.uploader,
-        viewCount: videoInfo.view_count,
+        title: info.title,
+        thumbnail: info.thumbnail,
+        duration: info.duration,
+        description: info.description,
+        uploader: info.uploader,
+        viewCount: info.view_count,
         // Store only essential download info
         selectedFormat
       })
 
       this.upsertHistoryEntry(id, options, {
-        title: videoInfo.title,
-        thumbnail: videoInfo.thumbnail,
-        duration: videoInfo.duration,
-        description: videoInfo.description,
-        uploader: videoInfo.uploader,
-        viewCount: videoInfo.view_count,
+        title: info.title,
+        thumbnail: info.thumbnail,
+        duration: info.duration,
+        description: info.description,
+        uploader: info.uploader,
+        viewCount: info.view_count,
         // Store only essential download info
         selectedFormat
       })
     } catch (error) {
-      console.warn('Failed to get detailed video info:', error)
+      scopedLoggers.download.warn('Failed to get detailed video info for ID:', id, error)
     }
 
     const applySelectedFormat = (formatId: string | undefined): boolean => {
@@ -542,7 +357,7 @@ class DownloadEngine extends EventEmitter {
       return true
     }
 
-    const args = this.buildDownloadArgs(options, downloadPath, settings)
+    const args = buildDownloadArgs(options, downloadPath, settings)
 
     const controller = new AbortController()
     const ytdlpProcess = ytdlp.exec(args, {
@@ -598,6 +413,7 @@ class DownloadEngine extends EventEmitter {
 
     ytdlpProcess.on('ytDlpEvent', (eventType: string, eventData: string) => {
       // Look for download destination messages
+      scopedLoggers.download.info('ytDlpEvent:', eventType, eventData)
       if (eventType === 'download' && eventData.includes('Destination:')) {
         const match = eventData.match(/Destination:\s*(.+)/)
         if (match?.[1]) {
@@ -668,113 +484,47 @@ class DownloadEngine extends EventEmitter {
       this.queue.downloadCompleted(id)
 
       if (code === 0) {
-        // Try to get the actual output path from yt-dlp events first
-        let finalOutputPath = actualOutputPath
-
-        // If we don't have the actual path, try to construct it
-        if (!finalOutputPath) {
-          try {
-            // Get video info to construct the expected output path
-            const videoInfo = await this.getVideoInfo(options.url)
-            const title = videoInfo.title || 'Unknown'
-
-            // Sanitize title for filename - handle Chinese characters and special chars
-            const sanitizedTitle = title
-              .replace(/[<>:"/\\|?*]/g, '_')
-              .replace(/[\u4e00-\u9fff]/g, '') // Remove Chinese characters
-              .replace(/\s+/g, '_') // Replace spaces with underscores
-              .replace(/_{2,}/g, '_') // Replace multiple underscores with single
-              .substring(0, 50) // Shorter limit for safety
-
-            // Determine file extension based on format
-            let extension = 'mp4' // default
-            if (options.type === 'audio') {
-              extension = options.extractFormat || 'mp3'
-            } else if (actualFormat) {
-              extension = actualFormat
-            }
-
-            // Construct the expected output path
-            const expectedFileName = `${sanitizedTitle}.${extension}`
-            const expectedPath = path.join(downloadPath, expectedFileName)
-
-            // Check if the file exists
-            const fs = await import('node:fs/promises')
-            try {
-              await fs.access(expectedPath)
-              finalOutputPath = expectedPath
-            } catch {
-              // Try to find any file with similar name in the download directory
-              try {
-                const files = await fs.readdir(downloadPath)
-                const matchingFile = files.find((file) => {
-                  // Look for files that might match our download
-                  const isVideoFile =
-                    file.endsWith('.mp4') ||
-                    file.endsWith('.webm') ||
-                    file.endsWith('.mkv') ||
-                    file.endsWith('.avi') ||
-                    file.endsWith('.mov')
-
-                  const isAudioFile =
-                    file.endsWith('.mp3') ||
-                    file.endsWith('.m4a') ||
-                    file.endsWith('.aac') ||
-                    file.endsWith('.ogg')
-
-                  const isCorrectType =
-                    (options.type === 'video' && isVideoFile) ||
-                    (options.type === 'audio' && isAudioFile)
-
-                  // Check if file was created recently (within last 5 minutes)
-                  const filePath = path.join(downloadPath, file)
-                  try {
-                    const fsSync = require('node:fs')
-                    const stats = fsSync.statSync(filePath)
-                    const isRecent = Date.now() - stats.mtime.getTime() < 5 * 60 * 1000
-                    return isCorrectType && isRecent
-                  } catch {
-                    return false
-                  }
-                })
-                if (matchingFile) {
-                  finalOutputPath = path.join(downloadPath, matchingFile)
-                }
-              } catch (error) {
-                console.warn('Failed to search for matching files:', error)
-              }
-            }
-          } catch (error) {
-            console.warn('Failed to construct output path:', error)
-          }
+        // Use actual output path from yt-dlp, or fallback to simple generated path
+        let finalOutputPath: string
+        if (actualOutputPath) {
+          finalOutputPath = actualOutputPath
+          scopedLoggers.download.info(
+            'Using actual output path from yt-dlp for ID:',
+            id,
+            'Path:',
+            finalOutputPath
+          )
+        } else {
+          // Simple fallback: generate path based on video title and format
+          const title = videoInfo?.title || 'Unknown'
+          const sanitizedTitle = title.replace(/[<>:"/\\|?*]/g, '_').substring(0, 50)
+          const extension =
+            options.type === 'audio' ? options.extractFormat || 'mp3' : actualFormat || 'mp4'
+          const fileName = `${sanitizedTitle}.${extension}`
+          finalOutputPath = path.join(downloadPath, fileName)
+          scopedLoggers.download.warn(
+            'Using fallback output path for ID:',
+            id,
+            'Path:',
+            finalOutputPath
+          )
         }
 
-        // Fallback to default path if still no output path
-        if (!finalOutputPath) {
-          // Create a generic filename with timestamp
-          const timestamp = Date.now()
-          const extension = options.type === 'audio' ? options.extractFormat || 'mp3' : 'mp4'
-          const genericFileName = `download_${timestamp}.${extension}`
-          finalOutputPath = path.join(downloadPath, genericFileName)
-        }
-
-        // Get file size if we have the output path
         let fileSize: number | undefined
-        let fileSizeError: unknown
-        if (finalOutputPath) {
-          try {
-            const fs = await import('node:fs/promises')
-            const stats = await fs.stat(finalOutputPath)
-            fileSize = stats.size
-          } catch (error) {
-            fileSizeError = error
+        try {
+          const fs = await import('node:fs/promises')
+          const stats = await fs.stat(finalOutputPath)
+          fileSize = stats.size
+        } catch (error) {
+          if (latestKnownSizeBytes !== undefined) {
+            fileSize = latestKnownSizeBytes
+          } else {
+            scopedLoggers.download.warn('Failed to get file size for ID:', id, error)
           }
         }
 
         if (fileSize === undefined && latestKnownSizeBytes !== undefined) {
           fileSize = latestKnownSizeBytes
-        } else if (fileSize === undefined && fileSizeError) {
-          console.warn('Failed to get file size:', fileSizeError)
         }
 
         this.updateDownloadInfo(id, {
@@ -786,9 +536,16 @@ class DownloadEngine extends EventEmitter {
           quality: actualQuality || undefined,
           codec: actualCodec || undefined
         })
+        scopedLoggers.download.info('Download completed successfully for ID:', id)
         this.emit('download-completed', id)
         this.addToHistory(id, options, 'completed', undefined, finalOutputPath)
       } else {
+        scopedLoggers.download.error(
+          'Download failed with exit code for ID:',
+          id,
+          'Exit code:',
+          code
+        )
         this.emit('download-error', id, new Error(`Download exited with code ${code}`))
         this.addToHistory(id, options, 'error', `Download exited with code ${code}`)
       }
@@ -796,6 +553,7 @@ class DownloadEngine extends EventEmitter {
 
     // Handle errors
     ytdlpProcess.on('error', (error: Error) => {
+      scopedLoggers.download.error('Download process error for ID:', id, error)
       this.activeDownloads.delete(id)
       this.queue.downloadCompleted(id)
       this.emit('download-error', id, error)
@@ -803,112 +561,8 @@ class DownloadEngine extends EventEmitter {
     })
   }
 
-  private buildDownloadArgs(
-    options: DownloadOptions,
-    downloadPath: string,
-    settings: AppSettings
-  ): string[] {
-    const args: string[] = ['--no-playlist', '--embed-chapters', '--no-mtime']
-
-    // Add encoding support for proper handling of non-ASCII characters
-    args.push('--encoding', 'utf-8')
-
-    // Format selection
-    if (options.type === 'video') {
-      args.push('-f', this.resolveVideoFormatSelector(options))
-    } else if (options.type === 'audio') {
-      args.push('-f', this.resolveAudioFormatSelector(options))
-    } else if (options.type === 'extract') {
-      args.push('-x')
-      args.push('--audio-format', options.extractFormat || 'mp3')
-      args.push('--audio-quality', options.extractQuality || '5')
-    }
-
-    // Time range
-    if (options.startTime || options.endTime) {
-      const start = options.startTime || '0'
-      const end = options.endTime || ''
-      args.push('--download-sections', `*${start}-${end || ''}`)
-    }
-
-    // Subtitles
-    if (options.downloadSubs) {
-      args.push('--write-subs', '--sub-langs', 'all')
-    }
-
-    // Output path with proper encoding handling
-    // Use sanitized filename to avoid encoding issues
-    const outputTemplate = path.join(downloadPath, '%(title).100s.%(ext)s')
-    args.push('-o', outputTemplate)
-
-    // Add options for better filename handling on Windows
-    if (process.platform === 'win32') {
-      // On Windows, use a more conservative approach to avoid encoding issues
-      args.push('--windows-filenames') // Use Windows-compatible filenames
-    }
-
-    // Browser cookies
-    if (settings.browserForCookies && settings.browserForCookies !== 'none') {
-      args.push('--cookies-from-browser', settings.browserForCookies)
-    }
-
-    // Proxy
-    if (settings.proxy) {
-      args.push('--proxy', settings.proxy)
-    }
-
-    // Config file
-    if (settings.configPath) {
-      args.push('--config-location', settings.configPath)
-    }
-
-    // URL (must be last)
-    args.push(options.url)
-
-    return args
-  }
-
-  private resolveVideoFormatSelector(options: DownloadOptions): string {
-    const format = options.format
-    const audioFormat = options.audioFormat
-
-    if (format && (format.includes('/') || (audioFormat === undefined && format.includes('+')))) {
-      return format
-    }
-
-    if (!format || format === 'best') {
-      if (audioFormat === 'none') {
-        return 'bestvideo+none'
-      }
-      if (!audioFormat || audioFormat === 'best') {
-        return 'best'
-      }
-      return `bestvideo+${audioFormat}`
-    }
-
-    if (audioFormat === 'none') {
-      return `${format}+none`
-    }
-
-    const audio = audioFormat && audioFormat !== 'best' ? audioFormat : 'bestaudio'
-    return `${format}+${audio}`
-  }
-
-  private resolveAudioFormatSelector(options: DownloadOptions): string {
-    const format = options.format
-
-    if (!format) {
-      return 'bestaudio'
-    }
-
-    if (format.includes('/') || format.includes('+') || format.includes('[')) {
-      return format
-    }
-
-    return format
-  }
-
   cancelDownload(id: string): boolean {
+    scopedLoggers.download.info('Cancelling download for ID:', id)
     const snapshot = this.queue.getItemDetails(id)
 
     const download = this.activeDownloads.get(id)
@@ -916,6 +570,7 @@ class DownloadEngine extends EventEmitter {
       download.controller.abort()
       const removedFromQueue = this.queue.remove(id)
       this.activeDownloads.delete(id)
+      scopedLoggers.download.info('Download cancelled successfully for ID:', id)
       this.emit('download-cancelled', id)
       if (snapshot) {
         this.upsertHistoryEntry(id, snapshot.options, {
@@ -1019,14 +674,15 @@ class DownloadEngine extends EventEmitter {
   ): void {
     // Get the download item from the queue to get additional info
     const completedDownload = this.queue.getCompletedDownload(id)
-
+    scopedLoggers.download.info('Completed download:', completedDownload)
     const completedAt = Date.now()
+    const finalOutputPath = actualOutputPath || options.outputPath
 
     this.upsertHistoryEntry(id, options, {
       title: completedDownload?.item.title || `Download ${id}`,
       thumbnail: completedDownload?.item.thumbnail,
       status,
-      outputPath: actualOutputPath || options.outputPath,
+      outputPath: finalOutputPath,
       completedAt,
       error,
       duration: completedDownload?.item.duration,

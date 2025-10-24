@@ -7,6 +7,7 @@ import { useSetAtom } from 'jotai'
 import {
   AlertCircle,
   CheckCircle2,
+  Copy,
   ExternalLink,
   FolderOpen,
   Loader2,
@@ -110,6 +111,25 @@ export function DownloadItem({ download }: DownloadItemProps) {
     await handleOpenFileLocation()
   }
 
+  const handleCopyToClipboard = async () => {
+    if (!download.outputPath) {
+      toast.error(t('notifications.copyFailed'))
+      return
+    }
+
+    try {
+      const success = await ipcServices.fs.copyFileToClipboard(download.outputPath)
+      if (!success) {
+        toast.error(t('notifications.copyFailed'))
+        return
+      }
+      toast.success(t('notifications.videoCopied'))
+    } catch (error) {
+      console.error('Failed to copy file to clipboard:', error)
+      toast.error(t('notifications.copyFailed'))
+    }
+  }
+
   const handleRemoveHistory = async () => {
     if (!isHistory) return
     try {
@@ -166,11 +186,11 @@ export function DownloadItem({ download }: DownloadItemProps) {
     <div className="group relative w-full max-w-full overflow-hidden">
       <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:gap-4">
         {/* Thumbnail */}
-        <div className="shrink-0 overflow-hidden rounded-md border border-border/60 bg-background/60">
+        <div className="shrink-0 overflow-hidden rounded-md border border-border/60 bg-background/60 w-32 h-20">
           <ImageWithPlaceholder
             src={thumbnailSrc}
             alt={download.title}
-            className="w-32 h-18 object-cover aspect-video"
+            className="w-full h-full object-cover"
             fallbackIcon={<Play className="h-6 w-6" />}
           />
         </div>
@@ -179,18 +199,11 @@ export function DownloadItem({ download }: DownloadItemProps) {
         <div className="flex-1 min-w-0 max-w-full space-y-3 overflow-hidden">
           <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:gap-4">
             <div className="flex-1 min-w-0 max-w-full space-y-2 overflow-hidden">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="w-full min-w-0 overflow-hidden">
-                    <p className="w-full wrap-break-word text-sm font-medium sm:text-base line-clamp-2">
-                      {download.title}
-                    </p>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p className="max-w-xs wrap-break-word">{download.title}</p>
-                </TooltipContent>
-              </Tooltip>
+              <div className="w-full min-w-0 overflow-hidden">
+                <p className="w-full wrap-break-word text-sm font-medium sm:text-base line-clamp-2">
+                  {download.title}
+                </p>
+              </div>
               <div className="flex w-full flex-wrap items-center gap-2 text-xs text-muted-foreground">
                 <Badge variant="outline" className="bg-muted/50 capitalize text-[11px] font-medium">
                   {download.type}
@@ -285,13 +298,13 @@ export function DownloadItem({ download }: DownloadItemProps) {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 shrink-0"
-                            onClick={handleOpenFile}
+                            onClick={handleCopyToClipboard}
                           >
-                            <ExternalLink className="h-4 w-4" />
+                            <Copy className="h-4 w-4" />
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p>{t('history.openFile')}</p>
+                          <p>{t('history.copyToClipboard')}</p>
                         </TooltipContent>
                       </Tooltip>
                       <Tooltip>
@@ -344,6 +357,21 @@ export function DownloadItem({ download }: DownloadItemProps) {
                         </TooltipTrigger>
                         <TooltipContent>
                           <p>{t('history.openFile')}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 shrink-0"
+                            onClick={handleCopyToClipboard}
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>{t('history.copyToClipboard')}</p>
                         </TooltipContent>
                       </Tooltip>
                       <Tooltip>

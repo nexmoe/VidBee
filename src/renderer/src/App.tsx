@@ -49,7 +49,7 @@ function AppContent() {
         </ScrollArea>
       </main>
 
-      <Toaster />
+      <Toaster richColors={true} />
     </div>
   )
 }

@@ -215,6 +215,29 @@ export function About() {
 
         <Card>
           <CardHeader>
+            <CardTitle>{t('about.followAuthorTitle')}</CardTitle>
+            <CardDescription>{t('about.followAuthorDescription')}</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <p className="text-sm text-muted-foreground md:max-w-md">
+              {t('about.followAuthorSupport')}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => openShareUrl('https://x.com/nexmoex')}
+                className="gap-2"
+              >
+                <Twitter className="h-4 w-4" />
+                {t('about.followAuthorActions.follow')}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
             <CardTitle>{t('about.shareTitle')}</CardTitle>
             <CardDescription>{t('about.shareDescription')}</CardDescription>
           </CardHeader>

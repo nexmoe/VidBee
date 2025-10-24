@@ -1,14 +1,21 @@
 import { join } from 'node:path'
 import { electronApp, optimizer } from '@electron-toolkit/utils'
 import { app, BrowserWindow, shell } from 'electron'
-import log from 'electron-log'
+import log from 'electron-log/main'
 import { autoUpdater } from 'electron-updater'
 import appIcon from '../../build/icon.png?asset'
+import { configureLogger } from './config/logger-config'
 import { downloadEngine } from './download-engine'
 import { services } from './ipc'
 import { ytdlpManager } from './lib/ytdlp-manager'
 import { settingsManager } from './settings'
 import { createTray, destroyTray } from './tray'
+
+// Initialize electron-log for main process
+log.initialize()
+
+// Configure logger settings
+configureLogger()
 
 let mainWindow: BrowserWindow | null = null
 let isQuitting = false
@@ -165,15 +172,15 @@ app.whenReady().then(async () => {
   })
 
   // IPC services are automatically registered by electron-ipc-decorator when imported
-  console.log('IPC services available:', Object.keys(services))
+  log.info('IPC services available:', Object.keys(services))
 
   // Initialize yt-dlp
   try {
-    console.log('Initializing yt-dlp...')
+    log.info('Initializing yt-dlp...')
     await ytdlpManager.initialize()
-    console.log('yt-dlp initialized successfully')
+    log.info('yt-dlp initialized successfully')
   } catch (error) {
-    console.error('Failed to initialize yt-dlp:', error)
+    log.error('Failed to initialize yt-dlp:', error)
   }
 
   createWindow()
