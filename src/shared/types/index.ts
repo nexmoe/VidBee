@@ -54,7 +54,6 @@ export interface DownloadItem {
   status: DownloadStatus
   progress?: DownloadProgress
   error?: string
-  outputPath?: string
   speed?: string
   // Enhanced video information
   duration?: number
@@ -83,7 +82,7 @@ export interface DownloadHistoryItem {
   thumbnail?: string
   type: 'video' | 'audio' | 'extract'
   status: DownloadStatus
-  outputPath?: string
+  downloadPath?: string
   fileSize?: number
   duration?: number
   downloadedAt: number
@@ -113,7 +112,6 @@ export interface DownloadOptions {
   startTime?: string
   endTime?: string
   downloadSubs?: boolean
-  outputPath?: string
 }
 
 export interface PlaylistInfo {

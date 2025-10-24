@@ -3,18 +3,8 @@ import { Button } from '@renderer/components/ui/button'
 import { ImageWithPlaceholder } from '@renderer/components/ui/image-with-placeholder'
 import { Progress } from '@renderer/components/ui/progress'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
-import { useSetAtom } from 'jotai'
-import {
-  AlertCircle,
-  CheckCircle2,
-  Copy,
-  ExternalLink,
-  FolderOpen,
-  Loader2,
-  Play,
-  Trash2,
-  X
-} from 'lucide-react'
+import { useAtomValue, useSetAtom } from 'jotai'
+import { AlertCircle, CheckCircle2, Copy, FolderOpen, Loader2, Play, Trash2, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { useCachedThumbnail } from '../../hooks/use-cached-thumbnail'
@@ -24,6 +14,14 @@ import {
   removeDownloadAtom,
   removeHistoryRecordAtom
 } from '../../store/downloads'
+import { settingsAtom } from '../../store/settings'
+
+// Helper function to generate file path with proper path separators
+const generateFilePath = (downloadPath: string, title: string, format: string): string => {
+  const fileName = `${title}.${format}`
+  // Use proper path joining for cross-platform compatibility
+  return `${downloadPath}/${fileName}`.replace(/\//g, '\\')
+}
 
 interface DownloadItemProps {
   download: DownloadRecord
@@ -54,6 +52,7 @@ const formatDate = (timestamp?: number) => {
 
 export function DownloadItem({ download }: DownloadItemProps) {
   const { t } = useTranslation()
+  const settings = useAtomValue(settingsAtom)
   const removeDownload = useSetAtom(removeDownloadAtom)
   const removeHistory = useSetAtom(removeHistoryRecordAtom)
   const isHistory = download.entryType === 'history'
@@ -76,14 +75,14 @@ export function DownloadItem({ download }: DownloadItemProps) {
     }
   }
 
-  const handleOpenFileLocation = async () => {
-    if (!download.outputPath) {
-      toast.error(t('notifications.openFolderFailed'))
-      return
-    }
-
+  const handleOpenFolder = async () => {
     try {
-      const success = await ipcServices.fs.openFileLocation(download.outputPath)
+      // Generate file path using downloadPath + title + ext
+      const downloadPath = download.downloadPath || settings.downloadPath
+      const format = download.format || (download.type === 'audio' ? 'mp3' : 'mp4')
+      const filePath = generateFilePath(downloadPath, download.title, format)
+
+      const success = await ipcServices.fs.openFileLocation(filePath)
       if (!success) {
         toast.error(t('notifications.openFolderFailed'))
       }
@@ -92,33 +91,20 @@ export function DownloadItem({ download }: DownloadItemProps) {
       toast.error(t('notifications.openFolderFailed'))
     }
   }
-
-  const handleOpenFile = async () => {
-    if (!download.outputPath) {
-      toast.error(t('notifications.openFileFailed'))
-      return
-    }
-
-    try {
-      await ipcServices.fs.openFileLocation(download.outputPath)
-    } catch (error) {
-      console.error('Failed to open file:', error)
-      toast.error(t('notifications.openFileFailed'))
-    }
-  }
-
-  const handleOpenFolder = async () => {
-    await handleOpenFileLocation()
-  }
-
+  // need title, downloadPath, format
   const handleCopyToClipboard = async () => {
-    if (!download.outputPath) {
+    if (!download.title || !download.downloadPath || !download.format) {
       toast.error(t('notifications.copyFailed'))
       return
     }
 
     try {
-      const success = await ipcServices.fs.copyFileToClipboard(download.outputPath)
+      // Generate file path using downloadPath + title + ext
+      const downloadPath = download.downloadPath
+      const format = download.format
+      const filePath = generateFilePath(downloadPath, download.title, format)
+
+      const success = await ipcServices.fs.copyFileToClipboard(filePath)
       if (!success) {
         toast.error(t('notifications.copyFailed'))
         return
@@ -130,10 +116,21 @@ export function DownloadItem({ download }: DownloadItemProps) {
     }
   }
 
+  // need id
   const handleRemoveHistory = async () => {
     if (!isHistory) return
     try {
-      await ipcServices.history.removeHistoryItem(download.id, download.outputPath)
+      // Generate file path using downloadPath + title + ext
+      const downloadPath = download.downloadPath || settings.downloadPath
+      const format = download.format || (download.type === 'audio' ? 'mp3' : 'mp4')
+      const filePath = generateFilePath(downloadPath, download.title, format)
+
+      // Remove from history first
+      await ipcServices.history.removeHistoryItem(download.id)
+
+      // Then try to delete the file
+      await ipcServices.fs.deleteFile(filePath)
+
       removeHistory(download.id)
       toast.success(t('notifications.itemRemoved'))
     } catch (error) {
@@ -152,7 +149,7 @@ export function DownloadItem({ download }: DownloadItemProps) {
       case 'processing':
         return <Loader2 className="h-4 w-4 animate-spin text-primary" />
       case 'pending':
-        return <Loader2 className="h-4 w-4 text-muted-foreground" />
+        return <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
       case 'cancelled':
         return <X className="h-4 w-4 text-muted-foreground" />
       default:
@@ -290,7 +287,7 @@ export function DownloadItem({ download }: DownloadItemProps) {
             <div className={actionsContainerClass}>
               {isHistory ? (
                 <>
-                  {download.outputPath && (
+                  {download.status === 'completed' && (
                     <>
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -299,6 +296,7 @@ export function DownloadItem({ download }: DownloadItemProps) {
                             size="icon"
                             className="h-8 w-8 shrink-0"
                             onClick={handleCopyToClipboard}
+                            disabled={!download.title || !download.downloadPath || !download.format}
                           >
                             <Copy className="h-4 w-4" />
                           </Button>
@@ -342,23 +340,8 @@ export function DownloadItem({ download }: DownloadItemProps) {
                 </>
               ) : (
                 <>
-                  {download.status === 'completed' && download.outputPath && (
+                  {download.status === 'completed' && (
                     <>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 shrink-0"
-                            onClick={handleOpenFile}
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>{t('history.openFile')}</p>
-                        </TooltipContent>
-                      </Tooltip>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button

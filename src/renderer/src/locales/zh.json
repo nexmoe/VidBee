@@ -176,7 +176,6 @@
     "openFileLocation": "打开文件位置",
     "openFolder": "打开文件夹",
     "openDownloadFolder": "打开下载文件夹",
-    "outputPath": "输出路径",
     "removeItem": "移除项目",
     "stats": {
       "cancelled": "已取消",

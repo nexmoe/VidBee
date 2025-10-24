@@ -231,6 +231,7 @@ class DownloadEngine extends EventEmitter {
     }
 
     const createdAt = Date.now()
+    const settings = settingsManager.getAll()
 
     const item: DownloadItem = {
       id,
@@ -247,7 +248,7 @@ class DownloadEngine extends EventEmitter {
       title: item.title,
       status: 'pending',
       downloadedAt: createdAt,
-      outputPath: options.outputPath
+      downloadPath: settings.downloadPath
     })
   }
 
@@ -255,7 +256,7 @@ class DownloadEngine extends EventEmitter {
     scopedLoggers.download.info('Starting download execution for ID:', id, 'URL:', options.url)
     const ytdlp = ytdlpManager.getInstance()
     const settings = settingsManager.getAll()
-    const downloadPath = options.outputPath || settings.downloadPath
+    const downloadPath = settings.downloadPath
 
     // Set environment variables for proper encoding on Windows
     if (process.platform === 'win32') {
@@ -408,39 +409,8 @@ class DownloadEngine extends EventEmitter {
       }
     )
 
-    // Handle yt-dlp events to capture output file path and format info
-    let actualOutputPath: string | null = null
-
+    // Handle yt-dlp events to capture format info
     ytdlpProcess.on('ytDlpEvent', (eventType: string, eventData: string) => {
-      // Look for download destination messages
-      scopedLoggers.download.info('ytDlpEvent:', eventType, eventData)
-      if (eventType === 'download' && eventData.includes('Destination:')) {
-        const match = eventData.match(/Destination:\s*(.+)/)
-        if (match?.[1]) {
-          actualOutputPath = match[1].trim()
-        }
-      }
-
-      // Also look for other output path patterns
-      if (
-        eventType === 'download' &&
-        (eventData.includes('has already been downloaded') ||
-          eventData.includes('has already been downloaded'))
-      ) {
-        const match = eventData.match(/\[download\]\s*(.+?)\s+has already been downloaded/)
-        if (match?.[1]) {
-          actualOutputPath = match[1].trim()
-        }
-      }
-
-      // Look for final output path in download messages
-      if (eventType === 'download' && eventData.includes('[download] 100%')) {
-        const match = eventData.match(/\[download\]\s*100%.*?of\s*(.+?)\s+at/)
-        if (match?.[1]) {
-          actualOutputPath = match[1].trim()
-        }
-      }
-
       // Look for format selection messages
       if (eventType === 'info' && eventData.includes('format')) {
         // Extract format info from yt-dlp output
@@ -484,31 +454,15 @@ class DownloadEngine extends EventEmitter {
       this.queue.downloadCompleted(id)
 
       if (code === 0) {
-        // Use actual output path from yt-dlp, or fallback to simple generated path
-        let finalOutputPath: string
-        if (actualOutputPath) {
-          finalOutputPath = actualOutputPath
-          scopedLoggers.download.info(
-            'Using actual output path from yt-dlp for ID:',
-            id,
-            'Path:',
-            finalOutputPath
-          )
-        } else {
-          // Simple fallback: generate path based on video title and format
-          const title = videoInfo?.title || 'Unknown'
-          const sanitizedTitle = title.replace(/[<>:"/\\|?*]/g, '_').substring(0, 50)
-          const extension =
-            options.type === 'audio' ? options.extractFormat || 'mp3' : actualFormat || 'mp4'
-          const fileName = `${sanitizedTitle}.${extension}`
-          finalOutputPath = path.join(downloadPath, fileName)
-          scopedLoggers.download.warn(
-            'Using fallback output path for ID:',
-            id,
-            'Path:',
-            finalOutputPath
-          )
-        }
+        // Generate file path using downloadPath + title + ext
+        const title = videoInfo?.title || 'Unknown'
+        const sanitizedTitle = title.replace(/[<>:"/\\|?*]/g, '_').substring(0, 50)
+        const extension =
+          options.type === 'audio' ? options.extractFormat || 'mp3' : actualFormat || 'mp4'
+        const fileName = `${sanitizedTitle}.${extension}`
+        const finalOutputPath = path.join(downloadPath, fileName)
+
+        scopedLoggers.download.info('Generated file path for ID:', id, 'Path:', finalOutputPath)
 
         let fileSize: number | undefined
         try {
@@ -529,7 +483,6 @@ class DownloadEngine extends EventEmitter {
 
         this.updateDownloadInfo(id, {
           status: 'completed',
-          outputPath: finalOutputPath,
           completedAt: Date.now(),
           fileSize,
           format: actualFormat || undefined,
@@ -538,7 +491,7 @@ class DownloadEngine extends EventEmitter {
         })
         scopedLoggers.download.info('Download completed successfully for ID:', id)
         this.emit('download-completed', id)
-        this.addToHistory(id, options, 'completed', undefined, finalOutputPath)
+        this.addToHistory(id, options, 'completed', undefined)
       } else {
         scopedLoggers.download.error(
           'Download failed with exit code for ID:',
@@ -617,9 +570,6 @@ class DownloadEngine extends EventEmitter {
     if (updates.duration !== undefined) {
       historyUpdates.duration = updates.duration
     }
-    if (updates.outputPath !== undefined) {
-      historyUpdates.outputPath = updates.outputPath
-    }
     if (updates.fileSize !== undefined) {
       historyUpdates.fileSize = updates.fileSize
     }
@@ -669,20 +619,17 @@ class DownloadEngine extends EventEmitter {
     id: string,
     options: DownloadOptions,
     status: DownloadHistoryItem['status'],
-    error?: string,
-    actualOutputPath?: string
+    error?: string
   ): void {
     // Get the download item from the queue to get additional info
     const completedDownload = this.queue.getCompletedDownload(id)
     scopedLoggers.download.info('Completed download:', completedDownload)
     const completedAt = Date.now()
-    const finalOutputPath = actualOutputPath || options.outputPath
 
     this.upsertHistoryEntry(id, options, {
       title: completedDownload?.item.title || `Download ${id}`,
       thumbnail: completedDownload?.item.thumbnail,
       status,
-      outputPath: finalOutputPath,
       completedAt,
       error,
       duration: completedDownload?.item.duration,
@@ -711,7 +658,7 @@ class DownloadEngine extends EventEmitter {
       thumbnail: updates.thumbnail,
       type: options.type,
       status: updates.status || 'pending',
-      outputPath: updates.outputPath,
+      downloadPath: updates.downloadPath,
       fileSize: updates.fileSize,
       duration: updates.duration,
       downloadedAt: updates.downloadedAt ?? Date.now(),

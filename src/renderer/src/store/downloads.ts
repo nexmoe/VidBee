@@ -4,6 +4,7 @@ import type { DownloadHistoryItem, DownloadItem } from '../../../shared/types'
 export type DownloadRecord = DownloadItem & {
   entryType: 'active' | 'history'
   downloadedAt?: number
+  downloadPath?: string
 }
 
 const recordKey = (entryType: DownloadRecord['entryType'], id: string) => `${entryType}:${id}`
@@ -22,7 +23,7 @@ const toHistoryRecord = (item: DownloadHistoryItem): DownloadRecord => ({
   status: item.status,
   progress: undefined,
   error: item.error,
-  outputPath: item.outputPath,
+  downloadPath: item.downloadPath,
   speed: undefined,
   duration: item.duration,
   fileSize: item.fileSize,

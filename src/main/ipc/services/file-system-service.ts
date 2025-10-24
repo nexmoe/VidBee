@@ -1,5 +1,4 @@
 import { execFile } from 'node:child_process'
-import type { Dirent } from 'node:fs'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
@@ -61,12 +60,6 @@ class FileSystemService extends IpcService {
       }
 
       if (stats?.isDirectory()) {
-        const candidate = await this.findLikelyFile(normalizedPath, normalizedPath)
-        if (candidate) {
-          shell.showItemInFolder(candidate)
-          return true
-        }
-
         const result = await shell.openPath(normalizedPath)
         if (result) {
           console.error('Failed to open directory:', result)
@@ -75,43 +68,25 @@ class FileSystemService extends IpcService {
         return true
       }
 
-      const fallbackDirectory = path.dirname(normalizedPath)
-      const fallbackCandidate = await this.findLikelyFile(fallbackDirectory, normalizedPath)
-      if (fallbackCandidate) {
-        shell.showItemInFolder(fallbackCandidate)
+      // If the exact path doesn't exist, try to open the parent directory
+      const parentDirectory = path.dirname(normalizedPath)
+      const parentStats = await fs.stat(parentDirectory).catch(() => null)
+
+      if (parentStats?.isDirectory()) {
+        const result = await shell.openPath(parentDirectory)
+        if (result) {
+          console.error('Failed to open parent directory:', result)
+          return false
+        }
         return true
       }
 
-      const result = await shell.openPath(fallbackDirectory)
-      if (!result) {
-        return true
-      }
-      console.error('Failed to open directory:', result)
+      console.error('File or directory does not exist:', normalizedPath)
+      return false
     } catch (error) {
-      try {
-        const directory = path.dirname(path.normalize(this.sanitizePath(filePath)))
-        const dirStats = await fs.stat(directory)
-        if (dirStats.isDirectory()) {
-          const fallbackCandidate = await this.findLikelyFile(directory, directory)
-          if (fallbackCandidate) {
-            shell.showItemInFolder(fallbackCandidate)
-            return true
-          }
-          const result = await shell.openPath(directory)
-          if (result) {
-            console.error('Failed to open directory:', result)
-            return false
-          }
-          return true
-        }
-      } catch (dirError) {
-        console.error('Failed to open parent directory:', dirError)
-      }
       console.error('Failed to open file location:', error)
       return false
     }
-
-    return false
   }
 
   @IpcMethod()
@@ -153,54 +128,6 @@ class FileSystemService extends IpcService {
         return
       default:
         await this.copyFileToClipboardLinux(resolvedPath)
-    }
-  }
-
-  private async findLikelyFile(directory: string, expectedPath: string): Promise<string | null> {
-    try {
-      const dirStats = await fs.stat(directory)
-      if (!dirStats.isDirectory()) {
-        return null
-      }
-
-      const entries = await fs.readdir(directory, { withFileTypes: true })
-      const files = entries.filter((entry: Dirent) => entry.isFile())
-      if (files.length === 0) {
-        return null
-      }
-
-      const expectedBase = path.basename(expectedPath).toLowerCase()
-      const expectedName = path.parse(expectedPath).name.toLowerCase()
-
-      const exactMatch = files.find((entry) => entry.name.toLowerCase() === expectedBase)
-      if (exactMatch) {
-        return path.join(directory, exactMatch.name)
-      }
-
-      if (expectedName) {
-        const partialMatch = files.find((entry) => entry.name.toLowerCase().includes(expectedName))
-        if (partialMatch) {
-          return path.join(directory, partialMatch.name)
-        }
-      }
-
-      let latestMatch: { filePath: string; mtimeMs: number } | null = null
-      for (const entry of files) {
-        const candidatePath = path.join(directory, entry.name)
-        try {
-          const candidateStats = await fs.stat(candidatePath)
-          if (!latestMatch || candidateStats.mtimeMs > latestMatch.mtimeMs) {
-            latestMatch = { filePath: candidatePath, mtimeMs: candidateStats.mtimeMs }
-          }
-        } catch (statError) {
-          console.error('Failed to stat candidate file:', statError)
-        }
-      }
-
-      return latestMatch?.filePath ?? null
-    } catch (error) {
-      console.error('Failed to search for matching file:', error)
-      return null
     }
   }
 
@@ -287,6 +214,58 @@ class FileSystemService extends IpcService {
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&apos;')
+  }
+
+  @IpcMethod()
+  async deleteFile(_context: IpcContext, filePath: string): Promise<boolean> {
+    try {
+      if (!filePath) {
+        return false
+      }
+
+      const sanitizedPath = this.sanitizePath(filePath)
+      const normalizedPath = path.normalize(sanitizedPath)
+
+      const stats = await fs.stat(normalizedPath).catch((error) => {
+        const err = error as NodeJS.ErrnoException
+        if (err?.code === 'ENOENT') {
+          return null
+        }
+        throw error
+      })
+
+      if (!stats) {
+        return false
+      }
+
+      if (stats.isFile()) {
+        await fs.unlink(normalizedPath).catch((error) => {
+          const err = error as NodeJS.ErrnoException
+          if (err?.code !== 'ENOENT') {
+            throw error
+          }
+        })
+        return true
+      }
+
+      if (stats.isDirectory()) {
+        const entries = await fs.readdir(normalizedPath)
+        if (entries.length === 0) {
+          await fs.rmdir(normalizedPath).catch((error) => {
+            const err = error as NodeJS.ErrnoException
+            if (err?.code !== 'ENOENT') {
+              throw error
+            }
+          })
+          return true
+        }
+      }
+
+      return false
+    } catch (error) {
+      console.error('Failed to delete file:', error)
+      return false
+    }
   }
 }
 
