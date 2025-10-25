@@ -11,7 +11,7 @@ jobs:
 
     strategy:
       matrix:
-        os: [windows-latest]
+        os: [windows-latest, macos-latest]
 
     steps:
       - name: Check out Git repository
@@ -36,12 +36,12 @@ jobs:
           curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe -o resources/yt-dlp.exe
 
           # Download yt-dlp for macOS (for cross-platform builds)
-          # curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos -o resources/yt-dlp_macos
-          # chmod +x resources/yt-dlp_macos
+          curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos -o resources/yt-dlp_macos
+          chmod +x resources/yt-dlp_macos
 
           # Download yt-dlp for Linux (for cross-platform builds)
-          curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o resources/yt-dlp_linux
-          chmod +x resources/yt-dlp_linux
+          # curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o resources/yt-dlp_linux
+          # chmod +x resources/yt-dlp_linux
 
       - name: Lint and format check
         run: pnpm run check

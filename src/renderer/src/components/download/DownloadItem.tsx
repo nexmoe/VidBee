@@ -20,7 +20,9 @@ import { settingsAtom } from '../../store/settings'
 const generateFilePath = (downloadPath: string, title: string, format: string): string => {
   const fileName = `${title}.${format}`
   // Use proper path joining for cross-platform compatibility
-  return `${downloadPath}/${fileName}`.replace(/\//g, '\\')
+  // Handle both forward and backward slashes for cross-platform compatibility
+  const normalizedDownloadPath = downloadPath.replace(/\\/g, '/')
+  return `${normalizedDownloadPath}/${fileName}`
 }
 
 interface DownloadItemProps {

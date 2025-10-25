@@ -1,5 +1,6 @@
 import { app, BrowserWindow, Menu, nativeImage, Tray } from 'electron'
 import appIcon from '../../resources/icon.png?asset'
+import trayIcon from '../../resources/tray-icon.png?asset'
 import { settingsManager } from './settings'
 
 let tray: Tray | null = null
@@ -85,9 +86,17 @@ export function createTray(): void {
     return
   }
 
-  const trayIcon = nativeImage.createFromPath(appIcon)
+  // Use 16x16 icon for macOS tray, fallback to app icon for other platforms
+  const iconPath = process.platform === 'darwin' ? trayIcon : appIcon
+  const trayIconImage = nativeImage.createFromPath(iconPath)
 
-  tray = new Tray(trayIcon)
+  // For macOS, ensure the icon is properly sized
+  if (process.platform === 'darwin') {
+    // Resize to 16x16 for macOS tray
+    trayIconImage.setTemplateImage(true)
+  }
+
+  tray = new Tray(trayIconImage)
 
   // Set tooltip
   tray.setToolTip('VidBee')
