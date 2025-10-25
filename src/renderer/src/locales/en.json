@@ -14,18 +14,24 @@
     "betaProgramDescription": "Receive early builds and upcoming features before everyone else.",
     "betaProgramTitle": "Preview channel",
     "description": "VidBee is a free, open-source downloader built with Electron and powered by yt-dlp.",
+    "followAuthorActions": {
+      "follow": "Follow @nexmoex"
+    },
+    "followAuthorDescription": "Stay updated with the latest VidBee news and updates.",
+    "followAuthorSupport": "Follow the developer on X (Twitter) to get the latest updates and news about VidBee.",
+    "followAuthorTitle": "Follow the Developer",
     "here": "here",
     "homepage": "Homepage",
     "notifications": {
       "checkingUpdates": "Looking for updates...",
-      "updateAvailable": "Update available: {{version}}",
-      "noUpdatesAvailable": "You're using the latest version",
-      "updateError": "Failed to check for updates: {{error}}",
-      "downloadUpdate": "Download and install update {{version}}?",
-      "downloadStarted": "Download started...",
       "downloadError": "Failed to download update",
+      "downloadStarted": "Download started...",
+      "downloadUpdate": "Download and install update {{version}}?",
+      "noUpdatesAvailable": "You're using the latest version",
+      "restartToUpdate": "Restart now to install update?",
+      "updateAvailable": "Update available: {{version}}",
       "updateDownloaded": "Update downloaded, restart to install",
-      "restartToUpdate": "Restart now to install update?"
+      "updateError": "Failed to check for updates: {{error}}"
     },
     "preferencesDescription": "Tune update settings without leaving this page.",
     "preferencesTitle": "Quick Toggles",
@@ -45,20 +51,14 @@
     },
     "resourcesDescription": "Useful links to learn more about VidBee and stay connected.",
     "resourcesTitle": "Resources",
+    "shareActions": {
+      "copy": "Copy link",
+      "facebook": "Share on Facebook",
+      "twitter": "Share on X (Twitter)"
+    },
+    "shareDescription": "Share VidBee with your community in one click.",
     "shareSupport": "Recommend VidBee to your friends to support our growth and updates.",
     "shareTitle": "Spread the word",
-    "shareDescription": "Share VidBee with your community in one click.",
-    "followAuthorActions": {
-      "follow": "Follow @nexmoex"
-    },
-    "followAuthorDescription": "Stay updated with the latest VidBee news and updates.",
-    "followAuthorSupport": "Follow the developer on X (Twitter) to get the latest updates and news about VidBee.",
-    "followAuthorTitle": "Follow the Developer",
-    "shareActions": {
-      "twitter": "Share on X (Twitter)",
-      "facebook": "Share on Facebook",
-      "copy": "Copy link"
-    },
     "sourceCode": "Source Code is available",
     "tagline": "An AI-friendly download helper for every creator",
     "title": "About",
@@ -97,7 +97,7 @@
     "worst": "Worst"
   },
   "download": {
-    "active": "active",
+    "active": "Active",
     "all": "All",
     "audio": "Audio",
     "back": "Back",
@@ -166,8 +166,8 @@
     "clearCancelled": "Clear Cancelled",
     "clearCompleted": "Clear Completed",
     "clearErrors": "Clear Errors",
+    "copyToClipboard": "Copy to clipboard",
     "copyUrl": "Copy URL",
-    "openInBrowser": "Click to open in browser",
     "date": "Date",
     "description": "View and manage your download history",
     "duration": "Duration",
@@ -180,11 +180,11 @@
     },
     "noHistory": "No download history yet",
     "noHistoryDescription": "Your completed downloads will appear here",
+    "openDownloadFolder": "Open Download Folder",
     "openFile": "Open File",
-    "copyToClipboard": "Copy to clipboard",
     "openFileLocation": "Open File Location",
     "openFolder": "Open Folder",
-    "openDownloadFolder": "Open Download Folder",
+    "openInBrowser": "Click to open in browser",
     "removeItem": "Remove Item",
     "stats": {
       "cancelled": "Cancelled",
@@ -209,7 +209,6 @@
   },
   "notifications": {
     "copyFailed": "Failed to copy to clipboard",
-    "videoCopied": "Video copied to clipboard",
     "downloadCompleted": "Download completed",
     "downloadFailed": "Download failed",
     "downloadStarted": "Download started",
@@ -218,7 +217,8 @@
     "openFolderFailed": "Failed to open folder",
     "removeFailed": "Failed to remove item",
     "settingsSaved": "Settings saved",
-    "urlCopied": "URL copied to clipboard"
+    "urlCopied": "URL copied to clipboard",
+    "videoCopied": "Video copied to clipboard"
   },
   "playlist": {
     "comingSoon": "Playlist download feature coming soon!",
