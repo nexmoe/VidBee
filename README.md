@@ -16,7 +16,6 @@
 - **Multi-format Support** - Videos, audio tracks, playlists to meet all download needs
 - Localized interface support in many languages
 
-
 ### 🎨 Best-in-class UI Experience
 
 - **Modern Design** - Clean and beautiful interface
@@ -32,6 +31,16 @@
    - **macOS**: Download `vidbee-x.x.x.dmg`
    - **Linux**: Download `vidbee-x.x.x.AppImage`
 3. **Install and run** the application
+
+### 🍎 macOS Installation Notes
+
+After downloading and installing VidBee on macOS, you may encounter a "file is damaged" error when trying to run the application. This is due to macOS security restrictions on applications downloaded from the internet.
+
+```bash
+xattr -rd com.apple.quarantine /Applications/VidBee.app/
+```
+
+This command removes the quarantine attribute that macOS applies to applications downloaded from the internet, allowing VidBee to run properly without the "file is damaged" error.
 
 ## 📸 Screenshots
 
