@@ -50,9 +50,9 @@ jobs:
       #   if: matrix.os == 'ubuntu-latest'
       #   run: pnpm run build:linux
 
-      # - name: build-mac
-      #   if: matrix.os == 'macos-latest'
-      #   run: pnpm run build:mac
+      - name: build-mac
+        if: matrix.os == 'macos-latest'
+        run: pnpm run build:mac
 
       - name: build-win
         if: matrix.os == 'windows-latest'
