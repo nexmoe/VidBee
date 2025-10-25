@@ -141,7 +141,7 @@ export function Home({ onOpenSupportedSites }: HomeProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const inlinePreviewSites = popularSites
     .slice(0, 3)
-    .map((site) => site.label)
+    .map((site) => t(`sites.popular.${site.id}.label`))
     .join(', ')
 
   // Playlist states

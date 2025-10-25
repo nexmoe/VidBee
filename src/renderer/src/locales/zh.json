@@ -14,18 +14,24 @@
     "betaProgramDescription": "抢先获得预览版和即将发布的新功能。",
     "betaProgramTitle": "预览通道",
     "description": "这是一个基于 Node.js 和 Electron 构建的自由开源应用，使用 yt-dlp 来完成下载。",
+    "followAuthorActions": {
+      "follow": "关注 @nexmoex"
+    },
+    "followAuthorDescription": "获取 VidBee 的最新消息和更新。",
+    "followAuthorSupport": "在 X (Twitter) 上关注开发者，获取 VidBee 的最新更新和消息。",
+    "followAuthorTitle": "关注开发者",
     "here": "此处",
     "homepage": "主页",
     "notifications": {
       "checkingUpdates": "正在查找更新...",
-      "updateAvailable": "发现新版本: {{version}}",
-      "noUpdatesAvailable": "您正在使用最新版本",
-      "updateError": "检查更新失败: {{error}}",
-      "downloadUpdate": "下载并安装更新 {{version}}？",
-      "downloadStarted": "开始下载...",
       "downloadError": "下载更新失败",
+      "downloadStarted": "开始下载...",
+      "downloadUpdate": "下载并安装更新 {{version}}？",
+      "noUpdatesAvailable": "您正在使用最新版本",
+      "restartToUpdate": "立即重启以安装更新？",
+      "updateAvailable": "发现新版本: {{version}}",
       "updateDownloaded": "更新已下载，重启以安装",
-      "restartToUpdate": "立即重启以安装更新？"
+      "updateError": "检查更新失败: {{error}}"
     },
     "preferencesDescription": "无需离开此页即可调整更新设置。",
     "preferencesTitle": "快速切换",
@@ -43,19 +49,19 @@
       "website": "官方网站",
       "websiteDescription": "产品亮点、路线图与社区动态。"
     },
-    "followAuthorActions": {
-      "follow": "关注 @nexmoex"
-    },
-    "followAuthorDescription": "获取 VidBee 的最新消息和更新。",
-    "followAuthorSupport": "在 X (Twitter) 上关注开发者，获取 VidBee 的最新更新和消息。",
-    "followAuthorTitle": "关注开发者",
     "resourcesDescription": "了解 VidBee 并保持关注的实用链接。",
     "resourcesTitle": "资源",
     "sourceCode": "源代码已开放",
     "tagline": "面向每位创作者的 AI 友好下载助手",
     "title": "关于",
     "version": "版本",
-    "versionLabel": "v{{version}}"
+    "versionLabel": "v{{version}}",
+    "latestVersionBadge": "最新版本：v{{version}}",
+    "latestVersionStatus": {
+      "available": "有新版本可用",
+      "uptodate": "您已是最新版本",
+      "error": "无法获取最新版本"
+    }
   },
   "advancedOptions": {
     "closeWhenDone": "下载完成后关闭应用",
@@ -159,7 +165,6 @@
     "clearCompleted": "清除已完成",
     "clearErrors": "清除错误",
     "copyUrl": "复制链接",
-    "openInBrowser": "点击在浏览器中打开",
     "date": "日期",
     "description": "查看并管理下载历史",
     "duration": "时长",
@@ -172,10 +177,11 @@
     },
     "noHistory": "暂无下载历史",
     "noHistoryDescription": "完成的下载会显示在这里",
+    "openDownloadFolder": "打开下载文件夹",
     "openFile": "打开文件",
     "openFileLocation": "打开文件位置",
     "openFolder": "打开文件夹",
-    "openDownloadFolder": "打开下载文件夹",
+    "openInBrowser": "点击在浏览器中打开",
     "removeItem": "移除项目",
     "stats": {
       "cancelled": "已取消",
@@ -238,30 +244,52 @@
     "app": "应用设置",
     "audio": "音频偏好",
     "browserForCookies": "选择用于读取 Cookie 的浏览器",
+    "browserForCookiesDescription": "用于身份验证的浏览器 Cookie 提取",
+    "browserOptions": {
+      "brave": "Brave",
+      "chrome": "Chrome",
+      "edge": "Edge",
+      "firefox": "Firefox",
+      "safari": "Safari"
+    },
     "configFile": "使用配置文件",
+    "configFileDescription": "yt-dlp 的自定义配置文件",
     "dark": "深色",
     "description": "配置下载偏好和应用设置",
+    "directorySelectError": "选择目录失败",
     "downloadPath": "下载位置",
+    "downloadPathDescription": "选择保存下载文件的位置",
+    "fileSelectError": "选择文件失败",
     "general": "通用",
     "language": "语言",
     "light": "浅色",
     "maxConcurrentDownloads": "最大活动下载数",
+    "maxConcurrentDownloadsDescription": "最大同时下载数量",
     "none": "无",
-    "oneClickAudioForVideo": "视频默认音频",
-    "oneClickAudioFormat": "默认音频格式",
     "oneClickDownload": "一键下载",
     "oneClickDownloadDescription": "启用使用默认设置的一键下载",
     "oneClickDownloadType": "默认下载类型",
-    "oneClickVideoFormat": "默认视频格式",
-    "preferredAudioQuality": "首选音频质量",
-    "preferredVideoCodec": "首选视频编码",
-    "preferredVideoQuality": "首选视频质量",
+    "oneClickDownloadTypeDescription": "选择一键下载的默认下载类型。质量使用下面的预设。",
+    "oneClickQuality": "首选质量",
+    "oneClickQualityDescription": "选择用于一键下载的质量预设",
+    "oneClickQualityOptions": {
+      "auto": "自动",
+      "bad": "较差",
+      "best": "最佳",
+      "good": "良好",
+      "normal": "标准",
+      "worst": "最差"
+    },
     "proxy": "代理",
+    "proxyDescription": "网络请求的代理服务器",
+    "proxyPlaceholder": "http://proxy:port",
     "selectConfigFile": "选择配置文件",
     "selectPath": "选择",
     "showMoreFormats": "显示更多格式选项",
+    "showMoreFormatsDescription": "在界面中显示额外的格式选项",
     "system": "系统",
     "theme": "主题",
+    "themeDescription": "为 VidBee 选择浅色、深色或系统主题",
     "title": "设置",
     "tray": {
       "quit": "退出",
@@ -277,6 +305,80 @@
     "pageDescription": "VidBee 使用 yt-dlp 覆盖数百个资源。",
     "pageIntro": "以下是大家最常下载的主流服务。",
     "pageTitle": "支持的网站",
+    "popular": {
+      "bandcamp": {
+        "description": "独立艺术家专辑和社区发布。",
+        "label": "Bandcamp"
+      },
+      "dailymotion": {
+        "description": "全球新闻、体育和娱乐片段。",
+        "label": "Dailymotion"
+      },
+      "facebook": {
+        "description": "来自公共页面的动态、观看和 Reels 视频。",
+        "label": "Facebook"
+      },
+      "instagram": {
+        "description": "动态、故事、Reels 和精选内容。",
+        "label": "Instagram"
+      },
+      "kick": {
+        "description": "Kick 平台上的创作者直播和回放。",
+        "label": "Kick"
+      },
+      "linkedin": {
+        "description": "专业演讲、网络研讨会和学习视频。",
+        "label": "LinkedIn"
+      },
+      "mixcloud": {
+        "description": "DJ 混音、广播节目和长音频。",
+        "label": "Mixcloud"
+      },
+      "niconico": {
+        "description": "日本动画、音乐和直播档案。",
+        "label": "Niconico"
+      },
+      "pinterest": {
+        "description": "创意图钉、教程 Reels 和生活方式灵感视频。",
+        "label": "Pinterest"
+      },
+      "reddit": {
+        "description": "来自社区的嵌入片段和托管视频。",
+        "label": "Reddit"
+      },
+      "soundcloud": {
+        "description": "音乐曲目、播放列表和 DJ 套装。",
+        "label": "SoundCloud"
+      },
+      "tiktok": {
+        "description": "短视频、特效和直播。",
+        "label": "TikTok"
+      },
+      "tumblr": {
+        "description": "创意短视频和粉丝编辑。",
+        "label": "Tumblr"
+      },
+      "twitch": {
+        "description": "游戏、音乐和 IRL 直播和 VOD。",
+        "label": "Twitch"
+      },
+      "twitter": {
+        "description": "时间线帖子、Spaces 录音和广播。",
+        "label": "X (Twitter)"
+      },
+      "vimeo": {
+        "description": "高质量创作者和商业视频托管。",
+        "label": "Vimeo"
+      },
+      "youtube": {
+        "description": "来自全球创作者的长视频和直播。",
+        "label": "YouTube"
+      },
+      "youtubemusic": {
+        "description": "官方音乐视频、专辑和现场表演。",
+        "label": "YouTube Music"
+      }
+    },
     "popularSection": "主流平台",
     "viewAll": "查看全部支持的网站"
   }

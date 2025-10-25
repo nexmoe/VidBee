@@ -1,0 +1,395 @@
+{
+  "about": {
+    "actions": {
+      "checkUpdates": "アップデートを確認",
+      "email": "メール",
+      "feedback": "フィードバック",
+      "openRepo": "GitHubリポジトリを開く",
+      "view": "表示",
+      "visit": "訪問"
+    },
+    "appName": "VidBee",
+    "autoUpdateDescription": "バックグラウンドで新しいリリースを自動的にダウンロードしてインストールします。",
+    "autoUpdateTitle": "自動アップデート",
+    "betaProgramDescription": "他の人より先に早期ビルドと今後の機能を受け取ります。",
+    "betaProgramTitle": "プレビューチャンネル",
+    "description": "VidBeeはElectronで構築され、yt-dlpによって動力を得る無料のオープンソースダウンローダーです。",
+    "followAuthorActions": {
+      "follow": "@nexmoexをフォロー"
+    },
+    "followAuthorDescription": "VidBeeの最新ニュースとアップデートを入手してください。",
+    "followAuthorSupport": "X (Twitter)で開発者をフォローして、VidBeeの最新アップデートとニュースを入手してください。",
+    "followAuthorTitle": "開発者をフォロー",
+    "here": "ここ",
+    "homepage": "ホームページ",
+    "notifications": {
+      "checkingUpdates": "アップデートを検索中...",
+      "downloadError": "アップデートのダウンロードに失敗",
+      "downloadStarted": "ダウンロード開始...",
+      "downloadUpdate": "アップデート{{version}}をダウンロードしてインストールしますか？",
+      "noUpdatesAvailable": "最新バージョンを使用しています",
+      "restartToUpdate": "今すぐ再起動してアップデートをインストールしますか？",
+      "updateAvailable": "利用可能なアップデート：{{version}}",
+      "updateDownloaded": "アップデートがダウンロードされました。再起動してインストールしてください",
+      "updateError": "アップデートの確認に失敗：{{error}}"
+    },
+    "preferencesDescription": "このページを離れることなくアップデート設定を調整します。",
+    "preferencesTitle": "クイックトグル",
+    "resources": {
+      "changelog": "リリースノート",
+      "changelogDescription": "各バージョンで何が変更されたかを追跡します。",
+      "contact": "メールサポート",
+      "contactDescription": "ヘルプやコラボレーションのために直接連絡してください。",
+      "documentation": "ヘルプセンター",
+      "documentationDescription": "ガイド、FAQ、一般的なワークフロー。",
+      "feedback": "フィードバックと問題",
+      "feedbackDescription": "GitHubでアイデアを共有したり問題を報告したりしてください。",
+      "license": "ライセンス",
+      "licenseDescription": "オープンソースライセンス条項を確認してください。",
+      "website": "公式ウェブサイト",
+      "websiteDescription": "製品のハイライト、ロードマップ、コミュニティニュース。"
+    },
+    "resourcesDescription": "VidBeeについてもっと学び、つながりを保つための有用なリンク。",
+    "resourcesTitle": "リソース",
+    "shareActions": {
+      "copy": "リンクをコピー",
+      "facebook": "Facebookで共有",
+      "twitter": "X (Twitter)で共有"
+    },
+    "shareDescription": "ワンクリックでコミュニティとVidBeeを共有してください。",
+    "shareSupport": "私たちの成長とアップデートをサポートするために、友達にVidBeeを推奨してください。",
+    "shareTitle": "口コミを広める",
+    "sourceCode": "ソースコードが利用可能",
+    "tagline": "すべてのクリエイターのためのAIフレンドリーなダウンロードアシスタント",
+    "title": "について",
+    "version": "バージョン",
+    "versionLabel": "v{{version}}",
+    "latestVersionBadge": "最新: v{{version}}",
+    "latestVersionStatus": {
+      "available": "新しいバージョンが利用可能",
+      "uptodate": "最新バージョンを使用中",
+      "error": "最新バージョンを取得できません"
+    }
+  },
+  "advancedOptions": {
+    "closeWhenDone": "ダウンロード完了時にアプリを閉じる",
+    "currentLocation": "現在のダウンロード場所 - ",
+    "downloadLocation": "ダウンロード場所",
+    "downloadSubs": "利用可能な場合は字幕をダウンロード",
+    "end": "終了",
+    "endHint": "空のままにすると最後までダウンロードされます",
+    "endPlaceholder": "10:00",
+    "selectLocation": "ダウンロード場所を選択",
+    "start": "開始",
+    "startHint": "空のままにすると最初から開始されます",
+    "startPlaceholder": "00:00",
+    "subtitles": "字幕",
+    "timeRange": "特定の時間範囲をダウンロード",
+    "title": "高度なオプション"
+  },
+  "app": {
+    "description": "数百のサイトからビデオとオーディオをダウンロード",
+    "title": "VidBee"
+  },
+  "audioExtract": {
+    "bad": "悪い",
+    "best": "最高",
+    "extract": "抽出",
+    "good": "良い",
+    "normal": "通常",
+    "selectFormat": "フォーマットを選択",
+    "selectQuality": "品質を選択",
+    "title": "オーディオを抽出",
+    "worst": "最悪"
+  },
+  "download": {
+    "active": "アクティブ",
+    "all": "すべて",
+    "audio": "オーディオ",
+    "back": "戻る",
+    "cancel": "キャンセル",
+    "cancelled": "キャンセル済み",
+    "clearCompleted": "完了をクリア",
+    "clearDownloads": "ダウンロードをクリア",
+    "completed": "完了",
+    "downloadAudio": "オーディオをダウンロード",
+    "downloadBtn": "ダウンロード",
+    "downloadPending": "保留中",
+    "downloadQueue": "ダウンロードキュー",
+    "downloadVideo": "ビデオをダウンロード",
+    "downloading": "ダウンロード中...",
+    "enterUrl": "ビデオURLを入力",
+    "enterUrlDescription": "ビデオURLを貼り付けまたは入力してください。 ",
+    "error": "エラー",
+    "fetch": "取得",
+    "fetchingVideoInfo": "ビデオ情報を取得中...",
+    "history": "履歴",
+    "imageLoadError": "画像の読み込みに失敗",
+    "imagePlaceholder": "利用可能な画像なし",
+    "infoUnavailable": "ワンクリックダウンロード（情報利用不可）",
+    "loading": "読み込み中",
+    "moreOptions": "その他のオプション",
+    "noActiveDownloads": "アクティブなダウンロードなし",
+    "noAudio": "オーディオなし",
+    "noHistory": "ダウンロード履歴なし",
+    "noItems": "アイテムが見つかりません",
+    "oneClickDownload": "ワンクリックダウンロード",
+    "oneClickDownloadDescription": "確認なしでデフォルト設定で直接ダウンロード",
+    "oneClickDownloadNow": "今すぐダウンロード",
+    "oneClickDownloadStarted": "デフォルト設定でダウンロード開始",
+    "paste": "貼り付け",
+    "pastePlaylistUrl": "クリップボードからプレイリストリンクを貼り付け [Ctrl + V]",
+    "pasteUrl": "ビデオURLまたはIDを貼り付け [Ctrl + V]",
+    "preparing": "準備中...",
+    "processing": "処理中",
+    "progress": "進行状況",
+    "selectAudioFormat": "オーディオフォーマットを選択",
+    "selectFormat": "フォーマットを選択",
+    "selectVideoFormat": "ビデオフォーマットを選択",
+    "singleVideo": "単一ビデオ",
+    "speed": "速度",
+    "title": "タイトル",
+    "total": "合計",
+    "unknownQuality": "不明な品質",
+    "unknownSize": "不明なサイズ",
+    "urlPlaceholder": "https://www.youtube.com/watch?v=...",
+    "video": "ビデオ",
+    "videoInfo": "ビデオ情報",
+    "videoInfoUpdated": "ビデオ情報が更新されました"
+  },
+  "errors": {
+    "clickToCopy": "詳細をコピーするにはクリック",
+    "clipboardEmpty": "クリップボードが空です",
+    "downloadFailed": "ダウンロードに失敗",
+    "downloadNecessaryFilesFailed": "必要なファイルのダウンロードに失敗しました。ネットワークを確認して再試行してください",
+    "emptyUrl": "URLを入力してください",
+    "errorDetails": "エラーの詳細",
+    "fetchInfoFailed": "ビデオ情報の取得に失敗",
+    "networkError": "エラーが発生しました。ネットワークを確認し、正しいURLを使用してください",
+    "pasteFromClipboard": "クリップボードからの貼り付けに失敗"
+  },
+  "history": {
+    "clearCancelled": "キャンセル済みをクリア",
+    "clearCompleted": "完了をクリア",
+    "clearErrors": "エラーをクリア",
+    "copyToClipboard": "クリップボードにコピー",
+    "copyUrl": "URLをコピー",
+    "date": "日付",
+    "description": "ダウンロード履歴を表示および管理",
+    "duration": "期間",
+    "fileSize": "ファイルサイズ",
+    "filters": {
+      "all": "すべて",
+      "cancelled": "キャンセル済み",
+      "completed": "完了",
+      "errors": "エラー"
+    },
+    "noHistory": "ダウンロード履歴はまだありません",
+    "noHistoryDescription": "完了したダウンロードがここに表示されます",
+    "openDownloadFolder": "ダウンロードフォルダを開く",
+    "openFile": "ファイルを開く",
+    "openFileLocation": "ファイルの場所を開く",
+    "openFolder": "フォルダを開く",
+    "openInBrowser": "ブラウザで開くにはクリック",
+    "removeItem": "アイテムを削除",
+    "stats": {
+      "cancelled": "キャンセル済み",
+      "completed": "完了",
+      "errors": "エラー",
+      "total": "合計"
+    },
+    "status": {
+      "cancelled": "キャンセル済み",
+      "completed": "完了",
+      "error": "エラー"
+    },
+    "title": "ダウンロード履歴"
+  },
+  "menu": {
+    "about": "について",
+    "download": "ダウンロード",
+    "playlist": "プレイリストをダウンロード",
+    "preferences": "設定",
+    "supportedSites": "サポートされているサイト",
+    "theme": "テーマ："
+  },
+  "notifications": {
+    "copyFailed": "クリップボードへのコピーに失敗",
+    "downloadCompleted": "ダウンロード完了",
+    "downloadFailed": "ダウンロードに失敗",
+    "downloadStarted": "ダウンロード開始",
+    "itemRemoved": "アイテムが削除されました",
+    "openFileFailed": "ファイルの開封に失敗",
+    "openFolderFailed": "フォルダの開封に失敗",
+    "removeFailed": "アイテムの削除に失敗",
+    "settingsSaved": "設定が保存されました",
+    "urlCopied": "URLがクリップボードにコピーされました",
+    "videoCopied": "ビデオがクリップボードにコピーされました"
+  },
+  "playlist": {
+    "comingSoon": "プレイリストダウンロード機能がまもなく登場します！",
+    "completed": "プレイリストがダウンロードされました",
+    "description": "YouTubeプレイリストまたはチャンネルからすべてのビデオをダウンロード",
+    "downloadFailed": "プレイリストダウンロードの開始に失敗",
+    "downloadPlaylist": "プレイリストをダウンロード",
+    "downloadStarted": "プレイリストから{{count}}個のビデオのダウンロードを開始",
+    "downloadType": "ダウンロードタイプ",
+    "downloading": "プレイリストをダウンロード中：",
+    "endIndex": "終了",
+    "enterPlaylistUrl": "プレイリストURLを入力",
+    "fetchFailed": "プレイリスト情報の取得に失敗",
+    "filenameFormat": "プレイリスト用ファイル名フォーマット",
+    "folderFormat": "プレイリスト用フォルダ名フォーマット",
+    "foundVideos": "プレイリストで{{count}}個のビデオを発見",
+    "linkLabel": "プレイリストURL",
+    "playlistUrlDescription": "プレイリストからすべてのビデオを一括ダウンロード",
+    "range": "範囲（オプション）",
+    "resetToDefault": "デフォルトにリセット",
+    "startIndex": "開始（1）",
+    "title": "プレイリストをダウンロード"
+  },
+  "settings": {
+    "aboutTab": "について",
+    "advanced": "高度",
+    "app": "アプリ設定",
+    "audio": "オーディオ設定",
+    "browserForCookies": "Cookieに使用するブラウザを選択",
+    "browserForCookiesDescription": "認証用のCookieを抽出するブラウザ",
+    "browserOptions": {
+      "brave": "Brave",
+      "chrome": "Chrome",
+      "edge": "Edge",
+      "firefox": "Firefox",
+      "safari": "Safari"
+    },
+    "configFile": "設定ファイルを使用",
+    "configFileDescription": "yt-dlp用のカスタム設定ファイル",
+    "dark": "ダーク",
+    "description": "ダウンロード設定とアプリ設定を構成",
+    "directorySelectError": "ディレクトリの選択に失敗",
+    "downloadPath": "ダウンロード場所",
+    "downloadPathDescription": "ダウンロードファイルの保存場所を選択",
+    "fileSelectError": "ファイルの選択に失敗",
+    "general": "一般",
+    "language": "言語",
+    "light": "ライト",
+    "maxConcurrentDownloads": "最大アクティブダウンロード数",
+    "maxConcurrentDownloadsDescription": "最大同時ダウンロード数",
+    "none": "なし",
+    "oneClickDownload": "ワンクリックダウンロード",
+    "oneClickDownloadDescription": "デフォルト設定でワンクリックダウンロードを有効化",
+    "oneClickDownloadType": "デフォルトダウンロードタイプ",
+    "oneClickDownloadTypeDescription": "ワンクリックダウンロードのデフォルトダウンロードタイプを選択。品質は下のプリセットを使用。",
+    "oneClickQuality": "優先品質",
+    "oneClickQualityDescription": "ワンクリックダウンロードに使用される品質プリセットを選択",
+    "oneClickQualityOptions": {
+      "auto": "自動",
+      "bad": "悪い",
+      "best": "最高",
+      "good": "良い",
+      "normal": "通常",
+      "worst": "最悪"
+    },
+    "proxy": "プロキシ",
+    "proxyDescription": "ネットワークリクエスト用のプロキシサーバー",
+    "proxyPlaceholder": "http://proxy:port",
+    "selectConfigFile": "設定ファイルを選択",
+    "selectPath": "選択",
+    "showMoreFormats": "より多くのフォーマットオプションを表示",
+    "showMoreFormatsDescription": "インターフェースに追加のフォーマットオプションを表示",
+    "system": "システム",
+    "theme": "テーマ",
+    "themeDescription": "VidBeeのライト、ダーク、またはシステムテーマを選択",
+    "title": "設定",
+    "tray": {
+      "quit": "終了",
+      "showHome": "ホームを表示"
+    },
+    "video": "ビデオ設定"
+  },
+  "sites": {
+    "homeInlineDescription": "{{sites}}およびその他のサイトをサポートしています。",
+    "moreDescription": "完全なyt-dlpリストはコミュニティによって継続的に更新されています。",
+    "moreTitle": "他のサイトが必要ですか？",
+    "openFullList": "サポートされているすべてのサイトリストを開く",
+    "pageDescription": "VidBeeは数百のソースに到達するためにyt-dlpをバックグラウンドで使用します。",
+    "pageIntro": "人々が最も頻繁にダウンロードする主要サービスです。",
+    "pageTitle": "サポートされているサイト",
+    "popular": {
+      "bandcamp": {
+        "description": "インディペンデントアーティストのアルバムとコミュニティリリース。",
+        "label": "Bandcamp"
+      },
+      "dailymotion": {
+        "description": "グローバルニュース、スポーツ、エンターテイメントクリップ。",
+        "label": "Dailymotion"
+      },
+      "facebook": {
+        "description": "パブリックページからのフィード、Watch、Reels動画。",
+        "label": "Facebook"
+      },
+      "instagram": {
+        "description": "フィード、Stories、Reels、ハイライトコンテンツ。",
+        "label": "Instagram"
+      },
+      "kick": {
+        "description": "Kickプラットフォームでのクリエイターライブストリームとリプレイ。",
+        "label": "Kick"
+      },
+      "linkedin": {
+        "description": "プロフェッショナルトーク、ウェビナー、学習動画。",
+        "label": "LinkedIn"
+      },
+      "mixcloud": {
+        "description": "DJミックス、ラジオ番組、ロングフォームオーディオ。",
+        "label": "Mixcloud"
+      },
+      "niconico": {
+        "description": "日本のアニメーション、音楽、ライブ放送アーカイブ。",
+        "label": "Niconico"
+      },
+      "pinterest": {
+        "description": "アイデアピン、ハウツーReels、ライフスタイルインスピレーション動画。",
+        "label": "Pinterest"
+      },
+      "reddit": {
+        "description": "コミュニティからの埋め込みクリップとホスト動画。",
+        "label": "Reddit"
+      },
+      "soundcloud": {
+        "description": "音楽トラック、プレイリスト、DJセット。",
+        "label": "SoundCloud"
+      },
+      "tiktok": {
+        "description": "ショートフォームモバイル動画、エフェクト、ライブストリーム。",
+        "label": "TikTok"
+      },
+      "tumblr": {
+        "description": "クリエイティブショートフォームメディアとファン編集。",
+        "label": "Tumblr"
+      },
+      "twitch": {
+        "description": "ゲーミング、音楽、IRLライブストリームとVOD。",
+        "label": "Twitch"
+      },
+      "twitter": {
+        "description": "タイムラインポスト、Spaces録音、放送。",
+        "label": "X (Twitter)"
+      },
+      "vimeo": {
+        "description": "クリエイターとビジネス向け高品質動画ホスティング。",
+        "label": "Vimeo"
+      },
+      "youtube": {
+        "description": "世界中のクリエイターからのロングフォームとライブストリーム動画。",
+        "label": "YouTube"
+      },
+      "youtubemusic": {
+        "description": "公式ミュージックビデオ、アルバム、ライブパフォーマンス。",
+        "label": "YouTube Music"
+      }
+    },
+    "popularSection": "主要プラットフォーム",
+    "viewAll": "サポートされているすべてのサイトを表示"
+  }
+}

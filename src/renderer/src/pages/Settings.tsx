@@ -54,7 +54,7 @@ export function Settings() {
       }
     } catch (error) {
       console.error('Failed to select directory:', error)
-      toast.error('Failed to select directory')
+      toast.error(t('settings.directorySelectError'))
     }
   }
 
@@ -67,7 +67,7 @@ export function Settings() {
       }
     } catch (error) {
       console.error('Failed to select file:', error)
-      toast.error('Failed to select file')
+      toast.error(t('settings.fileSelectError'))
     }
   }
 
@@ -100,7 +100,7 @@ export function Settings() {
               <Item variant="muted">
                 <ItemContent>
                   <ItemTitle>{t('settings.downloadPath')}</ItemTitle>
-                  <ItemDescription>Choose where to save downloaded files</ItemDescription>
+                  <ItemDescription>{t('settings.downloadPathDescription')}</ItemDescription>
                 </ItemContent>
                 <ItemActions>
                   <div className="flex gap-2 w-full max-w-md">
@@ -115,9 +115,7 @@ export function Settings() {
               <Item variant="muted">
                 <ItemContent>
                   <ItemTitle>{t('settings.theme')}</ItemTitle>
-                  <ItemDescription>
-                    Choose a light, dark, or system theme for VidBee
-                  </ItemDescription>
+                  <ItemDescription>{t('settings.themeDescription')}</ItemDescription>
                 </ItemContent>
                 <ItemActions>
                   <Select
@@ -160,8 +158,7 @@ export function Settings() {
                     <ItemContent>
                       <ItemTitle>{t('settings.oneClickDownloadType')}</ItemTitle>
                       <ItemDescription>
-                        Choose the default download type for one-click downloads. Quality uses the
-                        preset below.
+                        {t('settings.oneClickDownloadTypeDescription')}
                       </ItemDescription>
                     </ItemContent>
                     <ItemActions>
@@ -185,9 +182,7 @@ export function Settings() {
                   <Item variant="muted">
                     <ItemContent>
                       <ItemTitle>{t('settings.oneClickQuality')}</ItemTitle>
-                      <ItemDescription>
-                        Select the quality preset used for one-click downloads
-                      </ItemDescription>
+                      <ItemDescription>{t('settings.oneClickQualityDescription')}</ItemDescription>
                     </ItemContent>
                     <ItemActions>
                       <Select
@@ -230,9 +225,7 @@ export function Settings() {
               <Item variant="muted">
                 <ItemContent>
                   <ItemTitle>{t('settings.showMoreFormats')}</ItemTitle>
-                  <ItemDescription>
-                    Display additional format options in the interface
-                  </ItemDescription>
+                  <ItemDescription>{t('settings.showMoreFormatsDescription')}</ItemDescription>
                 </ItemContent>
                 <ItemActions>
                   <Switch
@@ -249,7 +242,9 @@ export function Settings() {
               <Item variant="muted">
                 <ItemContent>
                   <ItemTitle>{t('settings.maxConcurrentDownloads')}</ItemTitle>
-                  <ItemDescription>Maximum number of simultaneous downloads</ItemDescription>
+                  <ItemDescription>
+                    {t('settings.maxConcurrentDownloadsDescription')}
+                  </ItemDescription>
                 </ItemContent>
                 <ItemActions>
                   <Select
@@ -277,9 +272,7 @@ export function Settings() {
               <Item variant="muted">
                 <ItemContent>
                   <ItemTitle>{t('settings.browserForCookies')}</ItemTitle>
-                  <ItemDescription>
-                    Browser to extract cookies from for authentication
-                  </ItemDescription>
+                  <ItemDescription>{t('settings.browserForCookiesDescription')}</ItemDescription>
                 </ItemContent>
                 <ItemActions>
                   <Select
@@ -291,11 +284,13 @@ export function Settings() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">{t('settings.none')}</SelectItem>
-                      <SelectItem value="chrome">Chrome</SelectItem>
-                      <SelectItem value="firefox">Firefox</SelectItem>
-                      <SelectItem value="edge">Edge</SelectItem>
-                      <SelectItem value="safari">Safari</SelectItem>
-                      <SelectItem value="brave">Brave</SelectItem>
+                      <SelectItem value="chrome">{t('settings.browserOptions.chrome')}</SelectItem>
+                      <SelectItem value="firefox">
+                        {t('settings.browserOptions.firefox')}
+                      </SelectItem>
+                      <SelectItem value="edge">{t('settings.browserOptions.edge')}</SelectItem>
+                      <SelectItem value="safari">{t('settings.browserOptions.safari')}</SelectItem>
+                      <SelectItem value="brave">{t('settings.browserOptions.brave')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </ItemActions>
@@ -306,11 +301,11 @@ export function Settings() {
               <Item variant="muted">
                 <ItemContent>
                   <ItemTitle>{t('settings.proxy')}</ItemTitle>
-                  <ItemDescription>Proxy server for network requests</ItemDescription>
+                  <ItemDescription>{t('settings.proxyDescription')}</ItemDescription>
                 </ItemContent>
                 <ItemActions>
                   <Input
-                    placeholder="http://proxy:port"
+                    placeholder={t('settings.proxyPlaceholder')}
                     value={settings.proxy}
                     onChange={(e) => handleSettingChange('proxy', e.target.value)}
                     className="w-64"
@@ -323,7 +318,7 @@ export function Settings() {
               <Item variant="muted">
                 <ItemContent>
                   <ItemTitle>{t('settings.configFile')}</ItemTitle>
-                  <ItemDescription>Custom configuration file for yt-dlp</ItemDescription>
+                  <ItemDescription>{t('settings.configFileDescription')}</ItemDescription>
                 </ItemContent>
                 <ItemActions>
                   <div className="flex gap-2 w-full max-w-md">

@@ -169,7 +169,7 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
                   aria-current={isActive}
                 >
                   <div className="flex items-center gap-2">
-                    <span className={`${option.flag} text-base`} aria-hidden="true" />
+                    <span className={`${option.flag} rounded-xs text-base`} aria-hidden="true" />
                     <span lang={option.hreflang}>{option.name}</span>
                   </div>
                 </DropdownMenuItem>

@@ -1,5 +1,6 @@
 import { Button } from '@renderer/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@renderer/components/ui/card'
+import { cn } from '@renderer/lib/utils'
 import { useAtomValue, useSetAtom } from 'jotai'
 import { History as HistoryIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
@@ -89,7 +90,14 @@ export function UnifiedDownloadHistory() {
                 onClick={() => setStatusFilter(filter.key)}
               >
                 <span>{filter.label}</span>
-                <span className="ml-1 text-xs opacity-70">({filter.count})</span>
+                <span
+                  className={cn(
+                    'ml-1 min-w-5 rounded-full px-1 text-xs font-medium text-neutral-900',
+                    isActive ? ' bg-neutral-100' : ' bg-neutral-200'
+                  )}
+                >
+                  {filter.count}
+                </span>
               </Button>
             )
           })}

@@ -1,0 +1,395 @@
+{
+  "about": {
+    "actions": {
+      "checkUpdates": "Vérifier les mises à jour",
+      "email": "Email",
+      "feedback": "Commentaires",
+      "openRepo": "Ouvrir le dépôt GitHub",
+      "view": "Voir",
+      "visit": "Visiter"
+    },
+    "appName": "VidBee",
+    "autoUpdateDescription": "Télécharger et installer automatiquement les nouvelles versions en arrière-plan.",
+    "autoUpdateTitle": "Mises à jour automatiques",
+    "betaProgramDescription": "Recevez les versions préliminaires et les prochaines fonctionnalités avant tout le monde.",
+    "betaProgramTitle": "Canal de prévisualisation",
+    "description": "VidBee est un téléchargeur gratuit et open-source construit avec Electron et alimenté par yt-dlp.",
+    "followAuthorActions": {
+      "follow": "Suivre @nexmoex"
+    },
+    "followAuthorDescription": "Restez à jour avec les dernières nouvelles et mises à jour de VidBee.",
+    "followAuthorSupport": "Suivez le développeur sur X (Twitter) pour obtenir les dernières mises à jour et nouvelles sur VidBee.",
+    "followAuthorTitle": "Suivre le Développeur",
+    "here": "ici",
+    "homepage": "Page d'accueil",
+    "notifications": {
+      "checkingUpdates": "Recherche de mises à jour...",
+      "downloadError": "Échec du téléchargement de la mise à jour",
+      "downloadStarted": "Téléchargement démarré...",
+      "downloadUpdate": "Télécharger et installer la mise à jour {{version}} ?",
+      "noUpdatesAvailable": "Vous utilisez la dernière version",
+      "restartToUpdate": "Redémarrer maintenant pour installer la mise à jour ?",
+      "updateAvailable": "Mise à jour disponible : {{version}}",
+      "updateDownloaded": "Mise à jour téléchargée, redémarrez pour installer",
+      "updateError": "Échec de la vérification des mises à jour : {{error}}"
+    },
+    "preferencesDescription": "Ajustez les paramètres de mise à jour sans quitter cette page.",
+    "preferencesTitle": "Basculements Rapides",
+    "resources": {
+      "changelog": "Notes de version",
+      "changelogDescription": "Suivez ce qui a changé dans chaque version.",
+      "contact": "Support par email",
+      "contactDescription": "Contactez directement pour de l'aide ou collaboration.",
+      "documentation": "Centre d'aide",
+      "documentationDescription": "Guides, FAQ et flux de travail courants.",
+      "feedback": "Commentaires et problèmes",
+      "feedbackDescription": "Partagez des idées ou signalez des problèmes sur GitHub.",
+      "license": "Licence",
+      "licenseDescription": "Consultez les termes de la licence open-source.",
+      "website": "Site web officiel",
+      "websiteDescription": "Points forts du produit, feuille de route et actualités de la communauté."
+    },
+    "resourcesDescription": "Liens utiles pour en savoir plus sur VidBee et rester connecté.",
+    "resourcesTitle": "Ressources",
+    "shareActions": {
+      "copy": "Copier le lien",
+      "facebook": "Partager sur Facebook",
+      "twitter": "Partager sur X (Twitter)"
+    },
+    "shareDescription": "Partagez VidBee avec votre communauté en un clic.",
+    "shareSupport": "Recommandez VidBee à vos amis pour soutenir notre croissance et nos mises à jour.",
+    "shareTitle": "Faites passer le mot",
+    "sourceCode": "Le code source est disponible",
+    "tagline": "Un assistant de téléchargement convivial pour l'IA pour chaque créateur",
+    "title": "À propos",
+    "version": "Version",
+    "versionLabel": "v{{version}}",
+    "latestVersionBadge": "Dernière : v{{version}}",
+    "latestVersionStatus": {
+      "available": "Nouvelle version disponible",
+      "uptodate": "Vous êtes à jour",
+      "error": "Impossible de récupérer la dernière version"
+    }
+  },
+  "advancedOptions": {
+    "closeWhenDone": "Fermer l'application quand le téléchargement se termine",
+    "currentLocation": "Emplacement de téléchargement actuel - ",
+    "downloadLocation": "Emplacement de téléchargement",
+    "downloadSubs": "Télécharger les sous-titres si disponibles",
+    "end": "Fin",
+    "endHint": "Si laissé vide, sera téléchargé jusqu'à la fin",
+    "endPlaceholder": "10:00",
+    "selectLocation": "Sélectionner l'Emplacement de Téléchargement",
+    "start": "Début",
+    "startHint": "Si laissé vide, commencera du début",
+    "startPlaceholder": "00:00",
+    "subtitles": "Sous-titres",
+    "timeRange": "Télécharger une plage de temps spécifique",
+    "title": "Options Avancées"
+  },
+  "app": {
+    "description": "Télécharger des vidéos et audios depuis des centaines de sites",
+    "title": "VidBee"
+  },
+  "audioExtract": {
+    "bad": "Mauvais",
+    "best": "Meilleur",
+    "extract": "Extraire",
+    "good": "Bon",
+    "normal": "Normal",
+    "selectFormat": "Sélectionner le Format",
+    "selectQuality": "Sélectionner la Qualité",
+    "title": "Extraire l'Audio",
+    "worst": "Pire"
+  },
+  "download": {
+    "active": "Actif",
+    "all": "Tout",
+    "audio": "Audio",
+    "back": "Retour",
+    "cancel": "Annuler",
+    "cancelled": "Annulé",
+    "clearCompleted": "Effacer les Terminés",
+    "clearDownloads": "Effacer les Téléchargements",
+    "completed": "Terminé",
+    "downloadAudio": "Télécharger l'Audio",
+    "downloadBtn": "Télécharger",
+    "downloadPending": "En attente",
+    "downloadQueue": "File de Téléchargement",
+    "downloadVideo": "Télécharger la Vidéo",
+    "downloading": "Téléchargement en cours...",
+    "enterUrl": "Entrer l'URL de la Vidéo",
+    "enterUrlDescription": "Collez ou tapez une URL de vidéo. ",
+    "error": "Erreur",
+    "fetch": "Récupérer",
+    "fetchingVideoInfo": "Récupération des informations vidéo...",
+    "history": "Historique",
+    "imageLoadError": "Échec du chargement de l'image",
+    "imagePlaceholder": "Aucune image disponible",
+    "infoUnavailable": "Téléchargement en Un Clic (Info indisponible)",
+    "loading": "Chargement",
+    "moreOptions": "Plus d'options",
+    "noActiveDownloads": "Aucun téléchargement actif",
+    "noAudio": "Pas d'Audio",
+    "noHistory": "Aucun historique de téléchargement",
+    "noItems": "Aucun élément trouvé",
+    "oneClickDownload": "Téléchargement en Un Clic",
+    "oneClickDownloadDescription": "Télécharger directement avec les paramètres par défaut sans confirmation",
+    "oneClickDownloadNow": "Télécharger Maintenant",
+    "oneClickDownloadStarted": "Téléchargement démarré avec les paramètres par défaut",
+    "paste": "Coller",
+    "pastePlaylistUrl": "Cliquez pour coller le lien de la playlist depuis le presse-papiers [Ctrl + V]",
+    "pasteUrl": "Cliquez pour coller l'URL de la vidéo ou l'ID [Ctrl + V]",
+    "preparing": "Préparation...",
+    "processing": "Traitement",
+    "progress": "Progrès",
+    "selectAudioFormat": "Sélectionner le Format Audio",
+    "selectFormat": "Sélectionner le Format",
+    "selectVideoFormat": "Sélectionner le Format Vidéo",
+    "singleVideo": "Vidéo Unique",
+    "speed": "Vitesse",
+    "title": "Titre",
+    "total": "Total",
+    "unknownQuality": "Qualité inconnue",
+    "unknownSize": "Taille inconnue",
+    "urlPlaceholder": "https://www.youtube.com/watch?v=...",
+    "video": "Vidéo",
+    "videoInfo": "Informations Vidéo",
+    "videoInfoUpdated": "Informations vidéo mises à jour"
+  },
+  "errors": {
+    "clickToCopy": "Cliquez pour copier les détails",
+    "clipboardEmpty": "Le presse-papiers est vide",
+    "downloadFailed": "Échec du téléchargement",
+    "downloadNecessaryFilesFailed": "Échec du téléchargement des fichiers nécessaires. Veuillez vérifier votre réseau et réessayer",
+    "emptyUrl": "Veuillez entrer une URL",
+    "errorDetails": "Détails de l'Erreur",
+    "fetchInfoFailed": "Échec de la récupération des informations vidéo",
+    "networkError": "Une erreur s'est produite. Vérifiez votre réseau et utilisez une URL correcte",
+    "pasteFromClipboard": "Échec du collage depuis le presse-papiers"
+  },
+  "history": {
+    "clearCancelled": "Effacer les Annulés",
+    "clearCompleted": "Effacer les Terminés",
+    "clearErrors": "Effacer les Erreurs",
+    "copyToClipboard": "Copier dans le presse-papiers",
+    "copyUrl": "Copier l'URL",
+    "date": "Date",
+    "description": "Voir et gérer votre historique de téléchargements",
+    "duration": "Durée",
+    "fileSize": "Taille du Fichier",
+    "filters": {
+      "all": "Tout",
+      "cancelled": "Annulé",
+      "completed": "Terminé",
+      "errors": "Erreurs"
+    },
+    "noHistory": "Aucun historique de téléchargement encore",
+    "noHistoryDescription": "Vos téléchargements terminés apparaîtront ici",
+    "openDownloadFolder": "Ouvrir le Dossier de Téléchargement",
+    "openFile": "Ouvrir le Fichier",
+    "openFileLocation": "Ouvrir l'Emplacement du Fichier",
+    "openFolder": "Ouvrir le Dossier",
+    "openInBrowser": "Cliquez pour ouvrir dans le navigateur",
+    "removeItem": "Supprimer l'Élément",
+    "stats": {
+      "cancelled": "Annulé",
+      "completed": "Terminé",
+      "errors": "Erreurs",
+      "total": "Total"
+    },
+    "status": {
+      "cancelled": "Annulé",
+      "completed": "Terminé",
+      "error": "Erreur"
+    },
+    "title": "Historique de Téléchargement"
+  },
+  "menu": {
+    "about": "À propos",
+    "download": "Télécharger",
+    "playlist": "Télécharger la Playlist",
+    "preferences": "Préférences",
+    "supportedSites": "Sites Supportés",
+    "theme": "Thème :"
+  },
+  "notifications": {
+    "copyFailed": "Échec de la copie dans le presse-papiers",
+    "downloadCompleted": "Téléchargement terminé",
+    "downloadFailed": "Échec du téléchargement",
+    "downloadStarted": "Téléchargement démarré",
+    "itemRemoved": "Élément supprimé",
+    "openFileFailed": "Échec de l'ouverture du fichier",
+    "openFolderFailed": "Échec de l'ouverture du dossier",
+    "removeFailed": "Échec de la suppression de l'élément",
+    "settingsSaved": "Paramètres sauvegardés",
+    "urlCopied": "URL copiée dans le presse-papiers",
+    "videoCopied": "Vidéo copiée dans le presse-papiers"
+  },
+  "playlist": {
+    "comingSoon": "La fonctionnalité de téléchargement de playlist arrive bientôt !",
+    "completed": "Playlist téléchargée",
+    "description": "Télécharger toutes les vidéos d'une playlist ou chaîne YouTube",
+    "downloadFailed": "Échec du démarrage du téléchargement de playlist",
+    "downloadPlaylist": "Télécharger la Playlist",
+    "downloadStarted": "Démarré le téléchargement de {{count}} vidéos de la playlist",
+    "downloadType": "Type de Téléchargement",
+    "downloading": "Téléchargement de la playlist :",
+    "endIndex": "Fin",
+    "enterPlaylistUrl": "Entrer l'URL de la Playlist",
+    "fetchFailed": "Échec de la récupération des informations de playlist",
+    "filenameFormat": "Format de nom de fichier pour les playlists",
+    "folderFormat": "Format de nom de dossier pour les playlists",
+    "foundVideos": "Trouvé {{count}} vidéos dans la playlist",
+    "linkLabel": "URL de la Playlist",
+    "playlistUrlDescription": "Télécharger toutes les vidéos d'une playlist en lot",
+    "range": "Plage (Optionnel)",
+    "resetToDefault": "Réinitialiser par défaut",
+    "startIndex": "Début (1)",
+    "title": "Télécharger la Playlist"
+  },
+  "settings": {
+    "aboutTab": "À propos",
+    "advanced": "Avancé",
+    "app": "Paramètres de l'App",
+    "audio": "Préférences Audio",
+    "browserForCookies": "Sélectionner le navigateur pour utiliser les cookies",
+    "browserForCookiesDescription": "Navigateur pour extraire les cookies pour l'authentification",
+    "browserOptions": {
+      "brave": "Brave",
+      "chrome": "Chrome",
+      "edge": "Edge",
+      "firefox": "Firefox",
+      "safari": "Safari"
+    },
+    "configFile": "Utiliser le fichier de configuration",
+    "configFileDescription": "Fichier de configuration personnalisé pour yt-dlp",
+    "dark": "Sombre",
+    "description": "Configurez vos préférences de téléchargement et paramètres de l'application",
+    "directorySelectError": "Échec de la sélection du répertoire",
+    "downloadPath": "Emplacement de téléchargement",
+    "downloadPathDescription": "Choisissez où sauvegarder les fichiers téléchargés",
+    "fileSelectError": "Échec de la sélection du fichier",
+    "general": "Général",
+    "language": "Langue",
+    "light": "Clair",
+    "maxConcurrentDownloads": "Nombre maximum de téléchargements actifs",
+    "maxConcurrentDownloadsDescription": "Nombre maximum de téléchargements simultanés",
+    "none": "Aucun",
+    "oneClickDownload": "Téléchargement en Un Clic",
+    "oneClickDownloadDescription": "Activer le téléchargement en un clic avec les paramètres par défaut",
+    "oneClickDownloadType": "Type de téléchargement par défaut",
+    "oneClickDownloadTypeDescription": "Choisissez le type de téléchargement par défaut pour les téléchargements en un clic. La qualité utilise le préréglage ci-dessous.",
+    "oneClickQuality": "Qualité préférée",
+    "oneClickQualityDescription": "Sélectionnez le préréglage de qualité utilisé pour les téléchargements en un clic",
+    "oneClickQualityOptions": {
+      "auto": "Auto",
+      "bad": "Mauvais",
+      "best": "Meilleur",
+      "good": "Bon",
+      "normal": "Normal",
+      "worst": "Pire"
+    },
+    "proxy": "Proxy",
+    "proxyDescription": "Serveur proxy pour les requêtes réseau",
+    "proxyPlaceholder": "http://proxy:port",
+    "selectConfigFile": "Sélectionner le fichier de configuration",
+    "selectPath": "Sélectionner",
+    "showMoreFormats": "Afficher plus d'options de format",
+    "showMoreFormatsDescription": "Afficher des options de format supplémentaires dans l'interface",
+    "system": "Système",
+    "theme": "Thème",
+    "themeDescription": "Choisissez un thème clair, sombre ou système pour VidBee",
+    "title": "Paramètres",
+    "tray": {
+      "quit": "Quitter",
+      "showHome": "Afficher l'Accueil"
+    },
+    "video": "Préférences Vidéo"
+  },
+  "sites": {
+    "homeInlineDescription": "Supporte {{sites}} et plus.",
+    "moreDescription": "La liste complète yt-dlp est mise à jour constamment par la communauté.",
+    "moreTitle": "Besoin d'un autre site ?",
+    "openFullList": "Ouvrir la liste complète des sites supportés",
+    "pageDescription": "VidBee utilise yt-dlp en arrière-plan pour atteindre des centaines de sources.",
+    "pageIntro": "Voici les services principaux que les gens téléchargent le plus souvent.",
+    "pageTitle": "Sites Supportés",
+    "popular": {
+      "bandcamp": {
+        "description": "Albums d'artistes indépendants et sorties communautaires.",
+        "label": "Bandcamp"
+      },
+      "dailymotion": {
+        "description": "Actualités mondiales, sports et clips de divertissement.",
+        "label": "Dailymotion"
+      },
+      "facebook": {
+        "description": "Vidéos de flux, Watch et Reels des pages publiques.",
+        "label": "Facebook"
+      },
+      "instagram": {
+        "description": "Contenu de flux, Stories, Reels et Highlights.",
+        "label": "Instagram"
+      },
+      "kick": {
+        "description": "Streams en direct et replays de créateurs sur la plateforme Kick.",
+        "label": "Kick"
+      },
+      "linkedin": {
+        "description": "Conférences professionnelles, webinaires et vidéos d'apprentissage.",
+        "label": "LinkedIn"
+      },
+      "mixcloud": {
+        "description": "Mixes DJ, émissions radio et audio long format.",
+        "label": "Mixcloud"
+      },
+      "niconico": {
+        "description": "Animation japonaise, musique et archives de diffusion en direct.",
+        "label": "Niconico"
+      },
+      "pinterest": {
+        "description": "Épingles d'idées, Reels de tutoriels et vidéos d'inspiration lifestyle.",
+        "label": "Pinterest"
+      },
+      "reddit": {
+        "description": "Clips intégrés et vidéos hébergées des communautés.",
+        "label": "Reddit"
+      },
+      "soundcloud": {
+        "description": "Pistes musicales, playlists et sets DJ.",
+        "label": "SoundCloud"
+      },
+      "tiktok": {
+        "description": "Vidéos courtes mobiles, effets et streams en direct.",
+        "label": "TikTok"
+      },
+      "tumblr": {
+        "description": "Médias courts créatifs et montages de fans.",
+        "label": "Tumblr"
+      },
+      "twitch": {
+        "description": "Streams en direct de gaming, musique et IRL et VOD.",
+        "label": "Twitch"
+      },
+      "twitter": {
+        "description": "Publications de timeline, enregistrements Spaces et diffusions.",
+        "label": "X (Twitter)"
+      },
+      "vimeo": {
+        "description": "Hébergement vidéo de haute qualité pour créateurs et entreprises.",
+        "label": "Vimeo"
+      },
+      "youtube": {
+        "description": "Vidéo long format et livestream de créateurs du monde entier.",
+        "label": "YouTube"
+      },
+      "youtubemusic": {
+        "description": "Vidéos musicales officielles, albums et performances live.",
+        "label": "YouTube Music"
+      }
+    },
+    "popularSection": "Plateformes principales",
+    "viewAll": "Voir tous les sites supportés"
+  }
+}

@@ -29,14 +29,22 @@ export function SupportedSites() {
       <section className="space-y-3">
         <h2 className="text-lg font-semibold px-6">{t('sites.popularSection')}</h2>
         <ul className="grid gap-3 sm:grid-cols-2">
-          {popularSites.map((site) => (
-            <li key={site.id} className="rounded-md border border-border px-6 py-5">
-              <p className="text-sm font-medium">{site.label}</p>
-              {site.description ? (
-                <p className="mt-1 text-xs text-muted-foreground">{site.description}</p>
-              ) : null}
-            </li>
-          ))}
+          {popularSites.map((site) => {
+            const labelKey = `sites.popular.${site.id}.label`
+            const descriptionKey = `sites.popular.${site.id}.description`
+            const label = t(labelKey)
+            const description = t(descriptionKey)
+            const hasDescription = description !== descriptionKey
+
+            return (
+              <li key={site.id} className="rounded-md border border-border px-6 py-5">
+                <p className="text-sm font-medium">{label}</p>
+                {hasDescription ? (
+                  <p className="mt-1 text-xs text-muted-foreground">{description}</p>
+                ) : null}
+              </li>
+            )
+          })}
         </ul>
       </section>
 
