@@ -1,3 +1,4 @@
+import { normalizeLanguageCode } from '@shared/languages'
 import { app, BrowserWindow, Menu, nativeImage, Tray } from 'electron'
 import appIcon from '../../resources/icon.png?asset'
 import trayIcon from '../../resources/tray-icon.png?asset'
@@ -9,7 +10,7 @@ let tray: Tray | null = null
  * Get translated text based on current language setting
  */
 function t(key: 'showHome' | 'quit'): string {
-  const language = settingsManager.get('language') || 'en'
+  const language = normalizeLanguageCode(settingsManager.get('language'))
 
   const translations = {
     en: {
@@ -17,12 +18,12 @@ function t(key: 'showHome' | 'quit'): string {
       quit: 'Quit'
     },
     zh: {
-      showHome: '打开首页',
-      quit: '关闭应用'
+      showHome: '显示主页',
+      quit: '退出应用'
     }
   }
 
-  const displayLang = language.startsWith('en') ? 'en' : 'zh'
+  const displayLang = language.startsWith('zh') ? 'zh' : 'en'
   return translations[displayLang][key]
 }
 

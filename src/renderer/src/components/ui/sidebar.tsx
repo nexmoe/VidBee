@@ -7,6 +7,7 @@ import {
 } from '@renderer/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { saveSettingAtom } from '@renderer/store/settings'
+import { type LanguageCode, languageList, normalizeLanguageCode } from '@shared/languages'
 import { useSetAtom } from 'jotai'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -40,10 +41,7 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
   const { t, i18n } = useTranslation()
   const saveSetting = useSetAtom(saveSettingAtom)
 
-  const languageOptions = [
-    { value: 'en', label: 'English' },
-    { value: 'zh', label: '中文' }
-  ]
+  const languageOptions = languageList
 
   const navigationItems: NavigationItem[] = [
     {
@@ -83,11 +81,11 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
     }
   ]
 
-  const activeLanguageCode = (i18n.language ?? 'en').split('-')[0]
+  const activeLanguageCode = normalizeLanguageCode(i18n.language)
   const currentLanguage =
     languageOptions.find((option) => option.value === activeLanguageCode) ?? languageOptions[0]
 
-  const handleLanguageChange = async (value: string) => {
+  const handleLanguageChange = async (value: LanguageCode) => {
     if (activeLanguageCode === value) {
       return
     }
@@ -167,9 +165,13 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
                 <DropdownMenuItem
                   key={option.value}
                   onClick={() => void handleLanguageChange(option.value)}
-                  className={isActive ? 'font-semibold' : undefined}
+                  className={isActive ? 'font-semibold bg-muted focus:bg-muted' : undefined}
+                  aria-current={isActive}
                 >
-                  {option.label}
+                  <div className="flex items-center gap-2">
+                    <span className={`${option.flag} text-base`} aria-hidden="true" />
+                    <span lang={option.hreflang}>{option.name}</span>
+                  </div>
                 </DropdownMenuItem>
               )
             })}

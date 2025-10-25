@@ -254,10 +254,6 @@
     "downloadPath": "Download location",
     "general": "General",
     "language": "Language",
-    "languageOptions": {
-      "chinese": "Chinese (Simplified)",
-      "english": "English"
-    },
     "light": "Light",
     "maxConcurrentDownloads": "Maximum number of active downloads",
     "none": "None",

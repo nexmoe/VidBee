@@ -244,10 +244,6 @@
     "downloadPath": "下载位置",
     "general": "通用",
     "language": "语言",
-    "languageOptions": {
-      "chinese": "简体中文",
-      "english": "英语"
-    },
     "light": "浅色",
     "maxConcurrentDownloads": "最大活动下载数",
     "none": "无",

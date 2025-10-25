@@ -1,5 +1,6 @@
 import './assets/main.css'
 import './assets/global.css'
+import 'flag-icons/css/flag-icons.min.css'
 
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'

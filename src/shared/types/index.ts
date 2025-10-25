@@ -1,3 +1,6 @@
+import type { LanguageCode } from '../languages'
+import { defaultLanguageCode } from '../languages'
+
 // Download related types
 export interface VideoFormat {
   format_id: string
@@ -146,7 +149,7 @@ export interface AppSettings {
   proxy: string
   configPath: string
   betaProgram: boolean
-  language: string
+  language: LanguageCode
   theme: string
   oneClickDownload: boolean
   oneClickDownloadType: 'video' | 'audio'
@@ -163,7 +166,7 @@ export const defaultSettings: AppSettings = {
   proxy: '',
   configPath: '',
   betaProgram: false,
-  language: 'en',
+  language: defaultLanguageCode,
   theme: 'system',
   oneClickDownload: false,
   oneClickDownloadType: 'video',

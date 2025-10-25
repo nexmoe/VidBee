@@ -47,6 +47,7 @@
     "electron-log": "^5.4.3",
     "electron-store": "^11.0.2",
     "electron-updater": "^6.3.9",
+    "flag-icons": "^7.5.0",
     "i18next": "^25.5.3",
     "jotai": "^2.15.0",
     "lucide-react": "^0.544.0",

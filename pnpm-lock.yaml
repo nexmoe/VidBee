@@ -86,6 +86,9 @@ importers:
       electron-updater:
         specifier: ^6.3.9
         version: 6.6.2
+      flag-icons:
+        specifier: ^7.5.0
+        version: 7.5.0
       i18next:
         specifier: ^25.5.3
         version: 25.6.0(typescript@5.9.3)
@@ -2055,6 +2058,9 @@ packages:
 
   filelist@1.0.4:
     resolution: {integrity: sha512-w1cEuf3S+DrLCQL7ET6kz+gmlJdbq9J7yXCSjK/OZCPA+qEN1WyF4ZAf0YYJa4/shHJra2t/d/r8SV4Ji+x+8Q==}
+
+  flag-icons@7.5.0:
+    resolution: {integrity: sha512-kd+MNXviFIg5hijH766tt+3x76ele1AXlo4zDdCxIvqWZhKt4T83bOtxUOOMlTx/EcFdUMH5yvQgYlFh1EqqFg==}
 
   foreground-child@3.3.1:
     resolution: {integrity: sha512-gIXjKqtFuWEgzFRJA9WCQeSJLZDjgJUOMCMzxtvFq/37KojM1BFGufqsCy0r4qSQmYLsZYMeyRqzIWOMup03sw==}
@@ -5349,6 +5355,8 @@ snapshots:
   filelist@1.0.4:
     dependencies:
       minimatch: 5.1.6
+
+  flag-icons@7.5.0: {}
 
   foreground-child@3.3.1:
     dependencies:
