@@ -36,10 +36,17 @@ interface AboutResource {
   onClick?: () => void
 }
 
+type LatestVersionState =
+  | { status: 'available'; version: string }
+  | { status: 'uptodate'; version: string }
+  | { status: 'error'; error?: string }
+  | null
+
 export function About() {
   const { t } = useTranslation()
   const [settings, _setSettings] = useAtom(settingsAtom)
   const [appVersion, setAppVersion] = useState<string>('—')
+  const [latestVersionState, setLatestVersionState] = useState<LatestVersionState>(null)
   const saveSetting = useSetAtom(saveSettingAtom)
   const shareTargetUrl = 'https://github.com/nexmoe/VidBee'
 
@@ -79,14 +86,29 @@ export function About() {
 
       if (result.available) {
         toast.success(t('about.notifications.updateAvailable', { version: result.version }))
+        setLatestVersionState({
+          status: 'available',
+          version: result.version ?? ''
+        })
       } else if (result.error) {
         toast.error(t('about.notifications.updateError', { error: result.error }))
+        setLatestVersionState({
+          status: 'error',
+          error: result.error
+        })
       } else {
         toast.success(t('about.notifications.noUpdatesAvailable'))
+        setLatestVersionState({
+          status: 'uptodate',
+          version: result.version ?? appVersion
+        })
       }
     } catch (error) {
       console.error('Failed to check for updates:', error)
       toast.error(t('about.notifications.updateError', { error: 'Unknown error' }))
+      setLatestVersionState({
+        status: 'error'
+      })
     }
   }
 
@@ -125,6 +147,21 @@ export function About() {
       toast.error(t('notifications.copyFailed'))
     }
   }
+
+  const latestVersionBadgeText =
+    latestVersionState && latestVersionState.status !== 'error' && latestVersionState.version
+      ? t('about.latestVersionBadge', { version: latestVersionState.version })
+      : null
+  const latestVersionStatusKey = latestVersionState
+    ? `about.latestVersionStatus.${latestVersionState.status}`
+    : null
+  const latestVersionStatusClass =
+    latestVersionState?.status === 'available'
+      ? 'text-primary'
+      : latestVersionState?.status === 'error'
+        ? 'text-destructive'
+        : 'text-muted-foreground'
+  const latestVersionStatusText = latestVersionStatusKey ? t(latestVersionStatusKey) : null
 
   const aboutResources = useMemo<AboutResource[]>(
     () => [
@@ -178,9 +215,23 @@ export function About() {
                     <h2 className="text-2xl font-semibold leading-tight">{t('about.appName')}</h2>
                     <p className="text-sm text-muted-foreground">{t('about.tagline')}</p>
                   </div>
-                  <Badge variant="secondary">
-                    {t('about.versionLabel', { version: appVersion })}
-                  </Badge>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="secondary">
+                      {t('about.versionLabel', { version: appVersion })}
+                    </Badge>
+                    {latestVersionState ? (
+                      <div className="flex flex-wrap items-center gap-2">
+                        {latestVersionBadgeText ? (
+                          <Badge variant="outline">{latestVersionBadgeText}</Badge>
+                        ) : null}
+                        {latestVersionStatusText ? (
+                          <span className={`text-sm ${latestVersionStatusClass}`}>
+                            {latestVersionStatusText}
+                          </span>
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
               </div>
               <div className="flex items-center gap-2">
