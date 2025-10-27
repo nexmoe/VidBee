@@ -71,6 +71,31 @@ export function Settings() {
     }
   }
 
+  const handleSelectCookiesFile = async () => {
+    try {
+      const { ipcServices } = await import('../lib/ipc')
+      const path = await ipcServices.fs.selectFile()
+      if (path) {
+        await handleSettingChange('cookiesPath', path)
+      }
+    } catch (error) {
+      console.error('Failed to select cookies file:', error)
+      toast.error(t('settings.fileSelectError'))
+    }
+  }
+
+  const handleOpenCookiesFaq = async () => {
+    try {
+      const { ipcServices } = await import('../lib/ipc')
+      await ipcServices.fs.openExternal(
+        'https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp'
+      )
+    } catch (error) {
+      console.error('Failed to open cookies FAQ:', error)
+      toast.error(t('settings.openLinkError'))
+    }
+  }
+
   const handleThemeChange = async (value: 'light' | 'dark' | 'system') => {
     const currentTheme = (theme ?? settings.theme ?? 'system') as 'light' | 'dark' | 'system'
     if (currentTheme === value) {
@@ -271,6 +296,38 @@ export function Settings() {
 
               <Item variant="muted">
                 <ItemContent>
+                  <ItemTitle>{t('settings.proxy')}</ItemTitle>
+                  <ItemDescription>{t('settings.proxyDescription')}</ItemDescription>
+                </ItemContent>
+                <ItemActions>
+                  <Input
+                    placeholder={t('settings.proxyPlaceholder')}
+                    value={settings.proxy}
+                    onChange={(e) => handleSettingChange('proxy', e.target.value)}
+                    className="w-64"
+                  />
+                </ItemActions>
+              </Item>
+
+              <ItemSeparator />
+
+              <Item variant="muted">
+                <ItemContent>
+                  <ItemTitle>{t('settings.configFile')}</ItemTitle>
+                  <ItemDescription>{t('settings.configFileDescription')}</ItemDescription>
+                </ItemContent>
+                <ItemActions>
+                  <div className="flex gap-2 w-full max-w-md">
+                    <Input value={settings.configPath} readOnly className="flex-1" />
+                    <Button onClick={handleSelectConfigFile}>{t('settings.selectPath')}</Button>
+                  </div>
+                </ItemActions>
+              </Item>
+            </ItemGroup>
+
+            <ItemGroup>
+              <Item variant="muted">
+                <ItemContent>
                   <ItemTitle>{t('settings.browserForCookies')}</ItemTitle>
                   <ItemDescription>{t('settings.browserForCookiesDescription')}</ItemDescription>
                 </ItemContent>
@@ -300,16 +357,21 @@ export function Settings() {
 
               <Item variant="muted">
                 <ItemContent>
-                  <ItemTitle>{t('settings.proxy')}</ItemTitle>
-                  <ItemDescription>{t('settings.proxyDescription')}</ItemDescription>
+                  <ItemTitle>{t('settings.cookiesFile')}</ItemTitle>
+                  <ItemDescription>{t('settings.cookiesFileDescription')}</ItemDescription>
                 </ItemContent>
                 <ItemActions>
-                  <Input
-                    placeholder={t('settings.proxyPlaceholder')}
-                    value={settings.proxy}
-                    onChange={(e) => handleSettingChange('proxy', e.target.value)}
-                    className="w-64"
-                  />
+                  <div className="flex gap-2 w-full max-w-md">
+                    <Input value={settings.cookiesPath ?? ''} readOnly className="flex-1" />
+                    <Button onClick={handleSelectCookiesFile}>{t('settings.selectPath')}</Button>
+                    <Button
+                      variant="secondary"
+                      onClick={() => void handleSettingChange('cookiesPath', '')}
+                      disabled={!settings.cookiesPath}
+                    >
+                      {t('settings.clearCookiesFile')}
+                    </Button>
+                  </div>
                 </ItemActions>
               </Item>
 
@@ -317,14 +379,18 @@ export function Settings() {
 
               <Item variant="muted">
                 <ItemContent>
-                  <ItemTitle>{t('settings.configFile')}</ItemTitle>
-                  <ItemDescription>{t('settings.configFileDescription')}</ItemDescription>
+                  <ItemTitle>{t('settings.cookiesHelpTitle')}</ItemTitle>
+                  <ItemDescription>
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>{t('settings.cookiesHelpBrowser')}</li>
+                      <li>{t('settings.cookiesHelpFile')}</li>
+                    </ul>
+                  </ItemDescription>
                 </ItemContent>
                 <ItemActions>
-                  <div className="flex gap-2 w-full max-w-md">
-                    <Input value={settings.configPath} readOnly className="flex-1" />
-                    <Button onClick={handleSelectConfigFile}>{t('settings.selectPath')}</Button>
-                  </div>
+                  <Button variant="link" className="px-0" onClick={handleOpenCookiesFaq}>
+                    {t('settings.cookiesHelpFaq')}
+                  </Button>
                 </ItemActions>
               </Item>
             </ItemGroup>

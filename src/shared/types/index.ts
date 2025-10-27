@@ -146,6 +146,7 @@ export interface AppSettings {
   showMoreFormats: boolean
   maxConcurrentDownloads: number
   browserForCookies: string
+  cookiesPath: string
   proxy: string
   configPath: string
   betaProgram: boolean
@@ -163,6 +164,7 @@ export const defaultSettings: AppSettings = {
   showMoreFormats: false,
   maxConcurrentDownloads: 5,
   browserForCookies: 'none',
+  cookiesPath: '',
   proxy: '',
   configPath: '',
   betaProgram: false,

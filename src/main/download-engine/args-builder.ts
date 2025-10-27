@@ -90,6 +90,11 @@ export const buildDownloadArgs = (
     args.push('--cookies-from-browser', settings.browserForCookies)
   }
 
+  const cookiesPath = settings.cookiesPath?.trim()
+  if (cookiesPath) {
+    args.push('--cookies', cookiesPath)
+  }
+
   if (settings.proxy) {
     args.push('--proxy', settings.proxy)
   }

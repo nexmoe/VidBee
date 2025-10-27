@@ -61,6 +61,11 @@ class DownloadEngine extends EventEmitter {
       args.push('--cookies-from-browser', settings.browserForCookies)
     }
 
+    const cookiesPath = settings.cookiesPath?.trim()
+    if (cookiesPath) {
+      args.push('--cookies', cookiesPath)
+    }
+
     // Add config file if configured
     if (settings.configPath) {
       args.push('--config-location', `"${settings.configPath}"`)
@@ -128,6 +133,11 @@ class DownloadEngine extends EventEmitter {
     // Add browser cookies if configured (skip if 'none')
     if (settings.browserForCookies && settings.browserForCookies !== 'none') {
       args.push('--cookies-from-browser', settings.browserForCookies)
+    }
+
+    const cookiesPath = settings.cookiesPath?.trim()
+    if (cookiesPath) {
+      args.push('--cookies', cookiesPath)
     }
 
     args.push(url)
