@@ -166,6 +166,13 @@ export function About() {
   const aboutResources = useMemo<AboutResource[]>(
     () => [
       {
+        icon: LinkIcon,
+        label: t('about.resources.website'),
+        description: t('about.resources.websiteDescription'),
+        actionLabel: t('about.actions.visit'),
+        href: 'https://vidbee.org/'
+      },
+      {
         icon: FileText,
         label: t('about.resources.changelog'),
         description: t('about.resources.changelogDescription'),

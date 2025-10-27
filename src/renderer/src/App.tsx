@@ -53,8 +53,8 @@ function AppContent() {
 
       {/* Main Content */}
       <main className="flex flex-col flex-1 min-h-0 overflow-hidden bg-background">
-        {/* Custom Title Bar - Hide on macOS */}
-        {platform !== 'darwin' && <TitleBar />}
+        {/* Custom Title Bar */}
+        <TitleBar platform={platform} />
 
         <ScrollArea
           className="flex-1 w-full overflow-y-auto overflow-x-hidden"

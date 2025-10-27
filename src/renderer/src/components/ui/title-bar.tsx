@@ -7,11 +7,15 @@ import IconFluentSubtract20Regular from '~icons/fluent/subtract-20-regular'
 import { ipcEvents, ipcServices } from '../../lib/ipc'
 import '../../assets/title-bar.css'
 
-export function TitleBar() {
+interface TitleBarProps {
+  platform?: string
+}
+
+export function TitleBar({ platform }: TitleBarProps) {
   const [isMaximized, setIsMaximized] = useState(false)
 
   useEffect(() => {
-    // 监听窗口最大化状态变化
+    // Listen for window maximize state changes
     const handleMaximized = () => {
       setIsMaximized(true)
     }
@@ -41,8 +45,17 @@ export function TitleBar() {
     ipcServices.window.close()
   }
 
+  const isMac = platform === 'darwin'
+  const containerClass = `flex drag-region bg-background select-none ${
+    isMac ? 'h-10 items-center px-4' : 'justify-end pt-4 px-5'
+  }`
+
+  if (isMac) {
+    return <div className={containerClass} />
+  }
+
   return (
-    <div className="flex drag-region justify-end bg-background pt-4 px-5 select-none">
+    <div className={containerClass}>
       {/* Window controls */}
       <div className="flex items-center gap-1 no-drag">
         <Button
