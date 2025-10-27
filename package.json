@@ -1,6 +1,6 @@
 {
   "name": "vidbee",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "A modern Electron application for downloading videos and audios",
   "main": "./out/main/index.js",
   "author": "VidBee",
