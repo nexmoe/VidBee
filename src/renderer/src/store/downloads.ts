@@ -39,6 +39,10 @@ const toHistoryRecord = (item: DownloadHistoryItem): DownloadRecord => ({
   viewCount: item.viewCount,
   tags: item.tags,
   selectedFormat: item.selectedFormat,
+  playlistId: item.playlistId,
+  playlistTitle: item.playlistTitle,
+  playlistIndex: item.playlistIndex,
+  playlistSize: item.playlistSize,
   entryType: 'history',
   downloadedAt: item.downloadedAt
 })

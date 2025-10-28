@@ -3,6 +3,7 @@ import type {
   DownloadItem,
   DownloadOptions,
   PlaylistDownloadOptions,
+  PlaylistDownloadResult,
   PlaylistInfo,
   VideoInfo
 } from '../../../shared/types'
@@ -45,7 +46,7 @@ class DownloadService extends IpcService {
   async startPlaylistDownload(
     _context: IpcContext,
     options: PlaylistDownloadOptions
-  ): Promise<string[]> {
+  ): Promise<PlaylistDownloadResult> {
     return downloadEngine.startPlaylistDownload(options)
   }
 }

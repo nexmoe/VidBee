@@ -214,6 +214,28 @@ export function DownloadItem({ download }: DownloadItemProps) {
                   </div>
                 )}
               </div>
+              {download.playlistId && (
+                <div className="flex w-full flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                  <Badge
+                    variant="secondary"
+                    className="bg-blue-500/10 text-blue-700 dark:text-blue-200"
+                  >
+                    {t('playlist.badgeLabel')}
+                  </Badge>
+                  <span className="truncate">
+                    {download.playlistTitle || t('playlist.untitled')}
+                    {download.playlistIndex !== undefined &&
+                      download.playlistSize !== undefined && (
+                        <span className="ml-1 text-muted-foreground/80">
+                          {t('playlist.positionLabel', {
+                            index: download.playlistIndex,
+                            total: download.playlistSize
+                          })}
+                        </span>
+                      )}
+                  </span>
+                </div>
+              )}
               <div className="flex w-full min-w-0 flex-wrap items-center gap-2 text-xs text-muted-foreground">
                 {timestamp ? (
                   <span className="truncate max-w-[120px]">{formatDate(timestamp)}</span>
