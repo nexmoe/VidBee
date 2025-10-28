@@ -22,6 +22,12 @@
     "followAuthorTitle": "關注開發者",
     "here": "此處",
     "homepage": "首頁",
+    "latestVersionBadge": "最新版本：v{{version}}",
+    "latestVersionStatus": {
+      "available": "有新版本可用",
+      "error": "無法取得最新版本",
+      "uptodate": "您已是最新版本"
+    },
     "notifications": {
       "checkingUpdates": "正在搜尋更新...",
       "downloadError": "下載更新失敗",
@@ -63,13 +69,7 @@
     "tagline": "面向每位創作者的 AI 友善下載助手",
     "title": "關於",
     "version": "版本",
-    "versionLabel": "v{{version}}",
-    "latestVersionBadge": "最新版本：v{{version}}",
-    "latestVersionStatus": {
-      "available": "有新版本可用",
-      "uptodate": "您已是最新版本",
-      "error": "無法取得最新版本"
-    }
+    "versionLabel": "v{{version}}"
   },
   "advancedOptions": {
     "closeWhenDone": "下載完成後關閉應用程式",
@@ -227,6 +227,7 @@
     "videoCopied": "影片已複製到剪貼簿"
   },
   "playlist": {
+    "clearPreview": "清晰預覽",
     "comingSoon": "播放清單下載功能即將推出！",
     "completed": "播放清單已下載",
     "description": "下載 YouTube 播放清單或頻道中的全部影片",
@@ -241,12 +242,27 @@
     "filenameFormat": "播放清單檔案名稱格式",
     "folderFormat": "播放清單資料夾命名格式",
     "foundVideos": "在播放清單中找到 {{count}} 個影片",
+    "groupActive": "{{count}} 個活躍",
+    "groupErrors": "{{count}} 失敗",
+    "groupSummary": "{{已完成}} / {{總計}}已完成",
     "linkLabel": "播放清單連結",
+    "noEntries": "在此播放列表中找不到視頻",
+    "noEntriesInRange": "所選範圍內沒有視頻",
+    "noRangeSelected": "沒有結束設置 - 已選擇完整播放列表",
     "playlistUrlDescription": "批量下載播放清單中的所有影片",
+    "positionLabel": "第 {{index}} 項，共 {{total}} 項",
+    "previewButton": "預覽播放列表",
+    "previewFailed": "預覽播放列表失敗",
+    "previewRequired": "下載前預覽播放列表。",
+    "previewSummary": "下載前預覽播放列表項目。",
     "range": "範圍（可選）",
     "resetToDefault": "恢復預設",
+    "selectedRange": "範圍：{{開始}}-{{結束}}",
+    "showingCount": "顯示 {{count}} 個視頻",
     "startIndex": "開始（1）",
-    "title": "下載播放清單"
+    "title": "下載播放清單",
+    "totalVideos": "視頻總數：{{count}}",
+    "untitled": "無標題播放列表"
   },
   "settings": {
     "aboutTab": "關於",
@@ -262,8 +278,15 @@
       "firefox": "Firefox",
       "safari": "Safari"
     },
+    "clearCookiesFile": "清除",
     "configFile": "使用設定檔",
     "configFileDescription": "yt-dlp 的自訂設定檔",
+    "cookiesFile": "餅乾文件",
+    "cookiesFileDescription": "要加載以進行身份​​驗證的 Netscape 格式的 cookie 文件",
+    "cookiesHelpBrowser": "選擇上面的瀏覽器以自動重用其登錄會話。",
+    "cookiesHelpFaq": "打開 yt-dlp cookies 常見問題解答",
+    "cookiesHelpFile": "導出 Netscape cookies 文件（請參閱 yt-dlp FAQ）並在需要時在此處選擇它。",
+    "cookiesHelpTitle": "使用cookie",
     "dark": "深色",
     "description": "設定下載偏好和應用程式設定",
     "directorySelectError": "選擇目錄失敗",
@@ -290,6 +313,7 @@
       "normal": "標準",
       "worst": "最差"
     },
+    "openLinkError": "無法打開鏈接",
     "proxy": "代理伺服器",
     "proxyDescription": "網路請求的代理伺服器",
     "proxyPlaceholder": "http://proxy:port",
