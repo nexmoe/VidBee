@@ -226,6 +226,8 @@
     "videoCopied": "Video copied to clipboard"
   },
   "playlist": {
+    "badgeLabel": "Playlist",
+    "clearPreview": "Clear preview",
     "comingSoon": "Playlist download feature coming soon!",
     "completed": "Playlist downloaded",
     "description": "Download all videos from a YouTube playlist or channel",
@@ -240,12 +242,27 @@
     "filenameFormat": "Filename format for playlists",
     "folderFormat": "Folder name format for playlists",
     "foundVideos": "Found {{count}} videos in playlist",
+    "groupActive": "{{count}} active",
+    "groupErrors": "{{count}} failed",
+    "groupSummary": "{{completed}} / {{total}} completed",
     "linkLabel": "Playlist URL",
+    "noEntries": "No videos were found in this playlist",
+    "noEntriesInRange": "No videos in the selected range",
+    "noRangeSelected": "No end set - full playlist selected",
     "playlistUrlDescription": "Download all videos from a playlist in bulk",
+    "positionLabel": "Item {{index}} of {{total}}",
+    "previewButton": "Preview playlist",
+    "previewFailed": "Failed to preview playlist",
+    "previewSummary": "Preview playlist items before downloading.",
+    "previewRequired": "Preview the playlist before downloading.",
     "range": "Range (Optional)",
     "resetToDefault": "Reset to default",
+    "selectedRange": "Range: {{start}}-{{end}}",
+    "showingCount": "Showing {{count}} videos",
     "startIndex": "Start (1)",
-    "title": "Download Playlist"
+    "title": "Download Playlist",
+    "totalVideos": "Total videos: {{count}}",
+    "untitled": "Untitled playlist"
   },
   "settings": {
     "aboutTab": "About",

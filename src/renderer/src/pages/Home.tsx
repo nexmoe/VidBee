@@ -15,15 +15,16 @@ import {
   SelectTrigger,
   SelectValue
 } from '@renderer/components/ui/select'
-import { Tabs, TabsContent } from '@renderer/components/ui/tabs'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@renderer/components/ui/tabs'
 import { popularSites } from '@renderer/data/popularSites'
-import type { AppSettings, OneClickQualityPreset } from '@shared/types'
+import type { AppSettings, OneClickQualityPreset, PlaylistInfo } from '@shared/types'
 import { useAtom, useSetAtom } from 'jotai'
-import { AlertCircle, Download, Loader2, Search } from 'lucide-react'
-import { useCallback, useEffect, useId, useRef, useState } from 'react'
+import { AlertCircle, Download, ListVideo, Loader2, Search } from 'lucide-react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { UnifiedDownloadHistory } from '../components/download/UnifiedDownloadHistory'
+import { PlaylistPreviewCard } from '../components/playlist/PlaylistPreviewCard'
 import { VideoInfoCard } from '../components/video/VideoInfoCard'
 import { ipcEvents, ipcServices } from '../lib/ipc'
 import {
@@ -148,10 +149,41 @@ export function Home({ onOpenSupportedSites }: HomeProps) {
   const playlistUrlId = useId()
   const downloadTypeId = useId()
   const [playlistUrl, setPlaylistUrl] = useState('')
-  const [playlistLoading, setPlaylistLoading] = useState(false)
   const [downloadType, setDownloadType] = useState<'video' | 'audio'>('video')
   const [startIndex, setStartIndex] = useState('1')
   const [endIndex, setEndIndex] = useState('')
+  const [playlistInfo, setPlaylistInfo] = useState<PlaylistInfo | null>(null)
+  const [playlistPreviewLoading, setPlaylistPreviewLoading] = useState(false)
+  const [playlistDownloadLoading, setPlaylistDownloadLoading] = useState(false)
+  const [playlistPreviewError, setPlaylistPreviewError] = useState<string | null>(null)
+  const playlistBusy = playlistPreviewLoading || playlistDownloadLoading
+
+  const computePlaylistRange = useCallback(
+    (info: PlaylistInfo) => {
+      const parsedStart = Math.max(parseInt(startIndex, 10) || 1, 1)
+      const rawEnd = endIndex ? Math.max(parseInt(endIndex, 10), parsedStart) : undefined
+      const start = info.entryCount > 0 ? Math.min(parsedStart, info.entryCount) : parsedStart
+      const endValue =
+        rawEnd !== undefined
+          ? info.entryCount > 0
+            ? Math.min(rawEnd, info.entryCount)
+            : rawEnd
+          : undefined
+      return { start, end: endValue }
+    },
+    [startIndex, endIndex]
+  )
+
+  const selectedPlaylistEntries = useMemo(() => {
+    if (!playlistInfo) {
+      return []
+    }
+    const range = computePlaylistRange(playlistInfo)
+    const previewEnd = range.end ?? playlistInfo.entryCount
+    return playlistInfo.entries.filter(
+      (entry) => entry.index >= range.start && entry.index <= previewEnd
+    )
+  }, [playlistInfo, computePlaylistRange])
 
   const syncHistoryItem = useCallback(
     async (id: string) => {
@@ -366,70 +398,131 @@ export function Home({ onOpenSupportedSites }: HomeProps) {
 
   // Playlist handlers
   const handlePastePlaylistUrl = useCallback(async () => {
+    if (playlistBusy) return
     try {
       const text = await navigator.clipboard.readText()
       if (!text.trim()) {
         toast.error(t('errors.clipboardEmpty'))
         return
       }
-      setPlaylistUrl(text.trim())
+      const trimmed = text.trim()
+      setPlaylistUrl(trimmed)
+      setPlaylistInfo(null)
+      setPlaylistPreviewError(null)
     } catch (error) {
       console.error('Failed to paste URL:', error)
       toast.error(t('errors.pasteFromClipboard'))
     }
-  }, [t])
+  }, [playlistBusy, t])
 
-  const handleDownloadPlaylist = useCallback(async () => {
+  const handleClearPlaylistPreview = useCallback(() => {
+    setPlaylistInfo(null)
+    setPlaylistPreviewError(null)
+  }, [])
+
+  const handlePreviewPlaylist = useCallback(async () => {
     if (!playlistUrl.trim()) {
       toast.error(t('errors.emptyUrl'))
       return
     }
-
-    setPlaylistLoading(true)
+    setPlaylistPreviewError(null)
+    setPlaylistPreviewLoading(true)
     try {
-      // Get playlist info first to show user what will be downloaded
-      const playlistInfo = await ipcServices.download.getPlaylistInfo(playlistUrl)
+      const trimmedUrl = playlistUrl.trim()
+      const info = await ipcServices.download.getPlaylistInfo(trimmedUrl)
+      setPlaylistInfo(info)
+      if (info.entryCount === 0) {
+        toast.error(t('playlist.noEntries'))
+        return
+      }
+      toast.success(t('playlist.foundVideos', { count: info.entryCount }))
+    } catch (error) {
+      console.error('Failed to fetch playlist info:', error)
+      const message =
+        error instanceof Error && error.message ? error.message : t('playlist.previewFailed')
+      setPlaylistPreviewError(message)
+      setPlaylistInfo(null)
+      toast.error(t('playlist.previewFailed'))
+    } finally {
+      setPlaylistPreviewLoading(false)
+    }
+  }, [playlistUrl, t])
 
-      toast.success(t('playlist.foundVideos', { count: playlistInfo.entryCount }))
+  const handleDownloadPlaylist = useCallback(async () => {
+    const trimmedUrl = playlistUrl.trim()
+    if (!trimmedUrl) {
+      toast.error(t('errors.emptyUrl'))
+      return
+    }
 
-      // Build format preference based on settings
+    if (!playlistInfo) {
+      toast.error(t('playlist.previewRequired'))
+      return
+    }
+
+    setPlaylistPreviewError(null)
+    setPlaylistDownloadLoading(true)
+    try {
+      const info = playlistInfo
+      setPlaylistInfo(info)
+
+      if (info.entryCount === 0) {
+        toast.error(t('playlist.noEntries'))
+        return
+      }
+
+      const range = computePlaylistRange(info)
+      const previewEnd = range.end ?? info.entryCount
+
+      if (previewEnd < range.start || previewEnd === 0) {
+        toast.error(t('playlist.noEntriesInRange'))
+        return
+      }
+
       const format =
         downloadType === 'video'
           ? buildVideoFormatPreference(settings)
           : buildAudioFormatPreference(settings)
 
-      // Start playlist download
-      const downloadIds = await ipcServices.download.startPlaylistDownload({
-        url: playlistUrl.trim(),
+      const result = await ipcServices.download.startPlaylistDownload({
+        url: trimmedUrl,
         type: downloadType,
         format,
-        startIndex: parseInt(startIndex, 10) || 1,
-        endIndex: endIndex ? parseInt(endIndex, 10) : undefined
+        startIndex: range.start,
+        endIndex: range.end
       })
 
-      // Add all downloads to the renderer state
-      for (const id of downloadIds) {
+      if (result.totalCount === 0) {
+        toast.error(t('playlist.noEntriesInRange'))
+        return
+      }
+
+      const baseCreatedAt = Date.now()
+      result.entries.forEach((entry, index) => {
         const downloadItem = {
-          id,
-          url: playlistUrl.trim(),
-          title: t('download.fetchingVideoInfo'),
+          id: entry.downloadId,
+          url: entry.url,
+          title: entry.title || t('download.fetchingVideoInfo'),
           type: downloadType,
           status: 'pending' as const,
           progress: { percent: 0 },
-          createdAt: Date.now()
+          createdAt: baseCreatedAt + index,
+          playlistId: result.groupId,
+          playlistTitle: result.playlistTitle,
+          playlistIndex: entry.index,
+          playlistSize: result.totalCount
         }
         addDownload(downloadItem)
-      }
+      })
 
-      toast.success(t('playlist.downloadStarted', { count: downloadIds.length }))
-      setPlaylistUrl('') // Clear the URL after starting download
+      toast.success(t('playlist.downloadStarted', { count: result.totalCount }))
     } catch (error) {
       console.error('Failed to start playlist download:', error)
       toast.error(t('playlist.downloadFailed'))
     } finally {
-      setPlaylistLoading(false)
+      setPlaylistDownloadLoading(false)
     }
-  }, [playlistUrl, downloadType, startIndex, endIndex, settings, addDownload, t])
+  }, [playlistUrl, playlistInfo, computePlaylistRange, downloadType, settings, addDownload, t])
 
   // Auto-focus input on mount
   useEffect(() => {
@@ -442,7 +535,7 @@ export function Home({ onOpenSupportedSites }: HomeProps) {
       style={{ maxWidth: '100%' }}
     >
       <Tabs defaultValue="single" className="w-full">
-        {/* <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="single" className="flex items-center gap-2">
             <Download className="h-4 w-4" />
             {t('download.singleVideo')}
@@ -451,7 +544,7 @@ export function Home({ onOpenSupportedSites }: HomeProps) {
             <ListVideo className="h-4 w-4" />
             {t('playlist.title')}
           </TabsTrigger>
-        </TabsList> */}
+        </TabsList>
 
         {/* Single Video Download Tab */}
         <TabsContent value="single" className="space-y-6">
@@ -580,14 +673,18 @@ export function Home({ onOpenSupportedSites }: HomeProps) {
                     id={playlistUrlId}
                     placeholder="https://www.youtube.com/playlist?list=..."
                     value={playlistUrl}
-                    onChange={(e) => setPlaylistUrl(e.target.value)}
+                    onChange={(e) => {
+                      setPlaylistUrl(e.target.value)
+                      setPlaylistInfo(null)
+                      setPlaylistPreviewError(null)
+                    }}
                     className="flex-1"
-                    disabled={playlistLoading}
+                    disabled={playlistBusy}
                   />
                   <Button
                     onClick={handlePastePlaylistUrl}
                     variant="outline"
-                    disabled={playlistLoading}
+                    disabled={playlistBusy}
                   >
                     {t('download.paste')}
                   </Button>
@@ -600,7 +697,7 @@ export function Home({ onOpenSupportedSites }: HomeProps) {
                   <Select
                     value={downloadType}
                     onValueChange={(v) => setDownloadType(v as 'video' | 'audio')}
-                    disabled={playlistLoading}
+                    disabled={playlistBusy}
                   >
                     <SelectTrigger id={downloadTypeId}>
                       <SelectValue />
@@ -621,7 +718,7 @@ export function Home({ onOpenSupportedSites }: HomeProps) {
                       value={startIndex}
                       onChange={(e) => setStartIndex(e.target.value)}
                       min="1"
-                      disabled={playlistLoading}
+                      disabled={playlistBusy}
                     />
                     <Input
                       type="number"
@@ -629,29 +726,68 @@ export function Home({ onOpenSupportedSites }: HomeProps) {
                       value={endIndex}
                       onChange={(e) => setEndIndex(e.target.value)}
                       min="1"
-                      disabled={playlistLoading}
+                      disabled={playlistBusy}
                     />
                   </div>
                 </div>
               </div>
 
-              <Button
-                onClick={handleDownloadPlaylist}
-                className="w-full"
-                size="lg"
-                disabled={playlistLoading || !playlistUrl.trim()}
-              >
-                {playlistLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    {t('download.loading')}
-                  </>
-                ) : (
-                  t('playlist.downloadPlaylist')
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <Button
+                  onClick={handlePreviewPlaylist}
+                  variant="outline"
+                  className="w-full sm:w-auto"
+                  disabled={playlistBusy || !playlistUrl.trim()}
+                >
+                  {playlistPreviewLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      {t('download.loading')}
+                    </>
+                  ) : (
+                    <>
+                      <Search className="mr-2 h-5 w-5" />
+                      {t('playlist.previewButton')}
+                    </>
+                  )}
+                </Button>
+                {playlistInfo && (
+                  <Button
+                    onClick={handleDownloadPlaylist}
+                    className="w-full sm:flex-1"
+                    size="lg"
+                    disabled={playlistDownloadLoading || !playlistUrl.trim()}
+                  >
+                    {playlistDownloadLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        {t('download.loading')}
+                      </>
+                    ) : (
+                      t('playlist.downloadPlaylist')
+                    )}
+                  </Button>
                 )}
-              </Button>
+              </div>
+
+              {playlistUrl.trim() && !playlistInfo && !playlistPreviewError && !playlistBusy && (
+                <p className="text-xs text-muted-foreground">{t('playlist.previewRequired')}</p>
+              )}
+
+              {playlistPreviewError && (
+                <div className="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
+                  {playlistPreviewError}
+                </div>
+              )}
             </CardContent>
           </Card>
+          {playlistInfo && (
+            <PlaylistPreviewCard
+              playlist={playlistInfo}
+              entries={selectedPlaylistEntries}
+              onClear={handleClearPlaylistPreview}
+            />
+          )}
         </TabsContent>
       </Tabs>
 

@@ -48,7 +48,7 @@ export function About() {
   const [appVersion, setAppVersion] = useState<string>('—')
   const [latestVersionState, setLatestVersionState] = useState<LatestVersionState>(null)
   const saveSetting = useSetAtom(saveSettingAtom)
-  const shareTargetUrl = 'https://github.com/nexmoe/VidBee'
+  const shareTargetUrl = 'https://vidbee.org'
 
   useEffect(() => {
     let isActive = true

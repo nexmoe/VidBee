@@ -96,12 +96,12 @@ function setupDownloadEvents(): void {
 
 function initAutoUpdater(): void {
   if (process.env.NODE_ENV !== 'production') {
-    console.log('Skipping auto-updater initialization in development mode')
+    log.info('Skipping auto-updater initialization in development mode')
     return
   }
 
   try {
-    console.log('Initializing auto-updater...')
+    log.info('Initializing auto-updater...')
 
     log.transports.file.level = 'info'
     autoUpdater.logger = log
@@ -110,31 +110,26 @@ function initAutoUpdater(): void {
 
     autoUpdater.on('update-available', (info) => {
       log.info('Update available:', info.version)
-      console.log('Update available:', info.version)
       mainWindow?.webContents.send('update:available', info)
     })
 
     autoUpdater.on('update-not-available', (info) => {
       log.info('Update not available:', info.version)
-      console.log('Update not available:', info.version)
       mainWindow?.webContents.send('update:not-available', info)
     })
 
     autoUpdater.on('error', (err) => {
       log.error('Update error:', err)
-      console.error('Update error:', err)
       mainWindow?.webContents.send('update:error', err.message)
     })
 
     autoUpdater.on('download-progress', (progressObj) => {
       log.info('Download progress:', progressObj.percent)
-      console.log('Download progress:', progressObj.percent)
       mainWindow?.webContents.send('update:download-progress', progressObj)
     })
 
     autoUpdater.on('update-downloaded', (info) => {
       log.info('Update downloaded:', info.version)
-      console.log('Update downloaded:', info.version)
       mainWindow?.webContents.send('update:downloaded', info)
 
       if (mainWindow) {
@@ -148,15 +143,12 @@ function initAutoUpdater(): void {
 
     if (settingsManager.get('autoUpdate')) {
       log.info('Auto-update is enabled, checking for updates...')
-      console.log('Auto-update is enabled, checking for updates...')
       void autoUpdater.checkForUpdatesAndNotify()
     }
 
     log.info('Auto-updater initialized successfully')
-    console.log('Auto-updater initialized successfully')
   } catch (error) {
     log.error('Failed to initialize auto-updater:', error)
-    console.error('Failed to initialize auto-updater:', error)
   }
 }
 

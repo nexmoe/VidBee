@@ -6,8 +6,10 @@ import { History as HistoryIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useHistorySync } from '../../hooks/use-history-sync'
+import type { DownloadRecord } from '../../store/downloads'
 import { clearCompletedAtom, downloadStatsAtom, downloadsArrayAtom } from '../../store/downloads'
 import { DownloadItem } from './DownloadItem'
+import { PlaylistDownloadGroup } from './PlaylistDownloadGroup'
 
 type StatusFilter = 'all' | 'active' | 'completed' | 'error'
 
@@ -46,6 +48,56 @@ export function UnifiedDownloadHistory() {
     { key: 'completed', label: t('download.completed'), count: downloadStats.completed },
     { key: 'error', label: t('download.error'), count: downloadStats.error }
   ]
+
+  const groupedView = useMemo(() => {
+    const groups = new Map<
+      string,
+      { id: string; title: string; totalCount: number; records: DownloadRecord[] }
+    >()
+    const order: Array<{ type: 'group'; id: string } | { type: 'single'; record: DownloadRecord }> =
+      []
+
+    for (const record of filteredRecords) {
+      if (record.playlistId) {
+        let group = groups.get(record.playlistId)
+        if (!group) {
+          group = {
+            id: record.playlistId,
+            title: record.playlistTitle || record.title,
+            totalCount: record.playlistSize || 0,
+            records: []
+          }
+          groups.set(record.playlistId, group)
+          order.push({ type: 'group', id: record.playlistId })
+        }
+        group.records.push(record)
+        if (!group.title && record.playlistTitle) {
+          group.title = record.playlistTitle
+        }
+        if (!group.totalCount && record.playlistSize) {
+          group.totalCount = record.playlistSize
+        }
+      } else {
+        order.push({ type: 'single', record })
+      }
+    }
+
+    for (const group of groups.values()) {
+      group.records.sort((a, b) => {
+        const aIndex = a.playlistIndex ?? Number.MAX_SAFE_INTEGER
+        const bIndex = b.playlistIndex ?? Number.MAX_SAFE_INTEGER
+        if (aIndex !== bIndex) {
+          return aIndex - bIndex
+        }
+        return b.createdAt - a.createdAt
+      })
+      if (!group.totalCount) {
+        group.totalCount = group.records.length
+      }
+    }
+
+    return { order, groups }
+  }, [filteredRecords])
 
   const hasCompletedActive = allRecords.some(
     (item) => item.entryType === 'active' && item.status === 'completed'
@@ -110,10 +162,32 @@ export function UnifiedDownloadHistory() {
             <p className="text-sm font-medium">{t('download.noItems')}</p>
           </div>
         ) : (
-          <div className="space-y-2 sm:space-y-4 overflow-hidden w-full">
-            {filteredRecords.map((record) => (
-              <DownloadItem key={`${record.entryType}:${record.id}`} download={record} />
-            ))}
+          <div className="space-y-3 sm:space-y-4 overflow-hidden w-full">
+            {groupedView.order.map((item) => {
+              if (item.type === 'single') {
+                return (
+                  <DownloadItem
+                    key={`${item.record.entryType}:${item.record.id}`}
+                    download={item.record}
+                  />
+                )
+              }
+
+              const group = groupedView.groups.get(item.id)
+              if (!group) {
+                return null
+              }
+
+              return (
+                <PlaylistDownloadGroup
+                  key={`group:${group.id}`}
+                  groupId={group.id}
+                  title={group.title}
+                  totalCount={group.totalCount}
+                  records={group.records}
+                />
+              )
+            })}
           </div>
         )}
       </CardContent>

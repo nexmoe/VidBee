@@ -7,6 +7,7 @@ import type {
   DownloadOptions,
   DownloadProgress,
   PlaylistDownloadOptions,
+  PlaylistDownloadResult,
   PlaylistInfo,
   VideoFormat,
   VideoInfo
@@ -120,7 +121,7 @@ class DownloadEngine extends EventEmitter {
     const ytdlp = ytdlpManager.getInstance()
     const settings = settingsManager.getAll()
 
-    const args = ['-j', '--flat-playlist', '--no-warnings']
+    const args = ['-J', '--flat-playlist', '--no-warnings']
 
     // Add encoding support for proper handling of non-ASCII characters
     args.push('--encoding', 'utf-8')
@@ -140,7 +141,51 @@ class DownloadEngine extends EventEmitter {
       args.push('--cookies', cookiesPath)
     }
 
+    // Add config file if configured
+    if (settings.configPath) {
+      args.push('--config-location', `"${settings.configPath}"`)
+    }
+
     args.push(url)
+
+    type RawPlaylistEntry = {
+      id?: string
+      title?: string
+      url?: string
+      webpage_url?: string
+      original_url?: string
+      ie_key?: string
+    }
+
+    const resolveEntryUrl = (entry: RawPlaylistEntry): string => {
+      if (entry.url && typeof entry.url === 'string' && entry.url.startsWith('http')) {
+        return entry.url
+      }
+      if (entry.webpage_url && typeof entry.webpage_url === 'string') {
+        return entry.webpage_url
+      }
+      if (entry.original_url && typeof entry.original_url === 'string') {
+        return entry.original_url
+      }
+      if (entry.url && typeof entry.url === 'string') {
+        if (entry.ie_key && typeof entry.ie_key === 'string') {
+          const extractor = entry.ie_key.toLowerCase()
+          if (extractor.includes('youtube')) {
+            return `https://www.youtube.com/watch?v=${entry.url}`
+          }
+          if (extractor.includes('youtubemusic')) {
+            return `https://music.youtube.com/watch?v=${entry.url}`
+          }
+        }
+        if (entry.url.startsWith('https://') || entry.url.startsWith('http://')) {
+          return entry.url
+        }
+      }
+      if (entry.id && typeof entry.id === 'string') {
+        return entry.id
+      }
+      return ''
+    }
 
     return new Promise((resolve, reject) => {
       const process = ytdlp.exec(args)
@@ -158,51 +203,107 @@ class DownloadEngine extends EventEmitter {
       process.on('close', (code) => {
         if (code === 0 && stdout) {
           try {
-            const lines = stdout.trim().split('\n')
-            const entries = lines.map((line) => JSON.parse(line))
-            const playlistEntry = entries[0]
+            const parsed = JSON.parse(stdout) as {
+              id?: string
+              title?: string
+              entries?: RawPlaylistEntry[]
+            }
+            const rawEntries = Array.isArray(parsed.entries) ? parsed.entries : []
+            const entries = rawEntries
+              .map((entry, index) => {
+                const resolvedUrl = resolveEntryUrl(entry)
+                return {
+                  id: entry.id || `${index}`,
+                  title: entry.title || `Entry ${index + 1}`,
+                  url: resolvedUrl,
+                  index: index + 1
+                }
+              })
+              .filter((entry) => entry.url)
 
+            scopedLoggers.download.info(
+              'Successfully retrieved playlist info for:',
+              url,
+              'entries:',
+              entries.length
+            )
             resolve({
-              id: playlistEntry.id || '',
-              title: playlistEntry.title || 'Playlist',
-              entries: entries.map((entry) => ({
-                id: entry.id || '',
-                title: entry.title || 'Unknown',
-                url: entry.url || entry.webpage_url || ''
-              })),
+              id: parsed.id || url,
+              title: parsed.title || 'Playlist',
+              entries,
               entryCount: entries.length
             })
           } catch (error) {
+            scopedLoggers.download.error('Failed to parse playlist info for:', url, error)
             reject(new Error(`Failed to parse playlist info: ${error}`))
           }
         } else {
+          scopedLoggers.download.error(
+            'Failed to fetch playlist info for:',
+            url,
+            'Exit code:',
+            code,
+            'Error:',
+            stderr
+          )
           reject(new Error(stderr || 'Failed to fetch playlist info'))
         }
       })
 
       process.on('error', (error) => {
+        scopedLoggers.download.error('yt-dlp process error while fetching playlist info:', error)
         reject(error)
       })
     })
   }
 
-  async startPlaylistDownload(options: PlaylistDownloadOptions): Promise<string[]> {
+  async startPlaylistDownload(options: PlaylistDownloadOptions): Promise<PlaylistDownloadResult> {
     const playlistInfo = await this.getPlaylistInfo(options.url)
-    const downloadIds: string[] = []
+    const downloadEntries: PlaylistDownloadResult['entries'] = []
+    const groupId = `playlist_group_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`
 
     // Calculate the range of entries to download
-    const startIndex = (options.startIndex || 1) - 1 // Convert to 0-based index
-    const endIndex = options.endIndex ? options.endIndex - 1 : playlistInfo.entries.length - 1
-    const entriesToDownload = playlistInfo.entries.slice(startIndex, endIndex + 1)
+    const totalEntries = playlistInfo.entries.length
+    if (totalEntries === 0) {
+      scopedLoggers.download.warn('Playlist has no entries:', options.url)
+      return {
+        groupId,
+        playlistId: playlistInfo.id,
+        playlistTitle: playlistInfo.title,
+        type: options.type,
+        totalCount: 0,
+        startIndex: 0,
+        endIndex: 0,
+        entries: []
+      }
+    }
+
+    const requestedStart = Math.max((options.startIndex ?? 1) - 1, 0)
+    const requestedEnd = options.endIndex
+      ? Math.min(options.endIndex - 1, totalEntries - 1)
+      : totalEntries - 1
+    const rangeStart = Math.min(requestedStart, requestedEnd)
+    const rangeEnd = Math.max(requestedStart, requestedEnd)
+    const rawEntries = playlistInfo.entries.slice(rangeStart, rangeEnd + 1)
+    const settings = settingsManager.getAll()
+
+    const selectedEntries = rawEntries.filter((entry) => {
+      if (!entry.url) {
+        scopedLoggers.download.warn('Skipping playlist entry with missing URL:', entry)
+        return false
+      }
+      return true
+    })
+
+    const selectionSize = selectedEntries.length
 
     scopedLoggers.download.info(
-      `Starting playlist download: ${entriesToDownload.length} videos from "${playlistInfo.title}"`
+      `Starting playlist download: ${selectionSize} items from "${playlistInfo.title}"`
     )
 
     // Create download items for each video in the playlist
-    for (const entry of entriesToDownload) {
-      const downloadId = `playlist_${Date.now()}_${Math.random().toString(36).substring(7)}`
-      downloadIds.push(downloadId)
+    for (const entry of selectedEntries) {
+      const downloadId = `${groupId}_${Math.random().toString(36).substring(2, 10)}`
 
       const downloadOptions: DownloadOptions = {
         url: entry.url,
@@ -212,6 +313,13 @@ class DownloadEngine extends EventEmitter {
       }
 
       const createdAt = Date.now()
+      downloadEntries.push({
+        downloadId,
+        entryId: entry.id,
+        title: entry.title,
+        url: entry.url,
+        index: entry.index
+      })
 
       // Add to queue
       this.queue.add(downloadId, downloadOptions, {
@@ -221,17 +329,35 @@ class DownloadEngine extends EventEmitter {
         type: options.type,
         status: 'pending',
         progress: { percent: 0 },
-        createdAt
+        createdAt,
+        playlistId: groupId,
+        playlistTitle: playlistInfo.title,
+        playlistIndex: entry.index,
+        playlistSize: selectionSize
       })
 
       this.upsertHistoryEntry(downloadId, downloadOptions, {
         title: entry.title,
         status: 'pending',
-        downloadedAt: createdAt
+        downloadedAt: createdAt,
+        downloadPath: settings.downloadPath,
+        playlistId: groupId,
+        playlistTitle: playlistInfo.title,
+        playlistIndex: entry.index,
+        playlistSize: selectionSize
       })
     }
 
-    return downloadIds
+    return {
+      groupId,
+      playlistId: playlistInfo.id,
+      playlistTitle: playlistInfo.title,
+      type: options.type,
+      totalCount: selectionSize,
+      startIndex: selectedEntries[0]?.index ?? rangeStart + 1,
+      endIndex: selectedEntries[selectedEntries.length - 1]?.index ?? rangeEnd + 1,
+      entries: downloadEntries
+    }
   }
 
   startDownload(id: string, options: DownloadOptions): void {
@@ -607,6 +733,18 @@ class DownloadEngine extends EventEmitter {
     if (updates.tags !== undefined) {
       historyUpdates.tags = updates.tags
     }
+    if (updates.playlistId !== undefined) {
+      historyUpdates.playlistId = updates.playlistId
+    }
+    if (updates.playlistTitle !== undefined) {
+      historyUpdates.playlistTitle = updates.playlistTitle
+    }
+    if (updates.playlistIndex !== undefined) {
+      historyUpdates.playlistIndex = updates.playlistIndex
+    }
+    if (updates.playlistSize !== undefined) {
+      historyUpdates.playlistSize = updates.playlistSize
+    }
     if (updates.status !== undefined) {
       historyUpdates.status = updates.status
     }
@@ -651,7 +789,11 @@ class DownloadEngine extends EventEmitter {
       channel: completedDownload?.item.channel,
       uploader: completedDownload?.item.uploader,
       viewCount: completedDownload?.item.viewCount,
-      tags: completedDownload?.item.tags
+      tags: completedDownload?.item.tags,
+      playlistId: completedDownload?.item.playlistId,
+      playlistTitle: completedDownload?.item.playlistTitle,
+      playlistIndex: completedDownload?.item.playlistIndex,
+      playlistSize: completedDownload?.item.playlistSize
     })
   }
 
@@ -683,7 +825,11 @@ class DownloadEngine extends EventEmitter {
       viewCount: updates.viewCount,
       tags: updates.tags,
       // Download-specific format info
-      selectedFormat: updates.selectedFormat
+      selectedFormat: updates.selectedFormat,
+      playlistId: updates.playlistId,
+      playlistTitle: updates.playlistTitle,
+      playlistIndex: updates.playlistIndex,
+      playlistSize: updates.playlistSize
     }
 
     const merged: DownloadHistoryItem = {

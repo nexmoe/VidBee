@@ -76,6 +76,11 @@ export interface DownloadItem {
   tags?: string[]
   // Download-specific format info
   selectedFormat?: VideoFormat
+  // Playlist context (optional)
+  playlistId?: string
+  playlistTitle?: string
+  playlistIndex?: number
+  playlistSize?: number
 }
 
 export interface DownloadHistoryItem {
@@ -103,6 +108,11 @@ export interface DownloadHistoryItem {
   tags?: string[]
   // Download-specific format info
   selectedFormat?: VideoFormat
+  // Playlist context (optional)
+  playlistId?: string
+  playlistTitle?: string
+  playlistIndex?: number
+  playlistSize?: number
 }
 
 export interface DownloadOptions {
@@ -117,14 +127,17 @@ export interface DownloadOptions {
   downloadSubs?: boolean
 }
 
+export interface PlaylistEntry {
+  id: string
+  title: string
+  url: string
+  index: number
+}
+
 export interface PlaylistInfo {
   id: string
   title: string
-  entries: Array<{
-    id: string
-    title: string
-    url: string
-  }>
+  entries: PlaylistEntry[]
   entryCount: number
 }
 
@@ -136,6 +149,25 @@ export interface PlaylistDownloadOptions {
   endIndex?: number
   filenameFormat?: string
   folderFormat?: string
+}
+
+export interface PlaylistDownloadEntry {
+  downloadId: string
+  entryId: string
+  title: string
+  url: string
+  index: number
+}
+
+export interface PlaylistDownloadResult {
+  groupId: string
+  playlistId: string
+  playlistTitle: string
+  type: 'video' | 'audio'
+  totalCount: number
+  startIndex: number
+  endIndex: number
+  entries: PlaylistDownloadEntry[]
 }
 
 // Settings types
