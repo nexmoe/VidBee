@@ -10,6 +10,7 @@ import { downloadEngine } from './lib/download-engine'
 import { ytdlpManager } from './lib/ytdlp-manager'
 import { settingsManager } from './settings'
 import { createTray, destroyTray } from './tray'
+import { applyDockVisibility } from './utils/dock'
 
 // Initialize electron-log for main process
 log.initialize()
@@ -27,6 +28,7 @@ export function createWindow(): void {
     height: 800,
     show: false,
     titleBarStyle: 'hidden', // Hide title bar on macOS
+    trafficLightPosition: { x: 12.5, y: 10 },
     autoHideMenuBar: true,
     icon: appIcon, // Set application icon
     frame: false,
@@ -182,6 +184,8 @@ app.whenReady().then(async () => {
   } catch (error) {
     log.error('Failed to initialize yt-dlp:', error)
   }
+
+  applyDockVisibility(settingsManager.get('hideDockIcon'))
 
   createWindow()
 

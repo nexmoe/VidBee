@@ -21,7 +21,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@renderer/components/u
 import type { OneClickQualityPreset } from '@shared/types'
 import { useAtom, useSetAtom } from 'jotai'
 import { useTheme } from 'next-themes'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { loadSettingsAtom, saveSettingAtom, settingsAtom } from '../store/settings'
@@ -32,10 +32,25 @@ export function Settings() {
   const [settings, _setSettings] = useAtom(settingsAtom)
   const loadSettings = useSetAtom(loadSettingsAtom)
   const saveSetting = useSetAtom(saveSettingAtom)
+  const [platform, setPlatform] = useState<string>('')
 
   useEffect(() => {
     loadSettings()
   }, [loadSettings])
+
+  useEffect(() => {
+    const fetchPlatform = async () => {
+      try {
+        const { ipcServices } = await import('../lib/ipc')
+        const platformInfo = await ipcServices.app.getPlatform()
+        setPlatform(platformInfo)
+      } catch (error) {
+        console.error('Failed to get platform info:', error)
+      }
+    }
+
+    fetchPlatform()
+  }, [])
 
   const handleSettingChange = async (
     key: keyof typeof settings,
@@ -263,6 +278,23 @@ export function Settings() {
           </TabsContent>
 
           <TabsContent value="advanced" className="space-y-4 mt-2">
+            {platform === 'darwin' && (
+              <ItemGroup>
+                <Item variant="muted">
+                  <ItemContent>
+                    <ItemTitle>{t('settings.hideDockIcon')}</ItemTitle>
+                    <ItemDescription>{t('settings.hideDockIconDescription')}</ItemDescription>
+                  </ItemContent>
+                  <ItemActions>
+                    <Switch
+                      checked={settings.hideDockIcon}
+                      onCheckedChange={(value) => handleSettingChange('hideDockIcon', value)}
+                    />
+                  </ItemActions>
+                </Item>
+              </ItemGroup>
+            )}
+
             <ItemGroup>
               <Item variant="muted">
                 <ItemContent>
