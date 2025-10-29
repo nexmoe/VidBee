@@ -114,7 +114,7 @@ export function About() {
 
   const shareLinks = useMemo(() => {
     const encodedUrl = encodeURIComponent(shareTargetUrl)
-    const encodedText = encodeURIComponent(t('about.tagline'))
+    const encodedText = encodeURIComponent(t('about.description'))
 
     return {
       facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
@@ -207,11 +207,6 @@ export function About() {
   return (
     <div className="h-full bg-background">
       <div className="container mx-auto max-w-5xl p-6 space-y-6">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">{t('about.title')}</h1>
-          <p className="text-muted-foreground">{t('about.description')}</p>
-        </div>
-
         <Card>
           <CardContent className="pt-6">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -220,7 +215,7 @@ export function About() {
                 <div className="space-y-2">
                   <div>
                     <h2 className="text-2xl font-semibold leading-tight">{t('about.appName')}</h2>
-                    <p className="text-sm text-muted-foreground">{t('about.tagline')}</p>
+                    <p className="text-sm text-muted-foreground">{t('about.description')}</p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge variant="secondary">

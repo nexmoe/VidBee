@@ -156,6 +156,7 @@ export interface AppSettings {
   oneClickDownloadType: 'video' | 'audio'
   oneClickQuality: OneClickQualityPreset
   closeToTray: boolean
+  hideDockIcon: boolean
   autoUpdate: boolean
 }
 
@@ -174,5 +175,6 @@ export const defaultSettings: AppSettings = {
   oneClickDownloadType: 'video',
   oneClickQuality: 'auto',
   closeToTray: false,
+  hideDockIcon: false,
   autoUpdate: true
 }
