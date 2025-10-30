@@ -1,4 +1,4 @@
-import { execFile } from 'node:child_process'
+import { execFile, execSync } from 'node:child_process'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
@@ -40,7 +40,20 @@ class FileSystemService extends IpcService {
 
   @IpcMethod()
   getDefaultDownloadPath(_context: IpcContext): string {
-    return `${os.homedir()}/Downloads`
+    const fallbackPath = path.join(os.homedir(), 'Downloads')
+
+    if (process.platform === 'linux' || process.platform === 'freebsd') {
+      try {
+        const xdgPath = execSync('xdg-user-dir DOWNLOAD', { encoding: 'utf8' }).trim()
+        if (xdgPath) {
+          return xdgPath
+        }
+      } catch (error) {
+        console.warn('Unable to resolve XDG download directory, falling back to default:', error)
+      }
+    }
+
+    return fallbackPath
   }
 
   @IpcMethod()

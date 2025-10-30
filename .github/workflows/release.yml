@@ -11,7 +11,19 @@ jobs:
 
     strategy:
       matrix:
-        os: [windows-latest, macos-latest]
+        include:
+          - os: windows-latest
+            build_script: pnpm run build:win
+            ytdlp_asset: yt-dlp.exe
+            ytdlp_output: yt-dlp.exe
+          - os: macos-latest
+            build_script: pnpm run build:mac
+            ytdlp_asset: yt-dlp_macos
+            ytdlp_output: yt-dlp_macos
+          - os: ubuntu-latest
+            build_script: pnpm run build:linux
+            ytdlp_asset: yt-dlp
+            ytdlp_output: yt-dlp_linux
 
     steps:
       - name: Check out Git repository
@@ -30,33 +42,19 @@ jobs:
       - name: Install Dependencies
         run: pnpm install
 
-      - name: Download yt-dlp binaries
+      - name: Download yt-dlp binary
+        shell: bash
         run: |
-          # Download yt-dlp.exe for Windows
-          curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe -o resources/yt-dlp.exe
-
-          # Download yt-dlp for macOS (for cross-platform builds)
-          curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos -o resources/yt-dlp_macos
-          chmod +x resources/yt-dlp_macos
-
-          # Download yt-dlp for Linux (for cross-platform builds)
-          # curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o resources/yt-dlp_linux
-          # chmod +x resources/yt-dlp_linux
+          curl -L "https://github.com/yt-dlp/yt-dlp/releases/latest/download/${{ matrix.ytdlp_asset }}" -o "resources/${{ matrix.ytdlp_output }}"
+          if [[ "${{ runner.os }}" == "Linux" ]]; then
+            chmod +x "resources/${{ matrix.ytdlp_output }}"
+          fi
 
       - name: Lint and format check
         run: pnpm run check
 
-      # - name: build-linux
-      #   if: matrix.os == 'ubuntu-latest'
-      #   run: pnpm run build:linux
-
-      - name: build-mac
-        if: matrix.os == 'macos-latest'
-        run: pnpm run build:mac
-
-      - name: build-win
-        if: matrix.os == 'windows-latest'
-        run: pnpm run build:win
+      - name: Build application
+        run: ${{ matrix.build_script }}
 
       - name: release
         uses: softprops/action-gh-release@v1

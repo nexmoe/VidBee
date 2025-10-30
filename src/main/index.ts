@@ -1,6 +1,6 @@
 import { join } from 'node:path'
 import { electronApp, optimizer } from '@electron-toolkit/utils'
-import { app, BrowserWindow, shell } from 'electron'
+import { app, BrowserWindow, type BrowserWindowConstructorOptions, shell } from 'electron'
 import log from 'electron-log/main'
 import { autoUpdater } from 'electron-updater'
 import appIcon from '../../build/icon.png?asset'
@@ -22,18 +22,16 @@ let mainWindow: BrowserWindow | null = null
 let isQuitting = false
 
 export function createWindow(): void {
-  // Create the browser window
-  mainWindow = new BrowserWindow({
+  const isMac = process.platform === 'darwin'
+  const isWindows = process.platform === 'win32'
+
+  const windowOptions: BrowserWindowConstructorOptions = {
     width: 1200,
     height: 800,
     show: false,
-    titleBarStyle: 'hidden', // Hide title bar on macOS
-    trafficLightPosition: { x: 12.5, y: 10 },
     autoHideMenuBar: true,
     icon: appIcon, // Set application icon
     frame: false,
-    vibrancy: 'fullscreen-ui', // on MacOS
-    backgroundMaterial: 'acrylic', // on Windows 11
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,
@@ -41,7 +39,20 @@ export function createWindow(): void {
       nodeIntegration: false,
       webSecurity: false // Allow drag regions to work
     }
-  })
+  }
+
+  if (isMac) {
+    windowOptions.titleBarStyle = 'hidden'
+    windowOptions.trafficLightPosition = { x: 12.5, y: 10 }
+    windowOptions.vibrancy = 'fullscreen-ui'
+  }
+
+  if (isWindows) {
+    windowOptions.backgroundMaterial = 'acrylic'
+  }
+
+  // Create the browser window
+  mainWindow = new BrowserWindow(windowOptions)
 
   mainWindow.on('close', (event) => {
     const closeToTray = settingsManager.get('closeToTray')
