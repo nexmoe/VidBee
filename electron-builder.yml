@@ -31,9 +31,8 @@ dmg:
 linux:
   target:
     - AppImage
-    - snap
     - deb
-  maintainer: yourname@example.com
+  maintainer: nexmoex@gmail.com
   category: Utility
 appImage:
   artifactName: ${name}-${version}.${ext}
