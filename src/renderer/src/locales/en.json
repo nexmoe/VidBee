@@ -27,11 +27,15 @@
       "downloadError": "Failed to download update",
       "downloadStarted": "Download started...",
       "downloadUpdate": "Download and install update {{version}}?",
+      "manualDownloadAction": "Download now",
       "noUpdatesAvailable": "You're using the latest version",
       "restartToUpdate": "Restart now to install update?",
+      "restartNowAction": "Restart now",
       "updateAvailable": "Update available: {{version}}",
       "updateDownloaded": "Update downloaded, restart to install",
-      "updateError": "Failed to check for updates: {{error}}"
+      "updateDownloadedVersion": "Update {{version}} downloaded, restart to install",
+      "updateError": "Failed to check for updates: {{error}}",
+      "unknownErrorFallback": "Unknown error"
     },
     "preferencesDescription": "Tune update settings without leaving this page.",
     "preferencesTitle": "Quick Toggles",
