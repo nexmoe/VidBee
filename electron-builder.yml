@@ -21,13 +21,12 @@ nsis:
 mac:
   entitlementsInherit: build/entitlements.mac.plist
   notarize: false
+  artifactName: ${name}-${version}-${arch}.${ext}
   target:
     - target: dmg
       arch:
         - arm64
         - x64
-dmg:
-  artifactName: ${name}-${version}.${ext}
 linux:
   target:
     - AppImage
