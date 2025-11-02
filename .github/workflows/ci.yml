@@ -5,17 +5,10 @@ on:
     branches: [ main ]
 
 jobs:
-  build-windows:
+  build:
+    strategy:
+      matrix:
+        platform: [windows, macos, linux]
     uses: ./.github/workflows/build.yml
     with:
-      platform: windows
-
-  build-macos:
-    uses: ./.github/workflows/build.yml
-    with:
-      platform: macos
-
-  build-linux:
-    uses: ./.github/workflows/build.yml
-    with:
-      platform: linux
+      platform: ${{ matrix.platform }}

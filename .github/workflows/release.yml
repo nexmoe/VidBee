@@ -6,26 +6,17 @@ on:
       - v*.*.*
 
 jobs:
-  build-windows:
+  build:
+    strategy:
+      matrix:
+        platform: [windows, macos, linux]
     uses: ./.github/workflows/build.yml
     with:
-      platform: windows
-      upload_artifacts: true
-
-  build-macos:
-    uses: ./.github/workflows/build.yml
-    with:
-      platform: macos
-      upload_artifacts: true
-
-  build-linux:
-    uses: ./.github/workflows/build.yml
-    with:
-      platform: linux
+      platform: ${{ matrix.platform }}
       upload_artifacts: true
 
   release:
-    needs: [build-windows, build-macos, build-linux]
+    needs: [build]
     runs-on: ubuntu-latest
     steps:
       - name: Check out Git repository
