@@ -635,14 +635,16 @@ class DownloadEngine extends EventEmitter {
         const title = videoInfo?.title || 'Unknown'
         const sanitizedTitle = title.replace(/[<>:"/\\|?*]/g, '_').substring(0, 50)
 
-        // If video will be merged (format selector contains '+'), use mp4 extension
-        // Otherwise use the actual format from the download
+        // Determine file extension based on download type and format
+        // yt-dlp automatically chooses the best merge format (mkv/webm/mp4)
+        // based on codec compatibility, so we should use actualFormat when available
         let extension: string
         if (options.type === 'audio') {
           extension = options.extractFormat || 'mp3'
         } else if (willMerge) {
-          // Merged files are always mp4 when using --merge-output-format mp4
-          extension = 'mp4'
+          // For merged files, yt-dlp auto-selects format (mkv/webm/mp4)
+          // Use actualFormat if available, otherwise default to mkv (most compatible)
+          extension = actualFormat || 'mkv'
         } else {
           extension = actualFormat || 'mp4'
         }
