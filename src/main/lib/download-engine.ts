@@ -12,7 +12,7 @@ import type {
   VideoFormat,
   VideoInfo
 } from '../../shared/types'
-import { buildDownloadArgs } from '../download-engine/args-builder'
+import { buildDownloadArgs, resolveVideoFormatSelector } from '../download-engine/args-builder'
 import {
   findFormatByIdCandidates,
   parseSizeToBytes,
@@ -21,6 +21,7 @@ import {
 import { settingsManager } from '../settings'
 import { scopedLoggers } from '../utils/logger'
 import { DownloadQueue } from './download-queue'
+import { ffmpegManager } from './ffmpeg-manager'
 import { historyManager } from './history-manager'
 import { ytdlpManager } from './ytdlp-manager'
 
@@ -496,6 +497,46 @@ class DownloadEngine extends EventEmitter {
 
     const args = buildDownloadArgs(options, downloadPath, settings)
 
+    // Check if format selector contains '+' which means video and audio will be merged
+    const formatSelector =
+      options.type === 'video' ? resolveVideoFormatSelector(options) : undefined
+    const willMerge = formatSelector?.includes('+') ?? false
+
+    const urlArg = args.pop()
+    if (!urlArg) {
+      const missingUrlError = new Error('Download arguments missing URL.')
+      scopedLoggers.download.error('Missing URL argument for download ID:', id)
+      this.updateDownloadInfo(id, {
+        status: 'error',
+        completedAt: Date.now(),
+        error: missingUrlError.message
+      })
+      this.queue.downloadCompleted(id)
+      this.emit('download-error', id, missingUrlError)
+      this.addToHistory(id, options, 'error', missingUrlError.message)
+      return
+    }
+
+    let ffmpegPath: string
+    try {
+      ffmpegPath = ffmpegManager.getPath()
+    } catch (error) {
+      const ffmpegError = error instanceof Error ? error : new Error(String(error))
+      scopedLoggers.download.error('Failed to resolve ffmpeg for download ID:', id, ffmpegError)
+      this.updateDownloadInfo(id, {
+        status: 'error',
+        completedAt: Date.now(),
+        error: ffmpegError.message
+      })
+      this.queue.downloadCompleted(id)
+      this.emit('download-error', id, ffmpegError)
+      this.addToHistory(id, options, 'error', ffmpegError.message)
+      return
+    }
+
+    args.push('--ffmpeg-location', ffmpegPath)
+    args.push(urlArg)
+
     const controller = new AbortController()
     const ytdlpProcess = ytdlp.exec(args, {
       signal: controller.signal
@@ -593,23 +634,79 @@ class DownloadEngine extends EventEmitter {
         // Generate file path using downloadPath + title + ext
         const title = videoInfo?.title || 'Unknown'
         const sanitizedTitle = title.replace(/[<>:"/\\|?*]/g, '_').substring(0, 50)
-        const extension =
-          options.type === 'audio' ? options.extractFormat || 'mp3' : actualFormat || 'mp4'
+
+        // If video will be merged (format selector contains '+'), use mp4 extension
+        // Otherwise use the actual format from the download
+        let extension: string
+        if (options.type === 'audio') {
+          extension = options.extractFormat || 'mp3'
+        } else if (willMerge) {
+          // Merged files are always mp4 when using --merge-output-format mp4
+          extension = 'mp4'
+        } else {
+          extension = actualFormat || 'mp4'
+        }
+
         const fileName = `${sanitizedTitle}.${extension}`
         const finalOutputPath = path.join(downloadPath, fileName)
 
-        scopedLoggers.download.info('Generated file path for ID:', id, 'Path:', finalOutputPath)
+        scopedLoggers.download.info(
+          'Generated file path for ID:',
+          id,
+          'Path:',
+          finalOutputPath,
+          'Will merge:',
+          willMerge
+        )
 
         let fileSize: number | undefined
+        let actualFilePath = finalOutputPath
         try {
           const fs = await import('node:fs/promises')
+          // Try to find the actual file - yt-dlp may generate files with slightly different names
           const stats = await fs.stat(finalOutputPath)
           fileSize = stats.size
+          actualFilePath = finalOutputPath
         } catch (error) {
-          if (latestKnownSizeBytes !== undefined) {
-            fileSize = latestKnownSizeBytes
-          } else {
-            scopedLoggers.download.warn('Failed to get file size for ID:', id, error)
+          // If the expected file doesn't exist, try to find it by scanning the directory
+          try {
+            const fs = await import('node:fs/promises')
+            const files = await fs.readdir(downloadPath)
+            // Look for files matching the title pattern with the correct extension
+            const matchingFiles = files.filter((file) => {
+              const baseName = file.replace(/\.[^.]+$/, '')
+              const fileExt = file.split('.').pop()?.toLowerCase()
+              return (
+                (baseName === sanitizedTitle || baseName.startsWith(sanitizedTitle)) &&
+                fileExt === extension.toLowerCase()
+              )
+            })
+
+            if (matchingFiles.length > 0) {
+              // Use the most recently modified file if multiple matches
+              const fileStats = await Promise.all(
+                matchingFiles.map(async (file) => {
+                  const filePath = path.join(downloadPath, file)
+                  const stats = await fs.stat(filePath)
+                  return { file, path: filePath, mtime: stats.mtime, size: stats.size }
+                })
+              )
+              const mostRecent = fileStats.sort((a, b) => b.mtime.getTime() - a.mtime.getTime())[0]
+              actualFilePath = mostRecent.path
+              fileSize = mostRecent.size
+              scopedLoggers.download.info('Found actual file:', actualFilePath, 'Size:', fileSize)
+            } else if (latestKnownSizeBytes !== undefined) {
+              fileSize = latestKnownSizeBytes
+              scopedLoggers.download.warn('File not found, using estimated size:', fileSize)
+            } else {
+              scopedLoggers.download.warn('Failed to find file for ID:', id, error)
+            }
+          } catch (scanError) {
+            if (latestKnownSizeBytes !== undefined) {
+              fileSize = latestKnownSizeBytes
+            } else {
+              scopedLoggers.download.warn('Failed to get file size for ID:', id, scanError)
+            }
           }
         }
 
@@ -621,7 +718,7 @@ class DownloadEngine extends EventEmitter {
           status: 'completed',
           completedAt: Date.now(),
           fileSize,
-          format: actualFormat || undefined,
+          format: willMerge ? 'mp4' : actualFormat || undefined,
           quality: actualQuality || undefined,
           codec: actualCodec || undefined
         })

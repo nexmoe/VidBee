@@ -14,7 +14,8 @@ export const resolveVideoFormatSelector = (options: DownloadOptions): string => 
       return 'bestvideo+none'
     }
     if (!audioFormat || audioFormat === 'best') {
-      return 'best'
+      // Use bestvideo+bestaudio to ensure video and audio are merged into a single file
+      return 'bestvideo+bestaudio'
     }
     return `bestvideo+${audioFormat}`
   }
@@ -53,7 +54,15 @@ export const buildDownloadArgs = (
 
   // Format selection
   if (options.type === 'video') {
-    args.push('-f', resolveVideoFormatSelector(options))
+    const formatSelector = resolveVideoFormatSelector(options)
+    args.push('-f', formatSelector)
+    // Always add merge output format for video downloads to ensure video and audio are merged into a single file
+    // Check if any format option in the selector contains '+' (for formats like 'bestvideo+bestaudio/best')
+    // This ensures that bestvideo+bestaudio (or similar) will be merged automatically
+    const hasMergeFormat = formatSelector.includes('+')
+    if (hasMergeFormat) {
+      args.push('--merge-output-format', 'mp4')
+    }
   } else if (options.type === 'audio') {
     args.push('-f', resolveAudioFormatSelector(options))
   } else if (options.type === 'extract') {

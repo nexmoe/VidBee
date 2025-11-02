@@ -48,8 +48,24 @@ Invoke-WebRequest -Uri "https://github.com/yt-dlp/yt-dlp/releases/latest/downloa
 Invoke-WebRequest -Uri "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp" -OutFile "resources/yt-dlp_linux"
 ```
 
+## ffmpeg Binaries
+
+ffmpeg is required for merging audio/video streams and audio extraction. Bundle the matching binary for each target platform:
+
+### Required Files
+
+1. **Windows**: `ffmpeg.exe`
+2. **macOS**: `ffmpeg_macos`
+3. **Linux**: `ffmpeg_linux`
+
+### How to Download
+
+- **Windows / Linux**: Grab static builds from <https://ffmpeg.org/download.html> (or <https://github.com/yt-dlp/FFmpeg-Builds/releases>) and rename the binary to match the filenames above.
+- **macOS**: Download the `ffmpeg-arm64*.zip` and `ffmpeg-x86_64*.zip` assets from <https://github.com/eko5624/mpv-mac/releases/latest>. Extract them and merge into a universal binary with `lipo -create`, then save the result as `resources/ffmpeg_macos`.
+- On macOS/Linux ensure the final binary is executable: `chmod +x resources/ffmpeg_macos` (or `ffmpeg_linux`).
+
 ### Note
 
-- If you don't place binaries here, the app will attempt to download them at runtime
-- The app will automatically use the bundled version if available
-- File sizes: ~10-15 MB per binary
+- Bundled binaries are required for Windows builds. On macOS/Linux the app can also use ffmpeg/yt-dlp from the system PATH.
+- You can override the lookup paths via the `YTDLP_PATH` or `FFMPEG_PATH` environment variables if you prefer custom locations.
+- File sizes: ~10-15 MB per yt-dlp binary, ~40-80 MB per ffmpeg binary
