@@ -115,53 +115,59 @@ export function VideoInfoCard({ videoInfo }: VideoInfoCardProps) {
   }
 
   return (
-    <div className="space-y-4">
-      <Button variant="ghost" onClick={() => clearVideoInfo()} className="gap-2">
+    <div className="space-y-5">
+      <Button variant="ghost" onClick={() => clearVideoInfo()} className="gap-2 -ml-2" size="sm">
         <ArrowLeft className="h-4 w-4" />
         {t('download.back')}
       </Button>
 
-      <Card>
-        <CardHeader>
+      <Card className="overflow-hidden">
+        <CardHeader className="pb-4">
           <div className="flex flex-col md:flex-row gap-6">
             {/* Thumbnail */}
             <div className="shrink-0">
               <ImageWithPlaceholder
                 src={cachedThumbnail}
                 alt={title}
-                className="w-full md:w-80 rounded-lg aspect-video"
+                className="w-full md:w-80 rounded-lg aspect-video object-cover shadow-sm"
                 fallbackIcon={<Play className="h-12 w-12" />}
               />
             </div>
 
             {/* Video Metadata */}
-            <div className="flex-1 space-y-3">
-              <div>
-                <CardTitle className="text-xl mb-2">{t('download.videoInfo')}</CardTitle>
+            <div className="flex-1 space-y-4 min-w-0">
+              <div className="space-y-3">
+                <CardTitle className="text-2xl leading-tight">{t('download.videoInfo')}</CardTitle>
                 <CardDescription className="flex flex-wrap gap-2 items-center">
                   {videoInfo.duration && (
-                    <Badge variant="secondary" className="gap-1">
-                      <Clock className="h-3 w-3" />
-                      {formatDuration(videoInfo.duration)}
+                    <Badge variant="secondary" className="gap-1.5 px-2.5 py-1">
+                      <Clock className="h-3.5 w-3.5" />
+                      <span>{formatDuration(videoInfo.duration)}</span>
                     </Badge>
                   )}
                   {videoInfo.view_count && (
-                    <Badge variant="secondary" className="gap-1">
-                      <Eye className="h-3 w-3" />
-                      {formatViews(videoInfo.view_count)}
+                    <Badge variant="secondary" className="gap-1.5 px-2.5 py-1">
+                      <Eye className="h-3.5 w-3.5" />
+                      <span>{formatViews(videoInfo.view_count)}</span>
                     </Badge>
                   )}
-                  {videoInfo.uploader && <Badge variant="outline">{videoInfo.uploader}</Badge>}
+                  {videoInfo.uploader && (
+                    <Badge variant="outline" className="px-2.5 py-1">
+                      {videoInfo.uploader}
+                    </Badge>
+                  )}
                 </CardDescription>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor={titleId}>{t('download.title')}</Label>
+              <div className="space-y-2.5">
+                <Label htmlFor={titleId} className="text-sm font-semibold">
+                  {t('download.title')}
+                </Label>
                 <Input
                   id={titleId}
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="font-medium"
+                  className="font-medium h-10"
                 />
               </div>
             </div>
@@ -170,14 +176,18 @@ export function VideoInfoCard({ videoInfo }: VideoInfoCardProps) {
 
         <Separator />
 
-        <CardContent className="pt-6 space-y-6">
+        <CardContent className="pt-6 pb-6">
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'video' | 'audio')}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="video">{t('download.video')}</TabsTrigger>
-              <TabsTrigger value="audio">{t('download.audio')}</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="video" className="text-sm font-medium">
+                {t('download.video')}
+              </TabsTrigger>
+              <TabsTrigger value="audio" className="text-sm font-medium">
+                {t('download.audio')}
+              </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="video" className="space-y-4 mt-4">
+            <TabsContent value="video" className="space-y-5 mt-0">
               <FormatSelector
                 formats={videoInfo.formats || []}
                 type="video"
@@ -194,13 +204,18 @@ export function VideoInfoCard({ videoInfo }: VideoInfoCardProps) {
                 onDownloadSubsChange={setDownloadSubs}
               />
 
-              <Button onClick={() => handleDownload('video')} className="w-full" size="lg">
+              <Button
+                onClick={() => handleDownload('video')}
+                className="w-full"
+                size="lg"
+                variant="default"
+              >
                 <DownloadIcon className="mr-2 h-5 w-5" />
                 {t('download.downloadVideo')}
               </Button>
             </TabsContent>
 
-            <TabsContent value="audio" className="space-y-4 mt-4">
+            <TabsContent value="audio" className="space-y-5 mt-0">
               <FormatSelector
                 formats={videoInfo.formats || []}
                 type="audio"
@@ -218,7 +233,12 @@ export function VideoInfoCard({ videoInfo }: VideoInfoCardProps) {
                 onDownloadSubsChange={setDownloadSubs}
               />
 
-              <Button onClick={() => handleDownload('audio')} className="w-full" size="lg">
+              <Button
+                onClick={() => handleDownload('audio')}
+                className="w-full"
+                size="lg"
+                variant="default"
+              >
                 <DownloadIcon className="mr-2 h-5 w-5" />
                 {t('download.downloadAudio')}
               </Button>

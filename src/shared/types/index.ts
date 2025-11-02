@@ -17,6 +17,7 @@ export interface VideoFormat {
   audio_ext?: string
   tbr?: number
   quality?: number
+  protocol?: string // http, https, m3u8, m3u8_native, etc.
 }
 
 export interface VideoInfo {

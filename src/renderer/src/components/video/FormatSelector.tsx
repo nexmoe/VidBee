@@ -73,9 +73,22 @@ export function FormatSelector({
 
   useEffect(() => {
     // Filter and sort formats
-    const videos = formats.filter((f) => f.video_ext !== 'none' && f.vcodec && f.vcodec !== 'none')
+    // Exclude m3u8/HLS formats as they are streaming formats not suitable for direct download
+    const videos = formats.filter(
+      (f) =>
+        f.video_ext !== 'none' &&
+        f.vcodec &&
+        f.vcodec !== 'none' &&
+        f.protocol !== 'm3u8' &&
+        f.protocol !== 'm3u8_native'
+    )
     const audios = formats.filter(
-      (f) => f.acodec && f.acodec !== 'none' && (f.video_ext === 'none' || !f.video_ext)
+      (f) =>
+        f.acodec &&
+        f.acodec !== 'none' &&
+        (f.video_ext === 'none' || !f.video_ext) &&
+        f.protocol !== 'm3u8' &&
+        f.protocol !== 'm3u8_native'
     )
 
     // Apply showMoreFormats filter
@@ -86,6 +99,48 @@ export function FormatSelector({
     const filteredAudios = settings.showMoreFormats
       ? audios
       : audios.filter((f) => f.ext !== 'webm')
+
+    // Sort formats by quality (best first)
+    const sortVideoFormatsByQuality = (a: VideoFormat, b: VideoFormat) => {
+      // Sort by height (higher is better)
+      const aHeight = a.height ?? 0
+      const bHeight = b.height ?? 0
+      if (aHeight !== bHeight) {
+        return bHeight - aHeight
+      }
+      // If same height, sort by fps (higher is better)
+      const aFps = a.fps ?? 0
+      const bFps = b.fps ?? 0
+      if (aFps !== bFps) {
+        return bFps - aFps
+      }
+      // If same quality, prefer formats with file size information
+      const aHasSize = !!(a.filesize || a.filesize_approx)
+      const bHasSize = !!(b.filesize || b.filesize_approx)
+      if (aHasSize !== bHasSize) {
+        return bHasSize ? 1 : -1
+      }
+      return 0
+    }
+
+    const sortAudioFormatsByQuality = (a: VideoFormat, b: VideoFormat) => {
+      // Sort by bitrate/quality if available
+      const aQuality = a.tbr ?? a.quality ?? 0
+      const bQuality = b.tbr ?? b.quality ?? 0
+      if (aQuality !== bQuality) {
+        return bQuality - aQuality
+      }
+      // If same quality, prefer formats with file size information
+      const aHasSize = !!(a.filesize || a.filesize_approx)
+      const bHasSize = !!(b.filesize || b.filesize_approx)
+      if (aHasSize !== bHasSize) {
+        return bHasSize ? 1 : -1
+      }
+      return 0
+    }
+
+    filteredVideos.sort(sortVideoFormatsByQuality)
+    filteredAudios.sort(sortAudioFormatsByQuality)
 
     setVideoFormats(filteredVideos)
     setAudioFormats(filteredAudios)
@@ -121,25 +176,50 @@ export function FormatSelector({
   }
 
   const formatVideoLabel = (format: VideoFormat) => {
-    const quality = `${format.height || '???'}p${format.fps === 60 ? '60' : ''}`
-    const codec = settings.showMoreFormats ? ` | ${format.vcodec?.split('.')[0]}` : ''
+    const parts: string[] = []
+    // Resolution
+    if (format.height) {
+      parts.push(`${format.height}p${format.fps === 60 ? '60' : ''}`)
+    }
+    // Format extension
+    parts.push(format.ext.toUpperCase())
+    // Codec (if showMoreFormats is enabled)
+    if (settings.showMoreFormats && format.vcodec) {
+      parts.push(format.vcodec.split('.')[0])
+    }
+    // Audio indicator
+    if (format.acodec !== 'none') {
+      parts.push('🔊')
+    }
+    // File size
     const size = formatSize(format.filesize || format.filesize_approx)
-    const hasAudio = format.acodec !== 'none' ? ' 🔊' : ''
-    return `${quality} | ${format.ext} ${codec} | ${size}${hasAudio}`
+    if (size !== t('download.unknownSize')) {
+      parts.push(size)
+    }
+    return parts.join(' • ')
   }
 
   const formatAudioLabel = (format: VideoFormat) => {
+    const parts: string[] = []
+    // Quality
     const quality = format.format_note || t('download.unknownQuality')
+    parts.push(quality)
+    // Format extension
     const ext = format.ext === 'webm' ? 'opus' : format.ext
+    parts.push(ext.toUpperCase())
+    // File size
     const size = formatSize(format.filesize || format.filesize_approx)
-    return `${quality} | ${ext} | ${size}`
+    if (size !== t('download.unknownSize')) {
+      parts.push(size)
+    }
+    return parts.join(' • ')
   }
 
   if (type === 'video') {
     return (
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <Label>{t('download.selectVideoFormat')}</Label>
+      <div className="space-y-5">
+        <div className="space-y-3">
+          <Label className="text-sm font-semibold">{t('download.selectVideoFormat')}</Label>
           <Select
             value={selectedVideo}
             onValueChange={(value) => {
@@ -147,25 +227,25 @@ export function FormatSelector({
               onVideoFormatChange?.(value)
             }}
           >
-            <SelectTrigger>
+            <SelectTrigger className="h-11">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="max-h-[300px] p-1.5">
               {videoFormats.map((format) => (
                 <SelectItem
                   key={format.format_id}
                   value={format.format_id}
-                  className="font-mono text-xs"
+                  className="cursor-pointer py-2.5"
                 >
-                  {formatVideoLabel(format)}
+                  <span className="text-sm">{formatVideoLabel(format)}</span>
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
 
-        <div className="space-y-2">
-          <Label>{t('download.selectAudioFormat')}</Label>
+        <div className="space-y-3">
+          <Label className="text-sm font-semibold">{t('download.selectAudioFormat')}</Label>
           <Select
             value={selectedAudio}
             onValueChange={(value) => {
@@ -173,18 +253,20 @@ export function FormatSelector({
               onAudioFormatChange?.(value)
             }}
           >
-            <SelectTrigger>
+            <SelectTrigger className="h-11">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">{t('download.noAudio')}</SelectItem>
+            <SelectContent className="max-h-[300px] p-1.5">
+              <SelectItem value="none" className="cursor-pointer py-2.5">
+                <span className="text-sm">{t('download.noAudio')}</span>
+              </SelectItem>
               {audioFormats.map((format) => (
                 <SelectItem
                   key={format.format_id}
                   value={format.format_id}
-                  className="font-mono text-xs"
+                  className="cursor-pointer py-2.5"
                 >
-                  {formatAudioLabel(format)}
+                  <span className="text-sm">{formatAudioLabel(format)}</span>
                 </SelectItem>
               ))}
             </SelectContent>
@@ -196,8 +278,8 @@ export function FormatSelector({
 
   // Audio only
   return (
-    <div className="space-y-2">
-      <Label>{t('download.selectFormat')}</Label>
+    <div className="space-y-3">
+      <Label className="text-sm font-semibold">{t('download.selectFormat')}</Label>
       <Select
         value={selectedAudio}
         onValueChange={(value) => {
@@ -205,17 +287,17 @@ export function FormatSelector({
           onAudioFormatChange?.(value)
         }}
       >
-        <SelectTrigger>
+        <SelectTrigger className="h-11">
           <SelectValue />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="max-h-[300px] p-1.5">
           {audioFormats.map((format) => (
             <SelectItem
               key={format.format_id}
               value={format.format_id}
-              className="font-mono text-xs"
+              className="cursor-pointer py-2.5"
             >
-              {formatAudioLabel(format)}
+              <span className="text-sm">{formatAudioLabel(format)}</span>
             </SelectItem>
           ))}
         </SelectContent>
