@@ -3,10 +3,6 @@ name: Build
 on:
   workflow_call:
     inputs:
-      platform:
-        required: true
-        type: string
-        description: 'Platform to build for: windows, macos, or linux'
       upload_artifacts:
         required: false
         type: boolean
@@ -45,34 +41,24 @@ jobs:
             ffmpeg_inner_path: ffmpeg-master-latest-linux64-gpl/bin/ffmpeg
             ffmpeg_output: ffmpeg_linux
     steps:
-      - name: Skip if platform mismatch
-        if: matrix.platform != inputs.platform
-        run: |
-          echo "Skipping build for platform ${{ matrix.platform }} (requested: ${{ inputs.platform }})"
-          exit 0
-
       - name: Check out Git repository
-        if: matrix.platform == inputs.platform
         uses: actions/checkout@v4
 
       - name: Install Node.js
-        if: matrix.platform == inputs.platform
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
       - name: Install pnpm
-        if: matrix.platform == inputs.platform
         uses: pnpm/action-setup@v4
         with:
           version: 8
 
       - name: Install Dependencies
-        if: matrix.platform == inputs.platform
         run: pnpm install
 
       - name: Download ffmpeg binary (Windows)
-        if: matrix.platform == inputs.platform && matrix.platform == 'windows'
+        if: matrix.platform == 'windows'
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -84,7 +70,7 @@ jobs:
           Copy-Item -Path $source -Destination $destination -Force
 
       - name: Download ffmpeg binary (macOS)
-        if: matrix.platform == inputs.platform && matrix.platform == 'macos'
+        if: matrix.platform == 'macos'
         shell: bash
         env:
           FFMPEG_OUTPUT: ${{ matrix.ffmpeg_output }}
@@ -113,7 +99,7 @@ jobs:
           rm -rf ffmpeg-arm ffmpeg-x86 ffmpeg-arm.zip ffmpeg-x86.zip
 
       - name: Download ffmpeg binary (Linux)
-        if: matrix.platform == inputs.platform && matrix.platform == 'linux'
+        if: matrix.platform == 'linux'
         shell: bash
         run: |
           set -euo pipefail
@@ -124,7 +110,6 @@ jobs:
           chmod +x "resources/${{ matrix.ffmpeg_output }}"
 
       - name: Download yt-dlp binary
-        if: matrix.platform == inputs.platform
         shell: bash
         run: |
           curl -L "https://github.com/yt-dlp/yt-dlp/releases/latest/download/${{ matrix.ytdlp_asset }}" -o "resources/${{ matrix.ytdlp_output }}"
@@ -133,15 +118,13 @@ jobs:
           fi
 
       - name: Lint and format check
-        if: matrix.platform == inputs.platform
-        run: pnpm run check
+        run: pnpm run check && pnpm run typecheck
 
       - name: Build application
-        if: matrix.platform == inputs.platform
         run: ${{ matrix.build_script }}
 
       - name: Upload build artifacts
-        if: matrix.platform == inputs.platform && inputs.upload_artifacts == true
+        if: inputs.upload_artifacts == true
         uses: actions/upload-artifact@v4
         with:
           name: dist-${{ matrix.os }}

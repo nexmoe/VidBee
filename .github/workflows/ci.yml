@@ -6,9 +6,4 @@ on:
 
 jobs:
   build:
-    strategy:
-      matrix:
-        platform: [windows, macos, linux]
     uses: ./.github/workflows/build.yml
-    with:
-      platform: ${{ matrix.platform }}
