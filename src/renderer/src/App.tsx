@@ -61,43 +61,30 @@ function AppContent() {
       }
     }
 
-    const startUpdateDownload = async () => {
-      if (updateDownloadInProgressRef.current) {
-        return
-      }
-
-      updateDownloadInProgressRef.current = true
-      toast.info(t('about.notifications.downloadStarted'))
-
-      try {
-        const result = await ipcServices.update.downloadUpdate()
-        if (!result.success) {
-          throw new Error(result.error ?? 'Unknown error')
-        }
-      } catch (error) {
-        updateDownloadInProgressRef.current = false
-        const message =
-          error instanceof Error && error.message
-            ? error.message
-            : t('about.notifications.unknownErrorFallback')
-        toast.error(t('about.notifications.updateError', { error: message }))
+    const handleGoToDownloadPage = () => {
+      if (typeof window !== 'undefined') {
+        window.open('https://vidbee.org/download/', '_blank', 'noopener,noreferrer')
       }
     }
 
     const handleUpdateAvailable = (rawInfo: unknown) => {
       const info = (rawInfo ?? {}) as { version?: string }
       const versionLabel = info.version ?? ''
-      toast.success(t('about.notifications.updateAvailable', { version: versionLabel }))
 
       if (autoUpdateEnabled) {
-        void startUpdateDownload()
-      } else {
-        toast(t('about.notifications.downloadUpdate', { version: versionLabel }), {
+        // Update will be downloaded automatically because autoDownload is enabled in main process
+        toast.success(t('about.notifications.updateAvailable', { version: versionLabel }), {
           action: {
-            label: t('about.notifications.manualDownloadAction'),
-            onClick: () => {
-              void startUpdateDownload()
-            }
+            label: t('about.actions.goToDownload'),
+            onClick: handleGoToDownloadPage
+          }
+        })
+        // No need to manually call downloadUpdate() because autoDownload is true
+      } else {
+        toast.success(t('about.notifications.updateAvailable', { version: versionLabel }), {
+          action: {
+            label: t('about.actions.goToDownload'),
+            onClick: handleGoToDownloadPage
           }
         })
       }
