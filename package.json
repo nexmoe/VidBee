@@ -19,7 +19,7 @@
     "build:win": "node scripts/check-ytdlp.js win && pnpm run build && electron-builder --win",
     "build:mac": "node scripts/check-ytdlp.js mac && pnpm run build && electron-builder --mac --x64 --arm64",
     "build:linux": "node scripts/check-ytdlp.js linux && pnpm run build && electron-builder --linux",
-    "release": "pnpm run check && bumpp"
+    "release": "git checkout main && git pull && pnpm run check && bumpp"
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.2",
