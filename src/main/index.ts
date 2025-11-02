@@ -107,11 +107,6 @@ function setupDownloadEvents(): void {
 }
 
 function initAutoUpdater(): void {
-  if (process.env.NODE_ENV !== 'production') {
-    log.info('Skipping auto-updater initialization in development mode')
-    return
-  }
-
   try {
     log.info('Initializing auto-updater...')
 
