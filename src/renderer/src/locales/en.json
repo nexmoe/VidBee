@@ -2,8 +2,10 @@
   "about": {
     "actions": {
       "checkUpdates": "Check updates",
+      "download": "Download",
       "email": "Email",
       "feedback": "Feedback",
+      "goToDownload": "Go to download page",
       "openRepo": "Open GitHub repository",
       "view": "View",
       "visit": "Visit"
@@ -32,6 +34,7 @@
       "restartToUpdate": "Restart now to install update?",
       "restartNowAction": "Restart now",
       "updateAvailable": "Update available: {{version}}",
+      "updateAvailableMessage": "A new version {{version}} is available. Please download it from the official website.",
       "updateDownloaded": "Update downloaded, restart to install",
       "updateDownloadedVersion": "Update {{version}} downloaded, restart to install",
       "updateError": "Failed to check for updates: {{error}}",

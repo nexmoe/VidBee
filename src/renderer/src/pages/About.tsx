@@ -11,6 +11,7 @@ import { Switch } from '@renderer/components/ui/switch'
 import { useAtom, useSetAtom } from 'jotai'
 import type { LucideIcon } from 'lucide-react'
 import {
+  Download,
   Facebook,
   FileText,
   Github,
@@ -77,6 +78,47 @@ export function About() {
   ) => {
     await saveSetting({ key, value })
     toast.success(t('notifications.settingsSaved'))
+
+    // If auto-update is enabled, check for updates immediately
+    if (key === 'autoUpdate' && value === true) {
+      try {
+        toast.info(t('about.notifications.checkingUpdates'))
+        const result = await ipcServices.update.checkForUpdates()
+
+        if (result.available) {
+          // The update will be downloaded automatically because autoDownload is enabled
+          toast.success(t('about.notifications.updateAvailable', { version: result.version }), {
+            action: {
+              label: t('about.actions.goToDownload'),
+              onClick: handleGoToDownload
+            }
+          })
+          setLatestVersionState({
+            status: 'available',
+            version: result.version ?? ''
+          })
+        } else if (result.error) {
+          toast.error(t('about.notifications.updateError', { error: result.error }))
+          setLatestVersionState({
+            status: 'error',
+            error: result.error
+          })
+        } else {
+          toast.success(t('about.notifications.noUpdatesAvailable'))
+          setLatestVersionState({
+            status: 'uptodate',
+            version: result.version ?? appVersion
+          })
+        }
+      } catch (error) {
+        console.error('Failed to check for updates:', error)
+        toast.error(t('about.notifications.updateError', { error: 'Unknown error' }))
+      }
+    }
+  }
+
+  const handleGoToDownload = () => {
+    openShareUrl('https://vidbee.org/download/')
   }
 
   const handleCheckForUpdates = async () => {
@@ -85,7 +127,12 @@ export function About() {
       const result = await ipcServices.update.checkForUpdates()
 
       if (result.available) {
-        toast.success(t('about.notifications.updateAvailable', { version: result.version }))
+        toast.success(t('about.notifications.updateAvailable', { version: result.version }), {
+          action: {
+            label: t('about.actions.goToDownload'),
+            onClick: handleGoToDownload
+          }
+        })
         setLatestVersionState({
           status: 'available',
           version: result.version ?? ''
@@ -247,6 +294,12 @@ export function About() {
                     <Github className="h-4 w-4" />
                   </a>
                 </Button>
+                {latestVersionState?.status === 'available' ? (
+                  <Button onClick={handleGoToDownload} variant="default" className="gap-2">
+                    <Download className="h-4 w-4" />
+                    {t('about.actions.goToDownload')}
+                  </Button>
+                ) : null}
                 <Button onClick={handleCheckForUpdates} className="gap-2">
                   <RefreshCw className="h-4 w-4" />
                   {t('about.actions.checkUpdates')}

@@ -123,6 +123,12 @@ function initAutoUpdater(): void {
     autoUpdater.on('update-available', (info) => {
       log.info('Update available:', info.version)
       mainWindow?.webContents.send('update:available', info)
+
+      // If auto-update is enabled, the update will be downloaded automatically
+      // because autoDownload is set to true
+      if (settingsManager.get('autoUpdate')) {
+        log.info('Auto-update is enabled, update will be downloaded automatically')
+      }
     })
 
     autoUpdater.on('update-not-available', (info) => {
@@ -153,12 +159,18 @@ function initAutoUpdater(): void {
       }
     })
 
-    if (settingsManager.get('autoUpdate')) {
-      log.info('Auto-update is enabled, checking for updates...')
-      void autoUpdater.checkForUpdatesAndNotify()
-    }
-
     log.info('Auto-updater initialized successfully')
+
+    // Check for updates immediately if auto-update is enabled
+    const autoUpdateEnabled = settingsManager.get('autoUpdate')
+    if (autoUpdateEnabled) {
+      log.info('Auto-update is enabled, checking for updates immediately...')
+      // Use checkForUpdates instead of checkForUpdatesAndNotify
+      // because we have our own notification system and want to ensure immediate download
+      void autoUpdater.checkForUpdates()
+    } else {
+      log.info('Auto-update is disabled, skipping automatic update check')
+    }
   } catch (error) {
     log.error('Failed to initialize auto-updater:', error)
   }
