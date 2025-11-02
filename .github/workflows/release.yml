@@ -6,119 +6,39 @@ on:
       - v*.*.*
 
 jobs:
+  build-windows:
+    uses: ./.github/workflows/build.yml
+    with:
+      platform: windows
+      upload_artifacts: true
+
+  build-macos:
+    uses: ./.github/workflows/build.yml
+    with:
+      platform: macos
+      upload_artifacts: true
+
+  build-linux:
+    uses: ./.github/workflows/build.yml
+    with:
+      platform: linux
+      upload_artifacts: true
+
   release:
-    runs-on: ${{ matrix.os }}
-
-    strategy:
-      matrix:
-        include:
-          - os: windows-latest
-            build_script: pnpm run build:win
-            ytdlp_asset: yt-dlp.exe
-            ytdlp_output: yt-dlp.exe
-            ffmpeg_url: https://github.com/yt-dlp/FFmpeg-Builds/releases/latest/download/ffmpeg-master-latest-win64-gpl.zip
-            ffmpeg_inner_path: ffmpeg-master-latest-win64-gpl\bin\ffmpeg.exe
-            ffmpeg_output: ffmpeg.exe
-          - os: macos-latest
-            build_script: pnpm run build:mac
-            ytdlp_asset: yt-dlp_macos
-            ytdlp_output: yt-dlp_macos
-            ffmpeg_arm_url: https://github.com/eko5624/mpv-mac/releases/download/2025-10-25/ffmpeg-arm64-defd5f3f64.zip
-            ffmpeg_x86_url: https://github.com/eko5624/mpv-mac/releases/download/2025-10-25/ffmpeg-x86_64-defd5f3f64.zip
-            ffmpeg_inner_path: ffmpeg/ffmpeg
-            ffmpeg_output: ffmpeg_macos
-          - os: ubuntu-latest
-            build_script: pnpm run build:linux
-            ytdlp_asset: yt-dlp
-            ytdlp_output: yt-dlp_linux
-            ffmpeg_url: https://github.com/yt-dlp/FFmpeg-Builds/releases/latest/download/ffmpeg-master-latest-linux64-gpl.tar.xz
-            ffmpeg_inner_path: ffmpeg-master-latest-linux64-gpl/bin/ffmpeg
-            ffmpeg_output: ffmpeg_linux
-
+    needs: [build-windows, build-macos, build-linux]
+    runs-on: ubuntu-latest
     steps:
       - name: Check out Git repository
         uses: actions/checkout@v4
 
-      - name: Install Node.js
-        uses: actions/setup-node@v4
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
         with:
-          node-version: 20
+          pattern: dist-*
+          merge-multiple: true
+          path: dist/
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 8
-
-      - name: Install Dependencies
-        run: pnpm install
-
-      - name: Download ffmpeg binary (Windows)
-        if: matrix.os == 'windows-latest'
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $ffmpegUrl = '${{ matrix.ffmpeg_url }}'
-          Invoke-WebRequest -Uri $ffmpegUrl -OutFile ffmpeg.zip
-          Expand-Archive ffmpeg.zip -DestinationPath ffmpeg -Force
-          $source = Join-Path 'ffmpeg' '${{ matrix.ffmpeg_inner_path }}'
-          $destination = Join-Path 'resources' '${{ matrix.ffmpeg_output }}'
-          Copy-Item -Path $source -Destination $destination -Force
-
-      - name: Download ffmpeg binary (macOS)
-        if: matrix.os == 'macos-latest'
-        shell: bash
-        env:
-          FFMPEG_OUTPUT: ${{ matrix.ffmpeg_output }}
-        run: |
-          set -euo pipefail
-          curl -L "${{ matrix.ffmpeg_arm_url }}" -o ffmpeg-arm.zip
-          unzip -q ffmpeg-arm.zip -d ffmpeg-arm
-
-          curl -L "${{ matrix.ffmpeg_x86_url }}" -o ffmpeg-x86.zip
-          unzip -q ffmpeg-x86.zip -d ffmpeg-x86
-
-          arm_bin="ffmpeg-arm/${{ matrix.ffmpeg_inner_path }}"
-          x86_bin="ffmpeg-x86/${{ matrix.ffmpeg_inner_path }}"
-
-          if [[ ! -f "$arm_bin" ]]; then
-            echo "::error::Missing arm64 ffmpeg binary at $arm_bin"
-            exit 1
-          fi
-          if [[ ! -f "$x86_bin" ]]; then
-            echo "::error::Missing x86_64 ffmpeg binary at $x86_bin"
-            exit 1
-          fi
-
-          lipo -create "$arm_bin" "$x86_bin" -output "resources/$FFMPEG_OUTPUT"
-          chmod +x "resources/$FFMPEG_OUTPUT"
-          rm -rf ffmpeg-arm ffmpeg-x86 ffmpeg-arm.zip ffmpeg-x86.zip
-
-      - name: Download ffmpeg binary (Linux)
-        if: matrix.os == 'ubuntu-latest'
-        shell: bash
-        run: |
-          set -euo pipefail
-          curl -L "${{ matrix.ffmpeg_url }}" -o ffmpeg.tar.xz
-          mkdir ffmpeg
-          tar -xf ffmpeg.tar.xz -C ffmpeg
-          cp "ffmpeg/${{ matrix.ffmpeg_inner_path }}" "resources/${{ matrix.ffmpeg_output }}"
-          chmod +x "resources/${{ matrix.ffmpeg_output }}"
-
-      - name: Download yt-dlp binary
-        shell: bash
-        run: |
-          curl -L "https://github.com/yt-dlp/yt-dlp/releases/latest/download/${{ matrix.ytdlp_asset }}" -o "resources/${{ matrix.ytdlp_output }}"
-          if [[ "${{ runner.os }}" == "Linux" ]]; then
-            chmod +x "resources/${{ matrix.ytdlp_output }}"
-          fi
-
-      - name: Lint and format check
-        run: pnpm run check
-
-      - name: Build application
-        run: ${{ matrix.build_script }}
-
-      - name: release
+      - name: Release
         uses: softprops/action-gh-release@v1
         with:
           generate_release_notes: true

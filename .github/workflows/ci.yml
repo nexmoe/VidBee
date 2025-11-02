@@ -5,87 +5,17 @@ on:
     branches: [ main ]
 
 jobs:
-  test:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: windows-latest
-            build-script: pnpm run build:win
-            ytdlp-asset: yt-dlp.exe
-            ytdlp-output: yt-dlp.exe
-            ffmpeg_url: https://github.com/yt-dlp/FFmpeg-Builds/releases/latest/download/ffmpeg-master-latest-win64-gpl.zip
-            ffmpeg_inner_path: ffmpeg-master-latest-win64-gpl\bin\ffmpeg.exe
-            ffmpeg_output: ffmpeg.exe
-          - os: ubuntu-latest
-            build-script: pnpm run build:linux
-            ytdlp-asset: yt-dlp
-            ytdlp-output: yt-dlp_linux
-            ffmpeg_url: https://github.com/yt-dlp/FFmpeg-Builds/releases/latest/download/ffmpeg-master-latest-linux64-gpl.tar.xz
-            ffmpeg_inner_path: ffmpeg-master-latest-linux64-gpl/bin/ffmpeg
-            ffmpeg_output: ffmpeg_linux
-    runs-on: ${{ matrix.os }}
+  build-windows:
+    uses: ./.github/workflows/build.yml
+    with:
+      platform: windows
 
-    steps:
-      - name: Check out Git repository
-        uses: actions/checkout@v4
+  build-macos:
+    uses: ./.github/workflows/build.yml
+    with:
+      platform: macos
 
-      - name: Install Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 8
-
-      - name: Install Dependencies
-        run: pnpm install
-
-      - name: Download ffmpeg binary (Windows)
-        if: matrix.os == 'windows-latest'
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $ffmpegUrl = '${{ matrix.ffmpeg_url }}'
-          Invoke-WebRequest -Uri $ffmpegUrl -OutFile ffmpeg.zip
-          Expand-Archive ffmpeg.zip -DestinationPath ffmpeg -Force
-          $source = Join-Path 'ffmpeg' '${{ matrix.ffmpeg_inner_path }}'
-          $destination = Join-Path 'resources' '${{ matrix.ffmpeg_output }}'
-          Copy-Item -Path $source -Destination $destination -Force
-
-      - name: Download ffmpeg binary (macOS)
-        if: matrix.os == 'macos-latest'
-        shell: bash
-        run: |
-          set -euo pipefail
-          curl -L "${{ matrix.ffmpeg_url }}" -o ffmpeg.zip
-          unzip -q ffmpeg.zip -d ffmpeg
-          cp "ffmpeg/${{ matrix.ffmpeg_inner_path }}" "resources/${{ matrix.ffmpeg_output }}"
-          chmod +x "resources/${{ matrix.ffmpeg_output }}"
-
-      - name: Download ffmpeg binary (Linux)
-        if: matrix.os == 'ubuntu-latest'
-        shell: bash
-        run: |
-          set -euo pipefail
-          curl -L "${{ matrix.ffmpeg_url }}" -o ffmpeg.tar.xz
-          mkdir ffmpeg
-          tar -xf ffmpeg.tar.xz -C ffmpeg
-          cp "ffmpeg/${{ matrix.ffmpeg_inner_path }}" "resources/${{ matrix.ffmpeg_output }}"
-          chmod +x "resources/${{ matrix.ffmpeg_output }}"
-
-      - name: Download yt-dlp binary
-        shell: bash
-        run: |
-          curl -L "https://github.com/yt-dlp/yt-dlp/releases/latest/download/${{ matrix.ytdlp-asset }}" -o "resources/${{ matrix.ytdlp-output }}"
-          if [[ "${{ runner.os }}" == "Linux" ]]; then
-            chmod +x "resources/${{ matrix.ytdlp-output }}"
-          fi
-
-      - name: Lint and format check
-        run: pnpm run check
-
-      - name: Build application
-        run: ${{ matrix.build-script }}
+  build-linux:
+    uses: ./.github/workflows/build.yml
+    with:
+      platform: linux
