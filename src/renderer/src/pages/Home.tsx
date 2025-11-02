@@ -76,18 +76,20 @@ const getQualityPreset = (settings: AppSettings): OneClickQualityPreset =>
 
 const buildAudioSelectors = (preset: OneClickQualityPreset): string[] => {
   if (preset === 'worst') {
-    return ['worstaudio', 'worst']
+    return ['worstaudio']
   }
 
   const abrLimit = qualityPresetToAudioAbr[preset]
-  return dedupe([abrLimit ? `bestaudio[abr<=${abrLimit}]` : undefined, 'bestaudio', 'best'])
+  // Remove 'best' fallback to ensure merging - only use 'bestaudio' variants
+  return dedupe([abrLimit ? `bestaudio[abr<=${abrLimit}]` : undefined, 'bestaudio'])
 }
 
 const buildVideoFormatPreference = (settings: AppSettings): string => {
   const preset = getQualityPreset(settings)
 
   if (preset === 'worst') {
-    return 'worstvideo+worstaudio/worst'
+    // Use worstvideo+worstaudio as fallback instead of 'worst' to ensure merging
+    return 'worstvideo+worstaudio'
   }
 
   const maxHeight = qualityPresetToVideoHeight[preset]
@@ -110,7 +112,8 @@ const buildVideoFormatPreference = (settings: AppSettings): string => {
       combinations.push(video)
     }
   } else {
-    combinations.push('best')
+    // Use bestvideo+bestaudio as fallback instead of 'best' to ensure merging
+    combinations.push('bestvideo+bestaudio')
   }
 
   return dedupe(combinations).join('/')

@@ -7,6 +7,7 @@ import appIcon from '../../build/icon.png?asset'
 import { configureLogger } from './config/logger-config'
 import { services } from './ipc'
 import { downloadEngine } from './lib/download-engine'
+import { ffmpegManager } from './lib/ffmpeg-manager'
 import { ytdlpManager } from './lib/ytdlp-manager'
 import { settingsManager } from './settings'
 import { createTray, destroyTray } from './tray'
@@ -178,6 +179,15 @@ app.whenReady().then(async () => {
 
   // IPC services are automatically registered by electron-ipc-decorator when imported
   log.info('IPC services available:', Object.keys(services))
+
+  // Initialize ffmpeg
+  try {
+    log.info('Initializing ffmpeg...')
+    await ffmpegManager.initialize()
+    log.info('ffmpeg initialized successfully')
+  } catch (error) {
+    log.error('Failed to initialize ffmpeg:', error)
+  }
 
   // Initialize yt-dlp
   try {

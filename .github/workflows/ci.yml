@@ -5,48 +5,5 @@ on:
     branches: [ main ]
 
 jobs:
-  test:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: windows-latest
-            build-script: pnpm run build:win
-            ytdlp-asset: yt-dlp.exe
-            ytdlp-output: yt-dlp.exe
-          - os: ubuntu-latest
-            build-script: pnpm run build:linux
-            ytdlp-asset: yt-dlp
-            ytdlp-output: yt-dlp_linux
-    runs-on: ${{ matrix.os }}
-
-    steps:
-      - name: Check out Git repository
-        uses: actions/checkout@v4
-
-      - name: Install Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 8
-
-      - name: Install Dependencies
-        run: pnpm install
-
-      - name: Download yt-dlp binary
-        shell: bash
-        run: |
-          curl -L "https://github.com/yt-dlp/yt-dlp/releases/latest/download/${{ matrix.ytdlp-asset }}" -o "resources/${{ matrix.ytdlp-output }}"
-          if [[ "${{ runner.os }}" == "Linux" ]]; then
-            chmod +x "resources/${{ matrix.ytdlp-output }}"
-          fi
-
-      - name: Lint and format check
-        run: pnpm run check
-
-      - name: Build application
-        run: ${{ matrix.build-script }}
+  build:
+    uses: ./.github/workflows/build.yml

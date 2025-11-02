@@ -14,7 +14,8 @@ export const resolveVideoFormatSelector = (options: DownloadOptions): string => 
       return 'bestvideo+none'
     }
     if (!audioFormat || audioFormat === 'best') {
-      return 'best'
+      // Use bestvideo+bestaudio to ensure video and audio are merged into a single file
+      return 'bestvideo+bestaudio'
     }
     return `bestvideo+${audioFormat}`
   }
@@ -53,7 +54,11 @@ export const buildDownloadArgs = (
 
   // Format selection
   if (options.type === 'video') {
-    args.push('-f', resolveVideoFormatSelector(options))
+    const formatSelector = resolveVideoFormatSelector(options)
+    args.push('-f', formatSelector)
+    // Let yt-dlp automatically choose the best merge format (mkv/webm/mp4)
+    // based on codec compatibility. Forcing MP4 can cause failures
+    // when codecs are incompatible (e.g., VP9+Opus requires mkv/webm)
   } else if (options.type === 'audio') {
     args.push('-f', resolveAudioFormatSelector(options))
   } else if (options.type === 'extract') {

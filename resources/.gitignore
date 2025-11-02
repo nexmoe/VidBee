@@ -2,8 +2,11 @@
 yt-dlp.exe
 yt-dlp_macos
 yt-dlp_linux
+ffmpeg.exe
+ffmpeg_macos
+ffmpeg_linux
+ffmpeg
 
 # But keep the README
 !README.md
 !.gitignore
-

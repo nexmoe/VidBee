@@ -6,57 +6,26 @@ on:
       - v*.*.*
 
 jobs:
+  build:
+    uses: ./.github/workflows/build.yml
+    with:
+      upload_artifacts: true
+
   release:
-    runs-on: ${{ matrix.os }}
-
-    strategy:
-      matrix:
-        include:
-          - os: windows-latest
-            build_script: pnpm run build:win
-            ytdlp_asset: yt-dlp.exe
-            ytdlp_output: yt-dlp.exe
-          - os: macos-latest
-            build_script: pnpm run build:mac
-            ytdlp_asset: yt-dlp_macos
-            ytdlp_output: yt-dlp_macos
-          - os: ubuntu-latest
-            build_script: pnpm run build:linux
-            ytdlp_asset: yt-dlp
-            ytdlp_output: yt-dlp_linux
-
+    needs: [build]
+    runs-on: ubuntu-latest
     steps:
       - name: Check out Git repository
         uses: actions/checkout@v4
 
-      - name: Install Node.js
-        uses: actions/setup-node@v4
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
         with:
-          node-version: 20
+          pattern: dist-*
+          merge-multiple: true
+          path: dist/
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 8
-
-      - name: Install Dependencies
-        run: pnpm install
-
-      - name: Download yt-dlp binary
-        shell: bash
-        run: |
-          curl -L "https://github.com/yt-dlp/yt-dlp/releases/latest/download/${{ matrix.ytdlp_asset }}" -o "resources/${{ matrix.ytdlp_output }}"
-          if [[ "${{ runner.os }}" == "Linux" ]]; then
-            chmod +x "resources/${{ matrix.ytdlp_output }}"
-          fi
-
-      - name: Lint and format check
-        run: pnpm run check
-
-      - name: Build application
-        run: ${{ matrix.build_script }}
-
-      - name: release
+      - name: Release
         uses: softprops/action-gh-release@v1
         with:
           generate_release_notes: true
@@ -73,4 +42,3 @@ jobs:
             dist/*.blockmap
         env:
           GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
-
