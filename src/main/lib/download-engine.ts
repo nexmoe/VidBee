@@ -53,6 +53,11 @@ class DownloadEngine extends EventEmitter {
     // Add encoding support for proper handling of non-ASCII characters
     args.push('--encoding', 'utf-8')
 
+    // Note: Some sites (e.g., YouTube) may not provide filesize information
+    // in the initial request. This is normal behavior and filesize may be null/undefined
+    // for many formats. File size information might require additional HTTP HEAD requests
+    // which would significantly slow down info extraction, so yt-dlp doesn't fetch it by default.
+
     // Add proxy if configured
     if (settings.proxy) {
       args.push('--proxy', settings.proxy)
@@ -92,6 +97,27 @@ class DownloadEngine extends EventEmitter {
         if (code === 0 && stdout) {
           try {
             const info = JSON.parse(stdout)
+
+            // Calculate estimated file size for formats missing filesize information
+            // Using tbr (total bitrate in kbps) and duration (in seconds)
+            // Formula: (tbr * 1000) / 8 * duration = size in bytes
+            if (info.formats && Array.isArray(info.formats) && info.duration) {
+              const duration = info.duration
+              for (const format of info.formats) {
+                if (
+                  !format.filesize &&
+                  !format.filesize_approx &&
+                  format.tbr &&
+                  typeof format.tbr === 'number' &&
+                  duration > 0
+                ) {
+                  // Calculate estimated size: tbr (kbps) * 1000 / 8 bits per byte * duration (seconds)
+                  const estimatedSize = Math.round(((format.tbr * 1000) / 8) * duration)
+                  format.filesize_approx = estimatedSize
+                }
+              }
+            }
+
             scopedLoggers.download.info('Successfully retrieved video info for:', url)
             resolve(info)
           } catch (error) {

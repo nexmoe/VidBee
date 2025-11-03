@@ -41,44 +41,46 @@ export function AudioExtractor({ onExtract }: AudioExtractorProps) {
   ]
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('audioExtract.title')}</CardTitle>
+    <Card className="border-2 border-dashed">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg">{t('audioExtract.title')}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Label>{t('audioExtract.selectFormat')}</Label>
-          <Select value={extractFormat} onValueChange={setExtractFormat}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {audioFormats.map((format) => (
-                <SelectItem key={format.value} value={format.value}>
-                  {format.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-2.5">
+            <Label className="text-sm font-semibold">{t('audioExtract.selectFormat')}</Label>
+            <Select value={extractFormat} onValueChange={setExtractFormat}>
+              <SelectTrigger className="h-10">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {audioFormats.map((format) => (
+                  <SelectItem key={format.value} value={format.value}>
+                    {format.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2.5">
+            <Label className="text-sm font-semibold">{t('audioExtract.selectQuality')}</Label>
+            <Select value={extractQuality} onValueChange={setExtractQuality}>
+              <SelectTrigger className="h-10">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {qualities.map((quality) => (
+                  <SelectItem key={quality.value} value={quality.value}>
+                    {quality.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
-        <div className="space-y-2">
-          <Label>{t('audioExtract.selectQuality')}</Label>
-          <Select value={extractQuality} onValueChange={setExtractQuality}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {qualities.map((quality) => (
-                <SelectItem key={quality.value} value={quality.value}>
-                  {quality.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <Button onClick={() => onExtract('extract')} className="w-full">
+        <Button onClick={() => onExtract('extract')} className="w-full" size="lg">
           {t('audioExtract.extract')}
         </Button>
       </CardContent>
