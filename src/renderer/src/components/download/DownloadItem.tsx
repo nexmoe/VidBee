@@ -76,7 +76,14 @@ const formatDate = (timestamp?: number) => {
 
 const formatDateShort = (timestamp?: number) => {
   if (!timestamp) return ''
-  return new Date(timestamp).toLocaleDateString()
+  const date = new Date(timestamp)
+  return date.toLocaleString(undefined, {
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
 }
 
 export function DownloadItem({ download }: DownloadItemProps) {
