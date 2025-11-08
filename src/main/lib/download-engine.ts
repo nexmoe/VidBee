@@ -742,13 +742,16 @@ class DownloadEngine extends EventEmitter {
           fileSize = latestKnownSizeBytes
         }
 
+        const savedFileName = path.basename(actualFilePath)
+
         this.updateDownloadInfo(id, {
           status: 'completed',
           completedAt: Date.now(),
           fileSize,
           format: willMerge ? 'mp4' : actualFormat || undefined,
           quality: actualQuality || undefined,
-          codec: actualCodec || undefined
+          codec: actualCodec || undefined,
+          savedFileName
         })
         scopedLoggers.download.info('Download completed successfully for ID:', id)
         this.emit('download-completed', id)
@@ -882,6 +885,9 @@ class DownloadEngine extends EventEmitter {
     if (updates.selectedFormat !== undefined) {
       historyUpdates.selectedFormat = updates.selectedFormat
     }
+    if (updates.savedFileName !== undefined) {
+      historyUpdates.savedFileName = updates.savedFileName
+    }
 
     if (Object.keys(historyUpdates).length > 0) {
       this.upsertHistoryEntry(id, snapshot.options, historyUpdates)
@@ -936,6 +942,7 @@ class DownloadEngine extends EventEmitter {
       type: options.type,
       status: updates.status || 'pending',
       downloadPath: updates.downloadPath,
+      savedFileName: updates.savedFileName,
       fileSize: updates.fileSize,
       duration: updates.duration,
       downloadedAt: updates.downloadedAt ?? Date.now(),

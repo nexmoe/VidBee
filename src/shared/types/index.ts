@@ -65,6 +65,7 @@ export interface DownloadItem {
   format?: string
   quality?: string
   codec?: string
+  savedFileName?: string
   // Timestamps
   createdAt: number
   startedAt?: number
@@ -92,6 +93,7 @@ export interface DownloadHistoryItem {
   type: 'video' | 'audio' | 'extract'
   status: DownloadStatus
   downloadPath?: string
+  savedFileName?: string
   fileSize?: number
   duration?: number
   downloadedAt: number

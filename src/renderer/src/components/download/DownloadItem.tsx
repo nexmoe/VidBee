@@ -18,10 +18,15 @@ import {
 import { settingsAtom } from '../../store/settings'
 
 // Helper function to generate file path with proper path separators
-const generateFilePath = (downloadPath: string, title: string, format: string): string => {
-  const fileName = `${title}.${format}`
+const generateFilePath = (
+  downloadPath: string,
+  title: string,
+  format: string,
+  savedFileName?: string
+): string => {
+  // Prefer the actual saved filename when available
+  const fileName = savedFileName || `${title} via VidBee.${format}`
   // Use proper path joining for cross-platform compatibility
-  // Handle both forward and backward slashes for cross-platform compatibility
   const normalizedDownloadPath = downloadPath.replace(/\\/g, '/')
   return `${normalizedDownloadPath}/${fileName}`
 }
@@ -74,13 +79,19 @@ export function DownloadItem({ download }: DownloadItemProps) {
   // Check if file exists when download data changes
   useEffect(() => {
     const checkFileExists = async () => {
-      if (!download.title || !download.downloadPath || !download.format) {
+      if (!download.title || !download.downloadPath) {
         setFileExists(false)
         return
       }
 
       try {
-        const filePath = generateFilePath(download.downloadPath, download.title, download.format)
+        const formatForPath = download.format || (download.type === 'audio' ? 'mp3' : 'mp4')
+        const filePath = generateFilePath(
+          download.downloadPath,
+          download.title,
+          formatForPath,
+          download.savedFileName
+        )
         const exists = await ipcServices.fs.fileExists(filePath)
         setFileExists(exists)
       } catch (error) {
@@ -90,7 +101,13 @@ export function DownloadItem({ download }: DownloadItemProps) {
     }
 
     checkFileExists()
-  }, [download.title, download.downloadPath, download.format])
+  }, [
+    download.title,
+    download.downloadPath,
+    download.format,
+    download.savedFileName,
+    download.type
+  ])
 
   const handleCancel = async () => {
     if (isHistory) return
@@ -104,10 +121,14 @@ export function DownloadItem({ download }: DownloadItemProps) {
 
   const handleOpenFolder = async () => {
     try {
-      // Generate file path using downloadPath + title + ext
       const downloadPath = download.downloadPath || settings.downloadPath
       const format = download.format || (download.type === 'audio' ? 'mp3' : 'mp4')
-      const filePath = generateFilePath(downloadPath, download.title, format)
+      const filePath = generateFilePath(
+        downloadPath,
+        download.title,
+        format,
+        download.savedFileName
+      )
 
       const success = await ipcServices.fs.openFileLocation(filePath)
       if (!success) {
@@ -120,7 +141,12 @@ export function DownloadItem({ download }: DownloadItemProps) {
   }
   // Check if copy to clipboard is available
   const canCopyToClipboard = () => {
-    return !!(download.title && download.downloadPath && download.format && fileExists)
+    return !!(
+      download.title &&
+      download.downloadPath &&
+      fileExists &&
+      (download.savedFileName || download.format)
+    )
   }
 
   // need title, downloadPath, format
@@ -142,7 +168,7 @@ export function DownloadItem({ download }: DownloadItemProps) {
 
     try {
       // Generate file path using downloadPath + title + ext
-      const filePath = generateFilePath(downloadPath, title, format)
+      const filePath = generateFilePath(downloadPath, title, format, download.savedFileName)
 
       const success = await ipcServices.fs.copyFileToClipboard(filePath)
       if (!success) {
@@ -160,10 +186,14 @@ export function DownloadItem({ download }: DownloadItemProps) {
   const handleRemoveHistory = async () => {
     if (!isHistory) return
     try {
-      // Generate file path using downloadPath + title + ext
       const downloadPath = download.downloadPath || settings.downloadPath
       const format = download.format || (download.type === 'audio' ? 'mp3' : 'mp4')
-      const filePath = generateFilePath(downloadPath, download.title, format)
+      const filePath = generateFilePath(
+        downloadPath,
+        download.title,
+        format,
+        download.savedFileName
+      )
 
       // Remove from history first
       await ipcServices.history.removeHistoryItem(download.id)

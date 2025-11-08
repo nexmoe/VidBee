@@ -5,6 +5,7 @@ export type DownloadRecord = DownloadItem & {
   entryType: 'active' | 'history'
   downloadedAt?: number
   downloadPath?: string
+  savedFileName?: string
 }
 
 const recordKey = (entryType: DownloadRecord['entryType'], id: string) => `${entryType}:${id}`
@@ -43,6 +44,7 @@ const toHistoryRecord = (item: DownloadHistoryItem): DownloadRecord => ({
   playlistTitle: item.playlistTitle,
   playlistIndex: item.playlistIndex,
   playlistSize: item.playlistSize,
+  savedFileName: item.savedFileName,
   entryType: 'history',
   downloadedAt: item.downloadedAt
 })
