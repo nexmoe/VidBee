@@ -61,35 +61,6 @@ function AppContent() {
       }
     }
 
-    const handleGoToDownloadPage = () => {
-      if (typeof window !== 'undefined') {
-        window.open('https://vidbee.org/download/', '_blank', 'noopener,noreferrer')
-      }
-    }
-
-    const handleUpdateAvailable = (rawInfo: unknown) => {
-      const info = (rawInfo ?? {}) as { version?: string }
-      const versionLabel = info.version ?? ''
-
-      if (autoUpdateEnabled) {
-        // Update will be downloaded automatically because autoDownload is enabled in main process
-        toast.success(t('about.notifications.updateAvailable', { version: versionLabel }), {
-          action: {
-            label: t('about.actions.goToDownload'),
-            onClick: handleGoToDownloadPage
-          }
-        })
-        // No need to manually call downloadUpdate() because autoDownload is true
-      } else {
-        toast.success(t('about.notifications.updateAvailable', { version: versionLabel }), {
-          action: {
-            label: t('about.actions.goToDownload'),
-            onClick: handleGoToDownloadPage
-          }
-        })
-      }
-    }
-
     const handleUpdateDownloaded = (rawInfo: unknown) => {
       const info = (rawInfo ?? {}) as { version?: string }
       resetDownloadState()
@@ -135,14 +106,14 @@ function AppContent() {
       })
     }
 
-    ipcEvents.on('update:available', handleUpdateAvailable)
+    // Only listen to update events that should be shown globally
+    // update:available is handled in About page only
     ipcEvents.on('update:downloaded', handleUpdateDownloaded)
     ipcEvents.on('update:error', handleUpdateError)
     ipcEvents.on('update:download-progress', handleDownloadProgress)
     ipcEvents.on('update:show-notification', handleUpdateNotification)
 
     return () => {
-      ipcEvents.removeListener('update:available', handleUpdateAvailable)
       ipcEvents.removeListener('update:downloaded', handleUpdateDownloaded)
       ipcEvents.removeListener('update:error', handleUpdateError)
       ipcEvents.removeListener('update:download-progress', handleDownloadProgress)
