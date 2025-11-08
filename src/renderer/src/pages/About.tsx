@@ -7,6 +7,7 @@ import {
   CardHeader,
   CardTitle
 } from '@renderer/components/ui/card'
+import { Progress } from '@renderer/components/ui/progress'
 import { Switch } from '@renderer/components/ui/switch'
 import { useAtom, useSetAtom } from 'jotai'
 import type { LucideIcon } from 'lucide-react'
@@ -25,7 +26,7 @@ import {
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { ipcServices } from '../lib/ipc'
+import { ipcEvents, ipcServices } from '../lib/ipc'
 import { saveSettingAtom, settingsAtom } from '../store/settings'
 
 interface AboutResource {
@@ -48,6 +49,7 @@ export function About() {
   const [settings, _setSettings] = useAtom(settingsAtom)
   const [appVersion, setAppVersion] = useState<string>('—')
   const [latestVersionState, setLatestVersionState] = useState<LatestVersionState>(null)
+  const [updateDownloadProgress, setUpdateDownloadProgress] = useState<number | null>(null)
   const saveSetting = useSetAtom(saveSettingAtom)
   const shareTargetUrl = 'https://vidbee.org'
 
@@ -72,6 +74,49 @@ export function About() {
     }
   }, [])
 
+  // Listen for update events only in About page
+  useEffect(() => {
+    if (!window?.api) {
+      return
+    }
+
+    const handleUpdateAvailable = (rawInfo: unknown) => {
+      const info = (rawInfo ?? {}) as { version?: string }
+      const versionLabel = info.version ?? ''
+
+      // Update will be downloaded automatically because autoDownload is enabled in main process
+      toast.success(t('about.notifications.updateAvailable', { version: versionLabel }))
+      setLatestVersionState({
+        status: 'available',
+        version: versionLabel
+      })
+      // Reset download progress when new update is available
+      setUpdateDownloadProgress(0)
+    }
+
+    const handleUpdateDownloadProgress = (rawProgress: unknown) => {
+      const progress = (rawProgress ?? {}) as { percent?: number }
+      if (typeof progress?.percent === 'number') {
+        setUpdateDownloadProgress(progress.percent)
+      }
+    }
+
+    const handleUpdateDownloaded = () => {
+      // Clear progress when download is complete
+      setUpdateDownloadProgress(null)
+    }
+
+    ipcEvents.on('update:available', handleUpdateAvailable)
+    ipcEvents.on('update:download-progress', handleUpdateDownloadProgress)
+    ipcEvents.on('update:downloaded', handleUpdateDownloaded)
+
+    return () => {
+      ipcEvents.removeListener('update:available', handleUpdateAvailable)
+      ipcEvents.removeListener('update:download-progress', handleUpdateDownloadProgress)
+      ipcEvents.removeListener('update:downloaded', handleUpdateDownloaded)
+    }
+  }, [t])
+
   const handleSettingChange = async (
     key: keyof typeof settings,
     value: (typeof settings)[keyof typeof settings]
@@ -87,12 +132,7 @@ export function About() {
 
         if (result.available) {
           // The update will be downloaded automatically because autoDownload is enabled
-          toast.success(t('about.notifications.updateAvailable', { version: result.version }), {
-            action: {
-              label: t('about.actions.goToDownload'),
-              onClick: handleGoToDownload
-            }
-          })
+          toast.success(t('about.notifications.updateAvailable', { version: result.version }))
           setLatestVersionState({
             status: 'available',
             version: result.version ?? ''
@@ -127,12 +167,7 @@ export function About() {
       const result = await ipcServices.update.checkForUpdates()
 
       if (result.available) {
-        toast.success(t('about.notifications.updateAvailable', { version: result.version }), {
-          action: {
-            label: t('about.actions.goToDownload'),
-            onClick: handleGoToDownload
-          }
-        })
+        toast.success(t('about.notifications.updateAvailable', { version: result.version }))
         setLatestVersionState({
           status: 'available',
           version: result.version ?? ''
@@ -281,6 +316,19 @@ export function About() {
                       </div>
                     ) : null}
                   </div>
+                  {updateDownloadProgress !== null && (
+                    <div className="space-y-2 w-full">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm text-muted-foreground">
+                          {t('about.downloadingUpdate')}
+                        </span>
+                        <span className="text-sm font-medium">
+                          {updateDownloadProgress.toFixed(1)}%
+                        </span>
+                      </div>
+                      <Progress value={updateDownloadProgress} className="h-2" />
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-2">

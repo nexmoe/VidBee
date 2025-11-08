@@ -75,7 +75,8 @@
       "available": "New version available",
       "uptodate": "You're up to date",
       "error": "Unable to fetch the latest version"
-    }
+    },
+    "downloadingUpdate": "Downloading update"
   },
   "advancedOptions": {
     "closeWhenDone": "Close app when download finishes",
