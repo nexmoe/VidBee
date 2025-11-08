@@ -153,7 +153,12 @@ function AppContent() {
   const renderPage = () => {
     switch (currentPage) {
       case 'home':
-        return <Home onOpenSupportedSites={() => setCurrentPage('sites')} />
+        return (
+          <Home
+            onOpenSupportedSites={() => setCurrentPage('sites')}
+            onOpenSettings={() => setCurrentPage('settings')}
+          />
+        )
       case 'settings':
         return <Settings />
       case 'about':
@@ -161,7 +166,12 @@ function AppContent() {
       case 'sites':
         return <SupportedSites />
       default:
-        return <Home onOpenSupportedSites={() => setCurrentPage('sites')} />
+        return (
+          <Home
+            onOpenSupportedSites={() => setCurrentPage('sites')}
+            onOpenSettings={() => setCurrentPage('settings')}
+          />
+        )
     }
   }
 

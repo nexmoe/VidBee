@@ -19,7 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@renderer/components/u
 import { popularSites } from '@renderer/data/popularSites'
 import type { AppSettings, OneClickQualityPreset, PlaylistInfo } from '@shared/types'
 import { useAtom, useSetAtom } from 'jotai'
-import { AlertCircle, Download, ListVideo, Loader2, Search } from 'lucide-react'
+import { AlertCircle, Download, Loader2, Search } from 'lucide-react'
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -124,9 +124,10 @@ const buildAudioFormatPreference = (settings: AppSettings): string => {
 
 interface HomeProps {
   onOpenSupportedSites?: () => void
+  onOpenSettings?: () => void
 }
 
-export function Home({ onOpenSupportedSites }: HomeProps) {
+export function Home({ onOpenSupportedSites, onOpenSettings }: HomeProps) {
   const { t } = useTranslation()
   const [videoInfo, _setVideoInfo] = useAtom(currentVideoInfoAtom)
   const [loading] = useAtom(videoInfoLoadingAtom)
@@ -538,11 +539,9 @@ export function Home({ onOpenSupportedSites }: HomeProps) {
       <Tabs defaultValue="single" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="single" className="flex items-center gap-2">
-            <Download className="h-4 w-4" />
             {t('download.singleVideo')}
           </TabsTrigger>
           <TabsTrigger value="playlist" className="flex items-center gap-2">
-            <ListVideo className="h-4 w-4" />
             {t('playlist.title')}
           </TabsTrigger>
         </TabsList>
@@ -622,18 +621,20 @@ export function Home({ onOpenSupportedSites }: HomeProps) {
 
                 {/* One-Click Download Info */}
                 {settings.oneClickDownload && (
-                  <div className="rounded-lg bg-blue-50 dark:bg-blue-900/10 p-4">
-                    <div className="flex items-start gap-3">
-                      <Download className="h-5 w-5 text-blue-600 mt-0.5 dark:text-blue-400" />
-                      <div className="flex-1 space-y-1">
-                        <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                          {t('download.oneClickDownload')}
-                        </p>
-                        <p className="text-sm text-blue-700">
-                          {t('download.oneClickDownloadDescription')}
-                        </p>
-                      </div>
+                  <div className="flex items-center justify-between gap-2 rounded-lg bg-card px-4 py-3 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                      <span>{t('download.oneClickDownloadEnabled')}</span>
                     </div>
+                    {onOpenSettings && (
+                      <Button
+                        type="button"
+                        variant="link"
+                        className="h-auto px-2 py-0 text-xs"
+                        onClick={onOpenSettings}
+                      >
+                        {t('download.goToSettings')}
+                      </Button>
+                    )}
                   </div>
                 )}
 

@@ -1,13 +1,13 @@
 import { Button } from '@renderer/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@renderer/components/ui/card'
+import { CardContent, CardHeader } from '@renderer/components/ui/card'
 import { cn } from '@renderer/lib/utils'
-import { useAtomValue, useSetAtom } from 'jotai'
+import { useAtomValue } from 'jotai'
 import { History as HistoryIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useHistorySync } from '../../hooks/use-history-sync'
 import type { DownloadRecord } from '../../store/downloads'
-import { clearCompletedAtom, downloadStatsAtom, downloadsArrayAtom } from '../../store/downloads'
+import { downloadStatsAtom, downloadsArrayAtom } from '../../store/downloads'
 import { DownloadItem } from './DownloadItem'
 import { PlaylistDownloadGroup } from './PlaylistDownloadGroup'
 
@@ -17,7 +17,6 @@ export function UnifiedDownloadHistory() {
   const { t } = useTranslation()
   const allRecords = useAtomValue(downloadsArrayAtom)
   const downloadStats = useAtomValue(downloadStatsAtom)
-  const clearCompleted = useSetAtom(clearCompletedAtom)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
 
   useHistorySync()
@@ -99,33 +98,9 @@ export function UnifiedDownloadHistory() {
     return { order, groups }
   }, [filteredRecords])
 
-  const hasCompletedActive = allRecords.some(
-    (item) => item.entryType === 'active' && item.status === 'completed'
-  )
-  const handleClearCompleted = () => {
-    clearCompleted()
-  }
-
   return (
-    <Card className="border border-border/60 bg-background max-w-full shadow-sm backdrop-blur-sm">
-      <CardHeader className="gap-4">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="space-y-1">
-            <CardTitle>{t('download.downloadQueue')}</CardTitle>
-          </div>
-          <div className="flex flex-wrap items-center gap-2 text-xs">
-            {hasCompletedActive && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 border border-border/60 px-3"
-                onClick={handleClearCompleted}
-              >
-                {t('download.clearCompleted')}
-              </Button>
-            )}
-          </div>
-        </div>
+    <div className="space-y-4">
+      <CardHeader className="gap-4 p-0">
         <div className="flex flex-wrap items-center gap-2 text-sm">
           {filters.map((filter) => {
             const isActive = statusFilter === filter.key
@@ -155,7 +130,7 @@ export function UnifiedDownloadHistory() {
           })}
         </div>
       </CardHeader>
-      <CardContent className="space-y-3 overflow-hidden w-full">
+      <CardContent className="space-y-3 p-0 overflow-hidden w-full">
         {filteredRecords.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border/60 px-6 py-10 text-center text-muted-foreground">
             <HistoryIcon className="h-10 w-10 opacity-50" />
@@ -191,6 +166,6 @@ export function UnifiedDownloadHistory() {
           </div>
         )}
       </CardContent>
-    </Card>
+    </div>
   )
 }

@@ -230,6 +230,25 @@ class FileSystemService extends IpcService {
   }
 
   @IpcMethod()
+  async fileExists(_context: IpcContext, filePath: string): Promise<boolean> {
+    try {
+      if (!filePath) {
+        return false
+      }
+
+      const sanitizedPath = this.sanitizePath(filePath)
+      const normalizedPath = path.normalize(sanitizedPath)
+
+      const stats = await fs.stat(normalizedPath).catch(() => null)
+
+      return stats?.isFile() ?? false
+    } catch (error) {
+      console.error('Failed to check file existence:', error)
+      return false
+    }
+  }
+
+  @IpcMethod()
   async deleteFile(_context: IpcContext, filePath: string): Promise<boolean> {
     try {
       if (!filePath) {

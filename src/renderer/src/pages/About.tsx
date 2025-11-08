@@ -321,47 +321,47 @@ export function About() {
 
         <Card>
           <CardHeader>
-            <CardTitle>{t('about.followAuthorTitle')}</CardTitle>
-            <CardDescription>{t('about.followAuthorDescription')}</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <p className="text-sm text-muted-foreground md:max-w-md">
-              {t('about.followAuthorSupport')}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => openShareUrl('https://x.com/nexmoex')}
-                className="gap-2"
-              >
-                <Twitter className="h-4 w-4" />
-                {t('about.followAuthorActions.follow')}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
             <CardTitle>{t('about.shareTitle')}</CardTitle>
             <CardDescription>{t('about.shareDescription')}</CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <p className="text-sm text-muted-foreground md:max-w-md">{t('about.shareSupport')}</p>
-            <div className="flex flex-wrap gap-2">
-              <Button variant="outline" size="sm" onClick={handleShareTwitter} className="gap-2">
-                <Twitter className="h-4 w-4" />
-                {t('about.shareActions.twitter')}
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleShareFacebook} className="gap-2">
-                <Facebook className="h-4 w-4" />
-                {t('about.shareActions.facebook')}
-              </Button>
-              <Button variant="secondary" size="sm" onClick={handleCopyShareLink} className="gap-2">
-                <LinkIcon className="h-4 w-4" />
-                {t('about.shareActions.copy')}
-              </Button>
+          <CardContent className="space-y-4">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <p className="text-sm text-muted-foreground md:max-w-md">{t('about.shareSupport')}</p>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" size="sm" onClick={handleShareTwitter} className="gap-2">
+                  <Twitter className="h-4 w-4" />
+                  {t('about.shareActions.twitter')}
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleShareFacebook} className="gap-2">
+                  <Facebook className="h-4 w-4" />
+                  {t('about.shareActions.facebook')}
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleCopyShareLink}
+                  className="gap-2"
+                >
+                  <LinkIcon className="h-4 w-4" />
+                  {t('about.shareActions.copy')}
+                </Button>
+              </div>
+            </div>
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <p className="text-sm text-muted-foreground md:max-w-md">
+                {t('about.followAuthorSupport')}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => openShareUrl('https://x.com/nexmoex')}
+                  className="gap-2"
+                >
+                  <Twitter className="h-4 w-4" />
+                  {t('about.followAuthorActions.follow')}
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>

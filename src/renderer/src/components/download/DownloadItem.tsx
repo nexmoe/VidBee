@@ -5,6 +5,7 @@ import { Progress } from '@renderer/components/ui/progress'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { useAtomValue, useSetAtom } from 'jotai'
 import { AlertCircle, CheckCircle2, Copy, FolderOpen, Loader2, Play, Trash2, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { useCachedThumbnail } from '../../hooks/use-cached-thumbnail'
@@ -67,6 +68,30 @@ export function DownloadItem({ download }: DownloadItemProps) {
     ? actionsContainerBaseClass
     : `${actionsContainerBaseClass} sm:opacity-0 sm:group-hover:opacity-100`
 
+  // Track if the file exists
+  const [fileExists, setFileExists] = useState(false)
+
+  // Check if file exists when download data changes
+  useEffect(() => {
+    const checkFileExists = async () => {
+      if (!download.title || !download.downloadPath || !download.format) {
+        setFileExists(false)
+        return
+      }
+
+      try {
+        const filePath = generateFilePath(download.downloadPath, download.title, download.format)
+        const exists = await ipcServices.fs.fileExists(filePath)
+        setFileExists(exists)
+      } catch (error) {
+        console.error('Failed to check file existence:', error)
+        setFileExists(false)
+      }
+    }
+
+    checkFileExists()
+  }, [download.title, download.downloadPath, download.format])
+
   const handleCancel = async () => {
     if (isHistory) return
     try {
@@ -93,18 +118,31 @@ export function DownloadItem({ download }: DownloadItemProps) {
       toast.error(t('notifications.openFolderFailed'))
     }
   }
+  // Check if copy to clipboard is available
+  const canCopyToClipboard = () => {
+    return !!(download.title && download.downloadPath && download.format && fileExists)
+  }
+
   // need title, downloadPath, format
   const handleCopyToClipboard = async () => {
-    if (!download.title || !download.downloadPath || !download.format) {
+    if (!canCopyToClipboard()) {
+      toast.error(t('notifications.copyFailed'))
+      return
+    }
+
+    // Type guard: these values are guaranteed to exist after canCopyToClipboard() check
+    const downloadPath = download.downloadPath
+    const format = download.format
+    const title = download.title
+
+    if (!downloadPath || !format || !title) {
       toast.error(t('notifications.copyFailed'))
       return
     }
 
     try {
       // Generate file path using downloadPath + title + ext
-      const downloadPath = download.downloadPath
-      const format = download.format
-      const filePath = generateFilePath(downloadPath, download.title, format)
+      const filePath = generateFilePath(downloadPath, title, format)
 
       const success = await ipcServices.fs.copyFileToClipboard(filePath)
       if (!success) {
@@ -320,7 +358,7 @@ export function DownloadItem({ download }: DownloadItemProps) {
                             size="icon"
                             className="h-8 w-8 shrink-0"
                             onClick={handleCopyToClipboard}
-                            disabled={!download.title || !download.downloadPath || !download.format}
+                            disabled={!canCopyToClipboard()}
                           >
                             <Copy className="h-4 w-4" />
                           </Button>
@@ -373,6 +411,7 @@ export function DownloadItem({ download }: DownloadItemProps) {
                             size="icon"
                             className="h-8 w-8 shrink-0"
                             onClick={handleCopyToClipboard}
+                            disabled={!canCopyToClipboard()}
                           >
                             <Copy className="h-4 w-4" />
                           </Button>
