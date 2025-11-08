@@ -28,18 +28,32 @@ import {
 } from '../../store/downloads'
 import { settingsAtom } from '../../store/settings'
 
-// Helper function to generate file path with proper path separators
-const generateFilePath = (
+const generateFilePathCandidates = (
   downloadPath: string,
   title: string,
   format: string,
   savedFileName?: string
-): string => {
-  // Prefer the actual saved filename when available
-  const fileName = savedFileName || `${title} via VidBee.${format}`
-  // Use proper path joining for cross-platform compatibility
+): string[] => {
+  const candidateFileNames = savedFileName
+    ? [savedFileName]
+    : [`${title} via VidBee.${format}`, `${title}.${format}`]
   const normalizedDownloadPath = downloadPath.replace(/\\/g, '/')
-  return `${normalizedDownloadPath}/${fileName}`
+  return Array.from(
+    new Set(candidateFileNames.map((fileName) => `${normalizedDownloadPath}/${fileName}`))
+  )
+}
+
+const tryFileOperation = async (
+  paths: string[],
+  operation: (filePath: string) => Promise<boolean>
+): Promise<boolean> => {
+  for (const filePath of paths) {
+    const success = await operation(filePath)
+    if (success) {
+      return true
+    }
+  }
+  return false
 }
 
 interface DownloadItemProps {
@@ -115,14 +129,20 @@ export function DownloadItem({ download }: DownloadItemProps) {
 
       try {
         const formatForPath = download.format || (download.type === 'audio' ? 'mp3' : 'mp4')
-        const filePath = generateFilePath(
+        const filePaths = generateFilePathCandidates(
           download.downloadPath,
           download.title,
           formatForPath,
           download.savedFileName
         )
-        const exists = await ipcServices.fs.fileExists(filePath)
-        setFileExists(exists)
+        for (const filePath of filePaths) {
+          const exists = await ipcServices.fs.fileExists(filePath)
+          if (exists) {
+            setFileExists(true)
+            return
+          }
+        }
+        setFileExists(false)
       } catch (error) {
         console.error('Failed to check file existence:', error)
         setFileExists(false)
@@ -152,14 +172,16 @@ export function DownloadItem({ download }: DownloadItemProps) {
     try {
       const downloadPath = download.downloadPath || settings.downloadPath
       const format = download.format || (download.type === 'audio' ? 'mp3' : 'mp4')
-      const filePath = generateFilePath(
+      const filePaths = generateFilePathCandidates(
         downloadPath,
         download.title,
         format,
         download.savedFileName
       )
 
-      const success = await ipcServices.fs.openFileLocation(filePath)
+      const success = await tryFileOperation(filePaths, (filePath) =>
+        ipcServices.fs.openFileLocation(filePath)
+      )
       if (!success) {
         toast.error(t('notifications.openFolderFailed'))
       }
@@ -197,9 +219,16 @@ export function DownloadItem({ download }: DownloadItemProps) {
 
     try {
       // Generate file path using downloadPath + title + ext
-      const filePath = generateFilePath(downloadPath, title, format, download.savedFileName)
+      const filePaths = generateFilePathCandidates(
+        downloadPath,
+        title,
+        format,
+        download.savedFileName
+      )
 
-      const success = await ipcServices.fs.copyFileToClipboard(filePath)
+      const success = await tryFileOperation(filePaths, (filePath) =>
+        ipcServices.fs.copyFileToClipboard(filePath)
+      )
       if (!success) {
         toast.error(t('notifications.copyFailed'))
         return
@@ -217,7 +246,7 @@ export function DownloadItem({ download }: DownloadItemProps) {
     try {
       const downloadPath = download.downloadPath || settings.downloadPath
       const format = download.format || (download.type === 'audio' ? 'mp3' : 'mp4')
-      const filePath = generateFilePath(
+      const filePaths = generateFilePathCandidates(
         downloadPath,
         download.title,
         format,
