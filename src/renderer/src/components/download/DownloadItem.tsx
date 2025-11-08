@@ -257,7 +257,12 @@ export function DownloadItem({ download }: DownloadItemProps) {
       await ipcServices.history.removeHistoryItem(download.id)
 
       // Then try to delete the file
-      await ipcServices.fs.deleteFile(filePath)
+      const deleted = await tryFileOperation(filePaths, (filePath) =>
+        ipcServices.fs.deleteFile(filePath)
+      )
+      if (!deleted) {
+        console.warn('Failed to delete download file for history item:', download.id)
+      }
 
       removeHistory(download.id)
       toast.success(t('notifications.itemRemoved'))
