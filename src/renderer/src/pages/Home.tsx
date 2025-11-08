@@ -42,7 +42,6 @@ import {
 } from '../store/video'
 
 const qualityPresetToVideoHeight: Record<OneClickQualityPreset, number | null> = {
-  auto: null,
   best: null,
   good: 1080,
   normal: 720,
@@ -51,7 +50,6 @@ const qualityPresetToVideoHeight: Record<OneClickQualityPreset, number | null> =
 }
 
 const qualityPresetToAudioAbr: Record<OneClickQualityPreset, number | null> = {
-  auto: null,
   best: 320,
   good: 256,
   normal: 192,
@@ -72,7 +70,7 @@ const dedupe = (candidates: Array<string | undefined>): string[] => {
 }
 
 const getQualityPreset = (settings: AppSettings): OneClickQualityPreset =>
-  settings.oneClickQuality ?? 'auto'
+  settings.oneClickQuality ?? 'best'
 
 const buildAudioSelectors = (preset: OneClickQualityPreset): string[] => {
   if (preset === 'worst') {

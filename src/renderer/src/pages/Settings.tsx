@@ -235,9 +235,6 @@ export function Settings() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="auto">
-                            {t('settings.oneClickQualityOptions.auto')}
-                          </SelectItem>
                           <SelectItem value="best">
                             {t('settings.oneClickQualityOptions.best')}
                           </SelectItem>

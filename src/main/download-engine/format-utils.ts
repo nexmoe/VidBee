@@ -6,7 +6,6 @@ import type {
 } from '../../shared/types'
 
 const qualityPresetToVideoHeight: Record<OneClickQualityPreset, number | null> = {
-  auto: null,
   best: null,
   good: 1080,
   normal: 720,
@@ -15,7 +14,6 @@ const qualityPresetToVideoHeight: Record<OneClickQualityPreset, number | null> =
 }
 
 const qualityPresetToAudioAbr: Record<OneClickQualityPreset, number | null> = {
-  auto: null,
   best: 320,
   good: 256,
   normal: 192,
@@ -187,7 +185,7 @@ export const resolveSelectedFormat = (
     return directMatch
   }
 
-  const preset = settings.oneClickQuality ?? 'auto'
+  const preset = settings.oneClickQuality ?? 'best'
 
   if (options.type === 'video') {
     const videoFormats = formats.filter(

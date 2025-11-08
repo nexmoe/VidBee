@@ -172,7 +172,7 @@ export interface PlaylistDownloadResult {
 }
 
 // Settings types
-export type OneClickQualityPreset = 'auto' | 'best' | 'good' | 'normal' | 'bad' | 'worst'
+export type OneClickQualityPreset = 'best' | 'good' | 'normal' | 'bad' | 'worst'
 
 export interface AppSettings {
   downloadPath: string
@@ -206,7 +206,7 @@ export const defaultSettings: AppSettings = {
   theme: 'system',
   oneClickDownload: false,
   oneClickDownloadType: 'video',
-  oneClickQuality: 'auto',
+  oneClickQuality: 'best',
   closeToTray: false,
   hideDockIcon: false,
   autoUpdate: true

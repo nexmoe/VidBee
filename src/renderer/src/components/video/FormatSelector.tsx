@@ -12,7 +12,6 @@ import { useTranslation } from 'react-i18next'
 import type { OneClickQualityPreset, VideoFormat } from '../../../../shared/types'
 
 const qualityPresetToVideoHeight: Record<OneClickQualityPreset, number | null> = {
-  auto: null,
   best: null,
   good: 1080,
   normal: 720,
