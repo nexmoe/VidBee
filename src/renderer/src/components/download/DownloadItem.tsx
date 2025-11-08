@@ -4,8 +4,19 @@ import { ImageWithPlaceholder } from '@renderer/components/ui/image-with-placeho
 import { Progress } from '@renderer/components/ui/progress'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { useAtomValue, useSetAtom } from 'jotai'
-import { AlertCircle, CheckCircle2, Copy, FolderOpen, Loader2, Play, Trash2, X } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import {
+  AlertCircle,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  Copy,
+  FolderOpen,
+  Loader2,
+  Play,
+  Trash2,
+  X
+} from 'lucide-react'
+import { type ReactNode, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { useCachedThumbnail } from '../../hooks/use-cached-thumbnail'
@@ -17,17 +28,41 @@ import {
 } from '../../store/downloads'
 import { settingsAtom } from '../../store/settings'
 
-// Helper function to generate file path with proper path separators
-const generateFilePath = (downloadPath: string, title: string, format: string): string => {
-  const fileName = `${title}.${format}`
-  // Use proper path joining for cross-platform compatibility
-  // Handle both forward and backward slashes for cross-platform compatibility
+const generateFilePathCandidates = (
+  downloadPath: string,
+  title: string,
+  format: string,
+  savedFileName?: string
+): string[] => {
+  const candidateFileNames = savedFileName
+    ? [savedFileName]
+    : [`${title} via VidBee.${format}`, `${title}.${format}`]
   const normalizedDownloadPath = downloadPath.replace(/\\/g, '/')
-  return `${normalizedDownloadPath}/${fileName}`
+  return Array.from(
+    new Set(candidateFileNames.map((fileName) => `${normalizedDownloadPath}/${fileName}`))
+  )
+}
+
+const tryFileOperation = async (
+  paths: string[],
+  operation: (filePath: string) => Promise<boolean>
+): Promise<boolean> => {
+  for (const filePath of paths) {
+    const success = await operation(filePath)
+    if (success) {
+      return true
+    }
+  }
+  return false
 }
 
 interface DownloadItemProps {
   download: DownloadRecord
+}
+
+type MetadataDetail = {
+  label: string
+  value: ReactNode
 }
 
 const formatFileSize = (bytes?: number) => {
@@ -53,6 +88,18 @@ const formatDate = (timestamp?: number) => {
   return new Date(timestamp).toLocaleString()
 }
 
+const formatDateShort = (timestamp?: number) => {
+  if (!timestamp) return ''
+  const date = new Date(timestamp)
+  return date.toLocaleString(undefined, {
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
 export function DownloadItem({ download }: DownloadItemProps) {
   const { t } = useTranslation()
   const settings = useAtomValue(settingsAtom)
@@ -70,19 +117,32 @@ export function DownloadItem({ download }: DownloadItemProps) {
 
   // Track if the file exists
   const [fileExists, setFileExists] = useState(false)
+  const [detailsOpen, setDetailsOpen] = useState(false)
 
   // Check if file exists when download data changes
   useEffect(() => {
     const checkFileExists = async () => {
-      if (!download.title || !download.downloadPath || !download.format) {
+      if (!download.title || !download.downloadPath) {
         setFileExists(false)
         return
       }
 
       try {
-        const filePath = generateFilePath(download.downloadPath, download.title, download.format)
-        const exists = await ipcServices.fs.fileExists(filePath)
-        setFileExists(exists)
+        const formatForPath = download.format || (download.type === 'audio' ? 'mp3' : 'mp4')
+        const filePaths = generateFilePathCandidates(
+          download.downloadPath,
+          download.title,
+          formatForPath,
+          download.savedFileName
+        )
+        for (const filePath of filePaths) {
+          const exists = await ipcServices.fs.fileExists(filePath)
+          if (exists) {
+            setFileExists(true)
+            return
+          }
+        }
+        setFileExists(false)
       } catch (error) {
         console.error('Failed to check file existence:', error)
         setFileExists(false)
@@ -90,7 +150,13 @@ export function DownloadItem({ download }: DownloadItemProps) {
     }
 
     checkFileExists()
-  }, [download.title, download.downloadPath, download.format])
+  }, [
+    download.title,
+    download.downloadPath,
+    download.format,
+    download.savedFileName,
+    download.type
+  ])
 
   const handleCancel = async () => {
     if (isHistory) return
@@ -104,12 +170,18 @@ export function DownloadItem({ download }: DownloadItemProps) {
 
   const handleOpenFolder = async () => {
     try {
-      // Generate file path using downloadPath + title + ext
       const downloadPath = download.downloadPath || settings.downloadPath
       const format = download.format || (download.type === 'audio' ? 'mp3' : 'mp4')
-      const filePath = generateFilePath(downloadPath, download.title, format)
+      const filePaths = generateFilePathCandidates(
+        downloadPath,
+        download.title,
+        format,
+        download.savedFileName
+      )
 
-      const success = await ipcServices.fs.openFileLocation(filePath)
+      const success = await tryFileOperation(filePaths, (filePath) =>
+        ipcServices.fs.openFileLocation(filePath)
+      )
       if (!success) {
         toast.error(t('notifications.openFolderFailed'))
       }
@@ -120,7 +192,12 @@ export function DownloadItem({ download }: DownloadItemProps) {
   }
   // Check if copy to clipboard is available
   const canCopyToClipboard = () => {
-    return !!(download.title && download.downloadPath && download.format && fileExists)
+    return !!(
+      download.title &&
+      download.downloadPath &&
+      fileExists &&
+      (download.savedFileName || download.format)
+    )
   }
 
   // need title, downloadPath, format
@@ -142,9 +219,16 @@ export function DownloadItem({ download }: DownloadItemProps) {
 
     try {
       // Generate file path using downloadPath + title + ext
-      const filePath = generateFilePath(downloadPath, title, format)
+      const filePaths = generateFilePathCandidates(
+        downloadPath,
+        title,
+        format,
+        download.savedFileName
+      )
 
-      const success = await ipcServices.fs.copyFileToClipboard(filePath)
+      const success = await tryFileOperation(filePaths, (filePath) =>
+        ipcServices.fs.copyFileToClipboard(filePath)
+      )
       if (!success) {
         toast.error(t('notifications.copyFailed'))
         return
@@ -160,16 +244,25 @@ export function DownloadItem({ download }: DownloadItemProps) {
   const handleRemoveHistory = async () => {
     if (!isHistory) return
     try {
-      // Generate file path using downloadPath + title + ext
       const downloadPath = download.downloadPath || settings.downloadPath
       const format = download.format || (download.type === 'audio' ? 'mp3' : 'mp4')
-      const filePath = generateFilePath(downloadPath, download.title, format)
+      const filePaths = generateFilePathCandidates(
+        downloadPath,
+        download.title,
+        format,
+        download.savedFileName
+      )
 
       // Remove from history first
       await ipcServices.history.removeHistoryItem(download.id)
 
       // Then try to delete the file
-      await ipcServices.fs.deleteFile(filePath)
+      const deleted = await tryFileOperation(filePaths, (filePath) =>
+        ipcServices.fs.deleteFile(filePath)
+      )
+      if (!deleted) {
+        console.warn('Failed to delete download file for history item:', download.id)
+      }
 
       removeHistory(download.id)
       toast.success(t('notifications.itemRemoved'))
@@ -218,6 +311,246 @@ export function DownloadItem({ download }: DownloadItemProps) {
 
   const statusIcon = getStatusIcon()
   const statusText = getStatusText()
+  const sourceDisplay =
+    download.uploader && download.channel && download.uploader !== download.channel
+      ? `${download.uploader} • ${download.channel}`
+      : download.uploader || download.channel || ''
+
+  const metadataDetails: MetadataDetail[] = []
+
+  if (timestamp) {
+    metadataDetails.push({
+      label: t('history.date'),
+      value: formatDate(timestamp)
+    })
+  }
+
+  if (sourceDisplay) {
+    metadataDetails.push({
+      label: t('download.metadata.source'),
+      value: sourceDisplay
+    })
+  }
+
+  if (download.playlistId) {
+    metadataDetails.push({
+      label: t('download.metadata.playlist'),
+      value: (
+        <span>
+          {download.playlistTitle || t('playlist.untitled')}
+          {download.playlistIndex !== undefined && download.playlistSize !== undefined ? (
+            <span className="text-muted-foreground/80">
+              {` ${t('playlist.positionLabel', {
+                index: download.playlistIndex,
+                total: download.playlistSize
+              })}`}
+            </span>
+          ) : null}
+        </span>
+      )
+    })
+  }
+
+  if (download.duration) {
+    metadataDetails.push({
+      label: t('history.duration'),
+      value: formatDuration(download.duration)
+    })
+  }
+
+  const selectedFormatSize =
+    download.selectedFormat?.filesize || download.selectedFormat?.filesize_approx
+  const inlineFileSize = selectedFormatSize ? formatFileSize(selectedFormatSize) : undefined
+
+  const formatLabelValue = download.selectedFormat?.ext
+    ? download.selectedFormat.ext.toUpperCase()
+    : download.format
+      ? download.format.toUpperCase()
+      : undefined
+
+  if (formatLabelValue) {
+    metadataDetails.push({
+      label: t('download.metadata.format'),
+      value: formatLabelValue
+    })
+  }
+
+  const qualityValue = download.selectedFormat?.height
+    ? `${download.selectedFormat.height}p${download.selectedFormat.fps === 60 ? '60' : ''}`
+    : download.quality
+
+  if (qualityValue) {
+    metadataDetails.push({
+      label: t('download.metadata.quality'),
+      value: qualityValue
+    })
+  }
+
+  if (inlineFileSize) {
+    metadataDetails.push({
+      label: t('history.fileSize'),
+      value: inlineFileSize
+    })
+  }
+
+  if (download.codec) {
+    metadataDetails.push({
+      label: t('download.metadata.codec'),
+      value: download.codec
+    })
+  }
+
+  if (download.savedFileName) {
+    metadataDetails.push({
+      label: t('download.metadata.savedFile'),
+      value: download.savedFileName
+    })
+  }
+
+  if (download.url) {
+    metadataDetails.push({
+      label: t('download.metadata.url'),
+      value: (
+        <a
+          href={download.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="wrap-break-word text-primary hover:underline"
+        >
+          {download.url}
+        </a>
+      )
+    })
+  }
+
+  // Additional metadata fields
+  if (download.description) {
+    metadataDetails.push({
+      label: t('download.metadata.description'),
+      value: <span className="wrap-break-word">{download.description}</span>
+    })
+  }
+
+  if (download.viewCount !== undefined && download.viewCount !== null) {
+    metadataDetails.push({
+      label: t('download.metadata.views'),
+      value: download.viewCount.toLocaleString()
+    })
+  }
+
+  if (download.tags && download.tags.length > 0) {
+    metadataDetails.push({
+      label: t('download.metadata.tags'),
+      value: (
+        <div className="flex flex-wrap gap-1">
+          {download.tags.map((tag) => (
+            <Badge key={tag} variant="secondary" className="text-[10px] px-1.5 py-0.5">
+              {tag}
+            </Badge>
+          ))}
+        </div>
+      )
+    })
+  }
+
+  if (download.downloadPath) {
+    metadataDetails.push({
+      label: t('download.metadata.downloadPath'),
+      value: <span className="wrap-break-word font-mono text-xs">{download.downloadPath}</span>
+    })
+  }
+
+  // Timestamps
+  if (download.createdAt && download.createdAt !== timestamp) {
+    metadataDetails.push({
+      label: t('download.metadata.createdAt'),
+      value: formatDate(download.createdAt)
+    })
+  }
+
+  if (download.startedAt) {
+    metadataDetails.push({
+      label: t('download.metadata.startedAt'),
+      value: formatDate(download.startedAt)
+    })
+  }
+
+  if (download.completedAt && download.completedAt !== timestamp) {
+    metadataDetails.push({
+      label: t('download.metadata.completedAt'),
+      value: formatDate(download.completedAt)
+    })
+  }
+
+  // Speed
+  if (download.speed) {
+    metadataDetails.push({
+      label: t('download.metadata.speed'),
+      value: download.speed
+    })
+  }
+
+  // File size (if different from inlineFileSize)
+  if (download.fileSize && download.fileSize !== selectedFormatSize) {
+    metadataDetails.push({
+      label: t('download.metadata.fileSize'),
+      value: formatFileSize(download.fileSize)
+    })
+  }
+
+  // Selected format details
+  if (download.selectedFormat) {
+    if (download.selectedFormat.width) {
+      metadataDetails.push({
+        label: t('download.metadata.width'),
+        value: `${download.selectedFormat.width}px`
+      })
+    }
+
+    if (download.selectedFormat.height && !qualityValue) {
+      metadataDetails.push({
+        label: t('download.metadata.height'),
+        value: `${download.selectedFormat.height}px`
+      })
+    }
+
+    if (download.selectedFormat.fps) {
+      metadataDetails.push({
+        label: t('download.metadata.fps'),
+        value: `${download.selectedFormat.fps}`
+      })
+    }
+
+    if (download.selectedFormat.vcodec) {
+      metadataDetails.push({
+        label: t('download.metadata.videoCodec'),
+        value: download.selectedFormat.vcodec
+      })
+    }
+
+    if (download.selectedFormat.acodec) {
+      metadataDetails.push({
+        label: t('download.metadata.audioCodec'),
+        value: download.selectedFormat.acodec
+      })
+    }
+
+    if (download.selectedFormat.format_note) {
+      metadataDetails.push({
+        label: t('download.metadata.formatNote'),
+        value: download.selectedFormat.format_note
+      })
+    }
+
+    if (download.selectedFormat.protocol) {
+      metadataDetails.push({
+        label: t('download.metadata.protocol'),
+        value: download.selectedFormat.protocol.toUpperCase()
+      })
+    }
+  }
+
+  const hasMetadataDetails = metadataDetails.length > 0
 
   return (
     <div className="group relative w-full max-w-full overflow-hidden">
@@ -242,109 +575,102 @@ export function DownloadItem({ download }: DownloadItemProps) {
                 </p>
               </div>
               <div className="flex w-full flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                <Badge variant="outline" className="bg-muted/50 capitalize text-[11px] font-medium">
-                  {download.type}
-                </Badge>
                 {(statusIcon || statusText) && (
                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
                     {statusIcon}
                     <span>{statusText}</span>
                   </div>
                 )}
-              </div>
-              {download.playlistId && (
-                <div className="flex w-full flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                  <Badge
-                    variant="secondary"
-                    className="bg-blue-500/10 text-blue-700 dark:text-blue-200"
-                  >
-                    {t('playlist.badgeLabel')}
-                  </Badge>
-                  <span className="truncate">
-                    {download.playlistTitle || t('playlist.untitled')}
-                    {download.playlistIndex !== undefined &&
-                      download.playlistSize !== undefined && (
-                        <span className="ml-1 text-muted-foreground/80">
-                          {t('playlist.positionLabel', {
-                            index: download.playlistIndex,
-                            total: download.playlistSize
-                          })}
-                        </span>
-                      )}
-                  </span>
-                </div>
-              )}
-              <div className="flex w-full min-w-0 flex-wrap items-center gap-2 text-xs text-muted-foreground">
                 {timestamp ? (
-                  <span className="truncate max-w-[120px]">{formatDate(timestamp)}</span>
+                  <span className="truncate text-muted-foreground/80">
+                    {formatDateShort(timestamp)}
+                  </span>
                 ) : null}
+              </div>
+              <div className="flex w-full flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                {/* Source link */}
+                {(sourceDisplay || download.url) &&
+                  (download.url ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <a
+                          href={download.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="max-w-[180px] truncate hover:text-primary transition-colors"
+                        >
+                          {sourceDisplay || download.url}
+                        </a>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs wrap-break-word">
+                        <p>{download.url}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    <span className="truncate">{sourceDisplay}</span>
+                  ))}
 
-                <span className="truncate max-w-[120px] text-left">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <a
-                        href={download.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="hover:text-primary transition-colors cursor-pointer"
-                      >
-                        {download.uploader &&
-                        download.channel &&
-                        download.uploader !== download.channel
-                          ? `${download.uploader} • ${download.channel}`
-                          : download.uploader
-                            ? `${download.uploader}`
-                            : download.channel
-                              ? `${download.channel}`
-                              : ''}
-                      </a>
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs wrap-break-word">
-                      <p>{download.url}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </span>
-                {download.duration ? <span>{formatDuration(download.duration)}</span> : null}
-                {download.selectedFormat ? (
+                {/* Playlist info */}
+                {download.playlistId && (
                   <>
-                    {download.selectedFormat.height ? (
-                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5">
-                        {download.selectedFormat.height}p
-                        {download.selectedFormat.fps === 60 ? '60' : ''}
-                      </Badge>
-                    ) : null}
-                    {download.selectedFormat.ext ? (
-                      <Badge variant="outline" className="text-[10px] px-1.5 py-0.5">
-                        {download.selectedFormat.ext.toUpperCase()}
-                      </Badge>
-                    ) : null}
-                    {download.selectedFormat.filesize || download.selectedFormat.filesize_approx ? (
-                      <span className="text-[10px] opacity-75">
-                        {formatFileSize(
-                          download.selectedFormat.filesize ||
-                            download.selectedFormat.filesize_approx
-                        )}
-                      </span>
-                    ) : null}
-                  </>
-                ) : (
-                  <>
-                    {download.quality ? (
-                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5">
-                        {download.quality}
-                      </Badge>
-                    ) : null}
-                    {download.format ? (
-                      <Badge variant="outline" className="text-[10px] px-1.5 py-0.5">
-                        {download.format.toUpperCase()}
-                      </Badge>
-                    ) : null}
-                    {download.codec ? (
-                      <span className="text-[10px] opacity-75">{download.codec}</span>
-                    ) : null}
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5 shrink-0">
+                      {t('playlist.badgeLabel')}
+                    </Badge>
+                    <span className="max-w-[200px] truncate">
+                      {download.playlistTitle || t('playlist.untitled')}
+                      {download.playlistIndex !== undefined &&
+                        download.playlistSize !== undefined &&
+                        ` (${download.playlistIndex}/${download.playlistSize})`}
+                    </span>
                   </>
                 )}
+
+                {/* Quality badge */}
+                {(download.selectedFormat?.height || download.quality) && (
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 shrink-0">
+                    {download.selectedFormat?.height
+                      ? `${download.selectedFormat.height}p${download.selectedFormat.fps === 60 ? '60' : ''}`
+                      : download.quality}
+                  </Badge>
+                )}
+
+                {/* File size */}
+                {inlineFileSize && <span>{inlineFileSize}</span>}
+
+                {/* Details toggle */}
+                {hasMetadataDetails && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant={detailsOpen ? 'default' : 'ghost'}
+                        size="icon"
+                        className="h-6 w-6 shrink-0"
+                        type="button"
+                        onClick={() => setDetailsOpen((prev) => !prev)}
+                      >
+                        {detailsOpen ? (
+                          <ChevronUp className="h-3.5 w-3.5" />
+                        ) : (
+                          <ChevronDown className="h-3.5 w-3.5" />
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{detailsOpen ? t('download.hideDetails') : t('download.showDetails')}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
               </div>
+              {detailsOpen && hasMetadataDetails && (
+                <div className="space-y-2 rounded-md border border-dashed border-border/60 bg-muted/30 p-3 text-xs">
+                  {metadataDetails.map((item, index) => (
+                    <div key={`${item.label}-${index}`} className="flex gap-3">
+                      <span className="w-24 shrink-0 text-muted-foreground">{item.label}</span>
+                      <span className="flex-1 wrap-break-word text-foreground">{item.value}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
             <div className={actionsContainerClass}>
               {isHistory ? (

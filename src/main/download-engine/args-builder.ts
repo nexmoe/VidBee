@@ -80,7 +80,7 @@ export const buildDownloadArgs = (
   }
 
   // Output path with proper encoding handling
-  const outputTemplate = path.join(downloadPath, '%(title)s.%(ext)s')
+  const outputTemplate = path.join(downloadPath, '%(title)s via VidBee.%(ext)s')
   args.push('-o', outputTemplate)
 
   // Add options for better filename handling

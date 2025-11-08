@@ -1,3 +1,4 @@
+import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import type { AppSettings } from '../shared/types'
@@ -8,6 +9,24 @@ const ElectronStore = require('electron-store')
 // Access the default export
 const Store = ElectronStore.default || ElectronStore
 
+const OLD_DEFAULT_DOWNLOAD_PATH = path.join(os.homedir(), 'Downloads')
+
+const ensureDirectoryExists = (dir: string) => {
+  try {
+    fs.mkdirSync(dir, { recursive: true })
+  } catch (error) {
+    console.error('Failed to ensure download directory:', error)
+  }
+}
+
+const resolveDefaultDownloadPath = () => {
+  const downloadDir = path.join(os.homedir(), 'Downloads', 'VidBee')
+  ensureDirectoryExists(downloadDir)
+  return downloadDir
+}
+
+const DEFAULT_DOWNLOAD_PATH = resolveDefaultDownloadPath()
+
 class SettingsManager {
   // biome-ignore lint/suspicious/noExplicitAny: electron-store requires dynamic import
   private store: any
@@ -16,9 +35,10 @@ class SettingsManager {
     this.store = new Store({
       defaults: {
         ...defaultSettings,
-        downloadPath: path.join(os.homedir(), 'Downloads')
+        downloadPath: DEFAULT_DOWNLOAD_PATH
       }
     })
+    this.ensureDownloadDirectory()
   }
 
   get<K extends keyof AppSettings>(key: K): AppSettings[K] {
@@ -26,6 +46,9 @@ class SettingsManager {
   }
 
   set<K extends keyof AppSettings>(key: K, value: AppSettings[K]): void {
+    if (key === 'downloadPath' && typeof value === 'string') {
+      ensureDirectoryExists(value)
+    }
     this.store.set(key, value)
   }
 
@@ -35,6 +58,9 @@ class SettingsManager {
 
   setAll(settings: Partial<AppSettings>): void {
     for (const [key, value] of Object.entries(settings)) {
+      if (key === 'downloadPath' && typeof value === 'string') {
+        ensureDirectoryExists(value)
+      }
       this.store.set(key as keyof AppSettings, value as AppSettings[keyof AppSettings])
     }
   }
@@ -43,8 +69,22 @@ class SettingsManager {
     this.store.clear()
     this.store.set({
       ...defaultSettings,
-      downloadPath: path.join(os.homedir(), 'Downloads')
+      downloadPath: DEFAULT_DOWNLOAD_PATH
     })
+    ensureDirectoryExists(DEFAULT_DOWNLOAD_PATH)
+  }
+
+  private ensureDownloadDirectory(): void {
+    try {
+      const currentPath: string | undefined = this.store.get('downloadPath')
+      if (!currentPath || currentPath === OLD_DEFAULT_DOWNLOAD_PATH) {
+        this.store.set('downloadPath', DEFAULT_DOWNLOAD_PATH)
+        return
+      }
+      ensureDirectoryExists(currentPath)
+    } catch (error) {
+      console.error('Failed to verify download directory:', error)
+    }
   }
 }
 
