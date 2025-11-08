@@ -1,13 +1,13 @@
 import { Button } from '@renderer/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@renderer/components/ui/card'
+import { CardContent, CardHeader } from '@renderer/components/ui/card'
 import { cn } from '@renderer/lib/utils'
-import { useAtomValue, useSetAtom } from 'jotai'
+import { useAtomValue } from 'jotai'
 import { History as HistoryIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useHistorySync } from '../../hooks/use-history-sync'
 import type { DownloadRecord } from '../../store/downloads'
-import { clearCompletedAtom, downloadStatsAtom, downloadsArrayAtom } from '../../store/downloads'
+import { downloadStatsAtom, downloadsArrayAtom } from '../../store/downloads'
 import { DownloadItem } from './DownloadItem'
 import { PlaylistDownloadGroup } from './PlaylistDownloadGroup'
 
@@ -17,7 +17,6 @@ export function UnifiedDownloadHistory() {
   const { t } = useTranslation()
   const allRecords = useAtomValue(downloadsArrayAtom)
   const downloadStats = useAtomValue(downloadStatsAtom)
-  const clearCompleted = useSetAtom(clearCompletedAtom)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
 
   useHistorySync()
@@ -98,13 +97,6 @@ export function UnifiedDownloadHistory() {
 
     return { order, groups }
   }, [filteredRecords])
-
-  const hasCompletedActive = allRecords.some(
-    (item) => item.entryType === 'active' && item.status === 'completed'
-  )
-  const handleClearCompleted = () => {
-    clearCompleted()
-  }
 
   return (
     <div className="space-y-4">
