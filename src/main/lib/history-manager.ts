@@ -299,6 +299,15 @@ class HistoryManager {
 
     return counts
   }
+
+  hasHistoryForUrl(url: string): boolean {
+    for (const item of this.history.values()) {
+      if (item.url === url) {
+        return true
+      }
+    }
+    return false
+  }
 }
 
 export const historyManager = new HistoryManager()

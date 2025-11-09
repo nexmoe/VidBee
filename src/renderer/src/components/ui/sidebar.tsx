@@ -9,6 +9,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui
 import { saveSettingAtom } from '@renderer/store/settings'
 import { type LanguageCode, languageList, normalizeLanguageCode } from '@shared/languages'
 import { useSetAtom } from 'jotai'
+import { Newspaper } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import '../../assets/title-bar.css'
@@ -22,7 +23,7 @@ import MingcuteInformationLine from '~icons/mingcute/information-line'
 import MingcuteSettingsFill from '~icons/mingcute/settings-3-fill'
 import MingcuteSettingsLine from '~icons/mingcute/settings-3-line'
 
-type Page = 'home' | 'settings' | 'about' | 'sites'
+type Page = 'home' | 'subscriptions' | 'settings' | 'about' | 'sites'
 
 interface NavigationItem {
   id: Page
@@ -52,6 +53,14 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
         inactive: MingcuteDownload3Line
       },
       label: t('menu.download')
+    },
+    {
+      id: 'subscriptions',
+      icon: {
+        active: Newspaper,
+        inactive: Newspaper
+      },
+      label: t('menu.subscriptions')
     },
     {
       id: 'sites',

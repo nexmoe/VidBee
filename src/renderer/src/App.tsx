@@ -2,7 +2,8 @@ import { ScrollArea } from '@renderer/components/ui/scroll-area'
 import { Sidebar } from '@renderer/components/ui/sidebar'
 import { Toaster } from '@renderer/components/ui/sonner'
 import { TitleBar } from '@renderer/components/ui/title-bar'
-import { useAtom } from 'jotai'
+import type { SubscriptionRule } from '@shared/types'
+import { useSetAtom } from 'jotai'
 import { ThemeProvider } from 'next-themes'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -11,18 +12,36 @@ import { ipcEvents, ipcServices } from './lib/ipc'
 import { About } from './pages/About'
 import { Home } from './pages/Home'
 import { Settings } from './pages/Settings'
+import { Subscriptions } from './pages/Subscriptions'
 import { SupportedSites } from './pages/SupportedSites'
-import { settingsAtom } from './store/settings'
+import { loadSubscriptionsAtom, setSubscriptionsAtom } from './store/subscriptions'
 
-type Page = 'home' | 'settings' | 'about' | 'sites'
+type Page = 'home' | 'subscriptions' | 'settings' | 'about' | 'sites'
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('home')
   const [platform, setPlatform] = useState<string>('')
-  const [settings] = useAtom(settingsAtom)
+  const loadSubscriptions = useSetAtom(loadSubscriptionsAtom)
+  const setSubscriptions = useSetAtom(setSubscriptionsAtom)
   const { t } = useTranslation()
-  const autoUpdateEnabled = settings.autoUpdate
   const updateDownloadInProgressRef = useRef(false)
+
+  useEffect(() => {
+    loadSubscriptions()
+
+    const handleSubscriptions = (...args: unknown[]) => {
+      const list = args[0]
+      if (Array.isArray(list)) {
+        setSubscriptions(list as SubscriptionRule[])
+      }
+    }
+
+    ipcEvents.on('subscriptions:updated', handleSubscriptions)
+
+    return () => {
+      ipcEvents.removeListener('subscriptions:updated', handleSubscriptions)
+    }
+  }, [loadSubscriptions, setSubscriptions])
 
   useEffect(() => {
     // Get platform info to determine if we should show title bar
@@ -119,7 +138,7 @@ function AppContent() {
       ipcEvents.removeListener('update:download-progress', handleDownloadProgress)
       ipcEvents.removeListener('update:show-notification', handleUpdateNotification)
     }
-  }, [autoUpdateEnabled, t])
+  }, [t])
 
   const renderPage = () => {
     switch (currentPage) {
@@ -132,6 +151,8 @@ function AppContent() {
         )
       case 'settings':
         return <Settings />
+      case 'subscriptions':
+        return <Subscriptions />
       case 'about':
         return <About />
       case 'sites':

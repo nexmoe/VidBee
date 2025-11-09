@@ -1,0 +1,683 @@
+import { randomUUID } from 'node:crypto'
+import { EventEmitter } from 'node:events'
+import fs from 'node:fs'
+import { join } from 'node:path'
+import type { Database as BetterSqlite3Instance } from 'better-sqlite3'
+import DatabaseConstructor from 'better-sqlite3'
+import { and, desc, eq, inArray } from 'drizzle-orm'
+import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
+import { drizzle } from 'drizzle-orm/better-sqlite3'
+import { index, integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import { app } from 'electron'
+import log from 'electron-log/main'
+import type {
+  SubscriptionCreatePayload,
+  SubscriptionFeedItem,
+  SubscriptionRule,
+  SubscriptionStatus,
+  SubscriptionUpdatePayload
+} from '../../shared/types'
+import { sanitizeFilenameTemplate } from '../download-engine/args-builder'
+
+const MAX_SEEN_IDS = 200
+
+const sanitizeList = (values?: string[]): string[] => {
+  if (!values || values.length === 0) {
+    return []
+  }
+  return values
+    .map((value) => value.trim())
+    .filter((value, index, array) => value.length > 0 && array.indexOf(value) === index)
+}
+
+const ensureDirectoryExists = (dir?: string): void => {
+  if (!dir) {
+    return
+  }
+  try {
+    fs.mkdirSync(dir, { recursive: true })
+  } catch (error) {
+    log.error('Failed to ensure subscription directory:', error)
+  }
+}
+
+const booleanToNumber = (value: boolean): number => (value ? 1 : 0)
+const numberToBoolean = (value: number | null | undefined): boolean => value === 1
+
+const parseStringArray = (value: string | null | undefined): string[] => {
+  if (!value) {
+    return []
+  }
+  try {
+    const parsed = JSON.parse(value) as unknown
+    return Array.isArray(parsed) ? sanitizeList(parsed as string[]) : []
+  } catch {
+    return []
+  }
+}
+
+const stringifyArray = (values: string[]): string => JSON.stringify(sanitizeList(values))
+
+const subscriptionsTable = sqliteTable('subscriptions', {
+  id: text('id').primaryKey(),
+  title: text('title').notNull(),
+  sourceUrl: text('source_url').notNull(),
+  feedUrl: text('feed_url').notNull(),
+  platform: text('platform').notNull(),
+  keywords: text('keywords').notNull(),
+  tags: text('tags').notNull(),
+  onlyDownloadLatest: integer('only_latest', { mode: 'number' }).notNull(),
+  enabled: integer('enabled', { mode: 'number' }).notNull(),
+  coverUrl: text('cover_url'),
+  latestVideoTitle: text('latest_video_title'),
+  latestVideoPublishedAt: integer('latest_video_published_at', { mode: 'number' }),
+  lastCheckedAt: integer('last_checked_at', { mode: 'number' }),
+  lastSuccessAt: integer('last_success_at', { mode: 'number' }),
+  status: text('status').notNull(),
+  lastError: text('last_error'),
+  createdAt: integer('created_at', { mode: 'number' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'number' }).notNull(),
+  seenItemIds: text('seen_item_ids').notNull(),
+  lastItemId: text('last_item_id'),
+  downloadDirectory: text('download_directory'),
+  namingTemplate: text('naming_template')
+})
+
+const subscriptionItemsTable = sqliteTable(
+  'subscription_items',
+  {
+    subscriptionId: text('subscription_id').notNull(),
+    itemId: text('item_id').notNull(),
+    title: text('title').notNull(),
+    url: text('url').notNull(),
+    publishedAt: integer('published_at', { mode: 'number' }).notNull(),
+    thumbnail: text('thumbnail'),
+    status: text('status').notNull(),
+    added: integer('added', { mode: 'number' }).notNull(),
+    downloadId: text('download_id'),
+    createdAt: integer('created_at', { mode: 'number' }).notNull(),
+    updatedAt: integer('updated_at', { mode: 'number' }).notNull()
+  },
+  (table) => ({
+    pk: primaryKey({
+      columns: [table.subscriptionId, table.itemId],
+      name: 'subscription_items_pk'
+    }),
+    subscriptionIdx: index('subscription_items_subscription_idx').on(table.subscriptionId)
+  })
+)
+
+type SubscriptionRow = typeof subscriptionsTable.$inferSelect
+type SubscriptionInsert = typeof subscriptionsTable.$inferInsert
+type SubscriptionItemRow = typeof subscriptionItemsTable.$inferSelect
+
+export class SubscriptionManager extends EventEmitter {
+  private sqlite: BetterSqlite3Instance | null = null
+  private db: BetterSQLite3Database | null = null
+
+  constructor() {
+    super()
+    try {
+      this.getDatabase()
+      this.migrateLegacyStore()
+    } catch (error) {
+      log.error('subscriptions: failed to initialize database', error)
+    }
+  }
+
+  getAll(): SubscriptionRule[] {
+    const database = this.getDatabase()
+    const rows = database
+      .select()
+      .from(subscriptionsTable)
+      .orderBy(desc(subscriptionsTable.updatedAt))
+      .all()
+    return this.attachFeedItems(rows.map((row) => this.mapRowToRecord(row)))
+  }
+
+  getById(id: string): SubscriptionRule | undefined {
+    const database = this.getDatabase()
+    const row = database
+      .select()
+      .from(subscriptionsTable)
+      .where(eq(subscriptionsTable.id, id))
+      .get()
+    if (!row) {
+      return undefined
+    }
+    return this.attachFeedItems([this.mapRowToRecord(row)])[0]
+  }
+
+  add(payload: SubscriptionCreatePayload): SubscriptionRule {
+    const timestamp = Date.now()
+    const keywords = sanitizeList(payload.keywords)
+    const tags = sanitizeList(payload.tags)
+    const record: SubscriptionRule = {
+      id: randomUUID(),
+      title: payload.sourceUrl,
+      sourceUrl: payload.sourceUrl,
+      feedUrl: payload.feedUrl,
+      platform: payload.platform,
+      keywords,
+      tags,
+      onlyDownloadLatest: payload.onlyDownloadLatest ?? true,
+      enabled: payload.enabled ?? true,
+      coverUrl: undefined,
+      latestVideoTitle: undefined,
+      latestVideoPublishedAt: undefined,
+      lastCheckedAt: undefined,
+      lastSuccessAt: undefined,
+      status: 'idle',
+      lastError: undefined,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      seenItemIds: [],
+      lastItemId: undefined,
+      downloadDirectory: payload.downloadDirectory,
+      namingTemplate: payload.namingTemplate
+        ? sanitizeFilenameTemplate(payload.namingTemplate)
+        : undefined,
+      items: []
+    }
+
+    ensureDirectoryExists(payload.downloadDirectory)
+    this.insertRecord(record)
+    this.emitUpdates()
+    return record
+  }
+
+  update(
+    id: string,
+    updates: SubscriptionUpdatePayload & Partial<SubscriptionRule>
+  ): SubscriptionRule | undefined {
+    const existing = this.getById(id)
+    if (!existing) {
+      return undefined
+    }
+
+    const keywords = updates.keywords ? sanitizeList(updates.keywords) : undefined
+    const tags = updates.tags ? sanitizeList(updates.tags) : undefined
+    const seenItemIds = this.normalizeSeenItems(updates.seenItemIds ?? existing.seenItemIds)
+
+    const next: SubscriptionRule = {
+      ...existing,
+      ...updates,
+      keywords: keywords ?? existing.keywords,
+      tags: tags ?? existing.tags,
+      seenItemIds,
+      updatedAt: Date.now()
+    }
+
+    if (updates.namingTemplate) {
+      next.namingTemplate = sanitizeFilenameTemplate(updates.namingTemplate)
+    }
+
+    ensureDirectoryExists(next.downloadDirectory)
+    this.updateRecord(next)
+    this.emitUpdates()
+    return next
+  }
+
+  remove(id: string): boolean {
+    const database = this.getDatabase()
+    const result = database.delete(subscriptionsTable).where(eq(subscriptionsTable.id, id)).run()
+    if ((result.changes ?? 0) > 0) {
+      database
+        .delete(subscriptionItemsTable)
+        .where(eq(subscriptionItemsTable.subscriptionId, id))
+        .run()
+      this.emitUpdates()
+      return true
+    }
+    return false
+  }
+
+  appendSeenItems(id: string, itemIds: string[]): SubscriptionRule | undefined {
+    if (itemIds.length === 0) {
+      return this.getById(id)
+    }
+    const existing = this.getById(id)
+    if (!existing) {
+      return undefined
+    }
+    const merged = this.normalizeSeenItems([...existing.seenItemIds, ...itemIds])
+    return this.update(id, { seenItemIds: merged })
+  }
+
+  replaceFeedItems(
+    subscriptionId: string,
+    items: SubscriptionFeedItem[],
+    silent: boolean = false
+  ): void {
+    const database = this.getDatabase()
+    const limited = items.slice(0, 20)
+    const now = Date.now()
+    database.transaction((tx) => {
+      tx.delete(subscriptionItemsTable)
+        .where(eq(subscriptionItemsTable.subscriptionId, subscriptionId))
+        .run()
+      for (const item of limited) {
+        tx.insert(subscriptionItemsTable)
+          .values({
+            subscriptionId,
+            itemId: item.id,
+            title: item.title,
+            url: item.url,
+            publishedAt: item.publishedAt,
+            thumbnail: item.thumbnail ?? null,
+            status: 'queued',
+            added: booleanToNumber(item.addedToQueue),
+            downloadId: item.downloadId ?? null,
+            createdAt: item.publishedAt,
+            updatedAt: now
+          })
+          .run()
+      }
+    })
+    if (!silent) {
+      this.emitUpdates()
+    }
+  }
+
+  updateFeedItemQueueState(
+    subscriptionId: string,
+    itemId: string,
+    updates: { added?: boolean; downloadId?: string | null }
+  ): void {
+    if (updates.added === undefined && !Object.hasOwn(updates, 'downloadId')) {
+      return
+    }
+
+    const setPayload: Partial<typeof subscriptionItemsTable.$inferInsert> = {
+      updatedAt: Date.now()
+    }
+
+    if (updates.added !== undefined) {
+      setPayload.added = booleanToNumber(updates.added)
+    }
+    if (Object.hasOwn(updates, 'downloadId')) {
+      setPayload.downloadId = updates.downloadId ?? null
+    }
+
+    const database = this.getDatabase()
+    const result = database
+      .update(subscriptionItemsTable)
+      .set(setPayload)
+      .where(
+        and(
+          eq(subscriptionItemsTable.subscriptionId, subscriptionId),
+          eq(subscriptionItemsTable.itemId, itemId)
+        )
+      )
+      .run()
+
+    if ((result.changes ?? 0) > 0) {
+      this.emitUpdates()
+    }
+  }
+
+  private attachFeedItems(records: SubscriptionRule[]): SubscriptionRule[] {
+    if (records.length === 0) {
+      return records
+    }
+    const ids = records.map((record) => record.id)
+    const database = this.getDatabase()
+    const rows = database
+      .select()
+      .from(subscriptionItemsTable)
+      .where(inArray(subscriptionItemsTable.subscriptionId, ids))
+      .orderBy(desc(subscriptionItemsTable.publishedAt))
+      .all()
+
+    const grouped = new Map<string, SubscriptionFeedItem[]>()
+    for (const row of rows) {
+      const item = this.mapItemRowToFeedItem(row)
+      const list = grouped.get(row.subscriptionId)
+      if (list) {
+        list.push(item)
+      } else {
+        grouped.set(row.subscriptionId, [item])
+      }
+    }
+
+    return records.map((record) => ({
+      ...record,
+      items: grouped.get(record.id) ?? []
+    }))
+  }
+
+  private getDatabase(): BetterSQLite3Database {
+    if (this.db) {
+      return this.db
+    }
+
+    const databasePath = this.getDatabasePath()
+    this.sqlite = new DatabaseConstructor(databasePath, { timeout: 5000 })
+    this.sqlite.pragma('journal_mode = WAL')
+    this.sqlite.pragma('foreign_keys = ON')
+    this.db = drizzle(this.sqlite)
+    this.sqlite
+      .prepare(
+        `CREATE TABLE IF NOT EXISTS subscriptions (
+          id TEXT PRIMARY KEY,
+          title TEXT NOT NULL,
+          source_url TEXT NOT NULL,
+          feed_url TEXT NOT NULL,
+          platform TEXT NOT NULL,
+          keywords TEXT NOT NULL,
+          tags TEXT NOT NULL,
+          only_latest INTEGER NOT NULL,
+          enabled INTEGER NOT NULL,
+          cover_url TEXT,
+          latest_video_title TEXT,
+          latest_video_published_at INTEGER,
+          last_checked_at INTEGER,
+          last_success_at INTEGER,
+          status TEXT NOT NULL,
+          last_error TEXT,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL,
+          seen_item_ids TEXT NOT NULL,
+          last_item_id TEXT,
+          download_directory TEXT,
+          naming_template TEXT
+        )`
+      )
+      .run()
+
+    this.sqlite
+      .prepare(
+        `CREATE TABLE IF NOT EXISTS subscription_items (
+          subscription_id TEXT NOT NULL,
+          item_id TEXT NOT NULL,
+          title TEXT NOT NULL,
+          url TEXT NOT NULL,
+          published_at INTEGER NOT NULL,
+          thumbnail TEXT,
+          status TEXT NOT NULL,
+          added INTEGER NOT NULL,
+          download_id TEXT,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL,
+          PRIMARY KEY (subscription_id, item_id)
+        )`
+      )
+      .run()
+    this.sqlite
+      .prepare(
+        'CREATE INDEX IF NOT EXISTS subscription_items_subscription_idx ON subscription_items (subscription_id)'
+      )
+      .run()
+    this.ensureItemsSchema()
+    log.info('subscriptions: database initialized at', databasePath)
+    return this.db
+  }
+
+  private ensureItemsSchema(): void {
+    if (!this.sqlite) {
+      return
+    }
+    try {
+      const columns = this.sqlite.prepare(`PRAGMA table_info(subscription_items)`).all() as Array<{
+        name: string
+      }>
+      const hasAdded = columns.some((column) => column.name === 'added')
+      if (!hasAdded) {
+        this.sqlite
+          .prepare(`ALTER TABLE subscription_items ADD COLUMN added INTEGER NOT NULL DEFAULT 0`)
+          .run()
+      }
+      const hasStatus = columns.some((column) => column.name === 'status')
+      if (!hasStatus) {
+        this.sqlite
+          .prepare(
+            `ALTER TABLE subscription_items ADD COLUMN status TEXT NOT NULL DEFAULT 'queued'`
+          )
+          .run()
+      }
+      const hasDownloaded = columns.some((column) => column.name === 'downloaded')
+      if (hasDownloaded) {
+        this.sqlite.prepare(`UPDATE subscription_items SET added = 1 WHERE downloaded = 1`).run()
+        const sqlite = this.sqlite
+        const migrate = sqlite.transaction(() => {
+          sqlite.prepare(`DROP TABLE IF EXISTS subscription_items_new`).run()
+          sqlite
+            .prepare(
+              `CREATE TABLE subscription_items_new (
+                subscription_id TEXT NOT NULL,
+                item_id TEXT NOT NULL,
+                title TEXT NOT NULL,
+                url TEXT NOT NULL,
+                published_at INTEGER NOT NULL,
+                thumbnail TEXT,
+                status TEXT NOT NULL,
+                added INTEGER NOT NULL,
+                download_id TEXT,
+                created_at INTEGER NOT NULL,
+                updated_at INTEGER NOT NULL,
+                PRIMARY KEY (subscription_id, item_id)
+              )`
+            )
+            .run()
+          sqlite
+            .prepare(
+              `INSERT INTO subscription_items_new (
+                subscription_id,
+                item_id,
+                title,
+                url,
+                published_at,
+                thumbnail,
+                status,
+                added,
+                download_id,
+                created_at,
+                updated_at
+              )
+              SELECT
+                subscription_id,
+                item_id,
+                title,
+                url,
+                published_at,
+                thumbnail,
+                status,
+                added,
+                download_id,
+                created_at,
+                updated_at
+              FROM subscription_items`
+            )
+            .run()
+          sqlite.prepare(`DROP TABLE subscription_items`).run()
+          sqlite.prepare(`ALTER TABLE subscription_items_new RENAME TO subscription_items`).run()
+          sqlite
+            .prepare(
+              'CREATE INDEX IF NOT EXISTS subscription_items_subscription_idx ON subscription_items (subscription_id)'
+            )
+            .run()
+        })
+        migrate()
+        log.info('subscriptions: removed legacy downloaded column from subscription_items')
+      }
+    } catch (error) {
+      log.warn('subscriptions: failed to ensure subscription_items schema', error)
+    }
+  }
+
+  private getDatabasePath(): string {
+    return join(app.getPath('userData'), 'subscriptions.sqlite')
+  }
+
+  private migrateLegacyStore(): void {
+    try {
+      const LegacyStore = require('electron-store')
+      const store = new LegacyStore({
+        name: 'subscriptions',
+        defaults: {
+          subscriptions: []
+        }
+      })
+      const legacyData = store.get('subscriptions') as SubscriptionRule[] | undefined
+      if (!legacyData || legacyData.length === 0) {
+        return
+      }
+
+      if (this.getAll().length > 0) {
+        return
+      }
+
+      for (const legacyItem of legacyData) {
+        try {
+          const normalized: SubscriptionRule = {
+            ...legacyItem,
+            keywords: sanitizeList(legacyItem.keywords),
+            tags: sanitizeList(legacyItem.tags),
+            seenItemIds: sanitizeList(legacyItem.seenItemIds),
+            items: []
+          }
+          this.insertRecord(normalized)
+          const legacyFeedItemsRaw = Array.isArray(
+            (legacyItem as { items?: SubscriptionFeedItem[] }).items
+          )
+            ? ((legacyItem as { items?: SubscriptionFeedItem[] }).items ?? [])
+            : []
+          if (legacyFeedItemsRaw.length > 0) {
+            const converted = legacyFeedItemsRaw.map((item) => ({
+              id: item.id,
+              url: item.url,
+              title: item.title,
+              publishedAt: item.publishedAt,
+              thumbnail: item.thumbnail,
+              addedToQueue: Boolean((item as { downloaded?: boolean }).downloaded),
+              downloadId: item.downloadId
+            }))
+            this.replaceFeedItems(normalized.id, converted, true)
+          }
+        } catch (error) {
+          log.error('subscriptions: failed to migrate legacy record', error)
+        }
+      }
+
+      store.clear()
+      this.emitUpdates()
+      log.info(`subscriptions: migrated ${legacyData.length} legacy entries`)
+    } catch (error) {
+      log.warn('subscriptions: legacy migration skipped', error)
+    }
+  }
+
+  private insertRecord(record: SubscriptionRule): void {
+    const database = this.getDatabase()
+    const payload = this.mapRecordToInsert(record)
+    database
+      .insert(subscriptionsTable)
+      .values(payload)
+      .onConflictDoUpdate({ target: subscriptionsTable.id, set: payload })
+      .run()
+  }
+
+  private updateRecord(record: SubscriptionRule): void {
+    const database = this.getDatabase()
+    const payload = this.mapRecordToInsert(record)
+    database
+      .insert(subscriptionsTable)
+      .values(payload)
+      .onConflictDoUpdate({ target: subscriptionsTable.id, set: payload })
+      .run()
+  }
+
+  private mapRecordToInsert(record: SubscriptionRule): SubscriptionInsert {
+    return {
+      id: record.id,
+      title: record.title,
+      sourceUrl: record.sourceUrl,
+      feedUrl: record.feedUrl,
+      platform: record.platform,
+      keywords: stringifyArray(record.keywords),
+      tags: stringifyArray(record.tags),
+      onlyDownloadLatest: booleanToNumber(record.onlyDownloadLatest),
+      enabled: booleanToNumber(record.enabled),
+      coverUrl: record.coverUrl,
+      latestVideoTitle: record.latestVideoTitle,
+      latestVideoPublishedAt: record.latestVideoPublishedAt ?? null,
+      lastCheckedAt: record.lastCheckedAt ?? null,
+      lastSuccessAt: record.lastSuccessAt ?? null,
+      status: record.status,
+      lastError: record.lastError,
+      createdAt: record.createdAt,
+      updatedAt: record.updatedAt,
+      seenItemIds: stringifyArray(record.seenItemIds),
+      lastItemId: record.lastItemId,
+      downloadDirectory: record.downloadDirectory,
+      namingTemplate: record.namingTemplate
+        ? sanitizeFilenameTemplate(record.namingTemplate)
+        : undefined
+    }
+  }
+
+  private mapRowToRecord(row: SubscriptionRow): SubscriptionRule {
+    return {
+      id: row.id,
+      title: row.title,
+      sourceUrl: row.sourceUrl,
+      feedUrl: row.feedUrl,
+      platform: row.platform as SubscriptionRule['platform'],
+      keywords: parseStringArray(row.keywords),
+      tags: parseStringArray(row.tags),
+      onlyDownloadLatest: numberToBoolean(row.onlyDownloadLatest),
+      enabled: numberToBoolean(row.enabled),
+      coverUrl: row.coverUrl ?? undefined,
+      latestVideoTitle: row.latestVideoTitle ?? undefined,
+      latestVideoPublishedAt: row.latestVideoPublishedAt ?? undefined,
+      lastCheckedAt: row.lastCheckedAt ?? undefined,
+      lastSuccessAt: row.lastSuccessAt ?? undefined,
+      status: row.status as SubscriptionStatus,
+      lastError: row.lastError ?? undefined,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      seenItemIds: parseStringArray(row.seenItemIds),
+      lastItemId: row.lastItemId ?? undefined,
+      downloadDirectory: row.downloadDirectory ?? undefined,
+      namingTemplate: row.namingTemplate ? sanitizeFilenameTemplate(row.namingTemplate) : undefined,
+      items: []
+    }
+  }
+
+  private mapItemRowToFeedItem(row: SubscriptionItemRow): SubscriptionFeedItem {
+    return {
+      id: row.itemId,
+      url: row.url,
+      title: row.title,
+      publishedAt: row.publishedAt,
+      thumbnail: row.thumbnail ?? undefined,
+      addedToQueue: numberToBoolean(row.added),
+      downloadId: row.downloadId ?? undefined
+    }
+  }
+
+  private normalizeSeenItems(items: string[]): string[] {
+    const unique = new Map<string, string>()
+    for (const entry of items) {
+      if (!entry) {
+        continue
+      }
+      const key = entry.trim()
+      if (!key) {
+        continue
+      }
+      unique.set(key, key)
+    }
+    const normalized = Array.from(unique.keys())
+    if (normalized.length > MAX_SEEN_IDS) {
+      return normalized.slice(normalized.length - MAX_SEEN_IDS)
+    }
+    return normalized
+  }
+
+  private emitUpdates(): void {
+    this.emit('subscriptions:updated', this.getAll())
+  }
+}
+
+export const subscriptionManager = new SubscriptionManager()

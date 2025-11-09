@@ -395,6 +395,8 @@ class DownloadEngine extends EventEmitter {
 
     const createdAt = Date.now()
     const settings = settingsManager.getAll()
+    const targetDownloadPath = options.customDownloadPath?.trim() || settings.downloadPath
+    const origin = options.origin ?? 'manual'
 
     const item: DownloadItem = {
       id,
@@ -402,7 +404,11 @@ class DownloadEngine extends EventEmitter {
       title: 'Downloading...',
       type: options.type,
       status: 'pending' as const,
-      createdAt
+      createdAt,
+      tags: options.tags,
+      origin,
+      subscriptionId: options.subscriptionId,
+      subscriptionTitle: options.subscriptionTitle
     }
 
     this.queue.add(id, options, item)
@@ -411,7 +417,11 @@ class DownloadEngine extends EventEmitter {
       title: item.title,
       status: 'pending',
       downloadedAt: createdAt,
-      downloadPath: settings.downloadPath
+      downloadPath: targetDownloadPath,
+      tags: options.tags,
+      origin,
+      subscriptionId: options.subscriptionId,
+      subscriptionTitle: options.subscriptionTitle
     })
   }
 
@@ -419,7 +429,8 @@ class DownloadEngine extends EventEmitter {
     scopedLoggers.download.info('Starting download execution for ID:', id, 'URL:', options.url)
     const ytdlp = ytdlpManager.getInstance()
     const settings = settingsManager.getAll()
-    const downloadPath = settings.downloadPath
+    const defaultDownloadPath = settings.downloadPath
+    const resolvedDownloadPath = options.customDownloadPath?.trim() || defaultDownloadPath
 
     // Set environment variables for proper encoding on Windows
     if (process.platform === 'win32') {
@@ -521,7 +532,7 @@ class DownloadEngine extends EventEmitter {
       return true
     }
 
-    const args = buildDownloadArgs(options, downloadPath, settings)
+    const args = buildDownloadArgs(options, resolvedDownloadPath, settings)
 
     // Check if format selector contains '+' which means video and audio will be merged
     const formatSelector =
@@ -676,7 +687,7 @@ class DownloadEngine extends EventEmitter {
         }
 
         const fileName = `${sanitizedTitle}.${extension}`
-        const finalOutputPath = path.join(downloadPath, fileName)
+        const finalOutputPath = path.join(resolvedDownloadPath, fileName)
 
         scopedLoggers.download.info(
           'Generated file path for ID:',
@@ -699,7 +710,7 @@ class DownloadEngine extends EventEmitter {
           // If the expected file doesn't exist, try to find it by scanning the directory
           try {
             const fs = await import('node:fs/promises')
-            const files = await fs.readdir(downloadPath)
+            const files = await fs.readdir(resolvedDownloadPath)
             // Look for files matching the title pattern with the correct extension
             const matchingFiles = files.filter((file) => {
               const baseName = file.replace(/\.[^.]+$/, '')
@@ -714,7 +725,7 @@ class DownloadEngine extends EventEmitter {
               // Use the most recently modified file if multiple matches
               const fileStats = await Promise.all(
                 matchingFiles.map(async (file) => {
-                  const filePath = path.join(downloadPath, file)
+                  const filePath = path.join(resolvedDownloadPath, file)
                   const stats = await fs.stat(filePath)
                   return { file, path: filePath, mtime: stats.mtime, size: stats.size }
                 })
@@ -921,6 +932,9 @@ class DownloadEngine extends EventEmitter {
       uploader: completedDownload?.item.uploader,
       viewCount: completedDownload?.item.viewCount,
       tags: completedDownload?.item.tags,
+      origin: completedDownload?.item.origin,
+      subscriptionId: completedDownload?.item.subscriptionId,
+      subscriptionTitle: completedDownload?.item.subscriptionTitle,
       playlistId: completedDownload?.item.playlistId,
       playlistTitle: completedDownload?.item.playlistTitle,
       playlistIndex: completedDownload?.item.playlistIndex,
@@ -934,6 +948,8 @@ class DownloadEngine extends EventEmitter {
     updates: Partial<DownloadHistoryItem>
   ): void {
     const existing = historyManager.getHistoryById(id)
+    const resolvedDownloadPath =
+      updates.downloadPath ?? existing?.downloadPath ?? options.customDownloadPath
     const base: DownloadHistoryItem = existing ?? {
       id,
       url: options.url,
@@ -941,7 +957,7 @@ class DownloadEngine extends EventEmitter {
       thumbnail: updates.thumbnail,
       type: options.type,
       status: updates.status || 'pending',
-      downloadPath: updates.downloadPath,
+      downloadPath: resolvedDownloadPath,
       savedFileName: updates.savedFileName,
       fileSize: updates.fileSize,
       duration: updates.duration,
@@ -955,7 +971,10 @@ class DownloadEngine extends EventEmitter {
       channel: updates.channel,
       uploader: updates.uploader,
       viewCount: updates.viewCount,
-      tags: updates.tags,
+      tags: updates.tags ?? options.tags,
+      origin: updates.origin ?? options.origin,
+      subscriptionId: updates.subscriptionId ?? options.subscriptionId,
+      subscriptionTitle: updates.subscriptionTitle ?? options.subscriptionTitle,
       // Download-specific format info
       selectedFormat: updates.selectedFormat,
       playlistId: updates.playlistId,
@@ -972,7 +991,12 @@ class DownloadEngine extends EventEmitter {
       type: updates.type ?? base.type,
       title: updates.title ?? base.title,
       status: updates.status ?? base.status,
-      downloadedAt: updates.downloadedAt ?? base.downloadedAt
+      downloadedAt: updates.downloadedAt ?? base.downloadedAt,
+      downloadPath: resolvedDownloadPath ?? base.downloadPath,
+      tags: updates.tags ?? base.tags,
+      origin: updates.origin ?? base.origin,
+      subscriptionId: updates.subscriptionId ?? base.subscriptionId,
+      subscriptionTitle: updates.subscriptionTitle ?? base.subscriptionTitle
     }
 
     historyManager.addHistoryItem(merged)

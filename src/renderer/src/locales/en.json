@@ -190,7 +190,8 @@
       "videoCodec": "Video codec",
       "audioCodec": "Audio codec",
       "formatNote": "Format note",
-      "protocol": "Protocol"
+      "protocol": "Protocol",
+      "subscription": "Subscription"
     }
   },
   "errors": {
@@ -245,6 +246,7 @@
     "about": "About",
     "download": "Download",
     "playlist": "Download Playlist",
+    "subscriptions": "Subscriptions",
     "preferences": "Preferences",
     "supportedSites": "Supported Sites",
     "theme": "Theme:"
@@ -356,10 +358,15 @@
     "proxy": "Proxy",
     "proxyDescription": "Proxy server for network requests",
     "proxyPlaceholder": "http://proxy:port",
+    "rss": "RSS",
     "selectConfigFile": "Select config file",
     "selectPath": "Select",
     "showMoreFormats": "Show more format options",
     "showMoreFormatsDescription": "Display additional format options in the interface",
+    "subscriptionDefaults": {
+      "filenameDescription": "Pattern used when a subscription does not override its filename.",
+      "intervalDescription": "How often VidBee checks each subscription feed (1-24 hours)."
+    },
     "system": "System",
     "theme": "Theme",
     "themeDescription": "Choose a light, dark, or system theme for VidBee",
@@ -369,6 +376,84 @@
       "showHome": "Show Home"
     },
     "video": "Video Preferences"
+  },
+  "subscriptions": {
+    "title": "Subscriptions",
+    "description": "Automatically monitor RSS feeds and queue new downloads without manual work.",
+    "defaults": {
+      "title": "Automation defaults",
+      "description": "Control where subscription downloads are stored and how often VidBee checks for new videos.",
+      "downloadDirectory": "Download directory",
+      "filenameTemplate": "Filename template (file only)",
+      "checkInterval": "Check interval (hours)",
+      "onlyLatest": "Download only the latest video",
+      "onlyLatestDescription": "When enabled, VidBee skips older backlog items and only grabs the newest upload."
+    },
+    "add": {
+      "title": "Add subscription",
+      "description": "Paste a YouTube, Bilibili, or RSS link. VidBee will detect the feed automatically."
+    },
+    "fields": {
+      "url": "Source link",
+      "keywords": "Keyword filter (comma separated)",
+      "tags": "Auto tags",
+      "customDirectory": "Custom directory",
+      "namingTemplate": "Custom filename template (file only)",
+      "onlyLatest": "Download only the latest video",
+      "onlyLatestDescription": "Ignore backlog items and fetch just the newest upload from this feed.",
+      "enabled": "Enabled",
+      "onlyLatestShort": "Only latest"
+    },
+    "placeholders": {
+      "url": "https://www.youtube.com/channel/UC..."
+    },
+    "actions": {
+      "add": "Add",
+      "refresh": "Refresh",
+      "edit": "Edit",
+      "remove": "Remove",
+      "save": "Save changes",
+      "selectDirectory": "Browse"
+    },
+    "items": {
+      "title": "Latest uploads",
+      "empty": "No recent feed items found.",
+      "queued": "Queued",
+      "notQueued": "Not queued",
+      "actions": {
+        "open": "Open in browser"
+      }
+    },
+    "labels": {
+      "subscription": "Subscription",
+      "unknown": "Unknown subscription"
+    },
+    "notifications": {
+      "directoryError": "Failed to open the directory picker.",
+      "missingUrl": "Please paste a channel link first.",
+      "created": "Subscription added",
+      "createError": "Failed to add subscription.",
+      "refreshStarted": "Refresh started",
+      "removed": "Subscription removed",
+      "updated": "Subscription updated",
+      "openLinkError": "Failed to open the video link."
+    },
+    "detectedFeed": "Detected {{platform}} feed -> {{feed}}",
+    "detecting": "Detecting feed...",
+    "latestVideo": "Latest video: {{title}}",
+    "lastChecked": "Last checked: {{time}}",
+    "never": "Never",
+    "empty": "No subscriptions yet. Add your favorite channels to start auto-downloading.",
+    "edit": {
+      "title": "Edit {{name}}",
+      "description": "Tweak filters, tags, and overrides for this feed."
+    },
+    "status": {
+      "up-to-date": "Up to date",
+      "checking": "Checking",
+      "failed": "Failed",
+      "idle": "Idle"
+    }
   },
   "sites": {
     "homeInlineDescription": "Supports {{sites}} and more.",

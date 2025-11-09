@@ -76,6 +76,9 @@ export interface DownloadItem {
   uploader?: string
   viewCount?: number
   tags?: string[]
+  origin?: 'manual' | 'subscription'
+  subscriptionId?: string
+  subscriptionTitle?: string
   // Download-specific format info
   selectedFormat?: VideoFormat
   // Playlist context (optional)
@@ -83,6 +86,16 @@ export interface DownloadItem {
   playlistTitle?: string
   playlistIndex?: number
   playlistSize?: number
+}
+
+export interface SubscriptionFeedItem {
+  id: string
+  url: string
+  title: string
+  publishedAt: number
+  thumbnail?: string
+  addedToQueue: boolean
+  downloadId?: string
 }
 
 export interface DownloadHistoryItem {
@@ -109,6 +122,9 @@ export interface DownloadHistoryItem {
   uploader?: string
   viewCount?: number
   tags?: string[]
+  origin?: 'manual' | 'subscription'
+  subscriptionId?: string
+  subscriptionTitle?: string
   // Download-specific format info
   selectedFormat?: VideoFormat
   // Playlist context (optional)
@@ -128,6 +144,12 @@ export interface DownloadOptions {
   startTime?: string
   endTime?: string
   downloadSubs?: boolean
+  customDownloadPath?: string
+  customFilenameTemplate?: string
+  tags?: string[]
+  origin?: 'manual' | 'subscription'
+  subscriptionId?: string
+  subscriptionTitle?: string
 }
 
 export interface PlaylistEntry {
@@ -173,6 +195,66 @@ export interface PlaylistDownloadResult {
   entries: PlaylistDownloadEntry[]
 }
 
+// Subscription types
+export type SubscriptionPlatform = 'youtube' | 'bilibili' | 'custom'
+
+export type SubscriptionStatus = 'idle' | 'checking' | 'up-to-date' | 'failed'
+
+export interface SubscriptionRule {
+  id: string
+  title: string
+  sourceUrl: string
+  feedUrl: string
+  platform: SubscriptionPlatform
+  keywords: string[]
+  tags: string[]
+  onlyDownloadLatest: boolean
+  enabled: boolean
+  coverUrl?: string
+  latestVideoTitle?: string
+  latestVideoPublishedAt?: number
+  lastCheckedAt?: number
+  lastSuccessAt?: number
+  status: SubscriptionStatus
+  lastError?: string
+  createdAt: number
+  updatedAt: number
+  seenItemIds: string[]
+  lastItemId?: string
+  downloadDirectory?: string
+  namingTemplate?: string
+  items: SubscriptionFeedItem[]
+}
+
+export interface SubscriptionResolvedFeed {
+  sourceUrl: string
+  feedUrl: string
+  platform: SubscriptionPlatform
+}
+
+export interface SubscriptionCreatePayload {
+  sourceUrl: string
+  feedUrl: string
+  platform: SubscriptionPlatform
+  keywords?: string[]
+  tags?: string[]
+  onlyDownloadLatest?: boolean
+  downloadDirectory?: string
+  namingTemplate?: string
+  enabled?: boolean
+}
+
+export interface SubscriptionUpdatePayload {
+  title?: string
+  keywords?: string[]
+  tags?: string[]
+  onlyDownloadLatest?: boolean
+  enabled?: boolean
+  downloadDirectory?: string
+  namingTemplate?: string
+  items?: SubscriptionFeedItem[]
+}
+
 // Settings types
 export type OneClickQualityPreset = 'best' | 'good' | 'normal' | 'bad' | 'worst'
 
@@ -193,6 +275,9 @@ export interface AppSettings {
   closeToTray: boolean
   hideDockIcon: boolean
   autoUpdate: boolean
+  subscriptionFilenameTemplate: string
+  subscriptionOnlyLatestDefault: boolean
+  subscriptionCheckIntervalHours: number
 }
 
 export const defaultSettings: AppSettings = {
@@ -211,5 +296,8 @@ export const defaultSettings: AppSettings = {
   oneClickQuality: 'best',
   closeToTray: false,
   hideDockIcon: false,
-  autoUpdate: true
+  autoUpdate: true,
+  subscriptionFilenameTemplate: '%(uploader)s - %(title)s.%(ext)s',
+  subscriptionOnlyLatestDefault: true,
+  subscriptionCheckIntervalHours: 3
 }

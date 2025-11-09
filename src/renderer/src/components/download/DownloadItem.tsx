@@ -105,6 +105,9 @@ export function DownloadItem({ download }: DownloadItemProps) {
   const removeDownload = useSetAtom(removeDownloadAtom)
   const removeHistory = useSetAtom(removeHistoryRecordAtom)
   const isHistory = download.entryType === 'history'
+  const isSubscriptionDownload = download.origin === 'subscription'
+  const subscriptionLabel =
+    download.subscriptionTitle ?? download.subscriptionId ?? t('subscriptions.labels.unknown')
   const timestamp = download.completedAt ?? download.downloadedAt ?? download.createdAt
   const showActionsWithoutHover = isHistory || download.status === 'completed'
   const actionsContainerBaseClass =
@@ -548,6 +551,13 @@ export function DownloadItem({ download }: DownloadItemProps) {
     }
   }
 
+  if (isSubscriptionDownload) {
+    metadataDetails.push({
+      label: t('download.metadata.subscription'),
+      value: subscriptionLabel
+    })
+  }
+
   const hasMetadataDetails = metadataDetails.length > 0
 
   return (
@@ -567,10 +577,15 @@ export function DownloadItem({ download }: DownloadItemProps) {
         <div className="flex-1 min-w-0 max-w-full space-y-3 overflow-hidden">
           <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:gap-4">
             <div className="flex-1 min-w-0 max-w-full space-y-2 overflow-hidden">
-              <div className="w-full min-w-0 overflow-hidden">
-                <p className="w-full wrap-break-word text-sm font-medium sm:text-base line-clamp-2">
+              <div className="w-full min-w-0 overflow-hidden flex flex-wrap items-center gap-2">
+                <p className="flex-1 wrap-break-word text-sm font-medium sm:text-base line-clamp-2">
                   {download.title}
                 </p>
+                {isSubscriptionDownload && (
+                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5 shrink-0">
+                    {t('subscriptions.labels.subscription')}
+                  </Badge>
+                )}
               </div>
               <div className="flex w-full flex-wrap items-center gap-2 text-xs text-muted-foreground">
                 {(statusIcon || statusText) && (
