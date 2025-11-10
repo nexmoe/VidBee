@@ -371,8 +371,7 @@ export class SubscriptionScheduler extends EventEmitter {
         customFilenameTemplate: namingTemplate,
         tags,
         origin: 'subscription',
-        subscriptionId,
-        subscriptionTitle: subscription.title
+        subscriptionId
       })
 
       this.downloads.set(downloadId, {

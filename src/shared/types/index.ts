@@ -62,9 +62,6 @@ export interface DownloadItem {
   // Enhanced video information
   duration?: number
   fileSize?: number
-  format?: string
-  quality?: string
-  codec?: string
   savedFileName?: string
   // Timestamps
   createdAt: number
@@ -78,7 +75,6 @@ export interface DownloadItem {
   tags?: string[]
   origin?: 'manual' | 'subscription'
   subscriptionId?: string
-  subscriptionTitle?: string
   // Download-specific format info
   selectedFormat?: VideoFormat
   // Playlist context (optional)
@@ -112,10 +108,6 @@ export interface DownloadHistoryItem {
   downloadedAt: number
   completedAt?: number
   error?: string
-  // Enhanced video information
-  format?: string
-  quality?: string
-  codec?: string
   // Additional metadata
   description?: string
   channel?: string
@@ -124,7 +116,6 @@ export interface DownloadHistoryItem {
   tags?: string[]
   origin?: 'manual' | 'subscription'
   subscriptionId?: string
-  subscriptionTitle?: string
   // Download-specific format info
   selectedFormat?: VideoFormat
   // Playlist context (optional)
@@ -149,7 +140,6 @@ export interface DownloadOptions {
   tags?: string[]
   origin?: 'manual' | 'subscription'
   subscriptionId?: string
-  subscriptionTitle?: string
 }
 
 export interface PlaylistEntry {

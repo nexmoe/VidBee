@@ -407,8 +407,7 @@ class DownloadEngine extends EventEmitter {
       createdAt,
       tags: options.tags,
       origin,
-      subscriptionId: options.subscriptionId,
-      subscriptionTitle: options.subscriptionTitle
+      subscriptionId: options.subscriptionId
     }
 
     this.queue.add(id, options, item)
@@ -420,8 +419,7 @@ class DownloadEngine extends EventEmitter {
       downloadPath: targetDownloadPath,
       tags: options.tags,
       origin,
-      subscriptionId: options.subscriptionId,
-      subscriptionTitle: options.subscriptionTitle
+      subscriptionId: options.subscriptionId
     })
   }
 
@@ -441,8 +439,6 @@ class DownloadEngine extends EventEmitter {
     let availableFormats: VideoFormat[] = []
     let selectedFormat: VideoFormat | undefined
     let actualFormat: string | null = null
-    let actualQuality: string | null = null
-    let actualCodec: string | null = null
     let videoInfo: VideoInfo | undefined
 
     // First, get detailed video info to capture basic metadata and formats
@@ -455,20 +451,6 @@ class DownloadEngine extends EventEmitter {
 
       if (selectedFormat) {
         actualFormat = selectedFormat.ext || actualFormat
-
-        if (selectedFormat.height) {
-          actualQuality = `${selectedFormat.height}p${
-            selectedFormat.fps && selectedFormat.fps === 60 ? '60' : ''
-          }`
-        } else if (selectedFormat.format_note) {
-          actualQuality = selectedFormat.format_note
-        }
-
-        if (options.type === 'audio' || options.type === 'extract') {
-          actualCodec = selectedFormat.acodec || actualCodec
-        } else {
-          actualCodec = selectedFormat.vcodec || selectedFormat.acodec || actualCodec
-        }
       }
 
       this.updateDownloadInfo(id, {
@@ -512,18 +494,6 @@ class DownloadEngine extends EventEmitter {
 
       selectedFormat = candidate
       actualFormat = candidate.ext || actualFormat
-
-      if (candidate.height) {
-        actualQuality = `${candidate.height}p${candidate.fps === 60 ? '60' : ''}`
-      } else if (candidate.format_note) {
-        actualQuality = candidate.format_note
-      }
-
-      if (options.type === 'audio' || options.type === 'extract') {
-        actualCodec = candidate.acodec || actualCodec
-      } else {
-        actualCodec = candidate.vcodec || candidate.acodec || actualCodec
-      }
 
       this.updateDownloadInfo(id, {
         selectedFormat: candidate
@@ -640,16 +610,6 @@ class DownloadEngine extends EventEmitter {
           if (extMatch && !actualFormat) {
             actualFormat = extMatch[1]
           }
-
-          const heightMatch = formatInfo.match(/(\d+)p/)
-          if (heightMatch && !actualQuality) {
-            actualQuality = `${heightMatch[1]}p`
-          }
-
-          const codecMatch = formatInfo.match(/(?:vcodec|acodec)[:\s]*([^\s,]+)/)
-          if (codecMatch && !actualCodec) {
-            actualCodec = codecMatch[1]
-          }
         }
       }
 
@@ -759,9 +719,6 @@ class DownloadEngine extends EventEmitter {
           status: 'completed',
           completedAt: Date.now(),
           fileSize,
-          format: willMerge ? 'mp4' : actualFormat || undefined,
-          quality: actualQuality || undefined,
-          codec: actualCodec || undefined,
           savedFileName
         })
         scopedLoggers.download.info('Download completed successfully for ID:', id)
@@ -848,15 +805,6 @@ class DownloadEngine extends EventEmitter {
     if (updates.fileSize !== undefined) {
       historyUpdates.fileSize = updates.fileSize
     }
-    if (updates.format !== undefined) {
-      historyUpdates.format = updates.format
-    }
-    if (updates.quality !== undefined) {
-      historyUpdates.quality = updates.quality
-    }
-    if (updates.codec !== undefined) {
-      historyUpdates.codec = updates.codec
-    }
     if (updates.description !== undefined) {
       historyUpdates.description = updates.description
     }
@@ -884,6 +832,9 @@ class DownloadEngine extends EventEmitter {
     if (updates.playlistSize !== undefined) {
       historyUpdates.playlistSize = updates.playlistSize
     }
+    if (updates.selectedFormat !== undefined) {
+      historyUpdates.selectedFormat = updates.selectedFormat
+    }
     if (updates.status !== undefined) {
       historyUpdates.status = updates.status
     }
@@ -892,9 +843,6 @@ class DownloadEngine extends EventEmitter {
     }
     if (updates.error !== undefined) {
       historyUpdates.error = updates.error
-    }
-    if (updates.selectedFormat !== undefined) {
-      historyUpdates.selectedFormat = updates.selectedFormat
     }
     if (updates.savedFileName !== undefined) {
       historyUpdates.savedFileName = updates.savedFileName
@@ -924,9 +872,6 @@ class DownloadEngine extends EventEmitter {
       error,
       duration: completedDownload?.item.duration,
       fileSize: completedDownload?.item.fileSize,
-      format: completedDownload?.item.format,
-      quality: completedDownload?.item.quality,
-      codec: completedDownload?.item.codec,
       description: completedDownload?.item.description,
       channel: completedDownload?.item.channel,
       uploader: completedDownload?.item.uploader,
@@ -934,7 +879,6 @@ class DownloadEngine extends EventEmitter {
       tags: completedDownload?.item.tags,
       origin: completedDownload?.item.origin,
       subscriptionId: completedDownload?.item.subscriptionId,
-      subscriptionTitle: completedDownload?.item.subscriptionTitle,
       playlistId: completedDownload?.item.playlistId,
       playlistTitle: completedDownload?.item.playlistTitle,
       playlistIndex: completedDownload?.item.playlistIndex,
@@ -964,9 +908,6 @@ class DownloadEngine extends EventEmitter {
       downloadedAt: updates.downloadedAt ?? Date.now(),
       completedAt: updates.completedAt,
       error: updates.error,
-      format: updates.format,
-      quality: updates.quality,
-      codec: updates.codec,
       description: updates.description,
       channel: updates.channel,
       uploader: updates.uploader,
@@ -974,7 +915,6 @@ class DownloadEngine extends EventEmitter {
       tags: updates.tags ?? options.tags,
       origin: updates.origin ?? options.origin,
       subscriptionId: updates.subscriptionId ?? options.subscriptionId,
-      subscriptionTitle: updates.subscriptionTitle ?? options.subscriptionTitle,
       // Download-specific format info
       selectedFormat: updates.selectedFormat,
       playlistId: updates.playlistId,
@@ -995,8 +935,7 @@ class DownloadEngine extends EventEmitter {
       downloadPath: resolvedDownloadPath ?? base.downloadPath,
       tags: updates.tags ?? base.tags,
       origin: updates.origin ?? base.origin,
-      subscriptionId: updates.subscriptionId ?? base.subscriptionId,
-      subscriptionTitle: updates.subscriptionTitle ?? base.subscriptionTitle
+      subscriptionId: updates.subscriptionId ?? base.subscriptionId
     }
 
     historyManager.addHistoryItem(merged)

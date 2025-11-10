@@ -55,6 +55,73 @@ const tryFileOperation = async (
   return false
 }
 
+const getSavedFileExtension = (fileName?: string): string | undefined => {
+  if (!fileName) {
+    return undefined
+  }
+  const normalized = fileName.trim()
+  if (!normalized.includes('.')) {
+    return undefined
+  }
+  const ext = normalized.split('.').pop()
+  return ext?.toLowerCase()
+}
+
+const resolveDownloadExtension = (download: DownloadRecord): string => {
+  const savedExt = getSavedFileExtension(download.savedFileName)
+  if (savedExt) {
+    return savedExt
+  }
+  const selectedExt = download.selectedFormat?.ext?.toLowerCase()
+  if (selectedExt) {
+    return selectedExt
+  }
+  return download.type === 'audio' ? 'mp3' : 'mp4'
+}
+
+const getFormatLabel = (download: DownloadRecord): string | undefined => {
+  if (download.selectedFormat?.ext) {
+    return download.selectedFormat.ext.toUpperCase()
+  }
+  const savedExt = getSavedFileExtension(download.savedFileName)
+  return savedExt ? savedExt.toUpperCase() : undefined
+}
+
+const getQualityLabel = (download: DownloadRecord): string | undefined => {
+  const format = download.selectedFormat
+  if (!format) {
+    return undefined
+  }
+  if (format.height) {
+    return `${format.height}p${format.fps === 60 ? '60' : ''}`
+  }
+  if (format.format_note) {
+    return format.format_note
+  }
+  if (typeof format.quality === 'number') {
+    return format.quality.toString()
+  }
+  return undefined
+}
+
+const sanitizeCodec = (codec?: string | null): string | undefined => {
+  if (!codec || codec === 'none') {
+    return undefined
+  }
+  return codec
+}
+
+const getCodecLabel = (download: DownloadRecord): string | undefined => {
+  const format = download.selectedFormat
+  if (!format) {
+    return undefined
+  }
+  if (download.type === 'audio' || download.type === 'extract') {
+    return sanitizeCodec(format.acodec)
+  }
+  return sanitizeCodec(format.vcodec) ?? sanitizeCodec(format.acodec)
+}
+
 interface DownloadItemProps {
   download: DownloadRecord
 }
@@ -106,8 +173,7 @@ export function DownloadItem({ download }: DownloadItemProps) {
   const removeHistory = useSetAtom(removeHistoryRecordAtom)
   const isHistory = download.entryType === 'history'
   const isSubscriptionDownload = download.origin === 'subscription'
-  const subscriptionLabel =
-    download.subscriptionTitle ?? download.subscriptionId ?? t('subscriptions.labels.unknown')
+  const subscriptionLabel = download.subscriptionId ?? t('subscriptions.labels.unknown')
   const timestamp = download.completedAt ?? download.downloadedAt ?? download.createdAt
   const showActionsWithoutHover = isHistory || download.status === 'completed'
   const actionsContainerBaseClass =
@@ -115,6 +181,7 @@ export function DownloadItem({ download }: DownloadItemProps) {
   const actionsContainerClass = showActionsWithoutHover
     ? actionsContainerBaseClass
     : `${actionsContainerBaseClass} sm:opacity-0 sm:group-hover:opacity-100`
+  const resolvedExtension = resolveDownloadExtension(download)
 
   // Track if the file exists
   const [fileExists, setFileExists] = useState(false)
@@ -129,7 +196,7 @@ export function DownloadItem({ download }: DownloadItemProps) {
       }
 
       try {
-        const formatForPath = download.format || (download.type === 'audio' ? 'mp3' : 'mp4')
+        const formatForPath = resolvedExtension
         const filePaths = generateFilePathCandidates(
           download.downloadPath,
           download.title,
@@ -151,13 +218,7 @@ export function DownloadItem({ download }: DownloadItemProps) {
     }
 
     checkFileExists()
-  }, [
-    download.title,
-    download.downloadPath,
-    download.format,
-    download.savedFileName,
-    download.type
-  ])
+  }, [download.title, download.downloadPath, download.savedFileName, resolvedExtension])
 
   const handleCancel = async () => {
     if (isHistory) return
@@ -172,7 +233,7 @@ export function DownloadItem({ download }: DownloadItemProps) {
   const handleOpenFolder = async () => {
     try {
       const downloadPath = download.downloadPath || settings.downloadPath
-      const format = download.format || (download.type === 'audio' ? 'mp3' : 'mp4')
+      const format = resolvedExtension
       const filePaths = generateFilePathCandidates(
         downloadPath,
         download.title,
@@ -193,12 +254,7 @@ export function DownloadItem({ download }: DownloadItemProps) {
   }
   // Check if copy to clipboard is available
   const canCopyToClipboard = () => {
-    return !!(
-      download.title &&
-      download.downloadPath &&
-      fileExists &&
-      (download.savedFileName || download.format)
-    )
+    return Boolean(download.title && download.downloadPath && fileExists)
   }
 
   // need title, downloadPath, format
@@ -210,10 +266,10 @@ export function DownloadItem({ download }: DownloadItemProps) {
 
     // Type guard: these values are guaranteed to exist after canCopyToClipboard() check
     const downloadPath = download.downloadPath
-    const format = download.format
+    const format = resolvedExtension
     const title = download.title
 
-    if (!downloadPath || !format || !title) {
+    if (!downloadPath || !title) {
       toast.error(t('notifications.copyFailed'))
       return
     }
@@ -246,7 +302,7 @@ export function DownloadItem({ download }: DownloadItemProps) {
     if (!isHistory) return
     try {
       const downloadPath = download.downloadPath || settings.downloadPath
-      const format = download.format || (download.type === 'audio' ? 'mp3' : 'mp4')
+      const format = resolvedExtension
       const filePaths = generateFilePathCandidates(
         downloadPath,
         download.title,
@@ -363,11 +419,7 @@ export function DownloadItem({ download }: DownloadItemProps) {
     download.selectedFormat?.filesize || download.selectedFormat?.filesize_approx
   const inlineFileSize = selectedFormatSize ? formatFileSize(selectedFormatSize) : undefined
 
-  const formatLabelValue = download.selectedFormat?.ext
-    ? download.selectedFormat.ext.toUpperCase()
-    : download.format
-      ? download.format.toUpperCase()
-      : undefined
+  const formatLabelValue = getFormatLabel(download)
 
   if (formatLabelValue) {
     metadataDetails.push({
@@ -376,14 +428,12 @@ export function DownloadItem({ download }: DownloadItemProps) {
     })
   }
 
-  const qualityValue = download.selectedFormat?.height
-    ? `${download.selectedFormat.height}p${download.selectedFormat.fps === 60 ? '60' : ''}`
-    : download.quality
+  const qualityLabel = getQualityLabel(download)
 
-  if (qualityValue) {
+  if (qualityLabel) {
     metadataDetails.push({
       label: t('download.metadata.quality'),
-      value: qualityValue
+      value: qualityLabel
     })
   }
 
@@ -394,10 +444,11 @@ export function DownloadItem({ download }: DownloadItemProps) {
     })
   }
 
-  if (download.codec) {
+  const codecValue = getCodecLabel(download)
+  if (codecValue) {
     metadataDetails.push({
       label: t('download.metadata.codec'),
-      value: download.codec
+      value: codecValue
     })
   }
 
@@ -508,7 +559,7 @@ export function DownloadItem({ download }: DownloadItemProps) {
       })
     }
 
-    if (download.selectedFormat.height && !qualityValue) {
+    if (download.selectedFormat.height && !qualityLabel) {
       metadataDetails.push({
         label: t('download.metadata.height'),
         value: `${download.selectedFormat.height}px`
@@ -639,11 +690,9 @@ export function DownloadItem({ download }: DownloadItemProps) {
                 )}
 
                 {/* Quality badge */}
-                {(download.selectedFormat?.height || download.quality) && (
+                {qualityLabel && (
                   <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 shrink-0">
-                    {download.selectedFormat?.height
-                      ? `${download.selectedFormat.height}p${download.selectedFormat.fps === 60 ? '60' : ''}`
-                      : download.quality}
+                    {qualityLabel}
                   </Badge>
                 )}
 
