@@ -379,6 +379,7 @@
   },
   "subscriptions": {
     "title": "Subscriptions",
+    "subtitle": "{{count}} subscription{{count, plural, one {} other {s}}}",
     "description": "Automatically monitor RSS feeds and queue new downloads without manual work.",
     "defaults": {
       "title": "Automation defaults",
@@ -416,7 +417,8 @@
       "selectDirectory": "Browse"
     },
     "items": {
-      "title": "Latest uploads",
+      "title": "Latest uploads ({{count}})",
+      "count": "{{count}} items",
       "empty": "No recent feed items found.",
       "queued": "Queued",
       "notQueued": "Not queued",
@@ -436,7 +438,8 @@
       "refreshStarted": "Refresh started",
       "removed": "Subscription removed",
       "updated": "Subscription updated",
-      "openLinkError": "Failed to open the video link."
+      "openLinkError": "Failed to open the video link.",
+      "resolveError": "Failed to resolve RSS feed URL."
     },
     "detectedFeed": "Detected {{platform}} feed -> {{feed}}",
     "detecting": "Detecting feed...",

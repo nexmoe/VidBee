@@ -208,6 +208,11 @@ export class SubscriptionManager extends EventEmitter {
       updatedAt: Date.now()
     }
 
+    // If sourceUrl is updated but title is not explicitly set, update title to match sourceUrl
+    if (updates.sourceUrl && !updates.title && updates.sourceUrl !== existing.sourceUrl) {
+      next.title = updates.sourceUrl
+    }
+
     if (updates.namingTemplate) {
       next.namingTemplate = sanitizeFilenameTemplate(updates.namingTemplate)
     }

@@ -1,5 +1,7 @@
 @import 'tailwindcss';
 @import './theme.css';
+@import "tw-animate-css";
+
 
 @layer base {
   * {

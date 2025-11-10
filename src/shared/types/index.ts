@@ -236,6 +236,9 @@ export interface SubscriptionCreatePayload {
 
 export interface SubscriptionUpdatePayload {
   title?: string
+  sourceUrl?: string
+  feedUrl?: string
+  platform?: SubscriptionPlatform
   keywords?: string[]
   tags?: string[]
   onlyDownloadLatest?: boolean

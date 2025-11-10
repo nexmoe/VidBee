@@ -1,13 +1,6 @@
 import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from '@renderer/components/ui/card'
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -37,19 +30,16 @@ import type {
 } from '@shared/types'
 import dayjs from 'dayjs'
 import { useAtom, useSetAtom } from 'jotai'
-import { ExternalLink } from 'lucide-react'
-import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { ExternalLink, Plus } from 'lucide-react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
-const statusStyles: Record<
-  SubscriptionRule['status'],
-  { label: string; emoji: string; color: string }
-> = {
-  'up-to-date': { label: 'Up to date', emoji: '✅', color: 'text-emerald-500' },
-  checking: { label: 'Checking', emoji: '🔄', color: 'text-blue-500' },
-  failed: { label: 'Failed', emoji: '⚠️', color: 'text-amber-500' },
-  idle: { label: 'Idle', emoji: '⏸️', color: 'text-muted-foreground' }
+const statusStyles: Record<SubscriptionRule['status'], { color: string }> = {
+  'up-to-date': { color: 'text-emerald-600' },
+  checking: { color: 'text-blue-600' },
+  failed: { color: 'text-amber-600' },
+  idle: { color: 'text-muted-foreground' }
 }
 
 const sanitizeCommaList = (value: string) =>
@@ -62,12 +52,282 @@ const sanitizeTemplateInput = (value: string) => value.replace(/[/\\]+/g, '-')
 
 export function Subscriptions() {
   const { t } = useTranslation()
-  const [settings] = useAtom(settingsAtom)
   const [subscriptions] = useAtom(subscriptionsAtom)
-  const createSubscription = useSetAtom(createSubscriptionAtom)
   const updateSubscription = useSetAtom(updateSubscriptionAtom)
   const removeSubscription = useSetAtom(removeSubscriptionAtom)
   const refreshSubscription = useSetAtom(refreshSubscriptionAtom)
+
+  const [addDialogOpen, setAddDialogOpen] = useState(false)
+
+  const sortedSubscriptions = useMemo(
+    () =>
+      [...subscriptions].sort(
+        (a, b) => (b.updatedAt ?? b.createdAt ?? 0) - (a.updatedAt ?? a.createdAt ?? 0)
+      ),
+    [subscriptions]
+  )
+
+  const resolveFeed = useSetAtom(resolveFeedAtom)
+  const handleUpdateSubscription = useCallback(
+    async (id: string, data: SubscriptionRuleUpdateForm) => {
+      const updatePayload: Parameters<typeof updateSubscription>[0]['data'] = {
+        keywords: data.keywords,
+        tags: data.tags,
+        onlyDownloadLatest: data.onlyDownloadLatest,
+        downloadDirectory: data.downloadDirectory,
+        namingTemplate: data.namingTemplate,
+        enabled: data.enabled
+      }
+
+      // If URL is provided, resolve it and include sourceUrl, feedUrl, and platform
+      if (data.url) {
+        try {
+          const resolved = await resolveFeed(data.url)
+          updatePayload.sourceUrl = resolved.sourceUrl
+          updatePayload.feedUrl = resolved.feedUrl
+          updatePayload.platform = resolved.platform
+        } catch (error) {
+          console.error('Failed to resolve feed URL:', error)
+          toast.error(t('subscriptions.notifications.resolveError'))
+          return
+        }
+      }
+
+      await updateSubscription({ id, data: updatePayload })
+      await refreshSubscription(id)
+    },
+    [refreshSubscription, updateSubscription, resolveFeed, t]
+  )
+
+  const handleCreateSubscription = useCallback(async () => {
+    setAddDialogOpen(false)
+  }, [])
+
+  const renderStatus = (subscription: SubscriptionRule) => {
+    const meta = statusStyles[subscription.status]
+    return (
+      <span className={`text-xs ${meta.color}`}>
+        {t(`subscriptions.status.${subscription.status}`)}
+      </span>
+    )
+  }
+
+  return (
+    <div className="relative space-y-8 p-6">
+      <section className="space-y-4">
+        {sortedSubscriptions.length === 0 ? (
+          <div className="py-12 text-center text-sm text-muted-foreground">
+            {t('subscriptions.empty')}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {sortedSubscriptions.map((subscription) => (
+              <SubscriptionCard
+                key={subscription.id}
+                subscription={subscription}
+                onRefresh={() => refreshSubscription(subscription.id)}
+                onRemove={() => removeSubscription(subscription.id)}
+                onUpdate={(data) => handleUpdateSubscription(subscription.id, data)}
+                renderStatus={() => renderStatus(subscription)}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Floating Action Button */}
+      <Button
+        className="fixed bottom-8 right-8 h-14 w-14 rounded-full shadow-lg z-50"
+        size="icon"
+        onClick={() => setAddDialogOpen(true)}
+      >
+        <Plus className="h-6 w-6" />
+        <span className="sr-only">{t('subscriptions.add.title')}</span>
+      </Button>
+
+      <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+        <SubscriptionAddDialog
+          open={addDialogOpen}
+          onCreate={handleCreateSubscription}
+          onClose={() => setAddDialogOpen(false)}
+        />
+      </Dialog>
+    </div>
+  )
+}
+
+interface SubscriptionCardProps {
+  subscription: SubscriptionRule
+  renderStatus: () => React.ReactNode
+  onRefresh: () => Promise<void>
+  onRemove: () => Promise<void>
+  onUpdate: (data: SubscriptionRuleUpdateForm) => Promise<void>
+}
+
+interface SubscriptionRuleUpdateForm {
+  url?: string
+  keywords?: string[]
+  tags?: string[]
+  onlyDownloadLatest?: boolean
+  downloadDirectory?: string
+  namingTemplate?: string
+  enabled?: boolean
+}
+
+function SubscriptionCard({
+  subscription,
+  renderStatus,
+  onRefresh,
+  onRemove,
+  onUpdate
+}: SubscriptionCardProps) {
+  const { t } = useTranslation()
+  const [editOpen, setEditOpen] = useState(false)
+  const feedItems: SubscriptionFeedItem[] = subscription.items ?? []
+
+  const handleToggleEnabled = async (checked: boolean) => {
+    await onUpdate({ enabled: checked })
+  }
+
+  const handleRefresh = async () => {
+    await onRefresh()
+    toast.success(t('subscriptions.notifications.refreshStarted'))
+  }
+
+  const handleRemove = async () => {
+    await onRemove()
+    toast.success(t('subscriptions.notifications.removed'))
+  }
+
+  const handleOpenItem = async (url: string) => {
+    try {
+      await ipcServices.fs.openExternal(url)
+    } catch (error) {
+      console.error('Failed to open subscription item link:', error)
+      toast.error(t('subscriptions.notifications.openLinkError'))
+    }
+  }
+
+  const thumbnail = subscription.coverUrl
+  const lastCheckedLabel = subscription.lastCheckedAt
+    ? dayjs(subscription.lastCheckedAt).format('YYYY-MM-DD HH:mm')
+    : t('subscriptions.never')
+
+  return (
+    <div className="rounded-lg border bg-card">
+      <div className="border-b p-4">
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div className="flex w-full items-start gap-3">
+            <div className="h-12 w-12 shrink-0 overflow-hidden rounded bg-muted">
+              <ImageWithPlaceholder
+                src={thumbnail}
+                alt={subscription.title}
+                className="h-full w-full object-cover"
+              />
+            </div>
+            <div className="min-w-0 flex-1 space-y-1.5">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="text-base font-medium leading-tight">
+                  {subscription.title || t('subscriptions.labels.unknown')}
+                </h3>
+                {(subscription.tags ?? []).map((tag) => (
+                  <Badge key={tag} variant="secondary" className="text-xs">
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
+              {subscription.latestVideoTitle && (
+                <p className="text-sm text-muted-foreground line-clamp-1">
+                  {subscription.latestVideoTitle}
+                </p>
+              )}
+              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                <span>{t('subscriptions.lastChecked', { time: lastCheckedLabel })}</span>
+                {renderStatus()}
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 md:justify-end">
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-muted-foreground">{t('subscriptions.fields.enabled')}</span>
+              <Switch
+                checked={subscription.enabled}
+                onCheckedChange={(checked) => void handleToggleEnabled(checked)}
+              />
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => void handleRefresh()}>
+              {t('subscriptions.actions.refresh')}
+            </Button>
+            <Dialog open={editOpen} onOpenChange={setEditOpen}>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="sm">
+                  {t('subscriptions.actions.edit')}
+                </Button>
+              </DialogTrigger>
+              <SubscriptionEditDialog
+                subscription={subscription}
+                onSave={async (data) => {
+                  await onUpdate(data)
+                  toast.success(t('subscriptions.notifications.updated'))
+                  setEditOpen(false)
+                }}
+              />
+            </Dialog>
+            <Button variant="ghost" size="sm" onClick={() => void handleRemove()}>
+              {t('subscriptions.actions.remove')}
+            </Button>
+          </div>
+        </div>
+      </div>
+      {feedItems.length > 0 && (
+        <div className="space-y-1.5 p-4">
+          {feedItems.map((item) => (
+            <div
+              key={`${subscription.id}-${item.id}`}
+              className="flex items-center justify-between gap-3 rounded-md border bg-muted/30 px-3 py-2 transition-colors hover:bg-muted/50"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm" title={item.title}>
+                  {item.title}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {dayjs(item.publishedAt).format('YYYY-MM-DD HH:mm')}
+                </p>
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                <Badge variant={item.addedToQueue ? 'default' : 'outline'} className="text-xs">
+                  {item.addedToQueue
+                    ? t('subscriptions.items.queued')
+                    : t('subscriptions.items.notQueued')}
+                </Badge>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => void handleOpenItem(item.url)}
+                  title={t('subscriptions.items.actions.open')}
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+interface SubscriptionAddDialogProps {
+  open: boolean
+  onCreate: () => Promise<void>
+  onClose: () => void
+}
+
+function SubscriptionAddDialog({ open, onCreate, onClose }: SubscriptionAddDialogProps) {
+  const { t } = useTranslation()
+  const [settings] = useAtom(settingsAtom)
+  const createSubscription = useSetAtom(createSubscriptionAtom)
   const resolveFeed = useSetAtom(resolveFeedAtom)
 
   const [url, setUrl] = useState('')
@@ -82,6 +342,24 @@ export function Subscriptions() {
   const detectTimeout = useRef<NodeJS.Timeout | null>(null)
   const prevDefaultPathRef = useRef(settings.downloadPath)
   const urlInputId = useId()
+
+  // Reset form when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setUrl('')
+      setKeywords('')
+      setTags('')
+      setDetectedFeed(null)
+      setOnlyLatest(settings.subscriptionOnlyLatestDefault)
+      setCustomDownloadDirectory(settings.downloadPath)
+      setNamingTemplate(settings.subscriptionFilenameTemplate)
+    }
+  }, [
+    open,
+    settings.subscriptionOnlyLatestDefault,
+    settings.downloadPath,
+    settings.subscriptionFilenameTemplate
+  ])
 
   useEffect(() => {
     const newPath = settings.downloadPath
@@ -132,14 +410,6 @@ export function Subscriptions() {
     }
   }, [url, resolveFeed])
 
-  const sortedSubscriptions = useMemo(
-    () =>
-      [...subscriptions].sort(
-        (a, b) => (b.updatedAt ?? b.createdAt ?? 0) - (a.updatedAt ?? a.createdAt ?? 0)
-      ),
-    [subscriptions]
-  )
-
   const handleSelectDirectory = async () => {
     try {
       const path = await ipcServices.fs.selectDirectory()
@@ -172,314 +442,93 @@ export function Subscriptions() {
       setKeywords('')
       setTags('')
       setDetectedFeed(null)
+      await onCreate()
     } catch (error) {
       console.error('Failed to create subscription:', error)
       toast.error(t('subscriptions.notifications.createError'))
     }
   }
 
-  const renderStatus = (subscription: SubscriptionRule) => {
-    const meta = statusStyles[subscription.status]
-    return (
-      <div className="flex items-center gap-2">
-        <span className={meta.color}>{meta.emoji}</span>
-        <span className="text-sm text-muted-foreground">
-          {t(`subscriptions.status.${subscription.status}`)}
-        </span>
-      </div>
-    )
-  }
-
   return (
-    <div className="space-y-6 p-6">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">{t('subscriptions.title')}</h1>
-        <p className="text-muted-foreground">{t('subscriptions.description')}</p>
-      </div>
-
-      <Card>
-        <CardHeader className="space-y-1">
-          <CardTitle>{t('subscriptions.add.title')}</CardTitle>
-          <CardDescription>{t('subscriptions.add.description')}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-5">
+    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogHeader>
+        <DialogTitle>{t('subscriptions.add.title')}</DialogTitle>
+        <DialogDescription>{t('subscriptions.add.description')}</DialogDescription>
+      </DialogHeader>
+      <div className="space-y-4 py-2">
+        <div className="space-y-2">
+          <Label htmlFor={urlInputId}>{t('subscriptions.fields.url')}</Label>
+          <Input
+            id={urlInputId}
+            value={url}
+            placeholder={t('subscriptions.placeholders.url')}
+            onChange={(event) => setUrl(event.target.value)}
+          />
+          {detectedFeed && (
+            <Badge variant="outline" className="w-fit text-xs">
+              {t('subscriptions.detectedFeed', {
+                platform: detectedFeed.platform,
+                feed: detectedFeed.feedUrl
+              })}
+            </Badge>
+          )}
+          {detectingFeed && (
+            <p className="text-xs text-muted-foreground">{t('subscriptions.detecting')}</p>
+          )}
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor={urlInputId}>{t('subscriptions.fields.url')}</Label>
+            <Label>{t('subscriptions.fields.keywords')}</Label>
             <Input
-              id={urlInputId}
-              value={url}
-              placeholder={t('subscriptions.placeholders.url')}
-              onChange={(event) => setUrl(event.target.value)}
+              value={keywords}
+              onChange={(event) => setKeywords(event.target.value)}
+              placeholder="AI, tutorial"
             />
-            {detectedFeed && (
-              <Badge variant="outline" className="w-fit text-xs">
-                {t('subscriptions.detectedFeed', {
-                  platform: detectedFeed.platform,
-                  feed: detectedFeed.feedUrl
-                })}
-              </Badge>
-            )}
-            {detectingFeed && (
-              <p className="text-xs text-muted-foreground">{t('subscriptions.detecting')}</p>
-            )}
           </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label>{t('subscriptions.fields.keywords')}</Label>
-              <Input
-                value={keywords}
-                onChange={(event) => setKeywords(event.target.value)}
-                placeholder="AI, tutorial"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>{t('subscriptions.fields.tags')}</Label>
-              <Input
-                value={tags}
-                onChange={(event) => setTags(event.target.value)}
-                placeholder="YouTube, AI"
-              />
-            </div>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label>{t('subscriptions.fields.customDirectory')}</Label>
-              <div className="flex gap-2">
-                <Input value={customDownloadDirectory} readOnly />
-                <Button variant="secondary" onClick={() => void handleSelectDirectory()}>
-                  {t('subscriptions.actions.selectDirectory')}
-                </Button>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>{t('subscriptions.fields.namingTemplate')}</Label>
-              <Input
-                value={namingTemplate}
-                onChange={(event) => setNamingTemplate(sanitizeTemplateInput(event.target.value))}
-                placeholder="%(uploader)s - %(title)s.%(ext)s"
-              />
-            </div>
-          </div>
-          <div className="flex items-center justify-between gap-4 rounded-lg border px-4 py-3">
-            <div>
-              <p className="text-sm font-medium">{t('subscriptions.fields.onlyLatest')}</p>
-              <p className="text-xs text-muted-foreground">
-                {t('subscriptions.fields.onlyLatestDescription')}
-              </p>
-            </div>
-            <Switch checked={onlyLatest} onCheckedChange={setOnlyLatest} />
-          </div>
-          <div className="flex justify-end">
-            <Button onClick={() => void handleCreateSubscription()}>
-              {t('subscriptions.actions.add')}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <section className="space-y-4">
-        <div className="space-y-1">
-          <h2 className="text-xl font-semibold">{t('subscriptions.title')}</h2>
-          <p className="text-sm text-muted-foreground">{t('subscriptions.description')}</p>
-        </div>
-        {sortedSubscriptions.length === 0 ? (
-          <Card>
-            <CardContent className="py-10 text-center text-muted-foreground">
-              {t('subscriptions.empty')}
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-4">
-            {sortedSubscriptions.map((subscription) => (
-              <SubscriptionCard
-                key={subscription.id}
-                subscription={subscription}
-                onRefresh={() => refreshSubscription(subscription.id)}
-                onRemove={() => removeSubscription(subscription.id)}
-                onUpdate={(data) => updateSubscription({ id: subscription.id, data })}
-                renderStatus={() => renderStatus(subscription)}
-              />
-            ))}
-          </div>
-        )}
-      </section>
-    </div>
-  )
-}
-
-interface SubscriptionCardProps {
-  subscription: SubscriptionRule
-  renderStatus: () => React.ReactNode
-  onRefresh: () => Promise<void>
-  onRemove: () => Promise<void>
-  onUpdate: (data: SubscriptionRuleUpdateForm) => Promise<void>
-}
-
-interface SubscriptionRuleUpdateForm {
-  keywords?: string[]
-  tags?: string[]
-  onlyDownloadLatest?: boolean
-  downloadDirectory?: string
-  namingTemplate?: string
-  enabled?: boolean
-}
-
-function SubscriptionCard({
-  subscription,
-  renderStatus,
-  onRefresh,
-  onRemove,
-  onUpdate
-}: SubscriptionCardProps) {
-  const { t } = useTranslation()
-  const [editOpen, setEditOpen] = useState(false)
-  const feedItems: SubscriptionFeedItem[] = subscription.items ?? []
-
-  const handleToggleEnabled = async (checked: boolean) => {
-    await onUpdate({ enabled: checked })
-  }
-
-  const handleToggleMode = async (checked: boolean) => {
-    await onUpdate({ onlyDownloadLatest: checked })
-  }
-
-  const handleRefresh = async () => {
-    await onRefresh()
-    toast.success(t('subscriptions.notifications.refreshStarted'))
-  }
-
-  const handleRemove = async () => {
-    await onRemove()
-    toast.success(t('subscriptions.notifications.removed'))
-  }
-
-  const handleOpenItem = async (url: string) => {
-    try {
-      await ipcServices.fs.openExternal(url)
-    } catch (error) {
-      console.error('Failed to open subscription item link:', error)
-      toast.error(t('subscriptions.notifications.openLinkError'))
-    }
-  }
-
-  const thumbnail = subscription.coverUrl
-  const lastCheckedLabel = subscription.lastCheckedAt
-    ? dayjs(subscription.lastCheckedAt).format('YYYY-MM-DD HH:mm')
-    : t('subscriptions.never')
-
-  return (
-    <Card>
-      <CardHeader className="space-y-4">
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-          <div className="flex w-full items-start gap-4">
-            <div className="h-14 w-14 overflow-hidden rounded-md bg-muted">
-              <ImageWithPlaceholder
-                src={thumbnail}
-                alt={subscription.title}
-                className="h-full w-full object-cover"
-              />
-            </div>
-            <div className="min-w-0 space-y-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <CardTitle className="text-lg leading-tight">
-                  {subscription.title || t('subscriptions.labels.unknown')}
-                </CardTitle>
-                {(subscription.tags ?? []).map((tag) => (
-                  <Badge key={tag} variant="secondary">
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-              {subscription.latestVideoTitle && (
-                <CardDescription className="text-sm">
-                  {t('subscriptions.latestVideo', { title: subscription.latestVideoTitle })}
-                </CardDescription>
-              )}
-              <p className="text-xs text-muted-foreground">
-                {t('subscriptions.lastChecked', { time: lastCheckedLabel })}
-              </p>
-              <div>{renderStatus()}</div>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2 md:justify-end">
-            <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm text-muted-foreground">
-              <span>{t('subscriptions.fields.enabled')}</span>
-              <Switch
-                checked={subscription.enabled}
-                onCheckedChange={(checked) => void handleToggleEnabled(checked)}
-              />
-            </div>
-            <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm text-muted-foreground">
-              <span>{t('subscriptions.fields.onlyLatestShort')}</span>
-              <Switch
-                checked={subscription.onlyDownloadLatest}
-                onCheckedChange={(checked) => void handleToggleMode(checked)}
-              />
-            </div>
-            <Button variant="secondary" onClick={() => void handleRefresh()}>
-              {t('subscriptions.actions.refresh')}
-            </Button>
-            <Dialog open={editOpen} onOpenChange={setEditOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline">{t('subscriptions.actions.edit')}</Button>
-              </DialogTrigger>
-              <SubscriptionEditDialog
-                subscription={subscription}
-                onSave={async (data) => {
-                  await onUpdate(data)
-                  toast.success(t('subscriptions.notifications.updated'))
-                  setEditOpen(false)
-                }}
-              />
-            </Dialog>
-            <Button variant="destructive" onClick={() => void handleRemove()}>
-              {t('subscriptions.actions.remove')}
-            </Button>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-3 border-t pt-4">
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-semibold">{t('subscriptions.items.title')}</p>
-        </div>
-        {feedItems.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{t('subscriptions.items.empty')}</p>
-        ) : (
           <div className="space-y-2">
-            {feedItems.map((item) => (
-              <div
-                key={`${subscription.id}-${item.id}`}
-                className="flex flex-col gap-2 rounded-lg border bg-muted/20 px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium" title={item.title}>
-                    {item.title}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {dayjs(item.publishedAt).format('YYYY-MM-DD HH:mm')}
-                  </p>
-                </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  <Badge variant={item.addedToQueue ? 'default' : 'outline'}>
-                    {item.addedToQueue
-                      ? t('subscriptions.items.queued')
-                      : t('subscriptions.items.notQueued')}
-                  </Badge>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => void handleOpenItem(item.url)}
-                    title={t('subscriptions.items.actions.open')}
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
+            <Label>{t('subscriptions.fields.tags')}</Label>
+            <Input
+              value={tags}
+              onChange={(event) => setTags(event.target.value)}
+              placeholder="YouTube, AI"
+            />
           </div>
-        )}
-      </CardContent>
-    </Card>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label>{t('subscriptions.fields.customDirectory')}</Label>
+            <div className="flex gap-2">
+              <Input value={customDownloadDirectory} readOnly />
+              <Button variant="secondary" onClick={() => void handleSelectDirectory()}>
+                {t('subscriptions.actions.selectDirectory')}
+              </Button>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>{t('subscriptions.fields.namingTemplate')}</Label>
+            <Input
+              value={namingTemplate}
+              onChange={(event) => setNamingTemplate(sanitizeTemplateInput(event.target.value))}
+              placeholder="%(uploader)s - %(title)s.%(ext)s"
+            />
+          </div>
+        </div>
+        <div className="flex items-center justify-between gap-4 rounded-md border px-3 py-2">
+          <div>
+            <p className="text-sm">{t('subscriptions.fields.onlyLatest')}</p>
+          </div>
+          <Switch checked={onlyLatest} onCheckedChange={setOnlyLatest} />
+        </div>
+      </div>
+      <DialogFooter>
+        <Button variant="outline" onClick={onClose}>
+          {t('download.cancel')}
+        </Button>
+        <Button onClick={() => void handleCreateSubscription()}>
+          {t('subscriptions.actions.add')}
+        </Button>
+      </DialogFooter>
+    </DialogContent>
   )
 }
 
@@ -490,10 +539,48 @@ interface SubscriptionEditDialogProps {
 
 function SubscriptionEditDialog({ subscription, onSave }: SubscriptionEditDialogProps) {
   const { t } = useTranslation()
+  const resolveFeed = useSetAtom(resolveFeedAtom)
+  const [url, setUrl] = useState(subscription.feedUrl)
   const [keywords, setKeywords] = useState(subscription.keywords.join(', '))
   const [tags, setTags] = useState(subscription.tags.join(', '))
   const [downloadDirectory, setDownloadDirectory] = useState(subscription.downloadDirectory || '')
   const [namingTemplate, setNamingTemplate] = useState(subscription.namingTemplate || '')
+  const [onlyDownloadLatest, setOnlyDownloadLatest] = useState(subscription.onlyDownloadLatest)
+  const [detectedFeed, setDetectedFeed] = useState<SubscriptionResolvedFeed | null>(null)
+  const [detectingFeed, setDetectingFeed] = useState(false)
+
+  const detectTimeout = useRef<NodeJS.Timeout | null>(null)
+  const urlInputId = useId()
+
+  useEffect(() => {
+    if (!url.trim() || url.trim() === subscription.feedUrl) {
+      setDetectedFeed(null)
+      return
+    }
+
+    if (detectTimeout.current) {
+      clearTimeout(detectTimeout.current)
+    }
+
+    detectTimeout.current = setTimeout(async () => {
+      setDetectingFeed(true)
+      try {
+        const result = await resolveFeed(url.trim())
+        setDetectedFeed(result)
+      } catch (error) {
+        console.error('Failed to resolve feed:', error)
+        setDetectedFeed(null)
+      } finally {
+        setDetectingFeed(false)
+      }
+    }, 500)
+
+    return () => {
+      if (detectTimeout.current) {
+        clearTimeout(detectTimeout.current)
+      }
+    }
+  }, [url, resolveFeed, subscription.feedUrl])
 
   const handleSelectDirectory = async () => {
     try {
@@ -508,21 +595,56 @@ function SubscriptionEditDialog({ subscription, onSave }: SubscriptionEditDialog
   }
 
   const handleSave = async () => {
-    await onSave({
+    const updateData: SubscriptionRuleUpdateForm = {
       keywords: sanitizeCommaList(keywords),
       tags: sanitizeCommaList(tags),
       downloadDirectory: downloadDirectory || undefined,
-      namingTemplate: namingTemplate || undefined
-    })
+      namingTemplate: namingTemplate || undefined,
+      onlyDownloadLatest
+    }
+
+    // If feed URL changed, resolve it to validate and include in update
+    if (url.trim() && url.trim() !== subscription.feedUrl) {
+      try {
+        await resolveFeed(url.trim())
+        updateData.url = url.trim()
+      } catch (error) {
+        console.error('Failed to resolve feed:', error)
+        toast.error(t('subscriptions.notifications.resolveError'))
+        return
+      }
+    }
+
+    await onSave(updateData)
   }
 
   return (
-    <DialogContent>
+    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
       <DialogHeader>
         <DialogTitle>{t('subscriptions.edit.title', { name: subscription.title })}</DialogTitle>
         <DialogDescription>{t('subscriptions.edit.description')}</DialogDescription>
       </DialogHeader>
       <div className="space-y-4 py-2">
+        <div className="space-y-2">
+          <Label htmlFor={urlInputId}>{t('subscriptions.fields.url')}</Label>
+          <Input
+            id={urlInputId}
+            value={url}
+            placeholder={t('subscriptions.placeholders.url')}
+            onChange={(event) => setUrl(event.target.value)}
+          />
+          {detectedFeed && (
+            <Badge variant="outline" className="w-fit text-xs">
+              {t('subscriptions.detectedFeed', {
+                platform: detectedFeed.platform,
+                feed: detectedFeed.feedUrl
+              })}
+            </Badge>
+          )}
+          {detectingFeed && (
+            <p className="text-xs text-muted-foreground">{t('subscriptions.detecting')}</p>
+          )}
+        </div>
         <div className="space-y-2">
           <Label>{t('subscriptions.fields.keywords')}</Label>
           <Input value={keywords} onChange={(event) => setKeywords(event.target.value)} />
@@ -546,6 +668,10 @@ function SubscriptionEditDialog({ subscription, onSave }: SubscriptionEditDialog
             value={namingTemplate}
             onChange={(event) => setNamingTemplate(sanitizeTemplateInput(event.target.value))}
           />
+        </div>
+        <div className="flex items-center justify-between gap-4 rounded-md border px-3 py-2">
+          <p className="text-sm">{t('subscriptions.fields.onlyLatest')}</p>
+          <Switch checked={onlyDownloadLatest} onCheckedChange={setOnlyDownloadLatest} />
         </div>
       </div>
       <DialogFooter>
