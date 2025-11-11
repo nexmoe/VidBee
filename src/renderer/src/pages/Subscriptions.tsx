@@ -1,19 +1,29 @@
 import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
 import {
+  ContextMenu,
+  ContextMenuCheckboxItem,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger
+} from '@renderer/components/ui/context-menu'
+import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle,
-  DialogTrigger
+  DialogTitle
 } from '@renderer/components/ui/dialog'
-import { ImageWithPlaceholder } from '@renderer/components/ui/image-with-placeholder'
 import { Input } from '@renderer/components/ui/input'
 import { Label } from '@renderer/components/ui/label'
+import { RemoteImage } from '@renderer/components/ui/remote-image'
 import { Switch } from '@renderer/components/ui/switch'
+import { Tabs, TabsList, TabsTrigger } from '@renderer/components/ui/tabs'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { ipcServices } from '@renderer/lib/ipc'
+import { cn } from '@renderer/lib/utils'
 import { settingsAtom } from '@renderer/store/settings'
 import {
   createSubscriptionAtom,
@@ -30,17 +40,10 @@ import type {
 } from '@shared/types'
 import dayjs from 'dayjs'
 import { useAtom, useSetAtom } from 'jotai'
-import { ExternalLink, Plus } from 'lucide-react'
+import { Edit, ExternalLink, Plus, Power, RefreshCw, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-
-const statusStyles: Record<SubscriptionRule['status'], { color: string }> = {
-  'up-to-date': { color: 'text-emerald-600' },
-  checking: { color: 'text-blue-600' },
-  failed: { color: 'text-amber-600' },
-  idle: { color: 'text-muted-foreground' }
-}
 
 const sanitizeCommaList = (value: string) =>
   value
@@ -50,6 +53,157 @@ const sanitizeCommaList = (value: string) =>
 
 const sanitizeTemplateInput = (value: string) => value.replace(/[/\\]+/g, '-')
 
+const statusStyles: Record<
+  SubscriptionRule['status'],
+  { dotClass: string; textClass: string; label: string }
+> = {
+  'up-to-date': {
+    dotClass: 'bg-emerald-500',
+    textClass: 'text-emerald-600',
+    label: 'subscriptions.status.up-to-date'
+  },
+  checking: {
+    dotClass: 'bg-sky-500',
+    textClass: 'text-sky-600',
+    label: 'subscriptions.status.checking'
+  },
+  failed: {
+    dotClass: 'bg-red-500',
+    textClass: 'text-red-600',
+    label: 'subscriptions.status.failed'
+  },
+  idle: {
+    dotClass: 'bg-muted-foreground',
+    textClass: 'text-muted-foreground',
+    label: 'subscriptions.status.idle'
+  }
+}
+
+const disabledStatusStyle = {
+  dotClass: 'bg-zinc-400',
+  textClass: 'text-muted-foreground',
+  label: 'subscriptions.fields.disabled'
+}
+
+function SubscriptionTab({
+  subscription,
+  onRefresh,
+  onRemove,
+  onUpdate,
+  isActive
+}: SubscriptionTabProps) {
+  const { t } = useTranslation()
+  const [editOpen, setEditOpen] = useState(false)
+  const isDisabled = !subscription.enabled
+  const statusMeta = isDisabled ? disabledStatusStyle : statusStyles[subscription.status]
+  const statusDescription =
+    subscription.status === 'failed' && subscription.lastError
+      ? subscription.lastError
+      : t(statusStyles[subscription.status].label)
+  const lastUpdatedTimestamp =
+    subscription.lastCheckedAt ?? subscription.updatedAt ?? subscription.createdAt ?? null
+  const lastUpdatedLabel = lastUpdatedTimestamp
+    ? dayjs(lastUpdatedTimestamp).format('YYYY-MM-DD HH:mm')
+    : t('subscriptions.never')
+
+  const handleToggleEnabled = async (checked: boolean) => {
+    await onUpdate({ enabled: checked })
+  }
+
+  const handleRefresh = async () => {
+    await onRefresh()
+    toast.success(t('subscriptions.notifications.refreshStarted'))
+  }
+
+  const handleRemove = async () => {
+    await onRemove()
+    toast.success(t('subscriptions.notifications.removed'))
+  }
+
+  const handleEdit = () => {
+    setEditOpen(true)
+  }
+
+  return (
+    <>
+      <ContextMenu>
+        <ContextMenuTrigger asChild>
+          <TabsTrigger
+            value={subscription.id}
+            className={cn(
+              'flex h-auto w-20 flex-col rounded-sm! items-center gap-1 px-2 py-2 transition-all hover:opacity-80',
+              isActive && 'bg-neutral-100'
+            )}
+          >
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="relative h-12 w-12 shrink-0 overflow-hidden transition-colors">
+                  <RemoteImage
+                    src={subscription.coverUrl}
+                    alt={subscription.title || t('subscriptions.labels.unknown')}
+                    className="h-full w-full object-cover rounded-full overflow-hidden"
+                  />
+                  <span
+                    className={cn(
+                      'absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-background transition-colors',
+                      statusMeta.dotClass
+                    )}
+                  />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs space-y-1">
+                <p className="text-xs">{statusDescription}</p>
+                <p className="text-xs">
+                  {t('subscriptions.status.tooltip.updatedAt', { time: lastUpdatedLabel })}
+                </p>
+              </TooltipContent>
+            </Tooltip>
+            <div className="flex w-full flex-col items-center text-center">
+              <span className="w-full truncate text-xs font-medium">
+                {subscription.title || t('subscriptions.labels.unknown')}
+              </span>
+            </div>
+          </TabsTrigger>
+        </ContextMenuTrigger>
+        <ContextMenuContent>
+          <ContextMenuItem onClick={handleRefresh}>
+            <RefreshCw className="mr-2 h-4 w-4" />
+            {t('subscriptions.actions.refresh')}
+          </ContextMenuItem>
+          <ContextMenuItem onClick={handleEdit}>
+            <Edit className="mr-2 h-4 w-4" />
+            {t('subscriptions.actions.edit')}
+          </ContextMenuItem>
+          <ContextMenuSeparator />
+          <ContextMenuCheckboxItem
+            checked={subscription.enabled}
+            onCheckedChange={(checked) => void handleToggleEnabled(checked)}
+          >
+            <Power className="mr-2 h-4 w-4" />
+            {t('subscriptions.fields.enabled')}
+          </ContextMenuCheckboxItem>
+          <ContextMenuSeparator />
+          <ContextMenuItem onClick={() => void handleRemove()} variant="destructive">
+            <Trash2 className="mr-2 h-4 w-4" />
+            {t('subscriptions.actions.remove')}
+          </ContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenu>
+
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <SubscriptionEditDialog
+          subscription={subscription}
+          onSave={async (data) => {
+            await onUpdate(data)
+            toast.success(t('subscriptions.notifications.updated'))
+            setEditOpen(false)
+          }}
+        />
+      </Dialog>
+    </>
+  )
+}
+
 export function Subscriptions() {
   const { t } = useTranslation()
   const [subscriptions] = useAtom(subscriptionsAtom)
@@ -58,6 +212,7 @@ export function Subscriptions() {
   const refreshSubscription = useSetAtom(refreshSubscriptionAtom)
 
   const [addDialogOpen, setAddDialogOpen] = useState(false)
+  const [selectedTab, setSelectedTab] = useState<string>('')
 
   const sortedSubscriptions = useMemo(
     () =>
@@ -103,37 +258,76 @@ export function Subscriptions() {
     setAddDialogOpen(false)
   }, [])
 
-  const renderStatus = (subscription: SubscriptionRule) => {
-    const meta = statusStyles[subscription.status]
-    return (
-      <span className={`text-xs ${meta.color}`}>
-        {t(`subscriptions.status.${subscription.status}`)}
-      </span>
-    )
-  }
+  // Filter subscriptions based on selected tab
+  const displayedSubscriptions = useMemo(() => {
+    if (!selectedTab) {
+      return []
+    }
+    return sortedSubscriptions.filter((sub) => sub.id === selectedTab)
+  }, [selectedTab, sortedSubscriptions])
+
+  // Set default tab to first subscription if available
+  useEffect(() => {
+    if (!selectedTab && sortedSubscriptions.length > 0) {
+      // Set to first subscription if no tab is selected
+      setSelectedTab(sortedSubscriptions[0].id)
+    } else if (selectedTab && !sortedSubscriptions.find((s) => s.id === selectedTab)) {
+      // If selected subscription no longer exists, switch to first available
+      if (sortedSubscriptions.length > 0) {
+        setSelectedTab(sortedSubscriptions[0].id)
+      } else {
+        setSelectedTab('')
+      }
+    }
+  }, [selectedTab, sortedSubscriptions])
 
   return (
-    <div className="relative space-y-8 p-6">
-      <section className="space-y-4">
-        {sortedSubscriptions.length === 0 ? (
-          <div className="py-12 text-center text-sm text-muted-foreground">
-            {t('subscriptions.empty')}
+    <div className="relative">
+      {/* Channel Tabs Header */}
+      {sortedSubscriptions.length > 0 && (
+        <div className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
+          <div className="overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
+              <TabsList className="h-auto w-full justify-start rounded-none border-none bg-transparent p-0">
+                <div className="flex gap-0 px-6 pb-6">
+                  {/* Subscription Channel Tabs */}
+                  {sortedSubscriptions.map((subscription) => (
+                    <SubscriptionTab
+                      key={subscription.id}
+                      subscription={subscription}
+                      isActive={subscription.id === selectedTab}
+                      onRefresh={() => refreshSubscription(subscription.id)}
+                      onRemove={() => removeSubscription(subscription.id)}
+                      onUpdate={(data) => handleUpdateSubscription(subscription.id, data)}
+                    />
+                  ))}
+                </div>
+              </TabsList>
+            </Tabs>
           </div>
-        ) : (
-          <div className="space-y-3">
-            {sortedSubscriptions.map((subscription) => (
-              <SubscriptionCard
-                key={subscription.id}
-                subscription={subscription}
-                onRefresh={() => refreshSubscription(subscription.id)}
-                onRemove={() => removeSubscription(subscription.id)}
-                onUpdate={(data) => handleUpdateSubscription(subscription.id, data)}
-                renderStatus={() => renderStatus(subscription)}
-              />
-            ))}
-          </div>
-        )}
-      </section>
+        </div>
+      )}
+
+      {/* Content Area */}
+      <div className="relative space-y-8 p-6">
+        <section className="space-y-4">
+          {sortedSubscriptions.length === 0 ? (
+            <div className="py-12 text-center text-sm text-muted-foreground">
+              {t('subscriptions.empty')}
+            </div>
+          ) : !selectedTab ? (
+            <div className="py-12 text-center text-sm text-muted-foreground">
+              {t('subscriptions.empty')}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {displayedSubscriptions.map((subscription) => (
+                <SubscriptionCard key={subscription.id} subscription={subscription} />
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
 
       {/* Floating Action Button */}
       <Button
@@ -156,9 +350,9 @@ export function Subscriptions() {
   )
 }
 
-interface SubscriptionCardProps {
+interface SubscriptionTabProps {
   subscription: SubscriptionRule
-  renderStatus: () => React.ReactNode
+  isActive: boolean
   onRefresh: () => Promise<void>
   onRemove: () => Promise<void>
   onUpdate: (data: SubscriptionRuleUpdateForm) => Promise<void>
@@ -174,30 +368,9 @@ interface SubscriptionRuleUpdateForm {
   enabled?: boolean
 }
 
-function SubscriptionCard({
-  subscription,
-  renderStatus,
-  onRefresh,
-  onRemove,
-  onUpdate
-}: SubscriptionCardProps) {
+function SubscriptionCard({ subscription }: { subscription: SubscriptionRule }) {
   const { t } = useTranslation()
-  const [editOpen, setEditOpen] = useState(false)
   const feedItems: SubscriptionFeedItem[] = subscription.items ?? []
-
-  const handleToggleEnabled = async (checked: boolean) => {
-    await onUpdate({ enabled: checked })
-  }
-
-  const handleRefresh = async () => {
-    await onRefresh()
-    toast.success(t('subscriptions.notifications.refreshStarted'))
-  }
-
-  const handleRemove = async () => {
-    await onRemove()
-    toast.success(t('subscriptions.notifications.removed'))
-  }
 
   const handleOpenItem = async (url: string) => {
     try {
@@ -208,112 +381,87 @@ function SubscriptionCard({
     }
   }
 
-  const thumbnail = subscription.coverUrl
-  const lastCheckedLabel = subscription.lastCheckedAt
-    ? dayjs(subscription.lastCheckedAt).format('YYYY-MM-DD HH:mm')
-    : t('subscriptions.never')
+  if (feedItems.length === 0) {
+    return (
+      <div className="py-12 text-center text-sm text-muted-foreground">
+        {t('subscriptions.items.empty')}
+      </div>
+    )
+  }
 
   return (
-    <div className="rounded-lg border bg-card">
-      <div className="border-b p-4">
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-          <div className="flex w-full items-start gap-3">
-            <div className="h-12 w-12 shrink-0 overflow-hidden rounded bg-muted">
-              <ImageWithPlaceholder
-                src={thumbnail}
-                alt={subscription.title}
-                className="h-full w-full object-cover"
+    <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+      {feedItems.map((item) => (
+        <article key={`${subscription.id}-${item.id}`} className="group  transition-all">
+          <div className="relative w-full overflow-hidden bg-muted aspect-video overflow-hidden rounded-2xl">
+            {item.thumbnail ? (
+              <RemoteImage
+                src={item.thumbnail}
+                alt={item.title}
+                className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
               />
-            </div>
-            <div className="min-w-0 flex-1 space-y-1.5">
-              <div className="flex flex-wrap items-center gap-2">
-                <h3 className="text-base font-medium leading-tight">
-                  {subscription.title || t('subscriptions.labels.unknown')}
-                </h3>
-                {(subscription.tags ?? []).map((tag) => (
-                  <Badge key={tag} variant="secondary" className="text-xs">
-                    {tag}
-                  </Badge>
-                ))}
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
+                {t('subscriptions.labels.noThumbnail')}
               </div>
-              {subscription.latestVideoTitle && (
-                <p className="text-sm text-muted-foreground line-clamp-1">
-                  {subscription.latestVideoTitle}
-                </p>
+            )}
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/5 to-transparent" />
+            <div className="absolute top-3 left-3 flex items-center gap-2 rounded-full bg-black/60 pr-3 pl-1 py-1 text-xs font-medium text-white backdrop-blur">
+              {subscription.coverUrl ? (
+                <div className="h-6 w-6 overflow-hidden rounded-full border border-white/40">
+                  <RemoteImage
+                    src={subscription.coverUrl}
+                    alt={subscription.title || t('subscriptions.labels.unknown')}
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+              ) : (
+                <div className="flex h-6 w-6 items-center justify-center rounded-full border border-white/40 bg-white/10 text-[10px] font-semibold uppercase text-white">
+                  {(subscription.title || t('subscriptions.labels.unknown')).slice(0, 1)}
+                </div>
               )}
-              <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                <span>{t('subscriptions.lastChecked', { time: lastCheckedLabel })}</span>
-                {renderStatus()}
-              </div>
+              <span className="max-w-[10rem] truncate text-xs">
+                {subscription.title || t('subscriptions.labels.unknown')}
+              </span>
             </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2 md:justify-end">
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-muted-foreground">{t('subscriptions.fields.enabled')}</span>
-              <Switch
-                checked={subscription.enabled}
-                onCheckedChange={(checked) => void handleToggleEnabled(checked)}
-              />
+            <div className="absolute bottom-3 left-3 text-xs font-medium text-white">
+              {dayjs(item.publishedAt).format('YYYY-MM-DD HH:mm')}
             </div>
-            <Button variant="ghost" size="sm" onClick={() => void handleRefresh()}>
-              {t('subscriptions.actions.refresh')}
-            </Button>
-            <Dialog open={editOpen} onOpenChange={setEditOpen}>
-              <DialogTrigger asChild>
-                <Button variant="ghost" size="sm">
-                  {t('subscriptions.actions.edit')}
-                </Button>
-              </DialogTrigger>
-              <SubscriptionEditDialog
-                subscription={subscription}
-                onSave={async (data) => {
-                  await onUpdate(data)
-                  toast.success(t('subscriptions.notifications.updated'))
-                  setEditOpen(false)
-                }}
-              />
-            </Dialog>
-            <Button variant="ghost" size="sm" onClick={() => void handleRemove()}>
-              {t('subscriptions.actions.remove')}
-            </Button>
-          </div>
-        </div>
-      </div>
-      {feedItems.length > 0 && (
-        <div className="space-y-1.5 p-4">
-          {feedItems.map((item) => (
-            <div
-              key={`${subscription.id}-${item.id}`}
-              className="flex items-center justify-between gap-3 rounded-md border bg-muted/30 px-3 py-2 transition-colors hover:bg-muted/50"
+            <Badge
+              variant={item.addedToQueue ? 'default' : 'secondary'}
+              className={cn(
+                'absolute bottom-3 right-3 rounded-full text-xs text-white backdrop-blur',
+                item.addedToQueue ? 'bg-emerald-500' : 'bg-black/70'
+              )}
             >
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm" title={item.title}>
-                  {item.title}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {dayjs(item.publishedAt).format('YYYY-MM-DD HH:mm')}
-                </p>
-              </div>
-              <div className="flex shrink-0 items-center gap-2">
-                <Badge variant={item.addedToQueue ? 'default' : 'outline'} className="text-xs">
-                  {item.addedToQueue
-                    ? t('subscriptions.items.queued')
-                    : t('subscriptions.items.notQueued')}
-                </Badge>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7"
-                  onClick={() => void handleOpenItem(item.url)}
-                  title={t('subscriptions.items.actions.open')}
-                >
-                  <ExternalLink className="h-3.5 w-3.5" />
-                </Button>
-              </div>
+              {item.addedToQueue
+                ? t('subscriptions.items.queued')
+                : t('subscriptions.items.notQueued')}
+            </Badge>
+          </div>
+          <div className="flex flex-col gap-4 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1">
+              <p
+                className="text-base font-semibold leading-snug text-card-foreground"
+                title={item.title}
+              >
+                {item.title}
+              </p>
             </div>
-          ))}
-        </div>
-      )}
+            <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                className="rounded-full px-4"
+                onClick={() => void handleOpenItem(item.url)}
+                title={t('subscriptions.items.actions.open')}
+              >
+                <ExternalLink className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </article>
+      ))}
     </div>
   )
 }
