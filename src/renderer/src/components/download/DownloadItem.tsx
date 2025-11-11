@@ -1,7 +1,7 @@
 import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
-import { ImageWithPlaceholder } from '@renderer/components/ui/image-with-placeholder'
 import { Progress } from '@renderer/components/ui/progress'
+import { RemoteImage } from '@renderer/components/ui/remote-image'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { useAtomValue, useSetAtom } from 'jotai'
 import {
@@ -19,7 +19,6 @@ import {
 import { type ReactNode, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { useCachedThumbnail } from '../../hooks/use-cached-thumbnail'
 import { ipcServices } from '../../lib/ipc'
 import {
   type DownloadRecord,
@@ -107,7 +106,6 @@ export function DownloadItem({ download }: DownloadItemProps) {
   const removeHistory = useSetAtom(removeHistoryRecordAtom)
   const isHistory = download.entryType === 'history'
   const timestamp = download.completedAt ?? download.downloadedAt ?? download.createdAt
-  const thumbnailSrc = useCachedThumbnail(download.thumbnail)
   const showActionsWithoutHover = isHistory || download.status === 'completed'
   const actionsContainerBaseClass =
     'flex shrink-0 flex-wrap items-center justify-end gap-1 text-muted-foreground opacity-100 transition-opacity'
@@ -557,8 +555,8 @@ export function DownloadItem({ download }: DownloadItemProps) {
       <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:gap-4">
         {/* Thumbnail */}
         <div className="shrink-0 overflow-hidden rounded-md border border-border/60 bg-background/60 w-32 h-20">
-          <ImageWithPlaceholder
-            src={thumbnailSrc}
+          <RemoteImage
+            src={download.thumbnail}
             alt={download.title}
             className="w-full h-full object-cover"
             fallbackIcon={<Play className="h-6 w-6" />}

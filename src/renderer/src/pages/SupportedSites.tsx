@@ -6,7 +6,7 @@ import {
   CardHeader,
   CardTitle
 } from '@renderer/components/ui/card'
-import { ImageWithPlaceholder } from '@renderer/components/ui/image-with-placeholder'
+import { RemoteImage } from '@renderer/components/ui/remote-image'
 import { popularSites } from '@renderer/data/popularSites'
 import { ipcServices } from '@renderer/lib/ipc'
 import { ExternalLink } from 'lucide-react'
@@ -42,7 +42,7 @@ function SiteIcon({ domain, alt }: { domain: string; alt: string }) {
     }
   }, [domain])
 
-  return <ImageWithPlaceholder src={iconUrl || undefined} alt={alt} className="w-full h-full" />
+  return <RemoteImage src={iconUrl} alt={alt} className="w-full h-full" />
 }
 
 export function SupportedSites() {
