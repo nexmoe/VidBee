@@ -9,6 +9,7 @@ interface ImageWithPlaceholderProps {
   placeholderClassName?: string
   fallbackIcon?: React.ReactNode
   onError?: () => void
+  onLoad?: () => void
 }
 
 export function ImageWithPlaceholder({
@@ -17,7 +18,8 @@ export function ImageWithPlaceholder({
   className,
   placeholderClassName,
   fallbackIcon,
-  onError
+  onError,
+  onLoad
 }: ImageWithPlaceholderProps) {
   const [hasError, setHasError] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
@@ -30,6 +32,7 @@ export function ImageWithPlaceholder({
 
   const handleLoad = () => {
     setIsLoading(false)
+    onLoad?.()
   }
 
   // Show placeholder if no src, error occurred, or still loading
