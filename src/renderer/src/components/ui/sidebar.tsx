@@ -60,7 +60,7 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
         active: Newspaper,
         inactive: Newspaper
       },
-      label: t('menu.subscriptions')
+      label: t('menu.rss')
     },
     {
       id: 'sites',
@@ -138,7 +138,7 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
   return (
     <aside className="drag-region w-20 max-w-20 min-w-20 border-r border-border/60 bg-background/77 flex flex-col items-center py-4 gap-2">
       {/* App Logo */}
-      <div className="flex flex-col items-center gap-1 py-4 mt-2">
+      <div className="flex flex-col items-center gap-1 py-3 mt-4">
         <div className="w-12 h-12 flex items-center justify-center">
           <img src="./app-icon.png" alt="VidBee" className="w-10 h-10" />
         </div>

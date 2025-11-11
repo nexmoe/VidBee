@@ -20,6 +20,7 @@ type ParserItem = {
   youtubeId?: string
   mediaThumbnail?: Array<{ url?: string }> | { url?: string }
   mediaContent?: Array<{ url?: string }> | { url?: string }
+  enclosure?: Array<{ url?: string; type?: string }> | { url?: string; type?: string }
   [key: string]: unknown
 }
 
@@ -46,7 +47,8 @@ const parser = new Parser<{ item: ParserItem }>({
     item: [
       ['yt:videoId', 'youtubeId'],
       ['media:thumbnail', 'mediaThumbnail'],
-      ['media:content', 'mediaContent']
+      ['media:content', 'mediaContent'],
+      ['enclosure', 'enclosure']
     ]
   }
 })
@@ -316,20 +318,41 @@ export class SubscriptionScheduler extends EventEmitter {
   }
 
   private resolveThumbnail(item: ParserItem): string | undefined {
+    // Try media:thumbnail first
     const thumbnail = item.mediaThumbnail
     if (Array.isArray(thumbnail)) {
-      return thumbnail.find((entry) => entry?.url)?.url
+      const found = thumbnail.find((entry) => entry?.url)
+      if (found?.url) return found.url
     }
     if (thumbnail && typeof thumbnail === 'object' && 'url' in thumbnail) {
       return thumbnail.url as string | undefined
     }
+
+    // Try enclosure (for RSS feeds with image/jpeg type)
+    const enclosure = item.enclosure
+    if (Array.isArray(enclosure)) {
+      const imageEnclosure = enclosure.find(
+        (entry) => entry?.url && entry?.type?.startsWith('image/')
+      )
+      if (imageEnclosure?.url) return imageEnclosure.url
+    }
+    if (enclosure && typeof enclosure === 'object' && 'url' in enclosure) {
+      const enc = enclosure as { url?: string; type?: string }
+      if (enc.url && enc.type?.startsWith('image/')) {
+        return enc.url
+      }
+    }
+
+    // Try media:content as fallback
     const mediaContent = item.mediaContent
     if (Array.isArray(mediaContent)) {
-      return mediaContent.find((entry) => entry?.url)?.url
+      const found = mediaContent.find((entry) => entry?.url)
+      if (found?.url) return found.url
     }
     if (mediaContent && typeof mediaContent === 'object' && 'url' in mediaContent) {
       return mediaContent.url as string | undefined
     }
+
     return undefined
   }
 

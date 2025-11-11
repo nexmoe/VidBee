@@ -246,6 +246,7 @@
     "about": "About",
     "download": "Download",
     "playlist": "Download Playlist",
+    "rss": "RSS",
     "subscriptions": "Subscriptions",
     "preferences": "Preferences",
     "supportedSites": "Supported Sites",
@@ -403,6 +404,7 @@
       "onlyLatest": "Download only the latest video",
       "onlyLatestDescription": "Ignore backlog items and fetch just the newest upload from this feed.",
       "enabled": "Enabled",
+      "disabled": "Disabled",
       "onlyLatestShort": "Only latest"
     },
     "placeholders": {
@@ -422,13 +424,15 @@
       "empty": "No recent feed items found.",
       "queued": "Queued",
       "notQueued": "Not queued",
+      "fromChannel": "From {{channel}}",
       "actions": {
         "open": "Open in browser"
       }
     },
     "labels": {
       "subscription": "Subscription",
-      "unknown": "Unknown subscription"
+      "unknown": "Unknown subscription",
+      "noThumbnail": "No thumbnail"
     },
     "notifications": {
       "directoryError": "Failed to open the directory picker.",
@@ -452,10 +456,14 @@
       "description": "Tweak filters, tags, and overrides for this feed."
     },
     "status": {
+      "title": "Status",
       "up-to-date": "Up to date",
       "checking": "Checking",
       "failed": "Failed",
-      "idle": "Idle"
+      "idle": "Idle",
+      "tooltip": {
+        "updatedAt": "Updated: {{time}}"
+      }
     }
   },
   "sites": {
