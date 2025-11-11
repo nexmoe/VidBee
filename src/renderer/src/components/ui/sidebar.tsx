@@ -11,6 +11,7 @@ import { type LanguageCode, languageList, normalizeLanguageCode } from '@shared/
 import { useSetAtom } from 'jotai'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import '../../assets/title-bar.css'
 import MingcuteCheckCircleFill from '~icons/mingcute/check-circle-fill'
 import MingcuteCheckCircleLine from '~icons/mingcute/check-circle-line'
 import MingcuteDownload3Fill from '~icons/mingcute/download-3-fill'
@@ -107,7 +108,7 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
               variant="ghost"
               size="icon"
               onClick={() => onPageChange(item.id)}
-              className={`w-12 h-12 ${isActive ? 'bg-primary/10' : ''}`}
+              className={`no-drag w-12 h-12 ${isActive ? 'bg-primary/10' : ''}`}
             >
               <IconComponent className={`h-5! w-5! ${isActive ? 'text-primary' : ''}`} />
             </Button>
@@ -126,9 +127,9 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
   }
 
   return (
-    <aside className="w-20 max-w-20 min-w-20 border-r border-border/60 bg-background/77 flex flex-col items-center py-4 gap-2">
+    <aside className="drag-region w-20 max-w-20 min-w-20 border-r border-border/60 bg-background/77 flex flex-col items-center py-4 gap-2">
       {/* App Logo */}
-      <div className="flex flex-col items-center gap-1 py-4 mb-1">
+      <div className="flex flex-col items-center gap-1 py-4 mt-2">
         <div className="w-12 h-12 flex items-center justify-center">
           <img src="./app-icon.png" alt="VidBee" className="w-10 h-10" />
         </div>
@@ -148,7 +149,7 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
           <Tooltip>
             <TooltipTrigger asChild>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="w-12 h-12">
+                <Button variant="ghost" size="icon" className="no-drag w-12 h-12">
                   <MingcuteGlobeLine className="h-5! w-5!" />
                 </Button>
               </DropdownMenuTrigger>
@@ -192,7 +193,7 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
                   variant="ghost"
                   size="icon"
                   onClick={() => onPageChange(item.id)}
-                  className={`w-12 h-12 ${isActive ? 'bg-primary/10' : ''}`}
+                  className={`no-drag w-12 h-12 ${isActive ? 'bg-primary/10' : ''}`}
                 >
                   <IconComponent className={`h-5! w-5! ${isActive ? 'text-primary' : ''}`} />
                 </Button>
