@@ -223,13 +223,6 @@ export class SubscriptionScheduler extends EventEmitter {
         }
       }
 
-      if (keywordFiltered.length > 0) {
-        subscriptionManager.appendSeenItems(
-          subscription.id,
-          keywordFiltered.map((item) => item.id)
-        )
-      }
-
       const latestItem = normalizedItems[0]
       subscriptionManager.update(subscription.id, {
         status: 'up-to-date',
@@ -357,8 +350,8 @@ export class SubscriptionScheduler extends EventEmitter {
   }
 
   private filterNewItems(subscription: SubscriptionRule, items: FeedItem[]): FeedItem[] {
-    const seen = new Set(subscription.seenItemIds)
-    return items.filter((item) => !seen.has(item.id))
+    const seenIds = new Set(subscription.items.map((item) => item.id))
+    return items.filter((item) => !seenIds.has(item.id))
   }
 
   private async queueDownload(

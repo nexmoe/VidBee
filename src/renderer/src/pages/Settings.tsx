@@ -359,6 +359,13 @@ export function Settings() {
                   <div className="flex gap-2 w-full max-w-md">
                     <Input value={settings.configPath} readOnly className="flex-1" />
                     <Button onClick={handleSelectConfigFile}>{t('settings.selectPath')}</Button>
+                    <Button
+                      variant="secondary"
+                      onClick={() => void handleSettingChange('configPath', '')}
+                      disabled={!settings.configPath}
+                    >
+                      {t('settings.clearConfigFile')}
+                    </Button>
                   </div>
                 </ItemActions>
               </Item>

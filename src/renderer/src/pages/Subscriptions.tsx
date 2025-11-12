@@ -24,6 +24,7 @@ import { Tabs, TabsList, TabsTrigger } from '@renderer/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { ipcServices } from '@renderer/lib/ipc'
 import { cn } from '@renderer/lib/utils'
+import { type DownloadRecord, downloadsArrayAtom } from '@renderer/store/downloads'
 import { settingsAtom } from '@renderer/store/settings'
 import {
   createSubscriptionAtom,
@@ -34,12 +35,13 @@ import {
   updateSubscriptionAtom
 } from '@renderer/store/subscriptions'
 import type {
+  DownloadStatus,
   SubscriptionFeedItem,
   SubscriptionResolvedFeed,
   SubscriptionRule
 } from '@shared/types'
 import dayjs from 'dayjs'
-import { useAtom, useSetAtom } from 'jotai'
+import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import { Edit, ExternalLink, Plus, Power, RefreshCw, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -83,6 +85,19 @@ const disabledStatusStyle = {
   dotClass: 'bg-zinc-400',
   textClass: 'text-muted-foreground',
   label: 'subscriptions.fields.disabled'
+}
+
+type SubscriptionItemStatus = DownloadStatus | 'queued' | 'notQueued'
+
+const subscriptionItemStatusLabels: Record<SubscriptionItemStatus, string> = {
+  notQueued: 'subscriptions.items.status.notQueued',
+  queued: 'subscriptions.items.status.queued',
+  pending: 'subscriptions.items.status.pending',
+  downloading: 'subscriptions.items.status.downloading',
+  processing: 'subscriptions.items.status.processing',
+  completed: 'subscriptions.items.status.completed',
+  error: 'subscriptions.items.status.error',
+  cancelled: 'subscriptions.items.status.cancelled'
 }
 
 function SubscriptionTab({
@@ -131,8 +146,8 @@ function SubscriptionTab({
           <TabsTrigger
             value={subscription.id}
             className={cn(
-              'flex h-auto w-20 flex-col rounded-sm! items-center gap-1 px-2 py-2 transition-all hover:opacity-80',
-              isActive && 'bg-neutral-100'
+              'flex h-auto w-20 flex-col rounded-sm! items-center gap-1 px-2 py-2 transition-all hover:opacity-80 shrink-0 grow-0',
+              isActive && 'bg-muted/45'
             )}
           >
             <Tooltip>
@@ -284,29 +299,40 @@ export function Subscriptions() {
   return (
     <div className="relative">
       {/* Channel Tabs Header */}
-      {sortedSubscriptions.length > 0 && (
-        <div className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
-          <div className="overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-            <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
-              <TabsList className="h-auto w-full justify-start rounded-none border-none bg-transparent p-0">
-                <div className="flex gap-0 px-6 pb-6">
-                  {/* Subscription Channel Tabs */}
-                  {sortedSubscriptions.map((subscription) => (
-                    <SubscriptionTab
-                      key={subscription.id}
-                      subscription={subscription}
-                      isActive={subscription.id === selectedTab}
-                      onRefresh={() => refreshSubscription(subscription.id)}
-                      onRemove={() => removeSubscription(subscription.id)}
-                      onUpdate={(data) => handleUpdateSubscription(subscription.id, data)}
-                    />
-                  ))}
+      <div className="">
+        <div className="overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-auto">
+            <TabsList className="h-auto w-auto justify-start rounded-none border-none bg-transparent p-0 px-6">
+              {/* Subscription Channel Tabs */}
+              {sortedSubscriptions.map((subscription) => (
+                <SubscriptionTab
+                  key={subscription.id}
+                  subscription={subscription}
+                  isActive={subscription.id === selectedTab}
+                  onRefresh={() => refreshSubscription(subscription.id)}
+                  onRemove={() => removeSubscription(subscription.id)}
+                  onUpdate={(data) => handleUpdateSubscription(subscription.id, data)}
+                />
+              ))}
+              {/* Add RSS Button */}
+              <Button
+                className="flex h-auto w-20 flex-col items-center gap-1 rounded-sm! px-2 py-2 transition-all hover:opacity-80 bg-transparent hover:bg-neutral-100 shrink-0 grow-0"
+                variant="ghost"
+                onClick={() => setAddDialogOpen(true)}
+              >
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-muted-foreground/40 transition-colors">
+                  <Plus className="h-5 w-5 text-muted-foreground" />
                 </div>
-              </TabsList>
-            </Tabs>
-          </div>
+                <div className="flex w-full flex-col items-center text-center">
+                  <span className="w-full truncate text-xs font-medium">
+                    {t('subscriptions.add.title')}
+                  </span>
+                </div>
+              </Button>
+            </TabsList>
+          </Tabs>
         </div>
-      )}
+      </div>
 
       {/* Content Area */}
       <div className="relative space-y-8 p-6">
@@ -328,16 +354,6 @@ export function Subscriptions() {
           )}
         </section>
       </div>
-
-      {/* Floating Action Button */}
-      <Button
-        className="fixed bottom-8 right-8 h-14 w-14 rounded-full shadow-lg z-50"
-        size="icon"
-        onClick={() => setAddDialogOpen(true)}
-      >
-        <Plus className="h-6 w-6" />
-        <span className="sr-only">{t('subscriptions.add.title')}</span>
-      </Button>
 
       <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
         <SubscriptionAddDialog
@@ -371,6 +387,28 @@ interface SubscriptionRuleUpdateForm {
 function SubscriptionCard({ subscription }: { subscription: SubscriptionRule }) {
   const { t } = useTranslation()
   const feedItems: SubscriptionFeedItem[] = subscription.items ?? []
+  const downloads = useAtomValue(downloadsArrayAtom)
+  const downloadLookup = useMemo(() => {
+    const map = new Map<string, DownloadRecord>()
+    downloads.forEach((record) => {
+      map.set(record.id, record)
+    })
+    return map
+  }, [downloads])
+
+  const resolveItemStatus = (item: SubscriptionFeedItem): SubscriptionItemStatus => {
+    if (!item.addedToQueue) {
+      return 'notQueued'
+    }
+    if (!item.downloadId) {
+      return 'queued'
+    }
+    const matchedDownload = downloadLookup.get(item.downloadId)
+    if (!matchedDownload) {
+      return 'queued'
+    }
+    return matchedDownload.status
+  }
 
   const handleOpenItem = async (url: string) => {
     try {
@@ -391,77 +429,92 @@ function SubscriptionCard({ subscription }: { subscription: SubscriptionRule }) 
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-      {feedItems.map((item) => (
-        <article key={`${subscription.id}-${item.id}`} className="group  transition-all">
-          <div className="relative w-full overflow-hidden bg-muted aspect-video overflow-hidden rounded-2xl">
-            {item.thumbnail ? (
-              <RemoteImage
-                src={item.thumbnail}
-                alt={item.title}
-                className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-              />
-            ) : (
-              <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
-                {t('subscriptions.labels.noThumbnail')}
-              </div>
-            )}
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/5 to-transparent" />
-            <div className="absolute top-3 left-3 flex items-center gap-2 rounded-full bg-black/60 pr-3 pl-1 py-1 text-xs font-medium text-white backdrop-blur">
-              {subscription.coverUrl ? (
-                <div className="h-6 w-6 overflow-hidden rounded-full border border-white/40">
-                  <RemoteImage
-                    src={subscription.coverUrl}
-                    alt={subscription.title || t('subscriptions.labels.unknown')}
-                    className="h-full w-full object-cover"
-                  />
-                </div>
+      {feedItems.map((item) => {
+        const itemStatus = resolveItemStatus(item)
+        const badgeLabel = item.addedToQueue
+          ? t('subscriptions.items.status.queued')
+          : t('subscriptions.items.status.notQueued')
+        const tooltipLabel = item.addedToQueue
+          ? t('subscriptions.items.tooltip.downloadStatus', {
+              status: t(subscriptionItemStatusLabels[itemStatus])
+            })
+          : t('subscriptions.items.tooltip.notQueued')
+        const badgeClass = item.addedToQueue ? 'bg-emerald-500' : 'bg-black/70'
+        return (
+          <article key={`${subscription.id}-${item.id}`} className="group  transition-all">
+            <div className="relative w-full overflow-hidden bg-muted aspect-video overflow-hidden rounded-2xl">
+              {item.thumbnail ? (
+                <RemoteImage
+                  src={item.thumbnail}
+                  alt={item.title}
+                  className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
               ) : (
-                <div className="flex h-6 w-6 items-center justify-center rounded-full border border-white/40 bg-white/10 text-[10px] font-semibold uppercase text-white">
-                  {(subscription.title || t('subscriptions.labels.unknown')).slice(0, 1)}
+                <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
+                  {t('subscriptions.labels.noThumbnail')}
                 </div>
               )}
-              <span className="max-w-[10rem] truncate text-xs">
-                {subscription.title || t('subscriptions.labels.unknown')}
-              </span>
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/5 to-transparent" />
+              <div className="absolute top-3 left-3 flex items-center gap-2 rounded-full bg-black/60 pr-3 pl-1 py-1 text-xs font-medium text-white backdrop-blur">
+                {subscription.coverUrl ? (
+                  <div className="h-6 w-6 overflow-hidden rounded-full border border-white/40">
+                    <RemoteImage
+                      src={subscription.coverUrl}
+                      alt={subscription.title || t('subscriptions.labels.unknown')}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full border border-white/40 bg-white/10 text-[10px] font-semibold uppercase text-white">
+                    {(subscription.title || t('subscriptions.labels.unknown')).slice(0, 1)}
+                  </div>
+                )}
+                <span className="max-w-[10rem] truncate text-xs">
+                  {subscription.title || t('subscriptions.labels.unknown')}
+                </span>
+              </div>
+              <div className="absolute bottom-3 left-3 text-xs font-medium text-white">
+                {dayjs(item.publishedAt).format('YYYY-MM-DD HH:mm')}
+              </div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge
+                    variant="secondary"
+                    className={cn(
+                      'absolute bottom-3 right-3 rounded-full text-xs text-white backdrop-blur',
+                      badgeClass
+                    )}
+                  >
+                    {badgeLabel}
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent>{tooltipLabel}</TooltipContent>
+              </Tooltip>
             </div>
-            <div className="absolute bottom-3 left-3 text-xs font-medium text-white">
-              {dayjs(item.publishedAt).format('YYYY-MM-DD HH:mm')}
+            <div className="flex flex-col gap-4 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-1">
+                <p
+                  className="text-base font-semibold leading-snug text-card-foreground"
+                  title={item.title}
+                >
+                  {item.title}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="rounded-full px-4"
+                  onClick={() => void handleOpenItem(item.url)}
+                  title={t('subscriptions.items.actions.open')}
+                >
+                  <ExternalLink className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
-            <Badge
-              variant={item.addedToQueue ? 'default' : 'secondary'}
-              className={cn(
-                'absolute bottom-3 right-3 rounded-full text-xs text-white backdrop-blur',
-                item.addedToQueue ? 'bg-emerald-500' : 'bg-black/70'
-              )}
-            >
-              {item.addedToQueue
-                ? t('subscriptions.items.queued')
-                : t('subscriptions.items.notQueued')}
-            </Badge>
-          </div>
-          <div className="flex flex-col gap-4 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-1">
-              <p
-                className="text-base font-semibold leading-snug text-card-foreground"
-                title={item.title}
-              >
-                {item.title}
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="secondary"
-                size="sm"
-                className="rounded-full px-4"
-                onClick={() => void handleOpenItem(item.url)}
-                title={t('subscriptions.items.actions.open')}
-              >
-                <ExternalLink className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </article>
-      ))}
+          </article>
+        )
+      })}
     </div>
   )
 }
@@ -624,47 +677,32 @@ function SubscriptionAddDialog({ open, onCreate, onClose }: SubscriptionAddDialo
             <p className="text-xs text-muted-foreground">{t('subscriptions.detecting')}</p>
           )}
         </div>
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="space-y-2">
-            <Label>{t('subscriptions.fields.keywords')}</Label>
-            <Input
-              value={keywords}
-              onChange={(event) => setKeywords(event.target.value)}
-              placeholder="AI, tutorial"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>{t('subscriptions.fields.tags')}</Label>
-            <Input
-              value={tags}
-              onChange={(event) => setTags(event.target.value)}
-              placeholder="YouTube, AI"
-            />
+        <div className="space-y-2">
+          <Label>{t('subscriptions.fields.keywords')}</Label>
+          <Input value={keywords} onChange={(event) => setKeywords(event.target.value)} />
+        </div>
+        <div className="space-y-2">
+          <Label>{t('subscriptions.fields.tags')}</Label>
+          <Input value={tags} onChange={(event) => setTags(event.target.value)} />
+        </div>
+        <div className="space-y-2">
+          <Label>{t('subscriptions.fields.customDirectory')}</Label>
+          <div className="flex gap-2">
+            <Input value={customDownloadDirectory} readOnly />
+            <Button variant="secondary" onClick={() => void handleSelectDirectory()}>
+              {t('subscriptions.actions.selectDirectory')}
+            </Button>
           </div>
         </div>
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="space-y-2">
-            <Label>{t('subscriptions.fields.customDirectory')}</Label>
-            <div className="flex gap-2">
-              <Input value={customDownloadDirectory} readOnly />
-              <Button variant="secondary" onClick={() => void handleSelectDirectory()}>
-                {t('subscriptions.actions.selectDirectory')}
-              </Button>
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label>{t('subscriptions.fields.namingTemplate')}</Label>
-            <Input
-              value={namingTemplate}
-              onChange={(event) => setNamingTemplate(sanitizeTemplateInput(event.target.value))}
-              placeholder="%(uploader)s - %(title)s.%(ext)s"
-            />
-          </div>
+        <div className="space-y-2">
+          <Label>{t('subscriptions.fields.namingTemplate')}</Label>
+          <Input
+            value={namingTemplate}
+            onChange={(event) => setNamingTemplate(sanitizeTemplateInput(event.target.value))}
+          />
         </div>
         <div className="flex items-center justify-between gap-4 rounded-md border px-3 py-2">
-          <div>
-            <p className="text-sm">{t('subscriptions.fields.onlyLatest')}</p>
-          </div>
+          <p className="text-sm">{t('subscriptions.fields.onlyLatest')}</p>
           <Switch checked={onlyLatest} onCheckedChange={setOnlyLatest} />
         </div>
       </div>

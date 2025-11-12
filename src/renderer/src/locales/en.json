@@ -328,6 +328,7 @@
     },
     "configFile": "Use configuration file",
     "configFileDescription": "Custom configuration file for yt-dlp",
+    "clearConfigFile": "Clear",
     "dark": "Dark",
     "description": "Configure your download preferences and application settings",
     "directorySelectError": "Failed to select directory",
@@ -427,6 +428,106 @@
       "queued": "Queued",
       "notQueued": "Not queued",
       "fromChannel": "From {{channel}}",
+      "actions": {
+        "open": "Open in browser"
+      }
+    },
+    "labels": {
+      "subscription": "Subscription",
+      "unknown": "Unknown subscription",
+      "noThumbnail": "No thumbnail"
+    },
+    "notifications": {
+      "directoryError": "Failed to open the directory picker.",
+      "missingUrl": "Please paste a channel link first.",
+      "created": "Subscription added",
+      "createError": "Failed to add subscription.",
+      "refreshStarted": "Refresh started",
+      "removed": "Subscription removed",
+      "updated": "Subscription updated",
+      "openLinkError": "Failed to open the video link.",
+      "resolveError": "Failed to resolve RSS feed URL."
+    },
+    "detectedFeed": "Detected {{platform}} feed -> {{feed}}",
+    "detecting": "Detecting feed...",
+    "latestVideo": "Latest video: {{title}}",
+    "lastChecked": "Last checked: {{time}}",
+    "never": "Never",
+    "empty": "No subscriptions yet. Add your favorite channels to start auto-downloading.",
+    "edit": {
+      "title": "Edit {{name}}",
+      "description": "Tweak filters, tags, and overrides for this feed."
+    },
+    "status": {
+      "title": "Status",
+      "up-to-date": "Up to date",
+      "checking": "Checking",
+      "failed": "Failed",
+      "idle": "Idle",
+      "tooltip": {
+        "updatedAt": "Updated: {{time}}"
+      }
+    }
+  },
+  "subscriptions": {
+    "title": "Subscriptions",
+    "subtitle": "{{count}} subscription{{count, plural, one {} other {s}}}",
+    "description": "Automatically monitor RSS feeds and queue new downloads without manual work.",
+    "defaults": {
+      "title": "Automation defaults",
+      "description": "Control where subscription downloads are stored and how often VidBee checks for new videos.",
+      "downloadDirectory": "Download directory",
+      "filenameTemplate": "Filename template (file only)",
+      "checkInterval": "Check interval (hours)",
+      "onlyLatest": "Download only the latest video",
+      "onlyLatestDescription": "When enabled, VidBee skips older backlog items and only grabs the newest upload."
+    },
+    "add": {
+      "title": "Add RSS",
+      "description": "Paste an RSS feed link. VidBee will detect the feed automatically."
+    },
+    "fields": {
+      "url": "Source link",
+      "keywords": "Keyword filter (comma separated)",
+      "tags": "Auto tags",
+      "customDirectory": "Custom directory",
+      "namingTemplate": "Custom filename template (file only)",
+      "onlyLatest": "Download only the latest video",
+      "onlyLatestDescription": "Ignore backlog items and fetch just the newest upload from this feed.",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "onlyLatestShort": "Only latest"
+    },
+    "placeholders": {
+      "url": "https://www.youtube.com/channel/UC..."
+    },
+    "actions": {
+      "add": "Add",
+      "refresh": "Refresh",
+      "edit": "Edit",
+      "remove": "Remove",
+      "save": "Save changes",
+      "selectDirectory": "Browse"
+    },
+    "items": {
+      "title": "Latest uploads ({{count}})",
+      "count": "{{count}} items",
+      "empty": "No recent feed items found.",
+      "status": {
+        "queued": "Queued",
+        "notQueued": "Not queued",
+        "pending": "Pending",
+        "downloading": "Downloading",
+        "processing": "Processing",
+        "completed": "Completed",
+        "error": "Failed",
+        "cancelled": "Cancelled"
+      },
+      "fromChannel": "From {{channel}}",
+      "tooltip": {
+        "downloadStatus": "Download status: {{status}}",
+        "notQueued": "Not in the download queue yet"
+      },
       "actions": {
         "open": "Open in browser"
       }

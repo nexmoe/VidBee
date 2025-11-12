@@ -19,8 +19,6 @@ import type {
 } from '../../shared/types'
 import { sanitizeFilenameTemplate } from '../download-engine/args-builder'
 
-const MAX_SEEN_IDS = 200
-
 const sanitizeList = (values?: string[]): string[] => {
   if (!values || values.length === 0) {
     return []
@@ -77,8 +75,6 @@ const subscriptionsTable = sqliteTable('subscriptions', {
   lastError: text('last_error'),
   createdAt: integer('created_at', { mode: 'number' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'number' }).notNull(),
-  seenItemIds: text('seen_item_ids').notNull(),
-  lastItemId: text('last_item_id'),
   downloadDirectory: text('download_directory'),
   namingTemplate: text('naming_template')
 })
@@ -171,8 +167,6 @@ export class SubscriptionManager extends EventEmitter {
       lastError: undefined,
       createdAt: timestamp,
       updatedAt: timestamp,
-      seenItemIds: [],
-      lastItemId: undefined,
       downloadDirectory: payload.downloadDirectory,
       namingTemplate: payload.namingTemplate
         ? sanitizeFilenameTemplate(payload.namingTemplate)
@@ -197,14 +191,11 @@ export class SubscriptionManager extends EventEmitter {
 
     const keywords = updates.keywords ? sanitizeList(updates.keywords) : undefined
     const tags = updates.tags ? sanitizeList(updates.tags) : undefined
-    const seenItemIds = this.normalizeSeenItems(updates.seenItemIds ?? existing.seenItemIds)
-
     const next: SubscriptionRule = {
       ...existing,
       ...updates,
       keywords: keywords ?? existing.keywords,
       tags: tags ?? existing.tags,
-      seenItemIds,
       updatedAt: Date.now()
     }
 
@@ -235,18 +226,6 @@ export class SubscriptionManager extends EventEmitter {
       return true
     }
     return false
-  }
-
-  appendSeenItems(id: string, itemIds: string[]): SubscriptionRule | undefined {
-    if (itemIds.length === 0) {
-      return this.getById(id)
-    }
-    const existing = this.getById(id)
-    if (!existing) {
-      return undefined
-    }
-    const merged = this.normalizeSeenItems([...existing.seenItemIds, ...itemIds])
-    return this.update(id, { seenItemIds: merged })
   }
 
   replaceFeedItems(
@@ -382,8 +361,6 @@ export class SubscriptionManager extends EventEmitter {
           last_error TEXT,
           created_at INTEGER NOT NULL,
           updated_at INTEGER NOT NULL,
-          seen_item_ids TEXT NOT NULL,
-          last_item_id TEXT,
           download_directory TEXT,
           naming_template TEXT
         )`
@@ -413,6 +390,7 @@ export class SubscriptionManager extends EventEmitter {
         'CREATE INDEX IF NOT EXISTS subscription_items_subscription_idx ON subscription_items (subscription_id)'
       )
       .run()
+    this.ensureSubscriptionsSchema()
     this.ensureItemsSchema()
     log.info('subscriptions: database initialized at', databasePath)
     return this.db
@@ -510,6 +488,107 @@ export class SubscriptionManager extends EventEmitter {
     }
   }
 
+  private ensureSubscriptionsSchema(): void {
+    if (!this.sqlite) {
+      return
+    }
+    try {
+      const columns = this.sqlite.prepare(`PRAGMA table_info(subscriptions)`).all() as Array<{
+        name: string
+      }>
+      const hasLegacyColumns = columns.some((column) =>
+        ['seen_item_ids', 'last_item_id'].includes(column.name)
+      )
+      if (!hasLegacyColumns) {
+        return
+      }
+      const sqlite = this.sqlite
+      const migrate = sqlite.transaction(() => {
+        sqlite.prepare(`DROP TABLE IF EXISTS subscriptions_new`).run()
+        sqlite
+          .prepare(
+            `CREATE TABLE subscriptions_new (
+              id TEXT PRIMARY KEY,
+              title TEXT NOT NULL,
+              source_url TEXT NOT NULL,
+              feed_url TEXT NOT NULL,
+              platform TEXT NOT NULL,
+              keywords TEXT NOT NULL,
+              tags TEXT NOT NULL,
+              only_latest INTEGER NOT NULL,
+              enabled INTEGER NOT NULL,
+              cover_url TEXT,
+              latest_video_title TEXT,
+              latest_video_published_at INTEGER,
+              last_checked_at INTEGER,
+              last_success_at INTEGER,
+              status TEXT NOT NULL,
+              last_error TEXT,
+              created_at INTEGER NOT NULL,
+              updated_at INTEGER NOT NULL,
+              download_directory TEXT,
+              naming_template TEXT
+            )`
+          )
+          .run()
+        sqlite
+          .prepare(
+            `INSERT INTO subscriptions_new (
+              id,
+              title,
+              source_url,
+              feed_url,
+              platform,
+              keywords,
+              tags,
+              only_latest,
+              enabled,
+              cover_url,
+              latest_video_title,
+              latest_video_published_at,
+              last_checked_at,
+              last_success_at,
+              status,
+              last_error,
+              created_at,
+              updated_at,
+              download_directory,
+              naming_template
+            )
+            SELECT
+              id,
+              title,
+              source_url,
+              feed_url,
+              platform,
+              keywords,
+              tags,
+              only_latest,
+              enabled,
+              cover_url,
+              latest_video_title,
+              latest_video_published_at,
+              last_checked_at,
+              last_success_at,
+              status,
+              last_error,
+              created_at,
+              updated_at,
+              download_directory,
+              naming_template
+            FROM subscriptions`
+          )
+          .run()
+        sqlite.prepare(`DROP TABLE subscriptions`).run()
+        sqlite.prepare(`ALTER TABLE subscriptions_new RENAME TO subscriptions`).run()
+      })
+      migrate()
+      log.info('subscriptions: removed legacy seen_item_ids and last_item_id columns')
+    } catch (error) {
+      log.warn('subscriptions: failed to ensure subscriptions schema', error)
+    }
+  }
+
   private getDatabasePath(): string {
     return join(app.getPath('userData'), 'subscriptions.sqlite')
   }
@@ -538,7 +617,6 @@ export class SubscriptionManager extends EventEmitter {
             ...legacyItem,
             keywords: sanitizeList(legacyItem.keywords),
             tags: sanitizeList(legacyItem.tags),
-            seenItemIds: sanitizeList(legacyItem.seenItemIds),
             items: []
           }
           this.insertRecord(normalized)
@@ -612,8 +690,6 @@ export class SubscriptionManager extends EventEmitter {
       lastError: record.lastError,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
-      seenItemIds: stringifyArray(record.seenItemIds),
-      lastItemId: record.lastItemId,
       downloadDirectory: record.downloadDirectory,
       namingTemplate: record.namingTemplate
         ? sanitizeFilenameTemplate(record.namingTemplate)
@@ -641,8 +717,6 @@ export class SubscriptionManager extends EventEmitter {
       lastError: row.lastError ?? undefined,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
-      seenItemIds: parseStringArray(row.seenItemIds),
-      lastItemId: row.lastItemId ?? undefined,
       downloadDirectory: row.downloadDirectory ?? undefined,
       namingTemplate: row.namingTemplate ? sanitizeFilenameTemplate(row.namingTemplate) : undefined,
       items: []
@@ -659,25 +733,6 @@ export class SubscriptionManager extends EventEmitter {
       addedToQueue: numberToBoolean(row.added),
       downloadId: row.downloadId ?? undefined
     }
-  }
-
-  private normalizeSeenItems(items: string[]): string[] {
-    const unique = new Map<string, string>()
-    for (const entry of items) {
-      if (!entry) {
-        continue
-      }
-      const key = entry.trim()
-      if (!key) {
-        continue
-      }
-      unique.set(key, key)
-    }
-    const normalized = Array.from(unique.keys())
-    if (normalized.length > MAX_SEEN_IDS) {
-      return normalized.slice(normalized.length - MAX_SEEN_IDS)
-    }
-    return normalized
   }
 
   private emitUpdates(): void {
