@@ -209,69 +209,6 @@ export interface SubscriptionRule {
   lastError?: string
   createdAt: number
   updatedAt: number
-  seenItemIds: string[]
-  lastItemId?: string
-  downloadDirectory?: string
-  namingTemplate?: string
-  items: SubscriptionFeedItem[]
-}
-
-export interface SubscriptionResolvedFeed {
-  sourceUrl: string
-  feedUrl: string
-  platform: SubscriptionPlatform
-}
-
-export interface SubscriptionCreatePayload {
-  sourceUrl: string
-  feedUrl: string
-  platform: SubscriptionPlatform
-  keywords?: string[]
-  tags?: string[]
-  onlyDownloadLatest?: boolean
-  downloadDirectory?: string
-  namingTemplate?: string
-  enabled?: boolean
-}
-
-export interface SubscriptionUpdatePayload {
-  title?: string
-  sourceUrl?: string
-  feedUrl?: string
-  platform?: SubscriptionPlatform
-  keywords?: string[]
-  tags?: string[]
-  onlyDownloadLatest?: boolean
-  enabled?: boolean
-  downloadDirectory?: string
-  namingTemplate?: string
-  items?: SubscriptionFeedItem[]
-}
-
-// Subscription types
-export type SubscriptionPlatform = 'youtube' | 'bilibili' | 'custom'
-
-export type SubscriptionStatus = 'idle' | 'checking' | 'up-to-date' | 'failed'
-
-export interface SubscriptionRule {
-  id: string
-  title: string
-  sourceUrl: string
-  feedUrl: string
-  platform: SubscriptionPlatform
-  keywords: string[]
-  tags: string[]
-  onlyDownloadLatest: boolean
-  enabled: boolean
-  coverUrl?: string
-  latestVideoTitle?: string
-  latestVideoPublishedAt?: number
-  lastCheckedAt?: number
-  lastSuccessAt?: number
-  status: SubscriptionStatus
-  lastError?: string
-  createdAt: number
-  updatedAt: number
   downloadDirectory?: string
   namingTemplate?: string
   items: SubscriptionFeedItem[]

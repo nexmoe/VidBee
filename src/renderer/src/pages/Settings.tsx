@@ -26,7 +26,6 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { loadSettingsAtom, saveSettingAtom, settingsAtom } from '../store/settings'
 
-const sanitizeTemplateInput = (value: string) => value.replace(/[/\\]+/g, '-')
 const clampSubscriptionInterval = (value: string) => {
   const parsed = Number.parseInt(value, 10)
   if (Number.isNaN(parsed)) {
@@ -139,10 +138,9 @@ export function Settings() {
         </div>
 
         <Tabs defaultValue="general">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="general">{t('settings.general')}</TabsTrigger>
             <TabsTrigger value="advanced">{t('settings.advanced')}</TabsTrigger>
-            <TabsTrigger value="rss">{t('settings.rss')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="general" className="space-y-4 mt-2">
@@ -305,6 +303,33 @@ export function Settings() {
             <ItemGroup>
               <Item variant="muted">
                 <ItemContent>
+                  <ItemTitle>{t('subscriptions.defaults.checkInterval')}</ItemTitle>
+                  <ItemDescription>
+                    {t('settings.subscriptionDefaults.intervalDescription')}
+                  </ItemDescription>
+                </ItemContent>
+                <ItemActions>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={24}
+                    defaultValue={settings.subscriptionCheckIntervalHours}
+                    key={`subscription-interval-${settings.subscriptionCheckIntervalHours}`}
+                    onBlur={(event) =>
+                      void handleSettingChange(
+                        'subscriptionCheckIntervalHours',
+                        clampSubscriptionInterval(event.target.value)
+                      )
+                    }
+                    className="w-24"
+                  />
+                </ItemActions>
+              </Item>
+
+              <ItemSeparator />
+
+              <Item variant="muted">
+                <ItemContent>
                   <ItemTitle>{t('settings.maxConcurrentDownloads')}</ItemTitle>
                   <ItemDescription>
                     {t('settings.maxConcurrentDownloadsDescription')}
@@ -451,81 +476,6 @@ export function Settings() {
                   <Switch
                     checked={settings.enableAnalytics}
                     onCheckedChange={(value) => handleSettingChange('enableAnalytics', value)}
-                  />
-                </ItemActions>
-              </Item>
-            </ItemGroup>
-          </TabsContent>
-
-          <TabsContent value="rss" className="space-y-4 mt-2">
-            <div className="rounded-lg border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
-              {t('subscriptions.defaults.description')}
-            </div>
-            <ItemGroup>
-              <Item variant="muted">
-                <ItemContent>
-                  <ItemTitle>{t('subscriptions.defaults.filenameTemplate')}</ItemTitle>
-                  <ItemDescription>
-                    {t('settings.subscriptionDefaults.filenameDescription')}
-                  </ItemDescription>
-                </ItemContent>
-                <ItemActions>
-                  <Input
-                    className="w-full max-w-md"
-                    value={settings.subscriptionFilenameTemplate}
-                    onChange={(event) =>
-                      handleSettingChange(
-                        'subscriptionFilenameTemplate',
-                        sanitizeTemplateInput(event.target.value)
-                      )
-                    }
-                    placeholder="%(uploader)s - %(title)s.%(ext)s"
-                  />
-                </ItemActions>
-              </Item>
-
-              <ItemSeparator />
-
-              <Item variant="muted">
-                <ItemContent>
-                  <ItemTitle>{t('subscriptions.defaults.checkInterval')}</ItemTitle>
-                  <ItemDescription>
-                    {t('settings.subscriptionDefaults.intervalDescription')}
-                  </ItemDescription>
-                </ItemContent>
-                <ItemActions>
-                  <Input
-                    type="number"
-                    min={1}
-                    max={24}
-                    defaultValue={settings.subscriptionCheckIntervalHours}
-                    key={`subscription-interval-${settings.subscriptionCheckIntervalHours}`}
-                    onBlur={(event) =>
-                      void handleSettingChange(
-                        'subscriptionCheckIntervalHours',
-                        clampSubscriptionInterval(event.target.value)
-                      )
-                    }
-                    className="w-24"
-                  />
-                </ItemActions>
-              </Item>
-
-              <ItemSeparator />
-
-              <Item variant="muted">
-                <ItemContent>
-                  <ItemTitle>{t('subscriptions.defaults.onlyLatest')}</ItemTitle>
-                  <ItemDescription>
-                    {t('subscriptions.defaults.onlyLatestDescription')}
-                  </ItemDescription>
-                </ItemContent>
-                <ItemActions>
-                  <Switch
-                    checked={settings.subscriptionOnlyLatestDefault}
-                    onCheckedChange={(value) =>
-                      handleSettingChange('subscriptionOnlyLatestDefault', value)
-                    }
                   />
                 </ItemActions>
               </Item>

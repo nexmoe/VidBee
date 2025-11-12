@@ -88,7 +88,6 @@ const subscriptionItemsTable = sqliteTable(
     url: text('url').notNull(),
     publishedAt: integer('published_at', { mode: 'number' }).notNull(),
     thumbnail: text('thumbnail'),
-    status: text('status').notNull(),
     added: integer('added', { mode: 'number' }).notNull(),
     downloadId: text('download_id'),
     createdAt: integer('created_at', { mode: 'number' }).notNull(),
@@ -234,13 +233,13 @@ export class SubscriptionManager extends EventEmitter {
     silent: boolean = false
   ): void {
     const database = this.getDatabase()
-    const limited = items.slice(0, 20)
+    const orderedItems = [...items].sort((a, b) => b.publishedAt - a.publishedAt)
     const now = Date.now()
     database.transaction((tx) => {
       tx.delete(subscriptionItemsTable)
         .where(eq(subscriptionItemsTable.subscriptionId, subscriptionId))
         .run()
-      for (const item of limited) {
+      for (const item of orderedItems) {
         tx.insert(subscriptionItemsTable)
           .values({
             subscriptionId,
@@ -249,7 +248,6 @@ export class SubscriptionManager extends EventEmitter {
             url: item.url,
             publishedAt: item.publishedAt,
             thumbnail: item.thumbnail ?? null,
-            status: 'queued',
             added: booleanToNumber(item.addedToQueue),
             downloadId: item.downloadId ?? null,
             createdAt: item.publishedAt,
@@ -376,7 +374,6 @@ export class SubscriptionManager extends EventEmitter {
           url TEXT NOT NULL,
           published_at INTEGER NOT NULL,
           thumbnail TEXT,
-          status TEXT NOT NULL,
           added INTEGER NOT NULL,
           download_id TEXT,
           created_at INTEGER NOT NULL,
@@ -410,17 +407,13 @@ export class SubscriptionManager extends EventEmitter {
           .prepare(`ALTER TABLE subscription_items ADD COLUMN added INTEGER NOT NULL DEFAULT 0`)
           .run()
       }
-      const hasStatus = columns.some((column) => column.name === 'status')
-      if (!hasStatus) {
-        this.sqlite
-          .prepare(
-            `ALTER TABLE subscription_items ADD COLUMN status TEXT NOT NULL DEFAULT 'queued'`
-          )
-          .run()
-      }
       const hasDownloaded = columns.some((column) => column.name === 'downloaded')
-      if (hasDownloaded) {
-        this.sqlite.prepare(`UPDATE subscription_items SET added = 1 WHERE downloaded = 1`).run()
+      const hasLegacyStatus = columns.some((column) => column.name === 'status')
+      const needsMigration = hasDownloaded || hasLegacyStatus
+      if (needsMigration) {
+        if (hasDownloaded) {
+          this.sqlite.prepare(`UPDATE subscription_items SET added = 1 WHERE downloaded = 1`).run()
+        }
         const sqlite = this.sqlite
         const migrate = sqlite.transaction(() => {
           sqlite.prepare(`DROP TABLE IF EXISTS subscription_items_new`).run()
@@ -433,7 +426,6 @@ export class SubscriptionManager extends EventEmitter {
                 url TEXT NOT NULL,
                 published_at INTEGER NOT NULL,
                 thumbnail TEXT,
-                status TEXT NOT NULL,
                 added INTEGER NOT NULL,
                 download_id TEXT,
                 created_at INTEGER NOT NULL,
@@ -451,7 +443,6 @@ export class SubscriptionManager extends EventEmitter {
                 url,
                 published_at,
                 thumbnail,
-                status,
                 added,
                 download_id,
                 created_at,
@@ -464,7 +455,6 @@ export class SubscriptionManager extends EventEmitter {
                 url,
                 published_at,
                 thumbnail,
-                status,
                 added,
                 download_id,
                 created_at,
@@ -481,7 +471,7 @@ export class SubscriptionManager extends EventEmitter {
             .run()
         })
         migrate()
-        log.info('subscriptions: removed legacy downloaded column from subscription_items')
+        log.info('subscriptions: removed legacy columns from subscription_items')
       }
     } catch (error) {
       log.warn('subscriptions: failed to ensure subscription_items schema', error)

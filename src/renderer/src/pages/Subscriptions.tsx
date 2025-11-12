@@ -1,31 +1,29 @@
+import {
+  type SubscriptionFormData,
+  SubscriptionFormDialog
+} from '@renderer/components/subscription/SubscriptionFormDialog'
 import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
 import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from '@renderer/components/ui/card'
+import {
   ContextMenu,
-  ContextMenuCheckboxItem,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuSeparator,
   ContextMenuTrigger
 } from '@renderer/components/ui/context-menu'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle
-} from '@renderer/components/ui/dialog'
-import { Input } from '@renderer/components/ui/input'
-import { Label } from '@renderer/components/ui/label'
 import { RemoteImage } from '@renderer/components/ui/remote-image'
-import { Switch } from '@renderer/components/ui/switch'
 import { Tabs, TabsList, TabsTrigger } from '@renderer/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { ipcServices } from '@renderer/lib/ipc'
 import { cn } from '@renderer/lib/utils'
 import { type DownloadRecord, downloadsArrayAtom } from '@renderer/store/downloads'
-import { settingsAtom } from '@renderer/store/settings'
 import {
   createSubscriptionAtom,
   refreshSubscriptionAtom,
@@ -34,26 +32,13 @@ import {
   subscriptionsAtom,
   updateSubscriptionAtom
 } from '@renderer/store/subscriptions'
-import type {
-  DownloadStatus,
-  SubscriptionFeedItem,
-  SubscriptionResolvedFeed,
-  SubscriptionRule
-} from '@shared/types'
+import type { DownloadStatus, SubscriptionFeedItem, SubscriptionRule } from '@shared/types'
 import dayjs from 'dayjs'
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import { Edit, ExternalLink, Plus, Power, RefreshCw, Trash2 } from 'lucide-react'
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-
-const sanitizeCommaList = (value: string) =>
-  value
-    .split(',')
-    .map((entry) => entry.trim())
-    .filter((entry, index, array) => entry.length > 0 && array.indexOf(entry) === index)
-
-const sanitizeTemplateInput = (value: string) => value.replace(/[/\\]+/g, '-')
 
 const statusStyles: Record<
   SubscriptionRule['status'],
@@ -182,39 +167,38 @@ function SubscriptionTab({
         </ContextMenuTrigger>
         <ContextMenuContent>
           <ContextMenuItem onClick={handleRefresh}>
-            <RefreshCw className="mr-2 h-4 w-4" />
+            <RefreshCw className="h-4 w-4" />
             {t('subscriptions.actions.refresh')}
           </ContextMenuItem>
           <ContextMenuItem onClick={handleEdit}>
-            <Edit className="mr-2 h-4 w-4" />
+            <Edit className="h-4 w-4" />
             {t('subscriptions.actions.edit')}
           </ContextMenuItem>
-          <ContextMenuSeparator />
-          <ContextMenuCheckboxItem
-            checked={subscription.enabled}
-            onCheckedChange={(checked) => void handleToggleEnabled(checked)}
-          >
-            <Power className="mr-2 h-4 w-4" />
-            {t('subscriptions.fields.enabled')}
-          </ContextMenuCheckboxItem>
+          <ContextMenuItem onClick={() => void handleToggleEnabled(!subscription.enabled)}>
+            <Power className="h-4 w-4" />
+            {subscription.enabled
+              ? t('subscriptions.actions.disable')
+              : t('subscriptions.actions.enable')}
+          </ContextMenuItem>
           <ContextMenuSeparator />
           <ContextMenuItem onClick={() => void handleRemove()} variant="destructive">
-            <Trash2 className="mr-2 h-4 w-4" />
+            <Trash2 className="h-4 w-4" />
             {t('subscriptions.actions.remove')}
           </ContextMenuItem>
         </ContextMenuContent>
       </ContextMenu>
 
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <SubscriptionEditDialog
-          subscription={subscription}
-          onSave={async (data) => {
-            await onUpdate(data)
-            toast.success(t('subscriptions.notifications.updated'))
-            setEditOpen(false)
-          }}
-        />
-      </Dialog>
+      <SubscriptionFormDialog
+        mode="edit"
+        subscription={subscription}
+        open={editOpen}
+        onSave={async (data) => {
+          await onUpdate(data)
+          toast.success(t('subscriptions.notifications.updated'))
+          setEditOpen(false)
+        }}
+        onClose={() => setEditOpen(false)}
+      />
     </>
   )
 }
@@ -249,7 +233,7 @@ export function Subscriptions() {
         enabled: data.enabled
       }
 
-      // If URL is provided, resolve it and include sourceUrl, feedUrl, and platform
+      // If feed URL is provided, resolve it and include sourceUrl, feedUrl, and platform
       if (data.url) {
         try {
           const resolved = await resolveFeed(data.url)
@@ -269,9 +253,43 @@ export function Subscriptions() {
     [refreshSubscription, updateSubscription, resolveFeed, t]
   )
 
-  const handleCreateSubscription = useCallback(async () => {
-    setAddDialogOpen(false)
-  }, [])
+  const createSubscription = useSetAtom(createSubscriptionAtom)
+
+  const handleCreateSubscription = useCallback(
+    async (data: SubscriptionFormData) => {
+      if (!data.url) {
+        toast.error(t('subscriptions.notifications.missingUrl'))
+        return
+      }
+
+      try {
+        await createSubscription({
+          url: data.url,
+          keywords: data.keywords?.join(', '),
+          tags: data.tags?.join(', '),
+          onlyDownloadLatest: data.onlyDownloadLatest,
+          downloadDirectory: data.downloadDirectory,
+          namingTemplate: data.namingTemplate,
+          enabled: data.enabled
+        })
+        toast.success(t('subscriptions.notifications.created'))
+        setAddDialogOpen(false)
+      } catch (error) {
+        console.error('Failed to create subscription:', error)
+        toast.error(t('subscriptions.notifications.createError'))
+      }
+    },
+    [createSubscription, t]
+  )
+
+  const handleOpenRSSHubDocs = useCallback(async () => {
+    try {
+      await ipcServices.fs.openExternal('https://docs.rsshub.app/routes/social-media#youtube')
+    } catch (error) {
+      console.error('Failed to open RSSHub documentation:', error)
+      toast.error(t('subscriptions.notifications.openLinkError'))
+    }
+  }, [t])
 
   // Filter subscriptions based on selected tab
   const displayedSubscriptions = useMemo(() => {
@@ -353,15 +371,34 @@ export function Subscriptions() {
             </div>
           )}
         </section>
+
+        {/* RSSHub Info Card */}
+        <Card className="border-primary/20 bg-primary/5">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              {t('subscriptions.rssHub.title')}
+            </CardTitle>
+            <CardDescription>{t('subscriptions.rssHub.description')}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => void handleOpenRSSHubDocs()}
+              className="gap-2"
+            >
+              {t('subscriptions.rssHub.openDocs')}
+            </Button>
+          </CardContent>
+        </Card>
       </div>
 
-      <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-        <SubscriptionAddDialog
-          open={addDialogOpen}
-          onCreate={handleCreateSubscription}
-          onClose={() => setAddDialogOpen(false)}
-        />
-      </Dialog>
+      <SubscriptionFormDialog
+        mode="add"
+        open={addDialogOpen}
+        onSave={handleCreateSubscription}
+        onClose={() => setAddDialogOpen(false)}
+      />
     </div>
   )
 }
@@ -374,20 +411,15 @@ interface SubscriptionTabProps {
   onUpdate: (data: SubscriptionRuleUpdateForm) => Promise<void>
 }
 
-interface SubscriptionRuleUpdateForm {
-  url?: string
-  keywords?: string[]
-  tags?: string[]
-  onlyDownloadLatest?: boolean
-  downloadDirectory?: string
-  namingTemplate?: string
-  enabled?: boolean
-}
+type SubscriptionRuleUpdateForm = SubscriptionFormData
 
 function SubscriptionCard({ subscription }: { subscription: SubscriptionRule }) {
   const { t } = useTranslation()
   const feedItems: SubscriptionFeedItem[] = subscription.items ?? []
   const downloads = useAtomValue(downloadsArrayAtom)
+  const [historyStatusMap, setHistoryStatusMap] = useState<Record<string, DownloadStatus | null>>(
+    {}
+  )
   const downloadLookup = useMemo(() => {
     const map = new Map<string, DownloadRecord>()
     downloads.forEach((record) => {
@@ -395,6 +427,69 @@ function SubscriptionCard({ subscription }: { subscription: SubscriptionRule }) 
     })
     return map
   }, [downloads])
+
+  useEffect(() => {
+    const queuedDownloadIds = Array.from(
+      new Set(
+        feedItems
+          .filter((item) => item.addedToQueue && item.downloadId)
+          .map((item) => item.downloadId as string)
+      )
+    )
+
+    const missingIds = queuedDownloadIds.filter(
+      (downloadId) => !downloadLookup.has(downloadId) && historyStatusMap[downloadId] === undefined
+    )
+
+    if (missingIds.length === 0) {
+      return
+    }
+
+    let cancelled = false
+
+    const fetchHistoryStatuses = async () => {
+      try {
+        const results = await Promise.all(
+          missingIds.map(async (downloadId) => {
+            try {
+              const historyItem = await ipcServices.history.getHistoryById(downloadId)
+              return { downloadId, status: historyItem?.status ?? null }
+            } catch (error) {
+              console.error('Failed to fetch download history entry:', error)
+              return { downloadId, status: null }
+            }
+          })
+        )
+
+        if (cancelled) {
+          return
+        }
+
+        setHistoryStatusMap((prev) => {
+          let changed = false
+          const next = { ...prev }
+
+          for (const { downloadId, status } of results) {
+            if (next[downloadId] === status) {
+              continue
+            }
+            next[downloadId] = status
+            changed = true
+          }
+
+          return changed ? next : prev
+        })
+      } catch (error) {
+        console.error('Failed to resolve download history statuses:', error)
+      }
+    }
+
+    void fetchHistoryStatuses()
+
+    return () => {
+      cancelled = true
+    }
+  }, [feedItems, downloadLookup, historyStatusMap])
 
   const resolveItemStatus = (item: SubscriptionFeedItem): SubscriptionItemStatus => {
     if (!item.addedToQueue) {
@@ -405,6 +500,10 @@ function SubscriptionCard({ subscription }: { subscription: SubscriptionRule }) 
     }
     const matchedDownload = downloadLookup.get(item.downloadId)
     if (!matchedDownload) {
+      const cachedHistoryStatus = historyStatusMap[item.downloadId]
+      if (cachedHistoryStatus) {
+        return cachedHistoryStatus
+      }
       return 'queued'
     }
     return matchedDownload.status
@@ -428,21 +527,25 @@ function SubscriptionCard({ subscription }: { subscription: SubscriptionRule }) 
   }
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {feedItems.map((item) => {
         const itemStatus = resolveItemStatus(item)
+        const hasResolvedDownloadStatus =
+          item.addedToQueue && itemStatus !== 'queued' && itemStatus !== 'notQueued'
         const badgeLabel = item.addedToQueue
           ? t('subscriptions.items.status.queued')
           : t('subscriptions.items.status.notQueued')
         const tooltipLabel = item.addedToQueue
-          ? t('subscriptions.items.tooltip.downloadStatus', {
-              status: t(subscriptionItemStatusLabels[itemStatus])
-            })
+          ? hasResolvedDownloadStatus
+            ? t('subscriptions.items.tooltip.downloadStatus', {
+                status: t(subscriptionItemStatusLabels[itemStatus])
+              })
+            : t('subscriptions.items.tooltip.downloadPending')
           : t('subscriptions.items.tooltip.notQueued')
         const badgeClass = item.addedToQueue ? 'bg-emerald-500' : 'bg-black/70'
         return (
           <article key={`${subscription.id}-${item.id}`} className="group  transition-all">
-            <div className="relative w-full overflow-hidden bg-muted aspect-video overflow-hidden rounded-2xl">
+            <div className="relative w-full overflow-hidden bg-muted aspect-video rounded-2xl">
               {item.thumbnail ? (
                 <RemoteImage
                   src={item.thumbnail}
@@ -516,353 +619,5 @@ function SubscriptionCard({ subscription }: { subscription: SubscriptionRule }) 
         )
       })}
     </div>
-  )
-}
-
-interface SubscriptionAddDialogProps {
-  open: boolean
-  onCreate: () => Promise<void>
-  onClose: () => void
-}
-
-function SubscriptionAddDialog({ open, onCreate, onClose }: SubscriptionAddDialogProps) {
-  const { t } = useTranslation()
-  const [settings] = useAtom(settingsAtom)
-  const createSubscription = useSetAtom(createSubscriptionAtom)
-  const resolveFeed = useSetAtom(resolveFeedAtom)
-
-  const [url, setUrl] = useState('')
-  const [keywords, setKeywords] = useState('')
-  const [tags, setTags] = useState('')
-  const [onlyLatest, setOnlyLatest] = useState(settings.subscriptionOnlyLatestDefault)
-  const [customDownloadDirectory, setCustomDownloadDirectory] = useState(settings.downloadPath)
-  const [namingTemplate, setNamingTemplate] = useState(settings.subscriptionFilenameTemplate)
-  const [detectedFeed, setDetectedFeed] = useState<SubscriptionResolvedFeed | null>(null)
-  const [detectingFeed, setDetectingFeed] = useState(false)
-
-  const detectTimeout = useRef<NodeJS.Timeout | null>(null)
-  const prevDefaultPathRef = useRef(settings.downloadPath)
-  const urlInputId = useId()
-
-  // Reset form when dialog closes
-  useEffect(() => {
-    if (!open) {
-      setUrl('')
-      setKeywords('')
-      setTags('')
-      setDetectedFeed(null)
-      setOnlyLatest(settings.subscriptionOnlyLatestDefault)
-      setCustomDownloadDirectory(settings.downloadPath)
-      setNamingTemplate(settings.subscriptionFilenameTemplate)
-    }
-  }, [
-    open,
-    settings.subscriptionOnlyLatestDefault,
-    settings.downloadPath,
-    settings.subscriptionFilenameTemplate
-  ])
-
-  useEffect(() => {
-    const newPath = settings.downloadPath
-    setCustomDownloadDirectory((prev) => {
-      if (!prev || prev === prevDefaultPathRef.current) {
-        return newPath
-      }
-      return prev
-    })
-    prevDefaultPathRef.current = newPath
-  }, [settings.downloadPath])
-
-  useEffect(() => {
-    setNamingTemplate(settings.subscriptionFilenameTemplate)
-  }, [settings.subscriptionFilenameTemplate])
-
-  useEffect(() => {
-    setOnlyLatest(settings.subscriptionOnlyLatestDefault)
-  }, [settings.subscriptionOnlyLatestDefault])
-
-  useEffect(() => {
-    if (!url.trim()) {
-      setDetectedFeed(null)
-      return
-    }
-
-    if (detectTimeout.current) {
-      clearTimeout(detectTimeout.current)
-    }
-
-    detectTimeout.current = setTimeout(async () => {
-      setDetectingFeed(true)
-      try {
-        const result = await resolveFeed(url.trim())
-        setDetectedFeed(result)
-      } catch (error) {
-        console.error('Failed to resolve feed:', error)
-        setDetectedFeed(null)
-      } finally {
-        setDetectingFeed(false)
-      }
-    }, 500)
-
-    return () => {
-      if (detectTimeout.current) {
-        clearTimeout(detectTimeout.current)
-      }
-    }
-  }, [url, resolveFeed])
-
-  const handleSelectDirectory = async () => {
-    try {
-      const path = await ipcServices.fs.selectDirectory()
-      if (path) {
-        setCustomDownloadDirectory(path)
-      }
-    } catch (error) {
-      console.error('Failed to select directory:', error)
-      toast.error(t('subscriptions.notifications.directoryError'))
-    }
-  }
-
-  const handleCreateSubscription = async () => {
-    if (!url.trim()) {
-      toast.error(t('subscriptions.notifications.missingUrl'))
-      return
-    }
-
-    try {
-      await createSubscription({
-        url: url.trim(),
-        keywords,
-        tags,
-        onlyDownloadLatest: onlyLatest,
-        downloadDirectory: customDownloadDirectory,
-        namingTemplate
-      })
-      toast.success(t('subscriptions.notifications.created'))
-      setUrl('')
-      setKeywords('')
-      setTags('')
-      setDetectedFeed(null)
-      await onCreate()
-    } catch (error) {
-      console.error('Failed to create subscription:', error)
-      toast.error(t('subscriptions.notifications.createError'))
-    }
-  }
-
-  return (
-    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-      <DialogHeader>
-        <DialogTitle>{t('subscriptions.add.title')}</DialogTitle>
-        <DialogDescription>{t('subscriptions.add.description')}</DialogDescription>
-      </DialogHeader>
-      <div className="space-y-4 py-2">
-        <div className="space-y-2">
-          <Label htmlFor={urlInputId}>{t('subscriptions.fields.url')}</Label>
-          <Input
-            id={urlInputId}
-            value={url}
-            placeholder={t('subscriptions.placeholders.url')}
-            onChange={(event) => setUrl(event.target.value)}
-          />
-          {detectedFeed && (
-            <Badge variant="outline" className="w-fit text-xs">
-              {t('subscriptions.detectedFeed', {
-                platform: detectedFeed.platform,
-                feed: detectedFeed.feedUrl
-              })}
-            </Badge>
-          )}
-          {detectingFeed && (
-            <p className="text-xs text-muted-foreground">{t('subscriptions.detecting')}</p>
-          )}
-        </div>
-        <div className="space-y-2">
-          <Label>{t('subscriptions.fields.keywords')}</Label>
-          <Input value={keywords} onChange={(event) => setKeywords(event.target.value)} />
-        </div>
-        <div className="space-y-2">
-          <Label>{t('subscriptions.fields.tags')}</Label>
-          <Input value={tags} onChange={(event) => setTags(event.target.value)} />
-        </div>
-        <div className="space-y-2">
-          <Label>{t('subscriptions.fields.customDirectory')}</Label>
-          <div className="flex gap-2">
-            <Input value={customDownloadDirectory} readOnly />
-            <Button variant="secondary" onClick={() => void handleSelectDirectory()}>
-              {t('subscriptions.actions.selectDirectory')}
-            </Button>
-          </div>
-        </div>
-        <div className="space-y-2">
-          <Label>{t('subscriptions.fields.namingTemplate')}</Label>
-          <Input
-            value={namingTemplate}
-            onChange={(event) => setNamingTemplate(sanitizeTemplateInput(event.target.value))}
-          />
-        </div>
-        <div className="flex items-center justify-between gap-4 rounded-md border px-3 py-2">
-          <p className="text-sm">{t('subscriptions.fields.onlyLatest')}</p>
-          <Switch checked={onlyLatest} onCheckedChange={setOnlyLatest} />
-        </div>
-      </div>
-      <DialogFooter>
-        <Button variant="outline" onClick={onClose}>
-          {t('download.cancel')}
-        </Button>
-        <Button onClick={() => void handleCreateSubscription()}>
-          {t('subscriptions.actions.add')}
-        </Button>
-      </DialogFooter>
-    </DialogContent>
-  )
-}
-
-interface SubscriptionEditDialogProps {
-  subscription: SubscriptionRule
-  onSave: (data: SubscriptionRuleUpdateForm) => Promise<void>
-}
-
-function SubscriptionEditDialog({ subscription, onSave }: SubscriptionEditDialogProps) {
-  const { t } = useTranslation()
-  const resolveFeed = useSetAtom(resolveFeedAtom)
-  const [url, setUrl] = useState(subscription.feedUrl)
-  const [keywords, setKeywords] = useState(subscription.keywords.join(', '))
-  const [tags, setTags] = useState(subscription.tags.join(', '))
-  const [downloadDirectory, setDownloadDirectory] = useState(subscription.downloadDirectory || '')
-  const [namingTemplate, setNamingTemplate] = useState(subscription.namingTemplate || '')
-  const [onlyDownloadLatest, setOnlyDownloadLatest] = useState(subscription.onlyDownloadLatest)
-  const [detectedFeed, setDetectedFeed] = useState<SubscriptionResolvedFeed | null>(null)
-  const [detectingFeed, setDetectingFeed] = useState(false)
-
-  const detectTimeout = useRef<NodeJS.Timeout | null>(null)
-  const urlInputId = useId()
-
-  useEffect(() => {
-    if (!url.trim() || url.trim() === subscription.feedUrl) {
-      setDetectedFeed(null)
-      return
-    }
-
-    if (detectTimeout.current) {
-      clearTimeout(detectTimeout.current)
-    }
-
-    detectTimeout.current = setTimeout(async () => {
-      setDetectingFeed(true)
-      try {
-        const result = await resolveFeed(url.trim())
-        setDetectedFeed(result)
-      } catch (error) {
-        console.error('Failed to resolve feed:', error)
-        setDetectedFeed(null)
-      } finally {
-        setDetectingFeed(false)
-      }
-    }, 500)
-
-    return () => {
-      if (detectTimeout.current) {
-        clearTimeout(detectTimeout.current)
-      }
-    }
-  }, [url, resolveFeed, subscription.feedUrl])
-
-  const handleSelectDirectory = async () => {
-    try {
-      const path = await ipcServices.fs.selectDirectory()
-      if (path) {
-        setDownloadDirectory(path)
-      }
-    } catch (error) {
-      console.error('Failed to update directory:', error)
-      toast.error(t('subscriptions.notifications.directoryError'))
-    }
-  }
-
-  const handleSave = async () => {
-    const updateData: SubscriptionRuleUpdateForm = {
-      keywords: sanitizeCommaList(keywords),
-      tags: sanitizeCommaList(tags),
-      downloadDirectory: downloadDirectory || undefined,
-      namingTemplate: namingTemplate || undefined,
-      onlyDownloadLatest
-    }
-
-    // If feed URL changed, resolve it to validate and include in update
-    if (url.trim() && url.trim() !== subscription.feedUrl) {
-      try {
-        await resolveFeed(url.trim())
-        updateData.url = url.trim()
-      } catch (error) {
-        console.error('Failed to resolve feed:', error)
-        toast.error(t('subscriptions.notifications.resolveError'))
-        return
-      }
-    }
-
-    await onSave(updateData)
-  }
-
-  return (
-    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-      <DialogHeader>
-        <DialogTitle>{t('subscriptions.edit.title', { name: subscription.title })}</DialogTitle>
-        <DialogDescription>{t('subscriptions.edit.description')}</DialogDescription>
-      </DialogHeader>
-      <div className="space-y-4 py-2">
-        <div className="space-y-2">
-          <Label htmlFor={urlInputId}>{t('subscriptions.fields.url')}</Label>
-          <Input
-            id={urlInputId}
-            value={url}
-            placeholder={t('subscriptions.placeholders.url')}
-            onChange={(event) => setUrl(event.target.value)}
-          />
-          {detectedFeed && (
-            <Badge variant="outline" className="w-fit text-xs">
-              {t('subscriptions.detectedFeed', {
-                platform: detectedFeed.platform,
-                feed: detectedFeed.feedUrl
-              })}
-            </Badge>
-          )}
-          {detectingFeed && (
-            <p className="text-xs text-muted-foreground">{t('subscriptions.detecting')}</p>
-          )}
-        </div>
-        <div className="space-y-2">
-          <Label>{t('subscriptions.fields.keywords')}</Label>
-          <Input value={keywords} onChange={(event) => setKeywords(event.target.value)} />
-        </div>
-        <div className="space-y-2">
-          <Label>{t('subscriptions.fields.tags')}</Label>
-          <Input value={tags} onChange={(event) => setTags(event.target.value)} />
-        </div>
-        <div className="space-y-2">
-          <Label>{t('subscriptions.fields.customDirectory')}</Label>
-          <div className="flex gap-2">
-            <Input value={downloadDirectory} readOnly />
-            <Button variant="secondary" onClick={() => void handleSelectDirectory()}>
-              {t('subscriptions.actions.selectDirectory')}
-            </Button>
-          </div>
-        </div>
-        <div className="space-y-2">
-          <Label>{t('subscriptions.fields.namingTemplate')}</Label>
-          <Input
-            value={namingTemplate}
-            onChange={(event) => setNamingTemplate(sanitizeTemplateInput(event.target.value))}
-          />
-        </div>
-        <div className="flex items-center justify-between gap-4 rounded-md border px-3 py-2">
-          <p className="text-sm">{t('subscriptions.fields.onlyLatest')}</p>
-          <Switch checked={onlyDownloadLatest} onCheckedChange={setOnlyDownloadLatest} />
-        </div>
-      </div>
-      <DialogFooter>
-        <Button onClick={() => void handleSave()}>{t('subscriptions.actions.save')}</Button>
-      </DialogFooter>
-    </DialogContent>
   )
 }

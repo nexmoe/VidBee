@@ -10,5 +10,9 @@
   body {
     @apply text-foreground;
   }
+  input::placeholder,
+  textarea::placeholder {
+    opacity: 0.4;
+  }
 }
 

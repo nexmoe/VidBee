@@ -440,6 +440,7 @@ class DownloadEngine extends EventEmitter {
     let selectedFormat: VideoFormat | undefined
     let actualFormat: string | null = null
     let videoInfo: VideoInfo | undefined
+    let lastKnownOutputPath: string | undefined
 
     // First, get detailed video info to capture basic metadata and formats
     try {
@@ -503,6 +504,38 @@ class DownloadEngine extends EventEmitter {
     }
 
     const args = buildDownloadArgs(options, resolvedDownloadPath, settings)
+
+    const captureOutputPath = (rawPath: string | undefined): void => {
+      if (!rawPath) {
+        return
+      }
+      const trimmed = rawPath.trim().replace(/^"|"$/g, '')
+      if (!trimmed) {
+        return
+      }
+      lastKnownOutputPath = path.isAbsolute(trimmed)
+        ? trimmed
+        : path.join(resolvedDownloadPath, trimmed)
+    }
+
+    const extractOutputPathFromLog = (message: string): void => {
+      const destinationMatch = message.match(/Destination:\s*(.+)$/)
+      if (destinationMatch) {
+        captureOutputPath(destinationMatch[1])
+        return
+      }
+
+      const mergingMatch = message.match(/Merging formats into\s+"(.+?)"/)
+      if (mergingMatch) {
+        captureOutputPath(mergingMatch[1])
+        return
+      }
+
+      const movingMatch = message.match(/Moving file to\s+"(.+?)"/)
+      if (movingMatch) {
+        captureOutputPath(movingMatch[1])
+      }
+    }
 
     // Check if format selector contains '+' which means video and audio will be merged
     const formatSelector =
@@ -620,6 +653,10 @@ class DownloadEngine extends EventEmitter {
           applySelectedFormat(formatMatch[1])
         }
       }
+
+      if (eventType === 'download' || eventType === 'info') {
+        extractOutputPathFromLog(eventData)
+      }
     })
 
     // Handle completion
@@ -646,32 +683,44 @@ class DownloadEngine extends EventEmitter {
           extension = actualFormat || 'mp4'
         }
 
-        const fileName = `${sanitizedTitle}.${extension}`
-        const finalOutputPath = path.join(resolvedDownloadPath, fileName)
+        const fallbackFileName = `${sanitizedTitle}.${extension}`
+        const fallbackOutputPath = path.join(resolvedDownloadPath, fallbackFileName)
 
         scopedLoggers.download.info(
-          'Generated file path for ID:',
+          'Resolved output paths for ID:',
           id,
-          'Path:',
-          finalOutputPath,
+          'Primary:',
+          lastKnownOutputPath ?? fallbackOutputPath,
+          'Fallback:',
+          fallbackOutputPath,
           'Will merge:',
           willMerge
         )
 
         let fileSize: number | undefined
-        let actualFilePath = finalOutputPath
+        let actualFilePath = lastKnownOutputPath ?? fallbackOutputPath
+        const candidatePaths = lastKnownOutputPath
+          ? [lastKnownOutputPath, fallbackOutputPath]
+          : [fallbackOutputPath]
+
         try {
           const fs = await import('node:fs/promises')
-          // Try to find the actual file - yt-dlp may generate files with slightly different names
-          const stats = await fs.stat(finalOutputPath)
-          fileSize = stats.size
-          actualFilePath = finalOutputPath
-        } catch (error) {
-          // If the expected file doesn't exist, try to find it by scanning the directory
-          try {
-            const fs = await import('node:fs/promises')
+          let located = false
+          for (const candidate of candidatePaths) {
+            if (!candidate) {
+              continue
+            }
+            try {
+              const stats = await fs.stat(candidate)
+              fileSize = stats.size
+              actualFilePath = candidate
+              located = true
+              break
+            } catch {}
+          }
+
+          if (!located) {
             const files = await fs.readdir(resolvedDownloadPath)
-            // Look for files matching the title pattern with the correct extension
             const matchingFiles = files.filter((file) => {
               const baseName = file.replace(/\.[^.]+$/, '')
               const fileExt = file.split('.').pop()?.toLowerCase()
@@ -682,30 +731,33 @@ class DownloadEngine extends EventEmitter {
             })
 
             if (matchingFiles.length > 0) {
-              // Use the most recently modified file if multiple matches
               const fileStats = await Promise.all(
                 matchingFiles.map(async (file) => {
                   const filePath = path.join(resolvedDownloadPath, file)
                   const stats = await fs.stat(filePath)
-                  return { file, path: filePath, mtime: stats.mtime, size: stats.size }
+                  return { path: filePath, mtime: stats.mtime, size: stats.size }
                 })
               )
               const mostRecent = fileStats.sort((a, b) => b.mtime.getTime() - a.mtime.getTime())[0]
               actualFilePath = mostRecent.path
               fileSize = mostRecent.size
+              located = true
               scopedLoggers.download.info('Found actual file:', actualFilePath, 'Size:', fileSize)
-            } else if (latestKnownSizeBytes !== undefined) {
-              fileSize = latestKnownSizeBytes
+            }
+          }
+
+          if (!fileSize && latestKnownSizeBytes !== undefined) {
+            fileSize = latestKnownSizeBytes
+            if (!located) {
               scopedLoggers.download.warn('File not found, using estimated size:', fileSize)
-            } else {
-              scopedLoggers.download.warn('Failed to find file for ID:', id, error)
             }
-          } catch (scanError) {
-            if (latestKnownSizeBytes !== undefined) {
-              fileSize = latestKnownSizeBytes
-            } else {
-              scopedLoggers.download.warn('Failed to get file size for ID:', id, scanError)
-            }
+          } else if (!fileSize) {
+            scopedLoggers.download.warn('Failed to find file for ID:', id)
+          }
+        } catch (error) {
+          scopedLoggers.download.warn('Failed to resolve file details for ID:', id, error)
+          if (latestKnownSizeBytes !== undefined) {
+            fileSize = latestKnownSizeBytes
           }
         }
 

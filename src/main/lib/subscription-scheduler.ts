@@ -40,8 +40,6 @@ type FeedItem = {
   thumbnail?: string
 }
 
-const MAX_STORED_FEED_ITEMS = 12
-
 const parser = new Parser<{ item: ParserItem }>({
   customFields: {
     item: [
@@ -92,8 +90,7 @@ export class SubscriptionScheduler extends EventEmitter {
       this.downloads.delete(id)
       subscriptionManager.update(tracked.subscriptionId, {
         status: 'up-to-date',
-        lastSuccessAt: Date.now(),
-        lastError: undefined
+        lastSuccessAt: Date.now()
       })
       subscriptionManager.updateFeedItemQueueState(tracked.subscriptionId, tracked.itemId, {
         downloadId: id
@@ -122,7 +119,6 @@ export class SubscriptionScheduler extends EventEmitter {
       this.downloads.delete(id)
       subscriptionManager.update(tracked.subscriptionId, {
         status: 'failed',
-        lastError: error.message,
         lastCheckedAt: Date.now()
       })
       subscriptionManager.updateFeedItemQueueState(tracked.subscriptionId, tracked.itemId, {
@@ -200,7 +196,8 @@ export class SubscriptionScheduler extends EventEmitter {
       const feed = await parser.parseURL(subscription.feedUrl)
       const feedItems = Array.isArray(feed.items) ? feed.items : []
       const normalizedItems = this.normalizeFeedItems(feedItems as ParserItem[])
-      const unseenItems = this.filterNewItems(subscription, normalizedItems)
+      const recentItems = this.filterRecentItems(subscription, normalizedItems)
+      const unseenItems = this.filterNewItems(subscription, recentItems)
       const keywords = subscription.keywords.map((keyword) => keyword.toLowerCase())
       const keywordFiltered =
         keywords.length > 0
@@ -216,6 +213,11 @@ export class SubscriptionScheduler extends EventEmitter {
 
       const itemsToDownload =
         subscription.onlyDownloadLatest && deduped.length > 0 ? [deduped[0]] : deduped
+
+      subscriptionManager.replaceFeedItems(
+        subscription.id,
+        this.buildFeedItems(normalizedItems, subscription)
+      )
 
       if (itemsToDownload.length > 0) {
         for (const item of itemsToDownload) {
@@ -240,8 +242,6 @@ export class SubscriptionScheduler extends EventEmitter {
             ? feed.link.trim()
             : subscription.sourceUrl
       })
-
-      subscriptionManager.replaceFeedItems(subscription.id, this.buildFeedItems(normalizedItems))
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown RSS error'
       subscriptionManager.update(subscription.id, {
@@ -272,17 +272,23 @@ export class SubscriptionScheduler extends EventEmitter {
     return normalized.sort((a, b) => b.publishedAt - a.publishedAt)
   }
 
-  private buildFeedItems(items: FeedItem[]): SubscriptionFeedItem[] {
-    return items.slice(0, MAX_STORED_FEED_ITEMS).map((item) => {
+  private buildFeedItems(
+    items: FeedItem[],
+    subscription: SubscriptionRule
+  ): SubscriptionFeedItem[] {
+    const existingItems = new Map(subscription.items.map((item) => [item.id, item]))
+    return items.map((item) => {
       const tracked = this.getTrackedDownloadByUrl(item.url)
+      const existing = existingItems.get(item.id)
       return {
         id: item.id,
         url: item.url,
         title: item.title,
         publishedAt: item.publishedAt,
         thumbnail: item.thumbnail,
-        addedToQueue: Boolean(tracked) || historyManager.hasHistoryForUrl(item.url),
-        downloadId: tracked?.downloadId
+        addedToQueue:
+          Boolean(tracked) || existing?.addedToQueue || historyManager.hasHistoryForUrl(item.url),
+        downloadId: tracked?.downloadId ?? existing?.downloadId
       }
     })
   }
@@ -349,6 +355,19 @@ export class SubscriptionScheduler extends EventEmitter {
     return undefined
   }
 
+  private filterRecentItems(subscription: SubscriptionRule, items: FeedItem[]): FeedItem[] {
+    const lastKnownPublishedAt = this.getLastKnownPublishedAt(subscription)
+    if (lastKnownPublishedAt === 0) {
+      return subscription.onlyDownloadLatest ? items.slice(0, 1) : items
+    }
+    return items.filter((item) => item.publishedAt > lastKnownPublishedAt)
+  }
+
+  private getLastKnownPublishedAt(subscription: SubscriptionRule): number {
+    const fromItems = subscription.items.reduce((max, item) => Math.max(max, item.publishedAt), 0)
+    return Math.max(subscription.latestVideoPublishedAt ?? 0, fromItems)
+  }
+
   private filterNewItems(subscription: SubscriptionRule, items: FeedItem[]): FeedItem[] {
     const seenIds = new Set(subscription.items.map((item) => item.id))
     return items.filter((item) => !seenIds.has(item.id))
@@ -404,8 +423,7 @@ export class SubscriptionScheduler extends EventEmitter {
     } catch (error) {
       logger.error('Failed to start subscription download', { subscriptionId, itemId, error })
       subscriptionManager.update(subscriptionId, {
-        status: 'failed',
-        lastError: error instanceof Error ? error.message : String(error)
+        status: 'failed'
       })
       subscriptionManager.updateFeedItemQueueState(subscriptionId, itemId, {
         added: false,

@@ -9,7 +9,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui
 import { saveSettingAtom } from '@renderer/store/settings'
 import { type LanguageCode, languageList, normalizeLanguageCode } from '@shared/languages'
 import { useSetAtom } from 'jotai'
-import { Newspaper } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import '../../assets/title-bar.css'
@@ -20,6 +19,8 @@ import MingcuteDownload3Line from '~icons/mingcute/download-3-line'
 import MingcuteGlobeLine from '~icons/mingcute/globe-2-line'
 import MingcuteInformationFill from '~icons/mingcute/information-fill'
 import MingcuteInformationLine from '~icons/mingcute/information-line'
+import MingcuteRssFill from '~icons/mingcute/rss-fill'
+import MingcuteRssLine from '~icons/mingcute/rss-line'
 import MingcuteSettingsFill from '~icons/mingcute/settings-3-fill'
 import MingcuteSettingsLine from '~icons/mingcute/settings-3-line'
 
@@ -57,8 +58,8 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
     {
       id: 'subscriptions',
       icon: {
-        active: Newspaper,
-        inactive: Newspaper
+        active: MingcuteRssFill,
+        inactive: MingcuteRssLine
       },
       label: t('menu.rss')
     },
