@@ -271,6 +271,7 @@ export interface AppSettings {
   subscriptionFilenameTemplate: string
   subscriptionOnlyLatestDefault: boolean
   subscriptionCheckIntervalHours: number
+  enableAnalytics: boolean
 }
 
 export const defaultSettings: AppSettings = {
@@ -292,5 +293,6 @@ export const defaultSettings: AppSettings = {
   autoUpdate: true,
   subscriptionFilenameTemplate: '%(uploader)s - %(title)s.%(ext)s',
   subscriptionOnlyLatestDefault: true,
-  subscriptionCheckIntervalHours: 3
+  subscriptionCheckIntervalHours: 3,
+  enableAnalytics: true
 }

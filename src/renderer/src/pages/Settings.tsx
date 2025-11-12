@@ -433,6 +433,21 @@ export function Settings() {
                 </ItemActions>
               </Item>
             </ItemGroup>
+
+            <ItemGroup>
+              <Item variant="muted">
+                <ItemContent>
+                  <ItemTitle>{t('settings.enableAnalytics')}</ItemTitle>
+                  <ItemDescription>{t('settings.enableAnalyticsDescription')}</ItemDescription>
+                </ItemContent>
+                <ItemActions>
+                  <Switch
+                    checked={settings.enableAnalytics}
+                    onCheckedChange={(value) => handleSettingChange('enableAnalytics', value)}
+                  />
+                </ItemActions>
+              </Item>
+            </ItemGroup>
           </TabsContent>
 
           <TabsContent value="rss" className="space-y-4 mt-2">

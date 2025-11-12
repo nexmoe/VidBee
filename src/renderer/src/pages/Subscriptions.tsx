@@ -392,10 +392,7 @@ function SubscriptionCard({ subscription }: { subscription: SubscriptionRule }) 
   return (
     <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
       {feedItems.map((item) => (
-        <article
-          key={`${subscription.id}-${item.id}`}
-          className="group  transition-all"
-        >
+        <article key={`${subscription.id}-${item.id}`} className="group  transition-all">
           <div className="relative w-full overflow-hidden bg-muted aspect-video overflow-hidden rounded-2xl">
             {item.thumbnail ? (
               <RemoteImage

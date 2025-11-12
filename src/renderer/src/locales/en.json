@@ -339,6 +339,8 @@
     "light": "Light",
     "hideDockIcon": "Hide Dock icon",
     "hideDockIconDescription": "Remove VidBee from the macOS Dock. Use the menu bar or tray icon to reopen the app.",
+    "enableAnalytics": "Help improve VidBee",
+    "enableAnalyticsDescription": "Share anonymous usage data to help us understand how the app is used and prioritize improvements.",
     "maxConcurrentDownloads": "Maximum number of active downloads",
     "maxConcurrentDownloadsDescription": "Maximum number of simultaneous downloads",
     "none": "None",
