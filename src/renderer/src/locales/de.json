@@ -1,0 +1,585 @@
+{
+  "about": {
+    "actions": {
+      "checkUpdates": "Updates prüfen",
+      "download": "Herunterladen",
+      "email": "E-Mail",
+      "feedback": "Feedback",
+      "goToDownload": "Zur Download-Seite gehen",
+      "openRepo": "GitHub-Repository öffnen",
+      "view": "Ansehen",
+      "visit": "Besuchen"
+    },
+    "appName": "VidBee",
+    "autoUpdateDescription": "Neue Versionen automatisch im Hintergrund herunterladen und installieren.",
+    "autoUpdateTitle": "Automatische Updates",
+    "betaProgramDescription": "Erhalten Sie frühe Builds und kommende Funktionen vor allen anderen.",
+    "betaProgramTitle": "Vorschau-Kanal",
+    "description": "VidBee ist ein kostenloser, quelloffener Downloader, der mit Electron erstellt wurde und von yt-dlp angetrieben wird.",
+    "followAuthorActions": {
+      "follow": "Folgen Sie @nexmoex"
+    },
+    "followAuthorDescription": "Bleiben Sie auf dem Laufenden mit den neuesten VidBee-Nachrichten und Updates.",
+    "followAuthorSupport": "Folgen Sie dem Entwickler auf X (Twitter), um die neuesten Updates und Nachrichten über VidBee zu erhalten.",
+    "followAuthorTitle": "Dem Entwickler folgen",
+    "here": "hier",
+    "homepage": "Startseite",
+    "notifications": {
+      "checkingUpdates": "Suche nach Updates...",
+      "downloadError": "Update konnte nicht heruntergeladen werden",
+      "downloadStarted": "Download gestartet...",
+      "downloadUpdate": "Update {{version}} herunterladen und installieren?",
+      "manualDownloadAction": "Jetzt herunterladen",
+      "noUpdatesAvailable": "Sie verwenden die neueste Version",
+      "restartToUpdate": "Jetzt neu starten, um Update zu installieren?",
+      "restartNowAction": "Jetzt neu starten",
+      "updateAvailable": "Update verfügbar: {{version}}",
+      "updateAvailableMessage": "Eine neue Version {{version}} ist verfügbar. Bitte laden Sie sie von der offiziellen Website herunter.",
+      "updateDownloaded": "Update heruntergeladen, neu starten zum Installieren",
+      "updateDownloadedVersion": "Update {{version}} heruntergeladen, neu starten zum Installieren",
+      "updateError": "Update-Prüfung fehlgeschlagen: {{error}}",
+      "unknownErrorFallback": "Unbekannter Fehler"
+    },
+    "preferencesDescription": "Update-Einstellungen anpassen, ohne diese Seite zu verlassen.",
+    "preferencesTitle": "Schnellumschalter",
+    "resources": {
+      "changelog": "Versionshinweise",
+      "changelogDescription": "Informieren Sie sich über die Änderungen in jeder Version.",
+      "contact": "E-Mail-Support",
+      "contactDescription": "Kontaktieren Sie uns direkt für Hilfe oder Zusammenarbeit.",
+      "documentation": "Hilfezentrum",
+      "documentationDescription": "Anleitungen, FAQs und gängige Arbeitsabläufe.",
+      "feedback": "Feedback & Probleme",
+      "feedbackDescription": "Teilen Sie Ideen oder melden Sie Probleme auf GitHub.",
+      "license": "Lizenz",
+      "licenseDescription": "Überprüfen Sie die Bedingungen der Open-Source-Lizenz.",
+      "website": "Offizielle Website",
+      "websiteDescription": "Produkthighlights, Roadmap und Community-Nachrichten."
+    },
+    "resourcesDescription": "Nützliche Links, um mehr über VidBee zu erfahren und in Verbindung zu bleiben.",
+    "resourcesTitle": "Ressourcen",
+    "shareActions": {
+      "copy": "Link kopieren",
+      "facebook": "Auf Facebook teilen",
+      "twitter": "Auf X (Twitter) teilen"
+    },
+    "shareDescription": "Teilen Sie VidBee mit Ihrer Community mit einem Klick.",
+    "shareSupport": "Empfehlen Sie VidBee Ihren Freunden, um unser Wachstum und unsere Updates zu unterstützen.",
+    "shareTitle": "Verbreiten Sie die Nachricht",
+    "sourceCode": "Quellcode ist verfügbar",
+    "title": "Über",
+    "version": "Version",
+    "versionLabel": "v{{version}}",
+    "latestVersionBadge": "Neueste: v{{version}}",
+    "latestVersionStatus": {
+      "available": "Neue Version verfügbar",
+      "uptodate": "Sie sind auf dem neuesten Stand",
+      "error": "Neueste Version konnte nicht abgerufen werden"
+    },
+    "downloadingUpdate": "Update wird heruntergeladen"
+  },
+  "advancedOptions": {
+    "closeWhenDone": "App schließen, wenn Download abgeschlossen ist",
+    "currentLocation": "Aktueller Download-Speicherort - ",
+    "downloadLocation": "Download-Speicherort",
+    "downloadSubs": "Untertitel herunterladen, falls verfügbar",
+    "end": "Ende",
+    "endHint": "Wenn leer gelassen, wird bis zum Ende heruntergeladen",
+    "endPlaceholder": "10:00",
+    "selectLocation": "Download-Speicherort auswählen",
+    "start": "Start",
+    "startHint": "Wenn leer gelassen, wird vom Anfang an gestartet",
+    "startPlaceholder": "00:00",
+    "subtitles": "Untertitel",
+    "timeRange": "Bestimmten Zeitbereich herunterladen",
+    "title": "Erweiterte Optionen"
+  },
+  "app": {
+    "description": "Videos und Audios von Hunderten von Websites herunterladen",
+    "title": "VidBee"
+  },
+  "audioExtract": {
+    "bad": "Schlecht",
+    "best": "Am besten",
+    "extract": "Extrahieren",
+    "good": "Gut",
+    "normal": "Normal",
+    "selectFormat": "Format auswählen",
+    "selectQuality": "Qualität auswählen",
+    "title": "Audio extrahieren",
+    "worst": "Am schlechtesten"
+  },
+  "download": {
+    "active": "Aktiv",
+    "all": "Alle",
+    "audio": "Audio",
+    "back": "Zurück",
+    "cancel": "Abbrechen",
+    "cancelled": "Abgebrochen",
+    "clearCompleted": "Abgeschlossene löschen",
+    "clearDownloads": "Downloads löschen",
+    "completed": "Abgeschlossen",
+    "downloadAudio": "Audio herunterladen",
+    "downloadBtn": "Herunterladen",
+    "downloadPending": "Ausstehend",
+    "downloadQueue": "Download-Warteschlange",
+    "downloadVideo": "Video herunterladen",
+    "downloading": "Wird heruntergeladen...",
+    "enterUrl": "Video-URL eingeben",
+    "enterUrlDescription": "Fügen Sie eine Video-URL ein oder geben Sie sie ein. ",
+    "error": "Fehler",
+    "fetch": "Abrufen",
+    "fetchingVideoInfo": "Video-Informationen werden abgerufen...",
+    "history": "Verlauf",
+    "imageLoadError": "Bild konnte nicht geladen werden",
+    "imagePlaceholder": "Kein Bild verfügbar",
+    "infoUnavailable": "Ein-Klick-Download (Info nicht verfügbar)",
+    "loading": "Wird geladen",
+    "moreOptions": "Weitere Optionen",
+    "noActiveDownloads": "Keine aktiven Downloads",
+    "noAudio": "Kein Audio",
+    "noHistory": "Kein Download-Verlauf",
+    "noItems": "Keine Elemente gefunden",
+    "goToSettings": "Zu Einstellungen gehen",
+    "oneClickDownload": "Ein-Klick-Download",
+    "oneClickDownloadDescription": "Direkt mit Standardeinstellungen ohne Bestätigung herunterladen",
+    "oneClickDownloadEnabled": "Ein-Klick-Download ist aktiviert. Downloads starten direkt mit Standardeinstellungen.",
+    "oneClickDownloadNow": "Jetzt herunterladen",
+    "oneClickDownloadStarted": "Download mit Standardeinstellungen gestartet",
+    "paste": "Einfügen",
+    "pastePlaylistUrl": "Klicken, um Playlist-Link aus Zwischenablage einzufügen [Strg + V]",
+    "pasteUrl": "Klicken, um Video-URL oder ID einzufügen [Strg + V]",
+    "preparing": "Wird vorbereitet...",
+    "processing": "Wird verarbeitet",
+    "progress": "Fortschritt",
+    "showDetails": "Details anzeigen",
+    "hideDetails": "Details ausblenden",
+    "selectAudioFormat": "Audio-Format auswählen",
+    "selectFormat": "Format auswählen",
+    "selectVideoFormat": "Video-Format auswählen",
+    "singleVideo": "Einzelnes Video",
+    "speed": "Geschwindigkeit",
+    "title": "Titel",
+    "total": "Gesamt",
+    "unknownQuality": "Unbekannte Qualität",
+    "unknownSize": "Unbekannte Größe",
+    "urlPlaceholder": "https://www.youtube.com/watch?v=...",
+    "video": "Video",
+    "videoInfo": "Video-Informationen",
+    "videoInfoUpdated": "Video-Informationen aktualisiert",
+    "metadata": {
+      "source": "Quelle",
+      "playlist": "Playlist",
+      "format": "Format",
+      "quality": "Qualität",
+      "codec": "Codec",
+      "savedFile": "Gespeicherte Datei",
+      "url": "Quell-URL",
+      "description": "Beschreibung",
+      "views": "Aufrufe",
+      "tags": "Tags",
+      "downloadPath": "Download-Pfad",
+      "createdAt": "Erstellt am",
+      "startedAt": "Gestartet am",
+      "completedAt": "Abgeschlossen am",
+      "speed": "Geschwindigkeit",
+      "fileSize": "Dateigröße",
+      "width": "Breite",
+      "height": "Höhe",
+      "fps": "FPS",
+      "videoCodec": "Video-Codec",
+      "audioCodec": "Audio-Codec",
+      "formatNote": "Format-Hinweis",
+      "protocol": "Protokoll",
+      "subscription": "Abonnement"
+    }
+  },
+  "errors": {
+    "clickToCopy": "Klicken, um Details zu kopieren",
+    "clipboardEmpty": "Zwischenablage ist leer",
+    "downloadFailed": "Download fehlgeschlagen",
+    "downloadNecessaryFilesFailed": "Herunterladen der erforderlichen Dateien fehlgeschlagen. Bitte überprüfen Sie Ihr Netzwerk und versuchen Sie es erneut",
+    "emptyUrl": "Bitte geben Sie eine URL ein",
+    "errorDetails": "Fehlerdetails",
+    "fetchInfoFailed": "Video-Informationen konnten nicht abgerufen werden",
+    "networkError": "Ein Fehler ist aufgetreten. Überprüfen Sie Ihr Netzwerk und verwenden Sie die richtige URL",
+    "pasteFromClipboard": "Einfügen aus Zwischenablage fehlgeschlagen"
+  },
+  "history": {
+    "clearCancelled": "Abgebrochene löschen",
+    "clearCompleted": "Abgeschlossene löschen",
+    "clearErrors": "Fehler löschen",
+    "copyToClipboard": "In Zwischenablage kopieren",
+    "copyUrl": "URL kopieren",
+    "date": "Datum",
+    "description": "Ihren Download-Verlauf anzeigen und verwalten",
+    "duration": "Dauer",
+    "fileSize": "Dateigröße",
+    "filters": {
+      "all": "Alle",
+      "cancelled": "Abgebrochen",
+      "completed": "Abgeschlossen",
+      "errors": "Fehler"
+    },
+    "noHistory": "Noch kein Download-Verlauf",
+    "noHistoryDescription": "Ihre abgeschlossenen Downloads werden hier angezeigt",
+    "openDownloadFolder": "Download-Ordner öffnen",
+    "openFile": "Datei öffnen",
+    "openFileLocation": "Dateispeicherort öffnen",
+    "openFolder": "Ordner öffnen",
+    "openInBrowser": "Klicken, um im Browser zu öffnen",
+    "removeItem": "Element entfernen",
+    "stats": {
+      "cancelled": "Abgebrochen",
+      "completed": "Abgeschlossen",
+      "errors": "Fehler",
+      "total": "Gesamt"
+    },
+    "status": {
+      "cancelled": "Abgebrochen",
+      "completed": "Abgeschlossen",
+      "error": "Fehler"
+    },
+    "title": "Download-Verlauf"
+  },
+  "menu": {
+    "about": "Über",
+    "download": "Herunterladen",
+    "playlist": "Playlist herunterladen",
+    "rss": "RSS",
+    "subscriptions": "Abonnements",
+    "preferences": "Einstellungen",
+    "supportedSites": "Unterstützte Websites",
+    "theme": "Design:"
+  },
+  "notifications": {
+    "copyFailed": "Kopieren in Zwischenablage fehlgeschlagen",
+    "downloadCompleted": "Download abgeschlossen",
+    "downloadFailed": "Download fehlgeschlagen",
+    "downloadStarted": "Download gestartet",
+    "itemRemoved": "Element entfernt",
+    "openFileFailed": "Datei konnte nicht geöffnet werden",
+    "openFolderFailed": "Ordner konnte nicht geöffnet werden",
+    "removeFailed": "Element konnte nicht entfernt werden",
+    "settingsSaved": "Einstellungen gespeichert",
+    "urlCopied": "URL in Zwischenablage kopiert",
+    "videoCopied": "Video in Zwischenablage kopiert"
+  },
+  "playlist": {
+    "badgeLabel": "Playlist",
+    "clearPreview": "Vorschau löschen",
+    "comingSoon": "Playlist-Download-Funktion kommt bald!",
+    "completed": "Playlist heruntergeladen",
+    "description": "Alle Videos aus einer YouTube-Playlist oder einem Kanal herunterladen",
+    "downloadFailed": "Playlist-Download konnte nicht gestartet werden",
+    "downloadPlaylist": "Playlist herunterladen",
+    "downloadStarted": "Download von {{count}} Videos aus Playlist gestartet",
+    "downloadType": "Download-Typ",
+    "downloading": "Playlist wird heruntergeladen:",
+    "endIndex": "Ende",
+    "enterPlaylistUrl": "Playlist-URL eingeben",
+    "fetchFailed": "Playlist-Informationen konnten nicht abgerufen werden",
+    "filenameFormat": "Dateinamenformat für Playlists",
+    "folderFormat": "Ordnernamenformat für Playlists",
+    "foundVideos": "{{count}} Videos in Playlist gefunden",
+    "groupActive": "{{count}} aktiv",
+    "groupErrors": "{{count}} fehlgeschlagen",
+    "groupSummary": "{{completed}} / {{total}} abgeschlossen",
+    "linkLabel": "Playlist-URL",
+    "noEntries": "In dieser Playlist wurden keine Videos gefunden",
+    "noEntriesInRange": "Keine Videos im ausgewählten Bereich",
+    "noRangeSelected": "Kein Ende gesetzt - vollständige Playlist ausgewählt",
+    "playlistUrlDescription": "Alle Videos aus einer Playlist in großen Mengen herunterladen",
+    "positionLabel": "Element {{index}} von {{total}}",
+    "previewButton": "Playlist-Vorschau",
+    "previewFailed": "Playlist-Vorschau fehlgeschlagen",
+    "previewSummary": "Playlist-Elemente vor dem Download in der Vorschau anzeigen.",
+    "previewRequired": "Playlist vor dem Download in der Vorschau anzeigen.",
+    "range": "Bereich (Optional)",
+    "resetToDefault": "Auf Standard zurücksetzen",
+    "selectedRange": "Bereich: {{start}}-{{end}}",
+    "showingCount": "{{count}} Videos werden angezeigt",
+    "startIndex": "Start (1)",
+    "title": "Playlist herunterladen",
+    "totalVideos": "Gesamt Videos: {{count}}",
+    "untitled": "Unbenannte Playlist"
+  },
+  "settings": {
+    "aboutTab": "Über",
+    "advanced": "Erweitert",
+    "app": "App-Einstellungen",
+    "audio": "Audio-Einstellungen",
+    "browserForCookies": "Browser für Cookies auswählen",
+    "browserForCookiesDescription": "Browser zum Extrahieren von Cookies für die Authentifizierung",
+    "cookiesFile": "Cookie-Datei",
+    "cookiesFileDescription": "Netscape-formatierte Cookie-Datei zum Laden für die Authentifizierung",
+    "clearCookiesFile": "Löschen",
+    "cookiesHelpTitle": "Cookies verwenden",
+    "cookiesHelpBrowser": "Wählen Sie oben Ihren Browser aus, um seine angemeldete Sitzung automatisch wiederzuverwenden.",
+    "cookiesHelpFile": "Exportieren Sie eine Netscape-Cookie-Datei (siehe yt-dlp FAQ) und wählen Sie sie hier bei Bedarf aus.",
+    "cookiesHelpFaq": "yt-dlp Cookie FAQ öffnen",
+    "openLinkError": "Link konnte nicht geöffnet werden",
+    "browserOptions": {
+      "brave": "Brave",
+      "chrome": "Chrome",
+      "edge": "Edge",
+      "firefox": "Firefox",
+      "safari": "Safari"
+    },
+    "configFile": "Konfigurationsdatei verwenden",
+    "configFileDescription": "Benutzerdefinierte Konfigurationsdatei für yt-dlp",
+    "clearConfigFile": "Löschen",
+    "dark": "Dunkel",
+    "description": "Konfigurieren Sie Ihre Download-Einstellungen und Anwendungseinstellungen",
+    "directorySelectError": "Verzeichnis konnte nicht ausgewählt werden",
+    "downloadPath": "Download-Speicherort",
+    "downloadPathDescription": "Wählen Sie, wo heruntergeladene Dateien gespeichert werden sollen",
+    "fileSelectError": "Datei konnte nicht ausgewählt werden",
+    "general": "Allgemein",
+    "language": "Sprache",
+    "light": "Hell",
+    "hideDockIcon": "Dock-Symbol ausblenden",
+    "hideDockIconDescription": "VidBee aus dem macOS Dock entfernen. Verwenden Sie die Menüleiste oder das Tray-Symbol, um die App erneut zu öffnen.",
+    "launchAtLogin": "Beim Start starten",
+    "launchAtLoginDescription": "VidBee automatisch öffnen, nachdem Sie sich bei Ihrem Computer angemeldet haben.",
+    "launchAtLoginUnsupported": "Autostart ist nur unter macOS und Windows verfügbar.",
+    "enableAnalytics": "Helfen Sie, VidBee zu verbessern",
+    "enableAnalyticsDescription": "Teilen Sie anonyme Nutzungsdaten, damit wir verstehen können, wie die App verwendet wird, und Verbesserungen priorisieren können.",
+    "maxConcurrentDownloads": "Maximale Anzahl aktiver Downloads",
+    "maxConcurrentDownloadsDescription": "Maximale Anzahl gleichzeitiger Downloads",
+    "none": "Keine",
+    "oneClickDownload": "Ein-Klick-Download",
+    "oneClickDownloadDescription": "Ein-Klick-Download mit Standardeinstellungen aktivieren",
+    "oneClickDownloadType": "Standard-Download-Typ",
+    "oneClickDownloadTypeDescription": "Wählen Sie den Standard-Download-Typ für Ein-Klick-Downloads. Die Qualität verwendet die unten stehende Voreinstellung.",
+    "oneClickQuality": "Bevorzugte Qualität",
+    "oneClickQualityDescription": "Wählen Sie die Qualitätsvoreinstellung für Ein-Klick-Downloads",
+    "oneClickQualityOptions": {
+      "auto": "Automatisch",
+      "bad": "Schlecht",
+      "best": "Am besten",
+      "good": "Gut",
+      "normal": "Normal",
+      "worst": "Am schlechtesten"
+    },
+    "proxy": "Proxy",
+    "proxyDescription": "Proxy-Server für Netzwerkanfragen",
+    "proxyPlaceholder": "http://proxy:port",
+    "selectConfigFile": "Konfigurationsdatei auswählen",
+    "selectPath": "Auswählen",
+    "showMoreFormats": "Mehr Formatoptionen anzeigen",
+    "showMoreFormatsDescription": "Zusätzliche Formatoptionen in der Benutzeroberfläche anzeigen",
+    "subscriptionDefaults": {
+      "filenameDescription": "Muster, das verwendet wird, wenn ein Abonnement seinen Dateinamen nicht überschreibt.",
+      "intervalDescription": "Wie oft VidBee jeden Abonnement-Feed überprüft (1-24 Stunden)."
+    },
+    "system": "System",
+    "theme": "Design",
+    "themeDescription": "Wählen Sie ein helles, dunkles oder System-Design für VidBee",
+    "title": "Einstellungen",
+    "tray": {
+      "quit": "Beenden",
+      "showHome": "Startseite anzeigen"
+    },
+    "video": "Video-Einstellungen"
+  },
+  "subscriptions": {
+    "title": "Abonnements",
+    "subtitle": "{{count}} Abonnement{{count, plural, one {} other {e}}}",
+    "description": "Überwachen Sie RSS-Feeds automatisch und fügen Sie neue Downloads zur Warteschlange hinzu, ohne manuelle Arbeit.",
+    "defaults": {
+      "title": "Automatisierungs-Standardeinstellungen",
+      "description": "Steuern Sie, wo Abonnement-Downloads gespeichert werden und wie oft VidBee nach neuen Videos sucht.",
+      "downloadDirectory": "Download-Verzeichnis",
+      "filenameTemplate": "Dateinamen-Vorlage (nur Datei)",
+      "checkInterval": "Prüfintervall (Stunden)",
+      "onlyLatest": "Nur das neueste Video herunterladen",
+      "onlyLatestDescription": "Wenn aktiviert, überspringt VidBee ältere Backlog-Elemente und lädt nur den neuesten Upload."
+    },
+    "add": {
+      "title": "RSS hinzufügen",
+      "description": "Fügen Sie einen RSS-Feed-Link ein. VidBee erkennt den Feed automatisch."
+    },
+    "fields": {
+      "url": "Feed-URL",
+      "keywords": "Schlüsselwortfilter (durch Komma getrennt)",
+      "tags": "Automatische Tags",
+      "customDirectory": "Benutzerdefiniertes Verzeichnis",
+      "namingTemplate": "Benutzerdefinierte Dateinamen-Vorlage (nur Datei)",
+      "onlyLatest": "Nur das neueste Video herunterladen",
+      "onlyLatestDescription": "Backlog-Elemente ignorieren und nur den neuesten Upload aus diesem Feed abrufen.",
+      "enabled": "Aktiviert",
+      "disabled": "Deaktiviert",
+      "onlyLatestShort": "Nur neueste"
+    },
+    "placeholders": {
+      "url": "https://rsshub.app/youtube/user/@FKJ"
+    },
+    "actions": {
+      "add": "Hinzufügen",
+      "refresh": "Aktualisieren",
+      "edit": "Bearbeiten",
+      "remove": "Entfernen",
+      "save": "Änderungen speichern",
+      "selectDirectory": "Durchsuchen",
+      "enable": "Aktivieren",
+      "disable": "Deaktivieren"
+    },
+    "items": {
+      "title": "Neueste Uploads ({{count}})",
+      "count": "{{count}} Elemente",
+      "empty": "Keine kürzlichen Feed-Elemente gefunden.",
+      "status": {
+        "queued": "In Warteschlange",
+        "notQueued": "Nicht in Warteschlange",
+        "pending": "Ausstehend",
+        "downloading": "Wird heruntergeladen",
+        "processing": "Wird verarbeitet",
+        "completed": "Abgeschlossen",
+        "error": "Fehlgeschlagen",
+        "cancelled": "Abgebrochen"
+      },
+      "fromChannel": "Von {{channel}}",
+      "tooltip": {
+        "downloadStatus": "Download-Status: {{status}}",
+        "downloadPending": "Warten auf Download-Details...",
+        "notQueued": "Noch nicht in der Download-Warteschlange"
+      },
+      "actions": {
+        "open": "Im Browser öffnen",
+        "queue": "Zur Download-Warteschlange hinzufügen"
+      }
+    },
+    "labels": {
+      "subscription": "Abonnement",
+      "unknown": "Unbekanntes Abonnement",
+      "noThumbnail": "Kein Vorschaubild"
+    },
+    "notifications": {
+      "directoryError": "Verzeichnisauswahl konnte nicht geöffnet werden.",
+      "missingUrl": "Bitte fügen Sie zuerst einen Kanal-Link ein.",
+      "created": "Abonnement hinzugefügt",
+      "createError": "Abonnement konnte nicht hinzugefügt werden.",
+      "refreshStarted": "Aktualisierung gestartet",
+      "removed": "Abonnement entfernt",
+      "updated": "Abonnement aktualisiert",
+      "itemQueued": "Zur Download-Warteschlange hinzugefügt",
+      "itemAlreadyQueued": "Dieses Video ist bereits in der Warteschlange",
+      "queueError": "Hinzufügen zur Download-Warteschlange fehlgeschlagen.",
+      "openLinkError": "Video-Link konnte nicht geöffnet werden.",
+      "resolveError": "RSS-Feed-URL konnte nicht aufgelöst werden."
+    },
+    "detectedFeed": "{{platform}} Feed erkannt -> {{feed}}",
+    "detecting": "Feed wird erkannt...",
+    "latestVideo": "Neuestes Video: {{title}}",
+    "lastChecked": "Zuletzt geprüft: {{time}}",
+    "never": "Nie",
+    "empty": "Noch keine Abonnements. Fügen Sie Ihre Lieblingskanäle hinzu, um mit dem automatischen Download zu beginnen.",
+    "edit": {
+      "title": "{{name}} bearbeiten",
+      "description": "Passen Sie Filter, Tags und Überschreibungen für diesen Feed an."
+    },
+    "status": {
+      "title": "Status",
+      "up-to-date": "Aktuell",
+      "checking": "Wird geprüft",
+      "failed": "Fehlgeschlagen",
+      "idle": "Leerlauf",
+      "tooltip": {
+        "updatedAt": "Aktualisiert: {{time}}"
+      }
+    },
+    "rssHub": {
+      "title": "Automatische Abonnements mit RSSHub",
+      "description": "Kombinieren Sie VidBee mit RSSHub, um automatische Abonnements und Downloads von verschiedenen Plattformen zu ermöglichen. Nach der Einrichtung läuft VidBee im Hintergrund und lädt automatisch die neuesten Videos und Inhalte herunter.",
+      "learnMore": "Mehr über RSSHub erfahren",
+      "openDocs": "RSSHub-Dokumentation öffnen",
+      "hint": "Keine RSS-Feed-URL? Verwenden Sie RSSHub, um RSS-Feeds für YouTube, Twitter und Tausende anderer Plattformen zu generieren."
+    }
+  },
+  "sites": {
+    "homeInlineDescription": "Unterstützt {{sites}} und mehr.",
+    "moreDescription": "Die vollständige yt-dlp-Liste wird ständig von der Community aktualisiert.",
+    "moreTitle": "Benötigen Sie eine andere Website?",
+    "openFullList": "Vollständige Liste der unterstützten Websites öffnen",
+    "pageDescription": "VidBee verwendet yt-dlp unter der Haube, um Hunderte von Quellen zu erreichen.",
+    "pageIntro": "Hier sind die gängigen Dienste, von denen die meisten Menschen herunterladen.",
+    "pageTitle": "Unterstützte Websites",
+    "popular": {
+      "bandcamp": {
+        "description": "Alben unabhängiger Künstler und Community-Veröffentlichungen.",
+        "label": "Bandcamp"
+      },
+      "dailymotion": {
+        "description": "Globale Nachrichten, Sport und Unterhaltungsclips.",
+        "label": "Dailymotion"
+      },
+      "facebook": {
+        "description": "Videos aus Feed, Watch und Reels von öffentlichen Seiten.",
+        "label": "Facebook"
+      },
+      "instagram": {
+        "description": "Inhalte aus Feed, Stories, Reels und Highlights.",
+        "label": "Instagram"
+      },
+      "kick": {
+        "description": "Live-Streams und Wiederholungen von Creators auf der Kick-Plattform.",
+        "label": "Kick"
+      },
+      "linkedin": {
+        "description": "Professionelle Vorträge, Webinare und Lernvideos.",
+        "label": "LinkedIn"
+      },
+      "mixcloud": {
+        "description": "DJ-Mixe, Radiosendungen und lange Audioformate.",
+        "label": "Mixcloud"
+      },
+      "niconico": {
+        "description": "Japanische Animation, Musik und Live-Übertragungsarchiv.",
+        "label": "Niconico"
+      },
+      "pinterest": {
+        "description": "Ideen-Pins, How-to-Reels und Lifestyle-Inspirationsvideos.",
+        "label": "Pinterest"
+      },
+      "reddit": {
+        "description": "Eingebettete Clips und gehostete Videos aus Communities.",
+        "label": "Reddit"
+      },
+      "soundcloud": {
+        "description": "Musiktitel, Playlists und DJ-Sets.",
+        "label": "SoundCloud"
+      },
+      "tiktok": {
+        "description": "Kurze mobile Videos, Effekte und Live-Streams.",
+        "label": "TikTok"
+      },
+      "tumblr": {
+        "description": "Kreative kurze Medien und Fan-Bearbeitungen.",
+        "label": "Tumblr"
+      },
+      "twitch": {
+        "description": "Gaming-, Musik- und IRL-Live-Streams und VODs.",
+        "label": "Twitch"
+      },
+      "twitter": {
+        "description": "Timeline-Posts, Spaces-Aufnahmen und Übertragungen.",
+        "label": "X (Twitter)"
+      },
+      "vimeo": {
+        "description": "Hochwertiges Video-Hosting für Creators und Unternehmen.",
+        "label": "Vimeo"
+      },
+      "youtube": {
+        "description": "Lange Videos und Livestreams von Creators weltweit.",
+        "label": "YouTube"
+      },
+      "youtubemusic": {
+        "description": "Offizielle Musikvideos, Alben und Live-Auftritte.",
+        "label": "YouTube Music"
+      }
+    },
+    "popularSection": "Hauptplattformen",
+    "viewAll": "Alle unterstützten Websites anzeigen"
+  }
+}

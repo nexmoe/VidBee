@@ -2,8 +2,10 @@
   "about": {
     "actions": {
       "checkUpdates": "检查更新",
+      "download": "下载",
       "email": "邮件",
       "feedback": "反馈",
+      "goToDownload": "前往下载页面",
       "openRepo": "打开 GitHub 仓库",
       "view": "查看",
       "visit": "访问"
@@ -14,6 +16,7 @@
     "betaProgramDescription": "抢先获得预览版和即将发布的新功能。",
     "betaProgramTitle": "预览通道",
     "description": "这是一个基于 Node.js 和 Electron 构建的自由开源应用，使用 yt-dlp 来完成下载。",
+    "downloadingUpdate": "正在下载更新",
     "followAuthorActions": {
       "follow": "关注 @nexmoex"
     },
@@ -22,15 +25,26 @@
     "followAuthorTitle": "关注开发者",
     "here": "此处",
     "homepage": "主页",
+    "latestVersionBadge": "最新版本：v{{version}}",
+    "latestVersionStatus": {
+      "available": "有新版本可用",
+      "error": "无法获取最新版本",
+      "uptodate": "您已是最新版本"
+    },
     "notifications": {
       "checkingUpdates": "正在查找更新...",
       "downloadError": "下载更新失败",
       "downloadStarted": "开始下载...",
       "downloadUpdate": "下载并安装更新 {{version}}？",
+      "manualDownloadAction": "立即下载",
       "noUpdatesAvailable": "您正在使用最新版本",
+      "restartNowAction": "立即重新启动",
       "restartToUpdate": "立即重启以安装更新？",
+      "unknownErrorFallback": "未知错误",
       "updateAvailable": "发现新版本: {{version}}",
+      "updateAvailableMessage": "新版本 {{version}} 已推出。\n请从官方网站下载。",
       "updateDownloaded": "更新已下载，重启以安装",
+      "updateDownloadedVersion": "下载更新 {{version}}，重新启动安装",
       "updateError": "检查更新失败: {{error}}"
     },
     "preferencesDescription": "无需离开此页即可调整更新设置。",
@@ -51,16 +65,18 @@
     },
     "resourcesDescription": "了解 VidBee 并保持关注的实用链接。",
     "resourcesTitle": "资源",
+    "shareActions": {
+      "copy": "复制链接",
+      "facebook": "在脸书上分享",
+      "twitter": "在 X 上分享（推特）"
+    },
+    "shareDescription": "一键与您的社区分享 VidBee。",
+    "shareSupport": "向您的朋友推荐VidBee，以支持我们的成长和更新。",
+    "shareTitle": "传播这个词",
     "sourceCode": "源代码已开放",
     "title": "关于",
     "version": "版本",
-    "versionLabel": "v{{version}}",
-    "latestVersionBadge": "最新版本：v{{version}}",
-    "latestVersionStatus": {
-      "available": "有新版本可用",
-      "uptodate": "您已是最新版本",
-      "error": "无法获取最新版本"
-    }
+    "versionLabel": "v{{version}}"
   },
   "advancedOptions": {
     "closeWhenDone": "下载完成后关闭应用",
@@ -114,11 +130,39 @@
     "error": "错误",
     "fetch": "获取",
     "fetchingVideoInfo": "正在获取视频信息...",
+    "goToSettings": "前往“设置”",
+    "hideDetails": "隐藏详细信息",
     "history": "历史",
     "imageLoadError": "图像加载失败",
     "imagePlaceholder": "暂无图像",
     "infoUnavailable": "一键下载（信息不可用）",
     "loading": "加载中",
+    "metadata": {
+      "audioCodec": "音频编解码器",
+      "codec": "编解码器",
+      "completedAt": "完成于",
+      "createdAt": "创建于",
+      "description": "描述",
+      "downloadPath": "下载路径",
+      "fileSize": "文件大小",
+      "format": "格式",
+      "formatNote": "格式注释",
+      "fps": "FPS",
+      "height": "高度",
+      "playlist": "播放列表",
+      "protocol": "协议",
+      "quality": "质量",
+      "savedFile": "保存的文件",
+      "source": "来源",
+      "speed": "速度",
+      "startedAt": "开始于",
+      "subscription": "订阅",
+      "tags": "标签",
+      "url": "来源网址",
+      "videoCodec": "视频编解码器",
+      "views": "意见",
+      "width": "宽度"
+    },
     "moreOptions": "更多选项",
     "noActiveDownloads": "暂无进行中的下载",
     "noAudio": "无音频",
@@ -126,6 +170,7 @@
     "noItems": "未找到项目",
     "oneClickDownload": "一键下载",
     "oneClickDownloadDescription": "使用默认设置直接下载，无需确认",
+    "oneClickDownloadEnabled": "已启用一键下载。\n下载将直接以默认设置开始。",
     "oneClickDownloadNow": "立即下载",
     "oneClickDownloadStarted": "已使用默认设置开始下载",
     "paste": "粘贴",
@@ -137,6 +182,7 @@
     "selectAudioFormat": "选择音频格式",
     "selectFormat": "选择格式",
     "selectVideoFormat": "选择视频格式",
+    "showDetails": "显示详情",
     "singleVideo": "单个视频",
     "speed": "速度",
     "title": "标题",
@@ -163,6 +209,7 @@
     "clearCancelled": "清除已取消",
     "clearCompleted": "清除已完成",
     "clearErrors": "清除错误",
+    "copyToClipboard": "复制到剪贴板",
     "copyUrl": "复制链接",
     "date": "日期",
     "description": "查看并管理下载历史",
@@ -200,6 +247,8 @@
     "download": "下载",
     "playlist": "下载播放列表",
     "preferences": "偏好设置",
+    "rss": "RSS",
+    "subscriptions": "订阅",
     "supportedSites": "支持的网站",
     "theme": "主题："
   },
@@ -213,9 +262,12 @@
     "openFolderFailed": "打开文件夹失败",
     "removeFailed": "移除项目失败",
     "settingsSaved": "设置已保存",
-    "urlCopied": "链接已复制到剪贴板"
+    "urlCopied": "链接已复制到剪贴板",
+    "videoCopied": "视频已复制到剪贴板"
   },
   "playlist": {
+    "badgeLabel": "播放列表",
+    "clearPreview": "清晰预览",
     "comingSoon": "播放列表下载功能即将推出！",
     "completed": "播放列表已下载",
     "description": "下载 YouTube 播放列表或频道中的全部视频",
@@ -230,12 +282,27 @@
     "filenameFormat": "播放列表文件名格式",
     "folderFormat": "播放列表文件夹命名格式",
     "foundVideos": "在播放列表中找到 {{count}} 个视频",
+    "groupActive": "{{count}} 个活跃",
+    "groupErrors": "{{count}} 失败",
+    "groupSummary": "{{已完成}} / {{总计}}已完成",
     "linkLabel": "播放列表链接",
+    "noEntries": "在此播放列表中找不到视频",
+    "noEntriesInRange": "所选范围内没有视频",
+    "noRangeSelected": "没有结束设置 - 已选择完整播放列表",
     "playlistUrlDescription": "批量下载播放列表中的所有视频",
+    "positionLabel": "第 {{index}} 项，共 {{total}} 项",
+    "previewButton": "预览播放列表",
+    "previewFailed": "预览播放列表失败",
+    "previewRequired": "下载前预览播放列表。",
+    "previewSummary": "下载前预览播放列表项目。",
     "range": "范围（可选）",
     "resetToDefault": "恢复默认",
+    "selectedRange": "范围：{{开始}}-{{结束}}",
+    "showingCount": "显示 {{count}} 个视频",
     "startIndex": "开始（1）",
-    "title": "下载播放列表"
+    "title": "下载播放列表",
+    "totalVideos": "视频总数：{{count}}",
+    "untitled": "无标题播放列表"
   },
   "settings": {
     "aboutTab": "关于",
@@ -251,16 +318,31 @@
       "firefox": "Firefox",
       "safari": "Safari"
     },
+    "clearConfigFile": "清除",
+    "clearCookiesFile": "清除",
     "configFile": "使用配置文件",
     "configFileDescription": "yt-dlp 的自定义配置文件",
+    "cookiesFile": "饼干文件",
+    "cookiesFileDescription": "要加载以进行身份​​验证的 Netscape 格式的 cookie 文件",
+    "cookiesHelpBrowser": "选择上面的浏览器以自动重用其登录会话。",
+    "cookiesHelpFaq": "打开 yt-dlp cookies 常见问题解答",
+    "cookiesHelpFile": "导出 Netscape cookies 文件（请参阅 yt-dlp FAQ）并在需要时在此处选择它。",
+    "cookiesHelpTitle": "使用cookie",
     "dark": "深色",
     "description": "配置下载偏好和应用设置",
     "directorySelectError": "选择目录失败",
     "downloadPath": "下载位置",
     "downloadPathDescription": "选择保存下载文件的位置",
+    "enableAnalytics": "帮助改进 VidBee",
+    "enableAnalyticsDescription": "共享匿名使用数据，帮助我们了解应用程序的使用情况并确定改进的优先顺序。",
     "fileSelectError": "选择文件失败",
     "general": "通用",
+    "hideDockIcon": "隐藏 Dock 图标",
+    "hideDockIconDescription": "从 macOS Dock 中删除 VidBee。\n使用菜单栏或托盘图标重新打开应用程序。",
     "language": "语言",
+    "launchAtLogin": "启动时启动",
+    "launchAtLoginDescription": "登录计算机后自动打开 VidBee。",
+    "launchAtLoginUnsupported": "自动启动仅适用于 macOS 和 Windows。",
     "light": "浅色",
     "maxConcurrentDownloads": "最大活动下载数",
     "maxConcurrentDownloadsDescription": "最大同时下载数量",
@@ -279,6 +361,7 @@
       "normal": "标准",
       "worst": "最差"
     },
+    "openLinkError": "无法打开链接",
     "proxy": "代理",
     "proxyDescription": "网络请求的代理服务器",
     "proxyPlaceholder": "http://proxy:port",
@@ -286,6 +369,10 @@
     "selectPath": "选择",
     "showMoreFormats": "显示更多格式选项",
     "showMoreFormatsDescription": "在界面中显示额外的格式选项",
+    "subscriptionDefaults": {
+      "filenameDescription": "当订阅不覆盖其文件名时使用的模式。",
+      "intervalDescription": "VidBee 检查每个订阅源的频率（1-24 小时）。"
+    },
     "system": "系统",
     "theme": "主题",
     "themeDescription": "为 VidBee 选择浅色、深色或系统主题",
@@ -380,5 +467,119 @@
     },
     "popularSection": "主流平台",
     "viewAll": "查看全部支持的网站"
+  },
+  "subscriptions": {
+    "actions": {
+      "add": "添加",
+      "disable": "禁用",
+      "edit": "编辑",
+      "enable": "使能够",
+      "refresh": "刷新",
+      "remove": "消除",
+      "save": "保存更改",
+      "selectDirectory": "浏览"
+    },
+    "add": {
+      "description": "粘贴 RSS 源链接。 \nVidBee 将自动检测提要。",
+      "title": "添加RSS"
+    },
+    "defaults": {
+      "checkInterval": "检查间隔（小时）",
+      "description": "控制订阅下载的存储位置以及 VidBee 检查新视频的频率。",
+      "downloadDirectory": "下载目录",
+      "filenameTemplate": "文件名模板（仅限文件）",
+      "onlyLatest": "仅下载最新视频",
+      "onlyLatestDescription": "启用后，VidBee 会跳过较旧的积压项目，仅获取最新上传的项目。",
+      "title": "自动化默认值"
+    },
+    "description": "自动监控 RSS 源并对新下载进行排队，无需手动操作。",
+    "detectedFeed": "检测到 {{platform}} feed -> {{feed}}",
+    "detecting": "检测饲料...",
+    "edit": {
+      "description": "调整此提要的过滤器、标签和覆盖。",
+      "title": "编辑{{name}}"
+    },
+    "empty": "还没有订阅。\n添加您喜爱的频道以开始自动下载。",
+    "fields": {
+      "customDirectory": "自定义目录",
+      "disabled": "残疾人",
+      "enabled": "启用",
+      "keywords": "关键字过滤器（逗号分隔）",
+      "namingTemplate": "自定义文件名模板（仅限文件）",
+      "onlyLatest": "仅下载最新视频",
+      "onlyLatestDescription": "忽略积压的项目并仅从此源中获取最新上传的内容。",
+      "onlyLatestShort": "仅最新",
+      "tags": "自动标签",
+      "url": "提要网址"
+    },
+    "items": {
+      "actions": {
+        "open": "在浏览器中打开",
+        "queue": "添加到下载队列"
+      },
+      "count": "{{count}} 件",
+      "empty": "未找到最近的 Feed 项目。",
+      "fromChannel": "来自{{频道}}",
+      "status": {
+        "cancelled": "取消",
+        "completed": "完全的",
+        "downloading": "正在下载",
+        "error": "失败的",
+        "notQueued": "未排队",
+        "pending": "待办的",
+        "processing": "加工",
+        "queued": "排队"
+      },
+      "title": "最新上传 ({{count}})",
+      "tooltip": {
+        "downloadPending": "等待下载详细信息...",
+        "downloadStatus": "下载状态：{{status}}",
+        "notQueued": "尚未在下载队列中"
+      }
+    },
+    "labels": {
+      "noThumbnail": "无缩略图",
+      "subscription": "订阅",
+      "unknown": "未知订阅"
+    },
+    "lastChecked": "最后检查时间：{{time}}",
+    "latestVideo": "最新视频：{{title}}",
+    "never": "绝不",
+    "notifications": {
+      "createError": "添加订阅失败。",
+      "created": "已添加订阅",
+      "directoryError": "无法打开目录选择器。",
+      "itemAlreadyQueued": "该视频已排队",
+      "itemQueued": "添加到下载队列",
+      "missingUrl": "请先粘贴频道链接。",
+      "openLinkError": "无法打开视频链接。",
+      "queueError": "无法添加到下载队列。",
+      "refreshStarted": "刷新开始",
+      "removed": "订阅已删除",
+      "resolveError": "无法解析 RSS 源 URL。",
+      "updated": "订阅已更新"
+    },
+    "placeholders": {
+      "url": "https://rsshub.app/youtube/user/@FKJ"
+    },
+    "rssHub": {
+      "description": "将 VidBee 与 RSSHub 结合起来，可以从各种平台实现自动订阅和下载。\n设置完成后，VidBee 将在后台运行并自动下载最新的视频和内容。",
+      "hint": "没有 RSS 源 URL？\n使用 RSSHub 为 YouTube、Twitter 和数千个其他平台生成 RSS 源。",
+      "learnMore": "了解有关 RSSHub 的更多信息",
+      "openDocs": "打开 RSSHub 文档",
+      "title": "使用 RSSHub 自动订阅"
+    },
+    "status": {
+      "checking": "检查",
+      "failed": "失败的",
+      "idle": "闲置的",
+      "title": "地位",
+      "tooltip": {
+        "updatedAt": "更新时间：{{时间}}"
+      },
+      "up-to-date": "最新"
+    },
+    "subtitle": "{{count}} 订阅{{count，复数，一个 {} 其它 {s}}}",
+    "title": "订阅"
   }
 }
