@@ -27,16 +27,42 @@ import {
 } from '../../store/downloads'
 import { settingsAtom } from '../../store/settings'
 
+const normalizeSavedFileName = (fileName?: string): string | undefined => {
+  if (!fileName) {
+    return undefined
+  }
+  const trimmed = fileName.trim()
+  if (!trimmed) {
+    return undefined
+  }
+  return trimmed.replace(/\.f\d+(?=\.[^.]+$)/i, '')
+}
+
 const generateFilePathCandidates = (
   downloadPath: string,
   title: string,
   format: string,
   savedFileName?: string
 ): string[] => {
-  const candidateFileNames = savedFileName
-    ? [savedFileName]
-    : [`${title} via VidBee.${format}`, `${title}.${format}`]
   const normalizedDownloadPath = downloadPath.replace(/\\/g, '/')
+  const safeTitle = title.trim() || 'Unknown'
+
+  const savedNameCandidates: string[] = []
+  const trimmedSavedFileName = savedFileName?.trim()
+  if (trimmedSavedFileName) {
+    const normalized = normalizeSavedFileName(trimmedSavedFileName)
+    if (normalized) {
+      savedNameCandidates.push(normalized)
+    }
+    if (!normalized || normalized !== trimmedSavedFileName) {
+      savedNameCandidates.push(trimmedSavedFileName)
+    }
+  }
+
+  const candidateFileNames =
+    savedNameCandidates.length > 0
+      ? savedNameCandidates
+      : [`${safeTitle} via VidBee.${format}`, `${safeTitle}.${format}`]
   return Array.from(
     new Set(candidateFileNames.map((fileName) => `${normalizedDownloadPath}/${fileName}`))
   )
@@ -56,10 +82,10 @@ const tryFileOperation = async (
 }
 
 const getSavedFileExtension = (fileName?: string): string | undefined => {
-  if (!fileName) {
+  const normalized = normalizeSavedFileName(fileName)
+  if (!normalized) {
     return undefined
   }
-  const normalized = fileName.trim()
   if (!normalized.includes('.')) {
     return undefined
   }
@@ -182,6 +208,7 @@ export function DownloadItem({ download }: DownloadItemProps) {
     ? actionsContainerBaseClass
     : `${actionsContainerBaseClass} sm:opacity-0 sm:group-hover:opacity-100`
   const resolvedExtension = resolveDownloadExtension(download)
+  const normalizedSavedFileName = normalizeSavedFileName(download.savedFileName)
 
   // Track if the file exists
   const [fileExists, setFileExists] = useState(false)
@@ -452,10 +479,10 @@ export function DownloadItem({ download }: DownloadItemProps) {
     })
   }
 
-  if (download.savedFileName) {
+  if (normalizedSavedFileName || download.savedFileName) {
     metadataDetails.push({
       label: t('download.metadata.savedFile'),
-      value: download.savedFileName
+      value: normalizedSavedFileName ?? download.savedFileName
     })
   }
 

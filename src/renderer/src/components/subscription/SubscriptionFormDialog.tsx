@@ -1,4 +1,3 @@
-import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
 import {
   Dialog,
@@ -14,7 +13,7 @@ import { Switch } from '@renderer/components/ui/switch'
 import { ipcServices } from '@renderer/lib/ipc'
 import { settingsAtom } from '@renderer/store/settings'
 import { resolveFeedAtom } from '@renderer/store/subscriptions'
-import type { SubscriptionResolvedFeed, SubscriptionRule } from '@shared/types'
+import type { SubscriptionRule } from '@shared/types'
 import { useAtom, useSetAtom } from 'jotai'
 import { ChevronRight } from 'lucide-react'
 import { useEffect, useId, useRef, useState } from 'react'
@@ -67,7 +66,6 @@ export function SubscriptionFormDialog({
   const [namingTemplate, setNamingTemplate] = useState('')
 
   // Feed detection state
-  const [detectedFeed, setDetectedFeed] = useState<SubscriptionResolvedFeed | null>(null)
   const [detectingFeed, setDetectingFeed] = useState(false)
 
   const detectTimeout = useRef<NodeJS.Timeout | null>(null)
@@ -96,7 +94,6 @@ export function SubscriptionFormDialog({
       setDownloadDirectory(settings.downloadPath)
       setNamingTemplate(settings.subscriptionFilenameTemplate)
     }
-    setDetectedFeed(null)
   }, [
     open,
     mode,
@@ -137,13 +134,11 @@ export function SubscriptionFormDialog({
   // Feed detection logic
   useEffect(() => {
     if (!url.trim()) {
-      setDetectedFeed(null)
       return
     }
 
     // In edit mode, don't detect if URL hasn't changed
     if (mode === 'edit' && subscription && url.trim() === subscription.feedUrl) {
-      setDetectedFeed(null)
       return
     }
 
@@ -154,11 +149,9 @@ export function SubscriptionFormDialog({
     detectTimeout.current = setTimeout(async () => {
       setDetectingFeed(true)
       try {
-        const result = await resolveFeed(url.trim())
-        setDetectedFeed(result)
+        await resolveFeed(url.trim())
       } catch (error) {
         console.error('Failed to resolve feed:', error)
-        setDetectedFeed(null)
       } finally {
         setDetectingFeed(false)
       }
@@ -252,14 +245,6 @@ export function SubscriptionFormDialog({
               placeholder={t('subscriptions.placeholders.url')}
               onChange={(event) => setUrl(event.target.value)}
             />
-            {detectedFeed && (
-              <Badge variant="outline" className="w-fit text-xs">
-                {t('subscriptions.detectedFeed', {
-                  platform: detectedFeed.platform,
-                  feed: detectedFeed.feedUrl
-                })}
-              </Badge>
-            )}
             {detectingFeed && (
               <p className="text-xs text-muted-foreground">{t('subscriptions.detecting')}</p>
             )}
