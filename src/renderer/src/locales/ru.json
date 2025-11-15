@@ -1,0 +1,585 @@
+{
+  "about": {
+    "actions": {
+      "checkUpdates": "Проверить обновления",
+      "download": "Скачать",
+      "email": "Email",
+      "feedback": "Обратная связь",
+      "goToDownload": "Перейти на страницу загрузки",
+      "openRepo": "Открыть репозиторий GitHub",
+      "view": "Просмотр",
+      "visit": "Посетить"
+    },
+    "appName": "VidBee",
+    "autoUpdateDescription": "Автоматически загружать и устанавливать новые версии в фоновом режиме.",
+    "autoUpdateTitle": "Автообновления",
+    "betaProgramDescription": "Получайте ранние сборки и предстоящие функции раньше всех.",
+    "betaProgramTitle": "Канал предпросмотра",
+    "description": "VidBee — это бесплатный загрузчик с открытым исходным кодом, созданный на Electron и работающий на yt-dlp.",
+    "followAuthorActions": {
+      "follow": "Подписаться на @nexmoex"
+    },
+    "followAuthorDescription": "Будьте в курсе последних новостей и обновлений VidBee.",
+    "followAuthorSupport": "Подпишитесь на разработчика в X (Twitter), чтобы получать последние обновления и новости о VidBee.",
+    "followAuthorTitle": "Подписаться на разработчика",
+    "here": "здесь",
+    "homepage": "Главная страница",
+    "notifications": {
+      "checkingUpdates": "Поиск обновлений...",
+      "downloadError": "Не удалось загрузить обновление",
+      "downloadStarted": "Загрузка началась...",
+      "downloadUpdate": "Загрузить и установить обновление {{version}}?",
+      "manualDownloadAction": "Скачать сейчас",
+      "noUpdatesAvailable": "Вы используете последнюю версию",
+      "restartToUpdate": "Перезапустить сейчас для установки обновления?",
+      "restartNowAction": "Перезапустить сейчас",
+      "updateAvailable": "Доступно обновление: {{version}}",
+      "updateAvailableMessage": "Доступна новая версия {{version}}. Пожалуйста, загрузите её с официального сайта.",
+      "updateDownloaded": "Обновление загружено, перезапустите для установки",
+      "updateDownloadedVersion": "Обновление {{version}} загружено, перезапустите для установки",
+      "updateError": "Не удалось проверить обновления: {{error}}",
+      "unknownErrorFallback": "Неизвестная ошибка"
+    },
+    "preferencesDescription": "Настройте параметры обновления, не покидая эту страницу.",
+    "preferencesTitle": "Быстрые переключатели",
+    "resources": {
+      "changelog": "Примечания к выпуску",
+      "changelogDescription": "Узнайте, что изменилось в каждой версии.",
+      "contact": "Поддержка по email",
+      "contactDescription": "Свяжитесь напрямую для получения помощи или сотрудничества.",
+      "documentation": "Центр помощи",
+      "documentationDescription": "Руководства, FAQ и общие рабочие процессы.",
+      "feedback": "Обратная связь и проблемы",
+      "feedbackDescription": "Поделитесь идеями или сообщите о проблемах на GitHub.",
+      "license": "Лицензия",
+      "licenseDescription": "Ознакомьтесь с условиями лицензии с открытым исходным кодом.",
+      "website": "Официальный сайт",
+      "websiteDescription": "Основные моменты продукта, дорожная карта и новости сообщества."
+    },
+    "resourcesDescription": "Полезные ссылки для получения дополнительной информации о VidBee и поддержания связи.",
+    "resourcesTitle": "Ресурсы",
+    "shareActions": {
+      "copy": "Копировать ссылку",
+      "facebook": "Поделиться в Facebook",
+      "twitter": "Поделиться в X (Twitter)"
+    },
+    "shareDescription": "Поделитесь VidBee с вашим сообществом одним кликом.",
+    "shareSupport": "Рекомендуйте VidBee своим друзьям, чтобы поддержать наш рост и обновления.",
+    "shareTitle": "Распространяйте информацию",
+    "sourceCode": "Исходный код доступен",
+    "title": "О программе",
+    "version": "Версия",
+    "versionLabel": "v{{version}}",
+    "latestVersionBadge": "Последняя: v{{version}}",
+    "latestVersionStatus": {
+      "available": "Доступна новая версия",
+      "uptodate": "У вас актуальная версия",
+      "error": "Не удалось получить последнюю версию"
+    },
+    "downloadingUpdate": "Загрузка обновления"
+  },
+  "advancedOptions": {
+    "closeWhenDone": "Закрыть приложение после завершения загрузки",
+    "currentLocation": "Текущее местоположение загрузки - ",
+    "downloadLocation": "Местоположение загрузки",
+    "downloadSubs": "Загрузить субтитры, если доступны",
+    "end": "Конец",
+    "endHint": "Если оставить пустым, будет загружено до конца",
+    "endPlaceholder": "10:00",
+    "selectLocation": "Выбрать местоположение загрузки",
+    "start": "Начало",
+    "startHint": "Если оставить пустым, начнётся с начала",
+    "startPlaceholder": "00:00",
+    "subtitles": "Субтитры",
+    "timeRange": "Загрузить определённый временной диапазон",
+    "title": "Дополнительные параметры"
+  },
+  "app": {
+    "description": "Загружайте видео и аудио с сотен сайтов",
+    "title": "VidBee"
+  },
+  "audioExtract": {
+    "bad": "Плохое",
+    "best": "Лучшее",
+    "extract": "Извлечь",
+    "good": "Хорошее",
+    "normal": "Обычное",
+    "selectFormat": "Выбрать формат",
+    "selectQuality": "Выбрать качество",
+    "title": "Извлечь аудио",
+    "worst": "Худшее"
+  },
+  "download": {
+    "active": "Активные",
+    "all": "Все",
+    "audio": "Аудио",
+    "back": "Назад",
+    "cancel": "Отмена",
+    "cancelled": "Отменено",
+    "clearCompleted": "Очистить завершённые",
+    "clearDownloads": "Очистить загрузки",
+    "completed": "Завершено",
+    "downloadAudio": "Загрузить аудио",
+    "downloadBtn": "Загрузить",
+    "downloadPending": "Ожидание",
+    "downloadQueue": "Очередь загрузки",
+    "downloadVideo": "Загрузить видео",
+    "downloading": "Загрузка...",
+    "enterUrl": "Введите URL видео",
+    "enterUrlDescription": "Вставьте или введите URL видео. ",
+    "error": "Ошибка",
+    "fetch": "Получить",
+    "fetchingVideoInfo": "Получение информации о видео...",
+    "history": "История",
+    "imageLoadError": "Не удалось загрузить изображение",
+    "imagePlaceholder": "Изображение недоступно",
+    "infoUnavailable": "Загрузка одним кликом (Информация недоступна)",
+    "loading": "Загрузка",
+    "moreOptions": "Дополнительные параметры",
+    "noActiveDownloads": "Нет активных загрузок",
+    "noAudio": "Нет аудио",
+    "noHistory": "Нет истории загрузок",
+    "noItems": "Элементы не найдены",
+    "goToSettings": "Перейти в настройки",
+    "oneClickDownload": "Загрузка одним кликом",
+    "oneClickDownloadDescription": "Загрузить напрямую с настройками по умолчанию без подтверждения",
+    "oneClickDownloadEnabled": "Загрузка одним кликом включена. Загрузки будут начинаться напрямую с настройками по умолчанию.",
+    "oneClickDownloadNow": "Загрузить сейчас",
+    "oneClickDownloadStarted": "Загрузка начата с настройками по умолчанию",
+    "paste": "Вставить",
+    "pastePlaylistUrl": "Нажмите, чтобы вставить ссылку на плейлист из буфера обмена [Ctrl + V]",
+    "pasteUrl": "Нажмите, чтобы вставить URL видео или ID [Ctrl + V]",
+    "preparing": "Подготовка...",
+    "processing": "Обработка",
+    "progress": "Прогресс",
+    "showDetails": "Показать детали",
+    "hideDetails": "Скрыть детали",
+    "selectAudioFormat": "Выбрать формат аудио",
+    "selectFormat": "Выбрать формат",
+    "selectVideoFormat": "Выбрать формат видео",
+    "singleVideo": "Одно видео",
+    "speed": "Скорость",
+    "title": "Название",
+    "total": "Всего",
+    "unknownQuality": "Неизвестное качество",
+    "unknownSize": "Неизвестный размер",
+    "urlPlaceholder": "https://www.youtube.com/watch?v=...",
+    "video": "Видео",
+    "videoInfo": "Информация о видео",
+    "videoInfoUpdated": "Информация о видео обновлена",
+    "metadata": {
+      "source": "Источник",
+      "playlist": "Плейлист",
+      "format": "Формат",
+      "quality": "Качество",
+      "codec": "Кодек",
+      "savedFile": "Сохранённый файл",
+      "url": "URL источника",
+      "description": "Описание",
+      "views": "Просмотры",
+      "tags": "Теги",
+      "downloadPath": "Путь загрузки",
+      "createdAt": "Создано",
+      "startedAt": "Начато",
+      "completedAt": "Завершено",
+      "speed": "Скорость",
+      "fileSize": "Размер файла",
+      "width": "Ширина",
+      "height": "Высота",
+      "fps": "FPS",
+      "videoCodec": "Видеокодек",
+      "audioCodec": "Аудиокодек",
+      "formatNote": "Примечание формата",
+      "protocol": "Протокол",
+      "subscription": "Подписка"
+    }
+  },
+  "errors": {
+    "clickToCopy": "Нажмите, чтобы скопировать детали",
+    "clipboardEmpty": "Буфер обмена пуст",
+    "downloadFailed": "Загрузка не удалась",
+    "downloadNecessaryFilesFailed": "Не удалось загрузить необходимые файлы. Пожалуйста, проверьте вашу сеть и попробуйте снова",
+    "emptyUrl": "Пожалуйста, введите URL",
+    "errorDetails": "Детали ошибки",
+    "fetchInfoFailed": "Не удалось получить информацию о видео",
+    "networkError": "Произошла ошибка. Проверьте вашу сеть и используйте правильный URL",
+    "pasteFromClipboard": "Не удалось вставить из буфера обмена"
+  },
+  "history": {
+    "clearCancelled": "Очистить отменённые",
+    "clearCompleted": "Очистить завершённые",
+    "clearErrors": "Очистить ошибки",
+    "copyToClipboard": "Копировать в буфер обмена",
+    "copyUrl": "Копировать URL",
+    "date": "Дата",
+    "description": "Просмотр и управление историей загрузок",
+    "duration": "Длительность",
+    "fileSize": "Размер файла",
+    "filters": {
+      "all": "Все",
+      "cancelled": "Отменённые",
+      "completed": "Завершённые",
+      "errors": "Ошибки"
+    },
+    "noHistory": "Истории загрузок пока нет",
+    "noHistoryDescription": "Ваши завершённые загрузки появятся здесь",
+    "openDownloadFolder": "Открыть папку загрузок",
+    "openFile": "Открыть файл",
+    "openFileLocation": "Открыть местоположение файла",
+    "openFolder": "Открыть папку",
+    "openInBrowser": "Нажмите, чтобы открыть в браузере",
+    "removeItem": "Удалить элемент",
+    "stats": {
+      "cancelled": "Отменённые",
+      "completed": "Завершённые",
+      "errors": "Ошибки",
+      "total": "Всего"
+    },
+    "status": {
+      "cancelled": "Отменено",
+      "completed": "Завершено",
+      "error": "Ошибка"
+    },
+    "title": "История загрузок"
+  },
+  "menu": {
+    "about": "О программе",
+    "download": "Загрузить",
+    "playlist": "Загрузить плейлист",
+    "rss": "RSS",
+    "subscriptions": "Подписки",
+    "preferences": "Настройки",
+    "supportedSites": "Поддерживаемые сайты",
+    "theme": "Тема:"
+  },
+  "notifications": {
+    "copyFailed": "Не удалось скопировать в буфер обмена",
+    "downloadCompleted": "Загрузка завершена",
+    "downloadFailed": "Загрузка не удалась",
+    "downloadStarted": "Загрузка началась",
+    "itemRemoved": "Элемент удалён",
+    "openFileFailed": "Не удалось открыть файл",
+    "openFolderFailed": "Не удалось открыть папку",
+    "removeFailed": "Не удалось удалить элемент",
+    "settingsSaved": "Настройки сохранены",
+    "urlCopied": "URL скопирован в буфер обмена",
+    "videoCopied": "Видео скопировано в буфер обмена"
+  },
+  "playlist": {
+    "badgeLabel": "Плейлист",
+    "clearPreview": "Очистить предпросмотр",
+    "comingSoon": "Функция загрузки плейлиста скоро появится!",
+    "completed": "Плейлист загружен",
+    "description": "Загрузить все видео из плейлиста или канала YouTube",
+    "downloadFailed": "Не удалось начать загрузку плейлиста",
+    "downloadPlaylist": "Загрузить плейлист",
+    "downloadStarted": "Начата загрузка {{count}} видео из плейлиста",
+    "downloadType": "Тип загрузки",
+    "downloading": "Загрузка плейлиста:",
+    "endIndex": "Конец",
+    "enterPlaylistUrl": "Введите URL плейлиста",
+    "fetchFailed": "Не удалось получить информацию о плейлисте",
+    "filenameFormat": "Формат имени файла для плейлистов",
+    "folderFormat": "Формат имени папки для плейлистов",
+    "foundVideos": "Найдено {{count}} видео в плейлисте",
+    "groupActive": "{{count}} активных",
+    "groupErrors": "{{count}} ошибок",
+    "groupSummary": "{{completed}} / {{total}} завершено",
+    "linkLabel": "URL плейлиста",
+    "noEntries": "В этом плейлисте не найдено видео",
+    "noEntriesInRange": "Нет видео в выбранном диапазоне",
+    "noRangeSelected": "Конец не установлен - выбран весь плейлист",
+    "playlistUrlDescription": "Загрузить все видео из плейлиста массово",
+    "positionLabel": "Элемент {{index}} из {{total}}",
+    "previewButton": "Предпросмотр плейлиста",
+    "previewFailed": "Не удалось предпросмотреть плейлист",
+    "previewSummary": "Предпросмотр элементов плейлиста перед загрузкой.",
+    "previewRequired": "Предпросмотрите плейлист перед загрузкой.",
+    "range": "Диапазон (необязательно)",
+    "resetToDefault": "Сбросить на значения по умолчанию",
+    "selectedRange": "Диапазон: {{start}}-{{end}}",
+    "showingCount": "Показано {{count}} видео",
+    "startIndex": "Начало (1)",
+    "title": "Загрузить плейлист",
+    "totalVideos": "Всего видео: {{count}}",
+    "untitled": "Плейлист без названия"
+  },
+  "settings": {
+    "aboutTab": "О программе",
+    "advanced": "Дополнительно",
+    "app": "Настройки приложения",
+    "audio": "Настройки аудио",
+    "browserForCookies": "Выбрать браузер для использования cookie",
+    "browserForCookiesDescription": "Браузер для извлечения cookie для аутентификации",
+    "cookiesFile": "Файл cookie",
+    "cookiesFileDescription": "Файл cookie в формате Netscape для загрузки для аутентификации",
+    "clearCookiesFile": "Очистить",
+    "cookiesHelpTitle": "Использование cookie",
+    "cookiesHelpBrowser": "Выберите ваш браузер выше, чтобы автоматически использовать его сеанс входа.",
+    "cookiesHelpFile": "Экспортируйте файл cookie Netscape (см. FAQ yt-dlp) и выберите его здесь при необходимости.",
+    "cookiesHelpFaq": "Открыть FAQ по cookie yt-dlp",
+    "openLinkError": "Не удалось открыть ссылку",
+    "browserOptions": {
+      "brave": "Brave",
+      "chrome": "Chrome",
+      "edge": "Edge",
+      "firefox": "Firefox",
+      "safari": "Safari"
+    },
+    "configFile": "Использовать файл конфигурации",
+    "configFileDescription": "Пользовательский файл конфигурации для yt-dlp",
+    "clearConfigFile": "Очистить",
+    "dark": "Тёмная",
+    "description": "Настройте ваши предпочтения загрузки и настройки приложения",
+    "directorySelectError": "Не удалось выбрать директорию",
+    "downloadPath": "Местоположение загрузки",
+    "downloadPathDescription": "Выберите, где сохранять загруженные файлы",
+    "fileSelectError": "Не удалось выбрать файл",
+    "general": "Общие",
+    "language": "Язык",
+    "light": "Светлая",
+    "hideDockIcon": "Скрыть иконку Dock",
+    "hideDockIconDescription": "Удалить VidBee из Dock macOS. Используйте строку меню или иконку в трее, чтобы снова открыть приложение.",
+    "launchAtLogin": "Запускать при входе",
+    "launchAtLoginDescription": "Автоматически открывать VidBee после входа в систему.",
+    "launchAtLoginUnsupported": "Автозапуск доступен только в macOS и Windows.",
+    "enableAnalytics": "Помочь улучшить VidBee",
+    "enableAnalyticsDescription": "Поделитесь анонимными данными об использовании, чтобы помочь нам понять, как используется приложение, и расставить приоритеты улучшений.",
+    "maxConcurrentDownloads": "Максимальное количество активных загрузок",
+    "maxConcurrentDownloadsDescription": "Максимальное количество одновременных загрузок",
+    "none": "Нет",
+    "oneClickDownload": "Загрузка одним кликом",
+    "oneClickDownloadDescription": "Включить загрузку одним кликом с настройками по умолчанию",
+    "oneClickDownloadType": "Тип загрузки по умолчанию",
+    "oneClickDownloadTypeDescription": "Выберите тип загрузки по умолчанию для загрузок одним кликом. Качество использует предустановку ниже.",
+    "oneClickQuality": "Предпочтительное качество",
+    "oneClickQualityDescription": "Выберите предустановку качества, используемую для загрузок одним кликом",
+    "oneClickQualityOptions": {
+      "auto": "Авто",
+      "bad": "Плохое",
+      "best": "Лучшее",
+      "good": "Хорошее",
+      "normal": "Обычное",
+      "worst": "Худшее"
+    },
+    "proxy": "Прокси",
+    "proxyDescription": "Прокси-сервер для сетевых запросов",
+    "proxyPlaceholder": "http://proxy:port",
+    "selectConfigFile": "Выбрать файл конфигурации",
+    "selectPath": "Выбрать",
+    "showMoreFormats": "Показать больше вариантов форматов",
+    "showMoreFormatsDescription": "Отображать дополнительные варианты форматов в интерфейсе",
+    "subscriptionDefaults": {
+      "filenameDescription": "Шаблон, используемый, когда подписка не переопределяет имя файла.",
+      "intervalDescription": "Как часто VidBee проверяет каждый канал подписки (1-24 часа)."
+    },
+    "system": "Системная",
+    "theme": "Тема",
+    "themeDescription": "Выберите светлую, тёмную или системную тему для VidBee",
+    "title": "Настройки",
+    "tray": {
+      "quit": "Выход",
+      "showHome": "Показать главную"
+    },
+    "video": "Настройки видео"
+  },
+  "subscriptions": {
+    "title": "Подписки",
+    "subtitle": "{{count}} подписка{{count, plural, one {} other {}}}",
+    "description": "Автоматически отслеживайте RSS-каналы и добавляйте новые загрузки в очередь без ручной работы.",
+    "defaults": {
+      "title": "Настройки автоматизации по умолчанию",
+      "description": "Управляйте, где хранятся загрузки подписок и как часто VidBee проверяет новые видео.",
+      "downloadDirectory": "Директория загрузки",
+      "filenameTemplate": "Шаблон имени файла (только файл)",
+      "checkInterval": "Интервал проверки (часы)",
+      "onlyLatest": "Загружать только последнее видео",
+      "onlyLatestDescription": "При включении VidBee пропускает старые элементы из очереди и загружает только последнюю загрузку."
+    },
+    "add": {
+      "title": "Добавить RSS",
+      "description": "Вставьте ссылку на RSS-канал. VidBee автоматически определит канал."
+    },
+    "fields": {
+      "url": "URL канала",
+      "keywords": "Фильтр ключевых слов (разделено запятыми)",
+      "tags": "Автоматические теги",
+      "customDirectory": "Пользовательская директория",
+      "namingTemplate": "Пользовательский шаблон имени файла (только файл)",
+      "onlyLatest": "Загружать только последнее видео",
+      "onlyLatestDescription": "Игнорировать элементы из очереди и загружать только последнюю загрузку из этого канала.",
+      "enabled": "Включено",
+      "disabled": "Отключено",
+      "onlyLatestShort": "Только последнее"
+    },
+    "placeholders": {
+      "url": "https://rsshub.app/youtube/user/@FKJ"
+    },
+    "actions": {
+      "add": "Добавить",
+      "refresh": "Обновить",
+      "edit": "Редактировать",
+      "remove": "Удалить",
+      "save": "Сохранить изменения",
+      "selectDirectory": "Обзор",
+      "enable": "Включить",
+      "disable": "Отключить"
+    },
+    "items": {
+      "title": "Последние загрузки ({{count}})",
+      "count": "{{count}} элементов",
+      "empty": "Не найдено недавних элементов канала.",
+      "status": {
+        "queued": "В очереди",
+        "notQueued": "Не в очереди",
+        "pending": "Ожидание",
+        "downloading": "Загрузка",
+        "processing": "Обработка",
+        "completed": "Завершено",
+        "error": "Ошибка",
+        "cancelled": "Отменено"
+      },
+      "fromChannel": "От {{channel}}",
+      "tooltip": {
+        "downloadStatus": "Статус загрузки: {{status}}",
+        "downloadPending": "Ожидание деталей загрузки...",
+        "notQueued": "Ещё не в очереди загрузки"
+      },
+      "actions": {
+        "open": "Открыть в браузере",
+        "queue": "Добавить в очередь загрузки"
+      }
+    },
+    "labels": {
+      "subscription": "Подписка",
+      "unknown": "Неизвестная подписка",
+      "noThumbnail": "Нет миниатюры"
+    },
+    "notifications": {
+      "directoryError": "Не удалось открыть выбор директории.",
+      "missingUrl": "Пожалуйста, сначала вставьте ссылку на канал.",
+      "created": "Подписка добавлена",
+      "createError": "Не удалось добавить подписку.",
+      "refreshStarted": "Обновление начато",
+      "removed": "Подписка удалена",
+      "updated": "Подписка обновлена",
+      "itemQueued": "Добавлено в очередь загрузки",
+      "itemAlreadyQueued": "Это видео уже в очереди",
+      "queueError": "Не удалось добавить в очередь загрузки.",
+      "openLinkError": "Не удалось открыть ссылку на видео.",
+      "resolveError": "Не удалось разрешить URL RSS-канала."
+    },
+    "detectedFeed": "Обнаружен канал {{platform}} -> {{feed}}",
+    "detecting": "Определение канала...",
+    "latestVideo": "Последнее видео: {{title}}",
+    "lastChecked": "Последняя проверка: {{time}}",
+    "never": "Никогда",
+    "empty": "Пока нет подписок. Добавьте ваши любимые каналы, чтобы начать автоматическую загрузку.",
+    "edit": {
+      "title": "Редактировать {{name}}",
+      "description": "Настройте фильтры, теги и переопределения для этого канала."
+    },
+    "status": {
+      "title": "Статус",
+      "up-to-date": "Актуально",
+      "checking": "Проверка",
+      "failed": "Ошибка",
+      "idle": "Простой",
+      "tooltip": {
+        "updatedAt": "Обновлено: {{time}}"
+      }
+    },
+    "rssHub": {
+      "title": "Автоматические подписки с RSSHub",
+      "description": "Объедините VidBee с RSSHub для включения автоматических подписок и загрузок с различных платформ. После настройки VidBee работает в фоновом режиме и автоматически загружает последние видео и контент.",
+      "learnMore": "Узнать больше о RSSHub",
+      "openDocs": "Открыть документацию RSSHub",
+      "hint": "Нет URL RSS-канала? Используйте RSSHub для создания RSS-каналов для YouTube, Twitter и тысяч других платформ."
+    }
+  },
+  "sites": {
+    "homeInlineDescription": "Поддерживает {{sites}} и другие.",
+    "moreDescription": "Полный список yt-dlp постоянно обновляется сообществом.",
+    "moreTitle": "Нужен другой сайт?",
+    "openFullList": "Открыть полный список поддерживаемых сайтов",
+    "pageDescription": "VidBee использует yt-dlp под капотом для доступа к сотням источников.",
+    "pageIntro": "Вот основные сервисы, с которых люди чаще всего загружают.",
+    "pageTitle": "Поддерживаемые сайты",
+    "popular": {
+      "bandcamp": {
+        "description": "Альбомы независимых артистов и релизы сообщества.",
+        "label": "Bandcamp"
+      },
+      "dailymotion": {
+        "description": "Глобальные новости, спорт и развлекательные клипы.",
+        "label": "Dailymotion"
+      },
+      "facebook": {
+        "description": "Видео из ленты, Watch и Reels с публичных страниц.",
+        "label": "Facebook"
+      },
+      "instagram": {
+        "description": "Контент из ленты, Stories, Reels и Highlights.",
+        "label": "Instagram"
+      },
+      "kick": {
+        "description": "Прямые трансляции и повторы создателей на платформе Kick.",
+        "label": "Kick"
+      },
+      "linkedin": {
+        "description": "Профессиональные выступления, вебинары и обучающие видео.",
+        "label": "LinkedIn"
+      },
+      "mixcloud": {
+        "description": "DJ-миксы, радиошоу и длинные аудиоформаты.",
+        "label": "Mixcloud"
+      },
+      "niconico": {
+        "description": "Японская анимация, музыка и архив прямых трансляций.",
+        "label": "Niconico"
+      },
+      "pinterest": {
+        "description": "Идеи для пинов, обучающие ролики и видео-вдохновения для образа жизни.",
+        "label": "Pinterest"
+      },
+      "reddit": {
+        "description": "Встроенные клипы и размещённые видео из сообществ.",
+        "label": "Reddit"
+      },
+      "soundcloud": {
+        "description": "Музыкальные треки, плейлисты и DJ-сеты.",
+        "label": "SoundCloud"
+      },
+      "tiktok": {
+        "description": "Короткие мобильные видео, эффекты и прямые трансляции.",
+        "label": "TikTok"
+      },
+      "tumblr": {
+        "description": "Креативные короткие медиа и фанатские правки.",
+        "label": "Tumblr"
+      },
+      "twitch": {
+        "description": "Игровые, музыкальные и IRL прямые трансляции и VOD.",
+        "label": "Twitch"
+      },
+      "twitter": {
+        "description": "Посты из ленты, записи Spaces и трансляции.",
+        "label": "X (Twitter)"
+      },
+      "vimeo": {
+        "description": "Высококачественный хостинг видео для создателей и бизнеса.",
+        "label": "Vimeo"
+      },
+      "youtube": {
+        "description": "Длинные видео и прямые трансляции от создателей по всему миру.",
+        "label": "YouTube"
+      },
+      "youtubemusic": {
+        "description": "Официальные музыкальные видео, альбомы и живые выступления.",
+        "label": "YouTube Music"
+      }
+    },
+    "popularSection": "Основные платформы",
+    "viewAll": "Просмотреть все поддерживаемые сайты"
+  }
+}

@@ -2,8 +2,10 @@
   "about": {
     "actions": {
       "checkUpdates": "アップデートを確認",
+      "download": "ダウンロード",
       "email": "メール",
       "feedback": "フィードバック",
+      "goToDownload": "ダウンロードページへ行く",
       "openRepo": "GitHubリポジトリを開く",
       "view": "表示",
       "visit": "訪問"
@@ -14,6 +16,7 @@
     "betaProgramDescription": "他の人より先に早期ビルドと今後の機能を受け取ります。",
     "betaProgramTitle": "プレビューチャンネル",
     "description": "VidBeeはElectronで構築され、yt-dlpによって動力を得る無料のオープンソースダウンローダーです。",
+    "downloadingUpdate": "アップデートをダウンロードしています",
     "followAuthorActions": {
       "follow": "@nexmoexをフォロー"
     },
@@ -22,15 +25,26 @@
     "followAuthorTitle": "開発者をフォロー",
     "here": "ここ",
     "homepage": "ホームページ",
+    "latestVersionBadge": "最新: v{{version}}",
+    "latestVersionStatus": {
+      "available": "新しいバージョンが利用可能",
+      "error": "最新バージョンを取得できません",
+      "uptodate": "最新バージョンを使用中"
+    },
     "notifications": {
       "checkingUpdates": "アップデートを検索中...",
       "downloadError": "アップデートのダウンロードに失敗",
       "downloadStarted": "ダウンロード開始...",
       "downloadUpdate": "アップデート{{version}}をダウンロードしてインストールしますか？",
+      "manualDownloadAction": "今すぐダウンロード",
       "noUpdatesAvailable": "最新バージョンを使用しています",
+      "restartNowAction": "今すぐ再起動してください",
       "restartToUpdate": "今すぐ再起動してアップデートをインストールしますか？",
+      "unknownErrorFallback": "不明なエラー",
       "updateAvailable": "利用可能なアップデート：{{version}}",
+      "updateAvailableMessage": "新しいバージョン {{version}} が利用可能です。\n公式サイトからダウンロードしてください。",
       "updateDownloaded": "アップデートがダウンロードされました。再起動してインストールしてください",
+      "updateDownloadedVersion": "アップデート {{version}} をダウンロードしました。再起動してインストールしてください",
       "updateError": "アップデートの確認に失敗：{{error}}"
     },
     "preferencesDescription": "このページを離れることなくアップデート設定を調整します。",
@@ -62,13 +76,7 @@
     "sourceCode": "ソースコードが利用可能",
     "title": "について",
     "version": "バージョン",
-    "versionLabel": "v{{version}}",
-    "latestVersionBadge": "最新: v{{version}}",
-    "latestVersionStatus": {
-      "available": "新しいバージョンが利用可能",
-      "uptodate": "最新バージョンを使用中",
-      "error": "最新バージョンを取得できません"
-    }
+    "versionLabel": "v{{version}}"
   },
   "advancedOptions": {
     "closeWhenDone": "ダウンロード完了時にアプリを閉じる",
@@ -122,11 +130,39 @@
     "error": "エラー",
     "fetch": "取得",
     "fetchingVideoInfo": "ビデオ情報を取得中...",
+    "goToSettings": "設定に移動",
+    "hideDetails": "詳細を隠す",
     "history": "履歴",
     "imageLoadError": "画像の読み込みに失敗",
     "imagePlaceholder": "利用可能な画像なし",
     "infoUnavailable": "ワンクリックダウンロード（情報利用不可）",
     "loading": "読み込み中",
+    "metadata": {
+      "audioCodec": "オーディオコーデック",
+      "codec": "コーデック",
+      "completedAt": "完了時刻",
+      "createdAt": "で作成されました",
+      "description": "説明",
+      "downloadPath": "ダウンロードパス",
+      "fileSize": "ファイルサイズ",
+      "format": "形式",
+      "formatNote": "メモのフォーマット",
+      "fps": "FPS",
+      "height": "身長",
+      "playlist": "プレイリスト",
+      "protocol": "プロトコル",
+      "quality": "品質",
+      "savedFile": "保存されたファイル",
+      "source": "ソース",
+      "speed": "スピード",
+      "startedAt": "に開始",
+      "subscription": "サブスクリプション",
+      "tags": "タグ",
+      "url": "ソースURL",
+      "videoCodec": "ビデオコーデック",
+      "views": "ビュー",
+      "width": "幅"
+    },
     "moreOptions": "その他のオプション",
     "noActiveDownloads": "アクティブなダウンロードなし",
     "noAudio": "オーディオなし",
@@ -134,6 +170,7 @@
     "noItems": "アイテムが見つかりません",
     "oneClickDownload": "ワンクリックダウンロード",
     "oneClickDownloadDescription": "確認なしでデフォルト設定で直接ダウンロード",
+    "oneClickDownloadEnabled": "ワンクリックダウンロードが有効になります。\nダウンロードはデフォルト設定で直接開始されます。",
     "oneClickDownloadNow": "今すぐダウンロード",
     "oneClickDownloadStarted": "デフォルト設定でダウンロード開始",
     "paste": "貼り付け",
@@ -145,6 +182,7 @@
     "selectAudioFormat": "オーディオフォーマットを選択",
     "selectFormat": "フォーマットを選択",
     "selectVideoFormat": "ビデオフォーマットを選択",
+    "showDetails": "詳細を表示",
     "singleVideo": "単一ビデオ",
     "speed": "速度",
     "title": "タイトル",
@@ -209,6 +247,8 @@
     "download": "ダウンロード",
     "playlist": "プレイリストをダウンロード",
     "preferences": "設定",
+    "rss": "RSS",
+    "subscriptions": "定期購入",
     "supportedSites": "サポートされているサイト",
     "theme": "テーマ："
   },
@@ -226,6 +266,8 @@
     "videoCopied": "ビデオがクリップボードにコピーされました"
   },
   "playlist": {
+    "badgeLabel": "プレイリスト",
+    "clearPreview": "プレビューをクリアする",
     "comingSoon": "プレイリストダウンロード機能がまもなく登場します！",
     "completed": "プレイリストがダウンロードされました",
     "description": "YouTubeプレイリストまたはチャンネルからすべてのビデオをダウンロード",
@@ -240,12 +282,27 @@
     "filenameFormat": "プレイリスト用ファイル名フォーマット",
     "folderFormat": "プレイリスト用フォルダ名フォーマット",
     "foundVideos": "プレイリストで{{count}}個のビデオを発見",
+    "groupActive": "{{count}} 個がアクティブです",
+    "groupErrors": "{{count}} 回失敗しました",
+    "groupSummary": "{{完了}} / {{合計}} 完了",
     "linkLabel": "プレイリストURL",
+    "noEntries": "このプレイリストにはビデオが見つかりませんでした",
+    "noEntriesInRange": "選択した範囲にビデオがありません",
+    "noRangeSelected": "終了セットなし - 完全なプレイリストが選択されています",
     "playlistUrlDescription": "プレイリストからすべてのビデオを一括ダウンロード",
+    "positionLabel": "{{total}} 中のアイテム {{index}}",
+    "previewButton": "プレイリストをプレビューする",
+    "previewFailed": "プレイリストのプレビューに失敗しました",
+    "previewRequired": "ダウンロードする前にプレイリストをプレビューします。",
+    "previewSummary": "ダウンロードする前にプレイリスト項目をプレビューします。",
     "range": "範囲（オプション）",
     "resetToDefault": "デフォルトにリセット",
+    "selectedRange": "範囲: {{開始}}-{{終了}}",
+    "showingCount": "{{count}} 本の動画を表示しています",
     "startIndex": "開始（1）",
-    "title": "プレイリストをダウンロード"
+    "title": "プレイリストをダウンロード",
+    "totalVideos": "合計動画: {{count}}",
+    "untitled": "無題のプレイリスト"
   },
   "settings": {
     "aboutTab": "について",
@@ -261,16 +318,31 @@
       "firefox": "Firefox",
       "safari": "Safari"
     },
+    "clearConfigFile": "クリア",
+    "clearCookiesFile": "クリア",
     "configFile": "設定ファイルを使用",
     "configFileDescription": "yt-dlp用のカスタム設定ファイル",
+    "cookiesFile": "クッキーファイル",
+    "cookiesFileDescription": "認証のためにロードする Netscape 形式の Cookie ファイル",
+    "cookiesHelpBrowser": "サインイン セッションを自動的に再利用するには、上記のブラウザーを選択してください。",
+    "cookiesHelpFaq": "yt-dlp Cookie を開くに関するよくある質問",
+    "cookiesHelpFile": "Netscape Cookie ファイルをエクスポートし (yt-dlp FAQ を参照)、必要に応じてここで選択します。",
+    "cookiesHelpTitle": "クッキーの使用",
     "dark": "ダーク",
     "description": "ダウンロード設定とアプリ設定を構成",
     "directorySelectError": "ディレクトリの選択に失敗",
     "downloadPath": "ダウンロード場所",
     "downloadPathDescription": "ダウンロードファイルの保存場所を選択",
+    "enableAnalytics": "VidBee の改善にご協力ください",
+    "enableAnalyticsDescription": "匿名の使用状況データを共有することで、アプリの使用状況を把握し、改善の優先順位を付けることができます。",
     "fileSelectError": "ファイルの選択に失敗",
     "general": "一般",
+    "hideDockIcon": "ドックアイコンを非表示にする",
+    "hideDockIconDescription": "VidBee を macOS Dock から削除します。\nメニュー バーまたはトレイ アイコンを使用して、アプリを再度開きます。",
     "language": "言語",
+    "launchAtLogin": "起動時に起動する",
+    "launchAtLoginDescription": "コンピューターにサインインした後、VidBee を自動的に開きます。",
+    "launchAtLoginUnsupported": "自動起動は macOS と Windows でのみ利用できます。",
     "light": "ライト",
     "maxConcurrentDownloads": "最大アクティブダウンロード数",
     "maxConcurrentDownloadsDescription": "最大同時ダウンロード数",
@@ -289,6 +361,7 @@
       "normal": "通常",
       "worst": "最悪"
     },
+    "openLinkError": "リンクを開けませんでした",
     "proxy": "プロキシ",
     "proxyDescription": "ネットワークリクエスト用のプロキシサーバー",
     "proxyPlaceholder": "http://proxy:port",
@@ -296,6 +369,10 @@
     "selectPath": "選択",
     "showMoreFormats": "より多くのフォーマットオプションを表示",
     "showMoreFormatsDescription": "インターフェースに追加のフォーマットオプションを表示",
+    "subscriptionDefaults": {
+      "filenameDescription": "サブスクリプションがそのファイル名をオーバーライドしない場合に使用されるパターン。",
+      "intervalDescription": "VidBee が各サブスクリプション フィードをチェックする頻度 (1 ～ 24 時間)。"
+    },
     "system": "システム",
     "theme": "テーマ",
     "themeDescription": "VidBeeのライト、ダーク、またはシステムテーマを選択",
@@ -390,5 +467,119 @@
     },
     "popularSection": "主要プラットフォーム",
     "viewAll": "サポートされているすべてのサイトを表示"
+  },
+  "subscriptions": {
+    "actions": {
+      "add": "追加",
+      "disable": "無効にする",
+      "edit": "編集",
+      "enable": "有効にする",
+      "refresh": "リフレッシュ",
+      "remove": "取り除く",
+      "save": "変更を保存する",
+      "selectDirectory": "ブラウズ"
+    },
+    "add": {
+      "description": "RSS フィードのリンクを貼り付けます。 \nVidBee はフィードを自動的に検出します。",
+      "title": "RSSを追加"
+    },
+    "defaults": {
+      "checkInterval": "チェック間隔(時間)",
+      "description": "サブスクリプションのダウンロードが保存される場所と、VidBee が新しいビデオをチェックする頻度を制御します。",
+      "downloadDirectory": "ダウンロードディレクトリ",
+      "filenameTemplate": "ファイル名のテンプレート (ファイルのみ)",
+      "onlyLatest": "最新のビデオのみをダウンロードする",
+      "onlyLatestDescription": "有効にすると、VidBee は古いバックログ項目をスキップし、最新のアップロードのみを取得します。",
+      "title": "自動化のデフォルト"
+    },
+    "description": "RSS フィードを自動的に監視し、手動作業なしで新しいダウンロードをキューに追加します。",
+    "detectedFeed": "{{プラットフォーム}} フィードが検出されました -> {{フィード}}",
+    "detecting": "フィードを検出中...",
+    "edit": {
+      "description": "このフィードのフィルター、タグ、オーバーライドを調整します。",
+      "title": "{{名前}}を編集"
+    },
+    "empty": "まだ購読はありません。\nお気に入りのチャンネルを追加して自動ダウンロードを開始します。",
+    "fields": {
+      "customDirectory": "カスタムディレクトリ",
+      "disabled": "無効",
+      "enabled": "有効",
+      "keywords": "キーワードフィルター (カンマ区切り)",
+      "namingTemplate": "カスタム ファイル名テンプレート (ファイルのみ)",
+      "onlyLatest": "最新のビデオのみをダウンロードする",
+      "onlyLatestDescription": "バックログ項目を無視し、このフィードから最新のアップロードのみを取得します。",
+      "onlyLatestShort": "最新のもののみ",
+      "tags": "自動タグ",
+      "url": "フィード URL"
+    },
+    "items": {
+      "actions": {
+        "open": "ブラウザで開く",
+        "queue": "ダウンロードキューに追加"
+      },
+      "count": "{{count}} 個のアイテム",
+      "empty": "最近のフィード項目が見つかりませんでした。",
+      "fromChannel": "{{チャンネル}} から",
+      "status": {
+        "cancelled": "キャンセル",
+        "completed": "完了",
+        "downloading": "ダウンロード中",
+        "error": "失敗した",
+        "notQueued": "キューに登録されていません",
+        "pending": "保留中",
+        "processing": "処理",
+        "queued": "キューに入れられました"
+      },
+      "title": "最新のアップロード ({{count}})",
+      "tooltip": {
+        "downloadPending": "ダウンロードの詳細を待っています...",
+        "downloadStatus": "ダウンロードステータス: {{ステータス}}",
+        "notQueued": "まだダウンロードキューにありません"
+      }
+    },
+    "labels": {
+      "noThumbnail": "サムネイルなし",
+      "subscription": "サブスクリプション",
+      "unknown": "不明なサブスクリプション"
+    },
+    "lastChecked": "最終チェック日: {{time}}",
+    "latestVideo": "最新の動画: {{title}}",
+    "never": "一度もない",
+    "notifications": {
+      "createError": "サブスクリプションの追加に失敗しました。",
+      "created": "サブスクリプションが追加されました",
+      "directoryError": "ディレクトリピッカーを開けませんでした。",
+      "itemAlreadyQueued": "このビデオはすでにキューに登録されています",
+      "itemQueued": "ダウンロードキューに追加されました",
+      "missingUrl": "まずチャンネルのリンクを貼り付けてください。",
+      "openLinkError": "ビデオリンクを開けませんでした。",
+      "queueError": "ダウンロードキューへの追加に失敗しました。",
+      "refreshStarted": "更新が開始されました",
+      "removed": "サブスクリプションが削除されました",
+      "resolveError": "RSS フィード URL を解決できませんでした。",
+      "updated": "サブスクリプションが更新されました"
+    },
+    "placeholders": {
+      "url": "https://rsshub.app/youtube/user/@FKJ"
+    },
+    "rssHub": {
+      "description": "VidBee と RSSHub を組み合わせると、さまざまなプラットフォームからの自動サブスクリプションとダウンロードが可能になります。\nセットアップが完了すると、VidBee がバックグラウンドで実行され、最新のビデオとコンテンツが自動的にダウンロードされます。",
+      "hint": "RSS フィード URL をお持ちでない場合は、 \nRSSHub を使用して、YouTube、Twitter、その他数千のプラットフォーム用の RSS フィードを生成します。",
+      "learnMore": "RSSHub について詳しく見る",
+      "openDocs": "RSSHub ドキュメントを開く",
+      "title": "RSSHub による自動サブスクリプション"
+    },
+    "status": {
+      "checking": "チェック中",
+      "failed": "失敗した",
+      "idle": "アイドル状態",
+      "title": "状態",
+      "tooltip": {
+        "updatedAt": "更新日: {{time}}"
+      },
+      "up-to-date": "最新の"
+    },
+    "subtitle": "{{count}} 件のサブスクリプション{{count、複数、one {} other {s}}}",
+    "title": "定期購入"
   }
 }

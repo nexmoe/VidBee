@@ -1,0 +1,585 @@
+{
+  "about": {
+    "actions": {
+      "checkUpdates": "التحقق من التحديثات",
+      "download": "تحميل",
+      "email": "البريد الإلكتروني",
+      "feedback": "ملاحظات",
+      "goToDownload": "الانتقال إلى صفحة التحميل",
+      "openRepo": "فتح مستودع GitHub",
+      "view": "عرض",
+      "visit": "زيارة"
+    },
+    "appName": "VidBee",
+    "autoUpdateDescription": "تنزيل وتثبيت الإصدارات الجديدة تلقائياً في الخلفية.",
+    "autoUpdateTitle": "التحديثات التلقائية",
+    "betaProgramDescription": "تلقي البناءات المبكرة والميزات القادمة قبل أي شخص آخر.",
+    "betaProgramTitle": "قناة المعاينة",
+    "description": "VidBee هو برنامج تنزيل مجاني ومفتوح المصدر مبني باستخدام Electron ويعمل بواسطة yt-dlp.",
+    "followAuthorActions": {
+      "follow": "متابعة @nexmoex"
+    },
+    "followAuthorDescription": "ابق على اطلاع بآخر أخبار وتحديثات VidBee.",
+    "followAuthorSupport": "تابع المطور على X (Twitter) للحصول على آخر التحديثات والأخبار حول VidBee.",
+    "followAuthorTitle": "متابعة المطور",
+    "here": "هنا",
+    "homepage": "الصفحة الرئيسية",
+    "notifications": {
+      "checkingUpdates": "البحث عن التحديثات...",
+      "downloadError": "فشل في تنزيل التحديث",
+      "downloadStarted": "بدأ التحميل...",
+      "downloadUpdate": "تنزيل وتثبيت التحديث {{version}}؟",
+      "manualDownloadAction": "تنزيل الآن",
+      "noUpdatesAvailable": "أنت تستخدم أحدث إصدار",
+      "restartToUpdate": "إعادة التشغيل الآن لتثبيت التحديث؟",
+      "restartNowAction": "إعادة التشغيل الآن",
+      "updateAvailable": "تحديث متاح: {{version}}",
+      "updateAvailableMessage": "إصدار جديد {{version}} متاح. يرجى تنزيله من الموقع الرسمي.",
+      "updateDownloaded": "تم تنزيل التحديث، أعد التشغيل للتثبيت",
+      "updateDownloadedVersion": "تم تنزيل التحديث {{version}}، أعد التشغيل للتثبيت",
+      "updateError": "فشل في التحقق من التحديثات: {{error}}",
+      "unknownErrorFallback": "خطأ غير معروف"
+    },
+    "preferencesDescription": "ضبط إعدادات التحديث دون مغادرة هذه الصفحة.",
+    "preferencesTitle": "التبديلات السريعة",
+    "resources": {
+      "changelog": "ملاحظات الإصدار",
+      "changelogDescription": "اطلع على ما تغير في كل إصدار.",
+      "contact": "دعم البريد الإلكتروني",
+      "contactDescription": "تواصل مباشرة للحصول على المساعدة أو التعاون.",
+      "documentation": "مركز المساعدة",
+      "documentationDescription": "أدلة، أسئلة شائعة، وسير عمل شائعة.",
+      "feedback": "ملاحظات ومشاكل",
+      "feedbackDescription": "شارك الأفكار أو أبلغ عن المشاكل على GitHub.",
+      "license": "الترخيص",
+      "licenseDescription": "راجع شروط ترخيص المصدر المفتوح.",
+      "website": "الموقع الرسمي",
+      "websiteDescription": "أبرز المنتجات، خارطة الطريق، وأخبار المجتمع."
+    },
+    "resourcesDescription": "روابط مفيدة لمعرفة المزيد عن VidBee والبقاء على اتصال.",
+    "resourcesTitle": "الموارد",
+    "shareActions": {
+      "copy": "نسخ الرابط",
+      "facebook": "مشاركة على Facebook",
+      "twitter": "مشاركة على X (Twitter)"
+    },
+    "shareDescription": "شارك VidBee مع مجتمعك بنقرة واحدة.",
+    "shareSupport": "أوصِ VidBee لأصدقائك لدعم نمونا وتحديثاتنا.",
+    "shareTitle": "انشر الكلمة",
+    "sourceCode": "الكود المصدري متاح",
+    "title": "حول",
+    "version": "الإصدار",
+    "versionLabel": "v{{version}}",
+    "latestVersionBadge": "الأحدث: v{{version}}",
+    "latestVersionStatus": {
+      "available": "إصدار جديد متاح",
+      "uptodate": "أنت محدث",
+      "error": "تعذر جلب أحدث إصدار"
+    },
+    "downloadingUpdate": "تنزيل التحديث"
+  },
+  "advancedOptions": {
+    "closeWhenDone": "إغلاق التطبيق عند انتهاء التحميل",
+    "currentLocation": "موقع التحميل الحالي - ",
+    "downloadLocation": "موقع التحميل",
+    "downloadSubs": "تحميل الترجمات إن كانت متاحة",
+    "end": "النهاية",
+    "endHint": "إذا تُرك فارغاً، سيتم التحميل حتى النهاية",
+    "endPlaceholder": "10:00",
+    "selectLocation": "اختر موقع التحميل",
+    "start": "البداية",
+    "startHint": "إذا تُرك فارغاً، سيبدأ من البداية",
+    "startPlaceholder": "00:00",
+    "subtitles": "الترجمات",
+    "timeRange": "تحميل نطاق زمني محدد",
+    "title": "خيارات متقدمة"
+  },
+  "app": {
+    "description": "تحميل الفيديوهات والصوتيات من مئات المواقع",
+    "title": "VidBee"
+  },
+  "audioExtract": {
+    "bad": "سيء",
+    "best": "أفضل",
+    "extract": "استخراج",
+    "good": "جيد",
+    "normal": "عادي",
+    "selectFormat": "اختر التنسيق",
+    "selectQuality": "اختر الجودة",
+    "title": "استخراج الصوت",
+    "worst": "أسوأ"
+  },
+  "download": {
+    "active": "نشط",
+    "all": "الكل",
+    "audio": "صوت",
+    "back": "رجوع",
+    "cancel": "إلغاء",
+    "cancelled": "ملغي",
+    "clearCompleted": "مسح المكتملة",
+    "clearDownloads": "مسح التحميلات",
+    "completed": "مكتمل",
+    "downloadAudio": "تحميل الصوت",
+    "downloadBtn": "تحميل",
+    "downloadPending": "قيد الانتظار",
+    "downloadQueue": "قائمة انتظار التحميل",
+    "downloadVideo": "تحميل الفيديو",
+    "downloading": "جاري التحميل...",
+    "enterUrl": "أدخل رابط الفيديو",
+    "enterUrlDescription": "الصق أو اكتب رابط فيديو. ",
+    "error": "خطأ",
+    "fetch": "جلب",
+    "fetchingVideoInfo": "جلب معلومات الفيديو...",
+    "history": "السجل",
+    "imageLoadError": "فشل تحميل الصورة",
+    "imagePlaceholder": "لا توجد صورة متاحة",
+    "infoUnavailable": "تحميل بنقرة واحدة (المعلومات غير متاحة)",
+    "loading": "جاري التحميل",
+    "moreOptions": "خيارات إضافية",
+    "noActiveDownloads": "لا توجد تحميلات نشطة",
+    "noAudio": "لا يوجد صوت",
+    "noHistory": "لا يوجد سجل تحميل",
+    "noItems": "لم يتم العثور على عناصر",
+    "goToSettings": "انتقل إلى الإعدادات",
+    "oneClickDownload": "تحميل بنقرة واحدة",
+    "oneClickDownloadDescription": "تحميل مباشر بالإعدادات الافتراضية دون تأكيد",
+    "oneClickDownloadEnabled": "تم تفعيل التحميل بنقرة واحدة. ستبدأ التحميلات مباشرة بالإعدادات الافتراضية.",
+    "oneClickDownloadNow": "تحميل الآن",
+    "oneClickDownloadStarted": "بدأ التحميل بالإعدادات الافتراضية",
+    "paste": "لصق",
+    "pastePlaylistUrl": "انقر للصق رابط قائمة التشغيل من الحافظة [Ctrl + V]",
+    "pasteUrl": "انقر للصق رابط أو معرف الفيديو [Ctrl + V]",
+    "preparing": "جاري التحضير...",
+    "processing": "جاري المعالجة",
+    "progress": "التقدم",
+    "showDetails": "إظهار التفاصيل",
+    "hideDetails": "إخفاء التفاصيل",
+    "selectAudioFormat": "اختر تنسيق الصوت",
+    "selectFormat": "اختر التنسيق",
+    "selectVideoFormat": "اختر تنسيق الفيديو",
+    "singleVideo": "فيديو واحد",
+    "speed": "السرعة",
+    "title": "العنوان",
+    "total": "الإجمالي",
+    "unknownQuality": "جودة غير معروفة",
+    "unknownSize": "حجم غير معروف",
+    "urlPlaceholder": "https://www.youtube.com/watch?v=...",
+    "video": "فيديو",
+    "videoInfo": "معلومات الفيديو",
+    "videoInfoUpdated": "تم تحديث معلومات الفيديو",
+    "metadata": {
+      "source": "المصدر",
+      "playlist": "قائمة التشغيل",
+      "format": "التنسيق",
+      "quality": "الجودة",
+      "codec": "الترميز",
+      "savedFile": "الملف المحفوظ",
+      "url": "رابط المصدر",
+      "description": "الوصف",
+      "views": "المشاهدات",
+      "tags": "العلامات",
+      "downloadPath": "مسار التحميل",
+      "createdAt": "تم الإنشاء في",
+      "startedAt": "بدأ في",
+      "completedAt": "اكتمل في",
+      "speed": "السرعة",
+      "fileSize": "حجم الملف",
+      "width": "العرض",
+      "height": "الارتفاع",
+      "fps": "معدل الإطارات",
+      "videoCodec": "ترميز الفيديو",
+      "audioCodec": "ترميز الصوت",
+      "formatNote": "ملاحظة التنسيق",
+      "protocol": "البروتوكول",
+      "subscription": "الاشتراك"
+    }
+  },
+  "errors": {
+    "clickToCopy": "انقر لنسخ التفاصيل",
+    "clipboardEmpty": "الحافظة فارغة",
+    "downloadFailed": "فشل التحميل",
+    "downloadNecessaryFilesFailed": "فشل في تحميل الملفات الضرورية. يرجى التحقق من شبكتك والمحاولة مرة أخرى",
+    "emptyUrl": "يرجى إدخال رابط",
+    "errorDetails": "تفاصيل الخطأ",
+    "fetchInfoFailed": "فشل في جلب معلومات الفيديو",
+    "networkError": "حدث خطأ ما. تحقق من شبكتك واستخدم رابطاً صحيحاً",
+    "pasteFromClipboard": "فشل في اللصق من الحافظة"
+  },
+  "history": {
+    "clearCancelled": "مسح الملغاة",
+    "clearCompleted": "مسح المكتملة",
+    "clearErrors": "مسح الأخطاء",
+    "copyToClipboard": "نسخ إلى الحافظة",
+    "copyUrl": "نسخ الرابط",
+    "date": "التاريخ",
+    "description": "عرض وإدارة سجل التحميل الخاص بك",
+    "duration": "المدة",
+    "fileSize": "حجم الملف",
+    "filters": {
+      "all": "الكل",
+      "cancelled": "ملغي",
+      "completed": "مكتمل",
+      "errors": "أخطاء"
+    },
+    "noHistory": "لا يوجد سجل تحميل بعد",
+    "noHistoryDescription": "ستظهر تحميلاتك المكتملة هنا",
+    "openDownloadFolder": "فتح مجلد التحميل",
+    "openFile": "فتح الملف",
+    "openFileLocation": "فتح موقع الملف",
+    "openFolder": "فتح المجلد",
+    "openInBrowser": "انقر لفتح في المتصفح",
+    "removeItem": "إزالة العنصر",
+    "stats": {
+      "cancelled": "ملغي",
+      "completed": "مكتمل",
+      "errors": "أخطاء",
+      "total": "الإجمالي"
+    },
+    "status": {
+      "cancelled": "ملغي",
+      "completed": "مكتمل",
+      "error": "خطأ"
+    },
+    "title": "سجل التحميل"
+  },
+  "menu": {
+    "about": "حول",
+    "download": "تحميل",
+    "playlist": "تحميل قائمة التشغيل",
+    "rss": "RSS",
+    "subscriptions": "الاشتراكات",
+    "preferences": "التفضيلات",
+    "supportedSites": "المواقع المدعومة",
+    "theme": "المظهر:"
+  },
+  "notifications": {
+    "copyFailed": "فشل في النسخ إلى الحافظة",
+    "downloadCompleted": "اكتمل التحميل",
+    "downloadFailed": "فشل التحميل",
+    "downloadStarted": "بدأ التحميل",
+    "itemRemoved": "تم إزالة العنصر",
+    "openFileFailed": "فشل في فتح الملف",
+    "openFolderFailed": "فشل في فتح المجلد",
+    "removeFailed": "فشل في إزالة العنصر",
+    "settingsSaved": "تم حفظ الإعدادات",
+    "urlCopied": "تم نسخ الرابط إلى الحافظة",
+    "videoCopied": "تم نسخ الفيديو إلى الحافظة"
+  },
+  "playlist": {
+    "badgeLabel": "قائمة التشغيل",
+    "clearPreview": "مسح المعاينة",
+    "comingSoon": "ميزة تحميل قائمة التشغيل قريباً!",
+    "completed": "تم تحميل قائمة التشغيل",
+    "description": "تحميل جميع الفيديوهات من قائمة تشغيل أو قناة YouTube",
+    "downloadFailed": "فشل في بدء تحميل قائمة التشغيل",
+    "downloadPlaylist": "تحميل قائمة التشغيل",
+    "downloadStarted": "بدأ تحميل {{count}} فيديو من قائمة التشغيل",
+    "downloadType": "نوع التحميل",
+    "downloading": "جاري تحميل قائمة التشغيل:",
+    "endIndex": "النهاية",
+    "enterPlaylistUrl": "أدخل رابط قائمة التشغيل",
+    "fetchFailed": "فشل في جلب معلومات قائمة التشغيل",
+    "filenameFormat": "تنسيق اسم الملف لقوائم التشغيل",
+    "folderFormat": "تنسيق اسم المجلد لقوائم التشغيل",
+    "foundVideos": "تم العثور على {{count}} فيديو في قائمة التشغيل",
+    "groupActive": "{{count}} نشط",
+    "groupErrors": "{{count}} فشل",
+    "groupSummary": "{{completed}} / {{total}} مكتمل",
+    "linkLabel": "رابط قائمة التشغيل",
+    "noEntries": "لم يتم العثور على فيديوهات في قائمة التشغيل هذه",
+    "noEntriesInRange": "لا توجد فيديوهات في النطاق المحدد",
+    "noRangeSelected": "لم يتم تعيين النهاية - تم تحديد قائمة التشغيل الكاملة",
+    "playlistUrlDescription": "تحميل جميع الفيديوهات من قائمة تشغيل بشكل مجمع",
+    "positionLabel": "العنصر {{index}} من {{total}}",
+    "previewButton": "معاينة قائمة التشغيل",
+    "previewFailed": "فشل في معاينة قائمة التشغيل",
+    "previewSummary": "معاينة عناصر قائمة التشغيل قبل التحميل.",
+    "previewRequired": "معاينة قائمة التشغيل قبل التحميل.",
+    "range": "النطاق (اختياري)",
+    "resetToDefault": "إعادة تعيين إلى الافتراضي",
+    "selectedRange": "النطاق: {{start}}-{{end}}",
+    "showingCount": "عرض {{count}} فيديو",
+    "startIndex": "البداية (1)",
+    "title": "تحميل قائمة التشغيل",
+    "totalVideos": "إجمالي الفيديوهات: {{count}}",
+    "untitled": "قائمة تشغيل بدون عنوان"
+  },
+  "settings": {
+    "aboutTab": "حول",
+    "advanced": "متقدم",
+    "app": "إعدادات التطبيق",
+    "audio": "تفضيلات الصوت",
+    "browserForCookies": "اختر المتصفح لاستخدام ملفات تعريف الارتباط منه",
+    "browserForCookiesDescription": "المتصفح لاستخراج ملفات تعريف الارتباط منه للمصادقة",
+    "cookiesFile": "ملف ملفات تعريف الارتباط",
+    "cookiesFileDescription": "ملف ملفات تعريف الارتباط بتنسيق Netscape للتحميل للمصادقة",
+    "clearCookiesFile": "مسح",
+    "cookiesHelpTitle": "استخدام ملفات تعريف الارتباط",
+    "cookiesHelpBrowser": "اختر متصفحك أعلاه لإعادة استخدام جلسته الموقعة تلقائياً.",
+    "cookiesHelpFile": "قم بتصدير ملف ملفات تعريف الارتباط Netscape (راجع الأسئلة الشائعة لـ yt-dlp) واختره هنا عند الحاجة.",
+    "cookiesHelpFaq": "فتح الأسئلة الشائعة لملفات تعريف الارتباط في yt-dlp",
+    "openLinkError": "فشل في فتح الرابط",
+    "browserOptions": {
+      "brave": "Brave",
+      "chrome": "Chrome",
+      "edge": "Edge",
+      "firefox": "Firefox",
+      "safari": "Safari"
+    },
+    "configFile": "استخدام ملف التكوين",
+    "configFileDescription": "ملف تكوين مخصص لـ yt-dlp",
+    "clearConfigFile": "مسح",
+    "dark": "داكن",
+    "description": "تكوين تفضيلات التحميل وإعدادات التطبيق",
+    "directorySelectError": "فشل في اختيار المجلد",
+    "downloadPath": "موقع التحميل",
+    "downloadPathDescription": "اختر مكان حفظ الملفات المحملة",
+    "fileSelectError": "فشل في اختيار الملف",
+    "general": "عام",
+    "language": "اللغة",
+    "light": "فاتح",
+    "hideDockIcon": "إخفاء أيقونة Dock",
+    "hideDockIconDescription": "إزالة VidBee من Dock في macOS. استخدم شريط القائمة أو أيقونة الدرج لإعادة فتح التطبيق.",
+    "launchAtLogin": "بدء التشغيل عند تسجيل الدخول",
+    "launchAtLoginDescription": "فتح VidBee تلقائياً بعد تسجيل الدخول إلى جهاز الكمبيوتر الخاص بك.",
+    "launchAtLoginUnsupported": "البدء التلقائي متاح فقط على macOS و Windows.",
+    "enableAnalytics": "مساعدة في تحسين VidBee",
+    "enableAnalyticsDescription": "مشاركة بيانات الاستخدام المجهولة لمساعدتنا في فهم كيفية استخدام التطبيق وأولويات التحسينات.",
+    "maxConcurrentDownloads": "العدد الأقصى للتحميلات النشطة",
+    "maxConcurrentDownloadsDescription": "العدد الأقصى للتحميلات المتزامنة",
+    "none": "لا شيء",
+    "oneClickDownload": "تحميل بنقرة واحدة",
+    "oneClickDownloadDescription": "تفعيل التحميل بنقرة واحدة بالإعدادات الافتراضية",
+    "oneClickDownloadType": "نوع التحميل الافتراضي",
+    "oneClickDownloadTypeDescription": "اختر نوع التحميل الافتراضي للتحميلات بنقرة واحدة. تستخدم الجودة الإعداد المسبق أدناه.",
+    "oneClickQuality": "الجودة المفضلة",
+    "oneClickQualityDescription": "اختر الإعداد المسبق للجودة المستخدم للتحميلات بنقرة واحدة",
+    "oneClickQualityOptions": {
+      "auto": "تلقائي",
+      "bad": "سيء",
+      "best": "أفضل",
+      "good": "جيد",
+      "normal": "عادي",
+      "worst": "أسوأ"
+    },
+    "proxy": "الوكيل",
+    "proxyDescription": "خادم الوكيل لطلبات الشبكة",
+    "proxyPlaceholder": "http://proxy:port",
+    "selectConfigFile": "اختر ملف التكوين",
+    "selectPath": "اختر",
+    "showMoreFormats": "إظهار المزيد من خيارات التنسيق",
+    "showMoreFormatsDescription": "عرض خيارات التنسيق الإضافية في الواجهة",
+    "subscriptionDefaults": {
+      "filenameDescription": "النمط المستخدم عندما لا يتجاوز الاشتراك اسم ملفه.",
+      "intervalDescription": "عدد مرات فحص VidBee لكل تغذية اشتراك (1-24 ساعة)."
+    },
+    "system": "النظام",
+    "theme": "المظهر",
+    "themeDescription": "اختر مظهراً فاتحاً أو داكناً أو نظامياً لـ VidBee",
+    "title": "الإعدادات",
+    "tray": {
+      "quit": "إنهاء",
+      "showHome": "إظهار الصفحة الرئيسية"
+    },
+    "video": "تفضيلات الفيديو"
+  },
+  "subscriptions": {
+    "title": "الاشتراكات",
+    "subtitle": "{{count}} اشتراك{{count, plural, one {} other {}}}",
+    "description": "مراقبة تغذيات RSS تلقائياً ووضع التحميلات الجديدة في قائمة الانتظار دون عمل يدوي.",
+    "defaults": {
+      "title": "الإعدادات الافتراضية للأتمتة",
+      "description": "التحكم في مكان تخزين تحميلات الاشتراكات وعدد مرات فحص VidBee للفيديوهات الجديدة.",
+      "downloadDirectory": "مجلد التحميل",
+      "filenameTemplate": "قالب اسم الملف (الملف فقط)",
+      "checkInterval": "فترة الفحص (ساعات)",
+      "onlyLatest": "تحميل أحدث فيديو فقط",
+      "onlyLatestDescription": "عند التفعيل، يتخطى VidBee عناصر المتراكمة القديمة ويأخذ فقط آخر تحميل."
+    },
+    "add": {
+      "title": "إضافة RSS",
+      "description": "الصق رابط تغذية RSS. سيكتشف VidBee التغذية تلقائياً."
+    },
+    "fields": {
+      "url": "رابط التغذية",
+      "keywords": "مرشح الكلمات الرئيسية (مفصولة بفواصل)",
+      "tags": "علامات تلقائية",
+      "customDirectory": "مجلد مخصص",
+      "namingTemplate": "قالب اسم ملف مخصص (الملف فقط)",
+      "onlyLatest": "تحميل أحدث فيديو فقط",
+      "onlyLatestDescription": "تجاهل عناصر المتراكمة وجلب أحدث تحميل من هذه التغذية فقط.",
+      "enabled": "مفعل",
+      "disabled": "معطل",
+      "onlyLatestShort": "الأحدث فقط"
+    },
+    "placeholders": {
+      "url": "https://rsshub.app/youtube/user/@FKJ"
+    },
+    "actions": {
+      "add": "إضافة",
+      "refresh": "تحديث",
+      "edit": "تعديل",
+      "remove": "إزالة",
+      "save": "حفظ التغييرات",
+      "selectDirectory": "تصفح",
+      "enable": "تفعيل",
+      "disable": "تعطيل"
+    },
+    "items": {
+      "title": "آخر التحميلات ({{count}})",
+      "count": "{{count}} عنصر",
+      "empty": "لم يتم العثور على عناصر تغذية حديثة.",
+      "status": {
+        "queued": "في قائمة الانتظار",
+        "notQueued": "ليس في قائمة الانتظار",
+        "pending": "قيد الانتظار",
+        "downloading": "جاري التحميل",
+        "processing": "جاري المعالجة",
+        "completed": "مكتمل",
+        "error": "فشل",
+        "cancelled": "ملغي"
+      },
+      "fromChannel": "من {{channel}}",
+      "tooltip": {
+        "downloadStatus": "حالة التحميل: {{status}}",
+        "downloadPending": "في انتظار تفاصيل التحميل...",
+        "notQueued": "ليس في قائمة انتظار التحميل بعد"
+      },
+      "actions": {
+        "open": "فتح في المتصفح",
+        "queue": "إضافة إلى قائمة انتظار التحميل"
+      }
+    },
+    "labels": {
+      "subscription": "الاشتراك",
+      "unknown": "اشتراك غير معروف",
+      "noThumbnail": "لا توجد صورة مصغرة"
+    },
+    "notifications": {
+      "directoryError": "فشل في فتح منتقي المجلد.",
+      "missingUrl": "يرجى لصق رابط القناة أولاً.",
+      "created": "تمت إضافة الاشتراك",
+      "createError": "فشل في إضافة الاشتراك.",
+      "refreshStarted": "بدأ التحديث",
+      "removed": "تمت إزالة الاشتراك",
+      "updated": "تم تحديث الاشتراك",
+      "itemQueued": "تمت الإضافة إلى قائمة انتظار التحميل",
+      "itemAlreadyQueued": "هذا الفيديو موجود بالفعل في قائمة الانتظار",
+      "queueError": "فشل في الإضافة إلى قائمة انتظار التحميل.",
+      "openLinkError": "فشل في فتح رابط الفيديو.",
+      "resolveError": "فشل في حل رابط تغذية RSS."
+    },
+    "detectedFeed": "تم اكتشاف تغذية {{platform}} -> {{feed}}",
+    "detecting": "جاري اكتشاف التغذية...",
+    "latestVideo": "أحدث فيديو: {{title}}",
+    "lastChecked": "آخر فحص: {{time}}",
+    "never": "أبداً",
+    "empty": "لا توجد اشتراكات بعد. أضف قنواتك المفضلة لبدء التحميل التلقائي.",
+    "edit": {
+      "title": "تعديل {{name}}",
+      "description": "ضبط المرشحات والعلامات والتجاوزات لهذه التغذية."
+    },
+    "status": {
+      "title": "الحالة",
+      "up-to-date": "محدث",
+      "checking": "جاري الفحص",
+      "failed": "فشل",
+      "idle": "خامل",
+      "tooltip": {
+        "updatedAt": "محدث: {{time}}"
+      }
+    },
+    "rssHub": {
+      "title": "الاشتراكات الآلية مع RSSHub",
+      "description": "اجمع VidBee مع RSSHub لتمكين الاشتراكات والتحميلات الآلية من منصات مختلفة. بمجرد الإعداد، يعمل VidBee في الخلفية ويحمل تلقائياً أحدث الفيديوهات والمحتوى.",
+      "learnMore": "تعرف على المزيد حول RSSHub",
+      "openDocs": "فتح وثائق RSSHub",
+      "hint": "ليس لديك رابط تغذية RSS؟ استخدم RSSHub لإنشاء تغذيات RSS لـ YouTube و Twitter والآلاف من المنصات الأخرى."
+    }
+  },
+  "sites": {
+    "homeInlineDescription": "يدعم {{sites}} والمزيد.",
+    "moreDescription": "يتم تحديث قائمة yt-dlp الكاملة باستمرار من قبل المجتمع.",
+    "moreTitle": "تحتاج موقعاً آخر؟",
+    "openFullList": "فتح قائمة المواقع المدعومة الكاملة",
+    "pageDescription": "يستخدم VidBee yt-dlp تحت الغطاء للوصول إلى مئات المصادر.",
+    "pageIntro": "إليك الخدمات الرئيسية التي يقوم الناس بتحميلها منها في أغلب الأحيان.",
+    "pageTitle": "المواقع المدعومة",
+    "popular": {
+      "bandcamp": {
+        "description": "ألبومات الفنانين المستقلين وإصدارات المجتمع.",
+        "label": "Bandcamp"
+      },
+      "dailymotion": {
+        "description": "الأخبار العالمية والرياضة ومقاطع الترفيه.",
+        "label": "Dailymotion"
+      },
+      "facebook": {
+        "description": "مقاطع فيديو Feed و Watch و Reels من الصفحات العامة.",
+        "label": "Facebook"
+      },
+      "instagram": {
+        "description": "محتوى Feed و Stories و Reels و Highlights.",
+        "label": "Instagram"
+      },
+      "kick": {
+        "description": "البث المباشر للمبدعين وإعادة التشغيل على منصة Kick.",
+        "label": "Kick"
+      },
+      "linkedin": {
+        "description": "المحادثات المهنية والندوات عبر الويب ومقاطع الفيديو التعليمية.",
+        "label": "LinkedIn"
+      },
+      "mixcloud": {
+        "description": "مزج DJ وبرامج الراديو والصوت طويل الشكل.",
+        "label": "Mixcloud"
+      },
+      "niconico": {
+        "description": "أرشيف الرسوم المتحركة اليابانية والموسيقى والبث المباشر.",
+        "label": "Niconico"
+      },
+      "pinterest": {
+        "description": "دبابيس الأفكار ومقاطع كيفية القيام بذلك ومقاطع فيديو إلهام نمط الحياة.",
+        "label": "Pinterest"
+      },
+      "reddit": {
+        "description": "المقاطع المضمنة ومقاطع الفيديو المستضافة من المجتمعات.",
+        "label": "Reddit"
+      },
+      "soundcloud": {
+        "description": "مقاطع الموسيقى وقوائم التشغيل ومجموعات DJ.",
+        "label": "SoundCloud"
+      },
+      "tiktok": {
+        "description": "مقاطع فيديو قصيرة للهاتف المحمول والتأثيرات والبث المباشر.",
+        "label": "TikTok"
+      },
+      "tumblr": {
+        "description": "الوسائط الإبداعية قصيرة الشكل وتحريرات المعجبين.",
+        "label": "Tumblr"
+      },
+      "twitch": {
+        "description": "البث المباشر للألعاب والموسيقى و IRL و VODs.",
+        "label": "Twitch"
+      },
+      "twitter": {
+        "description": "منشورات الجدول الزمني وتسجيلات Spaces والبث.",
+        "label": "X (Twitter)"
+      },
+      "vimeo": {
+        "description": "استضافة فيديو عالية الجودة للمبدعين والأعمال.",
+        "label": "Vimeo"
+      },
+      "youtube": {
+        "description": "فيديو طويل الشكل والبث المباشر من المبدعين في جميع أنحاء العالم.",
+        "label": "YouTube"
+      },
+      "youtubemusic": {
+        "description": "مقاطع فيديو موسيقية رسمية وألبومات وعروض مباشرة.",
+        "label": "YouTube Music"
+      }
+    },
+    "popularSection": "المنصات الرئيسية",
+    "viewAll": "عرض جميع المواقع المدعومة"
+  }
+}

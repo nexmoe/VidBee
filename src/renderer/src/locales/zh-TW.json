@@ -2,8 +2,10 @@
   "about": {
     "actions": {
       "checkUpdates": "檢查更新",
+      "download": "下載",
       "email": "電子郵件",
       "feedback": "意見回饋",
+      "goToDownload": "前往下載頁面",
       "openRepo": "開啟 GitHub 儲存庫",
       "view": "檢視",
       "visit": "造訪"
@@ -14,6 +16,7 @@
     "betaProgramDescription": "搶先獲得預覽版和即將發布的新功能。",
     "betaProgramTitle": "預覽通道",
     "description": "VidBee 是一個基於 Node.js 和 Electron 構建的自由開源應用，使用 yt-dlp 來完成下載。",
+    "downloadingUpdate": "正在下載更新",
     "followAuthorActions": {
       "follow": "關注 @nexmoex"
     },
@@ -33,10 +36,15 @@
       "downloadError": "下載更新失敗",
       "downloadStarted": "開始下載...",
       "downloadUpdate": "下載並安裝更新 {{version}}？",
+      "manualDownloadAction": "立即下載",
       "noUpdatesAvailable": "您正在使用最新版本",
+      "restartNowAction": "立即重新啟動",
       "restartToUpdate": "立即重新啟動以安裝更新？",
+      "unknownErrorFallback": "未知錯誤",
       "updateAvailable": "發現新版本：{{version}}",
+      "updateAvailableMessage": "新版本 {{version}} 已推出。請從官方網站下載。",
       "updateDownloaded": "更新已下載，重新啟動以安裝",
+      "updateDownloadedVersion": "下載更新 {{version}}，重新啟動安裝",
       "updateError": "檢查更新失敗：{{error}}"
     },
     "preferencesDescription": "無需離開此頁即可調整更新設定。",
@@ -122,11 +130,39 @@
     "error": "錯誤",
     "fetch": "取得",
     "fetchingVideoInfo": "正在取得影片資訊...",
+    "goToSettings": "前往“設置”",
+    "hideDetails": "隱藏詳細信息",
     "history": "歷史",
     "imageLoadError": "圖片載入失敗",
     "imagePlaceholder": "暫無圖片",
     "infoUnavailable": "一鍵下載（資訊不可用）",
     "loading": "載入中",
+    "metadata": {
+      "audioCodec": "音頻編解碼器",
+      "codec": "編解碼器",
+      "completedAt": "完成於",
+      "createdAt": "創建於",
+      "description": "描述",
+      "downloadPath": "下載路徑",
+      "fileSize": "文件大小",
+      "format": "格式",
+      "formatNote": "格式註釋",
+      "fps": "FPS",
+      "height": "高度",
+      "playlist": "播放列表",
+      "protocol": "協定",
+      "quality": "品質",
+      "savedFile": "保存的文件",
+      "source": "來源",
+      "speed": "速度",
+      "startedAt": "開始於",
+      "subscription": "訂閱",
+      "tags": "標籤",
+      "url": "來源網址",
+      "videoCodec": "視頻編解碼器",
+      "views": "意見",
+      "width": "寬度"
+    },
     "moreOptions": "更多選項",
     "noActiveDownloads": "暫無進行中的下載",
     "noAudio": "無音訊",
@@ -134,6 +170,7 @@
     "noItems": "未找到項目",
     "oneClickDownload": "一鍵下載",
     "oneClickDownloadDescription": "使用預設設定直接下載，無需確認",
+    "oneClickDownloadEnabled": "已啟用一鍵下載。下載將直接以默認設置開始。",
     "oneClickDownloadNow": "立即下載",
     "oneClickDownloadStarted": "已使用預設設定開始下載",
     "paste": "貼上",
@@ -145,6 +182,7 @@
     "selectAudioFormat": "選擇音訊格式",
     "selectFormat": "選擇格式",
     "selectVideoFormat": "選擇影片格式",
+    "showDetails": "顯示詳情",
     "singleVideo": "單個影片",
     "speed": "速度",
     "title": "標題",
@@ -209,6 +247,8 @@
     "download": "下載",
     "playlist": "下載播放清單",
     "preferences": "偏好設定",
+    "rss": "RSS",
+    "subscriptions": "訂閱",
     "supportedSites": "支援的網站",
     "theme": "主題："
   },
@@ -226,6 +266,7 @@
     "videoCopied": "影片已複製到剪貼簿"
   },
   "playlist": {
+    "badgeLabel": "播放列表",
     "clearPreview": "清晰預覽",
     "comingSoon": "播放清單下載功能即將推出！",
     "completed": "播放清單已下載",
@@ -277,6 +318,7 @@
       "firefox": "Firefox",
       "safari": "Safari"
     },
+    "clearConfigFile": "清除",
     "clearCookiesFile": "清除",
     "configFile": "使用設定檔",
     "configFileDescription": "yt-dlp 的自訂設定檔",
@@ -291,9 +333,16 @@
     "directorySelectError": "選擇目錄失敗",
     "downloadPath": "下載位置",
     "downloadPathDescription": "選擇儲存下載檔案的位置",
+    "enableAnalytics": "幫助改進 VidBee",
+    "enableAnalyticsDescription": "共享匿名使用數據，幫助我們了解應用程序的使用情況並確定改進的優先順序。",
     "fileSelectError": "選擇檔案失敗",
     "general": "一般",
+    "hideDockIcon": "隱藏 Dock 圖標",
+    "hideDockIconDescription": "從 macOS Dock 中刪除 VidBee。使用菜單欄或託盤圖標重新打開應用程序。",
     "language": "語言",
+    "launchAtLogin": "啟動時啟動",
+    "launchAtLoginDescription": "登錄計算機後自動打開 VidBee。",
+    "launchAtLoginUnsupported": "自動啟動僅適用於 macOS 和 Windows。",
     "light": "淺色",
     "maxConcurrentDownloads": "最大活動下載數",
     "maxConcurrentDownloadsDescription": "最大同時下載數量",
@@ -320,6 +369,10 @@
     "selectPath": "選擇",
     "showMoreFormats": "顯示更多格式選項",
     "showMoreFormatsDescription": "在介面中顯示額外的格式選項",
+    "subscriptionDefaults": {
+      "filenameDescription": "當訂閱不覆蓋其文件名時使用的模式。",
+      "intervalDescription": "VidBee 檢查每個訂閱源的頻率（1-24 小時）。"
+    },
     "system": "系統",
     "theme": "主題",
     "themeDescription": "為 VidBee 選擇淺色、深色或系統主題",
@@ -414,5 +467,119 @@
     },
     "popularSection": "主流平台",
     "viewAll": "檢視全部支援的網站"
+  },
+  "subscriptions": {
+    "actions": {
+      "add": "添加",
+      "disable": "禁用",
+      "edit": "編輯",
+      "enable": "使能夠",
+      "refresh": "重新整理",
+      "remove": "消除",
+      "save": "保存更改",
+      "selectDirectory": "瀏覽"
+    },
+    "add": {
+      "description": "粘貼 RSS 源鏈接。 VidBee 將自動檢測提要。",
+      "title": "添加RSS"
+    },
+    "defaults": {
+      "checkInterval": "檢查間隔（小時）",
+      "description": "控制訂閱下載的存儲位置以及 VidBee 檢查新視頻的頻率。",
+      "downloadDirectory": "下載目錄",
+      "filenameTemplate": "文件名模板（僅限文件）",
+      "onlyLatest": "僅下載最新視頻",
+      "onlyLatestDescription": "啟用後，VidBee 會跳過較舊的積壓項目，僅獲取最新上傳的項目。",
+      "title": "自動化默認值"
+    },
+    "description": "自動監控 RSS 源並對新下載進行排隊，無需手動操作。",
+    "detectedFeed": "檢測到 {{platform}} feed -> {{feed}}",
+    "detecting": "檢測飼料...",
+    "edit": {
+      "description": "調整此提要的過濾器、標籤和覆蓋。",
+      "title": "編輯{{name}}"
+    },
+    "empty": "還沒有訂閱。添加您喜愛的頻道以開始自動下載。",
+    "fields": {
+      "customDirectory": "自定義目錄",
+      "disabled": "殘疾人",
+      "enabled": "啟用",
+      "keywords": "關鍵字過濾器（逗號分隔）",
+      "namingTemplate": "自定義文件名模板（僅限文件）",
+      "onlyLatest": "僅下載最新視頻",
+      "onlyLatestDescription": "忽略積壓的項目並僅從此源中獲取最新上傳的內容。",
+      "onlyLatestShort": "僅最新",
+      "tags": "自動標籤",
+      "url": "提要網址"
+    },
+    "items": {
+      "actions": {
+        "open": "在瀏覽器中打開",
+        "queue": "添加到下載隊列"
+      },
+      "count": "{{count}} 件",
+      "empty": "未找到最近的 Feed 項目。",
+      "fromChannel": "來自{{頻道}}",
+      "status": {
+        "cancelled": "取消",
+        "completed": "完全的",
+        "downloading": "正在下載",
+        "error": "失敗的",
+        "notQueued": "未排隊",
+        "pending": "待辦的",
+        "processing": "加工",
+        "queued": "排隊"
+      },
+      "title": "最新上傳 ({{count}})",
+      "tooltip": {
+        "downloadPending": "等待下載詳細信息...",
+        "downloadStatus": "下載狀態：{{status}}",
+        "notQueued": "尚未在下載隊列中"
+      }
+    },
+    "labels": {
+      "noThumbnail": "無縮略圖",
+      "subscription": "訂閱",
+      "unknown": "未知訂閱"
+    },
+    "lastChecked": "最後檢查時間：{{time}}",
+    "latestVideo": "最新視頻：{{title}}",
+    "never": "絕不",
+    "notifications": {
+      "createError": "添加訂閱失敗。",
+      "created": "已添加訂閱",
+      "directoryError": "無法打開目錄選擇器。",
+      "itemAlreadyQueued": "該視頻已排隊",
+      "itemQueued": "添加到下載隊列",
+      "missingUrl": "請先粘貼頻道鏈接。",
+      "openLinkError": "無法打開視頻鏈接。",
+      "queueError": "無法添加到下載隊列。",
+      "refreshStarted": "刷新開始",
+      "removed": "訂閱已刪除",
+      "resolveError": "無法解析 RSS 源 URL。",
+      "updated": "訂閱已更新"
+    },
+    "placeholders": {
+      "url": "https://rsshub.app/youtube/user/@FKJ"
+    },
+    "rssHub": {
+      "description": "將 VidBee 與 RSSHub 結合起來，可以從各種平台實現自動訂閱和下載。設置完成後，VidBee 將在後台運行並自動下載最新的視頻和內容。",
+      "hint": "沒有 RSS 源 URL？使用 RSSHub 為 YouTube、Twitter 和數千個其他平台生成 RSS 源。",
+      "learnMore": "了解有關 RSSHub 的更多信息",
+      "openDocs": "打開 RSSHub 文檔",
+      "title": "使用 RSSHub 自動訂閱"
+    },
+    "status": {
+      "checking": "檢查",
+      "failed": "失敗的",
+      "idle": "閒置的",
+      "title": "地位",
+      "tooltip": {
+        "updatedAt": "更新時間：{{時間}}"
+      },
+      "up-to-date": "最新"
+    },
+    "subtitle": "{{count}} 訂閱{{count，複數，一個 {} 其它 {s}}}",
+    "title": "訂閱"
   }
 }
