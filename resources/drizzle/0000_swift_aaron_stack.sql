@@ -1,0 +1,66 @@
+CREATE TABLE `download_history` (
+	`id` text PRIMARY KEY NOT NULL,
+	`url` text NOT NULL,
+	`title` text NOT NULL,
+	`thumbnail` text,
+	`type` text NOT NULL,
+	`status` text NOT NULL,
+	`download_path` text,
+	`saved_file_name` text,
+	`file_size` integer,
+	`duration` integer,
+	`downloaded_at` integer NOT NULL,
+	`completed_at` integer,
+	`sort_key` integer NOT NULL,
+	`error` text,
+	`description` text,
+	`channel` text,
+	`uploader` text,
+	`view_count` integer,
+	`tags` text,
+	`origin` text,
+	`subscription_id` text,
+	`selected_format` text,
+	`playlist_id` text,
+	`playlist_title` text,
+	`playlist_index` integer,
+	`playlist_size` integer
+);
+--> statement-breakpoint
+CREATE TABLE `subscription_items` (
+	`subscription_id` text NOT NULL,
+	`item_id` text NOT NULL,
+	`title` text NOT NULL,
+	`url` text NOT NULL,
+	`published_at` integer NOT NULL,
+	`thumbnail` text,
+	`added` integer NOT NULL,
+	`download_id` text,
+	`created_at` integer NOT NULL,
+	`updated_at` integer NOT NULL,
+	PRIMARY KEY(`subscription_id`, `item_id`)
+);
+--> statement-breakpoint
+CREATE INDEX `subscription_items_subscription_idx` ON `subscription_items` (`subscription_id`);--> statement-breakpoint
+CREATE TABLE `subscriptions` (
+	`id` text PRIMARY KEY NOT NULL,
+	`title` text NOT NULL,
+	`source_url` text NOT NULL,
+	`feed_url` text NOT NULL,
+	`platform` text NOT NULL,
+	`keywords` text NOT NULL,
+	`tags` text NOT NULL,
+	`only_latest` integer NOT NULL,
+	`enabled` integer NOT NULL,
+	`cover_url` text,
+	`latest_video_title` text,
+	`latest_video_published_at` integer,
+	`last_checked_at` integer,
+	`last_success_at` integer,
+	`status` text NOT NULL,
+	`last_error` text,
+	`created_at` integer NOT NULL,
+	`updated_at` integer NOT NULL,
+	`download_directory` text,
+	`naming_template` text
+);

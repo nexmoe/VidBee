@@ -8,6 +8,13 @@ import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import { app } from 'electron'
 import log from 'electron-log/main'
 import type { DownloadHistoryItem } from '../../shared/types'
+import { runMigrations } from './database/migrate'
+import {
+  type DownloadHistoryInsert,
+  type DownloadHistoryRow,
+  downloadHistoryTable
+} from './database/schema'
+import { getDatabaseFilePath } from './database-path'
 
 const logger = log.scope('history-manager')
 
@@ -136,35 +143,6 @@ const parseTags = (value: string | null): string[] | undefined => {
   return parsed.length > 0 ? parsed : undefined
 }
 
-const downloadHistoryTable = sqliteTable('download_history', {
-  id: text('id').primaryKey(),
-  url: text('url').notNull(),
-  title: text('title').notNull(),
-  thumbnail: text('thumbnail'),
-  type: text('type').notNull(),
-  status: text('status').notNull(),
-  downloadPath: text('download_path'),
-  savedFileName: text('saved_file_name'),
-  fileSize: integer('file_size', { mode: 'number' }),
-  duration: integer('duration', { mode: 'number' }),
-  downloadedAt: integer('downloaded_at', { mode: 'number' }).notNull(),
-  completedAt: integer('completed_at', { mode: 'number' }),
-  sortKey: integer('sort_key', { mode: 'number' }).notNull(),
-  error: text('error'),
-  description: text('description'),
-  channel: text('channel'),
-  uploader: text('uploader'),
-  viewCount: integer('view_count', { mode: 'number' }),
-  tags: text('tags'),
-  origin: text('origin'),
-  subscriptionId: text('subscription_id'),
-  selectedFormat: text('selected_format'),
-  playlistId: text('playlist_id'),
-  playlistTitle: text('playlist_title'),
-  playlistIndex: integer('playlist_index', { mode: 'number' }),
-  playlistSize: integer('playlist_size', { mode: 'number' })
-})
-
 const legacyDownloadHistoryTable = sqliteTable('download_history_legacy', {
   id: text('id').primaryKey(),
   status: text('status').notNull(),
@@ -173,9 +151,6 @@ const legacyDownloadHistoryTable = sqliteTable('download_history_legacy', {
   sortKey: integer('sort_key', { mode: 'number' }).notNull(),
   payload: text('payload').notNull()
 })
-
-type DownloadHistoryRow = typeof downloadHistoryTable.$inferSelect
-type DownloadHistoryInsert = typeof downloadHistoryTable.$inferInsert
 type LegacyDownloadHistoryRow = typeof legacyDownloadHistoryTable.$inferSelect
 
 class HistoryManager {
@@ -211,7 +186,7 @@ class HistoryManager {
     sqlite.pragma('foreign_keys = ON')
 
     const database = drizzle(sqlite)
-    database.run(createDownloadHistoryTableSql)
+    runMigrations(database)
 
     this.db = database
     logger.info(`history-db initialized at ${databasePath}`)
@@ -219,7 +194,7 @@ class HistoryManager {
   }
 
   private getDatabasePath(): string {
-    return join(app.getPath('userData'), 'download-history.sqlite')
+    return getDatabaseFilePath()
   }
 
   private getLegacyStorePath(): string {

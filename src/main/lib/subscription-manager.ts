@@ -1,14 +1,11 @@
 import { randomUUID } from 'node:crypto'
 import { EventEmitter } from 'node:events'
 import fs from 'node:fs'
-import { join } from 'node:path'
 import type { Database as BetterSqlite3Instance } from 'better-sqlite3'
 import DatabaseConstructor from 'better-sqlite3'
 import { and, desc, eq, inArray } from 'drizzle-orm'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import { drizzle } from 'drizzle-orm/better-sqlite3'
-import { index, integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core'
-import { app } from 'electron'
 import log from 'electron-log/main'
 import type {
   SubscriptionCreatePayload,
@@ -18,6 +15,15 @@ import type {
   SubscriptionUpdatePayload
 } from '../../shared/types'
 import { sanitizeFilenameTemplate } from '../download-engine/args-builder'
+import { runMigrations } from './database/migrate'
+import {
+  type SubscriptionInsert,
+  type SubscriptionItemRow,
+  type SubscriptionRow,
+  subscriptionItemsTable,
+  subscriptionsTable
+} from './database/schema'
+import { getDatabaseFilePath } from './database-path'
 
 const sanitizeList = (values?: string[]): string[] => {
   if (!values || values.length === 0) {
@@ -55,56 +61,6 @@ const parseStringArray = (value: string | null | undefined): string[] => {
 }
 
 const stringifyArray = (values: string[]): string => JSON.stringify(sanitizeList(values))
-
-const subscriptionsTable = sqliteTable('subscriptions', {
-  id: text('id').primaryKey(),
-  title: text('title').notNull(),
-  sourceUrl: text('source_url').notNull(),
-  feedUrl: text('feed_url').notNull(),
-  platform: text('platform').notNull(),
-  keywords: text('keywords').notNull(),
-  tags: text('tags').notNull(),
-  onlyDownloadLatest: integer('only_latest', { mode: 'number' }).notNull(),
-  enabled: integer('enabled', { mode: 'number' }).notNull(),
-  coverUrl: text('cover_url'),
-  latestVideoTitle: text('latest_video_title'),
-  latestVideoPublishedAt: integer('latest_video_published_at', { mode: 'number' }),
-  lastCheckedAt: integer('last_checked_at', { mode: 'number' }),
-  lastSuccessAt: integer('last_success_at', { mode: 'number' }),
-  status: text('status').notNull(),
-  lastError: text('last_error'),
-  createdAt: integer('created_at', { mode: 'number' }).notNull(),
-  updatedAt: integer('updated_at', { mode: 'number' }).notNull(),
-  downloadDirectory: text('download_directory'),
-  namingTemplate: text('naming_template')
-})
-
-const subscriptionItemsTable = sqliteTable(
-  'subscription_items',
-  {
-    subscriptionId: text('subscription_id').notNull(),
-    itemId: text('item_id').notNull(),
-    title: text('title').notNull(),
-    url: text('url').notNull(),
-    publishedAt: integer('published_at', { mode: 'number' }).notNull(),
-    thumbnail: text('thumbnail'),
-    added: integer('added', { mode: 'number' }).notNull(),
-    downloadId: text('download_id'),
-    createdAt: integer('created_at', { mode: 'number' }).notNull(),
-    updatedAt: integer('updated_at', { mode: 'number' }).notNull()
-  },
-  (table) => ({
-    pk: primaryKey({
-      columns: [table.subscriptionId, table.itemId],
-      name: 'subscription_items_pk'
-    }),
-    subscriptionIdx: index('subscription_items_subscription_idx').on(table.subscriptionId)
-  })
-)
-
-type SubscriptionRow = typeof subscriptionsTable.$inferSelect
-type SubscriptionInsert = typeof subscriptionsTable.$inferInsert
-type SubscriptionItemRow = typeof subscriptionItemsTable.$inferSelect
 
 export class SubscriptionManager extends EventEmitter {
   private sqlite: BetterSqlite3Instance | null = null
@@ -338,55 +294,7 @@ export class SubscriptionManager extends EventEmitter {
     this.sqlite.pragma('journal_mode = WAL')
     this.sqlite.pragma('foreign_keys = ON')
     this.db = drizzle(this.sqlite)
-    this.sqlite
-      .prepare(
-        `CREATE TABLE IF NOT EXISTS subscriptions (
-          id TEXT PRIMARY KEY,
-          title TEXT NOT NULL,
-          source_url TEXT NOT NULL,
-          feed_url TEXT NOT NULL,
-          platform TEXT NOT NULL,
-          keywords TEXT NOT NULL,
-          tags TEXT NOT NULL,
-          only_latest INTEGER NOT NULL,
-          enabled INTEGER NOT NULL,
-          cover_url TEXT,
-          latest_video_title TEXT,
-          latest_video_published_at INTEGER,
-          last_checked_at INTEGER,
-          last_success_at INTEGER,
-          status TEXT NOT NULL,
-          last_error TEXT,
-          created_at INTEGER NOT NULL,
-          updated_at INTEGER NOT NULL,
-          download_directory TEXT,
-          naming_template TEXT
-        )`
-      )
-      .run()
-
-    this.sqlite
-      .prepare(
-        `CREATE TABLE IF NOT EXISTS subscription_items (
-          subscription_id TEXT NOT NULL,
-          item_id TEXT NOT NULL,
-          title TEXT NOT NULL,
-          url TEXT NOT NULL,
-          published_at INTEGER NOT NULL,
-          thumbnail TEXT,
-          added INTEGER NOT NULL,
-          download_id TEXT,
-          created_at INTEGER NOT NULL,
-          updated_at INTEGER NOT NULL,
-          PRIMARY KEY (subscription_id, item_id)
-        )`
-      )
-      .run()
-    this.sqlite
-      .prepare(
-        'CREATE INDEX IF NOT EXISTS subscription_items_subscription_idx ON subscription_items (subscription_id)'
-      )
-      .run()
+    runMigrations(this.db)
     this.ensureSubscriptionsSchema()
     this.ensureItemsSchema()
     log.info('subscriptions: database initialized at', databasePath)
@@ -580,7 +488,7 @@ export class SubscriptionManager extends EventEmitter {
   }
 
   private getDatabasePath(): string {
-    return join(app.getPath('userData'), 'subscriptions.sqlite')
+    return getDatabaseFilePath()
   }
 
   private migrateLegacyStore(): void {

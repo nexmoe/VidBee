@@ -19,7 +19,8 @@
     "build:win": "node scripts/check-ytdlp.js win && pnpm run build && electron-builder --win",
     "build:mac": "node scripts/check-ytdlp.js mac && pnpm run build && electron-builder --mac --x64 --arm64",
     "build:linux": "node scripts/check-ytdlp.js linux && pnpm run build && electron-builder --linux",
-    "release": "git checkout main && git pull && pnpm run check && bumpp"
+    "release": "git checkout main && git pull && pnpm run check && bumpp",
+    "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.2",
@@ -77,6 +78,7 @@
     "@types/react-dom": "^19.1.9",
     "@vitejs/plugin-react": "^5.0.3",
     "bumpp": "^10.3.1",
+    "drizzle-kit": "^0.31.7",
     "electron": "^38.1.2",
     "electron-builder": "^25.1.8",
     "electron-vite": "^4.0.1",
