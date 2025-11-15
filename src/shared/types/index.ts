@@ -265,6 +265,7 @@ export interface AppSettings {
   oneClickQuality: OneClickQualityPreset
   closeToTray: boolean
   hideDockIcon: boolean
+  launchAtLogin: boolean
   autoUpdate: boolean
   subscriptionFilenameTemplate: string
   subscriptionOnlyLatestDefault: boolean
@@ -288,6 +289,7 @@ export const defaultSettings: AppSettings = {
   oneClickQuality: 'best',
   closeToTray: false,
   hideDockIcon: false,
+  launchAtLogin: false,
   autoUpdate: true,
   subscriptionFilenameTemplate: '%(uploader)s - %(title)s.%(ext)s',
   subscriptionOnlyLatestDefault: true,
