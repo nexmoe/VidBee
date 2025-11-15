@@ -395,6 +395,8 @@ class DownloadEngine extends EventEmitter {
 
     const createdAt = Date.now()
     const settings = settingsManager.getAll()
+    const targetDownloadPath = options.customDownloadPath?.trim() || settings.downloadPath
+    const origin = options.origin ?? 'manual'
 
     const item: DownloadItem = {
       id,
@@ -402,7 +404,10 @@ class DownloadEngine extends EventEmitter {
       title: 'Downloading...',
       type: options.type,
       status: 'pending' as const,
-      createdAt
+      createdAt,
+      tags: options.tags,
+      origin,
+      subscriptionId: options.subscriptionId
     }
 
     this.queue.add(id, options, item)
@@ -411,7 +416,10 @@ class DownloadEngine extends EventEmitter {
       title: item.title,
       status: 'pending',
       downloadedAt: createdAt,
-      downloadPath: settings.downloadPath
+      downloadPath: targetDownloadPath,
+      tags: options.tags,
+      origin,
+      subscriptionId: options.subscriptionId
     })
   }
 
@@ -419,7 +427,8 @@ class DownloadEngine extends EventEmitter {
     scopedLoggers.download.info('Starting download execution for ID:', id, 'URL:', options.url)
     const ytdlp = ytdlpManager.getInstance()
     const settings = settingsManager.getAll()
-    const downloadPath = settings.downloadPath
+    const defaultDownloadPath = settings.downloadPath
+    const resolvedDownloadPath = options.customDownloadPath?.trim() || defaultDownloadPath
 
     // Set environment variables for proper encoding on Windows
     if (process.platform === 'win32') {
@@ -430,9 +439,8 @@ class DownloadEngine extends EventEmitter {
     let availableFormats: VideoFormat[] = []
     let selectedFormat: VideoFormat | undefined
     let actualFormat: string | null = null
-    let actualQuality: string | null = null
-    let actualCodec: string | null = null
     let videoInfo: VideoInfo | undefined
+    let lastKnownOutputPath: string | undefined
 
     // First, get detailed video info to capture basic metadata and formats
     try {
@@ -444,20 +452,6 @@ class DownloadEngine extends EventEmitter {
 
       if (selectedFormat) {
         actualFormat = selectedFormat.ext || actualFormat
-
-        if (selectedFormat.height) {
-          actualQuality = `${selectedFormat.height}p${
-            selectedFormat.fps && selectedFormat.fps === 60 ? '60' : ''
-          }`
-        } else if (selectedFormat.format_note) {
-          actualQuality = selectedFormat.format_note
-        }
-
-        if (options.type === 'audio' || options.type === 'extract') {
-          actualCodec = selectedFormat.acodec || actualCodec
-        } else {
-          actualCodec = selectedFormat.vcodec || selectedFormat.acodec || actualCodec
-        }
       }
 
       this.updateDownloadInfo(id, {
@@ -502,18 +496,6 @@ class DownloadEngine extends EventEmitter {
       selectedFormat = candidate
       actualFormat = candidate.ext || actualFormat
 
-      if (candidate.height) {
-        actualQuality = `${candidate.height}p${candidate.fps === 60 ? '60' : ''}`
-      } else if (candidate.format_note) {
-        actualQuality = candidate.format_note
-      }
-
-      if (options.type === 'audio' || options.type === 'extract') {
-        actualCodec = candidate.acodec || actualCodec
-      } else {
-        actualCodec = candidate.vcodec || candidate.acodec || actualCodec
-      }
-
       this.updateDownloadInfo(id, {
         selectedFormat: candidate
       })
@@ -521,7 +503,39 @@ class DownloadEngine extends EventEmitter {
       return true
     }
 
-    const args = buildDownloadArgs(options, downloadPath, settings)
+    const args = buildDownloadArgs(options, resolvedDownloadPath, settings)
+
+    const captureOutputPath = (rawPath: string | undefined): void => {
+      if (!rawPath) {
+        return
+      }
+      const trimmed = rawPath.trim().replace(/^"|"$/g, '')
+      if (!trimmed) {
+        return
+      }
+      lastKnownOutputPath = path.isAbsolute(trimmed)
+        ? trimmed
+        : path.join(resolvedDownloadPath, trimmed)
+    }
+
+    const extractOutputPathFromLog = (message: string): void => {
+      const destinationMatch = message.match(/Destination:\s*(.+)$/)
+      if (destinationMatch) {
+        captureOutputPath(destinationMatch[1])
+        return
+      }
+
+      const mergingMatch = message.match(/Merging formats into\s+"(.+?)"/)
+      if (mergingMatch) {
+        captureOutputPath(mergingMatch[1])
+        return
+      }
+
+      const movingMatch = message.match(/Moving file to\s+"(.+?)"/)
+      if (movingMatch) {
+        captureOutputPath(movingMatch[1])
+      }
+    }
 
     // Check if format selector contains '+' which means video and audio will be merged
     const formatSelector =
@@ -629,16 +643,6 @@ class DownloadEngine extends EventEmitter {
           if (extMatch && !actualFormat) {
             actualFormat = extMatch[1]
           }
-
-          const heightMatch = formatInfo.match(/(\d+)p/)
-          if (heightMatch && !actualQuality) {
-            actualQuality = `${heightMatch[1]}p`
-          }
-
-          const codecMatch = formatInfo.match(/(?:vcodec|acodec)[:\s]*([^\s,]+)/)
-          if (codecMatch && !actualCodec) {
-            actualCodec = codecMatch[1]
-          }
         }
       }
 
@@ -648,6 +652,10 @@ class DownloadEngine extends EventEmitter {
         if (formatMatch) {
           applySelectedFormat(formatMatch[1])
         }
+      }
+
+      if (eventType === 'download' || eventType === 'info') {
+        extractOutputPathFromLog(eventData)
       }
     })
 
@@ -675,32 +683,44 @@ class DownloadEngine extends EventEmitter {
           extension = actualFormat || 'mp4'
         }
 
-        const fileName = `${sanitizedTitle}.${extension}`
-        const finalOutputPath = path.join(downloadPath, fileName)
+        const fallbackFileName = `${sanitizedTitle}.${extension}`
+        const fallbackOutputPath = path.join(resolvedDownloadPath, fallbackFileName)
 
         scopedLoggers.download.info(
-          'Generated file path for ID:',
+          'Resolved output paths for ID:',
           id,
-          'Path:',
-          finalOutputPath,
+          'Primary:',
+          lastKnownOutputPath ?? fallbackOutputPath,
+          'Fallback:',
+          fallbackOutputPath,
           'Will merge:',
           willMerge
         )
 
         let fileSize: number | undefined
-        let actualFilePath = finalOutputPath
+        let actualFilePath = lastKnownOutputPath ?? fallbackOutputPath
+        const candidatePaths = lastKnownOutputPath
+          ? [lastKnownOutputPath, fallbackOutputPath]
+          : [fallbackOutputPath]
+
         try {
           const fs = await import('node:fs/promises')
-          // Try to find the actual file - yt-dlp may generate files with slightly different names
-          const stats = await fs.stat(finalOutputPath)
-          fileSize = stats.size
-          actualFilePath = finalOutputPath
-        } catch (error) {
-          // If the expected file doesn't exist, try to find it by scanning the directory
-          try {
-            const fs = await import('node:fs/promises')
-            const files = await fs.readdir(downloadPath)
-            // Look for files matching the title pattern with the correct extension
+          let located = false
+          for (const candidate of candidatePaths) {
+            if (!candidate) {
+              continue
+            }
+            try {
+              const stats = await fs.stat(candidate)
+              fileSize = stats.size
+              actualFilePath = candidate
+              located = true
+              break
+            } catch {}
+          }
+
+          if (!located) {
+            const files = await fs.readdir(resolvedDownloadPath)
             const matchingFiles = files.filter((file) => {
               const baseName = file.replace(/\.[^.]+$/, '')
               const fileExt = file.split('.').pop()?.toLowerCase()
@@ -711,30 +731,33 @@ class DownloadEngine extends EventEmitter {
             })
 
             if (matchingFiles.length > 0) {
-              // Use the most recently modified file if multiple matches
               const fileStats = await Promise.all(
                 matchingFiles.map(async (file) => {
-                  const filePath = path.join(downloadPath, file)
+                  const filePath = path.join(resolvedDownloadPath, file)
                   const stats = await fs.stat(filePath)
-                  return { file, path: filePath, mtime: stats.mtime, size: stats.size }
+                  return { path: filePath, mtime: stats.mtime, size: stats.size }
                 })
               )
               const mostRecent = fileStats.sort((a, b) => b.mtime.getTime() - a.mtime.getTime())[0]
               actualFilePath = mostRecent.path
               fileSize = mostRecent.size
+              located = true
               scopedLoggers.download.info('Found actual file:', actualFilePath, 'Size:', fileSize)
-            } else if (latestKnownSizeBytes !== undefined) {
-              fileSize = latestKnownSizeBytes
+            }
+          }
+
+          if (!fileSize && latestKnownSizeBytes !== undefined) {
+            fileSize = latestKnownSizeBytes
+            if (!located) {
               scopedLoggers.download.warn('File not found, using estimated size:', fileSize)
-            } else {
-              scopedLoggers.download.warn('Failed to find file for ID:', id, error)
             }
-          } catch (scanError) {
-            if (latestKnownSizeBytes !== undefined) {
-              fileSize = latestKnownSizeBytes
-            } else {
-              scopedLoggers.download.warn('Failed to get file size for ID:', id, scanError)
-            }
+          } else if (!fileSize) {
+            scopedLoggers.download.warn('Failed to find file for ID:', id)
+          }
+        } catch (error) {
+          scopedLoggers.download.warn('Failed to resolve file details for ID:', id, error)
+          if (latestKnownSizeBytes !== undefined) {
+            fileSize = latestKnownSizeBytes
           }
         }
 
@@ -748,9 +771,6 @@ class DownloadEngine extends EventEmitter {
           status: 'completed',
           completedAt: Date.now(),
           fileSize,
-          format: willMerge ? 'mp4' : actualFormat || undefined,
-          quality: actualQuality || undefined,
-          codec: actualCodec || undefined,
           savedFileName
         })
         scopedLoggers.download.info('Download completed successfully for ID:', id)
@@ -837,15 +857,6 @@ class DownloadEngine extends EventEmitter {
     if (updates.fileSize !== undefined) {
       historyUpdates.fileSize = updates.fileSize
     }
-    if (updates.format !== undefined) {
-      historyUpdates.format = updates.format
-    }
-    if (updates.quality !== undefined) {
-      historyUpdates.quality = updates.quality
-    }
-    if (updates.codec !== undefined) {
-      historyUpdates.codec = updates.codec
-    }
     if (updates.description !== undefined) {
       historyUpdates.description = updates.description
     }
@@ -873,6 +884,9 @@ class DownloadEngine extends EventEmitter {
     if (updates.playlistSize !== undefined) {
       historyUpdates.playlistSize = updates.playlistSize
     }
+    if (updates.selectedFormat !== undefined) {
+      historyUpdates.selectedFormat = updates.selectedFormat
+    }
     if (updates.status !== undefined) {
       historyUpdates.status = updates.status
     }
@@ -881,9 +895,6 @@ class DownloadEngine extends EventEmitter {
     }
     if (updates.error !== undefined) {
       historyUpdates.error = updates.error
-    }
-    if (updates.selectedFormat !== undefined) {
-      historyUpdates.selectedFormat = updates.selectedFormat
     }
     if (updates.savedFileName !== undefined) {
       historyUpdates.savedFileName = updates.savedFileName
@@ -913,14 +924,13 @@ class DownloadEngine extends EventEmitter {
       error,
       duration: completedDownload?.item.duration,
       fileSize: completedDownload?.item.fileSize,
-      format: completedDownload?.item.format,
-      quality: completedDownload?.item.quality,
-      codec: completedDownload?.item.codec,
       description: completedDownload?.item.description,
       channel: completedDownload?.item.channel,
       uploader: completedDownload?.item.uploader,
       viewCount: completedDownload?.item.viewCount,
       tags: completedDownload?.item.tags,
+      origin: completedDownload?.item.origin,
+      subscriptionId: completedDownload?.item.subscriptionId,
       playlistId: completedDownload?.item.playlistId,
       playlistTitle: completedDownload?.item.playlistTitle,
       playlistIndex: completedDownload?.item.playlistIndex,
@@ -934,6 +944,8 @@ class DownloadEngine extends EventEmitter {
     updates: Partial<DownloadHistoryItem>
   ): void {
     const existing = historyManager.getHistoryById(id)
+    const resolvedDownloadPath =
+      updates.downloadPath ?? existing?.downloadPath ?? options.customDownloadPath
     const base: DownloadHistoryItem = existing ?? {
       id,
       url: options.url,
@@ -941,21 +953,20 @@ class DownloadEngine extends EventEmitter {
       thumbnail: updates.thumbnail,
       type: options.type,
       status: updates.status || 'pending',
-      downloadPath: updates.downloadPath,
+      downloadPath: resolvedDownloadPath,
       savedFileName: updates.savedFileName,
       fileSize: updates.fileSize,
       duration: updates.duration,
       downloadedAt: updates.downloadedAt ?? Date.now(),
       completedAt: updates.completedAt,
       error: updates.error,
-      format: updates.format,
-      quality: updates.quality,
-      codec: updates.codec,
       description: updates.description,
       channel: updates.channel,
       uploader: updates.uploader,
       viewCount: updates.viewCount,
-      tags: updates.tags,
+      tags: updates.tags ?? options.tags,
+      origin: updates.origin ?? options.origin,
+      subscriptionId: updates.subscriptionId ?? options.subscriptionId,
       // Download-specific format info
       selectedFormat: updates.selectedFormat,
       playlistId: updates.playlistId,
@@ -972,7 +983,11 @@ class DownloadEngine extends EventEmitter {
       type: updates.type ?? base.type,
       title: updates.title ?? base.title,
       status: updates.status ?? base.status,
-      downloadedAt: updates.downloadedAt ?? base.downloadedAt
+      downloadedAt: updates.downloadedAt ?? base.downloadedAt,
+      downloadPath: resolvedDownloadPath ?? base.downloadPath,
+      tags: updates.tags ?? base.tags,
+      origin: updates.origin ?? base.origin,
+      subscriptionId: updates.subscriptionId ?? base.subscriptionId
     }
 
     historyManager.addHistoryItem(merged)

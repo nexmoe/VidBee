@@ -1,5 +1,7 @@
 import { type IpcContext, IpcMethod, IpcService } from 'electron-ipc-decorator'
 import type { AppSettings } from '../../../shared/types'
+import { sanitizeFilenameTemplate } from '../../download-engine/args-builder'
+import { subscriptionScheduler } from '../../lib/subscription-scheduler'
 import { settingsManager } from '../../settings'
 import { updateTrayMenu } from '../../tray'
 import { applyDockVisibility } from '../../utils/dock'
@@ -9,12 +11,20 @@ class SettingsService extends IpcService {
 
   @IpcMethod()
   get<K extends keyof AppSettings>(_context: IpcContext, key: K): AppSettings[K] {
-    return settingsManager.get(key)
+    const value = settingsManager.get(key)
+    if (key === 'subscriptionFilenameTemplate' && typeof value === 'string') {
+      return sanitizeFilenameTemplate(value) as AppSettings[K]
+    }
+    return value
   }
 
   @IpcMethod()
   set<K extends keyof AppSettings>(_context: IpcContext, key: K, value: AppSettings[K]): void {
-    settingsManager.set(key, value)
+    if (key === 'subscriptionFilenameTemplate' && typeof value === 'string') {
+      settingsManager.set(key, sanitizeFilenameTemplate(value) as AppSettings[K])
+    } else {
+      settingsManager.set(key, value)
+    }
 
     if (key === 'language') {
       updateTrayMenu()
@@ -23,15 +33,30 @@ class SettingsService extends IpcService {
     if (key === 'hideDockIcon') {
       applyDockVisibility(value as AppSettings['hideDockIcon'])
     }
+
+    if (key === 'subscriptionCheckIntervalHours') {
+      subscriptionScheduler.refreshInterval()
+    }
   }
 
   @IpcMethod()
   getAll(_context: IpcContext): AppSettings {
-    return settingsManager.getAll()
+    const settings = settingsManager.getAll()
+    if (typeof settings.subscriptionFilenameTemplate === 'string') {
+      settings.subscriptionFilenameTemplate = sanitizeFilenameTemplate(
+        settings.subscriptionFilenameTemplate
+      )
+    }
+    return settings
   }
 
   @IpcMethod()
   setAll(_context: IpcContext, settings: Partial<AppSettings>): void {
+    if (typeof settings.subscriptionFilenameTemplate === 'string') {
+      settings.subscriptionFilenameTemplate = sanitizeFilenameTemplate(
+        settings.subscriptionFilenameTemplate
+      )
+    }
     settingsManager.setAll(settings)
 
     if (settings.language) {
@@ -41,12 +66,17 @@ class SettingsService extends IpcService {
     if (typeof settings.hideDockIcon === 'boolean') {
       applyDockVisibility(settings.hideDockIcon)
     }
+
+    if (settings.subscriptionCheckIntervalHours !== undefined) {
+      subscriptionScheduler.refreshInterval()
+    }
   }
 
   @IpcMethod()
   reset(_context: IpcContext): void {
     settingsManager.reset()
     applyDockVisibility(settingsManager.get('hideDockIcon'))
+    subscriptionScheduler.refreshInterval()
   }
 }
 

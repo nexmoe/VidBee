@@ -8,6 +8,8 @@ import { configureLogger } from './config/logger-config'
 import { services } from './ipc'
 import { downloadEngine } from './lib/download-engine'
 import { ffmpegManager } from './lib/ffmpeg-manager'
+import { subscriptionManager } from './lib/subscription-manager'
+import { subscriptionScheduler } from './lib/subscription-scheduler'
 import { ytdlpManager } from './lib/ytdlp-manager'
 import { settingsManager } from './settings'
 import { createTray, destroyTray } from './tray'
@@ -21,6 +23,10 @@ configureLogger()
 
 let mainWindow: BrowserWindow | null = null
 let isQuitting = false
+
+subscriptionManager.on('subscriptions:updated', (subscriptions) => {
+  mainWindow?.webContents.send('subscriptions:updated', subscriptions)
+})
 
 export function createWindow(): void {
   const isMac = process.platform === 'darwin'
@@ -79,6 +85,10 @@ export function createWindow(): void {
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
+
+  mainWindow.webContents.on('did-finish-load', () => {
+    mainWindow?.webContents.send('subscriptions:updated', subscriptionManager.getAll())
+  })
 
   // Setup download engine event forwarding to renderer
   setupDownloadEvents()
@@ -213,6 +223,8 @@ app.whenReady().then(async () => {
 
   // Create system tray
   createTray()
+
+  subscriptionScheduler.start()
 
   app.on('activate', () => {
     // On macOS it's common to re-create a window in the app when the

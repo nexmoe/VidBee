@@ -1,5 +1,7 @@
 @import 'tailwindcss';
 @import './theme.css';
+@import "tw-animate-css";
+
 
 @layer base {
   * {
@@ -7,6 +9,10 @@
   }
   body {
     @apply text-foreground;
+  }
+  input::placeholder,
+  textarea::placeholder {
+    opacity: 0.4;
   }
 }
 

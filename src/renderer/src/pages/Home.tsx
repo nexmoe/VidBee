@@ -142,6 +142,7 @@ export function Home({ onOpenSupportedSites, onOpenSettings }: HomeProps) {
 
   const [url, setUrl] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
+  const [activeTab, setActiveTab] = useState<'single' | 'playlist'>('single')
   const inlinePreviewSites = popularSites
     .slice(0, 3)
     .map((site) => t(`sites.popular.${site.id}.label`))
@@ -536,262 +537,275 @@ export function Home({ onOpenSupportedSites, onOpenSettings }: HomeProps) {
       className="container mx-auto max-w-7xl p-6 space-y-6 overflow-hidden w-full"
       style={{ maxWidth: '100%' }}
     >
-      <Tabs defaultValue="single" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="single" className="flex items-center gap-2">
-            {t('download.singleVideo')}
-          </TabsTrigger>
-          <TabsTrigger value="playlist" className="flex items-center gap-2">
-            {t('playlist.title')}
-          </TabsTrigger>
-        </TabsList>
-
-        {/* Single Video Download Tab */}
-        <TabsContent value="single" className="space-y-6">
-          {/* URL Input Card */}
-          {!videoInfo && (
-            <Card>
-              <CardHeader>
-                <CardTitle>{t('download.enterUrl')}</CardTitle>
+      <Card>
+        <Tabs
+          defaultValue="single"
+          value={activeTab}
+          onValueChange={(value) => setActiveTab(value as 'single' | 'playlist')}
+          className="w-full gap-0"
+        >
+          <CardHeader>
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <CardTitle>
+                  {activeTab === 'single' ? t('download.enterUrl') : t('playlist.enterPlaylistUrl')}
+                </CardTitle>
                 <CardDescription>
-                  <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                    <span>{t('sites.homeInlineDescription', { sites: inlinePreviewSites })}</span>
-                    <Button
-                      type="button"
-                      variant="link"
-                      className="px-0"
-                      onClick={() => onOpenSupportedSites?.()}
-                    >
-                      {t('sites.viewAll')}
-                    </Button>
-                  </div>
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <Input
-                      ref={inputRef}
-                      placeholder={t('download.urlPlaceholder')}
-                      value={url}
-                      onChange={(e) => setUrl(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      className="pr-10"
-                      disabled={loading}
-                    />
-                    {loading && (
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                      </div>
-                    )}
-                  </div>
-                  <Button onClick={handlePasteUrl} variant="outline" disabled={loading}>
-                    {t('download.paste')}
-                  </Button>
-                  {settings.oneClickDownload ? (
-                    <Button onClick={handleOneClickDownload} disabled={loading || !url.trim()}>
-                      {loading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          {t('download.loading')}
-                        </>
-                      ) : (
-                        <>
-                          <Download className="mr-2 h-4 w-4" />
-                          {t('download.oneClickDownloadNow')}
-                        </>
-                      )}
-                    </Button>
-                  ) : (
-                    <Button onClick={handleFetchVideo} disabled={loading || !url.trim()}>
-                      {loading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          {t('download.loading')}
-                        </>
-                      ) : (
-                        <>
-                          <Search className="mr-2 h-4 w-4" />
-                          {t('download.fetch')}
-                        </>
-                      )}
-                    </Button>
-                  )}
-                </div>
-
-                {/* One-Click Download Info */}
-                {settings.oneClickDownload && (
-                  <div className="flex items-center justify-between gap-2 rounded-lg bg-card px-4 py-3 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <span>{t('download.oneClickDownloadEnabled')}</span>
-                    </div>
-                    {onOpenSettings && (
+                  {activeTab === 'single' ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span>{t('sites.homeInlineDescription', { sites: inlinePreviewSites })}</span>
                       <Button
                         type="button"
                         variant="link"
-                        className="h-auto px-2 py-0 text-xs"
-                        onClick={onOpenSettings}
+                        className="p-0  h-auto"
+                        onClick={() => onOpenSupportedSites?.()}
                       >
-                        {t('download.goToSettings')}
+                        {t('sites.viewAll')}
+                      </Button>
+                    </div>
+                  ) : (
+                    t('playlist.playlistUrlDescription')
+                  )}
+                </CardDescription>
+              </div>
+              <TabsList className="grid grid-cols-2">
+                <TabsTrigger value="single" className="flex items-center gap-2">
+                  {t('download.singleVideo')}
+                </TabsTrigger>
+                <TabsTrigger value="playlist" className="flex items-center gap-2">
+                  {t('playlist.title')}
+                </TabsTrigger>
+              </TabsList>
+            </div>
+          </CardHeader>
+
+          <CardContent>
+            {/* Single Video Download Tab */}
+            <TabsContent value="single" className="space-y-6 mt-0">
+              {/* URL Input Card */}
+              {!videoInfo && (
+                <div className="space-y-4">
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Input
+                        ref={inputRef}
+                        placeholder={t('download.urlPlaceholder')}
+                        value={url}
+                        onChange={(e) => setUrl(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        className="pr-10"
+                        disabled={loading}
+                      />
+                      {loading && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                        </div>
+                      )}
+                    </div>
+                    <Button onClick={handlePasteUrl} variant="outline" disabled={loading}>
+                      {t('download.paste')}
+                    </Button>
+                    {settings.oneClickDownload ? (
+                      <Button onClick={handleOneClickDownload} disabled={loading || !url.trim()}>
+                        {loading ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            {t('download.loading')}
+                          </>
+                        ) : (
+                          <>
+                            <Download className="mr-2 h-4 w-4" />
+                            {t('download.oneClickDownloadNow')}
+                          </>
+                        )}
+                      </Button>
+                    ) : (
+                      <Button onClick={handleFetchVideo} disabled={loading || !url.trim()}>
+                        {loading ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            {t('download.loading')}
+                          </>
+                        ) : (
+                          <>
+                            <Search className="mr-2 h-4 w-4" />
+                            {t('download.fetch')}
+                          </>
+                        )}
                       </Button>
                     )}
                   </div>
-                )}
 
-                {/* Error Display */}
-                {error && (
-                  <div className="rounded-lg border border-destructive bg-destructive/10 p-4">
-                    <div className="flex items-start gap-3">
-                      <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
-                      <div className="flex-1 space-y-2">
-                        <p className="text-sm font-medium text-destructive">
-                          {t('errors.fetchInfoFailed')}
-                        </p>
-                        <p className="text-sm text-muted-foreground">{error}</p>
+                  {/* One-Click Download Info */}
+                  {settings.oneClickDownload && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        <span>{t('download.oneClickDownloadEnabled')}</span>
+                      </div>
+                      {onOpenSettings && (
+                        <Button
+                          type="button"
+                          variant="link"
+                          className="h-auto px-2 py-0 text-xs"
+                          onClick={onOpenSettings}
+                        >
+                          {t('download.goToSettings')}
+                        </Button>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Error Display */}
+                  {error && (
+                    <div className="rounded-lg border border-destructive bg-destructive/10 p-4">
+                      <div className="flex items-start gap-3">
+                        <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
+                        <div className="flex-1 space-y-2">
+                          <p className="text-sm font-medium text-destructive">
+                            {t('errors.fetchInfoFailed')}
+                          </p>
+                          <p className="text-sm text-muted-foreground">{error}</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Video Info and Download Options */}
-          {videoInfo && !loading && <VideoInfoCard videoInfo={videoInfo} />}
-        </TabsContent>
-
-        {/* Playlist Download Tab */}
-        <TabsContent value="playlist" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('playlist.enterPlaylistUrl')}</CardTitle>
-              <CardDescription>{t('playlist.playlistUrlDescription')}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor={playlistUrlId}>{t('playlist.linkLabel')}</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id={playlistUrlId}
-                    placeholder="https://www.youtube.com/playlist?list=..."
-                    value={playlistUrl}
-                    onChange={(e) => {
-                      setPlaylistUrl(e.target.value)
-                      setPlaylistInfo(null)
-                      setPlaylistPreviewError(null)
-                    }}
-                    className="flex-1"
-                    disabled={playlistBusy}
-                  />
-                  <Button
-                    onClick={handlePastePlaylistUrl}
-                    variant="outline"
-                    disabled={playlistBusy}
-                  >
-                    {t('download.paste')}
-                  </Button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor={downloadTypeId}>{t('playlist.downloadType')}</Label>
-                  <Select
-                    value={downloadType}
-                    onValueChange={(v) => setDownloadType(v as 'video' | 'audio')}
-                    disabled={playlistBusy}
-                  >
-                    <SelectTrigger id={downloadTypeId}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="video">{t('download.video')}</SelectItem>
-                      <SelectItem value="audio">{t('download.audio')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-muted-foreground">{t('playlist.range')}</Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Input
-                      type="number"
-                      placeholder={t('playlist.startIndex')}
-                      value={startIndex}
-                      onChange={(e) => setStartIndex(e.target.value)}
-                      min="1"
-                      disabled={playlistBusy}
-                    />
-                    <Input
-                      type="number"
-                      placeholder={t('playlist.endIndex')}
-                      value={endIndex}
-                      onChange={(e) => setEndIndex(e.target.value)}
-                      min="1"
-                      disabled={playlistBusy}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                <Button
-                  onClick={handlePreviewPlaylist}
-                  variant="outline"
-                  className="w-full sm:w-auto"
-                  disabled={playlistBusy || !playlistUrl.trim()}
-                >
-                  {playlistPreviewLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      {t('download.loading')}
-                    </>
-                  ) : (
-                    <>
-                      <Search className="mr-2 h-5 w-5" />
-                      {t('playlist.previewButton')}
-                    </>
                   )}
-                </Button>
-                {playlistInfo && (
+                </div>
+              )}
+
+              {/* Video Info and Download Options */}
+              {videoInfo && !loading && <VideoInfoCard videoInfo={videoInfo} />}
+            </TabsContent>
+
+            {/* Playlist Download Tab */}
+            <TabsContent value="playlist" className="space-y-6 mt-0">
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor={playlistUrlId}>{t('playlist.linkLabel')}</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id={playlistUrlId}
+                      placeholder="https://www.youtube.com/playlist?list=..."
+                      value={playlistUrl}
+                      onChange={(e) => {
+                        setPlaylistUrl(e.target.value)
+                        setPlaylistInfo(null)
+                        setPlaylistPreviewError(null)
+                      }}
+                      className="flex-1"
+                      disabled={playlistBusy}
+                    />
+                    <Button
+                      onClick={handlePastePlaylistUrl}
+                      variant="outline"
+                      disabled={playlistBusy}
+                    >
+                      {t('download.paste')}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor={downloadTypeId}>{t('playlist.downloadType')}</Label>
+                    <Select
+                      value={downloadType}
+                      onValueChange={(v) => setDownloadType(v as 'video' | 'audio')}
+                      disabled={playlistBusy}
+                    >
+                      <SelectTrigger id={downloadTypeId}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="video">{t('download.video')}</SelectItem>
+                        <SelectItem value="audio">{t('download.audio')}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-muted-foreground">{t('playlist.range')}</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input
+                        type="number"
+                        placeholder={t('playlist.startIndex')}
+                        value={startIndex}
+                        onChange={(e) => setStartIndex(e.target.value)}
+                        min="1"
+                        disabled={playlistBusy}
+                      />
+                      <Input
+                        type="number"
+                        placeholder={t('playlist.endIndex')}
+                        value={endIndex}
+                        onChange={(e) => setEndIndex(e.target.value)}
+                        min="1"
+                        disabled={playlistBusy}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                   <Button
-                    onClick={handleDownloadPlaylist}
-                    className="w-full sm:flex-1"
-                    size="lg"
-                    disabled={playlistDownloadLoading || !playlistUrl.trim()}
+                    onClick={handlePreviewPlaylist}
+                    variant="outline"
+                    className="w-full sm:w-auto"
+                    disabled={playlistBusy || !playlistUrl.trim()}
                   >
-                    {playlistDownloadLoading ? (
+                    {playlistPreviewLoading ? (
                       <>
                         <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                         {t('download.loading')}
                       </>
                     ) : (
-                      t('playlist.downloadPlaylist')
+                      <>
+                        <Search className="mr-2 h-5 w-5" />
+                        {t('playlist.previewButton')}
+                      </>
                     )}
                   </Button>
+                  {playlistInfo && (
+                    <Button
+                      onClick={handleDownloadPlaylist}
+                      className="w-full sm:flex-1"
+                      size="lg"
+                      disabled={playlistDownloadLoading || !playlistUrl.trim()}
+                    >
+                      {playlistDownloadLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                          {t('download.loading')}
+                        </>
+                      ) : (
+                        t('playlist.downloadPlaylist')
+                      )}
+                    </Button>
+                  )}
+                </div>
+
+                {playlistUrl.trim() && !playlistInfo && !playlistPreviewError && !playlistBusy && (
+                  <p className="text-xs text-muted-foreground">{t('playlist.previewRequired')}</p>
+                )}
+
+                {playlistPreviewError && (
+                  <div className="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
+                    {playlistPreviewError}
+                  </div>
                 )}
               </div>
+            </TabsContent>
+          </CardContent>
+        </Tabs>
+      </Card>
 
-              {playlistUrl.trim() && !playlistInfo && !playlistPreviewError && !playlistBusy && (
-                <p className="text-xs text-muted-foreground">{t('playlist.previewRequired')}</p>
-              )}
-
-              {playlistPreviewError && (
-                <div className="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
-                  {playlistPreviewError}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-          {playlistInfo && (
-            <PlaylistPreviewCard
-              playlist={playlistInfo}
-              entries={selectedPlaylistEntries}
-              onClear={handleClearPlaylistPreview}
-            />
-          )}
-        </TabsContent>
-      </Tabs>
+      {/* Playlist Preview Card (outside main card) */}
+      {playlistInfo && (
+        <PlaylistPreviewCard
+          playlist={playlistInfo}
+          entries={selectedPlaylistEntries}
+          onClear={handleClearPlaylistPreview}
+        />
+      )}
 
       {/* Unified Download History */}
       <UnifiedDownloadHistory />

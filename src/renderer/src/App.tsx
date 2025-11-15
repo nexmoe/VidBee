@@ -2,7 +2,8 @@ import { ScrollArea } from '@renderer/components/ui/scroll-area'
 import { Sidebar } from '@renderer/components/ui/sidebar'
 import { Toaster } from '@renderer/components/ui/sonner'
 import { TitleBar } from '@renderer/components/ui/title-bar'
-import { useAtom } from 'jotai'
+import type { SubscriptionRule } from '@shared/types'
+import { useAtom, useSetAtom } from 'jotai'
 import { ThemeProvider } from 'next-themes'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -11,18 +12,81 @@ import { ipcEvents, ipcServices } from './lib/ipc'
 import { About } from './pages/About'
 import { Home } from './pages/Home'
 import { Settings } from './pages/Settings'
+import { Subscriptions } from './pages/Subscriptions'
 import { SupportedSites } from './pages/SupportedSites'
-import { settingsAtom } from './store/settings'
+import { loadSettingsAtom, settingsAtom } from './store/settings'
+import { loadSubscriptionsAtom, setSubscriptionsAtom } from './store/subscriptions'
 
-type Page = 'home' | 'settings' | 'about' | 'sites'
+type Page = 'home' | 'subscriptions' | 'settings' | 'about' | 'sites'
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('home')
   const [platform, setPlatform] = useState<string>('')
+  const loadSubscriptions = useSetAtom(loadSubscriptionsAtom)
+  const setSubscriptions = useSetAtom(setSubscriptionsAtom)
   const [settings] = useAtom(settingsAtom)
+  const loadSettings = useSetAtom(loadSettingsAtom)
   const { t } = useTranslation()
-  const autoUpdateEnabled = settings.autoUpdate
   const updateDownloadInProgressRef = useRef(false)
+  const analyticsScriptRef = useRef<HTMLScriptElement | null>(null)
+
+  useEffect(() => {
+    loadSettings()
+  }, [loadSettings])
+
+  useEffect(() => {
+    loadSubscriptions()
+
+    const handleSubscriptions = (...args: unknown[]) => {
+      const list = args[0]
+      if (Array.isArray(list)) {
+        setSubscriptions(list as SubscriptionRule[])
+      }
+    }
+
+    ipcEvents.on('subscriptions:updated', handleSubscriptions)
+
+    return () => {
+      ipcEvents.removeListener('subscriptions:updated', handleSubscriptions)
+    }
+  }, [loadSubscriptions, setSubscriptions])
+
+  // Load or remove analytics script based on settings
+  useEffect(() => {
+    const scriptId = 'analytics-script'
+    const existingScript = document.getElementById(scriptId) as HTMLScriptElement | null
+
+    if (settings.enableAnalytics) {
+      // Remove existing script if it exists
+      if (existingScript) {
+        existingScript.remove()
+      }
+
+      // Create and append new script
+      const script = document.createElement('script')
+      script.id = scriptId
+      script.src = 'https://rybbit.102417.xyz/api/script.js'
+      script.setAttribute('data-site-id', '7bc6f6d625a4')
+      script.defer = true
+      script.async = true
+      document.head.appendChild(script)
+      analyticsScriptRef.current = script
+    } else {
+      // Remove script if analytics is disabled
+      if (existingScript) {
+        existingScript.remove()
+        analyticsScriptRef.current = null
+      }
+    }
+
+    return () => {
+      // Cleanup on unmount
+      const script = document.getElementById(scriptId)
+      if (script) {
+        script.remove()
+      }
+    }
+  }, [settings.enableAnalytics])
 
   useEffect(() => {
     // Get platform info to determine if we should show title bar
@@ -119,7 +183,7 @@ function AppContent() {
       ipcEvents.removeListener('update:download-progress', handleDownloadProgress)
       ipcEvents.removeListener('update:show-notification', handleUpdateNotification)
     }
-  }, [autoUpdateEnabled, t])
+  }, [t])
 
   const renderPage = () => {
     switch (currentPage) {
@@ -132,6 +196,8 @@ function AppContent() {
         )
       case 'settings':
         return <Settings />
+      case 'subscriptions':
+        return <Subscriptions />
       case 'about':
         return <About />
       case 'sites':

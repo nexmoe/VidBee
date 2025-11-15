@@ -19,10 +19,12 @@ import MingcuteDownload3Line from '~icons/mingcute/download-3-line'
 import MingcuteGlobeLine from '~icons/mingcute/globe-2-line'
 import MingcuteInformationFill from '~icons/mingcute/information-fill'
 import MingcuteInformationLine from '~icons/mingcute/information-line'
+import MingcuteRssFill from '~icons/mingcute/rss-fill'
+import MingcuteRssLine from '~icons/mingcute/rss-line'
 import MingcuteSettingsFill from '~icons/mingcute/settings-3-fill'
 import MingcuteSettingsLine from '~icons/mingcute/settings-3-line'
 
-type Page = 'home' | 'settings' | 'about' | 'sites'
+type Page = 'home' | 'subscriptions' | 'settings' | 'about' | 'sites'
 
 interface NavigationItem {
   id: Page
@@ -52,6 +54,14 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
         inactive: MingcuteDownload3Line
       },
       label: t('menu.download')
+    },
+    {
+      id: 'subscriptions',
+      icon: {
+        active: MingcuteRssFill,
+        inactive: MingcuteRssLine
+      },
+      label: t('menu.rss')
     },
     {
       id: 'sites',
@@ -102,21 +112,15 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
 
     return (
       <div key={item.id} className="flex flex-col items-center gap-1">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => onPageChange(item.id)}
-              className={`no-drag w-12 h-12 ${isActive ? 'bg-primary/10' : ''}`}
-            >
-              <IconComponent className={`h-5! w-5! ${isActive ? 'text-primary' : ''}`} />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="right">
-            <p>{item.label}</p>
-          </TooltipContent>
-        </Tooltip>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => onPageChange(item.id)}
+          className={`no-drag w-12 h-12 ${isActive ? 'bg-primary/10' : ''}`}
+        >
+          <IconComponent className={`h-5! w-5! ${isActive ? 'text-primary' : ''}`} />
+        </Button>
+
         {showLabel && (
           <span className="text-xs text-muted-foreground text-center leading-tight px-3">
             {item.label}
@@ -129,7 +133,7 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
   return (
     <aside className="drag-region w-20 max-w-20 min-w-20 border-r border-border/60 bg-background/77 flex flex-col items-center py-4 gap-2">
       {/* App Logo */}
-      <div className="flex flex-col items-center gap-1 py-4 mt-2">
+      <div className="flex flex-col items-center gap-1 py-3 mt-4">
         <div className="w-12 h-12 flex items-center justify-center">
           <img src="./app-icon.png" alt="VidBee" className="w-10 h-10" />
         </div>

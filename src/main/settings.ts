@@ -77,11 +77,14 @@ class SettingsManager {
   private ensureDownloadDirectory(): void {
     try {
       const currentPath: string | undefined = this.store.get('downloadPath')
-      if (!currentPath || currentPath === OLD_DEFAULT_DOWNLOAD_PATH) {
-        this.store.set('downloadPath', DEFAULT_DOWNLOAD_PATH)
-        return
+      const normalizedDownloadPath =
+        !currentPath || currentPath === OLD_DEFAULT_DOWNLOAD_PATH
+          ? DEFAULT_DOWNLOAD_PATH
+          : currentPath
+      if (normalizedDownloadPath !== currentPath) {
+        this.store.set('downloadPath', normalizedDownloadPath)
       }
-      ensureDirectoryExists(currentPath)
+      ensureDirectoryExists(normalizedDownloadPath)
     } catch (error) {
       console.error('Failed to verify download directory:', error)
     }

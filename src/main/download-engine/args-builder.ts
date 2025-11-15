@@ -1,6 +1,12 @@
 import path from 'node:path'
 import type { AppSettings, DownloadOptions } from '../../shared/types'
 
+export const sanitizeFilenameTemplate = (template: string): string => {
+  const trimmed = template.trim()
+  const sanitized = trimmed.replace(/[/\\]+/g, '-')
+  return sanitized === '' ? '%(title)s via VidBee.%(ext)s' : sanitized
+}
+
 export const resolveVideoFormatSelector = (options: DownloadOptions): string => {
   const format = options.format
   const audioFormat = options.audioFormat
@@ -80,7 +86,12 @@ export const buildDownloadArgs = (
   }
 
   // Output path with proper encoding handling
-  const outputTemplate = path.join(downloadPath, '%(title)s via VidBee.%(ext)s')
+  const baseDownloadPath = options.customDownloadPath?.trim() || downloadPath
+  const filenameTemplate = sanitizeFilenameTemplate(
+    options.customFilenameTemplate ?? '%(title)s via VidBee.%(ext)s'
+  )
+  const safeTemplate = filenameTemplate.replace(/^[\\/]+/, '')
+  const outputTemplate = path.join(baseDownloadPath, safeTemplate)
   args.push('-o', outputTemplate)
 
   // Add options for better filename handling

@@ -26,6 +26,14 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { loadSettingsAtom, saveSettingAtom, settingsAtom } from '../store/settings'
 
+const clampSubscriptionInterval = (value: string) => {
+  const parsed = Number.parseInt(value, 10)
+  if (Number.isNaN(parsed)) {
+    return 3
+  }
+  return Math.min(24, Math.max(1, parsed))
+}
+
 export function Settings() {
   const { t } = useTranslation()
   const { theme, setTheme } = useTheme()
@@ -295,6 +303,33 @@ export function Settings() {
             <ItemGroup>
               <Item variant="muted">
                 <ItemContent>
+                  <ItemTitle>{t('subscriptions.defaults.checkInterval')}</ItemTitle>
+                  <ItemDescription>
+                    {t('settings.subscriptionDefaults.intervalDescription')}
+                  </ItemDescription>
+                </ItemContent>
+                <ItemActions>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={24}
+                    defaultValue={settings.subscriptionCheckIntervalHours}
+                    key={`subscription-interval-${settings.subscriptionCheckIntervalHours}`}
+                    onBlur={(event) =>
+                      void handleSettingChange(
+                        'subscriptionCheckIntervalHours',
+                        clampSubscriptionInterval(event.target.value)
+                      )
+                    }
+                    className="w-24"
+                  />
+                </ItemActions>
+              </Item>
+
+              <ItemSeparator />
+
+              <Item variant="muted">
+                <ItemContent>
                   <ItemTitle>{t('settings.maxConcurrentDownloads')}</ItemTitle>
                   <ItemDescription>
                     {t('settings.maxConcurrentDownloadsDescription')}
@@ -349,6 +384,13 @@ export function Settings() {
                   <div className="flex gap-2 w-full max-w-md">
                     <Input value={settings.configPath} readOnly className="flex-1" />
                     <Button onClick={handleSelectConfigFile}>{t('settings.selectPath')}</Button>
+                    <Button
+                      variant="secondary"
+                      onClick={() => void handleSettingChange('configPath', '')}
+                      disabled={!settings.configPath}
+                    >
+                      {t('settings.clearConfigFile')}
+                    </Button>
                   </div>
                 </ItemActions>
               </Item>
@@ -420,6 +462,21 @@ export function Settings() {
                   <Button variant="link" className="px-0" onClick={handleOpenCookiesFaq}>
                     {t('settings.cookiesHelpFaq')}
                   </Button>
+                </ItemActions>
+              </Item>
+            </ItemGroup>
+
+            <ItemGroup>
+              <Item variant="muted">
+                <ItemContent>
+                  <ItemTitle>{t('settings.enableAnalytics')}</ItemTitle>
+                  <ItemDescription>{t('settings.enableAnalyticsDescription')}</ItemDescription>
+                </ItemContent>
+                <ItemActions>
+                  <Switch
+                    checked={settings.enableAnalytics}
+                    onCheckedChange={(value) => handleSettingChange('enableAnalytics', value)}
+                  />
                 </ItemActions>
               </Item>
             </ItemGroup>
