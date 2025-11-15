@@ -60,6 +60,8 @@ export function Settings() {
     fetchPlatform()
   }, [])
 
+  const autoLaunchSupported = platform === 'darwin' || platform === 'win32'
+
   const handleSettingChange = async (
     key: keyof typeof settings,
     value: (typeof settings)[keyof typeof settings]
@@ -267,6 +269,46 @@ export function Settings() {
             </ItemGroup>
 
             <ItemGroup>
+              {platform === 'darwin' && (
+                <>
+                  <Item variant="muted">
+                    <ItemContent>
+                      <ItemTitle>{t('settings.hideDockIcon')}</ItemTitle>
+                      <ItemDescription>{t('settings.hideDockIconDescription')}</ItemDescription>
+                    </ItemContent>
+                    <ItemActions>
+                      <Switch
+                        checked={settings.hideDockIcon}
+                        onCheckedChange={(value) => handleSettingChange('hideDockIcon', value)}
+                      />
+                    </ItemActions>
+                  </Item>
+                  <ItemSeparator />
+                </>
+              )}
+
+              <Item variant="muted">
+                <ItemContent>
+                  <ItemTitle>{t('settings.launchAtLogin')}</ItemTitle>
+                  <ItemDescription>
+                    {autoLaunchSupported
+                      ? t('settings.launchAtLoginDescription')
+                      : t('settings.launchAtLoginUnsupported')}
+                  </ItemDescription>
+                </ItemContent>
+                <ItemActions>
+                  <Switch
+                    checked={settings.launchAtLogin}
+                    onCheckedChange={(value) => handleSettingChange('launchAtLogin', value)}
+                    disabled={!autoLaunchSupported}
+                  />
+                </ItemActions>
+              </Item>
+            </ItemGroup>
+          </TabsContent>
+
+          <TabsContent value="advanced" className="space-y-4 mt-2">
+            <ItemGroup>
               <Item variant="muted">
                 <ItemContent>
                   <ItemTitle>{t('settings.showMoreFormats')}</ItemTitle>
@@ -280,25 +322,6 @@ export function Settings() {
                 </ItemActions>
               </Item>
             </ItemGroup>
-          </TabsContent>
-
-          <TabsContent value="advanced" className="space-y-4 mt-2">
-            {platform === 'darwin' && (
-              <ItemGroup>
-                <Item variant="muted">
-                  <ItemContent>
-                    <ItemTitle>{t('settings.hideDockIcon')}</ItemTitle>
-                    <ItemDescription>{t('settings.hideDockIconDescription')}</ItemDescription>
-                  </ItemContent>
-                  <ItemActions>
-                    <Switch
-                      checked={settings.hideDockIcon}
-                      onCheckedChange={(value) => handleSettingChange('hideDockIcon', value)}
-                    />
-                  </ItemActions>
-                </Item>
-              </ItemGroup>
-            )}
 
             <ItemGroup>
               <Item variant="muted">

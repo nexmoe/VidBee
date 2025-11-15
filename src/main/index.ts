@@ -13,6 +13,7 @@ import { subscriptionScheduler } from './lib/subscription-scheduler'
 import { ytdlpManager } from './lib/ytdlp-manager'
 import { settingsManager } from './settings'
 import { createTray, destroyTray } from './tray'
+import { applyAutoLaunchSetting } from './utils/auto-launch'
 import { applyDockVisibility } from './utils/dock'
 
 // Initialize electron-log for main process
@@ -216,6 +217,7 @@ app.whenReady().then(async () => {
   }
 
   applyDockVisibility(settingsManager.get('hideDockIcon'))
+  applyAutoLaunchSetting(settingsManager.get('launchAtLogin'))
 
   createWindow()
 

@@ -4,6 +4,7 @@ import { sanitizeFilenameTemplate } from '../../download-engine/args-builder'
 import { subscriptionScheduler } from '../../lib/subscription-scheduler'
 import { settingsManager } from '../../settings'
 import { updateTrayMenu } from '../../tray'
+import { applyAutoLaunchSetting } from '../../utils/auto-launch'
 import { applyDockVisibility } from '../../utils/dock'
 
 class SettingsService extends IpcService {
@@ -32,6 +33,10 @@ class SettingsService extends IpcService {
 
     if (key === 'hideDockIcon') {
       applyDockVisibility(value as AppSettings['hideDockIcon'])
+    }
+
+    if (key === 'launchAtLogin') {
+      applyAutoLaunchSetting(value as AppSettings['launchAtLogin'])
     }
 
     if (key === 'subscriptionCheckIntervalHours') {
@@ -67,6 +72,10 @@ class SettingsService extends IpcService {
       applyDockVisibility(settings.hideDockIcon)
     }
 
+    if (typeof settings.launchAtLogin === 'boolean') {
+      applyAutoLaunchSetting(settings.launchAtLogin)
+    }
+
     if (settings.subscriptionCheckIntervalHours !== undefined) {
       subscriptionScheduler.refreshInterval()
     }
@@ -76,6 +85,7 @@ class SettingsService extends IpcService {
   reset(_context: IpcContext): void {
     settingsManager.reset()
     applyDockVisibility(settingsManager.get('hideDockIcon'))
+    applyAutoLaunchSetting(settingsManager.get('launchAtLogin'))
     subscriptionScheduler.refreshInterval()
   }
 }
