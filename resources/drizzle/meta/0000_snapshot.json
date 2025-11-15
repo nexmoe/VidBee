@@ -273,19 +273,14 @@
       "indexes": {
         "subscription_items_subscription_idx": {
           "name": "subscription_items_subscription_idx",
-          "columns": [
-            "subscription_id"
-          ],
+          "columns": ["subscription_id"],
           "isUnique": false
         }
       },
       "foreignKeys": {},
       "compositePrimaryKeys": {
         "subscription_items_pk": {
-          "columns": [
-            "subscription_id",
-            "item_id"
-          ],
+          "columns": ["subscription_id", "item_id"],
           "name": "subscription_items_pk"
         }
       },

@@ -36,7 +36,7 @@ import {
 import type { DownloadStatus, SubscriptionFeedItem, SubscriptionRule } from '@shared/types'
 import dayjs from 'dayjs'
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
-import { Edit, ExternalLink, Plus, Power, RefreshCw, Trash2 } from 'lucide-react'
+import { Download, Edit, ExternalLink, Plus, Power, RefreshCw, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -522,6 +522,27 @@ function SubscriptionCard({ subscription }: { subscription: SubscriptionRule }) 
     }
   }
 
+  const handleQueueItem = useCallback(
+    async (item: SubscriptionFeedItem) => {
+      if (item.addedToQueue) {
+        toast.info(t('subscriptions.notifications.itemAlreadyQueued'))
+        return
+      }
+      try {
+        const queued = await ipcServices.subscriptions.queueItem(subscription.id, item.id)
+        if (queued) {
+          toast.success(t('subscriptions.notifications.itemQueued'))
+          return
+        }
+        toast.info(t('subscriptions.notifications.itemAlreadyQueued'))
+      } catch (error) {
+        console.error('Failed to queue subscription item:', error)
+        toast.error(t('subscriptions.notifications.queueError'))
+      }
+    },
+    [subscription.id, t]
+  )
+
   if (feedItems.length === 0) {
     return (
       <div className="py-12 text-center text-sm text-muted-foreground">
@@ -548,78 +569,95 @@ function SubscriptionCard({ subscription }: { subscription: SubscriptionRule }) 
           : t('subscriptions.items.tooltip.notQueued')
         const badgeClass = item.addedToQueue ? 'bg-emerald-500' : 'bg-black/70'
         return (
-          <article key={`${subscription.id}-${item.id}`} className="group  transition-all">
-            <div className="relative w-full overflow-hidden bg-muted aspect-video rounded-2xl">
-              {item.thumbnail ? (
-                <RemoteImage
-                  src={item.thumbnail}
-                  alt={item.title}
-                  className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                />
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
-                  {t('subscriptions.labels.noThumbnail')}
-                </div>
-              )}
-              <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/70 via-black/5 to-transparent" />
-              <div className="absolute top-3 left-3 flex items-center gap-2 rounded-full bg-black/60 pr-3 pl-1 py-1 text-xs font-medium text-white backdrop-blur">
-                {subscription.coverUrl ? (
-                  <div className="h-6 w-6 overflow-hidden rounded-full border border-white/40">
+          <ContextMenu key={`${subscription.id}-${item.id}`}>
+            <ContextMenuTrigger asChild>
+              <article className="group  transition-all">
+                <div className="relative w-full overflow-hidden bg-muted aspect-video rounded-2xl">
+                  {item.thumbnail ? (
                     <RemoteImage
-                      src={subscription.coverUrl}
-                      alt={subscription.title || t('subscriptions.labels.unknown')}
-                      className="h-full w-full object-cover"
+                      src={item.thumbnail}
+                      alt={item.title}
+                      className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
-                  </div>
-                ) : (
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full border border-white/40 bg-white/10 text-[10px] font-semibold uppercase text-white">
-                    {(subscription.title || t('subscriptions.labels.unknown')).slice(0, 1)}
-                  </div>
-                )}
-                <span className="max-w-40 truncate text-xs">
-                  {subscription.title || t('subscriptions.labels.unknown')}
-                </span>
-              </div>
-              <div className="absolute bottom-3 left-3 text-xs font-medium text-white">
-                {dayjs(item.publishedAt).format('YYYY-MM-DD HH:mm')}
-              </div>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Badge
-                    variant="secondary"
-                    className={cn(
-                      'absolute bottom-3 right-3 rounded-full text-xs text-white backdrop-blur',
-                      badgeClass
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
+                      {t('subscriptions.labels.noThumbnail')}
+                    </div>
+                  )}
+                  <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/70 via-black/5 to-transparent" />
+                  <div className="absolute top-3 left-3 flex items-center gap-2 rounded-full bg-black/60 pr-3 pl-1 py-1 text-xs font-medium text-white backdrop-blur">
+                    {subscription.coverUrl ? (
+                      <div className="h-6 w-6 overflow-hidden rounded-full border border-white/40">
+                        <RemoteImage
+                          src={subscription.coverUrl}
+                          alt={subscription.title || t('subscriptions.labels.unknown')}
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full border border-white/40 bg-white/10 text-[10px] font-semibold uppercase text-white">
+                        {(subscription.title || t('subscriptions.labels.unknown')).slice(0, 1)}
+                      </div>
                     )}
-                  >
-                    {badgeLabel}
-                  </Badge>
-                </TooltipTrigger>
-                <TooltipContent>{tooltipLabel}</TooltipContent>
-              </Tooltip>
-            </div>
-            <div className="flex flex-col gap-4 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
-              <div className="space-y-1">
-                <p
-                  className="text-base font-semibold leading-snug text-card-foreground"
-                  title={item.title}
-                >
-                  {item.title}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="rounded-full px-4"
-                  onClick={() => void handleOpenItem(item.url)}
-                  title={t('subscriptions.items.actions.open')}
-                >
-                  <ExternalLink className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </article>
+                    <span className="max-w-40 truncate text-xs">
+                      {subscription.title || t('subscriptions.labels.unknown')}
+                    </span>
+                  </div>
+                  <div className="absolute bottom-3 left-3 text-xs font-medium text-white">
+                    {dayjs(item.publishedAt).format('YYYY-MM-DD HH:mm')}
+                  </div>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Badge
+                        variant="secondary"
+                        className={cn(
+                          'absolute bottom-3 right-3 rounded-full text-xs text-white backdrop-blur',
+                          badgeClass
+                        )}
+                      >
+                        {badgeLabel}
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent>{tooltipLabel}</TooltipContent>
+                  </Tooltip>
+                </div>
+                <div className="flex flex-col gap-4 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="space-y-1">
+                    <p
+                      className="text-base font-semibold leading-snug text-card-foreground"
+                      title={item.title}
+                    >
+                      {item.title}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="rounded-full px-4"
+                      onClick={() => void handleOpenItem(item.url)}
+                      title={t('subscriptions.items.actions.open')}
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </article>
+            </ContextMenuTrigger>
+            <ContextMenuContent>
+              <ContextMenuItem
+                onClick={() => void handleQueueItem(item)}
+                disabled={item.addedToQueue}
+              >
+                <Download className="h-4 w-4" />
+                {t('subscriptions.items.actions.queue')}
+              </ContextMenuItem>
+              <ContextMenuItem onClick={() => void handleOpenItem(item.url)}>
+                <ExternalLink className="h-4 w-4" />
+                {t('subscriptions.items.actions.open')}
+              </ContextMenuItem>
+            </ContextMenuContent>
+          </ContextMenu>
         )
       })}
     </div>

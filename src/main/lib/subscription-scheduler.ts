@@ -149,6 +149,19 @@ export class SubscriptionScheduler extends EventEmitter {
     await this.checkAll()
   }
 
+  async queueItem(subscriptionId: string, itemId: string): Promise<boolean> {
+    const subscription = subscriptionManager.getById(subscriptionId)
+    if (!subscription) {
+      return false
+    }
+    const item = subscription.items.find((entry) => entry.id === itemId)
+    if (!item || item.addedToQueue) {
+      return false
+    }
+    await this.queueDownload(subscriptionId, itemId, item.url)
+    return true
+  }
+
   private scheduleNextRun(initialDelay?: number): void {
     if (this.timer) {
       clearTimeout(this.timer)

@@ -154,6 +154,11 @@ class SubscriptionService extends IpcService {
   async refresh(_context: IpcContext, id?: string): Promise<void> {
     await subscriptionScheduler.runNow(id)
   }
+
+  @IpcMethod()
+  async queueItem(_context: IpcContext, id: string, itemId: string): Promise<boolean> {
+    return subscriptionScheduler.queueItem(id, itemId)
+  }
 }
 
 export { SubscriptionService }

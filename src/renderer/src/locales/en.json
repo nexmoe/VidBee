@@ -443,7 +443,8 @@
         "notQueued": "Not in the download queue yet"
       },
       "actions": {
-        "open": "Open in browser"
+        "open": "Open in browser",
+        "queue": "Add to download queue"
       }
     },
     "labels": {
@@ -459,6 +460,9 @@
       "refreshStarted": "Refresh started",
       "removed": "Subscription removed",
       "updated": "Subscription updated",
+      "itemQueued": "Added to download queue",
+      "itemAlreadyQueued": "This video is already queued",
+      "queueError": "Failed to add to download queue.",
       "openLinkError": "Failed to open the video link.",
       "resolveError": "Failed to resolve RSS feed URL."
     },
