@@ -112,21 +112,15 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
 
     return (
       <div key={item.id} className="flex flex-col items-center gap-1">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => onPageChange(item.id)}
-              className={`no-drag w-12 h-12 ${isActive ? 'bg-primary/10' : ''}`}
-            >
-              <IconComponent className={`h-5! w-5! ${isActive ? 'text-primary' : ''}`} />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="right">
-            <p>{item.label}</p>
-          </TooltipContent>
-        </Tooltip>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => onPageChange(item.id)}
+          className={`no-drag w-12 h-12 ${isActive ? 'bg-primary/10' : ''}`}
+        >
+          <IconComponent className={`h-5! w-5! ${isActive ? 'text-primary' : ''}`} />
+        </Button>
+
         {showLabel && (
           <span className="text-xs text-muted-foreground text-center leading-tight px-3">
             {item.label}

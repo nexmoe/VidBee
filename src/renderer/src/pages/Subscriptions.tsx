@@ -18,6 +18,7 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger
 } from '@renderer/components/ui/context-menu'
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@renderer/components/ui/hover-card'
 import { RemoteImage } from '@renderer/components/ui/remote-image'
 import { Tabs, TabsList, TabsTrigger } from '@renderer/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
@@ -127,16 +128,16 @@ function SubscriptionTab({
   return (
     <>
       <ContextMenu>
-        <ContextMenuTrigger asChild>
-          <TabsTrigger
-            value={subscription.id}
-            className={cn(
-              'flex h-auto w-20 flex-col rounded-sm! items-center gap-1 px-2 py-2 transition-all hover:opacity-80 shrink-0 grow-0',
-              isActive && 'bg-muted/45'
-            )}
-          >
-            <Tooltip>
-              <TooltipTrigger asChild>
+        <HoverCard openDelay={0} closeDelay={0}>
+          <ContextMenuTrigger asChild>
+            <HoverCardTrigger asChild>
+              <TabsTrigger
+                value={subscription.id}
+                className={cn(
+                  'flex h-auto w-20 flex-col rounded-sm! items-center gap-1 px-2 py-2 transition-all hover:opacity-80 shrink-0 grow-0',
+                  isActive && 'bg-muted/45'
+                )}
+              >
                 <div className="relative h-12 w-12 shrink-0 overflow-hidden transition-colors">
                   <RemoteImage
                     src={subscription.coverUrl}
@@ -150,21 +151,24 @@ function SubscriptionTab({
                     )}
                   />
                 </div>
-              </TooltipTrigger>
-              <TooltipContent className="max-w-xs space-y-1">
-                <p className="text-xs">{statusDescription}</p>
-                <p className="text-xs">
-                  {t('subscriptions.status.tooltip.updatedAt', { time: lastUpdatedLabel })}
-                </p>
-              </TooltipContent>
-            </Tooltip>
-            <div className="flex w-full flex-col items-center text-center">
-              <span className="w-full truncate text-xs font-medium">
-                {subscription.title || t('subscriptions.labels.unknown')}
-              </span>
-            </div>
-          </TabsTrigger>
-        </ContextMenuTrigger>
+                <div className="flex w-full flex-col items-center text-center">
+                  <span className="w-full truncate text-xs font-medium">
+                    {subscription.title || t('subscriptions.labels.unknown')}
+                  </span>
+                </div>
+              </TabsTrigger>
+            </HoverCardTrigger>
+          </ContextMenuTrigger>
+          <HoverCardContent className="max-w-xs space-y-1">
+            <p className="text-sm font-semibold">
+              {subscription.title || t('subscriptions.labels.unknown')}
+            </p>
+            <p className="text-xs">{statusDescription}</p>
+            <p className="text-xs">
+              {t('subscriptions.status.tooltip.updatedAt', { time: lastUpdatedLabel })}
+            </p>
+          </HoverCardContent>
+        </HoverCard>
         <ContextMenuContent>
           <ContextMenuItem onClick={handleRefresh}>
             <RefreshCw className="h-4 w-4" />
@@ -557,7 +561,7 @@ function SubscriptionCard({ subscription }: { subscription: SubscriptionRule }) 
                   {t('subscriptions.labels.noThumbnail')}
                 </div>
               )}
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/5 to-transparent" />
+              <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/70 via-black/5 to-transparent" />
               <div className="absolute top-3 left-3 flex items-center gap-2 rounded-full bg-black/60 pr-3 pl-1 py-1 text-xs font-medium text-white backdrop-blur">
                 {subscription.coverUrl ? (
                   <div className="h-6 w-6 overflow-hidden rounded-full border border-white/40">
@@ -572,7 +576,7 @@ function SubscriptionCard({ subscription }: { subscription: SubscriptionRule }) 
                     {(subscription.title || t('subscriptions.labels.unknown')).slice(0, 1)}
                   </div>
                 )}
-                <span className="max-w-[10rem] truncate text-xs">
+                <span className="max-w-40 truncate text-xs">
                   {subscription.title || t('subscriptions.labels.unknown')}
                 </span>
               </div>
