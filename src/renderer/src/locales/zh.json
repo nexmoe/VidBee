@@ -284,7 +284,7 @@
     "foundVideos": "在播放列表中找到 {{count}} 个视频",
     "groupActive": "{{count}} 个活跃",
     "groupErrors": "{{count}} 失败",
-    "groupSummary": "{{已完成}} / {{总计}}已完成",
+    "groupSummary": "{{completed}} / {{total}}已完成",
     "linkLabel": "播放列表链接",
     "noEntries": "在此播放列表中找不到视频",
     "noEntriesInRange": "所选范围内没有视频",
@@ -297,7 +297,7 @@
     "previewSummary": "下载前预览播放列表项目。",
     "range": "范围（可选）",
     "resetToDefault": "恢复默认",
-    "selectedRange": "范围：{{开始}}-{{结束}}",
+    "selectedRange": "范围：{{start}}-{{end}}",
     "showingCount": "显示 {{count}} 个视频",
     "startIndex": "开始（1）",
     "title": "下载播放列表",
@@ -519,7 +519,7 @@
       },
       "count": "{{count}} 件",
       "empty": "未找到最近的 Feed 项目。",
-      "fromChannel": "来自{{频道}}",
+      "fromChannel": "来自{{channel}}",
       "status": {
         "cancelled": "取消",
         "completed": "完全的",
@@ -575,7 +575,7 @@
       "idle": "闲置的",
       "title": "地位",
       "tooltip": {
-        "updatedAt": "更新时间：{{时间}}"
+        "updatedAt": "更新时间：{{time}}"
       },
       "up-to-date": "最新"
     },
