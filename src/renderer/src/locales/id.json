@@ -1,0 +1,585 @@
+{
+  "about": {
+    "actions": {
+      "checkUpdates": "Periksa pembaruan",
+      "download": "Unduh",
+      "email": "Email",
+      "feedback": "Masukan",
+      "goToDownload": "Buka halaman unduhan",
+      "openRepo": "Buka repositori GitHub",
+      "view": "Lihat",
+      "visit": "Kunjungi"
+    },
+    "appName": "VidBee",
+    "autoUpdateDescription": "Unduh dan instal rilis baru secara otomatis di latar belakang.",
+    "autoUpdateTitle": "Pembaruan otomatis",
+    "betaProgramDescription": "Terima build awal dan fitur yang akan datang sebelum orang lain.",
+    "betaProgramTitle": "Saluran pratinjau",
+    "description": "VidBee adalah pengunduh gratis dan open-source yang dibangun dengan Electron dan didukung oleh yt-dlp.",
+    "followAuthorActions": {
+      "follow": "Ikuti @nexmoex"
+    },
+    "followAuthorDescription": "Tetap update dengan berita dan pembaruan VidBee terbaru.",
+    "followAuthorSupport": "Ikuti pengembang di X (Twitter) untuk mendapatkan pembaruan dan berita terbaru tentang VidBee.",
+    "followAuthorTitle": "Ikuti Pengembang",
+    "here": "di sini",
+    "homepage": "Beranda",
+    "notifications": {
+      "checkingUpdates": "Mencari pembaruan...",
+      "downloadError": "Gagal mengunduh pembaruan",
+      "downloadStarted": "Unduhan dimulai...",
+      "downloadUpdate": "Unduh dan instal pembaruan {{version}}?",
+      "manualDownloadAction": "Unduh sekarang",
+      "noUpdatesAvailable": "Anda menggunakan versi terbaru",
+      "restartToUpdate": "Mulai ulang sekarang untuk menginstal pembaruan?",
+      "restartNowAction": "Mulai ulang sekarang",
+      "updateAvailable": "Pembaruan tersedia: {{version}}",
+      "updateAvailableMessage": "Versi baru {{version}} tersedia. Silakan unduh dari situs web resmi.",
+      "updateDownloaded": "Pembaruan diunduh, mulai ulang untuk menginstal",
+      "updateDownloadedVersion": "Pembaruan {{version}} diunduh, mulai ulang untuk menginstal",
+      "updateError": "Gagal memeriksa pembaruan: {{error}}",
+      "unknownErrorFallback": "Kesalahan tidak diketahui"
+    },
+    "preferencesDescription": "Sesuaikan pengaturan pembaruan tanpa meninggalkan halaman ini.",
+    "preferencesTitle": "Toggle Cepat",
+    "resources": {
+      "changelog": "Catatan rilis",
+      "changelogDescription": "Ikuti apa yang berubah di setiap versi.",
+      "contact": "Dukungan email",
+      "contactDescription": "Hubungi langsung untuk bantuan atau kolaborasi.",
+      "documentation": "Pusat bantuan",
+      "documentationDescription": "Panduan, FAQ, dan alur kerja umum.",
+      "feedback": "Masukan & masalah",
+      "feedbackDescription": "Bagikan ide atau laporkan masalah di GitHub.",
+      "license": "Lisensi",
+      "licenseDescription": "Tinjau ketentuan lisensi open-source.",
+      "website": "Situs web resmi",
+      "websiteDescription": "Sorotan produk, roadmap, dan berita komunitas."
+    },
+    "resourcesDescription": "Tautan berguna untuk mempelajari lebih lanjut tentang VidBee dan tetap terhubung.",
+    "resourcesTitle": "Sumber Daya",
+    "shareActions": {
+      "copy": "Salin tautan",
+      "facebook": "Bagikan di Facebook",
+      "twitter": "Bagikan di X (Twitter)"
+    },
+    "shareDescription": "Bagikan VidBee dengan komunitas Anda dalam satu klik.",
+    "shareSupport": "Rekomendasikan VidBee kepada teman-teman Anda untuk mendukung pertumbuhan dan pembaruan kami.",
+    "shareTitle": "Sebarkan berita",
+    "sourceCode": "Kode Sumber tersedia",
+    "title": "Tentang",
+    "version": "Versi",
+    "versionLabel": "v{{version}}",
+    "latestVersionBadge": "Terbaru: v{{version}}",
+    "latestVersionStatus": {
+      "available": "Versi baru tersedia",
+      "uptodate": "Anda sudah menggunakan versi terbaru",
+      "error": "Tidak dapat mengambil versi terbaru"
+    },
+    "downloadingUpdate": "Mengunduh pembaruan"
+  },
+  "advancedOptions": {
+    "closeWhenDone": "Tutup aplikasi saat unduhan selesai",
+    "currentLocation": "Lokasi unduhan saat ini - ",
+    "downloadLocation": "Lokasi unduhan",
+    "downloadSubs": "Unduh subtitle jika tersedia",
+    "end": "Akhir",
+    "endHint": "Jika dibiarkan kosong, akan diunduh sampai akhir",
+    "endPlaceholder": "10:00",
+    "selectLocation": "Pilih Lokasi Unduhan",
+    "start": "Mulai",
+    "startHint": "Jika dibiarkan kosong, akan dimulai dari awal",
+    "startPlaceholder": "00:00",
+    "subtitles": "Subtitle",
+    "timeRange": "Unduh rentang waktu tertentu",
+    "title": "Opsi Lanjutan"
+  },
+  "app": {
+    "description": "Unduh video dan audio dari ratusan situs",
+    "title": "VidBee"
+  },
+  "audioExtract": {
+    "bad": "Buruk",
+    "best": "Terbaik",
+    "extract": "Ekstrak",
+    "good": "Baik",
+    "normal": "Normal",
+    "selectFormat": "Pilih Format",
+    "selectQuality": "Pilih Kualitas",
+    "title": "Ekstrak Audio",
+    "worst": "Terburuk"
+  },
+  "download": {
+    "active": "Aktif",
+    "all": "Semua",
+    "audio": "Audio",
+    "back": "Kembali",
+    "cancel": "Batal",
+    "cancelled": "Dibatalkan",
+    "clearCompleted": "Hapus Selesai",
+    "clearDownloads": "Hapus Unduhan",
+    "completed": "Selesai",
+    "downloadAudio": "Unduh Audio",
+    "downloadBtn": "Unduh",
+    "downloadPending": "Menunggu",
+    "downloadQueue": "Antrian Unduhan",
+    "downloadVideo": "Unduh Video",
+    "downloading": "Mengunduh...",
+    "enterUrl": "Masukkan URL Video",
+    "enterUrlDescription": "Tempel atau ketik URL video. ",
+    "error": "Kesalahan",
+    "fetch": "Ambil",
+    "fetchingVideoInfo": "Mengambil info video...",
+    "history": "Riwayat",
+    "imageLoadError": "Gagal memuat gambar",
+    "imagePlaceholder": "Tidak ada gambar tersedia",
+    "infoUnavailable": "Unduh Satu Klik (Info tidak tersedia)",
+    "loading": "Memuat",
+    "moreOptions": "Opsi lainnya",
+    "noActiveDownloads": "Tidak ada unduhan aktif",
+    "noAudio": "Tidak Ada Audio",
+    "noHistory": "Tidak ada riwayat unduhan",
+    "noItems": "Tidak ada item ditemukan",
+    "goToSettings": "Buka Pengaturan",
+    "oneClickDownload": "Unduh Satu Klik",
+    "oneClickDownloadDescription": "Unduh langsung dengan pengaturan default tanpa konfirmasi",
+    "oneClickDownloadEnabled": "Unduh Satu Klik diaktifkan. Unduhan akan dimulai langsung dengan pengaturan default.",
+    "oneClickDownloadNow": "Unduh Sekarang",
+    "oneClickDownloadStarted": "Unduhan dimulai dengan pengaturan default",
+    "paste": "Tempel",
+    "pastePlaylistUrl": "Klik untuk menempelkan tautan playlist dari clipboard [Ctrl + V]",
+    "pasteUrl": "Klik untuk menempelkan URL video atau ID [Ctrl + V]",
+    "preparing": "Mempersiapkan...",
+    "processing": "Memproses",
+    "progress": "Kemajuan",
+    "showDetails": "Tampilkan detail",
+    "hideDetails": "Sembunyikan detail",
+    "selectAudioFormat": "Pilih Format Audio",
+    "selectFormat": "Pilih Format",
+    "selectVideoFormat": "Pilih Format Video",
+    "singleVideo": "Video Tunggal",
+    "speed": "Kecepatan",
+    "title": "Judul",
+    "total": "Total",
+    "unknownQuality": "Kualitas tidak diketahui",
+    "unknownSize": "Ukuran tidak diketahui",
+    "urlPlaceholder": "https://www.youtube.com/watch?v=...",
+    "video": "Video",
+    "videoInfo": "Informasi Video",
+    "videoInfoUpdated": "Informasi video diperbarui",
+    "metadata": {
+      "source": "Sumber",
+      "playlist": "Playlist",
+      "format": "Format",
+      "quality": "Kualitas",
+      "codec": "Codec",
+      "savedFile": "File tersimpan",
+      "url": "URL Sumber",
+      "description": "Deskripsi",
+      "views": "Tayangan",
+      "tags": "Tag",
+      "downloadPath": "Jalur unduhan",
+      "createdAt": "Dibuat pada",
+      "startedAt": "Dimulai pada",
+      "completedAt": "Selesai pada",
+      "speed": "Kecepatan",
+      "fileSize": "Ukuran file",
+      "width": "Lebar",
+      "height": "Tinggi",
+      "fps": "FPS",
+      "videoCodec": "Codec video",
+      "audioCodec": "Codec audio",
+      "formatNote": "Catatan format",
+      "protocol": "Protokol",
+      "subscription": "Berlangganan"
+    }
+  },
+  "errors": {
+    "clickToCopy": "Klik untuk menyalin detail",
+    "clipboardEmpty": "Clipboard kosong",
+    "downloadFailed": "Unduhan gagal",
+    "downloadNecessaryFilesFailed": "Gagal mengunduh file yang diperlukan. Silakan periksa jaringan Anda dan coba lagi",
+    "emptyUrl": "Silakan masukkan URL",
+    "errorDetails": "Detail Kesalahan",
+    "fetchInfoFailed": "Gagal mengambil informasi video",
+    "networkError": "Terjadi kesalahan. Periksa jaringan Anda dan gunakan URL yang benar",
+    "pasteFromClipboard": "Gagal menempel dari clipboard"
+  },
+  "history": {
+    "clearCancelled": "Hapus Dibatalkan",
+    "clearCompleted": "Hapus Selesai",
+    "clearErrors": "Hapus Kesalahan",
+    "copyToClipboard": "Salin ke clipboard",
+    "copyUrl": "Salin URL",
+    "date": "Tanggal",
+    "description": "Lihat dan kelola riwayat unduhan Anda",
+    "duration": "Durasi",
+    "fileSize": "Ukuran File",
+    "filters": {
+      "all": "Semua",
+      "cancelled": "Dibatalkan",
+      "completed": "Selesai",
+      "errors": "Kesalahan"
+    },
+    "noHistory": "Belum ada riwayat unduhan",
+    "noHistoryDescription": "Unduhan yang selesai akan muncul di sini",
+    "openDownloadFolder": "Buka Folder Unduhan",
+    "openFile": "Buka File",
+    "openFileLocation": "Buka Lokasi File",
+    "openFolder": "Buka Folder",
+    "openInBrowser": "Klik untuk membuka di browser",
+    "removeItem": "Hapus Item",
+    "stats": {
+      "cancelled": "Dibatalkan",
+      "completed": "Selesai",
+      "errors": "Kesalahan",
+      "total": "Total"
+    },
+    "status": {
+      "cancelled": "Dibatalkan",
+      "completed": "Selesai",
+      "error": "Kesalahan"
+    },
+    "title": "Riwayat Unduhan"
+  },
+  "menu": {
+    "about": "Tentang",
+    "download": "Unduh",
+    "playlist": "Unduh Playlist",
+    "rss": "RSS",
+    "subscriptions": "Berlangganan",
+    "preferences": "Preferensi",
+    "supportedSites": "Situs yang Didukung",
+    "theme": "Tema:"
+  },
+  "notifications": {
+    "copyFailed": "Gagal menyalin ke clipboard",
+    "downloadCompleted": "Unduhan selesai",
+    "downloadFailed": "Unduhan gagal",
+    "downloadStarted": "Unduhan dimulai",
+    "itemRemoved": "Item dihapus",
+    "openFileFailed": "Gagal membuka file",
+    "openFolderFailed": "Gagal membuka folder",
+    "removeFailed": "Gagal menghapus item",
+    "settingsSaved": "Pengaturan disimpan",
+    "urlCopied": "URL disalin ke clipboard",
+    "videoCopied": "Video disalin ke clipboard"
+  },
+  "playlist": {
+    "badgeLabel": "Playlist",
+    "clearPreview": "Hapus pratinjau",
+    "comingSoon": "Fitur unduh playlist segera hadir!",
+    "completed": "Playlist diunduh",
+    "description": "Unduh semua video dari playlist atau saluran YouTube",
+    "downloadFailed": "Gagal memulai unduhan playlist",
+    "downloadPlaylist": "Unduh Playlist",
+    "downloadStarted": "Mulai mengunduh {{count}} video dari playlist",
+    "downloadType": "Jenis Unduhan",
+    "downloading": "Mengunduh playlist:",
+    "endIndex": "Akhir",
+    "enterPlaylistUrl": "Masukkan URL Playlist",
+    "fetchFailed": "Gagal mengambil informasi playlist",
+    "filenameFormat": "Format nama file untuk playlist",
+    "folderFormat": "Format nama folder untuk playlist",
+    "foundVideos": "Ditemukan {{count}} video dalam playlist",
+    "groupActive": "{{count}} aktif",
+    "groupErrors": "{{count}} gagal",
+    "groupSummary": "{{completed}} / {{total}} selesai",
+    "linkLabel": "URL Playlist",
+    "noEntries": "Tidak ada video yang ditemukan dalam playlist ini",
+    "noEntriesInRange": "Tidak ada video dalam rentang yang dipilih",
+    "noRangeSelected": "Tidak ada akhir yang ditetapkan - playlist penuh dipilih",
+    "playlistUrlDescription": "Unduh semua video dari playlist secara massal",
+    "positionLabel": "Item {{index}} dari {{total}}",
+    "previewButton": "Pratinjau playlist",
+    "previewFailed": "Gagal mempratinjau playlist",
+    "previewSummary": "Pratinjau item playlist sebelum mengunduh.",
+    "previewRequired": "Pratinjau playlist sebelum mengunduh.",
+    "range": "Rentang (Opsional)",
+    "resetToDefault": "Reset ke default",
+    "selectedRange": "Rentang: {{start}}-{{end}}",
+    "showingCount": "Menampilkan {{count}} video",
+    "startIndex": "Mulai (1)",
+    "title": "Unduh Playlist",
+    "totalVideos": "Total video: {{count}}",
+    "untitled": "Playlist tanpa judul"
+  },
+  "settings": {
+    "aboutTab": "Tentang",
+    "advanced": "Lanjutan",
+    "app": "Pengaturan Aplikasi",
+    "audio": "Preferensi Audio",
+    "browserForCookies": "Pilih browser untuk menggunakan cookie",
+    "browserForCookiesDescription": "Browser untuk mengekstrak cookie untuk autentikasi",
+    "cookiesFile": "File cookie",
+    "cookiesFileDescription": "File cookie format Netscape untuk dimuat untuk autentikasi",
+    "clearCookiesFile": "Hapus",
+    "cookiesHelpTitle": "Menggunakan cookie",
+    "cookiesHelpBrowser": "Pilih browser Anda di atas untuk menggunakan kembali sesi masuk secara otomatis.",
+    "cookiesHelpFile": "Ekspor file cookie Netscape (lihat FAQ yt-dlp) dan pilih di sini saat diperlukan.",
+    "cookiesHelpFaq": "Buka FAQ cookie yt-dlp",
+    "openLinkError": "Gagal membuka tautan",
+    "browserOptions": {
+      "brave": "Brave",
+      "chrome": "Chrome",
+      "edge": "Edge",
+      "firefox": "Firefox",
+      "safari": "Safari"
+    },
+    "configFile": "Gunakan file konfigurasi",
+    "configFileDescription": "File konfigurasi khusus untuk yt-dlp",
+    "clearConfigFile": "Hapus",
+    "dark": "Gelap",
+    "description": "Konfigurasikan preferensi unduhan dan pengaturan aplikasi Anda",
+    "directorySelectError": "Gagal memilih direktori",
+    "downloadPath": "Lokasi unduhan",
+    "downloadPathDescription": "Pilih tempat menyimpan file yang diunduh",
+    "fileSelectError": "Gagal memilih file",
+    "general": "Umum",
+    "language": "Bahasa",
+    "light": "Terang",
+    "hideDockIcon": "Sembunyikan ikon Dock",
+    "hideDockIconDescription": "Hapus VidBee dari Dock macOS. Gunakan menu bar atau ikon tray untuk membuka kembali aplikasi.",
+    "launchAtLogin": "Luncurkan saat startup",
+    "launchAtLoginDescription": "Buka VidBee secara otomatis setelah Anda masuk ke komputer Anda.",
+    "launchAtLoginUnsupported": "Peluncuran otomatis hanya tersedia di macOS dan Windows.",
+    "enableAnalytics": "Bantu tingkatkan VidBee",
+    "enableAnalyticsDescription": "Bagikan data penggunaan anonim untuk membantu kami memahami bagaimana aplikasi digunakan dan memprioritaskan peningkatan.",
+    "maxConcurrentDownloads": "Jumlah maksimum unduhan aktif",
+    "maxConcurrentDownloadsDescription": "Jumlah maksimum unduhan bersamaan",
+    "none": "Tidak ada",
+    "oneClickDownload": "Unduh Satu Klik",
+    "oneClickDownloadDescription": "Aktifkan unduh satu klik dengan pengaturan default",
+    "oneClickDownloadType": "Jenis unduhan default",
+    "oneClickDownloadTypeDescription": "Pilih jenis unduhan default untuk unduhan satu klik. Kualitas menggunakan preset di bawah ini.",
+    "oneClickQuality": "Kualitas yang disukai",
+    "oneClickQualityDescription": "Pilih preset kualitas yang digunakan untuk unduhan satu klik",
+    "oneClickQualityOptions": {
+      "auto": "Otomatis",
+      "bad": "Buruk",
+      "best": "Terbaik",
+      "good": "Baik",
+      "normal": "Normal",
+      "worst": "Terburuk"
+    },
+    "proxy": "Proxy",
+    "proxyDescription": "Server proxy untuk permintaan jaringan",
+    "proxyPlaceholder": "http://proxy:port",
+    "selectConfigFile": "Pilih file konfigurasi",
+    "selectPath": "Pilih",
+    "showMoreFormats": "Tampilkan lebih banyak opsi format",
+    "showMoreFormatsDescription": "Tampilkan opsi format tambahan di antarmuka",
+    "subscriptionDefaults": {
+      "filenameDescription": "Pola yang digunakan ketika berlangganan tidak menimpa nama filenya.",
+      "intervalDescription": "Seberapa sering VidBee memeriksa setiap feed berlangganan (1-24 jam)."
+    },
+    "system": "Sistem",
+    "theme": "Tema",
+    "themeDescription": "Pilih tema terang, gelap, atau sistem untuk VidBee",
+    "title": "Pengaturan",
+    "tray": {
+      "quit": "Keluar",
+      "showHome": "Tampilkan Beranda"
+    },
+    "video": "Preferensi Video"
+  },
+  "subscriptions": {
+    "title": "Berlangganan",
+    "subtitle": "{{count}} berlangganan{{count, plural, one {} other {}}}",
+    "description": "Pantau feed RSS secara otomatis dan antre unduhan baru tanpa pekerjaan manual.",
+    "defaults": {
+      "title": "Default otomatisasi",
+      "description": "Kontrol di mana unduhan berlangganan disimpan dan seberapa sering VidBee memeriksa video baru.",
+      "downloadDirectory": "Direktori unduhan",
+      "filenameTemplate": "Template nama file (hanya file)",
+      "checkInterval": "Interval pemeriksaan (jam)",
+      "onlyLatest": "Unduh hanya video terbaru",
+      "onlyLatestDescription": "Saat diaktifkan, VidBee melewati item backlog lama dan hanya mengambil unggahan terbaru."
+    },
+    "add": {
+      "title": "Tambah RSS",
+      "description": "Tempel tautan feed RSS. VidBee akan mendeteksi feed secara otomatis."
+    },
+    "fields": {
+      "url": "URL Feed",
+      "keywords": "Filter kata kunci (dipisahkan koma)",
+      "tags": "Tag otomatis",
+      "customDirectory": "Direktori khusus",
+      "namingTemplate": "Template nama file khusus (hanya file)",
+      "onlyLatest": "Unduh hanya video terbaru",
+      "onlyLatestDescription": "Abaikan item backlog dan ambil hanya unggahan terbaru dari feed ini.",
+      "enabled": "Diaktifkan",
+      "disabled": "Dinonaktifkan",
+      "onlyLatestShort": "Hanya terbaru"
+    },
+    "placeholders": {
+      "url": "https://rsshub.app/youtube/user/@FKJ"
+    },
+    "actions": {
+      "add": "Tambah",
+      "refresh": "Segarkan",
+      "edit": "Edit",
+      "remove": "Hapus",
+      "save": "Simpan perubahan",
+      "selectDirectory": "Jelajahi",
+      "enable": "Aktifkan",
+      "disable": "Nonaktifkan"
+    },
+    "items": {
+      "title": "Unggahan terbaru ({{count}})",
+      "count": "{{count}} item",
+      "empty": "Tidak ada item feed terbaru ditemukan.",
+      "status": {
+        "queued": "Diantre",
+        "notQueued": "Tidak diantre",
+        "pending": "Menunggu",
+        "downloading": "Mengunduh",
+        "processing": "Memproses",
+        "completed": "Selesai",
+        "error": "Gagal",
+        "cancelled": "Dibatalkan"
+      },
+      "fromChannel": "Dari {{channel}}",
+      "tooltip": {
+        "downloadStatus": "Status unduhan: {{status}}",
+        "downloadPending": "Menunggu detail unduhan...",
+        "notQueued": "Belum dalam antrian unduhan"
+      },
+      "actions": {
+        "open": "Buka di browser",
+        "queue": "Tambahkan ke antrian unduhan"
+      }
+    },
+    "labels": {
+      "subscription": "Berlangganan",
+      "unknown": "Berlangganan tidak diketahui",
+      "noThumbnail": "Tidak ada thumbnail"
+    },
+    "notifications": {
+      "directoryError": "Gagal membuka pemilih direktori.",
+      "missingUrl": "Silakan tempel tautan saluran terlebih dahulu.",
+      "created": "Berlangganan ditambahkan",
+      "createError": "Gagal menambahkan berlangganan.",
+      "refreshStarted": "Penyegaran dimulai",
+      "removed": "Berlangganan dihapus",
+      "updated": "Berlangganan diperbarui",
+      "itemQueued": "Ditambahkan ke antrian unduhan",
+      "itemAlreadyQueued": "Video ini sudah diantre",
+      "queueError": "Gagal menambahkan ke antrian unduhan.",
+      "openLinkError": "Gagal membuka tautan video.",
+      "resolveError": "Gagal menyelesaikan URL feed RSS."
+    },
+    "detectedFeed": "Feed {{platform}} terdeteksi -> {{feed}}",
+    "detecting": "Mendeteksi feed...",
+    "latestVideo": "Video terbaru: {{title}}",
+    "lastChecked": "Terakhir diperiksa: {{time}}",
+    "never": "Tidak pernah",
+    "empty": "Belum ada berlangganan. Tambahkan saluran favorit Anda untuk mulai mengunduh otomatis.",
+    "edit": {
+      "title": "Edit {{name}}",
+      "description": "Sesuaikan filter, tag, dan penggantian untuk feed ini."
+    },
+    "status": {
+      "title": "Status",
+      "up-to-date": "Terbaru",
+      "checking": "Memeriksa",
+      "failed": "Gagal",
+      "idle": "Menganggur",
+      "tooltip": {
+        "updatedAt": "Diperbarui: {{time}}"
+      }
+    },
+    "rssHub": {
+      "title": "Berlangganan Otomatis dengan RSSHub",
+      "description": "Gabungkan VidBee dengan RSSHub untuk mengaktifkan berlangganan dan unduhan otomatis dari berbagai platform. Setelah disetel, VidBee berjalan di latar belakang dan secara otomatis mengunduh video dan konten terbaru.",
+      "learnMore": "Pelajari lebih lanjut tentang RSSHub",
+      "openDocs": "Buka Dokumentasi RSSHub",
+      "hint": "Tidak punya URL feed RSS? Gunakan RSSHub untuk menghasilkan feed RSS untuk YouTube, Twitter, dan ribuan platform lainnya."
+    }
+  },
+  "sites": {
+    "homeInlineDescription": "Mendukung {{sites}} dan lainnya.",
+    "moreDescription": "Daftar lengkap yt-dlp terus diperbarui oleh komunitas.",
+    "moreTitle": "Perlu situs lain?",
+    "openFullList": "Buka daftar lengkap situs yang didukung",
+    "pageDescription": "VidBee menggunakan yt-dlp di balik layar untuk mencapai ratusan sumber.",
+    "pageIntro": "Berikut adalah layanan utama yang paling sering diunduh orang.",
+    "pageTitle": "Situs yang Didukung",
+    "popular": {
+      "bandcamp": {
+        "description": "Album artis independen dan rilis komunitas.",
+        "label": "Bandcamp"
+      },
+      "dailymotion": {
+        "description": "Klip berita, olahraga, dan hiburan global.",
+        "label": "Dailymotion"
+      },
+      "facebook": {
+        "description": "Video Feed, Watch, dan Reels dari halaman publik.",
+        "label": "Facebook"
+      },
+      "instagram": {
+        "description": "Konten Feed, Stories, Reels, dan Highlights.",
+        "label": "Instagram"
+      },
+      "kick": {
+        "description": "Streaming langsung dan replay kreator di platform Kick.",
+        "label": "Kick"
+      },
+      "linkedin": {
+        "description": "Pembicaraan profesional, webinar, dan video pembelajaran.",
+        "label": "LinkedIn"
+      },
+      "mixcloud": {
+        "description": "Mix DJ, acara radio, dan audio format panjang.",
+        "label": "Mixcloud"
+      },
+      "niconico": {
+        "description": "Arsip animasi, musik, dan siaran langsung Jepang.",
+        "label": "Niconico"
+      },
+      "pinterest": {
+        "description": "Pin ide, reel cara-cara, dan video inspirasi gaya hidup.",
+        "label": "Pinterest"
+      },
+      "reddit": {
+        "description": "Klip tersemat dan video yang dihosting dari komunitas.",
+        "label": "Reddit"
+      },
+      "soundcloud": {
+        "description": "Lagu musik, playlist, dan set DJ.",
+        "label": "SoundCloud"
+      },
+      "tiktok": {
+        "description": "Video format pendek seluler, efek, dan streaming langsung.",
+        "label": "TikTok"
+      },
+      "tumblr": {
+        "description": "Media format pendek kreatif dan edit penggemar.",
+        "label": "Tumblr"
+      },
+      "twitch": {
+        "description": "Streaming langsung gaming, musik, dan IRL serta VOD.",
+        "label": "Twitch"
+      },
+      "twitter": {
+        "description": "Posting timeline, rekaman Spaces, dan siaran.",
+        "label": "X (Twitter)"
+      },
+      "vimeo": {
+        "description": "Hosting video kreator dan bisnis berkualitas tinggi.",
+        "label": "Vimeo"
+      },
+      "youtube": {
+        "description": "Video format panjang dan streaming langsung dari kreator di seluruh dunia.",
+        "label": "YouTube"
+      },
+      "youtubemusic": {
+        "description": "Video musik resmi, album, dan pertunjukan langsung.",
+        "label": "YouTube Music"
+      }
+    },
+    "popularSection": "Platform utama",
+    "viewAll": "Lihat semua situs yang didukung"
+  }
+}

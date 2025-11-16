@@ -2,8 +2,10 @@
   "about": {
     "actions": {
       "checkUpdates": "Controlla aggiornamenti",
+      "download": "Scaricamento",
       "email": "Email",
       "feedback": "Feedback",
+      "goToDownload": "Vai alla pagina di download",
       "openRepo": "Apri repository GitHub",
       "view": "Visualizza",
       "visit": "Visita"
@@ -14,6 +16,7 @@
     "betaProgramDescription": "Ricevi build anticipate e prossime funzionalità prima di tutti.",
     "betaProgramTitle": "Canale anteprima",
     "description": "VidBee è un downloader gratuito e open-source costruito con Electron e alimentato da yt-dlp.",
+    "downloadingUpdate": "Download dell'aggiornamento",
     "followAuthorActions": {
       "follow": "Segui @nexmoex"
     },
@@ -22,15 +25,26 @@
     "followAuthorTitle": "Segui lo Sviluppatore",
     "here": "qui",
     "homepage": "Homepage",
+    "latestVersionBadge": "Ultima: v{{version}}",
+    "latestVersionStatus": {
+      "available": "Nuova versione disponibile",
+      "error": "Impossibile recuperare l'ultima versione",
+      "uptodate": "Sei aggiornato"
+    },
     "notifications": {
       "checkingUpdates": "Ricerca aggiornamenti...",
       "downloadError": "Errore nel download dell'aggiornamento",
       "downloadStarted": "Download iniziato...",
       "downloadUpdate": "Scarica e installa l'aggiornamento {{version}}?",
+      "manualDownloadAction": "Scarica ora",
       "noUpdatesAvailable": "Stai usando l'ultima versione",
+      "restartNowAction": "Ricomincia adesso",
       "restartToUpdate": "Riavvia ora per installare l'aggiornamento?",
+      "unknownErrorFallback": "Errore sconosciuto",
       "updateAvailable": "Aggiornamento disponibile: {{version}}",
+      "updateAvailableMessage": "È disponibile una nuova versione {{version}}. \nSi prega di scaricarlo dal sito ufficiale.",
       "updateDownloaded": "Aggiornamento scaricato, riavvia per installare",
+      "updateDownloadedVersion": "Aggiornamento {{version}} scaricato, riavvia per installare",
       "updateError": "Errore nel controllo degli aggiornamenti: {{error}}"
     },
     "preferencesDescription": "Regola le impostazioni di aggiornamento senza lasciare questa pagina.",
@@ -62,13 +76,7 @@
     "sourceCode": "Il codice sorgente è disponibile",
     "title": "Informazioni",
     "version": "Versione",
-    "versionLabel": "v{{version}}",
-    "latestVersionBadge": "Ultima: v{{version}}",
-    "latestVersionStatus": {
-      "available": "Nuova versione disponibile",
-      "uptodate": "Sei aggiornato",
-      "error": "Impossibile recuperare l'ultima versione"
-    }
+    "versionLabel": "v{{version}}"
   },
   "advancedOptions": {
     "closeWhenDone": "Chiudi app quando il download finisce",
@@ -122,11 +130,39 @@
     "error": "Errore",
     "fetch": "Recupera",
     "fetchingVideoInfo": "Recupero informazioni video...",
+    "goToSettings": "Vai su Impostazioni",
+    "hideDetails": "Nascondi dettagli",
     "history": "Cronologia",
     "imageLoadError": "Errore nel caricamento dell'immagine",
     "imagePlaceholder": "Nessuna immagine disponibile",
     "infoUnavailable": "Download con Un Clic (Info non disponibile)",
     "loading": "Caricamento",
+    "metadata": {
+      "audioCodec": "Codec audio",
+      "codec": "Codec",
+      "completedAt": "Completato a",
+      "createdAt": "Creato a",
+      "description": "Descrizione",
+      "downloadPath": "Scarica il percorso",
+      "fileSize": "Dimensioni del file",
+      "format": "Formato",
+      "formatNote": "Nota sul formato",
+      "fps": "FPS",
+      "height": "Altezza",
+      "playlist": "Playlist",
+      "protocol": "Protocollo",
+      "quality": "Qualità",
+      "savedFile": "File salvato",
+      "source": "Fonte",
+      "speed": "Velocità",
+      "startedAt": "Iniziato alle",
+      "subscription": "Sottoscrizione",
+      "tags": "Tag",
+      "url": "URL di origine",
+      "videoCodec": "Codec video",
+      "views": "Viste",
+      "width": "Larghezza"
+    },
     "moreOptions": "Più opzioni",
     "noActiveDownloads": "Nessun download attivo",
     "noAudio": "Nessun Audio",
@@ -134,6 +170,7 @@
     "noItems": "Nessun elemento trovato",
     "oneClickDownload": "Download con Un Clic",
     "oneClickDownloadDescription": "Scarica direttamente con impostazioni predefinite senza conferma",
+    "oneClickDownloadEnabled": "Il download con un clic è abilitato. \nI download verranno avviati direttamente con le impostazioni predefinite.",
     "oneClickDownloadNow": "Scarica Ora",
     "oneClickDownloadStarted": "Download iniziato con impostazioni predefinite",
     "paste": "Incolla",
@@ -145,6 +182,7 @@
     "selectAudioFormat": "Seleziona Formato Audio",
     "selectFormat": "Seleziona Formato",
     "selectVideoFormat": "Seleziona Formato Video",
+    "showDetails": "Mostra dettagli",
     "singleVideo": "Video Singolo",
     "speed": "Velocità",
     "title": "Titolo",
@@ -209,6 +247,8 @@
     "download": "Scarica",
     "playlist": "Scarica Playlist",
     "preferences": "Preferenze",
+    "rss": "RSS",
+    "subscriptions": "Abbonamenti",
     "supportedSites": "Siti Supportati",
     "theme": "Tema:"
   },
@@ -226,6 +266,8 @@
     "videoCopied": "Video copiato negli appunti"
   },
   "playlist": {
+    "badgeLabel": "Playlist",
+    "clearPreview": "Anteprima chiara",
     "comingSoon": "La funzionalità di download playlist arriverà presto!",
     "completed": "Playlist scaricata",
     "description": "Scarica tutti i video da una playlist o canale YouTube",
@@ -240,12 +282,27 @@
     "filenameFormat": "Formato nome file per playlist",
     "folderFormat": "Formato nome cartella per playlist",
     "foundVideos": "Trovati {{count}} video nella playlist",
+    "groupActive": "{{count}} attivi",
+    "groupErrors": "{{count}} non riuscito",
+    "groupSummary": "{{completato}} / {{totale}} completati",
     "linkLabel": "URL Playlist",
+    "noEntries": "Nessun video trovato in questa playlist",
+    "noEntriesInRange": "Nessun video nell'intervallo selezionato",
+    "noRangeSelected": "Nessun set finale: playlist completa selezionata",
     "playlistUrlDescription": "Scarica tutti i video da una playlist in blocco",
+    "positionLabel": "Articolo {{index}} di {{total}}",
+    "previewButton": "Anteprima della playlist",
+    "previewFailed": "Impossibile visualizzare l'anteprima della playlist",
+    "previewRequired": "Anteprima della playlist prima del download.",
+    "previewSummary": "Anteprima degli elementi della playlist prima del download.",
     "range": "Intervallo (Opzionale)",
     "resetToDefault": "Ripristina predefinito",
+    "selectedRange": "Intervallo: {{inizio}}-{{fine}}",
+    "showingCount": "Visualizzazione di {{count}} video",
     "startIndex": "Inizio (1)",
-    "title": "Scarica Playlist"
+    "title": "Scarica Playlist",
+    "totalVideos": "Video totali: {{count}}",
+    "untitled": "Playlist senza titolo"
   },
   "settings": {
     "aboutTab": "Informazioni",
@@ -261,16 +318,31 @@
       "firefox": "Firefox",
       "safari": "Safari"
     },
+    "clearConfigFile": "Chiaro",
+    "clearCookiesFile": "Chiaro",
     "configFile": "Usa file di configurazione",
     "configFileDescription": "File di configurazione personalizzato per yt-dlp",
+    "cookiesFile": "Archivio dei cookie",
+    "cookiesFileDescription": "File cookie formattato per Netscape da caricare per l'autenticazione",
+    "cookiesHelpBrowser": "Scegli il tuo browser qui sopra per riutilizzare automaticamente la sessione a cui hai effettuato l'accesso.",
+    "cookiesHelpFaq": "Apri le domande frequenti sui cookie yt-dlp",
+    "cookiesHelpFile": "Esporta un file cookie di Netscape (vedi le FAQ yt-dlp) e selezionalo qui quando necessario.",
+    "cookiesHelpTitle": "Utilizzo dei cookie",
     "dark": "Scuro",
     "description": "Configura le tue preferenze di download e impostazioni dell'app",
     "directorySelectError": "Errore nella selezione della directory",
     "downloadPath": "Posizione download",
     "downloadPathDescription": "Scegli dove salvare i file scaricati",
+    "enableAnalytics": "Aiutaci a migliorare VidBee",
+    "enableAnalyticsDescription": "Condividi dati di utilizzo anonimi per aiutarci a capire come viene utilizzata l'app e dare priorità ai miglioramenti.",
     "fileSelectError": "Errore nella selezione del file",
     "general": "Generale",
+    "hideDockIcon": "Nascondi l'icona del Dock",
+    "hideDockIconDescription": "Rimuovi VidBee dal Dock di macOS. \nUtilizza la barra dei menu o l'icona nella barra delle applicazioni per riaprire l'app.",
     "language": "Lingua",
+    "launchAtLogin": "Avvia all'avvio",
+    "launchAtLoginDescription": "Apri VidBee automaticamente dopo aver effettuato l'accesso al tuo computer.",
+    "launchAtLoginUnsupported": "L'avvio automatico è disponibile solo su macOS e Windows.",
     "light": "Chiaro",
     "maxConcurrentDownloads": "Numero massimo di download attivi",
     "maxConcurrentDownloadsDescription": "Numero massimo di download simultanei",
@@ -289,6 +361,7 @@
       "normal": "Normale",
       "worst": "Peggiore"
     },
+    "openLinkError": "Impossibile aprire il collegamento",
     "proxy": "Proxy",
     "proxyDescription": "Server proxy per le richieste di rete",
     "proxyPlaceholder": "http://proxy:port",
@@ -296,6 +369,10 @@
     "selectPath": "Seleziona",
     "showMoreFormats": "Mostra più opzioni formato",
     "showMoreFormatsDescription": "Visualizza opzioni di formato aggiuntive nell'interfaccia",
+    "subscriptionDefaults": {
+      "filenameDescription": "Modello utilizzato quando una sottoscrizione non sovrascrive il relativo nome file.",
+      "intervalDescription": "La frequenza con cui VidBee controlla ciascun feed di abbonamento (1-24 ore)."
+    },
     "system": "Sistema",
     "theme": "Tema",
     "themeDescription": "Scegli un tema chiaro, scuro o sistema per VidBee",
@@ -390,5 +467,119 @@
     },
     "popularSection": "Piattaforme principali",
     "viewAll": "Visualizza tutti i siti supportati"
+  },
+  "subscriptions": {
+    "actions": {
+      "add": "Aggiungere",
+      "disable": "Disabilita",
+      "edit": "Modificare",
+      "enable": "Abilitare",
+      "refresh": "Aggiorna",
+      "remove": "Rimuovere",
+      "save": "Salva modifiche",
+      "selectDirectory": "Sfoglia"
+    },
+    "add": {
+      "description": "Incolla un collegamento al feed RSS. \nVidBee rileverà automaticamente il feed.",
+      "title": "Aggiungi RSS"
+    },
+    "defaults": {
+      "checkInterval": "Intervallo di controllo (ore)",
+      "description": "Controlla dove vengono archiviati i download degli abbonamenti e la frequenza con cui VidBee verifica la presenza di nuovi video.",
+      "downloadDirectory": "Scarica la directory",
+      "filenameTemplate": "Modello nome file (solo file)",
+      "onlyLatest": "Scarica solo il video più recente",
+      "onlyLatestDescription": "Se abilitato, VidBee salta gli elementi del backlog più vecchi e acquisisce solo il caricamento più recente.",
+      "title": "Impostazioni predefinite dell'automazione"
+    },
+    "description": "Monitora automaticamente i feed RSS e accoda i nuovi download senza lavoro manuale.",
+    "detectedFeed": "Feed {{platform}} rilevato -> {{feed}}",
+    "detecting": "Rilevamento alimentazione...",
+    "edit": {
+      "description": "Modifica filtri, tag e sostituzioni per questo feed.",
+      "title": "Modifica {{nome}}"
+    },
+    "empty": "Nessun abbonamento ancora. \nAggiungi i tuoi canali preferiti per avviare il download automatico.",
+    "fields": {
+      "customDirectory": "Directory personalizzata",
+      "disabled": "Disabilitato",
+      "enabled": "Abilitato",
+      "keywords": "Filtro parole chiave (separati da virgole)",
+      "namingTemplate": "Modello nome file personalizzato (solo file)",
+      "onlyLatest": "Scarica solo il video più recente",
+      "onlyLatestDescription": "Ignora gli elementi del backlog e recupera solo il caricamento più recente da questo feed.",
+      "onlyLatestShort": "Solo più recente",
+      "tags": "Tag automatici",
+      "url": "URL del feed"
+    },
+    "items": {
+      "actions": {
+        "open": "Apri nel browser",
+        "queue": "Aggiungi alla coda di download"
+      },
+      "count": "{{count}} articoli",
+      "empty": "Nessun elemento del feed recente trovato.",
+      "fromChannel": "Da {{canale}}",
+      "status": {
+        "cancelled": "Annullato",
+        "completed": "Completato",
+        "downloading": "Download in corso",
+        "error": "Fallito",
+        "notQueued": "Non in coda",
+        "pending": "In attesa di",
+        "processing": "Elaborazione",
+        "queued": "In coda"
+      },
+      "title": "Ultimi caricamenti ({{count}})",
+      "tooltip": {
+        "downloadPending": "In attesa dei dettagli per il download...",
+        "downloadStatus": "Stato del download: {{status}}",
+        "notQueued": "Non ancora nella coda di download"
+      }
+    },
+    "labels": {
+      "noThumbnail": "Nessuna miniatura",
+      "subscription": "Sottoscrizione",
+      "unknown": "Abbonamento sconosciuto"
+    },
+    "lastChecked": "Ultimo controllo: {{time}}",
+    "latestVideo": "Ultimo video: {{title}}",
+    "never": "Mai",
+    "notifications": {
+      "createError": "Impossibile aggiungere l'abbonamento.",
+      "created": "Abbonamento aggiunto",
+      "directoryError": "Impossibile aprire il selettore di directory.",
+      "itemAlreadyQueued": "Questo video è già in coda",
+      "itemQueued": "Aggiunto alla coda di download",
+      "missingUrl": "Incolla prima il collegamento al canale.",
+      "openLinkError": "Impossibile aprire il collegamento video.",
+      "queueError": "Impossibile aggiungere alla coda di download.",
+      "refreshStarted": "Aggiornamento avviato",
+      "removed": "Abbonamento rimosso",
+      "resolveError": "Impossibile risolvere l'URL del feed RSS.",
+      "updated": "Abbonamento aggiornato"
+    },
+    "placeholders": {
+      "url": "https://rsshub.app/youtube/user/@FKJ"
+    },
+    "rssHub": {
+      "description": "Combina VidBee con RSSHub per abilitare abbonamenti e download automatizzati da varie piattaforme. \nUna volta configurato, VidBee viene eseguito in background e scarica automaticamente i video e i contenuti più recenti.",
+      "hint": "Non hai l'URL del feed RSS? \nUtilizza RSSHub per generare feed RSS per YouTube, Twitter e migliaia di altre piattaforme.",
+      "learnMore": "Ulteriori informazioni su RSSHub",
+      "openDocs": "Apri la documentazione RSSHub",
+      "title": "Abbonamenti automatizzati con RSSHub"
+    },
+    "status": {
+      "checking": "Controllo",
+      "failed": "Fallito",
+      "idle": "Oziare",
+      "title": "Stato",
+      "tooltip": {
+        "updatedAt": "Aggiornato: {{time}}"
+      },
+      "up-to-date": "Aggiornato"
+    },
+    "subtitle": "{{count}} abbonamento{{count, plural, one {} other {s}}}",
+    "title": "Abbonamenti"
   }
 }
