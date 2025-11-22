@@ -436,6 +436,9 @@ export function Settings() {
                     <SelectContent>
                       <SelectItem value="none">{t('settings.none')}</SelectItem>
                       <SelectItem value="chrome">{t('settings.browserOptions.chrome')}</SelectItem>
+                      <SelectItem value="chromium">
+                        {t('settings.browserOptions.chromium')}
+                      </SelectItem>
                       <SelectItem value="firefox">
                         {t('settings.browserOptions.firefox')}
                       </SelectItem>

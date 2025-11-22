@@ -1,7 +1,7 @@
 node_modules
 dist
 out
+.conductor/
 .DS_Store
 .eslintcache
 *.log*
-
