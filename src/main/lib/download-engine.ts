@@ -20,6 +20,7 @@ import {
 } from '../download-engine/format-utils'
 import { settingsManager } from '../settings'
 import { scopedLoggers } from '../utils/logger'
+import { resolvePathWithHome } from '../utils/path-helpers'
 import { DownloadQueue } from './download-queue'
 import { ffmpegManager } from './ffmpeg-manager'
 import { historyManager } from './history-manager'
@@ -74,8 +75,9 @@ class DownloadEngine extends EventEmitter {
     }
 
     // Add config file if configured
-    if (settings.configPath) {
-      args.push('--config-location', `"${settings.configPath}"`)
+    const configPath = resolvePathWithHome(settings.configPath)
+    if (configPath) {
+      args.push('--config-location', configPath)
     }
 
     args.push(url)
@@ -169,8 +171,9 @@ class DownloadEngine extends EventEmitter {
     }
 
     // Add config file if configured
-    if (settings.configPath) {
-      args.push('--config-location', `"${settings.configPath}"`)
+    const configPath = resolvePathWithHome(settings.configPath)
+    if (configPath) {
+      args.push('--config-location', configPath)
     }
 
     args.push(url)

@@ -1,5 +1,6 @@
 import path from 'node:path'
 import type { AppSettings, DownloadOptions } from '../../shared/types'
+import { resolvePathWithHome } from '../utils/path-helpers'
 
 export const sanitizeFilenameTemplate = (template: string): string => {
   const trimmed = template.trim()
@@ -115,8 +116,9 @@ export const buildDownloadArgs = (
     args.push('--proxy', settings.proxy)
   }
 
-  if (settings.configPath) {
-    args.push('--config-location', settings.configPath)
+  const configPath = resolvePathWithHome(settings.configPath)
+  if (configPath) {
+    args.push('--config-location', configPath)
   }
 
   args.push(options.url)
