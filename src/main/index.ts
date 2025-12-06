@@ -1,6 +1,8 @@
-import { join } from 'node:path'
+import { existsSync } from 'node:fs'
+import { isAbsolute, join, relative, resolve } from 'node:path'
 import { electronApp, optimizer } from '@electron-toolkit/utils'
-import { app, BrowserWindow, type BrowserWindowConstructorOptions, shell } from 'electron'
+import { APP_PROTOCOL, APP_PROTOCOL_SCHEME } from '@shared/constants'
+import { app, BrowserWindow, type BrowserWindowConstructorOptions, protocol, shell } from 'electron'
 import log from 'electron-log/main'
 import { autoUpdater } from 'electron-updater'
 import appIcon from '../../build/icon.png?asset'
@@ -21,6 +23,19 @@ log.initialize()
 
 // Configure logger settings
 configureLogger()
+
+const RENDERER_DIST_PATH = join(__dirname, '../renderer')
+
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: APP_PROTOCOL,
+    privileges: {
+      secure: true,
+      standard: true,
+      supportFetchAPI: true
+    }
+  }
+])
 
 let mainWindow: BrowserWindow | null = null
 let isQuitting = false
@@ -84,7 +99,7 @@ export function createWindow(): void {
   if (process.env.ELECTRON_RENDERER_URL) {
     mainWindow.loadURL(process.env.ELECTRON_RENDERER_URL)
   } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
+    mainWindow.loadURL(`${APP_PROTOCOL_SCHEME}renderer/index.html`)
   }
 
   mainWindow.webContents.on('did-finish-load', () => {
@@ -115,6 +130,66 @@ function setupDownloadEvents(): void {
   downloadEngine.on('download-cancelled', (id: string) => {
     mainWindow?.webContents.send('download:cancelled', id)
   })
+}
+
+function sanitizeRequestPath(requestUrl: URL): string {
+  const rawPath = `${requestUrl.hostname}${decodeURIComponent(requestUrl.pathname)}`
+  const trimmedLeading = rawPath.replace(/^\/+/, '')
+  const cleaned = trimmedLeading.replace(/\/+$/, '')
+  return cleaned || 'index.html'
+}
+
+function isWithinBase(targetPath: string, basePath: string): boolean {
+  const relativePath = relative(basePath, targetPath)
+  return !relativePath.startsWith('..') && !isAbsolute(relativePath)
+}
+
+function resolveVidbeeFilePath(requestUrl: URL, userDataPath: string): string | null {
+  const sanitizedPath = sanitizeRequestPath(requestUrl)
+  const [rootSegment, ...restSegments] = sanitizedPath.split('/')
+  const rendererPath = restSegments.join('/') || 'index.html'
+
+  if (rootSegment === 'renderer') {
+    const rendererTarget = resolve(RENDERER_DIST_PATH, rendererPath)
+
+    if (isWithinBase(rendererTarget, RENDERER_DIST_PATH) && existsSync(rendererTarget)) {
+      return rendererTarget
+    }
+  }
+
+  const userDataTarget = resolve(userDataPath, sanitizedPath)
+
+  if (isWithinBase(userDataTarget, userDataPath) && existsSync(userDataTarget)) {
+    return userDataTarget
+  }
+
+  const rendererFallback = resolve(RENDERER_DIST_PATH, sanitizedPath)
+
+  if (isWithinBase(rendererFallback, RENDERER_DIST_PATH) && existsSync(rendererFallback)) {
+    return rendererFallback
+  }
+
+  return null
+}
+
+function registerVidbeeProtocol(): void {
+  try {
+    const userDataPath = app.getPath('userData')
+    protocol.registerFileProtocol(APP_PROTOCOL, (request, callback) => {
+      const requestUrl = new URL(request.url)
+      const filePath = resolveVidbeeFilePath(requestUrl, userDataPath)
+
+      if (!filePath) {
+        log.error(`File not found for ${request.url}`)
+        callback({ error: -6 })
+        return
+      }
+
+      callback(filePath)
+    })
+  } catch (error) {
+    log.error(`Failed to register ${APP_PROTOCOL} protocol:`, error)
+  }
 }
 
 function initAutoUpdater(): void {
@@ -188,6 +263,13 @@ function initAutoUpdater(): void {
 app.whenReady().then(async () => {
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.vidbee')
+
+  registerVidbeeProtocol()
+
+  const registered = app.setAsDefaultProtocolClient(APP_PROTOCOL)
+  if (!registered) {
+    log.warn(`Failed to register ${APP_PROTOCOL} protocol handler`)
+  }
 
   // Default open or close DevTools by F12 in development
   // and ignore CommandOrControl + R in production.

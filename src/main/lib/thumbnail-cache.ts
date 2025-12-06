@@ -2,7 +2,7 @@ import crypto from 'node:crypto'
 import fs from 'node:fs'
 import fsPromises from 'node:fs/promises'
 import path from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { APP_PROTOCOL_SCHEME } from '@shared/constants'
 import { app } from 'electron'
 
 const SUPPORTED_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif'])
@@ -37,7 +37,11 @@ export class ThumbnailCache {
       return null
     }
 
-    if (originalUrl.startsWith('file://') || originalUrl.startsWith('data:')) {
+    if (
+      originalUrl.startsWith(APP_PROTOCOL_SCHEME) ||
+      originalUrl.startsWith('file://') ||
+      originalUrl.startsWith('data:')
+    ) {
       return originalUrl
     }
 
@@ -59,7 +63,7 @@ export class ThumbnailCache {
 
       const existingPath = await this.findExistingPath(basePath, defaultExtension)
       if (existingPath) {
-        return pathToFileURL(existingPath).toString()
+        return this.toAppProtocolUrl(existingPath)
       }
 
       const response = await fetch(originalUrl)
@@ -75,7 +79,7 @@ export class ThumbnailCache {
       const finalPath = `${basePath}${extension}`
 
       await fsPromises.writeFile(finalPath, buffer)
-      return pathToFileURL(finalPath).toString()
+      return this.toAppProtocolUrl(finalPath)
     } catch (error) {
       console.error('Failed to cache thumbnail:', error)
       return null
@@ -131,6 +135,13 @@ export class ThumbnailCache {
 
     const basePath = path.join(cacheDir, `${hash}`)
     return { basePath, defaultExtension: extension }
+  }
+
+  private toAppProtocolUrl(filePath: string): string {
+    const userDataPath = app.getPath('userData')
+    const relativePath = path.relative(userDataPath, filePath).replace(/\\/g, '/')
+
+    return `${APP_PROTOCOL_SCHEME}${relativePath}`
   }
 }
 

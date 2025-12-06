@@ -1,3 +1,4 @@
+import { APP_PROTOCOL_SCHEME } from '@shared/constants'
 import { Loader2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useCachedThumbnail } from '../../hooks/use-cached-thumbnail'
@@ -7,7 +8,7 @@ interface RemoteImageProps {
   /**
    * Remote image URL or local file path
    * If it's a remote URL (http/https), it will be cached automatically
-   * If it's a local path (file:// or data:), it will be used directly
+   * If it's a local path (vidbee://, file:// or data:), it will be used directly
    */
   src?: string | null
   alt: string
@@ -36,7 +37,7 @@ interface RemoteImageProps {
  *
  * This component automatically handles:
  * - Remote URL caching via thumbnail cache service
- * - Local file paths (file://, data:)
+ * - Local file paths (vidbee://, file://, data:)
  * - Loading states and error handling
  * - Placeholder display with loading indicator
  *
@@ -46,7 +47,7 @@ interface RemoteImageProps {
  * <RemoteImage src="https://example.com/image.jpg" alt="Example" />
  *
  * // Local file path (no caching)
- * <RemoteImage src="file:///path/to/image.jpg" alt="Local" />
+ * <RemoteImage src="vidbee://thumbnails/example.jpg" alt="Local" />
  *
  * // Without cache (direct load)
  * <RemoteImage src="https://example.com/image.jpg" alt="Example" useCache={false} />
@@ -80,6 +81,7 @@ export function RemoteImage({
   const shouldUseCache =
     useCache &&
     src &&
+    !src.startsWith(APP_PROTOCOL_SCHEME) &&
     !src.startsWith('file://') &&
     !src.startsWith('data:') &&
     (src.startsWith('http://') || src.startsWith('https://'))

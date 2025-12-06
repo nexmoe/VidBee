@@ -1,5 +1,5 @@
+import { APP_PROTOCOL_SCHEME } from '@shared/constants'
 import { useEffect, useState } from 'react'
-
 import { ipcServices } from '../lib/ipc'
 
 export const useCachedThumbnail = (url?: string | null): string | undefined => {
@@ -14,7 +14,11 @@ export const useCachedThumbnail = (url?: string | null): string | undefined => {
         return
       }
 
-      if (url.startsWith('file://') || url.startsWith('data:')) {
+      if (
+        url.startsWith(APP_PROTOCOL_SCHEME) ||
+        url.startsWith('file://') ||
+        url.startsWith('data:')
+      ) {
         setCachedUrl(url)
         return
       }
