@@ -7,6 +7,7 @@ import { useAtom, useSetAtom } from 'jotai'
 import { ThemeProvider } from 'next-themes'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { HashRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { ipcEvents, ipcServices } from './lib/ipc'
 import { About } from './pages/About'
@@ -19,8 +20,36 @@ import { loadSubscriptionsAtom, setSubscriptionsAtom } from './store/subscriptio
 
 type Page = 'home' | 'subscriptions' | 'settings' | 'about' | 'sites'
 
+const pageToPath: Record<Page, string> = {
+  home: '/',
+  subscriptions: '/subscriptions',
+  settings: '/settings',
+  about: '/about',
+  sites: '/sites'
+}
+
+const normalizePathname = (pathname: string): string => {
+  const trimmed = pathname.replace(/\/+$/, '')
+  return trimmed === '' ? '/' : trimmed
+}
+
+const pathToPage = (pathname: string): Page => {
+  const normalized = normalizePathname(pathname)
+  switch (normalized) {
+    case '/subscriptions':
+      return 'subscriptions'
+    case '/settings':
+      return 'settings'
+    case '/about':
+      return 'about'
+    case '/sites':
+      return 'sites'
+    default:
+      return 'home'
+  }
+}
+
 function AppContent() {
-  const [currentPage, setCurrentPage] = useState<Page>('home')
   const [platform, setPlatform] = useState<string>('')
   const loadSubscriptions = useSetAtom(loadSubscriptionsAtom)
   const setSubscriptions = useSetAtom(setSubscriptionsAtom)
@@ -29,6 +58,16 @@ function AppContent() {
   const { t } = useTranslation()
   const updateDownloadInProgressRef = useRef(false)
   const analyticsScriptRef = useRef<HTMLScriptElement | null>(null)
+  const navigate = useNavigate()
+  const location = useLocation()
+  const currentPage = pathToPage(location.pathname)
+
+  const handlePageChange = (page: Page) => {
+    const targetPath = pageToPath[page] ?? '/'
+    if (normalizePathname(location.pathname) !== targetPath) {
+      navigate(targetPath)
+    }
+  }
 
   useEffect(() => {
     loadSettings()
@@ -185,37 +224,10 @@ function AppContent() {
     }
   }, [t])
 
-  const renderPage = () => {
-    switch (currentPage) {
-      case 'home':
-        return (
-          <Home
-            onOpenSupportedSites={() => setCurrentPage('sites')}
-            onOpenSettings={() => setCurrentPage('settings')}
-          />
-        )
-      case 'settings':
-        return <Settings />
-      case 'subscriptions':
-        return <Subscriptions />
-      case 'about':
-        return <About />
-      case 'sites':
-        return <SupportedSites />
-      default:
-        return (
-          <Home
-            onOpenSupportedSites={() => setCurrentPage('sites')}
-            onOpenSettings={() => setCurrentPage('settings')}
-          />
-        )
-    }
-  }
-
   return (
     <div className="flex flex-row h-screen">
       {/* Sidebar Navigation */}
-      <Sidebar currentPage={currentPage} onPageChange={setCurrentPage} />
+      <Sidebar currentPage={currentPage} onPageChange={handlePageChange} />
 
       {/* Main Content */}
       <main className="flex flex-col flex-1 min-h-0 overflow-hidden bg-background">
@@ -227,7 +239,22 @@ function AppContent() {
           style={{ maxWidth: '100%' }}
         >
           <div className="w-full overflow-hidden" style={{ maxWidth: '100%' }}>
-            {renderPage()}
+            <Routes>
+              <Route
+                path="/"
+                element={
+                  <Home
+                    onOpenSupportedSites={() => handlePageChange('sites')}
+                    onOpenSettings={() => handlePageChange('settings')}
+                  />
+                }
+              />
+              <Route path="/subscriptions" element={<Subscriptions />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/sites" element={<SupportedSites />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
           </div>
         </ScrollArea>
       </main>
@@ -240,7 +267,9 @@ function AppContent() {
 function App() {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <AppContent />
+      <HashRouter>
+        <AppContent />
+      </HashRouter>
     </ThemeProvider>
   )
 }

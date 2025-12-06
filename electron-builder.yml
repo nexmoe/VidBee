@@ -2,6 +2,10 @@ appId: com.vidbee
 productName: VidBee
 directories:
   buildResources: build
+protocols:
+  - name: VidBee
+    schemes:
+      - vidbee
 files:
   - '!**/.vscode/*'
   - '!src/*'
@@ -19,6 +23,7 @@ nsis:
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
 mac:
+  identity: null
   entitlementsInherit: build/entitlements.mac.plist
   notarize: false
   artifactName: ${name}-${version}-${arch}.${ext}
