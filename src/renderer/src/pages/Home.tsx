@@ -124,11 +124,18 @@ const buildAudioFormatPreference = (settings: AppSettings): string => {
 }
 
 interface HomeProps {
+  deepLinkUrl?: string | null
+  onConsumeDeepLink?: () => void
   onOpenSupportedSites?: () => void
   onOpenSettings?: () => void
 }
 
-export function Home({ onOpenSupportedSites, onOpenSettings }: HomeProps) {
+export function Home({
+  deepLinkUrl,
+  onConsumeDeepLink,
+  onOpenSupportedSites,
+  onOpenSettings
+}: HomeProps) {
   const { t } = useTranslation()
   const [videoInfo, _setVideoInfo] = useAtom(currentVideoInfoAtom)
   const [loading] = useAtom(videoInfoLoadingAtom)
@@ -292,6 +299,103 @@ export function Home({ onOpenSupportedSites, onOpenSettings }: HomeProps) {
     await fetchVideoInfo(url.trim())
   }, [url, fetchVideoInfo, t])
 
+  const startOneClickDownload = useCallback(
+    async (targetUrl: string, options?: { clearInput?: boolean; setInputValue?: boolean }) => {
+      const trimmedUrl = targetUrl.trim()
+      if (!trimmedUrl) {
+        toast.error(t('errors.emptyUrl'))
+        return
+      }
+
+      if (options?.setInputValue) {
+        setUrl(trimmedUrl)
+      }
+
+      const id = `download_${Date.now()}_${Math.random().toString(36).substring(7)}`
+
+      const downloadItem = {
+        id,
+        url: trimmedUrl,
+        title: t('download.fetchingVideoInfo'),
+        type: settings.oneClickDownloadType,
+        status: 'pending' as const,
+        progress: { percent: 0 },
+        createdAt: Date.now()
+      }
+
+      const format =
+        settings.oneClickDownloadType === 'video'
+          ? buildVideoFormatPreference(settings)
+          : buildAudioFormatPreference(settings)
+
+      addDownload(downloadItem)
+
+      try {
+        await ipcServices.download.startDownload(id, {
+          url: trimmedUrl,
+          type: settings.oneClickDownloadType,
+          format
+        })
+
+        try {
+          const videoInfo = await ipcServices.download.getVideoInfo(trimmedUrl)
+
+          updateDownload({
+            id,
+            changes: {
+              title: videoInfo.title,
+              thumbnail: videoInfo.thumbnail,
+              duration: videoInfo.duration,
+              description: videoInfo.description,
+              channel: videoInfo.extractor_key,
+              uploader: videoInfo.extractor_key,
+              createdAt: Date.now(),
+              startedAt: Date.now()
+            }
+          })
+
+          await ipcServices.download.updateDownloadInfo(id, {
+            title: videoInfo.title,
+            thumbnail: videoInfo.thumbnail,
+            duration: videoInfo.duration,
+            description: videoInfo.description,
+            channel: videoInfo.extractor_key,
+            uploader: videoInfo.extractor_key,
+            createdAt: Date.now(),
+            startedAt: Date.now()
+          })
+
+          toast.success(t('download.videoInfoUpdated'))
+        } catch (infoError) {
+          console.warn('Failed to fetch video info for one-click download:', infoError)
+          updateDownload({
+            id,
+            changes: {
+              title: t('download.infoUnavailable'),
+              createdAt: Date.now(),
+              startedAt: Date.now()
+            }
+          })
+
+          await ipcServices.download.updateDownloadInfo(id, {
+            title: t('download.infoUnavailable'),
+            createdAt: Date.now(),
+            startedAt: Date.now()
+          })
+        }
+
+        toast.success(t('download.oneClickDownloadStarted'))
+        if (options?.clearInput) {
+          setUrl('')
+        }
+      } catch (error) {
+        console.error('Failed to start one-click download:', error)
+        toast.error(t('notifications.downloadFailed'))
+      }
+    },
+    [settings, addDownload, updateDownload, t, setUrl]
+  )
+
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (e.key === 'Enter') {
@@ -302,103 +406,18 @@ export function Home({ onOpenSupportedSites, onOpenSettings }: HomeProps) {
   )
 
   const handleOneClickDownload = useCallback(async () => {
-    if (!url.trim()) {
-      toast.error(t('errors.emptyUrl'))
+    await startOneClickDownload(url, { clearInput: true })
+  }, [startOneClickDownload, url])
+
+  useEffect(() => {
+    if (!deepLinkUrl) {
       return
     }
 
-    const id = `download_${Date.now()}_${Math.random().toString(36).substring(7)}`
-
-    // Create initial download item with placeholder info
-    const trimmedUrl = url.trim()
-
-    const downloadItem = {
-      id,
-      url: trimmedUrl,
-      title: t('download.fetchingVideoInfo'),
-      type: settings.oneClickDownloadType,
-      status: 'pending' as const,
-      progress: { percent: 0 },
-      createdAt: Date.now()
-    }
-
-    const options = {
-      url: trimmedUrl,
-      type: settings.oneClickDownloadType,
-      format:
-        settings.oneClickDownloadType === 'video'
-          ? buildVideoFormatPreference(settings)
-          : buildAudioFormatPreference(settings)
-    }
-
-    addDownload(downloadItem)
-
-    try {
-      // Start download immediately
-      await ipcServices.download.startDownload(id, options)
-
-      // Fetch video info in parallel to update the download item
-      try {
-        const videoInfo = await ipcServices.download.getVideoInfo(url.trim())
-
-        // Update the download item in the renderer state
-        updateDownload({
-          id,
-          changes: {
-            title: videoInfo.title,
-            thumbnail: videoInfo.thumbnail,
-            duration: videoInfo.duration,
-            description: videoInfo.description,
-            // Extract additional metadata if available
-            channel: videoInfo.extractor_key,
-            uploader: videoInfo.extractor_key,
-            createdAt: Date.now(),
-            startedAt: Date.now()
-          }
-        })
-
-        // Also update the download info in the main process queue
-        await ipcServices.download.updateDownloadInfo(id, {
-          title: videoInfo.title,
-          thumbnail: videoInfo.thumbnail,
-          duration: videoInfo.duration,
-          description: videoInfo.description,
-          channel: videoInfo.extractor_key,
-          uploader: videoInfo.extractor_key,
-          createdAt: Date.now(),
-          startedAt: Date.now()
-        })
-
-        // Show a subtle notification that video info was updated
-        toast.success(t('download.videoInfoUpdated'))
-      } catch (infoError) {
-        console.warn('Failed to fetch video info for one-click download:', infoError)
-        // Keep the placeholder title if video info fetch fails
-        // Update the title to indicate info fetch failed
-        updateDownload({
-          id,
-          changes: {
-            title: t('download.infoUnavailable'),
-            createdAt: Date.now(),
-            startedAt: Date.now()
-          }
-        })
-
-        // Also update the main process queue
-        await ipcServices.download.updateDownloadInfo(id, {
-          title: t('download.infoUnavailable'),
-          createdAt: Date.now(),
-          startedAt: Date.now()
-        })
-      }
-
-      toast.success(t('download.oneClickDownloadStarted'))
-      setUrl('') // Clear the URL after starting download
-    } catch (error) {
-      console.error('Failed to start one-click download:', error)
-      toast.error(t('notifications.downloadFailed'))
-    }
-  }, [url, settings, addDownload, updateDownload, t])
+    setActiveTab('single')
+    void startOneClickDownload(deepLinkUrl, { setInputValue: true })
+    onConsumeDeepLink?.()
+  }, [deepLinkUrl, onConsumeDeepLink, startOneClickDownload])
 
   // Playlist handlers
   const handlePastePlaylistUrl = useCallback(async () => {
