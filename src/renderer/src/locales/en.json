@@ -268,6 +268,7 @@
   "playlist": {
     "badgeLabel": "Playlist",
     "clearPreview": "Clear preview",
+    "collapsedProgress": "Downloading playlist: {{completed}} / {{total}} completed",
     "comingSoon": "Playlist download feature coming soon!",
     "completed": "Playlist downloaded",
     "description": "Download all videos from a YouTube playlist or channel",
@@ -283,7 +284,9 @@
     "folderFormat": "Folder name format for playlists",
     "foundVideos": "Found {{count}} videos in playlist",
     "groupActive": "{{count}} active",
+    "groupCollapse": "Collapse",
     "groupErrors": "{{count}} failed",
+    "groupExpand": "Expand",
     "groupSummary": "{{completed}} / {{total}} completed",
     "linkLabel": "Playlist URL",
     "noEntries": "No videos were found in this playlist",
