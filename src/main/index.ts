@@ -40,6 +40,7 @@ protocol.registerSchemesAsPrivileged([
 let mainWindow: BrowserWindow | null = null
 let isQuitting = false
 const pendingDeepLinkUrls: string[] = []
+let isRendererReady = false
 
 const parseDownloadDeepLink = (rawUrl: string): string | null => {
   try {
@@ -68,7 +69,7 @@ const parseDownloadDeepLink = (rawUrl: string): string | null => {
 }
 
 const deliverDeepLink = (videoUrl: string): void => {
-  if (!mainWindow) {
+  if (!mainWindow || !isRendererReady) {
     pendingDeepLinkUrls.push(videoUrl)
     return
   }
@@ -84,7 +85,7 @@ const deliverDeepLink = (videoUrl: string): void => {
 }
 
 const flushPendingDeepLinks = (): void => {
-  if (!mainWindow || pendingDeepLinkUrls.length === 0) {
+  if (!mainWindow || !isRendererReady || pendingDeepLinkUrls.length === 0) {
     return
   }
 
@@ -175,6 +176,7 @@ export function createWindow(): void {
 
   mainWindow.webContents.on('did-finish-load', () => {
     mainWindow?.webContents.send('subscriptions:updated', subscriptionManager.getAll())
+    isRendererReady = true
     flushPendingDeepLinks()
   })
 
