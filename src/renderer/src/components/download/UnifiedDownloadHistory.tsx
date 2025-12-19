@@ -1,6 +1,5 @@
 import { Button } from '@renderer/components/ui/button'
 import { CardContent, CardHeader } from '@renderer/components/ui/card'
-import { Checkbox } from '@renderer/components/ui/checkbox'
 import {
   Dialog,
   DialogContent,
@@ -168,13 +167,6 @@ export function UnifiedDownloadHistory() {
   )
   const hasHistory = historyRecords.length > 0
   const selectableCount = selectableIds.length
-  const allVisibleSelected = selectableCount > 0 && selectableIds.every((id) => selectedIds.has(id))
-  const someVisibleSelected = selectableIds.some((id) => selectedIds.has(id))
-  const selectVisibleState = allVisibleSelected
-    ? true
-    : someVisibleSelected
-      ? 'indeterminate'
-      : false
   const selectionSummary =
     selectableCount === 0
       ? t('history.selectedCount', { count: selectedCount })
@@ -206,26 +198,6 @@ export function UnifiedDownloadHistory() {
         next.delete(id)
       } else {
         next.add(id)
-      }
-      return next
-    })
-  }
-
-  const handleSelectAll = () => {
-    if (selectableCount === 0) {
-      return
-    }
-    setSelectedIds((prev) => {
-      const next = new Set(prev)
-      const allSelected = selectableIds.every((id) => next.has(id))
-      if (allSelected) {
-        for (const id of selectableIds) {
-          next.delete(id)
-        }
-      } else {
-        for (const id of selectableIds) {
-          next.add(id)
-        }
       }
       return next
     })

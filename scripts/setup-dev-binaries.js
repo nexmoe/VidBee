@@ -15,6 +15,8 @@ const http = require('node:http')
 // Configuration
 const RESOURCES_DIR = path.join(__dirname, '..', 'resources')
 const YTDLP_BASE_URL = 'https://github.com/yt-dlp/yt-dlp/releases/latest/download'
+const GITHUB_TOKEN =
+  process.env.GITHUB_TOKEN || process.env.GH_TOKEN || process.env.GITHUB_API_TOKEN
 
 // Platform configuration
 const PLATFORM_CONFIG = {
@@ -27,7 +29,12 @@ const PLATFORM_CONFIG = {
       url: 'https://github.com/yt-dlp/FFmpeg-Builds/releases/latest/download/ffmpeg-master-latest-win64-gpl.zip',
       innerPath: 'ffmpeg-master-latest-win64-gpl/bin/ffmpeg.exe',
       output: 'ffmpeg.exe',
-      extract: 'unzip'
+      extract: 'unzip',
+      release: {
+        repos: ['yt-dlp/FFmpeg-Builds', 'BtbN/FFmpeg-Builds'],
+        assetPattern: /win64.*gpl.*\.zip$/i,
+        binaryName: 'ffmpeg.exe'
+      }
     }
   },
   darwin: {
@@ -41,13 +48,21 @@ const PLATFORM_CONFIG = {
         url: 'https://github.com/eko5624/mpv-mac/releases/download/2025-10-25/ffmpeg-arm64-defd5f3f64.zip',
         innerPath: 'ffmpeg/ffmpeg',
         output: 'ffmpeg_macos',
-        extract: 'unzip'
+        extract: 'unzip',
+        release: {
+          repo: 'eko5624/mpv-mac',
+          assetPattern: /ffmpeg-arm64.*\.zip$/i
+        }
       },
       x64: {
         url: 'https://github.com/eko5624/mpv-mac/releases/download/2025-10-25/ffmpeg-x86_64-defd5f3f64.zip',
         innerPath: 'ffmpeg/ffmpeg',
         output: 'ffmpeg_macos',
-        extract: 'unzip'
+        extract: 'unzip',
+        release: {
+          repo: 'eko5624/mpv-mac',
+          assetPattern: /ffmpeg-x86_64.*\.zip$/i
+        }
       }
     }
   },
@@ -60,7 +75,12 @@ const PLATFORM_CONFIG = {
       url: 'https://github.com/yt-dlp/FFmpeg-Builds/releases/latest/download/ffmpeg-master-latest-linux64-gpl.tar.xz',
       innerPath: 'ffmpeg-master-latest-linux64-gpl/bin/ffmpeg',
       output: 'ffmpeg_linux',
-      extract: 'tar'
+      extract: 'tar',
+      release: {
+        repos: ['yt-dlp/FFmpeg-Builds', 'BtbN/FFmpeg-Builds'],
+        assetPattern: /linux64.*gpl.*\.tar\.xz$/i,
+        binaryName: 'ffmpeg'
+      }
     }
   }
 }
@@ -115,6 +135,85 @@ function downloadFile(url, dest) {
         reject(err)
       })
   })
+}
+
+function fetchJson(url) {
+  return new Promise((resolve, reject) => {
+    const protocol = url.startsWith('https') ? https : http
+    const headers = {
+      'User-Agent': 'vidbee-setup',
+      Accept: 'application/vnd.github+json'
+    }
+    if (GITHUB_TOKEN) {
+      headers.Authorization = `Bearer ${GITHUB_TOKEN}`
+    }
+
+    protocol
+      .get(url, { headers }, (response) => {
+        if (response.statusCode === 302 || response.statusCode === 301) {
+          return fetchJson(response.headers.location).then(resolve).catch(reject)
+        }
+        if (response.statusCode !== 200) {
+          return reject(new Error(`Failed to fetch ${url}: ${response.statusCode}`))
+        }
+
+        let body = ''
+        response.on('data', (chunk) => {
+          body += chunk
+        })
+        response.on('end', () => {
+          try {
+            resolve(JSON.parse(body))
+          } catch (error) {
+            reject(new Error(`Failed to parse JSON from ${url}: ${error.message}`))
+          }
+        })
+      })
+      .on('error', (err) => {
+        reject(err)
+      })
+  })
+}
+
+function inferFfmpegInnerPath(assetName, binaryName) {
+  if (!assetName) {
+    return null
+  }
+  const match = assetName.match(/^(.*)\.(tar\.xz|zip)$/i)
+  if (!match) {
+    return null
+  }
+  return `${match[1]}/bin/${binaryName}`
+}
+
+async function resolveReleaseAsset(release) {
+  if (!release) {
+    return null
+  }
+  const repoCandidates = release.repos ?? (release.repo ? [release.repo] : [])
+  if (repoCandidates.length === 0) {
+    return null
+  }
+
+  let lastError
+  for (const repo of repoCandidates) {
+    try {
+      const data = await fetchJson(`https://api.github.com/repos/${repo}/releases/latest`)
+      const assets = Array.isArray(data.assets) ? data.assets : []
+      const match = assets.find((asset) => asset?.name && release.assetPattern.test(asset.name))
+      if (match?.browser_download_url) {
+        return { name: match.name, url: match.browser_download_url }
+      }
+      lastError = new Error(`No matching assets found in ${repo}`)
+    } catch (error) {
+      lastError = error
+    }
+  }
+
+  if (lastError) {
+    throw lastError
+  }
+  return null
 }
 
 function extractZip(zipPath, extractDir) {
@@ -186,7 +285,7 @@ async function downloadYtDlp(config) {
 }
 
 async function downloadFfmpegWindows(config) {
-  const { url, innerPath, output } = config.ffmpeg
+  const { url: fallbackUrl, innerPath: fallbackInnerPath, output, release } = config.ffmpeg
   const outputPath = path.join(RESOURCES_DIR, output)
 
   if (fileExists(outputPath)) {
@@ -197,9 +296,26 @@ async function downloadFfmpegWindows(config) {
   log(`Downloading ffmpeg for Windows...`, 'download')
   const tempZip = path.join(RESOURCES_DIR, 'ffmpeg-temp.zip')
   const extractDir = path.join(RESOURCES_DIR, 'ffmpeg-temp')
+  let downloadUrl = fallbackUrl
+  let innerPath = fallbackInnerPath
+
+  if (release) {
+    try {
+      const resolved = await resolveReleaseAsset(release)
+      if (resolved) {
+        downloadUrl = resolved.url
+        const inferred = inferFfmpegInnerPath(resolved.name, release.binaryName ?? 'ffmpeg.exe')
+        if (inferred) {
+          innerPath = inferred
+        }
+      }
+    } catch (error) {
+      log(`Failed to resolve latest ffmpeg asset: ${error.message}`, 'warn')
+    }
+  }
 
   try {
-    await downloadFile(url, tempZip)
+    await downloadFile(downloadUrl, tempZip)
     log('Extracting ffmpeg...', 'info')
     extractZip(tempZip, extractDir)
 
@@ -229,7 +345,7 @@ async function downloadFfmpegMac(config) {
     throw new Error(`Unsupported architecture: ${arch}`)
   }
 
-  const { url, innerPath, output } = ffmpegConfig
+  const { url: fallbackUrl, innerPath, output, release } = ffmpegConfig
   const outputPath = path.join(RESOURCES_DIR, output)
 
   if (fileExists(outputPath)) {
@@ -240,9 +356,21 @@ async function downloadFfmpegMac(config) {
   log(`Downloading ffmpeg for macOS (${arch})...`, 'download')
   const tempZip = path.join(RESOURCES_DIR, 'ffmpeg-temp.zip')
   const extractDir = path.join(RESOURCES_DIR, 'ffmpeg-temp')
+  let downloadUrl = fallbackUrl
+
+  if (release) {
+    try {
+      const resolved = await resolveReleaseAsset(release)
+      if (resolved) {
+        downloadUrl = resolved.url
+      }
+    } catch (error) {
+      log(`Failed to resolve latest ffmpeg asset: ${error.message}`, 'warn')
+    }
+  }
 
   try {
-    await downloadFile(url, tempZip)
+    await downloadFile(downloadUrl, tempZip)
     log('Extracting ffmpeg...', 'info')
     extractZip(tempZip, extractDir)
 
@@ -266,7 +394,7 @@ async function downloadFfmpegMac(config) {
 }
 
 async function downloadFfmpegLinux(config) {
-  const { url, innerPath, output } = config.ffmpeg
+  const { url: fallbackUrl, innerPath: fallbackInnerPath, output, release } = config.ffmpeg
   const outputPath = path.join(RESOURCES_DIR, output)
 
   if (fileExists(outputPath)) {
@@ -277,9 +405,26 @@ async function downloadFfmpegLinux(config) {
   log(`Downloading ffmpeg for Linux...`, 'download')
   const tempTar = path.join(RESOURCES_DIR, 'ffmpeg-temp.tar.xz')
   const extractDir = path.join(RESOURCES_DIR, 'ffmpeg-temp')
+  let downloadUrl = fallbackUrl
+  let innerPath = fallbackInnerPath
+
+  if (release) {
+    try {
+      const resolved = await resolveReleaseAsset(release)
+      if (resolved) {
+        downloadUrl = resolved.url
+        const inferred = inferFfmpegInnerPath(resolved.name, release.binaryName ?? 'ffmpeg')
+        if (inferred) {
+          innerPath = inferred
+        }
+      }
+    } catch (error) {
+      log(`Failed to resolve latest ffmpeg asset: ${error.message}`, 'warn')
+    }
+  }
 
   try {
-    await downloadFile(url, tempTar)
+    await downloadFile(downloadUrl, tempTar)
     log('Extracting ffmpeg...', 'info')
     extractTarXz(tempTar, extractDir)
 
