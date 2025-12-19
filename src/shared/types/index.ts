@@ -164,6 +164,7 @@ export interface PlaylistDownloadOptions {
   endIndex?: number
   filenameFormat?: string
   folderFormat?: string
+  customDownloadPath?: string
 }
 
 export interface PlaylistDownloadEntry {
