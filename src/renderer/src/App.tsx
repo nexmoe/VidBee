@@ -54,6 +54,7 @@ function AppContent() {
   const { t } = useTranslation()
   const updateDownloadInProgressRef = useRef(false)
   const analyticsScriptRef = useRef<HTMLScriptElement | null>(null)
+  const [deepLinkUrl, setDeepLinkUrl] = useState<string | null>(null)
   const navigate = useNavigate()
   const location = useLocation()
   const currentPage = pathToPage(location.pathname)
@@ -73,6 +74,22 @@ function AppContent() {
   useEffect(() => {
     loadSettings()
   }, [loadSettings])
+
+  useEffect(() => {
+    const handleDeepLink = (rawUrl: unknown) => {
+      const url = typeof rawUrl === 'string' ? rawUrl.trim() : ''
+      if (!url) {
+        return
+      }
+      setDeepLinkUrl(url)
+      handlePageChange('home')
+    }
+
+    ipcEvents.on('download:deeplink', handleDeepLink)
+    return () => {
+      ipcEvents.removeListener('download:deeplink', handleDeepLink)
+    }
+  }, [handlePageChange])
 
   useEffect(() => {
     loadSubscriptions()
@@ -249,6 +266,8 @@ function AppContent() {
                 path="/"
                 element={
                   <Home
+                    deepLinkUrl={deepLinkUrl}
+                    onConsumeDeepLink={() => setDeepLinkUrl(null)}
                     onOpenSupportedSites={handleOpenSupportedSites}
                     onOpenSettings={() => handlePageChange('settings')}
                   />

@@ -39,6 +39,78 @@ protocol.registerSchemesAsPrivileged([
 
 let mainWindow: BrowserWindow | null = null
 let isQuitting = false
+const pendingDeepLinkUrls: string[] = []
+let isRendererReady = false
+
+const parseDownloadDeepLink = (rawUrl: string): string | null => {
+  try {
+    const parsed = new URL(rawUrl)
+    if (parsed.protocol !== `${APP_PROTOCOL}:`) {
+      return null
+    }
+
+    const host = parsed.hostname
+    const path = parsed.pathname.replace(/^\/+/, '')
+    const isDownloadLink = host === 'download' || path.startsWith('download')
+    if (!isDownloadLink) {
+      return null
+    }
+
+    const targetUrl = parsed.searchParams.get('url')
+    if (!targetUrl || !targetUrl.trim()) {
+      return null
+    }
+
+    return targetUrl.trim()
+  } catch (error) {
+    log.warn('Failed to parse deep link:', error)
+    return null
+  }
+}
+
+const deliverDeepLink = (videoUrl: string): void => {
+  if (!mainWindow || !isRendererReady) {
+    pendingDeepLinkUrls.push(videoUrl)
+    return
+  }
+
+  if (mainWindow.isMinimized()) {
+    mainWindow.restore()
+  }
+  if (!mainWindow.isVisible()) {
+    mainWindow.show()
+  }
+  mainWindow.focus()
+  mainWindow.webContents.send('download:deeplink', videoUrl)
+}
+
+const flushPendingDeepLinks = (): void => {
+  if (!mainWindow || !isRendererReady || pendingDeepLinkUrls.length === 0) {
+    return
+  }
+
+  const pending = pendingDeepLinkUrls.splice(0, pendingDeepLinkUrls.length)
+  for (const url of pending) {
+    mainWindow.webContents.send('download:deeplink', url)
+  }
+}
+
+const handleDeepLinkUrl = (rawUrl: string): void => {
+  const videoUrl = parseDownloadDeepLink(rawUrl)
+  if (!videoUrl) {
+    log.warn('Ignored unsupported deep link:', rawUrl)
+    return
+  }
+  deliverDeepLink(videoUrl)
+}
+
+const handleDeepLinkArgv = (argv: string[]): void => {
+  for (const arg of argv) {
+    if (arg.startsWith(`${APP_PROTOCOL}://`)) {
+      handleDeepLinkUrl(arg)
+    }
+  }
+}
 
 subscriptionManager.on('subscriptions:updated', (subscriptions) => {
   mainWindow?.webContents.send('subscriptions:updated', subscriptions)
@@ -104,6 +176,8 @@ export function createWindow(): void {
 
   mainWindow.webContents.on('did-finish-load', () => {
     mainWindow?.webContents.send('subscriptions:updated', subscriptionManager.getAll())
+    isRendererReady = true
+    flushPendingDeepLinks()
   })
 
   // Setup download engine event forwarding to renderer
@@ -257,6 +331,28 @@ function initAutoUpdater(): void {
   }
 }
 
+const gotSingleInstanceLock = app.requestSingleInstanceLock()
+
+if (!gotSingleInstanceLock) {
+  app.quit()
+} else {
+  app.on('second-instance', (_event, argv) => {
+    handleDeepLinkArgv(argv)
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) {
+        mainWindow.restore()
+      }
+      mainWindow.show()
+      mainWindow.focus()
+    }
+  })
+}
+
+app.on('open-url', (event, url) => {
+  event.preventDefault()
+  handleDeepLinkUrl(url)
+})
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
@@ -309,6 +405,8 @@ app.whenReady().then(async () => {
   createTray()
 
   subscriptionScheduler.start()
+
+  handleDeepLinkArgv(process.argv)
 
   app.on('activate', () => {
     // On macOS it's common to re-create a window in the app when the
