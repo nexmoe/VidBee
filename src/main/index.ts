@@ -44,7 +44,7 @@ subscriptionManager.on('subscriptions:updated', (subscriptions) => {
   mainWindow?.webContents.send('subscriptions:updated', subscriptions)
 })
 
-export function createWindow(): void {
+export function createWindow(startHidden = false): void {
   const isMac = process.platform === 'darwin'
   const isWindows = process.platform === 'win32'
 
@@ -86,6 +86,9 @@ export function createWindow(): void {
   })
 
   mainWindow.on('ready-to-show', () => {
+    if (startHidden) {
+      return
+    }
     mainWindow?.show()
   })
 
@@ -298,10 +301,19 @@ app.whenReady().then(async () => {
     log.error('Failed to initialize yt-dlp:', error)
   }
 
+  if (!settingsManager.get('launchAtLogin')) {
+    settingsManager.set('launchAtLogin', true)
+  }
+
   applyDockVisibility(settingsManager.get('hideDockIcon'))
   applyAutoLaunchSetting(settingsManager.get('launchAtLogin'))
 
-  createWindow()
+  const loginItemSettings = app.getLoginItemSettings()
+  const startHidden =
+    settingsManager.get('launchAtLogin') &&
+    (loginItemSettings.wasOpenedAtLogin || loginItemSettings.wasOpenedAsHidden)
+
+  createWindow(startHidden)
 
   initAutoUpdater()
 
