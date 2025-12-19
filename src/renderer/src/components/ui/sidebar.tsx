@@ -24,9 +24,20 @@ import MingcuteRssLine from '~icons/mingcute/rss-line'
 import MingcuteSettingsFill from '~icons/mingcute/settings-3-fill'
 import MingcuteSettingsLine from '~icons/mingcute/settings-3-line'
 
-type Page = 'home' | 'subscriptions' | 'settings' | 'about' | 'sites'
+type Page = 'home' | 'subscriptions' | 'settings' | 'about'
+type NavigationTarget = Page | 'supported-sites'
 
 interface NavigationItem {
+  id: NavigationTarget
+  icon: {
+    active: React.ComponentType<{ className?: string }>
+    inactive: React.ComponentType<{ className?: string }>
+  }
+  label: string
+  onClick?: () => void
+}
+
+interface PageNavigationItem {
   id: Page
   icon: {
     active: React.ComponentType<{ className?: string }>
@@ -38,9 +49,10 @@ interface NavigationItem {
 interface SidebarProps {
   currentPage: Page
   onPageChange: (page: Page) => void
+  onOpenSupportedSites: () => void
 }
 
-export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
+export function Sidebar({ currentPage, onPageChange, onOpenSupportedSites }: SidebarProps) {
   const { t, i18n } = useTranslation()
   const saveSetting = useSetAtom(saveSettingAtom)
 
@@ -64,16 +76,17 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
       label: t('menu.rss')
     },
     {
-      id: 'sites',
+      id: 'supported-sites',
       icon: {
         active: MingcuteCheckCircleFill,
         inactive: MingcuteCheckCircleLine
       },
-      label: t('menu.supportedSites')
+      label: t('menu.supportedSites'),
+      onClick: onOpenSupportedSites
     }
   ]
 
-  const bottomNavigationItems: NavigationItem[] = [
+  const bottomNavigationItems: PageNavigationItem[] = [
     {
       id: 'settings',
       icon: {
@@ -107,15 +120,16 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
   }
 
   const renderNavigationItem = (item: NavigationItem, showLabel = true) => {
-    const isActive = currentPage === item.id
+    const isActive = item.id !== 'supported-sites' && currentPage === item.id
     const IconComponent = isActive ? item.icon.active : item.icon.inactive
+    const handleClick = item.onClick ?? (() => onPageChange(item.id as Page))
 
     return (
       <div key={item.id} className="flex flex-col items-center gap-1">
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => onPageChange(item.id)}
+          onClick={handleClick}
           className={`no-drag w-12 h-12 ${isActive ? 'bg-primary/10' : ''}`}
         >
           <IconComponent className={`h-5! w-5! ${isActive ? 'text-primary' : ''}`} />
