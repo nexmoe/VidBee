@@ -14,18 +14,16 @@ import { About } from './pages/About'
 import { Home } from './pages/Home'
 import { Settings } from './pages/Settings'
 import { Subscriptions } from './pages/Subscriptions'
-import { SupportedSites } from './pages/SupportedSites'
 import { loadSettingsAtom, settingsAtom } from './store/settings'
 import { loadSubscriptionsAtom, setSubscriptionsAtom } from './store/subscriptions'
 
-type Page = 'home' | 'subscriptions' | 'settings' | 'about' | 'sites'
+type Page = 'home' | 'subscriptions' | 'settings' | 'about'
 
 const pageToPath: Record<Page, string> = {
   home: '/',
   subscriptions: '/subscriptions',
   settings: '/settings',
-  about: '/about',
-  sites: '/sites'
+  about: '/about'
 }
 
 const normalizePathname = (pathname: string): string => {
@@ -42,8 +40,6 @@ const pathToPage = (pathname: string): Page => {
       return 'settings'
     case '/about':
       return 'about'
-    case '/sites':
-      return 'sites'
     default:
       return 'home'
   }
@@ -61,12 +57,17 @@ function AppContent() {
   const navigate = useNavigate()
   const location = useLocation()
   const currentPage = pathToPage(location.pathname)
+  const supportedSitesUrl = 'https://vidbee.org/supported-sites/'
 
   const handlePageChange = (page: Page) => {
     const targetPath = pageToPath[page] ?? '/'
     if (normalizePathname(location.pathname) !== targetPath) {
       navigate(targetPath)
     }
+  }
+
+  const handleOpenSupportedSites = () => {
+    window.open(supportedSitesUrl, '_blank')
   }
 
   useEffect(() => {
@@ -227,7 +228,11 @@ function AppContent() {
   return (
     <div className="flex flex-row h-screen">
       {/* Sidebar Navigation */}
-      <Sidebar currentPage={currentPage} onPageChange={handlePageChange} />
+      <Sidebar
+        currentPage={currentPage}
+        onPageChange={handlePageChange}
+        onOpenSupportedSites={handleOpenSupportedSites}
+      />
 
       {/* Main Content */}
       <main className="flex flex-col flex-1 min-h-0 overflow-hidden bg-background">
@@ -244,7 +249,7 @@ function AppContent() {
                 path="/"
                 element={
                   <Home
-                    onOpenSupportedSites={() => handlePageChange('sites')}
+                    onOpenSupportedSites={handleOpenSupportedSites}
                     onOpenSettings={() => handlePageChange('settings')}
                   />
                 }
@@ -252,7 +257,6 @@ function AppContent() {
               <Route path="/subscriptions" element={<Subscriptions />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/about" element={<About />} />
-              <Route path="/sites" element={<SupportedSites />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>
