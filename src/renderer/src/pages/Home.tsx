@@ -16,10 +16,11 @@ import {
   SelectValue
 } from '@renderer/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@renderer/components/ui/tabs'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { popularSites } from '@renderer/data/popularSites'
 import type { AppSettings, OneClickQualityPreset, PlaylistInfo } from '@shared/types'
 import { useAtom, useSetAtom } from 'jotai'
-import { AlertCircle, Download, Loader2, Search } from 'lucide-react'
+import { AlertCircle, Download, List, Loader2, Play, Search } from 'lucide-react'
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -569,12 +570,32 @@ export function Home({ onOpenSupportedSites, onOpenSettings }: HomeProps) {
                 </CardDescription>
               </div>
               <TabsList className="grid grid-cols-2">
-                <TabsTrigger value="single" className="flex items-center gap-2">
-                  {t('download.singleVideo')}
-                </TabsTrigger>
-                <TabsTrigger value="playlist" className="flex items-center gap-2">
-                  {t('playlist.title')}
-                </TabsTrigger>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <TabsTrigger
+                      value="single"
+                      aria-label={t('download.singleVideo')}
+                      className="flex items-center justify-center data-[state=inactive]:text-muted-foreground data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+                    >
+                      <Play className="h-4 w-4" />
+                      <span className="sr-only">{t('download.singleVideo')}</span>
+                    </TabsTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">{t('download.singleVideo')}</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <TabsTrigger
+                      value="playlist"
+                      aria-label={t('playlist.title')}
+                      className="flex items-center justify-center data-[state=inactive]:text-muted-foreground data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+                    >
+                      <List className="h-4 w-4" />
+                      <span className="sr-only">{t('playlist.title')}</span>
+                    </TabsTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">{t('playlist.title')}</TooltipContent>
+                </Tooltip>
               </TabsList>
             </div>
           </CardHeader>
