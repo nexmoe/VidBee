@@ -26,6 +26,21 @@ class HistoryService extends IpcService {
   }
 
   @IpcMethod()
+  removeHistoryItems(_context: IpcContext, ids: string[]): number {
+    return historyManager.removeHistoryItems(ids)
+  }
+
+  @IpcMethod()
+  removeHistoryByPlaylistId(_context: IpcContext, playlistId: string): number {
+    return historyManager.removeHistoryByPlaylistId(playlistId)
+  }
+
+  @IpcMethod()
+  clearHistory(_context: IpcContext): void {
+    historyManager.clearHistory()
+  }
+
+  @IpcMethod()
   getHistoryCount(_context: IpcContext): {
     active: number
     completed: number

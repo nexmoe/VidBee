@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, renameSync } from 'node:fs'
 import { join } from 'node:path'
 import DatabaseConstructor from 'better-sqlite3'
-import { eq, sql } from 'drizzle-orm'
+import { eq, inArray, sql } from 'drizzle-orm'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import { drizzle } from 'drizzle-orm/better-sqlite3'
 import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
@@ -491,6 +491,61 @@ class HistoryManager {
     } catch (error) {
       logger.error('history-db failed to delete item', { id, error })
       return false
+    }
+  }
+
+  removeHistoryItems(ids: string[]): number {
+    const uniqueIds = Array.from(new Set(ids)).filter((id) => id.trim().length > 0)
+    if (uniqueIds.length === 0) {
+      return 0
+    }
+    let removedCount = 0
+    try {
+      const database = this.getDatabase()
+      const result = database
+        .delete(downloadHistoryTable)
+        .where(inArray(downloadHistoryTable.id, uniqueIds))
+        .run()
+      for (const id of uniqueIds) {
+        if (this.history.delete(id)) {
+          removedCount++
+        }
+      }
+      if ((result.changes ?? 0) > removedCount) {
+        removedCount = result.changes ?? removedCount
+      }
+      return removedCount
+    } catch (error) {
+      logger.error('history-db failed to delete items', { count: uniqueIds.length, error })
+      return removedCount
+    }
+  }
+
+  removeHistoryByPlaylistId(playlistId: string): number {
+    const normalized = playlistId.trim()
+    if (!normalized) {
+      return 0
+    }
+    let removedCount = 0
+    try {
+      const database = this.getDatabase()
+      const result = database
+        .delete(downloadHistoryTable)
+        .where(eq(downloadHistoryTable.playlistId, normalized))
+        .run()
+      for (const [id, item] of this.history.entries()) {
+        if (item.playlistId === normalized) {
+          this.history.delete(id)
+          removedCount++
+        }
+      }
+      if ((result.changes ?? 0) > removedCount) {
+        removedCount = result.changes ?? removedCount
+      }
+      return removedCount
+    } catch (error) {
+      logger.error('history-db failed to delete playlist items', { playlistId: normalized, error })
+      return removedCount
     }
   }
 
