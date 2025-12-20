@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import type YTDlpWrap from 'yt-dlp-wrap-plus'
+import { scopedLoggers } from '../utils/logger'
 
 // Use require for yt-dlp-wrap-plus to handle CommonJS/ESM compatibility
 const YTDlpWrapModule = require('yt-dlp-wrap-plus')
@@ -18,7 +19,7 @@ class YtDlpManager {
     this.ytdlpPath = await this.findOrDownloadYtDlp()
     this.ytdlpInstance = new YTDlpWrapCtor(this.ytdlpPath)
     this.jsRuntimeArgs = this.resolveJsRuntimeArgs()
-    console.log('yt-dlp initialized at:', this.ytdlpPath)
+    scopedLoggers.engine.info('yt-dlp initialized at:', this.ytdlpPath)
   }
 
   getInstance(): YTDlpWrapInstance {
@@ -63,7 +64,7 @@ class YtDlpManager {
 
     // Check environment variable first
     if (process.env.YTDLP_PATH && fs.existsSync(process.env.YTDLP_PATH)) {
-      console.log('Using yt-dlp from YTDLP_PATH:', process.env.YTDLP_PATH)
+      scopedLoggers.engine.info('Using yt-dlp from YTDLP_PATH:', process.env.YTDLP_PATH)
       return process.env.YTDLP_PATH
     }
 
@@ -71,13 +72,13 @@ class YtDlpManager {
     const resourcesPath = this.getResourcesPath()
     const bundledPath = path.join(resourcesPath, bundledName)
     if (fs.existsSync(bundledPath)) {
-      console.log('Using bundled yt-dlp:', bundledPath)
+      scopedLoggers.engine.info('Using bundled yt-dlp:', bundledPath)
       // Make executable on Unix-like systems if needed
       if (platform !== 'win32') {
         try {
           fs.chmodSync(bundledPath, 0o755)
         } catch (error) {
-          console.warn('Failed to set executable permission:', error)
+          scopedLoggers.engine.warn('Failed to set executable permission:', error)
         }
       }
       return bundledPath
@@ -88,7 +89,7 @@ class YtDlpManager {
       const possiblePaths = ['/opt/homebrew/bin/yt-dlp', '/usr/local/bin/yt-dlp']
       for (const p of possiblePaths) {
         if (fs.existsSync(p)) {
-          console.log('Using system yt-dlp:', p)
+          scopedLoggers.engine.info('Using system yt-dlp:', p)
           return p
         }
       }
@@ -99,7 +100,7 @@ class YtDlpManager {
       try {
         const systemPath = execSync('which yt-dlp').toString().trim()
         if (systemPath && fs.existsSync(systemPath)) {
-          console.log('Using system yt-dlp:', systemPath)
+          scopedLoggers.engine.info('Using system yt-dlp:', systemPath)
           return systemPath
         }
       } catch (_error) {
@@ -133,11 +134,11 @@ class YtDlpManager {
     }
 
     if (process.env.YTDLP_JS_RUNTIME) {
-      console.warn(
+      scopedLoggers.engine.warn(
         `Requested JS runtime "${runtime}" was not found. Falling back to yt-dlp default detection.`
       )
     } else {
-      console.warn(
+      scopedLoggers.engine.warn(
         'JS runtime not found. YouTube support may be limited without an external JS runtime.'
       )
     }
@@ -148,7 +149,7 @@ class YtDlpManager {
   private resolveJsRuntimePath(runtime: string): string | null {
     const envPath = process.env.YTDLP_JS_RUNTIME_PATH?.trim()
     if (envPath && fs.existsSync(envPath)) {
-      console.log('Using JS runtime from YTDLP_JS_RUNTIME_PATH:', envPath)
+      scopedLoggers.engine.info('Using JS runtime from YTDLP_JS_RUNTIME_PATH:', envPath)
       return envPath
     }
 
@@ -178,10 +179,10 @@ class YtDlpManager {
           try {
             fs.chmodSync(fullPath, 0o755)
           } catch (error) {
-            console.warn('Failed to set executable permission on JS runtime:', error)
+            scopedLoggers.engine.warn('Failed to set executable permission on JS runtime:', error)
           }
         }
-        console.log('Using bundled JS runtime:', fullPath)
+        scopedLoggers.engine.info('Using bundled JS runtime:', fullPath)
         return fullPath
       }
     }
@@ -190,13 +191,13 @@ class YtDlpManager {
       if (platform === 'win32') {
         const output = execSync(`where ${runtime}`).toString().split(/\r?\n/)[0]
         if (output && fs.existsSync(output)) {
-          console.log('Using system JS runtime:', output)
+          scopedLoggers.engine.info('Using system JS runtime:', output)
           return output
         }
       } else {
         const systemPath = execSync(`which ${runtime}`).toString().trim()
         if (systemPath && fs.existsSync(systemPath)) {
-          console.log('Using system JS runtime:', systemPath)
+          scopedLoggers.engine.info('Using system JS runtime:', systemPath)
           return systemPath
         }
       }

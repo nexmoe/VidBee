@@ -520,7 +520,7 @@ class DownloadEngine extends EventEmitter {
 
   startDownload(id: string, options: DownloadOptions): void {
     if (this.activeDownloads.has(id)) {
-      console.warn(`Download ${id} is already active`)
+      scopedLoggers.engine.warn(`Download ${id} is already active`)
       return
     }
 

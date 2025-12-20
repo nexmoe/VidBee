@@ -2,13 +2,14 @@ import { execSync } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
+import { scopedLoggers } from '../utils/logger'
 
 class FfmpegManager {
   private ffmpegPath: string | null = null
 
   async initialize(): Promise<void> {
     this.ffmpegPath = await this.findFfmpegBinary()
-    console.log('ffmpeg initialized at:', this.ffmpegPath)
+    scopedLoggers.engine.info('ffmpeg initialized at:', this.ffmpegPath)
   }
 
   getPath(): string {
@@ -30,7 +31,7 @@ class FfmpegManager {
     const resourceCandidates: string[] = []
 
     if (process.env.FFMPEG_PATH && fs.existsSync(process.env.FFMPEG_PATH)) {
-      console.log('Using ffmpeg from FFMPEG_PATH:', process.env.FFMPEG_PATH)
+      scopedLoggers.engine.info('Using ffmpeg from FFMPEG_PATH:', process.env.FFMPEG_PATH)
       return process.env.FFMPEG_PATH
     }
 
@@ -50,10 +51,13 @@ class FfmpegManager {
           try {
             fs.chmodSync(fullPath, 0o755)
           } catch (error) {
-            console.warn('Failed to set executable permission on ffmpeg binary:', error)
+            scopedLoggers.engine.warn(
+              'Failed to set executable permission on ffmpeg binary:',
+              error
+            )
           }
         }
-        console.log('Using bundled ffmpeg:', fullPath)
+        scopedLoggers.engine.info('Using bundled ffmpeg:', fullPath)
         return fullPath
       }
     }
@@ -62,7 +66,7 @@ class FfmpegManager {
       const commonPaths = ['/opt/homebrew/bin/ffmpeg', '/usr/local/bin/ffmpeg']
       for (const candidate of commonPaths) {
         if (fs.existsSync(candidate)) {
-          console.log('Using system ffmpeg:', candidate)
+          scopedLoggers.engine.info('Using system ffmpeg:', candidate)
           return candidate
         }
       }
@@ -72,7 +76,7 @@ class FfmpegManager {
       try {
         const systemPath = execSync('which ffmpeg').toString().trim()
         if (systemPath && fs.existsSync(systemPath)) {
-          console.log('Using system ffmpeg:', systemPath)
+          scopedLoggers.engine.info('Using system ffmpeg:', systemPath)
           return systemPath
         }
       } catch (_error) {
@@ -84,7 +88,7 @@ class FfmpegManager {
       try {
         const output = execSync('where ffmpeg').toString().split(/\r?\n/)[0]
         if (output && fs.existsSync(output)) {
-          console.log('Using system ffmpeg:', output)
+          scopedLoggers.engine.info('Using system ffmpeg:', output)
           return output
         }
       } catch (_error) {

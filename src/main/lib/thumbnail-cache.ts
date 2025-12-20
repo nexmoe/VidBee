@@ -4,6 +4,7 @@ import fsPromises from 'node:fs/promises'
 import path from 'node:path'
 import { APP_PROTOCOL_SCHEME } from '@shared/constants'
 import { app } from 'electron'
+import { scopedLoggers } from '../utils/logger'
 
 const SUPPORTED_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif'])
 
@@ -81,7 +82,7 @@ export class ThumbnailCache {
       await fsPromises.writeFile(finalPath, buffer)
       return this.toAppProtocolUrl(finalPath)
     } catch (error) {
-      console.error('Failed to cache thumbnail:', error)
+      scopedLoggers.thumbnail.error('Failed to cache thumbnail:', error)
       return null
     }
   }

@@ -1,6 +1,7 @@
 import os from 'node:os'
 import { app, BrowserWindow, dialog } from 'electron'
 import { type IpcContext, IpcMethod, IpcService } from 'electron-ipc-decorator'
+import { scopedLoggers } from '../../utils/logger'
 
 class AppService extends IpcService {
   static readonly groupName = 'app'
@@ -48,7 +49,7 @@ class AppService extends IpcService {
       const base64 = buffer.toString('base64')
       return `data:${contentType};base64,${base64}`
     } catch (error) {
-      console.error('Failed to fetch site icon:', error)
+      scopedLoggers.system.error('Failed to fetch site icon:', error)
       return null
     }
   }
