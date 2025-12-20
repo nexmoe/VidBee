@@ -34,6 +34,14 @@ const sanitizeCommaList = (value: string) =>
 
 const sanitizeTemplateInput = (value: string) => value.replace(/\\/g, '/').replace(/\/{2,}/g, '/')
 
+const buildDefaultSubscriptionDirectory = (downloadPath: string) => {
+  const trimmed = downloadPath.trim().replace(/[\\/]+$/, '')
+  if (!trimmed) {
+    return 'Subscriptions'
+  }
+  return `${trimmed}/Subscriptions`
+}
+
 export interface SubscriptionFormData {
   url?: string
   keywords?: string[]
@@ -75,7 +83,7 @@ export function SubscriptionFormDialog({
   const [detectingFeed, setDetectingFeed] = useState(false)
 
   const detectTimeout = useRef<NodeJS.Timeout | null>(null)
-  const prevDefaultPathRef = useRef(settings.downloadPath)
+  const prevDefaultPathRef = useRef(buildDefaultSubscriptionDirectory(settings.downloadPath))
   const urlInputId = useId()
 
   // Initialize form values based on mode
@@ -97,7 +105,7 @@ export function SubscriptionFormDialog({
       setKeywords('')
       setTags('')
       setOnlyLatest(settings.subscriptionOnlyLatestDefault)
-      setDownloadDirectory(settings.downloadPath)
+      setDownloadDirectory(buildDefaultSubscriptionDirectory(settings.downloadPath))
       setNamingTemplate(DEFAULT_SUBSCRIPTION_FILENAME_TEMPLATE)
     }
   }, [open, mode, subscription, settings.subscriptionOnlyLatestDefault, settings.downloadPath])
@@ -105,7 +113,7 @@ export function SubscriptionFormDialog({
   // Sync download directory with settings changes (only in add mode)
   useEffect(() => {
     if (mode === 'add') {
-      const newPath = settings.downloadPath
+      const newPath = buildDefaultSubscriptionDirectory(settings.downloadPath)
       setDownloadDirectory((prev) => {
         if (!prev || prev === prevDefaultPathRef.current) {
           return newPath
