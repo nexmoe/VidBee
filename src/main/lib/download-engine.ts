@@ -92,13 +92,54 @@ const resolveAutoVideoDownloadPath = (basePath: string, info?: VideoInfo): strin
   return path.join(root, sanitizeFolderName(label, 'Video'))
 }
 
-const resolveHistoryDownloadPath = (basePath: string, filenameTemplate?: string): string => {
+const sanitizeTemplateValue = (value: string): string =>
+  value
+    .replace(/[\\/:*?"<>|]+/g, '-')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/[. ]+$/g, '')
+
+const resolveTemplateToken = (token: string, info?: VideoInfo): string | undefined => {
+  if (!info) {
+    return undefined
+  }
+  switch (token) {
+    case 'uploader':
+      return info.uploader
+    case 'title':
+      return info.title
+    case 'id':
+      return info.id
+    case 'channel':
+      return info.uploader
+    case 'extractor':
+      return info.extractor_key
+    default:
+      return undefined
+  }
+}
+
+const resolveHistoryDownloadPath = (
+  basePath: string,
+  filenameTemplate?: string,
+  info?: VideoInfo
+): string => {
   if (!filenameTemplate?.trim()) {
     return basePath
   }
   const safeTemplate = sanitizeFilenameTemplate(filenameTemplate)
-  const templateDir = path.posix.dirname(safeTemplate)
+  const resolvedTemplate = safeTemplate.replace(/%\(([^)]+)\)s/g, (match, token) => {
+    const value = resolveTemplateToken(token, info)
+    if (!value) {
+      return match
+    }
+    return sanitizeTemplateValue(value)
+  })
+  const templateDir = path.posix.dirname(resolvedTemplate)
   if (templateDir === '.' || templateDir === '/') {
+    return basePath
+  }
+  if (/%\([^)]+\)s/.test(templateDir)) {
     return basePath
   }
   return path.join(basePath, templateDir)
@@ -573,7 +614,8 @@ class DownloadEngine extends EventEmitter {
 
     const historyDownloadPath = resolveHistoryDownloadPath(
       resolvedDownloadPath,
-      options.customFilenameTemplate
+      options.customFilenameTemplate,
+      videoInfo
     )
     ensureDirectoryExists(historyDownloadPath)
     this.upsertHistoryEntry(id, options, { downloadPath: historyDownloadPath })
