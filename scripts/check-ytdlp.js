@@ -44,6 +44,17 @@ const binaries = [
       linux: 'https://ffmpeg.org/download.html',
       mac: 'https://github.com/eko5624/mpv-mac/releases/latest'
     }
+  },
+  {
+    label: 'deno',
+    filenameMap: {
+      win: 'deno.exe',
+      mac: 'deno',
+      linux: 'deno'
+    },
+    help: {
+      default: 'https://github.com/denoland/deno/releases/latest'
+    }
   }
 ]
 

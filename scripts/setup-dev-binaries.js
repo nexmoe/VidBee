@@ -15,6 +15,7 @@ const http = require('node:http')
 // Configuration
 const RESOURCES_DIR = path.join(__dirname, '..', 'resources')
 const YTDLP_BASE_URL = 'https://github.com/yt-dlp/yt-dlp/releases/latest/download'
+const DENO_BASE_URL = 'https://github.com/denoland/deno/releases/latest/download'
 const GITHUB_TOKEN =
   process.env.GITHUB_TOKEN || process.env.GH_TOKEN || process.env.GITHUB_API_TOKEN
 
@@ -257,6 +258,32 @@ function fileExists(filePath) {
   return fs.existsSync(filePath)
 }
 
+function getDenoAssetName(platform, arch) {
+  if (platform === 'win32') {
+    if (arch === 'arm64') {
+      return 'deno-aarch64-pc-windows-msvc.zip'
+    }
+    return 'deno-x86_64-pc-windows-msvc.zip'
+  }
+  if (platform === 'darwin') {
+    if (arch === 'arm64') {
+      return 'deno-aarch64-apple-darwin.zip'
+    }
+    return 'deno-x86_64-apple-darwin.zip'
+  }
+  if (platform === 'linux') {
+    if (arch === 'arm64') {
+      return 'deno-aarch64-unknown-linux-gnu.zip'
+    }
+    return 'deno-x86_64-unknown-linux-gnu.zip'
+  }
+  return null
+}
+
+function getDenoOutputName(platform) {
+  return platform === 'win32' ? 'deno.exe' : 'deno'
+}
+
 // Main download functions
 async function downloadYtDlp(config) {
   const { asset, output } = config.ytdlp
@@ -447,6 +474,52 @@ async function downloadFfmpegLinux(config) {
   }
 }
 
+async function downloadDenoRuntime() {
+  const platform = os.platform()
+  const arch = os.arch()
+  const assetName = getDenoAssetName(platform, arch)
+
+  if (!assetName) {
+    log(`Skipping Deno runtime: unsupported platform/arch ${platform}/${arch}`, 'warn')
+    return
+  }
+
+  const outputName = getDenoOutputName(platform)
+  const outputPath = path.join(RESOURCES_DIR, outputName)
+
+  if (fileExists(outputPath)) {
+    log(`${outputName} already exists, skipping download`, 'info')
+    return
+  }
+
+  log(`Downloading Deno runtime (${platform}/${arch})...`, 'download')
+  const tempZip = path.join(RESOURCES_DIR, 'deno-temp.zip')
+  const extractDir = path.join(RESOURCES_DIR, 'deno-temp')
+  const downloadUrl = `${DENO_BASE_URL}/${assetName}`
+
+  try {
+    await downloadFile(downloadUrl, tempZip)
+    log('Extracting Deno runtime...', 'info')
+    extractZip(tempZip, extractDir)
+
+    const sourcePath = path.join(extractDir, outputName)
+    if (!fileExists(sourcePath)) {
+      throw new Error(`Deno binary not found at ${sourcePath}`)
+    }
+
+    fs.copyFileSync(sourcePath, outputPath)
+    setExecutable(outputPath)
+    log(`Downloaded ${outputName} successfully`, 'success')
+
+    fs.unlinkSync(tempZip)
+    fs.rmSync(extractDir, { recursive: true, force: true })
+  } catch (error) {
+    if (fs.existsSync(tempZip)) fs.unlinkSync(tempZip)
+    if (fs.existsSync(extractDir)) fs.rmSync(extractDir, { recursive: true, force: true })
+    throw error
+  }
+}
+
 // Main setup function
 async function setup() {
   const platform = os.platform()
@@ -463,6 +536,9 @@ async function setup() {
   try {
     // Download yt-dlp
     await downloadYtDlp(config)
+
+    // Download JS runtime (Deno)
+    await downloadDenoRuntime()
 
     // Download ffmpeg
     if (platform === 'win32') {

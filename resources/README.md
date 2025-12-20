@@ -69,3 +69,23 @@ ffmpeg is required for merging audio/video streams and audio extraction. Bundle 
 - Bundled binaries are required for Windows builds. On macOS/Linux the app can also use ffmpeg/yt-dlp from the system PATH.
 - You can override the lookup paths via the `YTDLP_PATH` or `FFMPEG_PATH` environment variables if you prefer custom locations.
 - File sizes: ~10-15 MB per yt-dlp binary, ~40-80 MB per ffmpeg binary
+
+## JS Runtime (Deno)
+
+yt-dlp uses an external JS runtime (Deno by default) for some extractors. Bundle a Deno binary so the app can run without system dependencies.
+
+### Required Files
+
+1. **Windows**: `deno.exe`
+2. **macOS**: `deno`
+3. **Linux**: `deno`
+
+### How to Download
+
+- Visit: <https://github.com/denoland/deno/releases/latest>
+- Download the matching platform archive and extract the `deno` (or `deno.exe`) binary into `resources/`.
+- On macOS/Linux ensure the file is executable: `chmod +x resources/deno`
+
+### Note
+
+- You can override the runtime path via `YTDLP_JS_RUNTIME_PATH` if needed.

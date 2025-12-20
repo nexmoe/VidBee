@@ -145,6 +145,13 @@ const resolveHistoryDownloadPath = (
   return path.join(basePath, templateDir)
 }
 
+const appendJsRuntimeArgs = (args: string[]): void => {
+  const runtimeArgs = ytdlpManager.getJsRuntimeArgs()
+  if (runtimeArgs.length > 0) {
+    args.push(...runtimeArgs)
+  }
+}
+
 class DownloadEngine extends EventEmitter {
   private activeDownloads: Map<string, DownloadProcess> = new Map()
   private queue: DownloadQueue
@@ -194,6 +201,7 @@ class DownloadEngine extends EventEmitter {
       args.push('--config-location', configPath)
     }
 
+    appendJsRuntimeArgs(args)
     args.push(url)
 
     return new Promise((resolve, reject) => {
@@ -290,6 +298,7 @@ class DownloadEngine extends EventEmitter {
       args.push('--config-location', configPath)
     }
 
+    appendJsRuntimeArgs(args)
     args.push(url)
 
     type RawPlaylistEntry = {
@@ -644,7 +653,12 @@ class DownloadEngine extends EventEmitter {
       return true
     }
 
-    const args = buildDownloadArgs(options, resolvedDownloadPath, settings)
+    const args = buildDownloadArgs(
+      options,
+      resolvedDownloadPath,
+      settings,
+      ytdlpManager.getJsRuntimeArgs()
+    )
 
     const captureOutputPath = (rawPath: string | undefined): void => {
       if (!rawPath) {
