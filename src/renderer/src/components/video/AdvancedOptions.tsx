@@ -21,6 +21,8 @@ interface AdvancedOptionsProps {
   onStartTimeChange: (value: string) => void
   onEndTimeChange: (value: string) => void
   onDownloadSubsChange: (value: boolean) => void
+  customDownloadPath: string
+  onCustomDownloadPathChange: (value: string) => void
 }
 
 export function AdvancedOptions({
@@ -29,7 +31,9 @@ export function AdvancedOptions({
   downloadSubs,
   onStartTimeChange,
   onEndTimeChange,
-  onDownloadSubsChange
+  onDownloadSubsChange,
+  customDownloadPath,
+  onCustomDownloadPathChange
 }: AdvancedOptionsProps) {
   const { t } = useTranslation()
   const [settings] = useAtom(settingsAtom)
@@ -43,7 +47,19 @@ export function AdvancedOptions({
       }
     } catch (error) {
       console.error('Failed to select directory:', error)
-      toast.error('Failed to select directory')
+      toast.error(t('settings.directorySelectError'))
+    }
+  }
+
+  const handleSelectCustomLocation = async () => {
+    try {
+      const path = await ipcServices.fs.selectDirectory()
+      if (path) {
+        onCustomDownloadPathChange(path)
+      }
+    } catch (error) {
+      console.error('Failed to select directory:', error)
+      toast.error(t('settings.directorySelectError'))
     }
   }
 
@@ -92,6 +108,34 @@ export function AdvancedOptions({
                 {t('settings.selectPath')}
               </Button>
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <Label>{t('download.customDownloadFolder')}</Label>
+              {customDownloadPath.trim() && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onCustomDownloadPathChange('')}
+                >
+                  {t('download.useAutoFolder')}
+                </Button>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <Input
+                value={customDownloadPath}
+                readOnly
+                className="flex-1"
+                placeholder={t('download.autoFolderPlaceholder')}
+              />
+              <Button onClick={handleSelectCustomLocation} variant="outline">
+                {t('settings.selectPath')}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">{t('download.autoFolderHint')}</p>
           </div>
         </AccordionContent>
       </AccordionItem>

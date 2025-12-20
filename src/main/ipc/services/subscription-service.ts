@@ -1,3 +1,4 @@
+import path from 'node:path'
 import { type IpcContext, IpcMethod, IpcService } from 'electron-ipc-decorator'
 import type {
   SubscriptionCreatePayload,
@@ -5,6 +6,7 @@ import type {
   SubscriptionRule,
   SubscriptionUpdatePayload
 } from '../../../shared/types'
+import { DEFAULT_SUBSCRIPTION_FILENAME_TEMPLATE } from '../../../shared/types'
 import { sanitizeFilenameTemplate } from '../../download-engine/args-builder'
 import { subscriptionManager } from '../../lib/subscription-manager'
 import { subscriptionScheduler } from '../../lib/subscription-scheduler'
@@ -112,6 +114,7 @@ class SubscriptionService extends IpcService {
   ): Promise<SubscriptionRule> {
     const resolved = resolveFeedFromInput(options.url)
     const settings = settingsManager.getAll()
+    const defaultDownloadDirectory = path.join(settings.downloadPath, 'Subscriptions')
     const payload: SubscriptionCreatePayload = {
       sourceUrl: resolved.sourceUrl,
       feedUrl: resolved.feedUrl,
@@ -120,9 +123,9 @@ class SubscriptionService extends IpcService {
       tags: options.tags,
       onlyDownloadLatest:
         options.onlyDownloadLatest ?? settings.subscriptionOnlyLatestDefault ?? true,
-      downloadDirectory: options.downloadDirectory || settings.downloadPath,
+      downloadDirectory: options.downloadDirectory || defaultDownloadDirectory,
       namingTemplate: sanitizeFilenameTemplate(
-        options.namingTemplate || settings.subscriptionFilenameTemplate
+        options.namingTemplate || DEFAULT_SUBSCRIPTION_FILENAME_TEMPLATE
       ),
       enabled: options.enabled ?? true
     }

@@ -10,7 +10,6 @@ const ElectronStore = require('electron-store')
 const Store = ElectronStore.default || ElectronStore
 
 const OLD_DEFAULT_DOWNLOAD_PATH = path.join(os.homedir(), 'Downloads')
-
 const ensureDirectoryExists = (dir: string) => {
   try {
     fs.mkdirSync(dir, { recursive: true })

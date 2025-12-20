@@ -4,8 +4,17 @@ import { resolvePathWithHome } from '../utils/path-helpers'
 
 export const sanitizeFilenameTemplate = (template: string): string => {
   const trimmed = template.trim()
-  const sanitized = trimmed.replace(/[/\\]+/g, '-')
-  return sanitized === '' ? '%(title)s via VidBee.%(ext)s' : sanitized
+  if (!trimmed) {
+    return '%(title)s via VidBee.%(ext)s'
+  }
+  const normalized = trimmed.replace(/\\/g, '/')
+  const safeParts = normalized
+    .split('/')
+    .map((part) => part.trim())
+    .filter((part) => part !== '' && part !== '.' && part !== '..')
+    .map((part) => part.replace(/[<>:"|?*]/g, '-').replace(/[. ]+$/g, ''))
+    .filter((part) => part !== '')
+  return safeParts.length === 0 ? '%(title)s via VidBee.%(ext)s' : safeParts.join('/')
 }
 
 export const resolveVideoFormatSelector = (options: DownloadOptions): string => {

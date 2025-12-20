@@ -14,7 +14,7 @@ import { Separator } from '@renderer/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@renderer/components/ui/tabs'
 import { useSetAtom } from 'jotai'
 import { ArrowLeft, Clock, Download as DownloadIcon, Eye, Play } from 'lucide-react'
-import { useId, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import type { VideoInfo } from '../../../../shared/types'
@@ -61,6 +61,11 @@ export function VideoInfoCard({ videoInfo }: VideoInfoCardProps) {
   const [startTime, setStartTime] = useState('')
   const [endTime, setEndTime] = useState('')
   const [downloadSubs, setDownloadSubs] = useState(false)
+  const [customDownloadPath, setCustomDownloadPath] = useState('')
+
+  useEffect(() => {
+    setCustomDownloadPath('')
+  }, [videoInfo.id])
 
   const handleDownload = async (type: 'video' | 'audio' | 'extract') => {
     const id = `download_${Date.now()}_${Math.random().toString(36).substring(7)}`
@@ -87,7 +92,8 @@ export function VideoInfoCard({ videoInfo }: VideoInfoCardProps) {
       audioFormat: type === 'video' ? selectedAudioForVideo : undefined,
       startTime: startTime || undefined,
       endTime: endTime || undefined,
-      downloadSubs
+      downloadSubs,
+      customDownloadPath: customDownloadPath.trim() || undefined
     }
 
     addDownload(downloadItem)
@@ -202,6 +208,8 @@ export function VideoInfoCard({ videoInfo }: VideoInfoCardProps) {
                 onStartTimeChange={setStartTime}
                 onEndTimeChange={setEndTime}
                 onDownloadSubsChange={setDownloadSubs}
+                customDownloadPath={customDownloadPath}
+                onCustomDownloadPathChange={setCustomDownloadPath}
               />
 
               <Button
@@ -231,6 +239,8 @@ export function VideoInfoCard({ videoInfo }: VideoInfoCardProps) {
                 onStartTimeChange={setStartTime}
                 onEndTimeChange={setEndTime}
                 onDownloadSubsChange={setDownloadSubs}
+                customDownloadPath={customDownloadPath}
+                onCustomDownloadPathChange={setCustomDownloadPath}
               />
 
               <Button

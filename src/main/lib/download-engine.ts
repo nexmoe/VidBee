@@ -1,4 +1,5 @@
 import { EventEmitter } from 'node:events'
+import fs from 'node:fs'
 import path from 'node:path'
 import type { YTDlpEventEmitter } from 'yt-dlp-wrap-plus'
 import type {
@@ -12,7 +13,11 @@ import type {
   VideoFormat,
   VideoInfo
 } from '../../shared/types'
-import { buildDownloadArgs, resolveVideoFormatSelector } from '../download-engine/args-builder'
+import {
+  buildDownloadArgs,
+  resolveVideoFormatSelector,
+  sanitizeFilenameTemplate
+} from '../download-engine/args-builder'
 import {
   findFormatByIdCandidates,
   parseSizeToBytes,
@@ -29,6 +34,115 @@ import { ytdlpManager } from './ytdlp-manager'
 interface DownloadProcess {
   controller: AbortController
   process: YTDlpEventEmitter
+}
+
+const ensureDirectoryExists = (dir?: string): void => {
+  if (!dir) {
+    return
+  }
+  try {
+    fs.mkdirSync(dir, { recursive: true })
+  } catch (error) {
+    scopedLoggers.download.error('Failed to ensure download directory:', error)
+  }
+}
+
+const sanitizeFolderName = (value: string, fallback: string): string => {
+  const trimmed = value.trim()
+  if (!trimmed) {
+    return fallback
+  }
+  const sanitized = trimmed
+    .replace(/[\\/:*?"<>|]+/g, '-')
+    .replace(/\s+/g, ' ')
+    .replace(/[. ]+$/g, '')
+  return sanitized || fallback
+}
+
+const isLikelyChannelUrl = (url: string): boolean => {
+  const normalized = url.toLowerCase()
+  if (normalized.includes('list=')) {
+    return false
+  }
+  return /youtube\.com\/(channel\/|c\/|user\/|@)/.test(normalized)
+}
+
+const resolveAutoPlaylistDownloadPath = (
+  basePath: string,
+  info: PlaylistInfo,
+  url: string
+): string => {
+  const kindFolder = isLikelyChannelUrl(url) ? 'Channels' : 'Playlists'
+  const title = sanitizeFolderName(
+    info.title || (kindFolder === 'Channels' ? 'Channel' : 'Playlist'),
+    kindFolder === 'Channels' ? 'Channel' : 'Playlist'
+  )
+  return path.join(basePath, kindFolder, title)
+}
+
+const resolveAutoVideoDownloadPath = (basePath: string, info?: VideoInfo): string => {
+  const root = path.join(basePath, 'Videos')
+  if (!info) {
+    return root
+  }
+  const label = info.uploader?.trim() || info.title?.trim()
+  if (!label) {
+    return root
+  }
+  return path.join(root, sanitizeFolderName(label, 'Video'))
+}
+
+const sanitizeTemplateValue = (value: string): string =>
+  value
+    .replace(/[\\/:*?"<>|]+/g, '-')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/[. ]+$/g, '')
+
+const resolveTemplateToken = (token: string, info?: VideoInfo): string | undefined => {
+  if (!info) {
+    return undefined
+  }
+  switch (token) {
+    case 'uploader':
+      return info.uploader
+    case 'title':
+      return info.title
+    case 'id':
+      return info.id
+    case 'channel':
+      return info.uploader
+    case 'extractor':
+      return info.extractor_key
+    default:
+      return undefined
+  }
+}
+
+const resolveHistoryDownloadPath = (
+  basePath: string,
+  filenameTemplate?: string,
+  info?: VideoInfo
+): string => {
+  if (!filenameTemplate?.trim()) {
+    return basePath
+  }
+  const safeTemplate = sanitizeFilenameTemplate(filenameTemplate)
+  const resolvedTemplate = safeTemplate.replace(/%\(([^)]+)\)s/g, (match, token) => {
+    const value = resolveTemplateToken(token, info)
+    if (!value) {
+      return match
+    }
+    return sanitizeTemplateValue(value)
+  })
+  const templateDir = path.posix.dirname(resolvedTemplate)
+  if (templateDir === '.' || templateDir === '/') {
+    return basePath
+  }
+  if (/%\([^)]+\)s/.test(templateDir)) {
+    return basePath
+  }
+  return path.join(basePath, templateDir)
 }
 
 class DownloadEngine extends EventEmitter {
@@ -316,6 +430,10 @@ class DownloadEngine extends EventEmitter {
     const rangeEnd = Math.max(requestedStart, requestedEnd)
     const rawEntries = playlistInfo.entries.slice(rangeStart, rangeEnd + 1)
     const settings = settingsManager.getAll()
+    const resolvedDownloadPath =
+      options.customDownloadPath?.trim() ||
+      resolveAutoPlaylistDownloadPath(settings.downloadPath, playlistInfo, options.url)
+    ensureDirectoryExists(resolvedDownloadPath)
 
     const selectedEntries = rawEntries.filter((entry) => {
       if (!entry.url) {
@@ -339,7 +457,8 @@ class DownloadEngine extends EventEmitter {
         url: entry.url,
         type: options.type,
         format: options.format,
-        audioFormat: options.type === 'audio' ? options.format : undefined
+        audioFormat: options.type === 'audio' ? options.format : undefined,
+        customDownloadPath: resolvedDownloadPath
       }
 
       const createdAt = Date.now()
@@ -370,7 +489,7 @@ class DownloadEngine extends EventEmitter {
         title: entry.title,
         status: 'pending',
         downloadedAt: createdAt,
-        downloadPath: settings.downloadPath,
+        downloadPath: resolvedDownloadPath,
         playlistId: groupId,
         playlistTitle: playlistInfo.title,
         playlistIndex: entry.index,
@@ -400,6 +519,12 @@ class DownloadEngine extends EventEmitter {
     const settings = settingsManager.getAll()
     const targetDownloadPath = options.customDownloadPath?.trim() || settings.downloadPath
     const origin = options.origin ?? 'manual'
+    const historyDownloadPath = resolveHistoryDownloadPath(
+      targetDownloadPath,
+      options.customFilenameTemplate
+    )
+    ensureDirectoryExists(targetDownloadPath)
+    ensureDirectoryExists(historyDownloadPath)
 
     const item: DownloadItem = {
       id,
@@ -419,7 +544,7 @@ class DownloadEngine extends EventEmitter {
       title: item.title,
       status: 'pending',
       downloadedAt: createdAt,
-      downloadPath: targetDownloadPath,
+      downloadPath: historyDownloadPath,
       tags: options.tags,
       origin,
       subscriptionId: options.subscriptionId
@@ -431,7 +556,7 @@ class DownloadEngine extends EventEmitter {
     const ytdlp = ytdlpManager.getInstance()
     const settings = settingsManager.getAll()
     const defaultDownloadPath = settings.downloadPath
-    const resolvedDownloadPath = options.customDownloadPath?.trim() || defaultDownloadPath
+    let resolvedDownloadPath = options.customDownloadPath?.trim() || defaultDownloadPath
 
     // Set environment variables for proper encoding on Windows
     if (process.platform === 'win32') {
@@ -481,6 +606,19 @@ class DownloadEngine extends EventEmitter {
     } catch (error) {
       scopedLoggers.download.warn('Failed to get detailed video info for ID:', id, error)
     }
+
+    if (!options.customDownloadPath?.trim()) {
+      resolvedDownloadPath = resolveAutoVideoDownloadPath(defaultDownloadPath, videoInfo)
+      options.customDownloadPath = resolvedDownloadPath
+    }
+
+    const historyDownloadPath = resolveHistoryDownloadPath(
+      resolvedDownloadPath,
+      options.customFilenameTemplate,
+      videoInfo
+    )
+    ensureDirectoryExists(historyDownloadPath)
+    this.upsertHistoryEntry(id, options, { downloadPath: historyDownloadPath })
 
     const applySelectedFormat = (formatId: string | undefined): boolean => {
       if (!formatId) {

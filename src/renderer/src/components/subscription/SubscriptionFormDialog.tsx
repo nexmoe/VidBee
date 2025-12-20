@@ -1,3 +1,9 @@
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger
+} from '@renderer/components/ui/accordion'
 import { Button } from '@renderer/components/ui/button'
 import {
   Dialog,
@@ -13,7 +19,7 @@ import { Switch } from '@renderer/components/ui/switch'
 import { ipcServices } from '@renderer/lib/ipc'
 import { settingsAtom } from '@renderer/store/settings'
 import { resolveFeedAtom } from '@renderer/store/subscriptions'
-import type { SubscriptionRule } from '@shared/types'
+import { DEFAULT_SUBSCRIPTION_FILENAME_TEMPLATE, type SubscriptionRule } from '@shared/types'
 import { useAtom, useSetAtom } from 'jotai'
 import { ChevronRight } from 'lucide-react'
 import { useEffect, useId, useRef, useState } from 'react'
@@ -26,7 +32,15 @@ const sanitizeCommaList = (value: string) =>
     .map((entry) => entry.trim())
     .filter((entry, index, array) => entry.length > 0 && array.indexOf(entry) === index)
 
-const sanitizeTemplateInput = (value: string) => value.replace(/[/\\]+/g, '-')
+const sanitizeTemplateInput = (value: string) => value.replace(/\\/g, '/').replace(/\/{2,}/g, '/')
+
+const buildDefaultSubscriptionDirectory = (downloadPath: string) => {
+  const trimmed = downloadPath.trim().replace(/[\\/]+$/, '')
+  if (!trimmed) {
+    return 'Subscriptions'
+  }
+  return `${trimmed}/Subscriptions`
+}
 
 export interface SubscriptionFormData {
   url?: string
@@ -69,7 +83,7 @@ export function SubscriptionFormDialog({
   const [detectingFeed, setDetectingFeed] = useState(false)
 
   const detectTimeout = useRef<NodeJS.Timeout | null>(null)
-  const prevDefaultPathRef = useRef(settings.downloadPath)
+  const prevDefaultPathRef = useRef(buildDefaultSubscriptionDirectory(settings.downloadPath))
   const urlInputId = useId()
 
   // Initialize form values based on mode
@@ -91,22 +105,15 @@ export function SubscriptionFormDialog({
       setKeywords('')
       setTags('')
       setOnlyLatest(settings.subscriptionOnlyLatestDefault)
-      setDownloadDirectory(settings.downloadPath)
-      setNamingTemplate(settings.subscriptionFilenameTemplate)
+      setDownloadDirectory(buildDefaultSubscriptionDirectory(settings.downloadPath))
+      setNamingTemplate(DEFAULT_SUBSCRIPTION_FILENAME_TEMPLATE)
     }
-  }, [
-    open,
-    mode,
-    subscription,
-    settings.subscriptionOnlyLatestDefault,
-    settings.downloadPath,
-    settings.subscriptionFilenameTemplate
-  ])
+  }, [open, mode, subscription, settings.subscriptionOnlyLatestDefault, settings.downloadPath])
 
   // Sync download directory with settings changes (only in add mode)
   useEffect(() => {
     if (mode === 'add') {
-      const newPath = settings.downloadPath
+      const newPath = buildDefaultSubscriptionDirectory(settings.downloadPath)
       setDownloadDirectory((prev) => {
         if (!prev || prev === prevDefaultPathRef.current) {
           return newPath
@@ -116,13 +123,6 @@ export function SubscriptionFormDialog({
       prevDefaultPathRef.current = newPath
     }
   }, [settings.downloadPath, mode])
-
-  // Sync naming template with settings changes (only in add mode)
-  useEffect(() => {
-    if (mode === 'add') {
-      setNamingTemplate(settings.subscriptionFilenameTemplate)
-    }
-  }, [settings.subscriptionFilenameTemplate, mode])
 
   // Sync onlyLatest with settings changes (only in add mode)
   useEffect(() => {
@@ -266,14 +266,6 @@ export function SubscriptionFormDialog({
             )}
           </div>
           <div className="space-y-2">
-            <Label>{t('subscriptions.fields.keywords')}</Label>
-            <Input value={keywords} onChange={(event) => setKeywords(event.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label>{t('subscriptions.fields.tags')}</Label>
-            <Input value={tags} onChange={(event) => setTags(event.target.value)} />
-          </div>
-          <div className="space-y-2">
             <Label>{t('subscriptions.fields.customDirectory')}</Label>
             <div className="flex gap-2">
               <Input value={downloadDirectory} readOnly />
@@ -282,17 +274,34 @@ export function SubscriptionFormDialog({
               </Button>
             </div>
           </div>
-          <div className="space-y-2">
-            <Label>{t('subscriptions.fields.namingTemplate')}</Label>
-            <Input
-              value={namingTemplate}
-              onChange={(event) => setNamingTemplate(sanitizeTemplateInput(event.target.value))}
-            />
-          </div>
-          <div className="flex items-center justify-between gap-4 rounded-md border px-3 py-2">
-            <p className="text-sm">{t('subscriptions.fields.onlyLatest')}</p>
-            <Switch checked={onlyLatest} onCheckedChange={setOnlyLatest} />
-          </div>
+          <Accordion type="single" collapsible>
+            <AccordionItem value="advanced">
+              <AccordionTrigger>{t('advancedOptions.title')}</AccordionTrigger>
+              <AccordionContent className="space-y-3">
+                <div className="space-y-2">
+                  <Label>{t('subscriptions.fields.keywords')}</Label>
+                  <Input value={keywords} onChange={(event) => setKeywords(event.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t('subscriptions.fields.tags')}</Label>
+                  <Input value={tags} onChange={(event) => setTags(event.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t('subscriptions.fields.namingTemplate')}</Label>
+                  <Input
+                    value={namingTemplate}
+                    onChange={(event) =>
+                      setNamingTemplate(sanitizeTemplateInput(event.target.value))
+                    }
+                  />
+                </div>
+                <div className="flex items-center justify-between gap-4 rounded-md border px-3 py-2">
+                  <p className="text-sm">{t('subscriptions.fields.onlyLatest')}</p>
+                  <Switch checked={onlyLatest} onCheckedChange={setOnlyLatest} />
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </div>
         <DialogFooter>
           {mode === 'add' && (

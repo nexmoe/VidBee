@@ -163,6 +163,7 @@ export function Home({
   const [downloadType, setDownloadType] = useState<'video' | 'audio'>('video')
   const [startIndex, setStartIndex] = useState('1')
   const [endIndex, setEndIndex] = useState('')
+  const [playlistCustomDownloadPath, setPlaylistCustomDownloadPath] = useState('')
   const [playlistInfo, setPlaylistInfo] = useState<PlaylistInfo | null>(null)
   const [playlistPreviewLoading, setPlaylistPreviewLoading] = useState(false)
   const [playlistDownloadLoading, setPlaylistDownloadLoading] = useState(false)
@@ -432,9 +433,23 @@ export function Home({
       setPlaylistUrl(trimmed)
       setPlaylistInfo(null)
       setPlaylistPreviewError(null)
+      setPlaylistCustomDownloadPath('')
     } catch (error) {
       console.error('Failed to paste URL:', error)
       toast.error(t('errors.pasteFromClipboard'))
+    }
+  }, [playlistBusy, t])
+
+  const handleSelectPlaylistDirectory = useCallback(async () => {
+    if (playlistBusy) return
+    try {
+      const path = await ipcServices.fs.selectDirectory()
+      if (path) {
+        setPlaylistCustomDownloadPath(path)
+      }
+    } catch (error) {
+      console.error('Failed to select directory:', error)
+      toast.error(t('settings.directorySelectError'))
     }
   }, [playlistBusy, t])
 
@@ -512,7 +527,8 @@ export function Home({
         type: downloadType,
         format,
         startIndex: range.start,
-        endIndex: range.end
+        endIndex: range.end,
+        customDownloadPath: playlistCustomDownloadPath.trim() || undefined
       })
 
       if (result.totalCount === 0) {
@@ -545,7 +561,16 @@ export function Home({
     } finally {
       setPlaylistDownloadLoading(false)
     }
-  }, [playlistUrl, playlistInfo, computePlaylistRange, downloadType, settings, addDownload, t])
+  }, [
+    playlistUrl,
+    playlistInfo,
+    computePlaylistRange,
+    downloadType,
+    settings,
+    addDownload,
+    t,
+    playlistCustomDownloadPath
+  ])
 
   // Auto-focus input on mount
   useEffect(() => {
@@ -730,6 +755,7 @@ export function Home({
                         setPlaylistUrl(e.target.value)
                         setPlaylistInfo(null)
                         setPlaylistPreviewError(null)
+                        setPlaylistCustomDownloadPath('')
                       }}
                       className="flex-1"
                       disabled={playlistBusy}
@@ -783,6 +809,40 @@ export function Home({
                       />
                     </div>
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <Label>{t('download.customDownloadFolder')}</Label>
+                    {playlistCustomDownloadPath.trim() && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setPlaylistCustomDownloadPath('')}
+                        disabled={playlistBusy}
+                      >
+                        {t('download.useAutoFolder')}
+                      </Button>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <Input
+                      value={playlistCustomDownloadPath}
+                      readOnly
+                      className="flex-1"
+                      placeholder={t('download.autoFolderPlaceholder')}
+                      disabled={playlistBusy}
+                    />
+                    <Button
+                      onClick={handleSelectPlaylistDirectory}
+                      variant="outline"
+                      disabled={playlistBusy}
+                    >
+                      {t('settings.selectPath')}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{t('download.autoFolderHint')}</p>
                 </div>
 
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
