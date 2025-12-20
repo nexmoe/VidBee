@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronRight, Trash2 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { DownloadRecord } from '../../store/downloads'
 import { Button } from '../ui/button'
@@ -16,6 +16,30 @@ interface PlaylistDownloadGroupProps {
   onDeletePlaylist?: (playlistId: string, title: string, ids: string[]) => void
 }
 
+const STORAGE_KEY_PREFIX = 'playlist_expanded_'
+
+const getStorageKey = (groupId: string): string => {
+  return `${STORAGE_KEY_PREFIX}${groupId}`
+}
+
+const loadExpandedState = (groupId: string): boolean => {
+  try {
+    const stored = localStorage.getItem(getStorageKey(groupId))
+    return stored === 'true'
+  } catch (error) {
+    console.error('Failed to load playlist expanded state:', error)
+    return false
+  }
+}
+
+const saveExpandedState = (groupId: string, isExpanded: boolean): void => {
+  try {
+    localStorage.setItem(getStorageKey(groupId), String(isExpanded))
+  } catch (error) {
+    console.error('Failed to save playlist expanded state:', error)
+  }
+}
+
 export function PlaylistDownloadGroup({
   groupId,
   title,
@@ -26,7 +50,11 @@ export function PlaylistDownloadGroup({
   onDeletePlaylist
 }: PlaylistDownloadGroupProps) {
   const { t } = useTranslation()
-  const [isExpanded, setIsExpanded] = useState(true)
+  const [isExpanded, setIsExpanded] = useState(() => loadExpandedState(groupId))
+
+  useEffect(() => {
+    saveExpandedState(groupId, isExpanded)
+  }, [groupId, isExpanded])
 
   const completedCount = records.filter((record) => record.status === 'completed').length
   const errorCount = records.filter((record) => record.status === 'error').length
@@ -50,33 +78,53 @@ export function PlaylistDownloadGroup({
   const aggregatePercent = totalCount > 0 ? Math.min((totalProgress / totalCount) * 100, 100) : 0
 
   return (
-    <div className="space-y-3 rounded-md border border-border/50 bg-background/60 px-3 py-2.5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-foreground">{displayTitle}</p>
-          {isExpanded ? (
-            <p className="text-xs text-muted-foreground">
-              {t('playlist.groupSummary', { completed: completedCount, total: totalCount })}
-            </p>
-          ) : (
-            <p className="text-xs text-muted-foreground">
-              {t('playlist.collapsedProgress', { completed: completedCount, total: totalCount })}
-            </p>
-          )}
+    <div className="space-y-2 rounded-md bg-muted/20 px-2.5 py-2">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          <button
+            type="button"
+            className="flex shrink-0 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
+            onClick={() => setIsExpanded((prev) => !prev)}
+            aria-expanded={isExpanded}
+            aria-label={toggleLabel}
+            title={toggleLabel}
+          >
+            {isExpanded ? (
+              <ChevronDown className="h-3.5 w-3.5" />
+            ) : (
+              <ChevronRight className="h-3.5 w-3.5" />
+            )}
+          </button>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium text-foreground">{displayTitle}</p>
+            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <span>
+                {t('playlist.collapsedProgress', { completed: completedCount, total: totalCount })}
+              </span>
+              {activeCount > 0 && (
+                <>
+                  <span className="text-muted-foreground/50">•</span>
+                  <span>{t('playlist.groupActive', { count: activeCount })}</span>
+                </>
+              )}
+              {errorCount > 0 && (
+                <>
+                  <span className="text-muted-foreground/50">•</span>
+                  <span className="text-destructive">
+                    {t('playlist.groupErrors', { count: errorCount })}
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
         </div>
-        <div className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
-          {activeCount > 0 && <span>{t('playlist.groupActive', { count: activeCount })}</span>}
-          {errorCount > 0 && (
-            <span className="text-destructive">
-              {t('playlist.groupErrors', { count: errorCount })}
-            </span>
-          )}
+        <div className="flex shrink-0 items-center gap-1">
           {canDeletePlaylist && (
             <Button
               type="button"
               variant="ghost"
               size="icon"
-              className="h-7 w-7"
+              className="h-6 w-6 rounded-full"
               onClick={() =>
                 onDeletePlaylist?.(
                   groupId,
@@ -87,45 +135,36 @@ export function PlaylistDownloadGroup({
               aria-label={t('history.deletePlaylist')}
               title={t('history.deletePlaylist')}
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash2 className="h-3.5 w-3.5" />
             </Button>
           )}
-          <button
-            type="button"
-            className="ml-1 inline-flex h-7 w-7 items-center justify-center rounded-full text-foreground/70 transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            onClick={() => setIsExpanded((prev) => !prev)}
-            aria-expanded={isExpanded}
-            aria-label={toggleLabel}
-            title={toggleLabel}
-          >
-            {isExpanded ? (
-              <ChevronDown className="h-4 w-4" />
-            ) : (
-              <ChevronRight className="h-4 w-4" />
-            )}
-          </button>
         </div>
       </div>
 
       {!isExpanded && totalCount > 0 && (
-        <div className="space-y-1.5">
-          <Progress value={aggregatePercent} className="h-1 w-full" />
-        </div>
+        <Progress value={aggregatePercent} className="h-0.5 w-full" />
       )}
 
-      {isExpanded && (
-        <div className="space-y-2">
-          {records.map((record) => (
-            <div key={`${groupId}:${record.entryType}:${record.id}`}>
-              <DownloadItem
-                download={record}
-                isSelected={selectedIds?.has(record.id) ?? false}
-                onToggleSelect={onToggleSelect}
-              />
-            </div>
-          ))}
+      <div
+        className="grid overflow-hidden transition-[grid-template-rows] duration-300 ease-in-out"
+        style={{
+          gridTemplateRows: isExpanded ? '1fr' : '0fr'
+        }}
+      >
+        <div className="min-h-0">
+          <div className="space-y-3 pt-1">
+            {records.map((record) => (
+              <div key={`${groupId}:${record.entryType}:${record.id}`}>
+                <DownloadItem
+                  download={record}
+                  isSelected={selectedIds?.has(record.id) ?? false}
+                  onToggleSelect={onToggleSelect}
+                />
+              </div>
+            ))}
+          </div>
         </div>
-      )}
+      </div>
     </div>
   )
 }

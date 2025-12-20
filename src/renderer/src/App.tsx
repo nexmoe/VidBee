@@ -54,7 +54,6 @@ function AppContent() {
   const { t } = useTranslation()
   const updateDownloadInProgressRef = useRef(false)
   const analyticsScriptRef = useRef<HTMLScriptElement | null>(null)
-  const [deepLinkUrl, setDeepLinkUrl] = useState<string | null>(null)
   const navigate = useNavigate()
   const location = useLocation()
   const currentPage = pathToPage(location.pathname)
@@ -81,8 +80,8 @@ function AppContent() {
       if (!url) {
         return
       }
-      setDeepLinkUrl(url)
       handlePageChange('home')
+      // TODO: Handle deep link URL in download dialog
     }
 
     ipcEvents.on('download:deeplink', handleDeepLink)
@@ -260,14 +259,12 @@ function AppContent() {
           className="flex-1 w-full overflow-y-auto overflow-x-hidden"
           style={{ maxWidth: '100%' }}
         >
-          <div className="w-full overflow-hidden" style={{ maxWidth: '100%' }}>
+          <div className="w-full h-full flex flex-col min-h-0" style={{ maxWidth: '100%' }}>
             <Routes>
               <Route
                 path="/"
                 element={
                   <Home
-                    deepLinkUrl={deepLinkUrl}
-                    onConsumeDeepLink={() => setDeepLinkUrl(null)}
                     onOpenSupportedSites={handleOpenSupportedSites}
                     onOpenSettings={() => handlePageChange('settings')}
                   />

@@ -130,7 +130,7 @@ export function Sidebar({ currentPage, onPageChange, onOpenSupportedSites }: Sid
           variant="ghost"
           size="icon"
           onClick={handleClick}
-          className={`no-drag w-12 h-12 ${isActive ? 'bg-primary/10' : ''}`}
+          className={`no-drag rounded-2xl w-12 h-12 ${isActive ? 'bg-primary/10' : ''}`}
         >
           <IconComponent className={`h-5! w-5! ${isActive ? 'text-primary' : ''}`} />
         </Button>
@@ -167,7 +167,7 @@ export function Sidebar({ currentPage, onPageChange, onOpenSupportedSites }: Sid
           <Tooltip>
             <TooltipTrigger asChild>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="no-drag w-12 h-12">
+                <Button variant="ghost" size="icon" className="no-drag rounded-2xl w-12 h-12">
                   <MingcuteGlobeLine className="h-5! w-5!" />
                 </Button>
               </DropdownMenuTrigger>
@@ -211,7 +211,7 @@ export function Sidebar({ currentPage, onPageChange, onOpenSupportedSites }: Sid
                   variant="ghost"
                   size="icon"
                   onClick={() => onPageChange(item.id)}
-                  className={`no-drag w-12 h-12 ${isActive ? 'bg-primary/10' : ''}`}
+                  className={`no-drag rounded-2xl w-12 h-12 ${isActive ? 'bg-primary/10' : ''}`}
                 >
                   <IconComponent className={`h-5! w-5! ${isActive ? 'text-primary' : ''}`} />
                 </Button>

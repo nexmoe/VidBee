@@ -493,7 +493,9 @@ export class SubscriptionManager extends EventEmitter {
 
   private migrateLegacyStore(): void {
     try {
-      const LegacyStore = require('electron-store')
+      const ElectronStore = require('electron-store')
+      // Access the default export
+      const LegacyStore = ElectronStore.default || ElectronStore
       const store = new LegacyStore({
         name: 'subscriptions',
         defaults: {

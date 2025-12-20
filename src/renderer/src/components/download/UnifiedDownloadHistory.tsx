@@ -18,19 +18,18 @@ import { useHistorySync } from '../../hooks/use-history-sync'
 import { ipcServices } from '../../lib/ipc'
 import type { DownloadRecord } from '../../store/downloads'
 import {
-  clearHistoryRecordsAtom,
   downloadStatsAtom,
   downloadsArrayAtom,
   removeHistoryRecordsAtom,
   removeHistoryRecordsByPlaylistAtom
 } from '../../store/downloads'
 import { settingsAtom } from '../../store/settings'
+import { DownloadDialog } from './DownloadDialog'
 import { DownloadItem } from './DownloadItem'
 import { PlaylistDownloadGroup } from './PlaylistDownloadGroup'
 
 type StatusFilter = 'all' | 'active' | 'completed' | 'error'
 type ConfirmAction =
-  | { type: 'clear-all' }
   | { type: 'delete-selected'; ids: string[] }
   | { type: 'delete-playlist'; playlistId: string; title: string; ids: string[] }
 
@@ -112,11 +111,18 @@ const resolveDownloadExtension = (download: DownloadRecord): string => {
   return download.type === 'audio' ? 'mp3' : 'mp4'
 }
 
-export function UnifiedDownloadHistory() {
+interface UnifiedDownloadHistoryProps {
+  onOpenSupportedSites?: () => void
+  onOpenSettings?: () => void
+}
+
+export function UnifiedDownloadHistory({
+  onOpenSupportedSites,
+  onOpenSettings
+}: UnifiedDownloadHistoryProps) {
   const { t } = useTranslation()
   const allRecords = useAtomValue(downloadsArrayAtom)
   const downloadStats = useAtomValue(downloadStatsAtom)
-  const clearHistoryRecords = useSetAtom(clearHistoryRecordsAtom)
   const removeHistoryRecords = useSetAtom(removeHistoryRecordsAtom)
   const removeHistoryRecordsByPlaylist = useSetAtom(removeHistoryRecordsByPlaylistAtom)
   const settings = useAtomValue(settingsAtom)
@@ -165,7 +171,6 @@ export function UnifiedDownloadHistory() {
       filteredRecords.filter((record) => record.entryType === 'history').map((record) => record.id),
     [filteredRecords]
   )
-  const hasHistory = historyRecords.length > 0
   const selectableCount = selectableIds.length
   const selectionSummary =
     selectableCount === 0
@@ -207,13 +212,6 @@ export function UnifiedDownloadHistory() {
     setSelectedIds(new Set())
   }
 
-  const handleRequestClearAll = () => {
-    if (!hasHistory) {
-      return
-    }
-    setConfirmAction({ type: 'clear-all' })
-  }
-
   const handleRequestDeleteSelected = () => {
     if (selectedIds.size === 0) {
       return
@@ -249,13 +247,6 @@ export function UnifiedDownloadHistory() {
       return null
     }
     switch (confirmAction.type) {
-      case 'clear-all': {
-        return {
-          title: t('history.confirmClearAllTitle'),
-          description: t('history.confirmClearAllDescription', { count: historyRecords.length }),
-          actionLabel: t('history.clearAllAction')
-        }
-      }
       case 'delete-selected': {
         return {
           title: t('history.confirmDeleteSelectedTitle'),
@@ -278,7 +269,7 @@ export function UnifiedDownloadHistory() {
       default:
         return null
     }
-  }, [confirmAction, historyRecords.length, t])
+  }, [confirmAction, t])
 
   const deleteHistoryFiles = async (records: DownloadRecord[]) => {
     const failedIds: string[] = []
@@ -315,12 +306,6 @@ export function UnifiedDownloadHistory() {
     }
     setConfirmBusy(true)
     try {
-      if (confirmAction.type === 'clear-all') {
-        await ipcServices.history.clearHistory()
-        clearHistoryRecords()
-        setSelectedIds(new Set())
-        toast.success(t('notifications.historyCleared'))
-      }
       if (confirmAction.type === 'delete-selected') {
         await ipcServices.history.removeHistoryItems(confirmAction.ids)
         removeHistoryRecords(confirmAction.ids)
@@ -340,10 +325,6 @@ export function UnifiedDownloadHistory() {
       }
       setConfirmAction(null)
     } catch (error) {
-      if (confirmAction.type === 'clear-all') {
-        console.error('Failed to clear history:', error)
-        toast.error(t('notifications.historyClearFailed'))
-      }
       if (confirmAction.type === 'delete-selected') {
         console.error('Failed to remove selected history items:', error)
         toast.error(t('notifications.itemsRemoveFailed'))
@@ -409,7 +390,7 @@ export function UnifiedDownloadHistory() {
 
   return (
     <div className={cn('space-y-4', selectedCount > 0 && 'pb-20')}>
-      <CardHeader className="gap-4 p-0">
+      <CardHeader className="gap-4 p-0 pb-4 sticky top-0 z-50 bg-background backdrop-blur supports-[backdrop-filter]:bg-background/95">
         <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
           <div className="flex flex-wrap items-center gap-2">
             {filters.map((filter) => {
@@ -439,25 +420,22 @@ export function UnifiedDownloadHistory() {
               )
             })}
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 rounded-full px-3"
-            onClick={handleRequestClearAll}
-            disabled={!hasHistory}
-          >
-            {t('history.clearAll')}
-          </Button>
+          <div className="flex items-center gap-2">
+            <DownloadDialog
+              onOpenSupportedSites={onOpenSupportedSites}
+              onOpenSettings={onOpenSettings}
+            />
+          </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-3 p-0 overflow-hidden w-full">
+      <CardContent className="space-y-3 p-0 overflow-x-hidden w-full">
         {filteredRecords.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border/60 px-6 py-10 text-center text-muted-foreground">
+          <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border/60 px-6 py-10 text-center text-muted-foreground">
             <HistoryIcon className="h-10 w-10 opacity-50" />
             <p className="text-sm font-medium">{t('download.noItems')}</p>
           </div>
         ) : (
-          <div className="space-y-3 sm:space-y-4 overflow-hidden w-full">
+          <div className="space-y-4 w-full">
             {groupedView.order.map((item) => {
               if (item.type === 'single') {
                 return (

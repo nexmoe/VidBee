@@ -1,4 +1,3 @@
-import { Button } from '@renderer/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@renderer/components/ui/card'
 import { Label } from '@renderer/components/ui/label'
 import {
@@ -8,19 +7,27 @@ import {
   SelectTrigger,
   SelectValue
 } from '@renderer/components/ui/select'
-import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { VideoInfo } from '../../../../shared/types'
 
-interface AudioExtractorProps {
-  videoInfo: VideoInfo
-  onExtract: (type: 'extract') => void
+export interface AudioExtractorState {
+  extractFormat: string
+  extractQuality: string
 }
 
-export function AudioExtractor({ onExtract }: AudioExtractorProps) {
+interface AudioExtractorProps {
+  videoInfo: VideoInfo
+  state: AudioExtractorState
+  onStateChange: (state: Partial<AudioExtractorState>) => void
+}
+
+export function AudioExtractor({
+  videoInfo: _videoInfo,
+  state,
+  onStateChange
+}: AudioExtractorProps) {
   const { t } = useTranslation()
-  const [extractFormat, setExtractFormat] = useState('mp3')
-  const [extractQuality, setExtractQuality] = useState('5')
+  const { extractFormat, extractQuality } = state
 
   const audioFormats = [
     { value: 'mp3', label: 'MP3' },
@@ -49,7 +56,10 @@ export function AudioExtractor({ onExtract }: AudioExtractorProps) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2.5">
             <Label className="text-sm font-semibold">{t('audioExtract.selectFormat')}</Label>
-            <Select value={extractFormat} onValueChange={setExtractFormat}>
+            <Select
+              value={extractFormat}
+              onValueChange={(value) => onStateChange({ extractFormat: value })}
+            >
               <SelectTrigger className="h-10">
                 <SelectValue />
               </SelectTrigger>
@@ -65,7 +75,10 @@ export function AudioExtractor({ onExtract }: AudioExtractorProps) {
 
           <div className="space-y-2.5">
             <Label className="text-sm font-semibold">{t('audioExtract.selectQuality')}</Label>
-            <Select value={extractQuality} onValueChange={setExtractQuality}>
+            <Select
+              value={extractQuality}
+              onValueChange={(value) => onStateChange({ extractQuality: value })}
+            >
               <SelectTrigger className="h-10">
                 <SelectValue />
               </SelectTrigger>
@@ -79,10 +92,6 @@ export function AudioExtractor({ onExtract }: AudioExtractorProps) {
             </Select>
           </div>
         </div>
-
-        <Button onClick={() => onExtract('extract')} className="w-full" size="lg">
-          {t('audioExtract.extract')}
-        </Button>
       </CardContent>
     </Card>
   )

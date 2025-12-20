@@ -3,15 +3,21 @@ import { Button } from '@renderer/components/ui/button'
 import { Checkbox } from '@renderer/components/ui/checkbox'
 import { Progress } from '@renderer/components/ui/progress'
 import { RemoteImage } from '@renderer/components/ui/remote-image'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle
+} from '@renderer/components/ui/sheet'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { useAtomValue, useSetAtom } from 'jotai'
 import {
   AlertCircle,
   CheckCircle2,
-  ChevronDown,
-  ChevronUp,
   Copy,
   FolderOpen,
+  Info,
   Loader2,
   Play,
   Trash2,
@@ -187,7 +193,6 @@ const formatDateShort = (timestamp?: number) => {
   if (!timestamp) return ''
   const date = new Date(timestamp)
   return date.toLocaleString(undefined, {
-    year: 'numeric',
     month: 'numeric',
     day: 'numeric',
     hour: '2-digit',
@@ -204,19 +209,15 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
   const isSubscriptionDownload = download.origin === 'subscription'
   const subscriptionLabel = download.subscriptionId ?? t('subscriptions.labels.unknown')
   const timestamp = download.completedAt ?? download.downloadedAt ?? download.createdAt
-  const showActionsWithoutHover = isHistory || download.status === 'completed'
-  const actionsContainerBaseClass =
-    'relative z-20 flex shrink-0 flex-wrap items-center justify-end gap-1 text-muted-foreground opacity-100 transition-opacity'
-  const actionsContainerClass = showActionsWithoutHover
-    ? actionsContainerBaseClass
-    : `${actionsContainerBaseClass} sm:opacity-0 sm:group-hover:opacity-100`
+  const actionsContainerClass =
+    'relative z-20 flex shrink-0 flex-wrap items-center justify-end gap-1 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity'
   const resolvedExtension = resolveDownloadExtension(download)
   const normalizedSavedFileName = normalizeSavedFileName(download.savedFileName)
   const selectionEnabled = isHistory && Boolean(onToggleSelect)
 
   // Track if the file exists
   const [fileExists, setFileExists] = useState(false)
-  const [detailsOpen, setDetailsOpen] = useState(false)
+  const [sheetOpen, setSheetOpen] = useState(false)
 
   // Check if file exists when download data changes
   useEffect(() => {
@@ -647,44 +648,41 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
   return (
     <div
       className={`group relative w-full max-w-full overflow-hidden rounded-lg border border-transparent transition-colors ${
-        isSelectedHistory ? 'border-primary/60 bg-primary/10 ring-1 ring-primary/30' : ''
+        isSelectedHistory ? 'bg-primary/10' : ''
       }`}
     >
       {isSelectedHistory && (
         <div className="absolute left-0 top-0 h-full w-1 bg-primary/70" aria-hidden="true" />
       )}
-      <button
-        type="button"
-        className={`absolute inset-0 z-10 rounded-lg bg-transparent ${
-          selectionEnabled ? 'cursor-pointer' : 'cursor-default'
-        } disabled:cursor-default disabled:opacity-100`}
-        aria-label={t('history.selectItem')}
-        disabled={!selectionEnabled}
-        onClick={() => onToggleSelect?.(download.id)}
-      />
-      <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:gap-4">
+      <div
+        className={`flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:gap-3 ${
+          selectionEnabled ? 'cursor-pointer' : ''
+        }`}
+        onClick={selectionEnabled ? () => onToggleSelect?.(download.id) : undefined}
+        onKeyDown={
+          selectionEnabled
+            ? (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  onToggleSelect?.(download.id)
+                }
+              }
+            : undefined
+        }
+        role={selectionEnabled ? 'button' : undefined}
+        tabIndex={selectionEnabled ? 0 : undefined}
+        aria-label={selectionEnabled ? t('history.selectItem') : undefined}
+      >
         {/* Thumbnail */}
-        <button
-          type="button"
-          className={`relative z-20 shrink-0 overflow-hidden rounded-md border bg-background/60 w-32 h-20 disabled:opacity-100 disabled:cursor-default ${
-            selectionEnabled ? 'cursor-pointer' : 'cursor-default'
-          } ${isSelectedHistory ? 'border-primary/40' : 'border-border/60'}`}
-          aria-pressed={selectionEnabled ? Boolean(isSelected) : undefined}
-          onClick={(event) => {
-            event.stopPropagation()
-            if (selectionEnabled) {
-              onToggleSelect?.(download.id)
-            }
-          }}
-          disabled={!selectionEnabled}
-        >
+        <div className="relative z-20 shrink-0 overflow-hidden rounded-lg border border-border/60 bg-background/60 w-20 h-14 pointer-events-none">
           {selectionEnabled && (
             <div
-              className={`absolute left-1 top-1 rounded-md bg-background/80 p-0.5 shadow-sm transition ${
+              className={`absolute left-1 top-1 z-30 rounded-md transition pointer-events-auto ${
                 isSelected
                   ? 'opacity-100'
                   : 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'
               }`}
+              onClick={(event) => event.stopPropagation()}
             >
               <Checkbox
                 checked={Boolean(isSelected)}
@@ -698,16 +696,16 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
             src={download.thumbnail}
             alt={download.title}
             className="w-full h-full object-cover"
-            fallbackIcon={<Play className="h-6 w-6" />}
+            fallbackIcon={<Play className="h-4 w-4" />}
           />
-        </button>
+        </div>
 
         {/* Content */}
-        <div className="flex-1 min-w-0 max-w-full space-y-3 overflow-hidden">
-          <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:gap-4">
-            <div className="flex-1 min-w-0 max-w-full space-y-2 overflow-hidden">
-              <div className="w-full min-w-0 overflow-hidden flex flex-wrap items-center gap-2">
-                <p className="flex-1 wrap-break-word text-sm font-medium sm:text-base line-clamp-2">
+        <div className="flex-1 min-w-0 max-w-full space-y-1.5 overflow-hidden pointer-events-none">
+          <div className="flex w-full flex-col gap-1.5 sm:flex-row sm:items-start sm:justify-between sm:gap-2">
+            <div className="flex-1 min-w-0 max-w-full space-y-1 overflow-hidden">
+              <div className="w-full min-w-0 overflow-hidden flex flex-wrap items-center gap-1.5">
+                <p className="flex-1 wrap-break-word text-sm font-medium line-clamp-1">
                   {download.title}
                 </p>
                 {isSubscriptionDownload && (
@@ -716,103 +714,64 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
                   </Badge>
                 )}
               </div>
-              <div className="flex w-full flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                {(statusIcon || statusText) && (
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    {statusIcon}
-                    <span>{statusText}</span>
-                  </div>
-                )}
-                {timestamp ? (
-                  <span className="truncate text-muted-foreground/80">
-                    {formatDateShort(timestamp)}
-                  </span>
-                ) : null}
-              </div>
-              <div className="flex w-full flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-                {/* Source link */}
-                {(sourceDisplay || download.url) &&
-                  (download.url ? (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <a
-                          href={download.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="relative z-20 max-w-[180px] truncate hover:text-primary transition-colors"
-                        >
-                          {sourceDisplay || download.url}
-                        </a>
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs wrap-break-word">
-                        <p>{download.url}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  ) : (
-                    <span className="truncate">{sourceDisplay}</span>
-                  ))}
-
-                {/* Playlist info */}
-                {download.playlistId && (
-                  <>
-                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5 shrink-0">
-                      {t('playlist.badgeLabel')}
-                    </Badge>
-                    <span className="max-w-[200px] truncate">
-                      {download.playlistTitle || t('playlist.untitled')}
-                      {download.playlistIndex !== undefined &&
-                        download.playlistSize !== undefined &&
-                        ` (${download.playlistIndex}/${download.playlistSize})`}
-                    </span>
-                  </>
-                )}
-
-                {/* Quality badge */}
-                {qualityLabel && (
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 shrink-0">
-                    {qualityLabel}
-                  </Badge>
-                )}
-
-                {/* File size */}
-                {inlineFileSize && <span>{inlineFileSize}</span>}
-
-                {/* Details toggle */}
-                {hasMetadataDetails && (
+              <div className="flex w-full flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
+                {/* Status */}
+                {statusIcon && (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button
-                        variant={detailsOpen ? 'default' : 'ghost'}
-                        size="icon"
-                        className="relative z-20 h-6 w-6 shrink-0"
-                        type="button"
-                        onClick={() => setDetailsOpen((prev) => !prev)}
-                      >
-                        {detailsOpen ? (
-                          <ChevronUp className="h-3.5 w-3.5" />
-                        ) : (
-                          <ChevronDown className="h-3.5 w-3.5" />
-                        )}
-                      </Button>
+                      <div className="flex items-center shrink-0">{statusIcon}</div>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>{detailsOpen ? t('download.hideDetails') : t('download.showDetails')}</p>
+                      <p>{statusText}</p>
                     </TooltipContent>
                   </Tooltip>
                 )}
+                {/* Timestamp */}
+                {timestamp && (
+                  <span className="truncate shrink-0">{formatDateShort(timestamp)}</span>
+                )}
+                {/* Quality */}
+                {qualityLabel && (
+                  <>
+                    {(statusIcon || timestamp) && (
+                      <span className="text-muted-foreground/60 shrink-0">•</span>
+                    )}
+                    <span className="shrink-0">{qualityLabel}</span>
+                  </>
+                )}
+                {/* File size */}
+                {inlineFileSize && (
+                  <>
+                    {(statusIcon || timestamp || qualityLabel) && (
+                      <span className="text-muted-foreground/60 shrink-0">•</span>
+                    )}
+                    <span className="shrink-0">{inlineFileSize}</span>
+                  </>
+                )}
               </div>
-              {detailsOpen && hasMetadataDetails && (
-                <div className="space-y-2 rounded-md border border-dashed border-border/60 bg-muted/30 p-3 text-xs">
-                  {metadataDetails.map((item, index) => (
-                    <div key={`${item.label}-${index}`} className="flex gap-3">
-                      <span className="w-24 shrink-0 text-muted-foreground">{item.label}</span>
-                      <span className="flex-1 wrap-break-word text-foreground">{item.value}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
-            <div className={actionsContainerClass}>
+            <div className={`${actionsContainerClass} pointer-events-auto`}>
+              {/* Info button - show details in sheet */}
+              {hasMetadataDetails && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 shrink-0 rounded-full"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setSheetOpen(true)
+                      }}
+                    >
+                      <Info className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{t('download.showDetails')}</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
               {isHistory ? (
                 <>
                   {download.status === 'completed' && (
@@ -822,8 +781,11 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 shrink-0"
-                            onClick={handleCopyToClipboard}
+                            className="h-8 w-8 shrink-0 rounded-full"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleCopyToClipboard()
+                            }}
                             disabled={!canCopyToClipboard()}
                           >
                             <Copy className="h-4 w-4" />
@@ -838,8 +800,11 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 shrink-0"
-                            onClick={handleOpenFolder}
+                            className="h-8 w-8 shrink-0 rounded-full"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleOpenFolder()
+                            }}
                           >
                             <FolderOpen className="h-4 w-4" />
                           </Button>
@@ -855,8 +820,11 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 shrink-0"
-                        onClick={handleRemoveHistory}
+                        className="h-8 w-8 shrink-0 rounded-full"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleRemoveHistory()
+                        }}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -875,8 +843,11 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 shrink-0"
-                            onClick={handleCopyToClipboard}
+                            className="h-8 w-8 shrink-0 rounded-full"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleCopyToClipboard()
+                            }}
                             disabled={!canCopyToClipboard()}
                           >
                             <Copy className="h-4 w-4" />
@@ -891,8 +862,11 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 shrink-0"
-                            onClick={handleOpenFolder}
+                            className="h-8 w-8 shrink-0 rounded-full"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleOpenFolder()
+                            }}
                           >
                             <FolderOpen className="h-4 w-4" />
                           </Button>
@@ -909,8 +883,11 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 shrink-0"
-                      onClick={handleCancel}
+                      className="h-8 w-8 shrink-0 rounded-full"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleCancel()
+                      }}
                     >
                       <X className="h-4 w-4" />
                     </Button>
@@ -922,13 +899,13 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
 
           {/* Progress */}
           {download.progress && download.status !== 'completed' && download.status !== 'error' && (
-            <div className="space-y-2 bg-background/60 w-full overflow-hidden">
-              <Progress value={download.progress.percent} className="h-1.5 w-full" />
-              <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground w-full">
+            <div className="space-y-1 bg-background/60 w-full overflow-hidden">
+              <Progress value={download.progress.percent} className="h-1 w-full" />
+              <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground w-full">
                 <span className="font-medium shrink-0">
                   {download.progress.percent.toFixed(1)}%
                 </span>
-                <div className="flex flex-wrap items-center gap-3 min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2 min-w-0 flex-1">
                   {download.progress.downloaded && download.progress.total && (
                     <span className="truncate max-w-[100px]">
                       {download.progress.downloaded} / {download.progress.total}
@@ -953,6 +930,32 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
           )}
         </div>
       </div>
+
+      {/* Video Details Sheet */}
+      {hasMetadataDetails && (
+        <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+          <SheetContent side="right" className="w-full sm:max-w-lg flex flex-col p-0">
+            <div className="flex flex-col h-full overflow-hidden">
+              <SheetHeader className="px-6 pt-6 pb-4 border-b shrink-0">
+                <SheetTitle className="line-clamp-2">{download.title}</SheetTitle>
+                <SheetDescription>{t('download.videoInfo')}</SheetDescription>
+              </SheetHeader>
+              <div className="flex-1 overflow-y-auto px-6 py-4">
+                <div className="space-y-4">
+                  {metadataDetails.map((item, index) => (
+                    <div key={`${item.label}-${index}`} className="flex flex-col gap-1">
+                      <span className="text-sm font-medium text-muted-foreground">
+                        {item.label}
+                      </span>
+                      <div className="text-sm text-foreground break-words">{item.value}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </SheetContent>
+        </Sheet>
+      )}
     </div>
   )
 }

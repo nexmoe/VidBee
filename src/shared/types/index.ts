@@ -147,6 +147,7 @@ export interface PlaylistEntry {
   title: string
   url: string
   index: number
+  thumbnail?: string
 }
 
 export interface PlaylistInfo {

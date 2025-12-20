@@ -134,7 +134,7 @@ function SubscriptionTab({
               <TabsTrigger
                 value={subscription.id}
                 className={cn(
-                  'flex h-auto w-20 flex-col rounded-sm! items-center gap-1 px-2 py-2 transition-all hover:opacity-80 shrink-0 grow-0',
+                  'flex h-auto w-20 flex-col rounded-2xl items-center gap-1 px-2 py-2 transition-all hover:opacity-80 shrink-0 grow-0',
                   isActive && 'bg-muted/45'
                 )}
               >
@@ -338,7 +338,7 @@ export function Subscriptions() {
               ))}
               {/* Add RSS Button */}
               <Button
-                className="flex h-auto w-20 flex-col items-center gap-1 rounded-sm! px-2 py-2 transition-all hover:opacity-80 bg-transparent hover:bg-neutral-100 shrink-0 grow-0"
+                className="flex h-auto w-20 flex-col items-center gap-1 rounded-2xl px-2 py-2 transition-all hover:opacity-80 bg-transparent hover:bg-neutral-100 shrink-0 grow-0"
                 variant="ghost"
                 onClick={() => setAddDialogOpen(true)}
               >
