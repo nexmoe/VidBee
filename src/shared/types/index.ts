@@ -268,11 +268,12 @@ export interface AppSettings {
   hideDockIcon: boolean
   launchAtLogin: boolean
   autoUpdate: boolean
-  subscriptionFilenameTemplate: string
   subscriptionOnlyLatestDefault: boolean
   subscriptionCheckIntervalHours: number
   enableAnalytics: boolean
 }
+
+export const DEFAULT_SUBSCRIPTION_FILENAME_TEMPLATE = '%(uploader)s/%(title)s.%(ext)s'
 
 export const defaultSettings: AppSettings = {
   downloadPath: '',
@@ -292,7 +293,6 @@ export const defaultSettings: AppSettings = {
   hideDockIcon: false,
   launchAtLogin: false,
   autoUpdate: true,
-  subscriptionFilenameTemplate: '%(uploader)s - %(title)s.%(ext)s',
   subscriptionOnlyLatestDefault: true,
   subscriptionCheckIntervalHours: 3,
   enableAnalytics: true

@@ -424,7 +424,7 @@
       "title": "Automation defaults",
       "description": "Control where subscription downloads are stored and how often VidBee checks for new videos.",
       "downloadDirectory": "Download directory",
-      "filenameTemplate": "Filename template (file only)",
+      "filenameTemplate": "Filename template",
       "checkInterval": "Check interval (hours)",
       "onlyLatest": "Download only the latest video",
       "onlyLatestDescription": "When enabled, VidBee skips older backlog items and only grabs the newest upload."
@@ -438,7 +438,7 @@
       "keywords": "Keyword filter (comma separated)",
       "tags": "Auto tags",
       "customDirectory": "Custom directory",
-      "namingTemplate": "Custom filename template (file only)",
+      "namingTemplate": "Custom filename template",
       "onlyLatest": "Download only the latest video",
       "onlyLatestDescription": "Ignore backlog items and fetch just the newest upload from this feed.",
       "enabled": "Enabled",

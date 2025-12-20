@@ -5,6 +5,7 @@ import type {
   SubscriptionRule,
   SubscriptionUpdatePayload
 } from '../../../shared/types'
+import { DEFAULT_SUBSCRIPTION_FILENAME_TEMPLATE } from '../../../shared/types'
 import { sanitizeFilenameTemplate } from '../../download-engine/args-builder'
 import { subscriptionManager } from '../../lib/subscription-manager'
 import { subscriptionScheduler } from '../../lib/subscription-scheduler'
@@ -122,7 +123,7 @@ class SubscriptionService extends IpcService {
         options.onlyDownloadLatest ?? settings.subscriptionOnlyLatestDefault ?? true,
       downloadDirectory: options.downloadDirectory || settings.downloadPath,
       namingTemplate: sanitizeFilenameTemplate(
-        options.namingTemplate || settings.subscriptionFilenameTemplate
+        options.namingTemplate || DEFAULT_SUBSCRIPTION_FILENAME_TEMPLATE
       ),
       enabled: options.enabled ?? true
     }
