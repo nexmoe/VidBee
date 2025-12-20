@@ -1,5 +1,6 @@
 import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
+import { Checkbox } from '@renderer/components/ui/checkbox'
 import { Progress } from '@renderer/components/ui/progress'
 import { RemoteImage } from '@renderer/components/ui/remote-image'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
@@ -150,6 +151,8 @@ const getCodecLabel = (download: DownloadRecord): string | undefined => {
 
 interface DownloadItemProps {
   download: DownloadRecord
+  isSelected?: boolean
+  onToggleSelect?: (id: string) => void
 }
 
 type MetadataDetail = {
@@ -192,7 +195,7 @@ const formatDateShort = (timestamp?: number) => {
   })
 }
 
-export function DownloadItem({ download }: DownloadItemProps) {
+export function DownloadItem({ download, isSelected = false, onToggleSelect }: DownloadItemProps) {
   const { t } = useTranslation()
   const settings = useAtomValue(settingsAtom)
   const removeDownload = useSetAtom(removeDownloadAtom)
@@ -203,12 +206,13 @@ export function DownloadItem({ download }: DownloadItemProps) {
   const timestamp = download.completedAt ?? download.downloadedAt ?? download.createdAt
   const showActionsWithoutHover = isHistory || download.status === 'completed'
   const actionsContainerBaseClass =
-    'flex shrink-0 flex-wrap items-center justify-end gap-1 text-muted-foreground opacity-100 transition-opacity'
+    'relative z-20 flex shrink-0 flex-wrap items-center justify-end gap-1 text-muted-foreground opacity-100 transition-opacity'
   const actionsContainerClass = showActionsWithoutHover
     ? actionsContainerBaseClass
     : `${actionsContainerBaseClass} sm:opacity-0 sm:group-hover:opacity-100`
   const resolvedExtension = resolveDownloadExtension(download)
   const normalizedSavedFileName = normalizeSavedFileName(download.savedFileName)
+  const selectionEnabled = isHistory && Boolean(onToggleSelect)
 
   // Track if the file exists
   const [fileExists, setFileExists] = useState(false)
@@ -494,7 +498,7 @@ export function DownloadItem({ download }: DownloadItemProps) {
           href={download.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="wrap-break-word text-primary hover:underline"
+          className="relative z-20 wrap-break-word text-primary hover:underline"
         >
           {download.url}
         </a>
@@ -638,18 +642,65 @@ export function DownloadItem({ download }: DownloadItemProps) {
 
   const hasMetadataDetails = metadataDetails.length > 0
 
+  const isSelectedHistory = selectionEnabled && isSelected
+
   return (
-    <div className="group relative w-full max-w-full overflow-hidden">
+    <div
+      className={`group relative w-full max-w-full overflow-hidden rounded-lg border border-transparent transition-colors ${
+        isSelectedHistory ? 'border-primary/60 bg-primary/10 ring-1 ring-primary/30' : ''
+      }`}
+    >
+      {isSelectedHistory && (
+        <div className="absolute left-0 top-0 h-full w-1 bg-primary/70" aria-hidden="true" />
+      )}
+      <button
+        type="button"
+        className={`absolute inset-0 z-10 rounded-lg bg-transparent ${
+          selectionEnabled ? 'cursor-pointer' : 'cursor-default'
+        } disabled:cursor-default disabled:opacity-100`}
+        aria-label={t('history.selectItem')}
+        disabled={!selectionEnabled}
+        onClick={() => onToggleSelect?.(download.id)}
+      />
       <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:gap-4">
         {/* Thumbnail */}
-        <div className="shrink-0 overflow-hidden rounded-md border border-border/60 bg-background/60 w-32 h-20">
+        <button
+          type="button"
+          className={`relative z-20 shrink-0 overflow-hidden rounded-md border bg-background/60 w-32 h-20 disabled:opacity-100 disabled:cursor-default ${
+            selectionEnabled ? 'cursor-pointer' : 'cursor-default'
+          } ${isSelectedHistory ? 'border-primary/40' : 'border-border/60'}`}
+          aria-pressed={selectionEnabled ? Boolean(isSelected) : undefined}
+          onClick={(event) => {
+            event.stopPropagation()
+            if (selectionEnabled) {
+              onToggleSelect?.(download.id)
+            }
+          }}
+          disabled={!selectionEnabled}
+        >
+          {selectionEnabled && (
+            <div
+              className={`absolute left-1 top-1 rounded-md bg-background/80 p-0.5 shadow-sm transition ${
+                isSelected
+                  ? 'opacity-100'
+                  : 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'
+              }`}
+            >
+              <Checkbox
+                checked={Boolean(isSelected)}
+                onCheckedChange={() => onToggleSelect?.(download.id)}
+                onClick={(event) => event.stopPropagation()}
+                aria-label={t('history.selectItem')}
+              />
+            </div>
+          )}
           <RemoteImage
             src={download.thumbnail}
             alt={download.title}
             className="w-full h-full object-cover"
             fallbackIcon={<Play className="h-6 w-6" />}
           />
-        </div>
+        </button>
 
         {/* Content */}
         <div className="flex-1 min-w-0 max-w-full space-y-3 overflow-hidden">
@@ -688,7 +739,7 @@ export function DownloadItem({ download }: DownloadItemProps) {
                           href={download.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="max-w-[180px] truncate hover:text-primary transition-colors"
+                          className="relative z-20 max-w-[180px] truncate hover:text-primary transition-colors"
                         >
                           {sourceDisplay || download.url}
                         </a>
@@ -733,7 +784,7 @@ export function DownloadItem({ download }: DownloadItemProps) {
                       <Button
                         variant={detailsOpen ? 'default' : 'ghost'}
                         size="icon"
-                        className="h-6 w-6 shrink-0"
+                        className="relative z-20 h-6 w-6 shrink-0"
                         type="button"
                         onClick={() => setDetailsOpen((prev) => !prev)}
                       >

@@ -96,6 +96,31 @@ export const removeHistoryRecordAtom = atom(null, (get, set, id: string) => {
   set(downloadRecordsAtom, downloads)
 })
 
+export const removeHistoryRecordsAtom = atom(null, (get, set, ids: string[]) => {
+  if (!ids || ids.length === 0) {
+    return
+  }
+  const downloads = new Map(get(downloadRecordsAtom))
+  const uniqueIds = Array.from(new Set(ids))
+  uniqueIds.forEach((id) => {
+    downloads.delete(recordKey('history', id))
+  })
+  set(downloadRecordsAtom, downloads)
+})
+
+export const removeHistoryRecordsByPlaylistAtom = atom(null, (get, set, playlistId: string) => {
+  if (!playlistId) {
+    return
+  }
+  const downloads = new Map(get(downloadRecordsAtom))
+  for (const [key, item] of downloads.entries()) {
+    if (item.entryType === 'history' && item.playlistId === playlistId) {
+      downloads.delete(key)
+    }
+  }
+  set(downloadRecordsAtom, downloads)
+})
+
 export const clearHistoryRecordsAtom = atom(null, (get, set) => {
   const downloads = new Map(get(downloadRecordsAtom))
   for (const [key, item] of downloads.entries()) {
