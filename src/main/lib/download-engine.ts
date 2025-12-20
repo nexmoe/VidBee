@@ -478,7 +478,12 @@ class DownloadEngine extends EventEmitter {
     const settings = settingsManager.getAll()
     const targetDownloadPath = options.customDownloadPath?.trim() || settings.downloadPath
     const origin = options.origin ?? 'manual'
+    const historyDownloadPath = resolveHistoryDownloadPath(
+      targetDownloadPath,
+      options.customFilenameTemplate
+    )
     ensureDirectoryExists(targetDownloadPath)
+    ensureDirectoryExists(historyDownloadPath)
 
     const item: DownloadItem = {
       id,
@@ -498,7 +503,7 @@ class DownloadEngine extends EventEmitter {
       title: item.title,
       status: 'pending',
       downloadedAt: createdAt,
-      downloadPath: targetDownloadPath,
+      downloadPath: historyDownloadPath,
       tags: options.tags,
       origin,
       subscriptionId: options.subscriptionId
