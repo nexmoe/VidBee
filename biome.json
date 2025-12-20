@@ -39,7 +39,18 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "includes": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "**/*.json"]
+    "includes": [
+      "**/*.ts",
+      "**/*.tsx",
+      "**/*.js",
+      "**/*.jsx",
+      "**/*.json",
+      "!monkey/dist",
+      "!dist",
+      "!out",
+      "!build"
+    ],
+    "experimentalScannerIgnores": ["monkey/dist/**", "dist/**", "out/**", "build/**"]
   },
   "vcs": {
     "enabled": true,

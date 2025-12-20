@@ -23,7 +23,7 @@ import { popularSites } from '@renderer/data/popularSites'
 
 import type { AppSettings, OneClickQualityPreset, PlaylistInfo } from '@shared/types'
 import { useAtom, useSetAtom } from 'jotai'
-import { AlertCircle, Download, FolderOpen, List, Loader2, Plus, Search, Video } from 'lucide-react'
+import { AlertCircle, FolderOpen, List, Loader2, Plus, Video } from 'lucide-react'
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -1275,16 +1275,12 @@ export function DownloadDialog({ onOpenSupportedSites, onOpenSettings }: Downloa
                       {loading ? (
                         <Loader2 className="h-5 w-5 animate-spin" />
                       ) : (
-                        <>{t('download.oneClickDownloadNow')}</>
+                        t('download.oneClickDownloadNow')
                       )}
                     </Button>
                   ) : (
                     <Button onClick={handleFetchVideo} disabled={loading || !url.trim()}>
-                      {loading ? (
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                      ) : (
-                        <>{t('download.fetch')}</>
-                      )}
+                      {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : t('download.fetch')}
                     </Button>
                   )
                 ) : videoInfoCardState.activeTab === 'video' ? (
@@ -1328,7 +1324,7 @@ export function DownloadDialog({ onOpenSupportedSites, onOpenSettings }: Downloa
                   {playlistDownloadLoading ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : (
-                    <>{t('playlist.downloadCurrentRange')}</>
+                    t('playlist.downloadCurrentRange')
                   )}
                 </Button>
               ) : (
@@ -1340,7 +1336,7 @@ export function DownloadDialog({ onOpenSupportedSites, onOpenSettings }: Downloa
                   {playlistPreviewLoading ? (
                     <Loader2 className="h-5 w-5 animate-spin" />
                   ) : (
-                    <>{t('download.fetch')}</>
+                    t('download.fetch')
                   )}
                 </Button>
               )}

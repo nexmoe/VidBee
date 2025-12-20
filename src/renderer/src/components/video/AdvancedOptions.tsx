@@ -4,6 +4,7 @@ import {
   AccordionItem,
   AccordionTrigger
 } from '@renderer/components/ui/accordion'
+import { Input } from '@renderer/components/ui/input'
 import { Label } from '@renderer/components/ui/label'
 import { Switch } from '@renderer/components/ui/switch'
 import { useTranslation } from 'react-i18next'

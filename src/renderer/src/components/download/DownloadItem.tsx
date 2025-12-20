@@ -658,20 +658,20 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
         className={`flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:gap-3 ${
           selectionEnabled ? 'cursor-pointer' : ''
         }`}
-        onClick={selectionEnabled ? () => onToggleSelect?.(download.id) : undefined}
-        onKeyDown={
-          selectionEnabled
-            ? (e) => {
+        {...(selectionEnabled
+          ? {
+              onClick: () => onToggleSelect?.(download.id),
+              onKeyDown: (e: React.KeyboardEvent) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault()
                   onToggleSelect?.(download.id)
                 }
-              }
-            : undefined
-        }
-        role={selectionEnabled ? 'button' : undefined}
-        tabIndex={selectionEnabled ? 0 : undefined}
-        aria-label={selectionEnabled ? t('history.selectItem') : undefined}
+              },
+              role: 'button',
+              tabIndex: 0,
+              'aria-label': t('history.selectItem')
+            }
+          : {})}
       >
         {/* Thumbnail */}
         <div className="relative z-20 shrink-0 overflow-hidden rounded-lg border border-border/60 bg-background/60 w-20 h-14 pointer-events-none">
@@ -682,7 +682,6 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
                   ? 'opacity-100'
                   : 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'
               }`}
-              onClick={(event) => event.stopPropagation()}
             >
               <Checkbox
                 checked={Boolean(isSelected)}
