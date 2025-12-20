@@ -13,7 +13,11 @@ import type {
   VideoFormat,
   VideoInfo
 } from '../../shared/types'
-import { buildDownloadArgs, resolveVideoFormatSelector } from '../download-engine/args-builder'
+import {
+  buildDownloadArgs,
+  resolveVideoFormatSelector,
+  sanitizeFilenameTemplate
+} from '../download-engine/args-builder'
 import {
   findFormatByIdCandidates,
   parseSizeToBytes,
@@ -86,6 +90,18 @@ const resolveAutoVideoDownloadPath = (basePath: string, info?: VideoInfo): strin
     return root
   }
   return path.join(root, sanitizeFolderName(label, 'Video'))
+}
+
+const resolveHistoryDownloadPath = (basePath: string, filenameTemplate?: string): string => {
+  if (!filenameTemplate?.trim()) {
+    return basePath
+  }
+  const safeTemplate = sanitizeFilenameTemplate(filenameTemplate)
+  const templateDir = path.posix.dirname(safeTemplate)
+  if (templateDir === '.' || templateDir === '/') {
+    return basePath
+  }
+  return path.join(basePath, templateDir)
 }
 
 class DownloadEngine extends EventEmitter {
@@ -550,8 +566,12 @@ class DownloadEngine extends EventEmitter {
       options.customDownloadPath = resolvedDownloadPath
     }
 
-    ensureDirectoryExists(resolvedDownloadPath)
-    this.upsertHistoryEntry(id, options, { downloadPath: resolvedDownloadPath })
+    const historyDownloadPath = resolveHistoryDownloadPath(
+      resolvedDownloadPath,
+      options.customFilenameTemplate
+    )
+    ensureDirectoryExists(historyDownloadPath)
+    this.upsertHistoryEntry(id, options, { downloadPath: historyDownloadPath })
 
     const applySelectedFormat = (formatId: string | undefined): boolean => {
       if (!formatId) {
