@@ -229,6 +229,81 @@ export function DownloadDialog({ onOpenSupportedSites, onOpenSettings }: Downloa
     [addHistoryRecord, removeDownload]
   )
 
+  // Listen for deep link events
+  useEffect(() => {
+    const handleDeepLink = async (data: unknown) => {
+      // Support both old format (string) and new format (object with url and type)
+      let url: string
+      let type: 'single' | 'playlist' = 'single'
+
+      if (typeof data === 'string') {
+        // Legacy format: just URL string
+        url = data.trim()
+      } else if (data && typeof data === 'object' && 'url' in data) {
+        // New format: object with url and type
+        url = typeof data.url === 'string' ? data.url.trim() : ''
+        if ('type' in data && data.type === 'playlist') {
+          type = 'playlist'
+        }
+      } else {
+        return
+      }
+
+      if (!url) {
+        return
+      }
+
+      // Open dialog and set URL
+      setOpen(true)
+      setActiveTab(type)
+
+      if (type === 'playlist') {
+        // Handle playlist
+        setPlaylistUrl(url)
+        setPlaylistInfo(null)
+        setPlaylistPreviewError(null)
+        setPlaylistCustomDownloadPath('')
+
+        // Wait for dialog to open, then fetch playlist info
+        setTimeout(async () => {
+          setPlaylistPreviewError(null)
+          setPlaylistPreviewLoading(true)
+          try {
+            const info = await ipcServices.download.getPlaylistInfo(url)
+            setPlaylistInfo(info)
+            if (info.entryCount === 0) {
+              toast.error(t('playlist.noEntries'))
+              return
+            }
+            toast.success(t('playlist.foundVideos', { count: info.entryCount }))
+          } catch (error) {
+            console.error('Failed to fetch playlist info:', error)
+            const message =
+              error instanceof Error && error.message ? error.message : t('playlist.previewFailed')
+            setPlaylistPreviewError(message)
+            setPlaylistInfo(null)
+            toast.error(t('playlist.previewFailed'))
+          } finally {
+            setPlaylistPreviewLoading(false)
+          }
+        }, 100)
+      } else {
+        // Handle single video
+        setUrl(url)
+
+        // Wait for dialog to open and settings to load, then fetch video info
+        setTimeout(async () => {
+          await fetchVideoInfo(url)
+        }, 100)
+      }
+    }
+
+    ipcEvents.on('download:deeplink', handleDeepLink)
+    return () => {
+      ipcEvents.removeListener('download:deeplink', handleDeepLink)
+    }
+  }, [fetchVideoInfo, t])
+
   useEffect(() => {
     if (!open) return
 

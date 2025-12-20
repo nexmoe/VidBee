@@ -78,24 +78,24 @@ export function PlaylistDownloadGroup({
   const aggregatePercent = totalCount > 0 ? Math.min((totalProgress / totalCount) * 100, 100) : 0
 
   return (
-    <div className="space-y-2 rounded-md bg-muted/20 px-2.5 py-2">
+    <div className="space-y-2 rounded-md bg-muted/30 px-2.5 py-2">
       <div className="flex items-center justify-between gap-2">
-        <div className="flex min-w-0 flex-1 items-center gap-2">
-          <button
-            type="button"
-            className="flex shrink-0 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
-            onClick={() => setIsExpanded((prev) => !prev)}
-            aria-expanded={isExpanded}
-            aria-label={toggleLabel}
-            title={toggleLabel}
-          >
+        <button
+          type="button"
+          className="flex min-w-0 flex-1 items-center gap-2 rounded-md p-1.5 transition-colors hover:bg-muted/40 active:bg-muted/60 -ml-1.5 -mr-1.5"
+          onClick={() => setIsExpanded((prev) => !prev)}
+          aria-expanded={isExpanded}
+          aria-label={toggleLabel}
+          title={toggleLabel}
+        >
+          <div className="flex shrink-0 items-center justify-center text-muted-foreground">
             {isExpanded ? (
-              <ChevronDown className="h-3.5 w-3.5" />
+              <ChevronDown className="h-5 w-5" />
             ) : (
-              <ChevronRight className="h-3.5 w-3.5" />
+              <ChevronRight className="h-5 w-5" />
             )}
-          </button>
-          <div className="min-w-0 flex-1">
+          </div>
+          <div className="min-w-0 flex-1 text-left">
             <p className="truncate text-sm font-medium text-foreground">{displayTitle}</p>
             <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
               <span>
@@ -117,7 +117,7 @@ export function PlaylistDownloadGroup({
               )}
             </div>
           </div>
-        </div>
+        </button>
         <div className="flex shrink-0 items-center gap-1">
           {canDeletePlaylist && (
             <Button
@@ -125,13 +125,14 @@ export function PlaylistDownloadGroup({
               variant="ghost"
               size="icon"
               className="h-6 w-6 rounded-full"
-              onClick={() =>
+              onClick={(e) => {
+                e.stopPropagation()
                 onDeletePlaylist?.(
                   groupId,
                   displayTitle,
                   historyRecords.map((record) => record.id)
                 )
-              }
+              }}
               aria-label={t('history.deletePlaylist')}
               title={t('history.deletePlaylist')}
             >

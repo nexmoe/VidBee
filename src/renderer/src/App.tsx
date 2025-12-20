@@ -5,7 +5,7 @@ import { TitleBar } from '@renderer/components/ui/title-bar'
 import type { SubscriptionRule } from '@shared/types'
 import { useAtom, useSetAtom } from 'jotai'
 import { ThemeProvider } from 'next-themes'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { HashRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router'
 import { toast } from 'sonner'
@@ -59,12 +59,15 @@ function AppContent() {
   const currentPage = pathToPage(location.pathname)
   const supportedSitesUrl = 'https://vidbee.org/supported-sites/'
 
-  const handlePageChange = (page: Page) => {
-    const targetPath = pageToPath[page] ?? '/'
-    if (normalizePathname(location.pathname) !== targetPath) {
-      navigate(targetPath)
-    }
-  }
+  const handlePageChange = useCallback(
+    (page: Page) => {
+      const targetPath = pageToPath[page] ?? '/'
+      if (normalizePathname(location.pathname) !== targetPath) {
+        navigate(targetPath)
+      }
+    },
+    [location.pathname, navigate]
+  )
 
   const handleOpenSupportedSites = () => {
     window.open(supportedSitesUrl, '_blank')
@@ -80,8 +83,9 @@ function AppContent() {
       if (!url) {
         return
       }
+      // Switch to home page to show download dialog
       handlePageChange('home')
-      // TODO: Handle deep link URL in download dialog
+      // The DownloadDialog component will handle opening the dialog and parsing the video
     }
 
     ipcEvents.on('download:deeplink', handleDeepLink)

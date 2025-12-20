@@ -222,6 +222,7 @@
     "confirmClearAllDescription": "Remove {{count}} items from your history. Files stay on disk.",
     "confirmDeleteSelectedTitle": "Remove selected items?",
     "confirmDeleteSelectedDescription": "Remove {{count}} items from your history. Files stay on disk.",
+    "alsoDeleteFiles": "Also delete files",
     "confirmDeletePlaylistTitle": "Remove playlist history?",
     "confirmDeletePlaylistDescription": "Remove {{count}} items from {{title}} and delete their files.",
     "copyToClipboard": "Copy to clipboard",

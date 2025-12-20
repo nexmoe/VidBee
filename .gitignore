@@ -1,5 +1,5 @@
 node_modules
-dist
+/dist
 out
 .conductor/
 .DS_Store

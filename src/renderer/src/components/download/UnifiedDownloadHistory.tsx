@@ -1,5 +1,6 @@
 import { Button } from '@renderer/components/ui/button'
 import { CardContent, CardHeader } from '@renderer/components/ui/card'
+import { Checkbox } from '@renderer/components/ui/checkbox'
 import {
   Dialog,
   DialogContent,
@@ -11,7 +12,7 @@ import {
 import { cn } from '@renderer/lib/utils'
 import { useAtomValue, useSetAtom } from 'jotai'
 import { History as HistoryIcon } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useId, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { useHistorySync } from '../../hooks/use-history-sync'
@@ -130,6 +131,8 @@ export function UnifiedDownloadHistory({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null)
   const [confirmBusy, setConfirmBusy] = useState(false)
+  const [alsoDeleteFiles, setAlsoDeleteFiles] = useState(false)
+  const alsoDeleteFilesId = useId()
 
   useHistorySync()
 
@@ -309,6 +312,11 @@ export function UnifiedDownloadHistory({
       if (confirmAction.type === 'delete-selected') {
         await ipcServices.history.removeHistoryItems(confirmAction.ids)
         removeHistoryRecords(confirmAction.ids)
+        if (alsoDeleteFiles) {
+          const idSet = new Set(confirmAction.ids)
+          const recordsToDelete = historyRecords.filter((record) => idSet.has(record.id))
+          await deleteHistoryFiles(recordsToDelete)
+        }
         pruneSelectedIds(confirmAction.ids)
         toast.success(t('notifications.itemsRemoved', { count: confirmAction.ids.length }))
       }
@@ -324,6 +332,7 @@ export function UnifiedDownloadHistory({
         )
       }
       setConfirmAction(null)
+      setAlsoDeleteFiles(false)
     } catch (error) {
       if (confirmAction.type === 'delete-selected') {
         console.error('Failed to remove selected history items:', error)
@@ -501,6 +510,7 @@ export function UnifiedDownloadHistory({
         onOpenChange={(open) => {
           if (!open && !confirmBusy) {
             setConfirmAction(null)
+            setAlsoDeleteFiles(false)
           }
         }}
       >
@@ -510,10 +520,28 @@ export function UnifiedDownloadHistory({
               <DialogTitle>{confirmContent.title}</DialogTitle>
               <DialogDescription>{confirmContent.description}</DialogDescription>
             </DialogHeader>
+            {confirmAction?.type === 'delete-selected' && (
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id={alsoDeleteFilesId}
+                  checked={alsoDeleteFiles}
+                  onCheckedChange={(checked) => setAlsoDeleteFiles(checked === true)}
+                />
+                <label
+                  htmlFor={alsoDeleteFilesId}
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                >
+                  {t('history.alsoDeleteFiles')}
+                </label>
+              </div>
+            )}
             <DialogFooter>
               <Button
                 variant="outline"
-                onClick={() => setConfirmAction(null)}
+                onClick={() => {
+                  setConfirmAction(null)
+                  setAlsoDeleteFiles(false)
+                }}
                 disabled={confirmBusy}
               >
                 {t('download.cancel')}

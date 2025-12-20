@@ -39,10 +39,14 @@ protocol.registerSchemesAsPrivileged([
 
 let mainWindow: BrowserWindow | null = null
 let isQuitting = false
-const pendingDeepLinkUrls: string[] = []
+interface DeepLinkData {
+  url: string
+  type: 'single' | 'playlist'
+}
+const pendingDeepLinkUrls: DeepLinkData[] = []
 let isRendererReady = false
 
-const parseDownloadDeepLink = (rawUrl: string): string | null => {
+const parseDownloadDeepLink = (rawUrl: string): DeepLinkData | null => {
   try {
     const parsed = new URL(rawUrl)
     if (parsed.protocol !== `${APP_PROTOCOL}:`) {
@@ -61,16 +65,22 @@ const parseDownloadDeepLink = (rawUrl: string): string | null => {
       return null
     }
 
-    return targetUrl.trim()
+    const typeParam = parsed.searchParams.get('type')
+    const type = typeParam === 'playlist' ? 'playlist' : 'single'
+
+    return {
+      url: targetUrl.trim(),
+      type
+    }
   } catch (error) {
     log.warn('Failed to parse deep link:', error)
     return null
   }
 }
 
-const deliverDeepLink = (videoUrl: string): void => {
+const deliverDeepLink = (data: DeepLinkData): void => {
   if (!mainWindow || !isRendererReady) {
-    pendingDeepLinkUrls.push(videoUrl)
+    pendingDeepLinkUrls.push(data)
     return
   }
 
@@ -81,7 +91,7 @@ const deliverDeepLink = (videoUrl: string): void => {
     mainWindow.show()
   }
   mainWindow.focus()
-  mainWindow.webContents.send('download:deeplink', videoUrl)
+  mainWindow.webContents.send('download:deeplink', data)
 }
 
 const flushPendingDeepLinks = (): void => {
@@ -90,18 +100,18 @@ const flushPendingDeepLinks = (): void => {
   }
 
   const pending = pendingDeepLinkUrls.splice(0, pendingDeepLinkUrls.length)
-  for (const url of pending) {
-    mainWindow.webContents.send('download:deeplink', url)
+  for (const data of pending) {
+    mainWindow.webContents.send('download:deeplink', data)
   }
 }
 
 const handleDeepLinkUrl = (rawUrl: string): void => {
-  const videoUrl = parseDownloadDeepLink(rawUrl)
-  if (!videoUrl) {
+  const data = parseDownloadDeepLink(rawUrl)
+  if (!data) {
     log.warn('Ignored unsupported deep link:', rawUrl)
     return
   }
-  deliverDeepLink(videoUrl)
+  deliverDeepLink(data)
 }
 
 const handleDeepLinkArgv = (argv: string[]): void => {
