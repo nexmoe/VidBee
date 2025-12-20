@@ -19,7 +19,7 @@
   </p>
 </div>
 
-VidBee is a modern, open-source video downloader that lets you download videos and audios from 1000+ websites worldwide. Built with Electron and powered by yt-dlp, VidBee offers a clean, intuitive interface with powerful features for all your downloading needs.
+VidBee is a modern, open-source video downloader that lets you download videos and audios from 1000+ websites worldwide. Built with Electron and powered by yt-dlp, VidBee offers a clean, intuitive interface with powerful features for all your downloading needs, including RSS auto-download automation that automatically subscribes to feeds and downloads new videos from your favorite creators in the background.
 
 ## 👋🏻 Getting Started
 
@@ -42,6 +42,35 @@ xattr -rd com.apple.quarantine /Applications/VidBee.app/
 ```
 
 This command removes the quarantine attribute that macOS applies to applications downloaded from the internet, allowing VidBee to run properly without the "file is damaged" error.
+
+### 🌐 Browser Script (Quick Download)
+
+For a more convenient downloading experience, you can install the VidBee browser script to add a quick download button directly on supported video websites.
+
+![VidBee Browser Script](screenshots/browser-script.png)
+
+**Installation:**
+
+1. Install a userscript manager extension:
+   - [Tampermonkey](https://www.tampermonkey.net/) (Recommended)
+   - [Violentmonkey](https://violentmonkey.github.io/)
+   - [Greasemonkey](https://www.greasespot.net/)
+
+2. Install the VidBee Quick Download script:
+   - [Install from Greasy Fork](https://greasyfork.org/zh-CN/scripts/559595-vidbee-quick-download)
+
+**Usage:**
+
+After installation, when you visit supported video websites (YouTube, Bilibili, TikTok, Instagram, Twitter, etc.), a download button will appear on the page. Click the button to quickly send the video URL to VidBee desktop app for downloading.
+
+**Supported Sites:**
+
+The script works on popular video platforms including:
+
+- YouTube, Bilibili, TikTok, Vimeo, Dailymotion
+- Twitch, Twitter/X, Instagram, Facebook
+- Reddit, SoundCloud, Niconico, Kick
+- Bandcamp, Mixcloud, and more
 
 > [!IMPORTANT]
 >
@@ -69,6 +98,10 @@ Download videos from almost any website worldwide through the powerful yt-dlp en
 Modern, clean interface with intuitive operations. One-click pause/resume/retry, real-time progress tracking, and comprehensive download queue management.
 
 ![VidBee Download Queue](screenshots/download-queue.png)
+
+### 📡 RSS Auto Download
+
+Automatically subscribe to RSS feeds and auto-download new videos in the background from your favorite creators across YouTube, TikTok, and more. Set up RSS subscriptions once, and VidBee will automatically download new uploads without manual intervention, perfect for keeping up with your favorite channels and creators.
 
 ## 🌐 Supported Sites
 
