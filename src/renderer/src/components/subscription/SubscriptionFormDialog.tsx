@@ -1,10 +1,5 @@
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger
-} from '@renderer/components/ui/accordion'
 import { Button } from '@renderer/components/ui/button'
+import { Checkbox } from '@renderer/components/ui/checkbox'
 import {
   Dialog,
   DialogContent,
@@ -17,6 +12,7 @@ import { Input } from '@renderer/components/ui/input'
 import { Label } from '@renderer/components/ui/label'
 import { Switch } from '@renderer/components/ui/switch'
 import { ipcServices } from '@renderer/lib/ipc'
+import { cn } from '@renderer/lib/utils'
 import { settingsAtom } from '@renderer/store/settings'
 import { resolveFeedAtom } from '@renderer/store/subscriptions'
 import { DEFAULT_SUBSCRIPTION_FILENAME_TEMPLATE, type SubscriptionRule } from '@shared/types'
@@ -85,12 +81,16 @@ export function SubscriptionFormDialog({
   const detectTimeout = useRef<NodeJS.Timeout | null>(null)
   const prevDefaultPathRef = useRef(buildDefaultSubscriptionDirectory(settings.downloadPath))
   const urlInputId = useId()
+  const advancedOptionsId = useId()
+  const [advancedOptionsOpen, setAdvancedOptionsOpen] = useState(false)
 
   // Initialize form values based on mode
   useEffect(() => {
     if (!open) {
       return
     }
+
+    setAdvancedOptionsOpen(false)
 
     if (mode === 'edit' && subscription) {
       setUrl(subscription.feedUrl)
@@ -274,10 +274,16 @@ export function SubscriptionFormDialog({
               </Button>
             </div>
           </div>
-          <Accordion type="single" collapsible>
-            <AccordionItem value="advanced">
-              <AccordionTrigger>{t('advancedOptions.title')}</AccordionTrigger>
-              <AccordionContent className="space-y-3">
+          <div
+            data-state={advancedOptionsOpen ? 'open' : 'closed'}
+            className={cn(
+              'grid overflow-hidden transition-[grid-template-rows,opacity] duration-200 ease-out',
+              advancedOptionsOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+            )}
+            aria-hidden={!advancedOptionsOpen}
+          >
+            <div className={cn('min-h-0', !advancedOptionsOpen && 'pointer-events-none')}>
+              <div className="space-y-3 border-t pt-4">
                 <div className="space-y-2">
                   <Label>{t('subscriptions.fields.keywords')}</Label>
                   <Input value={keywords} onChange={(event) => setKeywords(event.target.value)} />
@@ -299,17 +305,31 @@ export function SubscriptionFormDialog({
                   <p className="text-sm">{t('subscriptions.fields.onlyLatest')}</p>
                   <Switch checked={onlyLatest} onCheckedChange={setOnlyLatest} />
                 </div>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
+              </div>
+            </div>
+          </div>
         </div>
         <DialogFooter>
-          {mode === 'add' && (
-            <Button variant="outline" onClick={onClose}>
-              {t('download.cancel')}
-            </Button>
-          )}
-          <Button onClick={() => void handleSave()}>{t(saveButtonKey)}</Button>
+          <div className="flex items-center justify-between w-full gap-4">
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id={advancedOptionsId}
+                checked={advancedOptionsOpen}
+                onCheckedChange={(checked) => setAdvancedOptionsOpen(checked === true)}
+              />
+              <Label htmlFor={advancedOptionsId} className="cursor-pointer">
+                {t('advancedOptions.title')}
+              </Label>
+            </div>
+            <div className="ml-auto flex gap-2">
+              {mode === 'add' && (
+                <Button variant="outline" onClick={onClose}>
+                  {t('download.cancel')}
+                </Button>
+              )}
+              <Button onClick={() => void handleSave()}>{t(saveButtonKey)}</Button>
+            </div>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
