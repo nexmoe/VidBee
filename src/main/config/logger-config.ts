@@ -5,15 +5,6 @@ import log from 'electron-log/main'
  * Set log format, file path, transport methods, etc.
  */
 export function configureLogger() {
-  // Configure console output format - support colors and scope, time in gray
-  log.transports.console.format = '%c{h}:{i}:{s}%c [{level}]{scope} {text}'
-
-  // Enable console colors
-  log.transports.console.useStyles = true
-
-  // Configure file output format - include scope information
-  log.transports.file.format = '[{y}-{m}-{d} {h}:{i}:{s}] [{level}] {scope} {text}'
-
   // Set log levels
   // Development: show all logs
   // Production: show info level and above only

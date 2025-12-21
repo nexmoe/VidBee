@@ -3,6 +3,7 @@ import os from 'node:os'
 import path from 'node:path'
 import type { AppSettings } from '../shared/types'
 import { defaultSettings } from '../shared/types'
+import { scopedLoggers } from './utils/logger'
 
 // Use require for electron-store to avoid CommonJS/ESM issues
 const ElectronStore = require('electron-store')
@@ -14,7 +15,7 @@ const ensureDirectoryExists = (dir: string) => {
   try {
     fs.mkdirSync(dir, { recursive: true })
   } catch (error) {
-    console.error('Failed to ensure download directory:', error)
+    scopedLoggers.system.error('Failed to ensure download directory:', error)
   }
 }
 
@@ -85,7 +86,7 @@ class SettingsManager {
       }
       ensureDirectoryExists(normalizedDownloadPath)
     } catch (error) {
-      console.error('Failed to verify download directory:', error)
+      scopedLoggers.system.error('Failed to verify download directory:', error)
     }
   }
 }

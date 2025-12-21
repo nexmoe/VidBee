@@ -5,11 +5,12 @@
 
   <h3>VidBee</h3>
   <p>
-    <a href="https://github.com/nexmoe/VidBee/stargazers"><img src="https://img.shields.io/github/stars/nexmoe/VidBee?color=ffcb47&labelColor=black&style=flat-square&logo=github&label=Stars" /></a>
-    <a href="https://github.com/nexmoe/VidBee/graphs/contributors"><img src="https://img.shields.io/github/contributors/nexmoe/VidBee?style=flat-square&logo=github&label=Contributors&labelColor=black" /></a>
-    <a href="https://github.com/nexmoe/VidBee/releases"><img src="https://img.shields.io/github/downloads/nexmoe/VidBee/total?color=369eff&labelColor=black&logo=github&style=flat-square&label=Downloads" /></a>
-    <a href="https://github.com/nexmoe/VidBee/releases/latest"><img src="https://img.shields.io/github/v/release/nexmoe/VidBee?color=369eff&labelColor=black&logo=github&style=flat-square&label=Latest%20Release" /></a>
-    <a href="https://x.com/intent/follow?screen_name=nexmoex"><img src="https://img.shields.io/badge/Follow-blue?color=1d9bf0&logo=x&labelColor=black&style=flat-square" /></a>
+    <a href="https://github.com/nexmoe/VidBee/stargazers"><img src="https://img.shields.io/github/stars/nexmoe/VidBee?color=ffcb47&labelColor=black&logo=github&label=Stars" /></a>
+    <a href="https://github.com/nexmoe/VidBee/graphs/contributors"><img src="https://img.shields.io/github/contributors/nexmoe/VidBee?ogo=github&label=Contributors&labelColor=black" /></a>
+    <a href="https://github.com/nexmoe/VidBee/releases"><img src="https://img.shields.io/github/downloads/nexmoe/VidBee/total?color=369eff&labelColor=black&logo=github&label=Downloads" /></a>
+    <a href="https://github.com/nexmoe/VidBee/releases/latest"><img src="https://img.shields.io/github/v/release/nexmoe/VidBee?color=369eff&labelColor=black&logo=github&label=Latest%20Release" /></a>
+    <a href="https://x.com/intent/follow?screen_name=nexmoex"><img src="https://img.shields.io/badge/Follow-blue?color=1d9bf0&logo=x&labelColor=black" /></a>
+    <a href="https://deepwiki.com/nexmoe/VidBee"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
     <br />
     <br />
     <a href="https://github.com/nexmoe/VidBee/releases/latest" target="_blank"><img src="screenshots/main-interface.png" alt="VidBee Desktop" width="46%"/></a>

@@ -6,6 +6,8 @@ ffmpeg.exe
 ffmpeg_macos
 ffmpeg_linux
 ffmpeg
+deno.exe
+deno
 
 # But keep the README
 !README.md

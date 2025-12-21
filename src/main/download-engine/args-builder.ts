@@ -61,7 +61,8 @@ export const resolveAudioFormatSelector = (options: DownloadOptions): string => 
 export const buildDownloadArgs = (
   options: DownloadOptions,
   downloadPath: string,
-  settings: AppSettings
+  settings: AppSettings,
+  jsRuntimeArgs: string[] = []
 ): string[] => {
   const args: string[] = ['--no-playlist', '--embed-chapters', '--no-mtime']
 
@@ -128,6 +129,10 @@ export const buildDownloadArgs = (
   const configPath = resolvePathWithHome(settings.configPath)
   if (configPath) {
     args.push('--config-location', configPath)
+  }
+
+  if (jsRuntimeArgs.length > 0) {
+    args.push(...jsRuntimeArgs)
   }
 
   args.push(options.url)

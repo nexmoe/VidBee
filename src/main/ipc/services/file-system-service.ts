@@ -6,6 +6,7 @@ import { pathToFileURL } from 'node:url'
 import { promisify } from 'node:util'
 import { clipboard, dialog, shell } from 'electron'
 import { type IpcContext, IpcMethod, IpcService } from 'electron-ipc-decorator'
+import { scopedLoggers } from '../../utils/logger'
 
 const execFileAsync = promisify(execFile)
 
@@ -49,7 +50,10 @@ class FileSystemService extends IpcService {
           return xdgPath
         }
       } catch (error) {
-        console.warn('Unable to resolve XDG download directory, falling back to default:', error)
+        scopedLoggers.system.warn(
+          'Unable to resolve XDG download directory, falling back to default:',
+          error
+        )
       }
     }
 
@@ -75,7 +79,7 @@ class FileSystemService extends IpcService {
       if (stats?.isDirectory()) {
         const result = await shell.openPath(normalizedPath)
         if (result) {
-          console.error('Failed to open directory:', result)
+          scopedLoggers.system.error('Failed to open directory:', result)
           return false
         }
         return true
@@ -88,16 +92,16 @@ class FileSystemService extends IpcService {
       if (parentStats?.isDirectory()) {
         const result = await shell.openPath(parentDirectory)
         if (result) {
-          console.error('Failed to open parent directory:', result)
+          scopedLoggers.system.error('Failed to open parent directory:', result)
           return false
         }
         return true
       }
 
-      console.error('File or directory does not exist:', normalizedPath)
+      scopedLoggers.system.error('File or directory does not exist:', normalizedPath)
       return false
     } catch (error) {
-      console.error('Failed to open file location:', error)
+      scopedLoggers.system.error('Failed to open file location:', error)
       return false
     }
   }
@@ -122,7 +126,7 @@ class FileSystemService extends IpcService {
 
       return true
     } catch (error) {
-      console.error('Failed to copy file to clipboard:', error)
+      scopedLoggers.system.error('Failed to copy file to clipboard:', error)
       return false
     }
   }
@@ -150,7 +154,7 @@ class FileSystemService extends IpcService {
       await shell.openExternal(url)
       return true
     } catch (error) {
-      console.error('Failed to open external URL:', error)
+      scopedLoggers.system.error('Failed to open external URL:', error)
       return false
     }
   }
@@ -166,7 +170,10 @@ class FileSystemService extends IpcService {
       ])
       return
     } catch (error) {
-      console.error('PowerShell clipboard copy failed, falling back to manual buffer:', error)
+      scopedLoggers.system.error(
+        'PowerShell clipboard copy failed, falling back to manual buffer:',
+        error
+      )
     }
 
     const winPath = resolvedPath.replace(/\//g, '\\')
@@ -194,7 +201,10 @@ class FileSystemService extends IpcService {
       await execFileAsync('osascript', ['-e', `set the clipboard to (POSIX file "${escaped}")`])
       return
     } catch (error) {
-      console.error('osascript clipboard copy failed, falling back to manual buffer:', error)
+      scopedLoggers.system.error(
+        'osascript clipboard copy failed, falling back to manual buffer:',
+        error
+      )
     }
 
     const entries = [
@@ -243,7 +253,7 @@ class FileSystemService extends IpcService {
 
       return stats?.isFile() ?? false
     } catch (error) {
-      console.error('Failed to check file existence:', error)
+      scopedLoggers.system.error('Failed to check file existence:', error)
       return false
     }
   }
@@ -295,7 +305,7 @@ class FileSystemService extends IpcService {
 
       return false
     } catch (error) {
-      console.error('Failed to delete file:', error)
+      scopedLoggers.system.error('Failed to delete file:', error)
       return false
     }
   }
