@@ -20,6 +20,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@renderer/components/ui/tabs'
 
 import { popularSites } from '@renderer/data/popularSites'
+import { cn } from '@renderer/lib/utils'
 
 import type { AppSettings, OneClickQualityPreset, PlaylistInfo } from '@shared/types'
 import { useAtom, useSetAtom } from 'jotai'
@@ -1042,23 +1043,41 @@ export function DownloadDialog({ onOpenSupportedSites, onOpenSettings }: Downloa
                 )}
 
                 {/* Advanced Options Content - Single Video */}
-                {videoInfo && !loading && singleVideoAdvancedOptionsOpen && (
-                  <div className="w-full pt-4 mt-4 border-t">
-                    <AdvancedOptions
-                      startTime={videoInfoCardState.startTime}
-                      endTime={videoInfoCardState.endTime}
-                      downloadSubs={videoInfoCardState.downloadSubs}
-                      onStartTimeChange={(value) =>
-                        setVideoInfoCardState((prev) => ({ ...prev, startTime: value }))
-                      }
-                      onEndTimeChange={(value) =>
-                        setVideoInfoCardState((prev) => ({ ...prev, endTime: value }))
-                      }
-                      onDownloadSubsChange={(value) =>
-                        setVideoInfoCardState((prev) => ({ ...prev, downloadSubs: value }))
-                      }
-                      showAccordion={false}
-                    />
+                {videoInfo && !loading && (
+                  <div
+                    data-state={singleVideoAdvancedOptionsOpen ? 'open' : 'closed'}
+                    className={cn(
+                      'grid overflow-hidden transition-[grid-template-rows,opacity] duration-200 ease-out',
+                      singleVideoAdvancedOptionsOpen
+                        ? 'grid-rows-[1fr] opacity-100'
+                        : 'grid-rows-[0fr] opacity-0'
+                    )}
+                    aria-hidden={!singleVideoAdvancedOptionsOpen}
+                  >
+                    <div
+                      className={cn(
+                        'min-h-0',
+                        !singleVideoAdvancedOptionsOpen && 'pointer-events-none'
+                      )}
+                    >
+                      <div className="w-full pt-4 mt-4 border-t">
+                        <AdvancedOptions
+                          startTime={videoInfoCardState.startTime}
+                          endTime={videoInfoCardState.endTime}
+                          downloadSubs={videoInfoCardState.downloadSubs}
+                          onStartTimeChange={(value) =>
+                            setVideoInfoCardState((prev) => ({ ...prev, startTime: value }))
+                          }
+                          onEndTimeChange={(value) =>
+                            setVideoInfoCardState((prev) => ({ ...prev, endTime: value }))
+                          }
+                          onDownloadSubsChange={(value) =>
+                            setVideoInfoCardState((prev) => ({ ...prev, downloadSubs: value }))
+                          }
+                          showAccordion={false}
+                        />
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
@@ -1191,51 +1210,62 @@ export function DownloadDialog({ onOpenSupportedSites, onOpenSettings }: Downloa
                 )}
 
                 {/* Advanced Options Content - Playlist */}
-                {advancedOptionsOpen && (
-                  <div className="w-full pt-4 mt-4 border-t">
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor={downloadTypeId}>{t('playlist.downloadType')}</Label>
-                          <Select
-                            value={downloadType}
-                            onValueChange={(v) => setDownloadType(v as 'video' | 'audio')}
-                            disabled={playlistBusy}
-                          >
-                            <SelectTrigger id={downloadTypeId}>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="video">{t('download.video')}</SelectItem>
-                              <SelectItem value="audio">{t('download.audio')}</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
+                <div
+                  data-state={advancedOptionsOpen ? 'open' : 'closed'}
+                  className={cn(
+                    'grid overflow-hidden transition-[grid-template-rows,opacity] duration-200 ease-out',
+                    advancedOptionsOpen
+                      ? 'grid-rows-[1fr] opacity-100'
+                      : 'grid-rows-[0fr] opacity-0'
+                  )}
+                  aria-hidden={!advancedOptionsOpen}
+                >
+                  <div className={cn('min-h-0', !advancedOptionsOpen && 'pointer-events-none')}>
+                    <div className="w-full pt-4 mt-4 border-t">
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor={downloadTypeId}>{t('playlist.downloadType')}</Label>
+                            <Select
+                              value={downloadType}
+                              onValueChange={(v) => setDownloadType(v as 'video' | 'audio')}
+                              disabled={playlistBusy}
+                            >
+                              <SelectTrigger id={downloadTypeId}>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="video">{t('download.video')}</SelectItem>
+                                <SelectItem value="audio">{t('download.audio')}</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
 
-                        <div className="space-y-2">
-                          <Label>{t('playlist.range')}</Label>
-                          <div className="flex items-center gap-2">
-                            <Input
-                              placeholder="1"
-                              value={startIndex}
-                              onChange={(e) => setStartIndex(e.target.value)}
-                              className="text-center"
-                              disabled={playlistBusy}
-                            />
-                            <span className="text-muted-foreground text-xs">-</span>
-                            <Input
-                              placeholder={playlistInfo?.entryCount.toString() || 'End'}
-                              value={endIndex}
-                              onChange={(e) => setEndIndex(e.target.value)}
-                              className="text-center"
-                              disabled={playlistBusy}
-                            />
+                          <div className="space-y-2">
+                            <Label>{t('playlist.range')}</Label>
+                            <div className="flex items-center gap-2">
+                              <Input
+                                placeholder="1"
+                                value={startIndex}
+                                onChange={(e) => setStartIndex(e.target.value)}
+                                className="text-center"
+                                disabled={playlistBusy}
+                              />
+                              <span className="text-muted-foreground text-xs">-</span>
+                              <Input
+                                placeholder={playlistInfo?.entryCount.toString() || 'End'}
+                                value={endIndex}
+                                onChange={(e) => setEndIndex(e.target.value)}
+                                className="text-center"
+                                disabled={playlistBusy}
+                              />
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                )}
+                </div>
               </div>
             </TabsContent>
           </ScrollArea>
