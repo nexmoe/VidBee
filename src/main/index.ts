@@ -317,9 +317,7 @@ function initAutoUpdater(): void {
 
       if (mainWindow) {
         mainWindow.webContents.send('update:show-notification', {
-          title: 'Update Ready',
-          body: `Version ${info.version} has been downloaded and will be installed on restart.`,
-          icon: 'app-icon'
+          version: info.version
         })
       }
     })

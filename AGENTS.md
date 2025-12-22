@@ -3,3 +3,4 @@
 3. Support i18n, only translate the English version of en.json
 4. use English for comments&console
 5. Follow the ✅ KISS (Keep It Simple, Stupid) & ✅ YAGNI (You Aren't Gonna Need It) principles
+6. Use Conventional Commits format for commit messages: `type(scope): subject`. Common types: feat, fix, docs, style, refactor, test, chore, perf, ci, build, revert. PR titles should also follow this format.
