@@ -168,34 +168,14 @@ function AppContent() {
       return
     }
 
-    const showRestartPrompt = () => {
-      toast.info(t('about.notifications.restartToUpdate'), {
-        action: {
-          label: t('about.notifications.restartNowAction'),
-          onClick: () => {
-            void ipcServices.update.quitAndInstall()
-          }
-        }
-      })
-    }
-
     const resetDownloadState = () => {
       if (updateDownloadInProgressRef.current) {
         updateDownloadInProgressRef.current = false
       }
     }
 
-    const handleUpdateDownloaded = (rawInfo: unknown) => {
-      const info = (rawInfo ?? {}) as { version?: string }
+    const handleUpdateDownloaded = (_rawInfo: unknown) => {
       resetDownloadState()
-
-      const versionLabel = info?.version ?? ''
-      const downloadedMessage = versionLabel
-        ? t('about.notifications.updateDownloadedVersion', { version: versionLabel })
-        : t('about.notifications.updateDownloaded')
-      toast.success(downloadedMessage)
-
-      showRestartPrompt()
     }
 
     const handleUpdateError = (rawMessage: unknown) => {
@@ -214,13 +194,13 @@ function AppContent() {
     }
 
     const handleUpdateNotification = (rawPayload: unknown) => {
-      const payload = (rawPayload ?? {}) as { body?: string; version?: string }
-      const versionLabel = payload.version ?? ''
+      const payload = (rawPayload ?? {}) as { version?: string }
+      const versionLabel = payload?.version ?? ''
       const downloadedMessage = versionLabel
         ? t('about.notifications.updateDownloadedVersion', { version: versionLabel })
         : t('about.notifications.updateDownloaded')
 
-      toast.info(payload?.body ?? downloadedMessage, {
+      toast.info(downloadedMessage, {
         action: {
           label: t('about.notifications.restartNowAction'),
           onClick: () => {
