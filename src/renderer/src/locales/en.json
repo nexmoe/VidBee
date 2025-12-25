@@ -15,7 +15,7 @@
     "autoUpdateTitle": "Auto updates",
     "betaProgramDescription": "Receive early builds and upcoming features before everyone else.",
     "betaProgramTitle": "Preview channel",
-    "description": "VidBee is a free, open-source downloader built with Electron and powered by yt-dlp.",
+    "description": "VidBee - Free and open-source automated video downloader with RSS auto-download, batch processing, and support for 1000+ platforms.",
     "followAuthorActions": {
       "follow": "Follow @nexmoex"
     },
@@ -51,6 +51,10 @@
       "documentationDescription": "Guides, FAQs, and common workflows.",
       "feedback": "Feedback & issues",
       "feedbackDescription": "Share ideas or report issues on GitHub.",
+      "githubIssues": "GitHub Issues",
+      "githubIssuesDescription": "Report bugs or request features on GitHub.",
+      "discord": "Discord Community",
+      "discordDescription": "Join our Discord community for discussions and support.",
       "license": "License",
       "licenseDescription": "Review the open-source license terms.",
       "website": "Official website",

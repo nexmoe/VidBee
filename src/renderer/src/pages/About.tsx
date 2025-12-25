@@ -17,10 +17,8 @@ import {
   FileText,
   Github,
   Link as LinkIcon,
-  Mail,
   MessageCircle,
   RefreshCw,
-  ShieldCheck,
   Twitter
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
@@ -196,7 +194,7 @@ export function About() {
 
   const shareLinks = useMemo(() => {
     const encodedUrl = encodeURIComponent(shareTargetUrl)
-    const encodedText = encodeURIComponent(t('about.description'))
+    const encodedText = encodeURIComponent(`${t('about.description')} @nexmoex`)
 
     return {
       facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
@@ -262,25 +260,18 @@ export function About() {
         href: 'https://github.com/nexmoe/VidBee/releases'
       },
       {
-        icon: MessageCircle,
-        label: t('about.resources.feedback'),
-        description: t('about.resources.feedbackDescription'),
+        icon: Github,
+        label: t('about.resources.githubIssues'),
+        description: t('about.resources.githubIssuesDescription'),
         actionLabel: t('about.actions.feedback'),
         href: 'https://github.com/nexmoe/VidBee/issues/new/choose'
       },
       {
-        icon: ShieldCheck,
-        label: t('about.resources.license'),
-        description: t('about.resources.licenseDescription'),
-        actionLabel: t('about.actions.view'),
-        href: 'https://github.com/nexmoe/VidBee/blob/main/LICENSE'
-      },
-      {
-        icon: Mail,
-        label: t('about.resources.contact'),
-        description: t('about.resources.contactDescription'),
-        actionLabel: t('about.actions.email'),
-        href: 'mailto:nexmoex@gmail.com'
+        icon: MessageCircle,
+        label: t('about.resources.discord'),
+        description: t('about.resources.discordDescription'),
+        actionLabel: t('about.actions.visit'),
+        href: 'https://discord.gg/uBqXV6QPdm'
       }
     ],
     [t]
@@ -415,10 +406,6 @@ export function About() {
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle>{t('about.resourcesTitle')}</CardTitle>
-            <CardDescription>{t('about.resourcesDescription')}</CardDescription>
-          </CardHeader>
           <CardContent className="p-0">
             <div className="flex flex-col divide-y">
               {aboutResources.map((resource) => {
