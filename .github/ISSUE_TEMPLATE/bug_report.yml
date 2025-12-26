@@ -1,0 +1,55 @@
+name: Bug Report
+description: Report a problem or regression
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: input
+    id: app_version
+    attributes:
+      label: App version
+      description: The VidBee version (e.g., 1.2.3)
+      placeholder: 1.2.3
+    validations:
+      required: true
+  - type: input
+    id: os_version
+    attributes:
+      label: OS version
+      description: Your operating system and version (e.g., macOS 14.2, Windows 11 23H2)
+      placeholder: macOS 14.2
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Provide clear steps so we can reproduce the issue
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+      placeholder: What you expected to happen
+    validations:
+      required: false
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result
+      placeholder: What actually happened
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots
+      description: Paste relevant logs or add screenshots
+      placeholder: Attach files or paste logs here
+    validations:
+      required: false
