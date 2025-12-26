@@ -76,10 +76,10 @@ jobs:
           FFMPEG_OUTPUT: ${{ matrix.ffmpeg_output }}
         run: |
           set -euo pipefail
-          curl -L "${{ matrix.ffmpeg_arm_url }}" -o ffmpeg-arm.zip
+          curl -fL --retry 3 --retry-delay 2 --retry-connrefused "${{ matrix.ffmpeg_arm_url }}" -o ffmpeg-arm.zip
           unzip -q ffmpeg-arm.zip -d ffmpeg-arm
 
-          curl -L "${{ matrix.ffmpeg_x86_url }}" -o ffmpeg-x86.zip
+          curl -fL --retry 3 --retry-delay 2 --retry-connrefused "${{ matrix.ffmpeg_x86_url }}" -o ffmpeg-x86.zip
           unzip -q ffmpeg-x86.zip -d ffmpeg-x86
 
           arm_bin="ffmpeg-arm/${{ matrix.ffmpeg_inner_path }}"
@@ -103,7 +103,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          curl -L "${{ matrix.ffmpeg_url }}" -o ffmpeg.tar.xz
+          curl -fL --retry 3 --retry-delay 2 --retry-connrefused "${{ matrix.ffmpeg_url }}" -o ffmpeg.tar.xz
+          if ! tar -tf ffmpeg.tar.xz >/dev/null 2>&1; then
+            echo "::error::Downloaded ffmpeg archive is not a valid tar.xz"
+            exit 1
+          fi
           mkdir ffmpeg
           tar -xf ffmpeg.tar.xz -C ffmpeg
           cp "ffmpeg/${{ matrix.ffmpeg_inner_path }}" "resources/${{ matrix.ffmpeg_output }}"
@@ -112,7 +116,7 @@ jobs:
       - name: Download yt-dlp binary
         shell: bash
         run: |
-          curl -L "https://github.com/yt-dlp/yt-dlp/releases/latest/download/${{ matrix.ytdlp_asset }}" -o "resources/${{ matrix.ytdlp_output }}"
+          curl -fL --retry 3 --retry-delay 2 --retry-connrefused "https://github.com/yt-dlp/yt-dlp/releases/latest/download/${{ matrix.ytdlp_asset }}" -o "resources/${{ matrix.ytdlp_output }}"
           if [[ "${{ matrix.platform }}" == "linux" ]] || [[ "${{ matrix.platform }}" == "macos" ]]; then
             chmod +x "resources/${{ matrix.ytdlp_output }}"
           fi
@@ -130,4 +134,3 @@ jobs:
           name: dist-${{ matrix.os }}
           path: dist/
           retention-days: 1
-
