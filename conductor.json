@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "setup": "cp -r $CONDUCTOR_ROOT_PATH/resources resources/ && pnpm install",
+    "setup": "cp -r $CONDUCTOR_ROOT_PATH/resources resources && pnpm install",
     "run": "pnpm run dev"
   }
 }

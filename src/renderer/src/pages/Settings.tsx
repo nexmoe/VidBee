@@ -18,6 +18,7 @@ import {
 } from '@renderer/components/ui/select'
 import { Switch } from '@renderer/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@renderer/components/ui/tabs'
+import { type LanguageCode, languageList, normalizeLanguageCode } from '@shared/languages'
 import type { OneClickQualityPreset } from '@shared/types'
 import { useAtom, useSetAtom } from 'jotai'
 import { useTheme } from 'next-themes'
@@ -35,7 +36,7 @@ const clampSubscriptionInterval = (value: string) => {
 }
 
 export function Settings() {
-  const { t } = useTranslation()
+  const { t, i18n: i18nInstance } = useTranslation()
   const { theme, setTheme } = useTheme()
   const [settings, _setSettings] = useAtom(settingsAtom)
   const loadSettings = useSetAtom(loadSettingsAtom)
@@ -131,6 +132,21 @@ export function Settings() {
     await handleSettingChange('theme', value)
   }
 
+  const languageOptions = languageList
+  const activeLanguageCode = normalizeLanguageCode(i18nInstance.language)
+  const currentLanguage =
+    languageOptions.find((option) => option.value === activeLanguageCode) ?? languageOptions[0]
+
+  const handleLanguageChange = async (value: LanguageCode) => {
+    if (activeLanguageCode === value) {
+      return
+    }
+
+    await saveSetting({ key: 'language', value })
+    await i18nInstance.changeLanguage(value)
+    toast.success(t('notifications.settingsSaved'))
+  }
+
   return (
     <div className="h-full bg-background">
       <div className="container mx-auto max-w-4xl p-6 space-y-6">
@@ -181,6 +197,53 @@ export function Settings() {
                       <SelectItem value="light">{t('settings.light')}</SelectItem>
                       <SelectItem value="dark">{t('settings.dark')}</SelectItem>
                       <SelectItem value="system">{t('settings.system')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </ItemActions>
+              </Item>
+
+              <ItemSeparator />
+
+              <Item variant="muted">
+                <ItemContent>
+                  <ItemTitle>{t('settings.language')}</ItemTitle>
+                  <ItemDescription>{t('settings.languageDescription')}</ItemDescription>
+                </ItemContent>
+                <ItemActions>
+                  <Select
+                    value={currentLanguage.value}
+                    onValueChange={(value) => void handleLanguageChange(value as LanguageCode)}
+                  >
+                    <SelectTrigger className="w-48">
+                      <SelectValue placeholder={currentLanguage.name}>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`${currentLanguage.flag} rounded-xs text-base`}
+                            aria-hidden="true"
+                          />
+                          <span lang={currentLanguage.hreflang}>{currentLanguage.name}</span>
+                        </div>
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {languageOptions.map((option) => {
+                        const isActive = option.value === currentLanguage.value
+                        return (
+                          <SelectItem
+                            key={option.value}
+                            value={option.value}
+                            className={isActive ? 'font-semibold bg-muted' : undefined}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={`${option.flag} rounded-xs text-base`}
+                                aria-hidden="true"
+                              />
+                              <span lang={option.hreflang}>{option.name}</span>
+                            </div>
+                          </SelectItem>
+                        )
+                      })}
                     </SelectContent>
                   </Select>
                 </ItemActions>

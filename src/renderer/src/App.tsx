@@ -16,6 +16,7 @@ import { Settings } from './pages/Settings'
 import { Subscriptions } from './pages/Subscriptions'
 import { loadSettingsAtom, settingsAtom } from './store/settings'
 import { loadSubscriptionsAtom, setSubscriptionsAtom } from './store/subscriptions'
+import { updateAvailableAtom, updateReadyAtom } from './store/update'
 
 type Page = 'home' | 'subscriptions' | 'settings' | 'about'
 
@@ -51,6 +52,8 @@ function AppContent() {
   const setSubscriptions = useSetAtom(setSubscriptionsAtom)
   const [settings] = useAtom(settingsAtom)
   const loadSettings = useSetAtom(loadSettingsAtom)
+  const setUpdateReady = useSetAtom(updateReadyAtom)
+  const setUpdateAvailable = useSetAtom(updateAvailableAtom)
   const { t } = useTranslation()
   const updateDownloadInProgressRef = useRef(false)
   const analyticsScriptRef = useRef<HTMLScriptElement | null>(null)
@@ -174,8 +177,25 @@ function AppContent() {
       }
     }
 
-    const handleUpdateDownloaded = (_rawInfo: unknown) => {
+    const handleUpdateAvailable = (rawInfo: unknown) => {
+      const info = (rawInfo ?? {}) as { version?: string }
+      setUpdateAvailable({
+        available: true,
+        version: info.version
+      })
+    }
+
+    const handleUpdateDownloaded = (rawInfo: unknown) => {
+      const info = (rawInfo ?? {}) as { version?: string }
       resetDownloadState()
+      setUpdateReady({
+        ready: true,
+        version: info.version
+      })
+      setUpdateAvailable({
+        available: true,
+        version: info.version
+      })
     }
 
     const handleUpdateError = (rawMessage: unknown) => {
@@ -211,19 +231,21 @@ function AppContent() {
     }
 
     // Only listen to update events that should be shown globally
-    // update:available is handled in About page only
+    // update:available shows a visual indicator in the sidebar
+    ipcEvents.on('update:available', handleUpdateAvailable)
     ipcEvents.on('update:downloaded', handleUpdateDownloaded)
     ipcEvents.on('update:error', handleUpdateError)
     ipcEvents.on('update:download-progress', handleDownloadProgress)
     ipcEvents.on('update:show-notification', handleUpdateNotification)
 
     return () => {
+      ipcEvents.removeListener('update:available', handleUpdateAvailable)
       ipcEvents.removeListener('update:downloaded', handleUpdateDownloaded)
       ipcEvents.removeListener('update:error', handleUpdateError)
       ipcEvents.removeListener('update:download-progress', handleDownloadProgress)
       ipcEvents.removeListener('update:show-notification', handleUpdateNotification)
     }
-  }, [t])
+  }, [setUpdateAvailable, setUpdateReady, t])
 
   return (
     <div className="flex flex-row h-screen">
