@@ -104,38 +104,78 @@ function ensureDir(dir) {
   }
 }
 
+function safeUnlink(filePath) {
+  if (fs.existsSync(filePath)) {
+    fs.unlinkSync(filePath)
+  }
+}
+
+function getDownloadHeaders(url) {
+  const headers = {
+    'User-Agent': 'vidbee-setup',
+    Accept: '*/*'
+  }
+  if (GITHUB_TOKEN && /github\.com|githubusercontent\.com/.test(url)) {
+    headers.Authorization = `Bearer ${GITHUB_TOKEN}`
+  }
+  return headers
+}
+
 function downloadFile(url, dest) {
   return new Promise((resolve, reject) => {
     const protocol = url.startsWith('https') ? https : http
     const file = fs.createWriteStream(dest)
 
-    protocol
-      .get(url, (response) => {
-        if (response.statusCode === 302 || response.statusCode === 301) {
-          // Handle redirect
-          file.close()
-          fs.unlinkSync(dest)
-          return downloadFile(response.headers.location, dest).then(resolve).catch(reject)
-        }
-
-        if (response.statusCode !== 200) {
-          file.close()
-          fs.unlinkSync(dest)
-          return reject(new Error(`Failed to download: ${response.statusCode}`))
-        }
-
-        response.pipe(file)
-        file.on('finish', () => {
-          file.close()
-          resolve()
-        })
-      })
-      .on('error', (err) => {
+    const request = protocol.get(url, { headers: getDownloadHeaders(url) }, (response) => {
+      if (response.statusCode === 302 || response.statusCode === 301) {
+        // Handle redirect
         file.close()
-        fs.unlinkSync(dest)
-        reject(err)
+        safeUnlink(dest)
+        return downloadFile(response.headers.location, dest).then(resolve).catch(reject)
+      }
+
+      if (response.statusCode !== 200) {
+        file.close()
+        safeUnlink(dest)
+        return reject(new Error(`Failed to download: ${response.statusCode}`))
+      }
+
+      response.pipe(file)
+      file.on('finish', () => {
+        file.close()
+        resolve()
       })
+    })
+
+    request.setTimeout(30000, () => {
+      request.destroy(new Error('Download timeout'))
+    })
+
+    request.on('error', (err) => {
+      file.close()
+      safeUnlink(dest)
+      reject(err)
+    })
   })
+}
+
+async function downloadFileWithRetry(url, dest, retries = 3, delayMs = 2000) {
+  let lastError
+  for (let attempt = 1; attempt <= retries; attempt += 1) {
+    try {
+      await downloadFile(url, dest)
+      return
+    } catch (error) {
+      lastError = error
+      safeUnlink(dest)
+      if (attempt < retries) {
+        const backoff = delayMs * attempt
+        log(`Download failed (attempt ${attempt}/${retries}): ${error.message}`, 'warn')
+        await new Promise((resolve) => setTimeout(resolve, backoff))
+      }
+    }
+  }
+  throw lastError
 }
 
 function fetchJson(url) {
@@ -299,7 +339,7 @@ async function downloadYtDlp(config) {
   const tempPath = path.join(RESOURCES_DIR, `.${asset}.tmp`)
 
   try {
-    await downloadFile(url, tempPath)
+    await downloadFileWithRetry(url, tempPath)
     fs.renameSync(tempPath, outputPath)
     setExecutable(outputPath)
     log(`Downloaded ${output} successfully`, 'success')
@@ -342,7 +382,7 @@ async function downloadFfmpegWindows(config) {
   }
 
   try {
-    await downloadFile(downloadUrl, tempZip)
+    await downloadFileWithRetry(downloadUrl, tempZip)
     log('Extracting ffmpeg...', 'info')
     extractZip(tempZip, extractDir)
 
@@ -397,7 +437,7 @@ async function downloadFfmpegMac(config) {
   }
 
   try {
-    await downloadFile(downloadUrl, tempZip)
+    await downloadFileWithRetry(downloadUrl, tempZip)
     log('Extracting ffmpeg...', 'info')
     extractZip(tempZip, extractDir)
 
@@ -451,7 +491,7 @@ async function downloadFfmpegLinux(config) {
   }
 
   try {
-    await downloadFile(downloadUrl, tempTar)
+    await downloadFileWithRetry(downloadUrl, tempTar)
     log('Extracting ffmpeg...', 'info')
     extractTarXz(tempTar, extractDir)
 
@@ -498,7 +538,7 @@ async function downloadDenoRuntime() {
   const downloadUrl = `${DENO_BASE_URL}/${assetName}`
 
   try {
-    await downloadFile(downloadUrl, tempZip)
+    await downloadFileWithRetry(downloadUrl, tempZip)
     log('Extracting Deno runtime...', 'info')
     extractZip(tempZip, extractDir)
 
