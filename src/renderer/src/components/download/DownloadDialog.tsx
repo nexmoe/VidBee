@@ -114,9 +114,11 @@ const buildVideoFormatPreference = (settings: AppSettings): string => {
       combinations.push(video)
     }
   } else {
-    // Use bestvideo+bestaudio as fallback instead of 'best' to ensure merging
+    // Prefer merged formats, then allow 'best' as a compatibility fallback.
     combinations.push('bestvideo+bestaudio')
   }
+
+  combinations.push('best')
 
   return dedupe(combinations).join('/')
 }
@@ -935,28 +937,32 @@ export function DownloadDialog({ onOpenSupportedSites, onOpenSettings }: Downloa
                       {t('sites.viewAll')}
                     </Button>
                   </div>
-
-                  {settings.oneClickDownload && (
-                    <div className="flex items-center gap-2 text-xs text-primary">
-                      <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-                      <span>{t('download.oneClickDownloadEnabled')}</span>
-                      {onOpenSettings && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="text-xs h-auto"
-                          onClick={() => {
-                            setOpen(false)
-                            onOpenSettings()
-                          }}
-                        >
-                          {t('download.goToSettings')}
-                        </Button>
-                      )}
-                    </div>
-                  )}
                 </div>
+
+                {/* One-click download indicator */}
+                {settings.oneClickDownload && (
+                  <div className="w-full">
+                    <div className="rounded-lg border bg-muted/30 p-2.5">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span>{t('download.oneClickDownloadEnabled')}</span>
+                        {onOpenSettings && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="text-xs h-auto"
+                            onClick={() => {
+                              setOpen(false)
+                              onOpenSettings()
+                            }}
+                          >
+                            {t('download.goToSettings')}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Error Display */}
                 {error && (

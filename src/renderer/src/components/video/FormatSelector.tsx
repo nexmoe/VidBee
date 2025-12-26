@@ -73,22 +73,30 @@ export function FormatSelector({
   useEffect(() => {
     // Filter and sort formats
     // Exclude m3u8/HLS formats as they are streaming formats not suitable for direct download
-    const videos = formats.filter(
-      (f) =>
-        f.video_ext !== 'none' &&
-        f.vcodec &&
-        f.vcodec !== 'none' &&
-        f.protocol !== 'm3u8' &&
-        f.protocol !== 'm3u8_native'
+    const isVideoFormat = (format: VideoFormat) =>
+      format.video_ext !== 'none' && format.vcodec && format.vcodec !== 'none'
+    const isAudioFormat = (format: VideoFormat) =>
+      format.acodec &&
+      format.acodec !== 'none' &&
+      (format.video_ext === 'none' || !format.video_ext)
+    const isHlsFormat = (format: VideoFormat) =>
+      format.protocol === 'm3u8' || format.protocol === 'm3u8_native'
+
+    const videoCandidates = formats.filter(
+      (format) => isVideoFormat(format) && !isHlsFormat(format)
     )
-    const audios = formats.filter(
-      (f) =>
-        f.acodec &&
-        f.acodec !== 'none' &&
-        (f.video_ext === 'none' || !f.video_ext) &&
-        f.protocol !== 'm3u8' &&
-        f.protocol !== 'm3u8_native'
+    const audioCandidates = formats.filter(
+      (format) => isAudioFormat(format) && !isHlsFormat(format)
     )
+
+    const videos =
+      videoCandidates.length > 0
+        ? videoCandidates
+        : formats.filter((format) => isVideoFormat(format))
+    const audios =
+      audioCandidates.length > 0
+        ? audioCandidates
+        : formats.filter((format) => isAudioFormat(format))
 
     // Apply showMoreFormats filter
     const filteredVideos = settings.showMoreFormats
@@ -98,6 +106,9 @@ export function FormatSelector({
     const filteredAudios = settings.showMoreFormats
       ? audios
       : audios.filter((f) => f.ext !== 'webm')
+
+    const finalVideos = filteredVideos.length > 0 ? filteredVideos : videos
+    const finalAudios = filteredAudios.length > 0 ? filteredAudios : audios
 
     // Sort formats by quality (best first)
     const sortVideoFormatsByQuality = (a: VideoFormat, b: VideoFormat) => {
@@ -138,23 +149,23 @@ export function FormatSelector({
       return 0
     }
 
-    filteredVideos.sort(sortVideoFormatsByQuality)
-    filteredAudios.sort(sortAudioFormatsByQuality)
+    finalVideos.sort(sortVideoFormatsByQuality)
+    finalAudios.sort(sortAudioFormatsByQuality)
 
-    setVideoFormats(filteredVideos)
-    setAudioFormats(filteredAudios)
+    setVideoFormats(finalVideos)
+    setAudioFormats(finalAudios)
 
     // Auto-select best format based on preferences
-    if (filteredVideos.length > 0 && !selectedVideo) {
-      const preferred = pickVideoFormatForPreset(filteredVideos, settings.oneClickQuality)
+    if (finalVideos.length > 0 && !selectedVideo) {
+      const preferred = pickVideoFormatForPreset(finalVideos, settings.oneClickQuality)
       if (preferred) {
         setSelectedVideo(preferred.format_id)
         onVideoFormatChange?.(preferred.format_id)
       }
     }
 
-    if (filteredAudios.length > 0 && !selectedAudio) {
-      const best = filteredAudios[0]
+    if (finalAudios.length > 0 && !selectedAudio) {
+      const best = finalAudios[0]
       setSelectedAudio(best.format_id)
       onAudioFormatChange?.(best.format_id)
     }
