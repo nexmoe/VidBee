@@ -25,7 +25,6 @@ import { useTheme } from 'next-themes'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import i18n from '../i18n'
 import { loadSettingsAtom, saveSettingAtom, settingsAtom } from '../store/settings'
 
 const clampSubscriptionInterval = (value: string) => {
