@@ -21,6 +21,10 @@ export const resolveVideoFormatSelector = (options: DownloadOptions): string => 
   const format = options.format
   const audioFormat = options.audioFormat
 
+  if (format && audioFormat === '') {
+    return format
+  }
+
   if (format && (format.includes('/') || (audioFormat === undefined && format.includes('+')))) {
     return format
   }
