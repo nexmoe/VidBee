@@ -292,7 +292,7 @@ export const defaultSettings: AppSettings = {
   oneClickQuality: 'best',
   closeToTray: false,
   hideDockIcon: false,
-  launchAtLogin: false,
+  launchAtLogin: true,
   autoUpdate: true,
   subscriptionOnlyLatestDefault: true,
   subscriptionCheckIntervalHours: 3,
