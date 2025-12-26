@@ -1,12 +1,6 @@
 import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from '@renderer/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@renderer/components/ui/card'
 import { Progress } from '@renderer/components/ui/progress'
 import { Switch } from '@renderer/components/ui/switch'
 import { useAtom, useSetAtom } from 'jotai'
@@ -18,14 +12,16 @@ import {
   Github,
   Link as LinkIcon,
   MessageCircle,
+  MessageSquare,
   RefreshCw,
   Twitter
 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { ipcEvents, ipcServices } from '../lib/ipc'
 import { saveSettingAtom, settingsAtom } from '../store/settings'
+import { updateAvailableAtom, updateReadyAtom } from '../store/update'
 
 interface AboutResource {
   icon: LucideIcon
@@ -45,6 +41,8 @@ type LatestVersionState =
 export function About() {
   const { t } = useTranslation()
   const [settings, _setSettings] = useAtom(settingsAtom)
+  const [updateReady] = useAtom(updateReadyAtom)
+  const setUpdateAvailable = useSetAtom(updateAvailableAtom)
   const [appVersion, setAppVersion] = useState<string>('—')
   const [latestVersionState, setLatestVersionState] = useState<LatestVersionState>(null)
   const [updateDownloadProgress, setUpdateDownloadProgress] = useState<number | null>(null)
@@ -88,6 +86,10 @@ export function About() {
         status: 'available',
         version: versionLabel
       })
+      setUpdateAvailable({
+        available: true,
+        version: versionLabel
+      })
       // Reset download progress when new update is available
       setUpdateDownloadProgress(0)
     }
@@ -113,7 +115,7 @@ export function About() {
       ipcEvents.removeListener('update:download-progress', handleUpdateDownloadProgress)
       ipcEvents.removeListener('update:downloaded', handleUpdateDownloaded)
     }
-  }, [t])
+  }, [setUpdateAvailable, t])
 
   const handleSettingChange = async (
     key: keyof typeof settings,
@@ -135,6 +137,10 @@ export function About() {
             status: 'available',
             version: result.version ?? ''
           })
+          setUpdateAvailable({
+            available: true,
+            version: result.version
+          })
         } else if (result.error) {
           toast.error(t('about.notifications.updateError', { error: result.error }))
           setLatestVersionState({
@@ -146,6 +152,10 @@ export function About() {
           setLatestVersionState({
             status: 'uptodate',
             version: result.version ?? appVersion
+          })
+          setUpdateAvailable({
+            available: false,
+            version: undefined
           })
         }
       } catch (error) {
@@ -159,6 +169,10 @@ export function About() {
     openShareUrl('https://vidbee.org/download/')
   }
 
+  const handleRestartToUpdate = () => {
+    void ipcServices.update.quitAndInstall()
+  }
+
   const handleCheckForUpdates = async () => {
     try {
       toast.info(t('about.notifications.checkingUpdates'))
@@ -169,6 +183,10 @@ export function About() {
         setLatestVersionState({
           status: 'available',
           version: result.version ?? ''
+        })
+        setUpdateAvailable({
+          available: true,
+          version: result.version
         })
       } else if (result.error) {
         toast.error(t('about.notifications.updateError', { error: result.error }))
@@ -181,6 +199,10 @@ export function About() {
         setLatestVersionState({
           status: 'uptodate',
           version: result.version ?? appVersion
+        })
+        setUpdateAvailable({
+          available: false,
+          version: undefined
         })
       }
     } catch (error) {
@@ -202,13 +224,13 @@ export function About() {
     }
   }, [t])
 
-  const openShareUrl = (url: string) => {
+  const openShareUrl = useCallback((url: string) => {
     if (typeof window === 'undefined') {
       return
     }
 
     window.open(url, '_blank', 'noopener,noreferrer')
-  }
+  }, [])
 
   const handleShareTwitter = () => {
     openShareUrl(shareLinks.twitter)
@@ -243,6 +265,39 @@ export function About() {
         : 'text-muted-foreground'
   const latestVersionStatusText = latestVersionStatusKey ? t(latestVersionStatusKey) : null
 
+  const handleXFeedback = useCallback(() => {
+    const versionText = appVersion !== '—' ? ` VidBee v${appVersion}` : ' VidBee'
+    const tweetText = encodeURIComponent(`@nexmoex${versionText}`)
+    openShareUrl(`https://x.com/intent/tweet?text=${tweetText}`)
+  }, [appVersion, openShareUrl])
+
+  const feedbackResources = useMemo<AboutResource[]>(
+    () => [
+      {
+        icon: Github,
+        label: t('about.resources.githubIssues'),
+        description: t('about.resources.githubIssuesDescription'),
+        actionLabel: t('about.actions.feedback'),
+        href: 'https://github.com/nexmoe/VidBee/issues/new/choose'
+      },
+      {
+        icon: Twitter,
+        label: t('about.resources.xFeedback'),
+        description: t('about.resources.xFeedbackDescription'),
+        actionLabel: t('about.actions.feedback'),
+        onClick: handleXFeedback
+      },
+      {
+        icon: MessageCircle,
+        label: t('about.resources.discord'),
+        description: t('about.resources.discordDescription'),
+        actionLabel: t('about.actions.visit'),
+        href: 'https://discord.gg/uBqXV6QPdm'
+      }
+    ],
+    [t, handleXFeedback]
+  )
+
   const aboutResources = useMemo<AboutResource[]>(
     () => [
       {
@@ -258,20 +313,6 @@ export function About() {
         description: t('about.resources.changelogDescription'),
         actionLabel: t('about.actions.view'),
         href: 'https://github.com/nexmoe/VidBee/releases'
-      },
-      {
-        icon: Github,
-        label: t('about.resources.githubIssues'),
-        description: t('about.resources.githubIssuesDescription'),
-        actionLabel: t('about.actions.feedback'),
-        href: 'https://github.com/nexmoe/VidBee/issues/new/choose'
-      },
-      {
-        icon: MessageCircle,
-        label: t('about.resources.discord'),
-        description: t('about.resources.discordDescription'),
-        actionLabel: t('about.actions.visit'),
-        href: 'https://discord.gg/uBqXV6QPdm'
       }
     ],
     [t]
@@ -282,69 +323,87 @@ export function About() {
       <div className="container mx-auto max-w-5xl p-6 space-y-6">
         <Card>
           <CardContent className="pt-6">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-col gap-4">
               <div className="flex items-center gap-4">
-                <img src="./app-icon.png" alt="VidBee" className="h-16 w-16 rounded-2xl" />
-                <div className="space-y-2">
-                  <div>
-                    <h2 className="text-2xl font-semibold leading-tight">{t('about.appName')}</h2>
-                    <p className="text-sm text-muted-foreground">{t('about.description')}</p>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="secondary">
-                      {t('about.versionLabel', { version: appVersion })}
-                    </Badge>
-                    {latestVersionState ? (
-                      <div className="flex flex-wrap items-center gap-2">
-                        {latestVersionBadgeText ? (
-                          <Badge variant="outline">{latestVersionBadgeText}</Badge>
-                        ) : null}
-                        {latestVersionStatusText ? (
-                          <span className={`text-sm ${latestVersionStatusClass}`}>
-                            {latestVersionStatusText}
-                          </span>
-                        ) : null}
-                      </div>
-                    ) : null}
-                  </div>
-                  {updateDownloadProgress !== null && (
-                    <div className="space-y-2 w-full">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-sm text-muted-foreground">
-                          {t('about.downloadingUpdate')}
-                        </span>
-                        <span className="text-sm font-medium">
-                          {updateDownloadProgress.toFixed(1)}%
-                        </span>
-                      </div>
-                      <Progress value={updateDownloadProgress} className="h-2" />
+                <img src="./app-icon.png" alt="VidBee" className="h-18 w-18 rounded-2xl" />
+                <div className="flex-1 space-y-2">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <h2 className="text-2xl font-semibold leading-tight">{t('about.appName')}</h2>
+                      <Badge variant="secondary">
+                        {t('about.versionLabel', { version: appVersion })}
+                      </Badge>
+                      {latestVersionState ? (
+                        <div className="flex flex-wrap items-center gap-2">
+                          {latestVersionBadgeText ? (
+                            <Badge variant="outline">{latestVersionBadgeText}</Badge>
+                          ) : null}
+                          {latestVersionStatusText ? (
+                            <span className={`text-sm ${latestVersionStatusClass}`}>
+                              {latestVersionStatusText}
+                            </span>
+                          ) : null}
+                        </div>
+                      ) : null}
                     </div>
-                  )}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button variant="outline" size="sm" asChild>
+                        <a
+                          href="https://github.com/nexmoe/vidbee"
+                          target="_blank"
+                          rel="noreferrer"
+                          aria-label={t('about.actions.openRepo')}
+                        >
+                          <Github className="h-3.5 w-3.5" />
+                        </a>
+                      </Button>
+                      {updateReady.ready ? (
+                        <Button
+                          onClick={handleRestartToUpdate}
+                          variant="default"
+                          size="sm"
+                          className="gap-2"
+                        >
+                          <RefreshCw className="h-3.5 w-3.5" />
+                          {t('about.notifications.restartNowAction')}
+                        </Button>
+                      ) : null}
+                      {latestVersionState?.status === 'available' ? (
+                        <Button
+                          onClick={handleGoToDownload}
+                          variant="default"
+                          size="sm"
+                          className="gap-2"
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                          {t('about.actions.goToDownload')}
+                        </Button>
+                      ) : null}
+                      <Button onClick={handleCheckForUpdates} size="sm" className="gap-2">
+                        <RefreshCw className="h-3.5 w-3.5" />
+                        {t('about.actions.checkUpdates')}
+                      </Button>
+                    </div>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{t('about.description')}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="icon" asChild>
-                  <a
-                    href="https://github.com/nexmoe/vidbee"
-                    target="_blank"
-                    rel="noreferrer"
-                    aria-label={t('about.actions.openRepo')}
-                  >
-                    <Github className="h-4 w-4" />
-                  </a>
-                </Button>
-                {latestVersionState?.status === 'available' ? (
-                  <Button onClick={handleGoToDownload} variant="default" className="gap-2">
-                    <Download className="h-4 w-4" />
-                    {t('about.actions.goToDownload')}
-                  </Button>
-                ) : null}
-                <Button onClick={handleCheckForUpdates} className="gap-2">
-                  <RefreshCw className="h-4 w-4" />
-                  {t('about.actions.checkUpdates')}
-                </Button>
-              </div>
             </div>
+            {updateDownloadProgress !== null && (
+              <div className="flex flex-col gap-3 pt-4">
+                <div className="space-y-2 w-full">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm text-muted-foreground">
+                      {t('about.downloadingUpdate')}
+                    </span>
+                    <span className="text-sm font-medium">
+                      {updateDownloadProgress.toFixed(1)}%
+                    </span>
+                  </div>
+                  <Progress value={updateDownloadProgress} className="h-2" />
+                </div>
+              </div>
+            )}
             <div className="flex items-center justify-between gap-4 pt-6">
               <div className="space-y-1">
                 <p className="font-medium leading-none">{t('about.autoUpdateTitle')}</p>
@@ -361,7 +420,6 @@ export function About() {
         <Card>
           <CardHeader>
             <CardTitle>{t('about.shareTitle')}</CardTitle>
-            <CardDescription>{t('about.shareDescription')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -408,6 +466,45 @@ export function About() {
         <Card>
           <CardContent className="p-0">
             <div className="flex flex-col divide-y">
+              {/* Feedback section - merged into one row */}
+              <div className="flex items-center justify-between gap-4 px-6 py-4">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted/60">
+                    <MessageSquare className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="font-medium leading-none">{t('about.resources.feedback')}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {t('about.resources.feedbackDescription')}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {feedbackResources.map((resource) => {
+                    const Icon = resource.icon
+                    return resource.href ? (
+                      <Button key={resource.label} variant="outline" size="sm" asChild>
+                        <a href={resource.href} target="_blank" rel="noreferrer" className="gap-2">
+                          <Icon className="h-4 w-4" />
+                          {resource.label}
+                        </a>
+                      </Button>
+                    ) : (
+                      <Button
+                        key={resource.label}
+                        variant="outline"
+                        size="sm"
+                        onClick={resource.onClick}
+                        className="gap-2"
+                      >
+                        <Icon className="h-4 w-4" />
+                        {resource.label}
+                      </Button>
+                    )
+                  })}
+                </div>
+              </div>
+              {/* Other resources */}
               {aboutResources.map((resource) => {
                 const Icon = resource.icon
                 return (
