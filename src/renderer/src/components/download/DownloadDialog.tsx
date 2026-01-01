@@ -78,11 +78,11 @@ const getQualityPreset = (settings: AppSettings): OneClickQualityPreset =>
 
 const buildAudioSelectors = (preset: OneClickQualityPreset): string[] => {
   if (preset === 'worst') {
-    return ['worstaudio']
+    return dedupe(['worstaudio', 'bestaudio'])
   }
 
   const abrLimit = qualityPresetToAudioAbr[preset]
-  // Remove 'best' fallback to ensure merging - only use 'bestaudio' variants
+  // Prefer audio-only selectors so video+audio merges remain valid.
   return dedupe([abrLimit ? `bestaudio[abr<=${abrLimit}]` : undefined, 'bestaudio'])
 }
 
@@ -90,8 +90,8 @@ const buildVideoFormatPreference = (settings: AppSettings): string => {
   const preset = getQualityPreset(settings)
 
   if (preset === 'worst') {
-    // Use worstvideo+worstaudio as fallback instead of 'worst' to ensure merging
-    return 'worstvideo+worstaudio'
+    // Prefer separate streams, then fall back to single-file selectors.
+    return 'worstvideo+worstaudio/worst/best'
   }
 
   const maxHeight = qualityPresetToVideoHeight[preset]
@@ -125,7 +125,7 @@ const buildVideoFormatPreference = (settings: AppSettings): string => {
 
 const buildAudioFormatPreference = (settings: AppSettings): string => {
   const selectors = buildAudioSelectors(getQualityPreset(settings))
-  return selectors.join('/')
+  return dedupe([...selectors, 'best']).join('/')
 }
 
 interface DownloadDialogProps {
