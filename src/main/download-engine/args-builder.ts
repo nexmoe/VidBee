@@ -34,8 +34,8 @@ export const resolveVideoFormatSelector = (options: DownloadOptions): string => 
       return 'bestvideo+none'
     }
     if (!audioFormat || audioFormat === 'best') {
-      // Use bestvideo+bestaudio to ensure video and audio are merged into a single file
-      return 'bestvideo+bestaudio'
+      // Prefer merged formats, but allow single-file "best" for sites without separate streams.
+      return 'bestvideo+bestaudio/best'
     }
     return `bestvideo+${audioFormat}`
   }
