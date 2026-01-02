@@ -36,6 +36,19 @@ interface DownloadProcess {
   process: YTDlpEventEmitter
 }
 
+const formatYtDlpCommand = (args: string[]): string => {
+  const quoted = args.map((arg) => {
+    if (arg === '') {
+      return '""'
+    }
+    if (/[\s"'\\]/.test(arg)) {
+      return `"${arg.replace(/(["\\])/g, '\\$1')}"`
+    }
+    return arg
+  })
+  return `yt-dlp ${quoted.join(' ')}`
+}
+
 const ensureDirectoryExists = (dir?: string): void => {
   if (!dir) {
     return
@@ -731,6 +744,8 @@ class DownloadEngine extends EventEmitter {
 
     args.push('--ffmpeg-location', ffmpegPath)
     args.push(urlArg)
+
+    scopedLoggers.download.info('yt-dlp command:', formatYtDlpCommand(args))
 
     const controller = new AbortController()
     const ytdlpProcess = ytdlp.exec(args, {

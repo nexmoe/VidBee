@@ -790,11 +790,12 @@ export function DownloadDialog({ onOpenSupportedSites, onOpenSettings }: Downloa
         type,
         format:
           type === 'video'
-            ? videoInfoCardState.selectedVideoFormat
+            ? videoInfoCardState.selectedVideoFormat || undefined
             : type === 'extract'
               ? undefined
-              : videoInfoCardState.selectedAudioFormat,
-        audioFormat: type === 'video' ? videoInfoCardState.selectedAudioForVideo : undefined,
+              : videoInfoCardState.selectedAudioFormat || undefined,
+        audioFormat:
+          type === 'video' ? videoInfoCardState.selectedAudioForVideo || undefined : undefined,
         extractFormat:
           type === 'extract' ? videoInfoCardState.audioExtractor.extractFormat : undefined,
         extractQuality:

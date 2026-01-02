@@ -155,9 +155,20 @@ export function FormatSelector({
     setVideoFormats(finalVideos)
     setAudioFormats(finalAudios)
 
-    // Auto-select best format based on preferences
-    if (finalVideos.length > 0 && !selectedVideo) {
-      const preferred = pickVideoFormatForPreset(finalVideos, settings.oneClickQuality)
+    // Auto-select best format based on preferences.
+    // If no separate audio formats exist, prefer muxed video formats (with audio).
+    const videosWithAudio = finalVideos.filter(
+      (format) => format.acodec && format.acodec !== 'none'
+    )
+    const autoVideos =
+      finalAudios.length > 0
+        ? finalVideos
+        : videosWithAudio.length > 0
+          ? videosWithAudio
+          : finalVideos
+
+    if (autoVideos.length > 0 && !selectedVideo) {
+      const preferred = pickVideoFormatForPreset(autoVideos, settings.oneClickQuality)
       if (preferred) {
         setSelectedVideo(preferred.format_id)
         onVideoFormatChange?.(preferred.format_id)
@@ -226,67 +237,79 @@ export function FormatSelector({
   }
 
   if (type === 'video') {
+    if (videoFormats.length === 0 && audioFormats.length === 0) {
+      return null
+    }
+
     return (
       <div className="space-y-5">
-        <div className="space-y-3">
-          <Label className="text-sm font-semibold">{t('download.selectVideoFormat')}</Label>
-          <Select
-            value={selectedVideo}
-            onValueChange={(value) => {
-              setSelectedVideo(value)
-              onVideoFormatChange?.(value)
-            }}
-          >
-            <SelectTrigger className="h-11">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="max-h-[300px] p-1.5">
-              {videoFormats.map((format) => (
-                <SelectItem
-                  key={format.format_id}
-                  value={format.format_id}
-                  className="cursor-pointer py-2.5"
-                >
-                  <span className="text-sm">{formatVideoLabel(format)}</span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {videoFormats.length > 0 && (
+          <div className="space-y-3">
+            <Label className="text-sm font-semibold">{t('download.selectVideoFormat')}</Label>
+            <Select
+              value={selectedVideo}
+              onValueChange={(value) => {
+                setSelectedVideo(value)
+                onVideoFormatChange?.(value)
+              }}
+            >
+              <SelectTrigger className="h-11">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="max-h-[300px] p-1.5">
+                {videoFormats.map((format) => (
+                  <SelectItem
+                    key={format.format_id}
+                    value={format.format_id}
+                    className="cursor-pointer py-2.5"
+                  >
+                    <span className="text-sm">{formatVideoLabel(format)}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
-        <div className="space-y-3">
-          <Label className="text-sm font-semibold">{t('download.selectAudioFormat')}</Label>
-          <Select
-            value={selectedAudio}
-            onValueChange={(value) => {
-              setSelectedAudio(value)
-              onAudioFormatChange?.(value)
-            }}
-          >
-            <SelectTrigger className="h-11">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="max-h-[300px] p-1.5">
-              <SelectItem value="none" className="cursor-pointer py-2.5">
-                <span className="text-sm">{t('download.noAudio')}</span>
-              </SelectItem>
-              {audioFormats.map((format) => (
-                <SelectItem
-                  key={format.format_id}
-                  value={format.format_id}
-                  className="cursor-pointer py-2.5"
-                >
-                  <span className="text-sm">{formatAudioLabel(format)}</span>
+        {audioFormats.length > 0 && (
+          <div className="space-y-3">
+            <Label className="text-sm font-semibold">{t('download.selectAudioFormat')}</Label>
+            <Select
+              value={selectedAudio}
+              onValueChange={(value) => {
+                setSelectedAudio(value)
+                onAudioFormatChange?.(value)
+              }}
+            >
+              <SelectTrigger className="h-11">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="max-h-[300px] p-1.5">
+                <SelectItem value="none" className="cursor-pointer py-2.5">
+                  <span className="text-sm">{t('download.noAudio')}</span>
                 </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+                {audioFormats.map((format) => (
+                  <SelectItem
+                    key={format.format_id}
+                    value={format.format_id}
+                    className="cursor-pointer py-2.5"
+                  >
+                    <span className="text-sm">{formatAudioLabel(format)}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </div>
     )
   }
 
   // Audio only
+  if (audioFormats.length === 0) {
+    return null
+  }
+
   return (
     <div className="space-y-3">
       <Label className="text-sm font-semibold">{t('download.selectFormat')}</Label>
