@@ -13,6 +13,7 @@ import { ffmpegManager } from './lib/ffmpeg-manager'
 import { subscriptionManager } from './lib/subscription-manager'
 import { subscriptionScheduler } from './lib/subscription-scheduler'
 import { ytdlpManager } from './lib/ytdlp-manager'
+import { startExtensionApiServer, stopExtensionApiServer } from './local-api'
 import { settingsManager } from './settings'
 import { createTray, destroyTray } from './tray'
 import { applyAutoLaunchSetting } from './utils/auto-launch'
@@ -402,6 +403,8 @@ app.whenReady().then(async () => {
     log.error('Failed to initialize yt-dlp:', error)
   }
 
+  await startExtensionApiServer()
+
   applyDockVisibility(settingsManager.get('hideDockIcon'))
   applyAutoLaunchSetting(settingsManager.get('launchAtLogin'))
 
@@ -449,6 +452,7 @@ app.on('window-all-closed', () => {
 // Cleanup tray on quit
 app.on('will-quit', () => {
   destroyTray()
+  void stopExtensionApiServer()
 })
 
 // In this file you can include the rest of your app's specific main process
