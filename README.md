@@ -40,21 +40,22 @@ xattr -rd com.apple.quarantine /Applications/VidBee.app/
 
 This command removes the quarantine attribute that macOS applies to applications downloaded from the internet, allowing VidBee to run properly without the "file is damaged" error.
 
-### 🌐 Browser Script (Quick Download)
+### 🌐 Browser Extension (Quick Download)
 
-For a more convenient downloading experience, you can install the VidBee browser script to add a quick download button directly on supported video websites.
+For a more convenient downloading experience, you can install the VidBee browser extension to add a quick download button directly on supported video websites.
 
 ![VidBee Browser Script](screenshots/browser-script.png)
 
-**Installation:**
+**Installation (From Source):**
 
-1. Install a userscript manager extension:
-   - [Tampermonkey](https://www.tampermonkey.net/) (Recommended)
-   - [Violentmonkey](https://violentmonkey.github.io/)
-   - [Greasemonkey](https://www.greasespot.net/)
+1. Enter the extension workspace: `cd extension`
+2. Install dependencies: `pnpm install`
+3. Start development build: `pnpm dev`
+4. Load the generated extension from the `.output/chrome-mv3` folder (or use the path shown in the terminal).
 
-2. Install the VidBee Quick Download script:
-   - [Install from Greasy Fork](https://greasyfork.org/zh-CN/scripts/559595-vidbee-quick-download)
+> [!NOTE]
+>
+> The legacy userscript in `monkey` is deprecated and no longer maintained.
 
 **Usage:**
 
