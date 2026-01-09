@@ -129,6 +129,7 @@ subscriptionManager.on('subscriptions:updated', (subscriptions) => {
 export function createWindow(): void {
   const isMac = process.platform === 'darwin'
   const isWindows = process.platform === 'win32'
+  const shouldStartHidden = isWindows && app.getLoginItemSettings().wasOpenedAtLogin
 
   const windowOptions: BrowserWindowConstructorOptions = {
     width: 1200,
@@ -168,6 +169,9 @@ export function createWindow(): void {
   })
 
   mainWindow.on('ready-to-show', () => {
+    if (shouldStartHidden) {
+      return
+    }
     mainWindow?.show()
   })
 
