@@ -53,7 +53,11 @@ class SettingsManager {
   }
 
   getAll(): AppSettings {
-    return this.store.store
+    return {
+      ...defaultSettings,
+      downloadPath: DEFAULT_DOWNLOAD_PATH,
+      ...this.store.store
+    }
   }
 
   setAll(settings: Partial<AppSettings>): void {
