@@ -425,7 +425,7 @@ export class SubscriptionScheduler extends EventEmitter {
     }
 
     const srcMatch = html.match(
-      /<img[^>]+\s(?:src|data-src|data-original)\s*=\s*(['"]?)([^'">\s]+)\1/i
+      /<img\b[^>]*\b(?:src|data-src|data-original)\b\s*=\s*(['"]?)([^'">\s]+)\1/i
     )
     if (srcMatch?.[2]) {
       return srcMatch[2]
