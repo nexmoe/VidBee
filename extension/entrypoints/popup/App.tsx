@@ -42,7 +42,7 @@ const formatDuration = (value?: number): string => {
 }
 
 const formatBytes = (value?: number): string => {
-  if (!value || value <= 0) return 'Unknown'
+  if (!value || value <= 0) return '-'
   const units = ['B', 'KB', 'MB', 'GB']
   let size = value
   let unitIndex = 0
@@ -72,6 +72,12 @@ type VideoInfoCacheEntry = {
   error?: string
 }
 
+type VideoGroup = {
+  label: string
+  height: number
+  formats: VideoFormat[]
+}
+
 const loadCachedInfo = async (url: string): Promise<VideoInfoCacheEntry | null> => {
   const data = await browser.storage.local.get('videoInfoCacheByUrl')
   const map = data.videoInfoCacheByUrl as Record<string, VideoInfoCacheEntry> | undefined
@@ -82,10 +88,26 @@ const loadCachedInfo = async (url: string): Promise<VideoInfoCacheEntry | null> 
   return cached
 }
 
+const sanitizeError = (error: string): string => {
+  const message = error.toLowerCase()
+  if (
+    message.includes('localhost') ||
+    message.includes('fetch') ||
+    message.includes('network') ||
+    message.includes('connect') ||
+    message.includes('failed to request')
+  ) {
+    return 'Client connection failed'
+  }
+  return error
+}
+
 function App() {
   const [info, setInfo] = useState<VideoInfo | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [currentUrl, setCurrentUrl] = useState<string>('')
+  const [retryTrigger, setRetryTrigger] = useState(0)
 
   useEffect(() => {
     let active = true
@@ -98,6 +120,7 @@ function App() {
       if (!active || areaName !== 'local') return
       const change = changes.videoInfoCacheByUrl
       if (!change?.newValue) return
+
       const map = change.newValue as Record<string, VideoInfoCacheEntry>
       const next = map[targetState.url]
       if (!next) return
@@ -107,7 +130,7 @@ function App() {
         setError(null)
         setLoading(false)
       } else if (next.status === 'error' && next.error) {
-        setError(next.error)
+        setError(sanitizeError(next.error))
         setInfo(null)
         setLoading(false)
       } else if (next.status === 'pending') {
@@ -124,22 +147,25 @@ function App() {
 
       const [tab] = await browser.tabs.query({ active: true, currentWindow: true })
       if (!isValidHttpUrl(tab?.url)) {
-        setError('Open a video page in an http(s) tab first.')
+        setError('Please open a valid video page first.')
         setLoading(false)
         return
       }
 
       const targetUrl = tab.url as string
       targetState.url = targetUrl
+      setCurrentUrl(targetUrl)
+
       const cached = await loadCachedInfo(targetUrl)
-      if (cached) {
+      const shouldBypassCache = retryTrigger > 0
+      if (cached && !shouldBypassCache) {
         if (cached.status === 'ready' && cached.info) {
           setInfo(cached.info)
           setLoading(false)
           return
         }
         if (cached.status === 'error' && cached.error) {
-          setError(cached.error)
+          setError(sanitizeError(cached.error))
           setLoading(false)
           return
         }
@@ -152,7 +178,7 @@ function App() {
         })
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to request video info.'
-        setError(message)
+        setError(sanitizeError(message))
         setLoading(false)
       }
 
@@ -162,7 +188,7 @@ function App() {
         setError(null)
         setLoading(false)
       } else if (latest && latest.status === 'error' && latest.error) {
-        setError(latest.error)
+        setError(sanitizeError(latest.error))
         setInfo(null)
         setLoading(false)
       }
@@ -174,7 +200,7 @@ function App() {
       active = false
       browser.storage.onChanged.removeListener(handleStorageChange)
     }
-  }, [])
+  }, [retryTrigger])
 
   const formats = useMemo(() => info?.formats ?? [], [info])
   const groupedFormats = useMemo(() => {
@@ -195,131 +221,192 @@ function App() {
     return { video, audio, other }
   }, [formats])
 
+  const groupedVideoFormats = useMemo(() => {
+    const raw = groupedFormats.video
+    if (!raw.length) return []
+
+    const groups: Record<number, VideoFormat[]> = {}
+    const noHeight: VideoFormat[] = []
+
+    for (const f of raw) {
+      const h = f.height || f.resolution?.match(/x(\d+)/)?.[1]
+      const heightVal = h ? Number(h) : 0
+
+      if (heightVal > 0) {
+        if (!groups[heightVal]) groups[heightVal] = []
+        groups[heightVal].push(f)
+      } else {
+        noHeight.push(f)
+      }
+    }
+
+    const sortedLabels = Object.keys(groups)
+      .map(Number)
+      .sort((a, b) => b - a)
+
+    const result: VideoGroup[] = sortedLabels.map((h) => ({
+      label: `${h}p`,
+      height: h,
+      formats: groups[h].sort((a, b) => {
+        const sa = a.filesize || a.filesize_approx || 0
+        const sb = b.filesize || b.filesize_approx || 0
+        return sb - sa
+      })
+    }))
+
+    if (noHeight.length > 0) {
+      result.push({
+        label: 'Other',
+        height: 0,
+        formats: noHeight
+      })
+    }
+
+    return result
+  }, [groupedFormats.video])
+
+  const handleOpenClient = () => {
+    if (!currentUrl) return
+    const deepLink = `vidbee://download?url=${encodeURIComponent(currentUrl)}`
+    window.location.href = deepLink
+  }
+
+  const renderStatus = () => {
+    // if (loading) return null
+    if (error)
+      return (
+        <span className="status-indicator">
+          <div className="status-dot error" /> Error
+        </span>
+      )
+    if (info)
+      return (
+        <span className="status-indicator">
+          <div className="status-dot ok" /> Ready
+        </span>
+      )
+    return (
+      <span className="status-indicator">
+        <div className="status-dot" /> Idle
+      </span>
+    )
+  }
+
   return (
     <div className="app">
-      <header className="app-header">
-        <div className="header-row">
-          <div>
-            <h1>VidBee Video Info</h1>
-            <p className="subtitle">Data from the VidBee desktop app (yt-dlp).</p>
-          </div>
-          <span
-            className={`status-icon ${loading ? 'status-icon--loading' : info ? 'status-icon--ok' : error ? 'status-icon--error' : ''}`}
-            title={loading ? 'Loading' : info ? 'Loaded' : error ? 'Error' : 'Idle'}
-          />
-        </div>
+      <header>
+        <h1>VidBee</h1>
+        {renderStatus()}
       </header>
+      {loading && (
+        <div className="loading-container">
+          <div className="spinner" />
+          <div className="loading-text">Analyzing video...</div>
+        </div>
+      )}
 
-      {loading && <p className="status">Loading...</p>}
-      {!loading && error && <pre className="status error status-pre">{error}</pre>}
+      {!loading && error && (
+        <div className="error-container">
+          <div className="error-banner">{error}</div>
+          <div className="troubleshoot-box">
+            <p className="troubleshoot-title">Having trouble?</p>
+            <div className="troubleshoot-actions">
+              <button
+                type="button"
+                className="link-button"
+                onClick={() => {
+                  window.location.href = 'vidbee://'
+                  setTimeout(() => setRetryTrigger((c) => c + 1), 100)
+                }}
+              >
+                Open Client
+              </button>
+              <span className="divider">•</span>
+              <a
+                href="https://vidbee.app"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="link-button"
+              >
+                Download
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
 
       {!loading && !error && info && (
-        <section className="info">
-          <div className="info-main">
-            <div className="info-text">
+        <>
+          <section className="video-info">
+            <div className="video-details">
               <h2>{info.title || 'Untitled video'}</h2>
-              <p>Duration: {formatDuration(info.duration)}</p>
-              <p>Formats: {formats.length}</p>
+              <div className="meta-row">
+                <span>{formatDuration(info.duration)}</span>
+                <span>•</span>
+                <span>{formats.length} formats</span>
+              </div>
             </div>
-            {info.thumbnail && <img className="thumb" src={info.thumbnail} alt="Video thumbnail" />}
-          </div>
+            {info.thumbnail && <img className="thumbnail" src={info.thumbnail} alt="" />}
+          </section>
 
-          <div className="formats">
-            {formats.length === 0 && <p className="status">No formats returned.</p>}
-            {formats.length > 0 && (
-              <>
-                <div className="formats-group">
-                  <h3>Video</h3>
-                  {groupedFormats.video.length === 0 && <p className="status">No video formats.</p>}
-                  {groupedFormats.video.length > 0 && (
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>ID</th>
-                          <th>Ext</th>
-                          <th>Resolution</th>
-                          <th>Size</th>
-                          <th>Note</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {groupedFormats.video.map((format, index) => (
-                          <tr key={`video-${format.format_id ?? 'format'}-${index}`}>
-                            <td>{format.format_id ?? '-'}</td>
-                            <td>{format.ext ?? '-'}</td>
-                            <td>
-                              {format.resolution ||
-                                (format.width && format.height
-                                  ? `${format.width}x${format.height}`
-                                  : '-')}
-                            </td>
-                            <td>{formatBytes(format.filesize ?? format.filesize_approx)}</td>
-                            <td>{format.format_note ?? '-'}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
-                </div>
+          <button type="button" className="primary-button" onClick={handleOpenClient}>
+            Download with VidBee
+          </button>
 
-                <div className="formats-group">
-                  <h3>Audio</h3>
-                  {groupedFormats.audio.length === 0 && <p className="status">No audio formats.</p>}
-                  {groupedFormats.audio.length > 0 && (
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>ID</th>
-                          <th>Ext</th>
-                          <th>Codec</th>
-                          <th>Size</th>
-                          <th>Note</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {groupedFormats.audio.map((format, index) => (
-                          <tr key={`audio-${format.format_id ?? 'format'}-${index}`}>
-                            <td>{format.format_id ?? '-'}</td>
-                            <td>{format.ext ?? '-'}</td>
-                            <td>{format.acodec ?? '-'}</td>
-                            <td>{formatBytes(format.filesize ?? format.filesize_approx)}</td>
-                            <td>{format.format_note ?? '-'}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
-                </div>
+          <section className="formats-section">
+            {groupedVideoFormats.map((group) => (
+              <div className="format-group" key={group.label}>
+                <div className="group-title sticky-title">{group.label}</div>
+                <table className="format-table">
+                  <thead>
+                    <tr>
+                      <th className="col-id">ID</th>
+                      <th className="col-ext">Ext</th>
+                      <th className="col-size">Size</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {group.formats.map((f) => (
+                      <tr key={`vg-${group.label}-${f.format_id ?? f.ext ?? 'video'}`}>
+                        <td className="col-id">{f.format_id || '-'}</td>
+                        <td className="col-ext">{f.ext || '-'}</td>
+                        <td className="col-size">{formatBytes(f.filesize || f.filesize_approx)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ))}
 
-                {groupedFormats.other.length > 0 && (
-                  <div className="formats-group">
-                    <h3>Other</h3>
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>ID</th>
-                          <th>Ext</th>
-                          <th>Details</th>
-                          <th>Size</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {groupedFormats.other.map((format, index) => (
-                          <tr key={`other-${format.format_id ?? 'format'}-${index}`}>
-                            <td>{format.format_id ?? '-'}</td>
-                            <td>{format.ext ?? '-'}</td>
-                            <td>{format.format_note ?? format.vcodec ?? format.acodec ?? '-'}</td>
-                            <td>{formatBytes(format.filesize ?? format.filesize_approx)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </>
+            {groupedVideoFormats.length === 0 && groupedFormats.audio.length === 0 && (
+              <div className="empty-state">No compatible formats.</div>
             )}
-          </div>
-        </section>
+
+            {groupedFormats.audio.length > 0 && (
+              <div className="format-group">
+                <div className="group-title">Audio Only</div>
+                <table className="format-table">
+                  <thead>
+                    <tr>
+                      <th className="col-id">ID</th>
+                      <th className="col-ext">Ext</th>
+                      <th className="col-size">Size</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {groupedFormats.audio.map((f) => (
+                      <tr key={`a-${f.format_id ?? f.ext ?? 'audio'}`}>
+                        <td className="col-id">{f.format_id || '-'}</td>
+                        <td className="col-ext">{f.ext || '-'}</td>
+                        <td className="col-size">{formatBytes(f.filesize || f.filesize_approx)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+        </>
       )}
     </div>
   )
