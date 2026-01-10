@@ -67,6 +67,8 @@ interface RemoteImageProps {
  * />
  * ```
  */
+const IMAGE_LOAD_TIMEOUT_MS = 30000
+
 export function RemoteImage({
   src,
   alt,
@@ -91,8 +93,10 @@ export function RemoteImage({
   const imageSrc = shouldUseCache ? cachedSrc : (src ?? undefined)
 
   const [isImageLoading, setIsImageLoading] = useState(true)
+  const [timedOutSrc, setTimedOutSrc] = useState<string | null>(null)
   const isCacheLoading = shouldUseCache && src && cachedSrc === undefined
-  const isLoading = isCacheLoading || isImageLoading
+  const hasTimedOut = Boolean(src) && timedOutSrc === src
+  const isLoading = !hasTimedOut && (isCacheLoading || isImageLoading)
 
   useEffect(() => {
     if (imageSrc) {
@@ -101,6 +105,19 @@ export function RemoteImage({
       setIsImageLoading(false)
     }
   }, [imageSrc])
+
+  useEffect(() => {
+    if (!src || hasTimedOut || !isLoading) return
+
+    const timeoutId = window.setTimeout(() => {
+      setTimedOutSrc(src)
+      setIsImageLoading(false)
+    }, IMAGE_LOAD_TIMEOUT_MS)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+    }
+  }, [src, hasTimedOut, isLoading])
 
   useEffect(() => {
     onLoadingChange?.(isLoading)
