@@ -2,7 +2,14 @@ import { existsSync } from 'node:fs'
 import { isAbsolute, join, relative, resolve } from 'node:path'
 import { electronApp, optimizer } from '@electron-toolkit/utils'
 import { APP_PROTOCOL, APP_PROTOCOL_SCHEME } from '@shared/constants'
-import { app, BrowserWindow, type BrowserWindowConstructorOptions, protocol, shell } from 'electron'
+import {
+  app,
+  BrowserWindow,
+  type BrowserWindowConstructorOptions,
+  ipcMain,
+  protocol,
+  shell
+} from 'electron'
 import log from 'electron-log/main'
 import { autoUpdater } from 'electron-updater'
 import appIcon from '../../build/icon.png?asset'
@@ -194,8 +201,46 @@ export function createWindow(): void {
     flushPendingDeepLinks()
   })
 
+  // Setup error handling for renderer process
+  setupRendererErrorHandling()
+
   // Setup download engine event forwarding to renderer
   setupDownloadEvents()
+}
+
+function setupRendererErrorHandling(): void {
+  if (!mainWindow) return
+
+  // Handle uncaught exceptions in renderer process
+  mainWindow.webContents.on('unresponsive', () => {
+    log.error('Renderer process became unresponsive')
+  })
+
+  mainWindow.webContents.on('responsive', () => {
+    log.info('Renderer process became responsive again')
+  })
+
+  // Listen for renderer errors via IPC
+  ipcMain.on('error:renderer', (_event, errorData) => {
+    log.error('Renderer error received:', errorData)
+
+    // Log detailed error information
+    if (errorData.error) {
+      log.error('Error name:', errorData.error.name)
+      log.error('Error message:', errorData.error.message)
+      if (errorData.error.stack) {
+        log.error('Error stack:', errorData.error.stack)
+      }
+    }
+
+    if (errorData.errorInfo?.componentStack) {
+      log.error('Component stack:', errorData.errorInfo.componentStack)
+    }
+
+    if (errorData.context) {
+      log.error('Error context:', errorData.context)
+    }
+  })
 }
 
 function setupDownloadEvents(): void {
@@ -383,6 +428,17 @@ app.whenReady().then(async () => {
   // and ignore CommandOrControl + R in production.
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
+
+    // Enable F12 to toggle DevTools in both development and production
+    window.webContents.on('before-input-event', (_, input) => {
+      if (input.key === 'F12') {
+        if (window.webContents.isDevToolsOpened()) {
+          window.webContents.closeDevTools()
+        } else {
+          window.webContents.openDevTools()
+        }
+      }
+    })
   })
 
   // IPC services are automatically registered by electron-ipc-decorator when imported

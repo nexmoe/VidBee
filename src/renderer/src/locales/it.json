@@ -371,8 +371,7 @@
     "showMoreFormats": "Mostra più opzioni formato",
     "showMoreFormatsDescription": "Visualizza opzioni di formato aggiuntive nell'interfaccia",
     "subscriptionDefaults": {
-      "filenameDescription": "Modello utilizzato quando una sottoscrizione non sovrascrive il relativo nome file.",
-      "intervalDescription": "La frequenza con cui VidBee controlla ciascun feed di abbonamento (1-24 ore)."
+      "filenameDescription": "Modello utilizzato quando una sottoscrizione non sovrascrive il relativo nome file."
     },
     "system": "Sistema",
     "theme": "Tema",
@@ -485,7 +484,6 @@
       "title": "Aggiungi RSS"
     },
     "defaults": {
-      "checkInterval": "Intervallo di controllo (ore)",
       "description": "Controlla dove vengono archiviati i download degli abbonamenti e la frequenza con cui VidBee verifica la presenza di nuovi video.",
       "downloadDirectory": "Scarica la directory",
       "filenameTemplate": "Modello nome file (solo file)",
