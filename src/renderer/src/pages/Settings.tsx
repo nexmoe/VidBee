@@ -18,16 +18,43 @@ import {
 } from '@renderer/components/ui/select'
 import { Switch } from '@renderer/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@renderer/components/ui/tabs'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { type LanguageCode, languageList, normalizeLanguageCode } from '@shared/languages'
 import type { OneClickQualityPreset } from '@shared/types'
 import { useAtom, useSetAtom } from 'jotai'
+import { AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { useTheme } from 'next-themes'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { ipcServices } from '../lib/ipc'
 import { logger } from '../lib/logger'
 import { loadSettingsAtom, saveSettingAtom, settingsAtom } from '../store/settings'
+
+const parseBrowserCookiesSetting = (value: string | undefined) => {
+  if (!value || value === 'none') {
+    return { browser: 'none', profile: '' }
+  }
+
+  const separatorIndex = value.indexOf(':')
+  if (separatorIndex === -1) {
+    return { browser: value, profile: '' }
+  }
+
+  const browser = value.slice(0, separatorIndex).trim()
+  const profile = value.slice(separatorIndex + 1)
+  return { browser: browser || 'none', profile }
+}
+
+const buildBrowserCookiesSetting = (browser: string, profile: string) => {
+  const trimmedBrowser = browser.trim()
+  if (!trimmedBrowser || trimmedBrowser === 'none') {
+    return 'none'
+  }
+
+  const trimmedProfile = profile.trim()
+  return trimmedProfile ? `${trimmedBrowser}:${trimmedProfile}` : trimmedBrowser
+}
 
 export function Settings() {
   const { t, i18n: i18nInstance } = useTranslation()
@@ -37,23 +64,19 @@ export function Settings() {
   const saveSetting = useSetAtom(saveSettingAtom)
   const [platform, setPlatform] = useState<string>('')
   const [activeTab, setActiveTab] = useState<string>('general')
+  const [browserProfileValidation, setBrowserProfileValidation] = useState<{
+    valid: boolean
+    reason?: string
+  }>({ valid: false })
+  const lastAutoDetectBrowser = useRef<string | null>(null)
 
   useEffect(() => {
-    logger.info('[Settings] Component mounted, loading settings...')
     try {
       loadSettings()
-      // Note: settings will be logged in the next useEffect after it's loaded
     } catch (error) {
       logger.error('[Settings] Failed to load settings:', error)
     }
   }, [loadSettings])
-
-  useEffect(() => {
-    logger.info('[Settings] Settings state updated', {
-      settingsKeys: Object.keys(settings),
-      settingsValues: settings
-    })
-  }, [settings])
 
   useEffect(() => {
     const fetchPlatform = async () => {
@@ -70,20 +93,17 @@ export function Settings() {
 
   const autoLaunchSupported = platform === 'darwin' || platform === 'win32'
 
-  const handleSettingChange = async (
-    key: keyof typeof settings,
-    value: (typeof settings)[keyof typeof settings]
-  ) => {
-    try {
-      logger.info('[Settings] Changing setting', { key, value, currentValue: settings[key] })
-      await saveSetting({ key, value })
-      toast.success(t('notifications.settingsSaved'))
-      logger.info('[Settings] Setting changed successfully', { key, value })
-    } catch (error) {
-      logger.error('[Settings] Failed to change setting', { key, value, error })
-      toast.error(t('settings.saveError') || 'Failed to save setting')
-    }
-  }
+  const handleSettingChange = useCallback(
+    async (key: keyof typeof settings, value: (typeof settings)[keyof typeof settings]) => {
+      try {
+        await saveSetting({ key, value })
+      } catch (error) {
+        logger.error('[Settings] Failed to change setting', { key, value, error })
+        toast.error(t('settings.saveError') || 'Failed to save setting')
+      }
+    },
+    [saveSetting, t]
+  )
 
   const handleSelectPath = async () => {
     try {
@@ -146,6 +166,87 @@ export function Settings() {
   const activeLanguageCode = normalizeLanguageCode(i18nInstance.language)
   const currentLanguage =
     languageOptions.find((option) => option.value === activeLanguageCode) ?? languageOptions[0]
+  const parsedBrowserCookies = parseBrowserCookiesSetting(settings.browserForCookies)
+  const browserForCookiesValue = parsedBrowserCookies.browser
+  const browserCookiesProfileValue = parsedBrowserCookies.profile
+  const hasBrowserProfileValue = browserCookiesProfileValue.trim().length > 0
+  const showBrowserProfileCheck = hasBrowserProfileValue && browserProfileValidation.valid
+  const showBrowserProfileWarning = hasBrowserProfileValue && !browserProfileValidation.valid
+  const getBrowserProfileWarningMessage = (reason?: string) => {
+    switch (reason) {
+      case 'pathNotFound':
+        return t('settings.browserForCookiesProfileInvalidPath')
+      case 'profileNotFound':
+        return t('settings.browserForCookiesProfileInvalidProfile')
+      case 'browserUnsupported':
+        return t('settings.browserForCookiesProfileInvalidUnsupported')
+      case 'empty':
+        return t('settings.browserForCookiesProfileInvalidEmpty')
+      default:
+        return t('settings.browserForCookiesProfileInvalid')
+    }
+  }
+
+  useEffect(() => {
+    const browserChanged = lastAutoDetectBrowser.current !== browserForCookiesValue
+    const shouldAutoDetect =
+      browserForCookiesValue !== 'none' && (browserChanged || !browserCookiesProfileValue)
+
+    if (!shouldAutoDetect) {
+      lastAutoDetectBrowser.current = browserForCookiesValue
+      return
+    }
+
+    const detectProfilePath = async () => {
+      try {
+        const detectedPath =
+          await ipcServices.browserCookies.getBrowserProfilePath(browserForCookiesValue)
+        const nextProfileValue = detectedPath || ''
+        if (nextProfileValue !== browserCookiesProfileValue) {
+          const nextValue = buildBrowserCookiesSetting(browserForCookiesValue, nextProfileValue)
+          await handleSettingChange('browserForCookies', nextValue)
+        }
+      } catch (error) {
+        logger.error('[Settings] Failed to detect browser profile path:', error)
+      } finally {
+        lastAutoDetectBrowser.current = browserForCookiesValue
+      }
+    }
+
+    void detectProfilePath()
+  }, [browserForCookiesValue, browserCookiesProfileValue, handleSettingChange])
+
+  useEffect(() => {
+    if (browserForCookiesValue === 'none' || !hasBrowserProfileValue) {
+      setBrowserProfileValidation({ valid: false, reason: 'empty' })
+      return
+    }
+
+    let isActive = true
+
+    const validateProfilePath = async () => {
+      try {
+        const result = await ipcServices.browserCookies.validateBrowserProfilePath(
+          browserForCookiesValue,
+          browserCookiesProfileValue
+        )
+        if (isActive) {
+          setBrowserProfileValidation(result)
+        }
+      } catch (error) {
+        if (isActive) {
+          setBrowserProfileValidation({ valid: false, reason: 'pathNotFound' })
+        }
+        logger.error('[Settings] Failed to validate browser profile path:', error)
+      }
+    }
+
+    void validateProfilePath()
+
+    return () => {
+      isActive = false
+    }
+  }, [browserForCookiesValue, browserCookiesProfileValue, hasBrowserProfileValue])
 
   const handleLanguageChange = async (value: LanguageCode) => {
     if (activeLanguageCode === value) {
@@ -154,7 +255,6 @@ export function Settings() {
 
     await saveSetting({ key: 'language', value })
     await i18nInstance.changeLanguage(value)
-    toast.success(t('notifications.settingsSaved'))
   }
 
   return (
@@ -168,24 +268,7 @@ export function Settings() {
         <Tabs
           value={activeTab}
           onValueChange={(value) => {
-            logger.info('[Settings] Tab changed', { from: activeTab, to: value })
             setActiveTab(value)
-            try {
-              if (value === 'advanced') {
-                logger.info('[Settings] Entering advanced tab', {
-                  settings: settings,
-                  settingsKeys: Object.keys(settings),
-                  maxConcurrentDownloads: settings.maxConcurrentDownloads,
-                  browserForCookies: settings.browserForCookies,
-                  cookiesPath: settings.cookiesPath,
-                  proxy: settings.proxy,
-                  configPath: settings.configPath,
-                  enableAnalytics: settings.enableAnalytics
-                })
-              }
-            } catch (error) {
-              logger.error('[Settings] Error when entering advanced tab:', error)
-            }
           }}
         >
           <TabsList className="grid w-full grid-cols-2">
@@ -414,7 +497,6 @@ export function Settings() {
                     checked={settings.showMoreFormats ?? false}
                     onCheckedChange={(value) => {
                       try {
-                        logger.info('[Settings] Toggling showMoreFormats', { value })
                         handleSettingChange('showMoreFormats', value)
                       } catch (error) {
                         logger.error('[Settings] Error toggling showMoreFormats:', error)
@@ -438,22 +520,12 @@ export function Settings() {
                     try {
                       const maxConcurrent = settings.maxConcurrentDownloads ?? 5
                       const maxConcurrentStr = maxConcurrent.toString()
-                      logger.info('[Settings] Rendering max concurrent downloads select', {
-                        maxConcurrent,
-                        maxConcurrentStr,
-                        type: typeof maxConcurrent
-                      })
                       return (
                         <Select
                           value={maxConcurrentStr}
                           onValueChange={(value) => {
                             try {
                               const numValue = Number(value)
-                              logger.info('[Settings] Max concurrent downloads changed', {
-                                oldValue: maxConcurrent,
-                                newValue: numValue,
-                                stringValue: value
-                              })
                               handleSettingChange('maxConcurrentDownloads', numValue)
                             } catch (error) {
                               logger.error(
@@ -497,17 +569,12 @@ export function Settings() {
                   {(() => {
                     try {
                       const proxyValue = settings.proxy ?? ''
-                      logger.info('[Settings] Rendering proxy input', { proxyValue })
                       return (
                         <Input
                           placeholder={t('settings.proxyPlaceholder')}
                           value={proxyValue}
                           onChange={(e) => {
                             try {
-                              logger.info('[Settings] Proxy value changed', {
-                                oldValue: proxyValue,
-                                newValue: e.target.value
-                              })
                               handleSettingChange('proxy', e.target.value)
                             } catch (error) {
                               logger.error('[Settings] Error changing proxy:', error)
@@ -523,48 +590,6 @@ export function Settings() {
                   })()}
                 </ItemActions>
               </Item>
-
-              <ItemSeparator />
-
-              <Item variant="muted">
-                <ItemContent>
-                  <ItemTitle>{t('settings.configFile')}</ItemTitle>
-                  <ItemDescription>{t('settings.configFileDescription')}</ItemDescription>
-                </ItemContent>
-                <ItemActions>
-                  {(() => {
-                    try {
-                      const configPathValue = settings.configPath ?? ''
-                      logger.info('[Settings] Rendering config file input', { configPathValue })
-                      return (
-                        <div className="flex gap-2 w-full max-w-md">
-                          <Input value={configPathValue} readOnly className="flex-1" />
-                          <Button onClick={handleSelectConfigFile}>
-                            {t('settings.selectPath')}
-                          </Button>
-                          <Button
-                            variant="secondary"
-                            onClick={() => {
-                              try {
-                                logger.info('[Settings] Clearing config path')
-                                void handleSettingChange('configPath', '')
-                              } catch (error) {
-                                logger.error('[Settings] Error clearing config path:', error)
-                              }
-                            }}
-                            disabled={!configPathValue}
-                          >
-                            {t('settings.clearConfigFile')}
-                          </Button>
-                        </div>
-                      )
-                    } catch (error) {
-                      logger.error('[Settings] Error rendering config file input:', error)
-                      return <div>Error loading config file setting</div>
-                    }
-                  })()}
-                </ItemActions>
-              </Item>
             </ItemGroup>
 
             <ItemGroup>
@@ -576,20 +601,13 @@ export function Settings() {
                 <ItemActions>
                   {(() => {
                     try {
-                      const browserValue = settings.browserForCookies ?? 'none'
-                      logger.info('[Settings] Rendering browser for cookies select', {
-                        browserValue
-                      })
                       return (
                         <Select
-                          value={browserValue}
+                          value={browserForCookiesValue}
                           onValueChange={(value) => {
                             try {
-                              logger.info('[Settings] Browser for cookies changed', {
-                                oldValue: browserValue,
-                                newValue: value
-                              })
-                              handleSettingChange('browserForCookies', value)
+                              const nextValue = buildBrowserCookiesSetting(value, '')
+                              handleSettingChange('browserForCookies', nextValue)
                             } catch (error) {
                               logger.error('[Settings] Error changing browser for cookies:', error)
                             }
@@ -618,12 +636,87 @@ export function Settings() {
                             <SelectItem value="brave">
                               {t('settings.browserOptions.brave')}
                             </SelectItem>
+                            <SelectItem value="opera">
+                              {t('settings.browserOptions.opera')}
+                            </SelectItem>
+                            <SelectItem value="vivaldi">
+                              {t('settings.browserOptions.vivaldi')}
+                            </SelectItem>
+                            <SelectItem value="whale">
+                              {t('settings.browserOptions.whale')}
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                       )
                     } catch (error) {
                       logger.error('[Settings] Error rendering browser for cookies select:', error)
                       return <div>Error loading browser for cookies setting</div>
+                    }
+                  })()}
+                </ItemActions>
+              </Item>
+
+              <ItemSeparator />
+
+              <Item variant="muted">
+                <ItemContent className="basis-full">
+                  <ItemTitle>{t('settings.browserForCookiesProfile')}</ItemTitle>
+                  <ItemDescription>
+                    {t('settings.browserForCookiesProfileDescription')}
+                  </ItemDescription>
+                </ItemContent>
+                <ItemActions className="basis-full">
+                  {(() => {
+                    try {
+                      return (
+                        <div className="relative w-full">
+                          <Input
+                            placeholder={t('settings.browserForCookiesProfilePlaceholder')}
+                            value={browserCookiesProfileValue}
+                            onChange={(event) => {
+                              try {
+                                const newProfileValue = event.target.value
+                                const nextValue = buildBrowserCookiesSetting(
+                                  browserForCookiesValue,
+                                  newProfileValue
+                                )
+                                handleSettingChange('browserForCookies', nextValue)
+                              } catch (error) {
+                                logger.error(
+                                  '[Settings] Error changing browser cookies profile:',
+                                  error
+                                )
+                              }
+                            }}
+                            disabled={browserForCookiesValue === 'none'}
+                            className="w-full pr-10"
+                          />
+                          {showBrowserProfileCheck ? (
+                            <CheckCircle2
+                              className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-emerald-500"
+                              aria-hidden
+                            />
+                          ) : null}
+                          {showBrowserProfileWarning ? (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="absolute right-3 top-1/2 inline-flex h-4 w-4 -translate-y-1/2 items-center justify-center text-amber-500">
+                                  <AlertTriangle className="h-4 w-4" aria-hidden />
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                {getBrowserProfileWarningMessage(browserProfileValidation.reason)}
+                              </TooltipContent>
+                            </Tooltip>
+                          ) : null}
+                        </div>
+                      )
+                    } catch (error) {
+                      logger.error(
+                        '[Settings] Error rendering browser cookies profile input:',
+                        error
+                      )
+                      return <div>Error loading browser cookies profile setting</div>
                     }
                   })()}
                 </ItemActions>
@@ -640,7 +733,6 @@ export function Settings() {
                   {(() => {
                     try {
                       const cookiesPathValue = settings.cookiesPath ?? ''
-                      logger.info('[Settings] Rendering cookies file input', { cookiesPathValue })
                       return (
                         <div className="flex gap-2 w-full max-w-md">
                           <Input value={cookiesPathValue} readOnly className="flex-1" />
@@ -651,7 +743,6 @@ export function Settings() {
                             variant="secondary"
                             onClick={() => {
                               try {
-                                logger.info('[Settings] Clearing cookies path')
                                 void handleSettingChange('cookiesPath', '')
                               } catch (error) {
                                 logger.error('[Settings] Error clearing cookies path:', error)
@@ -687,6 +778,46 @@ export function Settings() {
                   </Button>
                 </ItemActions>
               </Item>
+
+              <ItemSeparator />
+
+              <Item variant="muted">
+                <ItemContent>
+                  <ItemTitle>{t('settings.configFile')}</ItemTitle>
+                  <ItemDescription>{t('settings.configFileDescription')}</ItemDescription>
+                </ItemContent>
+                <ItemActions>
+                  {(() => {
+                    try {
+                      const configPathValue = settings.configPath ?? ''
+                      return (
+                        <div className="flex gap-2 w-full max-w-md">
+                          <Input value={configPathValue} readOnly className="flex-1" />
+                          <Button onClick={handleSelectConfigFile}>
+                            {t('settings.selectPath')}
+                          </Button>
+                          <Button
+                            variant="secondary"
+                            onClick={() => {
+                              try {
+                                void handleSettingChange('configPath', '')
+                              } catch (error) {
+                                logger.error('[Settings] Error clearing config path:', error)
+                              }
+                            }}
+                            disabled={!configPathValue}
+                          >
+                            {t('settings.clearConfigFile')}
+                          </Button>
+                        </div>
+                      )
+                    } catch (error) {
+                      logger.error('[Settings] Error rendering config file input:', error)
+                      return <div>Error loading config file setting</div>
+                    }
+                  })()}
+                </ItemActions>
+              </Item>
             </ItemGroup>
 
             <ItemGroup>
@@ -699,18 +830,11 @@ export function Settings() {
                   {(() => {
                     try {
                       const analyticsValue = settings.enableAnalytics ?? true
-                      logger.info('[Settings] Rendering enable analytics switch', {
-                        analyticsValue
-                      })
                       return (
                         <Switch
                           checked={analyticsValue}
                           onCheckedChange={(value) => {
                             try {
-                              logger.info('[Settings] Enable analytics changed', {
-                                oldValue: analyticsValue,
-                                newValue: value
-                              })
                               handleSettingChange('enableAnalytics', value)
                             } catch (error) {
                               logger.error('[Settings] Error changing enable analytics:', error)
