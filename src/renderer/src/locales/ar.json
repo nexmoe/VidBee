@@ -371,8 +371,7 @@
     "showMoreFormats": "إظهار المزيد من خيارات التنسيق",
     "showMoreFormatsDescription": "عرض خيارات التنسيق الإضافية في الواجهة",
     "subscriptionDefaults": {
-      "filenameDescription": "النمط المستخدم عندما لا يتجاوز الاشتراك اسم ملفه.",
-      "intervalDescription": "عدد مرات فحص VidBee لكل تغذية اشتراك (1-24 ساعة)."
+      "filenameDescription": "النمط المستخدم عندما لا يتجاوز الاشتراك اسم ملفه."
     },
     "system": "النظام",
     "theme": "المظهر",
@@ -393,7 +392,6 @@
       "description": "التحكم في مكان تخزين تحميلات الاشتراكات وعدد مرات فحص VidBee للفيديوهات الجديدة.",
       "downloadDirectory": "مجلد التحميل",
       "filenameTemplate": "قالب اسم الملف (الملف فقط)",
-      "checkInterval": "فترة الفحص (ساعات)",
       "onlyLatest": "تحميل أحدث فيديو فقط",
       "onlyLatestDescription": "عند التفعيل، يتخطى VidBee عناصر المتراكمة القديمة ويأخذ فقط آخر تحميل."
     },

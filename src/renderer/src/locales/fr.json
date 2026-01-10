@@ -371,8 +371,7 @@
     "showMoreFormats": "Afficher plus d'options de format",
     "showMoreFormatsDescription": "Afficher des options de format supplémentaires dans l'interface",
     "subscriptionDefaults": {
-      "filenameDescription": "Modèle utilisé lorsqu’un abonnement ne remplace pas son nom de fichier.",
-      "intervalDescription": "À quelle fréquence VidBee vérifie chaque flux d'abonnement (1 à 24 heures)."
+      "filenameDescription": "Modèle utilisé lorsqu’un abonnement ne remplace pas son nom de fichier."
     },
     "system": "Système",
     "theme": "Thème",
@@ -485,7 +484,6 @@
       "title": "Ajouter un flux RSS"
     },
     "defaults": {
-      "checkInterval": "Intervalle de vérification (heures)",
       "description": "Contrôlez où les téléchargements par abonnement sont stockés et à quelle fréquence VidBee recherche de nouvelles vidéos.",
       "downloadDirectory": "Répertoire de téléchargement",
       "filenameTemplate": "Modèle de nom de fichier (fichier uniquement)",

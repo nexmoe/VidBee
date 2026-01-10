@@ -371,8 +371,7 @@
     "showMoreFormats": "Mostrar mais opções de formato",
     "showMoreFormatsDescription": "Exibir opções de formato adicionais na interface",
     "subscriptionDefaults": {
-      "filenameDescription": "Padrão usado quando uma assinatura não substitui seu nome de arquivo.",
-      "intervalDescription": "Com que frequência o VidBee verifica cada feed de assinatura (1 a 24 horas)."
+      "filenameDescription": "Padrão usado quando uma assinatura não substitui seu nome de arquivo."
     },
     "system": "Sistema",
     "theme": "Tema",
@@ -485,7 +484,6 @@
       "title": "Adicionar RSS"
     },
     "defaults": {
-      "checkInterval": "Intervalo de verificação (horas)",
       "description": "Controle onde os downloads de assinaturas são armazenados e com que frequência o VidBee verifica novos vídeos.",
       "downloadDirectory": "Baixar diretório",
       "filenameTemplate": "Modelo de nome de arquivo (somente arquivo)",

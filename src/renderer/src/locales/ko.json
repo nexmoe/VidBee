@@ -371,8 +371,7 @@
     "showMoreFormats": "더 많은 형식 옵션 표시",
     "showMoreFormatsDescription": "인터페이스에 추가 형식 옵션 표시",
     "subscriptionDefaults": {
-      "filenameDescription": "구독이 파일 이름을 재정의하지 않을 때 사용되는 패턴입니다.",
-      "intervalDescription": "VidBee가 각 구독 피드를 확인하는 빈도(1~24시간)."
+      "filenameDescription": "구독이 파일 이름을 재정의하지 않을 때 사용되는 패턴입니다."
     },
     "system": "시스템",
     "theme": "테마",
@@ -485,7 +484,6 @@
       "title": "RSS 추가"
     },
     "defaults": {
-      "checkInterval": "확인 간격(시간)",
       "description": "구독 다운로드가 저장되는 위치와 VidBee가 새 비디오를 확인하는 빈도를 제어합니다.",
       "downloadDirectory": "디렉토리 다운로드",
       "filenameTemplate": "파일 이름 템플릿(파일만)",

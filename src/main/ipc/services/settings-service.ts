@@ -1,6 +1,5 @@
 import { type IpcContext, IpcMethod, IpcService } from 'electron-ipc-decorator'
 import type { AppSettings } from '../../../shared/types'
-import { subscriptionScheduler } from '../../lib/subscription-scheduler'
 import { settingsManager } from '../../settings'
 import { updateTrayMenu } from '../../tray'
 import { applyAutoLaunchSetting } from '../../utils/auto-launch'
@@ -29,10 +28,6 @@ class SettingsService extends IpcService {
     if (key === 'launchAtLogin') {
       applyAutoLaunchSetting(value as AppSettings['launchAtLogin'])
     }
-
-    if (key === 'subscriptionCheckIntervalHours') {
-      subscriptionScheduler.refreshInterval()
-    }
   }
 
   @IpcMethod()
@@ -55,10 +50,6 @@ class SettingsService extends IpcService {
     if (typeof settings.launchAtLogin === 'boolean') {
       applyAutoLaunchSetting(settings.launchAtLogin)
     }
-
-    if (settings.subscriptionCheckIntervalHours !== undefined) {
-      subscriptionScheduler.refreshInterval()
-    }
   }
 
   @IpcMethod()
@@ -66,7 +57,6 @@ class SettingsService extends IpcService {
     settingsManager.reset()
     applyDockVisibility(settingsManager.get('hideDockIcon'))
     applyAutoLaunchSetting(settingsManager.get('launchAtLogin'))
-    subscriptionScheduler.refreshInterval()
   }
 }
 

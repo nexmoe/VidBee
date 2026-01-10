@@ -371,8 +371,7 @@
     "showMoreFormats": "より多くのフォーマットオプションを表示",
     "showMoreFormatsDescription": "インターフェースに追加のフォーマットオプションを表示",
     "subscriptionDefaults": {
-      "filenameDescription": "サブスクリプションがそのファイル名をオーバーライドしない場合に使用されるパターン。",
-      "intervalDescription": "VidBee が各サブスクリプション フィードをチェックする頻度 (1 ～ 24 時間)。"
+      "filenameDescription": "サブスクリプションがそのファイル名をオーバーライドしない場合に使用されるパターン。"
     },
     "system": "システム",
     "theme": "テーマ",
@@ -485,7 +484,6 @@
       "title": "RSSを追加"
     },
     "defaults": {
-      "checkInterval": "チェック間隔(時間)",
       "description": "サブスクリプションのダウンロードが保存される場所と、VidBee が新しいビデオをチェックする頻度を制御します。",
       "downloadDirectory": "ダウンロードディレクトリ",
       "filenameTemplate": "ファイル名のテンプレート (ファイルのみ)",

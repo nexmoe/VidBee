@@ -371,8 +371,7 @@
     "showMoreFormats": "Mehr Formatoptionen anzeigen",
     "showMoreFormatsDescription": "Zusätzliche Formatoptionen in der Benutzeroberfläche anzeigen",
     "subscriptionDefaults": {
-      "filenameDescription": "Muster, das verwendet wird, wenn ein Abonnement seinen Dateinamen nicht überschreibt.",
-      "intervalDescription": "Wie oft VidBee jeden Abonnement-Feed überprüft (1-24 Stunden)."
+      "filenameDescription": "Muster, das verwendet wird, wenn ein Abonnement seinen Dateinamen nicht überschreibt."
     },
     "system": "System",
     "theme": "Design",
@@ -393,7 +392,6 @@
       "description": "Steuern Sie, wo Abonnement-Downloads gespeichert werden und wie oft VidBee nach neuen Videos sucht.",
       "downloadDirectory": "Download-Verzeichnis",
       "filenameTemplate": "Dateinamen-Vorlage (nur Datei)",
-      "checkInterval": "Prüfintervall (Stunden)",
       "onlyLatest": "Nur das neueste Video herunterladen",
       "onlyLatestDescription": "Wenn aktiviert, überspringt VidBee ältere Backlog-Elemente und lädt nur den neuesten Upload."
     },

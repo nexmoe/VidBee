@@ -270,7 +270,6 @@ export interface AppSettings {
   launchAtLogin: boolean
   autoUpdate: boolean
   subscriptionOnlyLatestDefault: boolean
-  subscriptionCheckIntervalHours: number
   enableAnalytics: boolean
 }
 
@@ -295,6 +294,5 @@ export const defaultSettings: AppSettings = {
   launchAtLogin: false,
   autoUpdate: true,
   subscriptionOnlyLatestDefault: true,
-  subscriptionCheckIntervalHours: 3,
   enableAnalytics: true
 }

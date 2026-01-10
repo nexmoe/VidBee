@@ -52,13 +52,6 @@ const parser = new Parser<{ item: ParserItem }>({
   }
 })
 
-const clampIntervalHours = (value: number | undefined): number => {
-  if (!value || Number.isNaN(value)) {
-    return 3
-  }
-  return Math.min(24, Math.max(1, value))
-}
-
 const sanitizeDownloadId = (subscriptionId: string, itemId: string): string => {
   const base = Buffer.from(`${subscriptionId}:${itemId}`).toString('base64url')
   return `sub_${base}`
@@ -167,7 +160,7 @@ export class SubscriptionScheduler extends EventEmitter {
     if (this.timer) {
       clearTimeout(this.timer)
     }
-    const intervalHours = clampIntervalHours(settingsManager.get('subscriptionCheckIntervalHours'))
+    const intervalHours = 3 // Default check interval: 3 hours
     const delayMs = initialDelay ?? intervalHours * 60 * 60 * 1000
     this.timer = setTimeout(() => {
       void this.checkAll().finally(() => this.scheduleNextRun())

@@ -371,8 +371,7 @@
     "showMoreFormats": "Mostrar más opciones de formato",
     "showMoreFormatsDescription": "Mostrar opciones de formato adicionales en la interfaz",
     "subscriptionDefaults": {
-      "filenameDescription": "Patrón usado cuando una suscripción no sobrescribe su nombre de archivo.",
-      "intervalDescription": "Con qué frecuencia VidBee verifica cada feed de suscripción (1-24 horas)."
+      "filenameDescription": "Patrón usado cuando una suscripción no sobrescribe su nombre de archivo."
     },
     "system": "Sistema",
     "theme": "Tema",
@@ -393,7 +392,6 @@
       "description": "Controla dónde se almacenan las descargas de suscripciones y con qué frecuencia VidBee verifica nuevos videos.",
       "downloadDirectory": "Directorio de descarga",
       "filenameTemplate": "Plantilla de nombre de archivo (solo archivo)",
-      "checkInterval": "Intervalo de verificación (horas)",
       "onlyLatest": "Descargar solo el último video",
       "onlyLatestDescription": "Cuando está habilitado, VidBee omite elementos antiguos del backlog y solo toma la última carga."
     },

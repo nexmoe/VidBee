@@ -371,8 +371,7 @@
     "showMoreFormats": "Tampilkan lebih banyak opsi format",
     "showMoreFormatsDescription": "Tampilkan opsi format tambahan di antarmuka",
     "subscriptionDefaults": {
-      "filenameDescription": "Pola yang digunakan ketika berlangganan tidak menimpa nama filenya.",
-      "intervalDescription": "Seberapa sering VidBee memeriksa setiap feed berlangganan (1-24 jam)."
+      "filenameDescription": "Pola yang digunakan ketika berlangganan tidak menimpa nama filenya."
     },
     "system": "Sistem",
     "theme": "Tema",
@@ -393,7 +392,6 @@
       "description": "Kontrol di mana unduhan berlangganan disimpan dan seberapa sering VidBee memeriksa video baru.",
       "downloadDirectory": "Direktori unduhan",
       "filenameTemplate": "Template nama file (hanya file)",
-      "checkInterval": "Interval pemeriksaan (jam)",
       "onlyLatest": "Unduh hanya video terbaru",
       "onlyLatestDescription": "Saat diaktifkan, VidBee melewati item backlog lama dan hanya mengambil unggahan terbaru."
     },

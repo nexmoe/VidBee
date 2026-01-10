@@ -206,6 +206,25 @@
       "subscription": "Subscription"
     }
   },
+  "error": {
+    "title": "Something went wrong",
+    "description": "An unexpected error occurred. Please try reloading the application or report this issue if it persists.",
+    "message": "Error Message",
+    "unknownError": "Unknown error occurred",
+    "goHome": "Go Home",
+    "reload": "Reload App",
+    "copyReport": "Copy Error Report",
+    "copied": "Copied!",
+    "copySuccess": "Error report copied to clipboard",
+    "copyFailed": "Failed to copy error report",
+    "showDetails": "Show Details",
+    "hideDetails": "Hide Details",
+    "stackTrace": "Stack Trace",
+    "componentStack": "Component Stack",
+    "noStackTrace": "No stack trace available",
+    "fullReport": "Full Error Report",
+    "helpText": "If this error persists, please copy the error report above and share it with the support team. You can find contact information in the About page."
+  },
   "errors": {
     "clickToCopy": "Click to copy details",
     "clipboardEmpty": "Clipboard is empty",
@@ -415,8 +434,7 @@
     "showMoreFormats": "Show more format options",
     "showMoreFormatsDescription": "Display additional format options in the interface",
     "subscriptionDefaults": {
-      "filenameDescription": "Pattern used when a subscription does not override its filename.",
-      "intervalDescription": "How often VidBee checks each subscription feed (1-24 hours)."
+      "filenameDescription": "Pattern used when a subscription does not override its filename."
     },
     "system": "System",
     "theme": "Theme",
@@ -437,7 +455,6 @@
       "description": "Control where subscription downloads are stored and how often VidBee checks for new videos.",
       "downloadDirectory": "Download directory",
       "filenameTemplate": "Filename template",
-      "checkInterval": "Check interval (hours)",
       "onlyLatest": "Download only the latest video",
       "onlyLatestDescription": "When enabled, VidBee skips older backlog items and only grabs the newest upload."
     },

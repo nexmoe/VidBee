@@ -9,6 +9,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { HashRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router'
 import { toast } from 'sonner'
+import { ErrorBoundary } from './components/error/ErrorBoundary'
 import { ipcEvents, ipcServices } from './lib/ipc'
 import { About } from './pages/About'
 import { Home } from './pages/Home'
@@ -292,11 +293,13 @@ function AppContent() {
 
 function App() {
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <HashRouter>
-        <AppContent />
-      </HashRouter>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <HashRouter>
+          <AppContent />
+        </HashRouter>
+      </ThemeProvider>
+    </ErrorBoundary>
   )
 }
 

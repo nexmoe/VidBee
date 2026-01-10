@@ -372,8 +372,7 @@
     "showMoreFormats": "顯示更多格式選項",
     "showMoreFormatsDescription": "在介面中顯示額外的格式選項",
     "subscriptionDefaults": {
-      "filenameDescription": "當訂閱不覆蓋其文件名時使用的模式。",
-      "intervalDescription": "VidBee 檢查每個訂閱源的頻率（1-24 小時）。"
+      "filenameDescription": "當訂閱不覆蓋其文件名時使用的模式。"
     },
     "system": "系統",
     "theme": "主題",
@@ -486,7 +485,6 @@
       "title": "添加RSS"
     },
     "defaults": {
-      "checkInterval": "檢查間隔（小時）",
       "description": "控制訂閱下載的存儲位置以及 VidBee 檢查新視頻的頻率。",
       "downloadDirectory": "下載目錄",
       "filenameTemplate": "文件名模板（僅限文件）",
