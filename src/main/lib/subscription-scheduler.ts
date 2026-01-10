@@ -19,6 +19,11 @@ type ParserItem = {
   isoDate?: string
   pubDate?: string
   youtubeId?: string
+  content?: string
+  contentSnippet?: string
+  contentEncoded?: string
+  summary?: string
+  description?: string
   mediaThumbnail?: Array<{ url?: string }> | { url?: string }
   mediaContent?: Array<{ url?: string }> | { url?: string }
   enclosure?: Array<{ url?: string; type?: string }> | { url?: string; type?: string }
@@ -41,13 +46,15 @@ type FeedItem = {
   thumbnail?: string
 }
 
-const parser = new Parser<{ item: ParserItem }>({
+const parser = new Parser<Record<string, never>, ParserItem>({
   customFields: {
     item: [
       ['yt:videoId', 'youtubeId'],
       ['media:thumbnail', 'mediaThumbnail'],
       ['media:content', 'mediaContent'],
-      ['enclosure', 'enclosure']
+      ['enclosure', 'enclosure'],
+      ['content:encoded', 'contentEncoded'],
+      ['description', 'description']
     ]
   }
 })
@@ -233,13 +240,18 @@ export class SubscriptionScheduler extends EventEmitter {
       }
 
       const latestItem = normalizedItems[0]
+      const coverUrl = this.resolveSubscriptionCover(
+        feed,
+        normalizedItems,
+        feedItems as ParserItem[]
+      )
       subscriptionManager.update(subscription.id, {
         status: 'up-to-date',
         lastSuccessAt: Date.now(),
         lastError: undefined,
         latestVideoTitle: latestItem?.title ?? subscription.latestVideoTitle,
         latestVideoPublishedAt: latestItem?.publishedAt ?? subscription.latestVideoPublishedAt,
-        coverUrl: (feed.image as { url?: string } | undefined)?.url ?? subscription.coverUrl,
+        coverUrl: coverUrl ?? subscription.coverUrl,
         title:
           typeof feed.title === 'string' && feed.title.trim().length > 0
             ? feed.title.trim()
@@ -357,6 +369,74 @@ export class SubscriptionScheduler extends EventEmitter {
     }
     if (mediaContent && typeof mediaContent === 'object' && 'url' in mediaContent) {
       return mediaContent.url as string | undefined
+    }
+
+    // Try to parse an image from HTML fields
+    const htmlCandidates = [
+      item.content,
+      item.contentEncoded,
+      item.description,
+      item.summary,
+      item.contentSnippet
+    ]
+    for (const html of htmlCandidates) {
+      const imageUrl = this.extractImageFromHtml(html)
+      if (imageUrl) {
+        return imageUrl
+      }
+    }
+
+    return undefined
+  }
+
+  private resolveSubscriptionCover(
+    feed: Parser.Output<ParserItem>,
+    items: FeedItem[],
+    rawItems: ParserItem[]
+  ): string | undefined {
+    const feedImageUrl = typeof feed.image?.url === 'string' ? feed.image.url : undefined
+    if (feedImageUrl) {
+      return feedImageUrl
+    }
+
+    const itunesImageUrl = typeof feed.itunes?.image === 'string' ? feed.itunes.image : undefined
+    if (itunesImageUrl) {
+      return itunesImageUrl
+    }
+
+    const itemThumbnail = items.find((item) => item.thumbnail)?.thumbnail
+    if (itemThumbnail) {
+      return itemThumbnail
+    }
+
+    for (const item of rawItems) {
+      const thumbnail = this.resolveThumbnail(item)
+      if (thumbnail) {
+        return thumbnail
+      }
+    }
+
+    return undefined
+  }
+
+  private extractImageFromHtml(html?: string): string | undefined {
+    if (!html) {
+      return undefined
+    }
+
+    const srcMatch = html.match(
+      /<img\b[^>]*\b(?:src|data-src|data-original)\b\s*=\s*(['"]?)([^'">\s]+)\1/i
+    )
+    if (srcMatch?.[2]) {
+      return srcMatch[2]
+    }
+
+    const srcsetMatch = html.match(/<img[^>]+srcset\s*=\s*(['"])([^'"]+)\1/i)
+    if (srcsetMatch?.[2]) {
+      const firstCandidate = srcsetMatch[2].split(',')[0]?.trim().split(/\s+/)[0]
+      if (firstCandidate) {
+        return firstCandidate
+      }
     }
 
     return undefined
