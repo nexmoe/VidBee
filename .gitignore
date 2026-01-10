@@ -2,6 +2,8 @@ node_modules
 /dist
 out
 .conductor/
+.wxt
+.output
 .DS_Store
 .eslintcache
 *.log*
