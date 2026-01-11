@@ -42,3 +42,9 @@ jobs:
             dist/*.blockmap
         env:
           GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+
+      - name: Notify Cloudflare Pages
+        env:
+          CLOUDFLARE_WEBHOOK_URL: ${{ secrets.CLOUDFLARE_WEBHOOK_URL }}
+        run: |
+          curl -X POST "$CLOUDFLARE_WEBHOOK_URL"
