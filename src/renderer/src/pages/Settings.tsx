@@ -522,6 +522,94 @@ export function Settings() {
             <ItemGroup>
               <Item variant="muted">
                 <ItemContent>
+                  <ItemTitle>{t('settings.embedSubs')}</ItemTitle>
+                  <ItemDescription>{t('settings.embedSubsDescription')}</ItemDescription>
+                </ItemContent>
+                <ItemActions>
+                  <Switch
+                    checked={settings.embedSubs ?? false}
+                    onCheckedChange={(value) => {
+                      try {
+                        handleSettingChange('embedSubs', value)
+                      } catch (error) {
+                        logger.error('[Settings] Error toggling embedSubs:', error)
+                      }
+                    }}
+                  />
+                </ItemActions>
+              </Item>
+
+              <ItemSeparator />
+
+              {platform !== 'darwin' && (
+                <>
+                  <Item variant="muted">
+                    <ItemContent>
+                      <ItemTitle>{t('settings.embedThumbnail')}</ItemTitle>
+                      <ItemDescription>{t('settings.embedThumbnailDescription')}</ItemDescription>
+                    </ItemContent>
+                    <ItemActions>
+                      <Switch
+                        checked={settings.embedThumbnail ?? false}
+                        onCheckedChange={(value) => {
+                          try {
+                            handleSettingChange('embedThumbnail', value)
+                          } catch (error) {
+                            logger.error('[Settings] Error toggling embedThumbnail:', error)
+                          }
+                        }}
+                      />
+                    </ItemActions>
+                  </Item>
+
+                  <ItemSeparator />
+                </>
+              )}
+
+              <Item variant="muted">
+                <ItemContent>
+                  <ItemTitle>{t('settings.embedMetadata')}</ItemTitle>
+                  <ItemDescription>{t('settings.embedMetadataDescription')}</ItemDescription>
+                </ItemContent>
+                <ItemActions>
+                  <Switch
+                    checked={settings.embedMetadata ?? false}
+                    onCheckedChange={(value) => {
+                      try {
+                        handleSettingChange('embedMetadata', value)
+                      } catch (error) {
+                        logger.error('[Settings] Error toggling embedMetadata:', error)
+                      }
+                    }}
+                  />
+                </ItemActions>
+              </Item>
+
+              <ItemSeparator />
+
+              <Item variant="muted">
+                <ItemContent>
+                  <ItemTitle>{t('settings.embedChapters')}</ItemTitle>
+                  <ItemDescription>{t('settings.embedChaptersDescription')}</ItemDescription>
+                </ItemContent>
+                <ItemActions>
+                  <Switch
+                    checked={settings.embedChapters ?? true}
+                    onCheckedChange={(value) => {
+                      try {
+                        handleSettingChange('embedChapters', value)
+                      } catch (error) {
+                        logger.error('[Settings] Error toggling embedChapters:', error)
+                      }
+                    }}
+                  />
+                </ItemActions>
+              </Item>
+            </ItemGroup>
+
+            <ItemGroup>
+              <Item variant="muted">
+                <ItemContent>
                   <ItemTitle>{t('settings.maxConcurrentDownloads')}</ItemTitle>
                   <ItemDescription>
                     {t('settings.maxConcurrentDownloadsDescription')}

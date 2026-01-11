@@ -271,6 +271,10 @@ export interface AppSettings {
   autoUpdate: boolean
   subscriptionOnlyLatestDefault: boolean
   enableAnalytics: boolean
+  embedSubs: boolean
+  embedThumbnail: boolean
+  embedMetadata: boolean
+  embedChapters: boolean
 }
 
 export const DEFAULT_SUBSCRIPTION_FILENAME_TEMPLATE = '%(uploader)s/%(title)s.%(ext)s'
@@ -294,5 +298,9 @@ export const defaultSettings: AppSettings = {
   launchAtLogin: false,
   autoUpdate: true,
   subscriptionOnlyLatestDefault: true,
-  enableAnalytics: true
+  enableAnalytics: true,
+  embedSubs: false,
+  embedThumbnail: false,
+  embedMetadata: false,
+  embedChapters: true
 }

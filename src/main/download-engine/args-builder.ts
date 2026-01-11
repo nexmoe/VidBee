@@ -68,7 +68,7 @@ export const buildDownloadArgs = (
   settings: AppSettings,
   jsRuntimeArgs: string[] = []
 ): string[] => {
-  const args: string[] = ['--no-playlist', '--embed-chapters', '--no-mtime']
+  const args: string[] = ['--no-playlist', '--no-mtime']
 
   // Add encoding support for proper handling of non-ASCII characters
   args.push('--encoding', 'utf-8')
@@ -95,10 +95,21 @@ export const buildDownloadArgs = (
     args.push('--download-sections', `*${start}-${end || ''}`)
   }
 
+  const embedSubs = settings.embedSubs
+  const embedMetadata = settings.embedMetadata
+  const embedChapters = settings.embedChapters
+
   // Subtitles
-  if (options.downloadSubs) {
+  if (options.downloadSubs || embedSubs) {
     args.push('--write-subs', '--sub-langs', 'all')
   }
+
+  args.push(embedSubs ? '--embed-subs' : '--no-embed-subs')
+  if (process.platform !== 'darwin') {
+    args.push(settings.embedThumbnail ? '--embed-thumbnail' : '--no-embed-thumbnail')
+  }
+  args.push(embedMetadata ? '--embed-metadata' : '--no-embed-metadata')
+  args.push(embedChapters ? '--embed-chapters' : '--no-embed-chapters')
 
   // Output path with proper encoding handling
   const baseDownloadPath = options.customDownloadPath?.trim() || downloadPath
