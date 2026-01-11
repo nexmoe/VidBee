@@ -400,6 +400,10 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
 
   const statusIcon = getStatusIcon()
   const statusText = getStatusText()
+  const progressInfo = download.progress
+  const showInlineProgress = Boolean(
+    progressInfo && download.status !== 'completed' && download.status !== 'error'
+  )
   const sourceDisplay =
     download.uploader && download.channel && download.uploader !== download.channel
       ? `${download.uploader} • ${download.channel}`
@@ -725,6 +729,24 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
                     </TooltipContent>
                   </Tooltip>
                 )}
+                {showInlineProgress && (
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="font-medium shrink-0">
+                      {(progressInfo?.percent ?? 0).toFixed(1)}%
+                    </span>
+                    {progressInfo?.downloaded && progressInfo?.total && (
+                      <span className="truncate max-w-[120px]">
+                        {progressInfo.downloaded} / {progressInfo.total}
+                      </span>
+                    )}
+                    {progressInfo?.currentSpeed && (
+                      <span className="truncate max-w-[80px]">{progressInfo.currentSpeed}</span>
+                    )}
+                    {progressInfo?.eta && (
+                      <span className="truncate max-w-[80px]">ETA: {progressInfo.eta}</span>
+                    )}
+                  </div>
+                )}
                 {/* Timestamp */}
                 {timestamp && (
                   <span className="truncate shrink-0">{formatDateShort(timestamp)}</span>
@@ -898,26 +920,8 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
 
           {/* Progress */}
           {download.progress && download.status !== 'completed' && download.status !== 'error' && (
-            <div className="space-y-1 bg-background/60 w-full overflow-hidden">
+            <div className="bg-background/60 w-full overflow-hidden">
               <Progress value={download.progress.percent} className="h-1 w-full" />
-              <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground w-full">
-                <span className="font-medium shrink-0">
-                  {download.progress.percent.toFixed(1)}%
-                </span>
-                <div className="flex flex-wrap items-center gap-2 min-w-0 flex-1">
-                  {download.progress.downloaded && download.progress.total && (
-                    <span className="truncate max-w-[100px]">
-                      {download.progress.downloaded} / {download.progress.total}
-                    </span>
-                  )}
-                  {download.progress.currentSpeed && (
-                    <span className="truncate max-w-[80px]">{download.progress.currentSpeed}</span>
-                  )}
-                  {download.progress.eta && (
-                    <span className="truncate max-w-[80px]">ETA: {download.progress.eta}</span>
-                  )}
-                </div>
-              </div>
             </div>
           )}
 
