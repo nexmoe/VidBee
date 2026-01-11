@@ -8,7 +8,7 @@
 const fs = require('node:fs')
 const path = require('node:path')
 const os = require('node:os')
-const { execSync } = require('node:child_process')
+const { execSync, spawnSync } = require('node:child_process')
 const https = require('node:https')
 const http = require('node:http')
 
@@ -33,7 +33,7 @@ const PLATFORM_CONFIG = {
       extract: 'unzip',
       release: {
         repos: ['yt-dlp/FFmpeg-Builds', 'BtbN/FFmpeg-Builds'],
-        assetPattern: /win64.*gpl.*\.zip$/i,
+        assetPattern: /ffmpeg-master-latest-win64-gpl\.zip$/i,
         binaryName: 'ffmpeg.exe'
       }
     }
@@ -79,7 +79,7 @@ const PLATFORM_CONFIG = {
       extract: 'tar',
       release: {
         repos: ['yt-dlp/FFmpeg-Builds', 'BtbN/FFmpeg-Builds'],
-        assetPattern: /linux64.*gpl.*\.tar\.xz$/i,
+        assetPattern: /ffmpeg-master-latest-linux64-gpl\.tar\.xz$/i,
         binaryName: 'ffmpeg'
       }
     }
@@ -125,24 +125,43 @@ function downloadFile(url, dest) {
   return new Promise((resolve, reject) => {
     const protocol = url.startsWith('https') ? https : http
     const file = fs.createWriteStream(dest)
+    let downloadedBytes = 0
 
     const request = protocol.get(url, { headers: getDownloadHeaders(url) }, (response) => {
       if (response.statusCode === 302 || response.statusCode === 301) {
         // Handle redirect
         file.close()
         safeUnlink(dest)
-        return downloadFile(response.headers.location, dest).then(resolve).catch(reject)
+        const redirectUrl = response.headers.location
+        if (!redirectUrl) {
+          return reject(new Error(`Redirect without location for ${url}`))
+        }
+        log(`Redirected to ${redirectUrl}`, 'info')
+        return downloadFile(redirectUrl, dest).then(resolve).catch(reject)
       }
 
+      const contentLength = response.headers['content-length']
       if (response.statusCode !== 200) {
         file.close()
         safeUnlink(dest)
-        return reject(new Error(`Failed to download: ${response.statusCode}`))
+        return reject(
+          new Error(
+            `Failed to download ${url}: ${response.statusCode} (length: ${contentLength || 'unknown'})`
+          )
+        )
       }
+
+      response.on('data', (chunk) => {
+        downloadedBytes += chunk.length
+      })
 
       response.pipe(file)
       file.on('finish', () => {
         file.close()
+        log(
+          `Downloaded ${formatBytes(downloadedBytes)} from ${url}`,
+          downloadedBytes ? 'success' : 'warn'
+        )
         resolve()
       })
     })
@@ -154,6 +173,7 @@ function downloadFile(url, dest) {
     request.on('error', (err) => {
       file.close()
       safeUnlink(dest)
+      log(`Download error for ${url}: ${err.message}`, 'error')
       reject(err)
     })
   })
@@ -163,6 +183,7 @@ async function downloadFileWithRetry(url, dest, retries = 3, delayMs = 2000) {
   let lastError
   for (let attempt = 1; attempt <= retries; attempt += 1) {
     try {
+      log(`Downloading ${url} (attempt ${attempt}/${retries})...`, 'download')
       await downloadFile(url, dest)
       return
     } catch (error) {
@@ -170,7 +191,7 @@ async function downloadFileWithRetry(url, dest, retries = 3, delayMs = 2000) {
       safeUnlink(dest)
       if (attempt < retries) {
         const backoff = delayMs * attempt
-        log(`Download failed (attempt ${attempt}/${retries}): ${error.message}`, 'warn')
+        log(`Download failed for ${url} (attempt ${attempt}/${retries}): ${error.message}`, 'warn')
         await new Promise((resolve) => setTimeout(resolve, backoff))
       }
     }
@@ -298,6 +319,37 @@ function fileExists(filePath) {
   return fs.existsSync(filePath)
 }
 
+function formatBytes(bytes) {
+  if (!bytes || bytes <= 0) {
+    return 'unknown size'
+  }
+  if (bytes >= 1024 * 1024) {
+    return `${Math.round(bytes / (1024 * 1024))} MB`
+  }
+  return `${Math.round(bytes / 1024)} KB`
+}
+
+function checkBinary(filePath, args, label) {
+  const result = spawnSync(filePath, args, {
+    encoding: 'utf8',
+    timeout: 8000,
+    windowsHide: true
+  })
+
+  if (result.error) {
+    return { ok: false, message: result.error.message }
+  }
+
+  if (result.status !== 0) {
+    const output = `${result.stdout || ''}\n${result.stderr || ''}`.trim()
+    return { ok: false, message: output || `exit code ${result.status}` }
+  }
+
+  const output = `${result.stdout || ''}\n${result.stderr || ''}`.trim()
+  const firstLine = output.split(/\r?\n/).find((line) => line.trim())
+  return { ok: true, message: firstLine ? firstLine.trim() : `${label} version check ok` }
+}
+
 function getDenoAssetName(platform, arch) {
   if (platform === 'win32') {
     if (arch === 'arm64') {
@@ -330,6 +382,10 @@ async function downloadYtDlp(config) {
   const outputPath = path.join(RESOURCES_DIR, output)
 
   if (fileExists(outputPath)) {
+    const validation = checkBinary(outputPath, ['--version'], 'yt-dlp')
+    if (!validation.ok) {
+      log(`Existing ${output} failed version check: ${validation.message}`, 'warn')
+    }
     log(`${output} already exists, skipping download`, 'info')
     return
   }
@@ -342,6 +398,11 @@ async function downloadYtDlp(config) {
     await downloadFileWithRetry(url, tempPath)
     fs.renameSync(tempPath, outputPath)
     setExecutable(outputPath)
+    const validation = checkBinary(outputPath, ['--version'], 'yt-dlp')
+    if (!validation.ok) {
+      safeUnlink(outputPath)
+      throw new Error(`Downloaded ${output} failed version check: ${validation.message}`)
+    }
     log(`Downloaded ${output} successfully`, 'success')
   } catch (error) {
     if (fs.existsSync(tempPath)) {
@@ -356,6 +417,10 @@ async function downloadFfmpegWindows(config) {
   const outputPath = path.join(RESOURCES_DIR, output)
 
   if (fileExists(outputPath)) {
+    const validation = checkBinary(outputPath, ['-version'], 'ffmpeg')
+    if (!validation.ok) {
+      log(`Existing ${output} failed version check: ${validation.message}`, 'warn')
+    }
     log(`${output} already exists, skipping download`, 'info')
     return
   }
@@ -392,6 +457,11 @@ async function downloadFfmpegWindows(config) {
     }
 
     fs.copyFileSync(sourcePath, outputPath)
+    const validation = checkBinary(outputPath, ['-version'], 'ffmpeg')
+    if (!validation.ok) {
+      safeUnlink(outputPath)
+      throw new Error(`Downloaded ${output} failed version check: ${validation.message}`)
+    }
     log(`Downloaded ${output} successfully`, 'success')
 
     // Cleanup
@@ -416,6 +486,10 @@ async function downloadFfmpegMac(config) {
   const outputPath = path.join(RESOURCES_DIR, output)
 
   if (fileExists(outputPath)) {
+    const validation = checkBinary(outputPath, ['-version'], 'ffmpeg')
+    if (!validation.ok) {
+      log(`Existing ${output} failed version check: ${validation.message}`, 'warn')
+    }
     log(`${output} already exists, skipping download`, 'info')
     return
   }
@@ -448,6 +522,11 @@ async function downloadFfmpegMac(config) {
 
     fs.copyFileSync(sourcePath, outputPath)
     setExecutable(outputPath)
+    const validation = checkBinary(outputPath, ['-version'], 'ffmpeg')
+    if (!validation.ok) {
+      safeUnlink(outputPath)
+      throw new Error(`Downloaded ${output} failed version check: ${validation.message}`)
+    }
     log(`Downloaded ${output} successfully`, 'success')
 
     // Cleanup
@@ -465,6 +544,10 @@ async function downloadFfmpegLinux(config) {
   const outputPath = path.join(RESOURCES_DIR, output)
 
   if (fileExists(outputPath)) {
+    const validation = checkBinary(outputPath, ['-version'], 'ffmpeg')
+    if (!validation.ok) {
+      log(`Existing ${output} failed version check: ${validation.message}`, 'warn')
+    }
     log(`${output} already exists, skipping download`, 'info')
     return
   }
@@ -502,6 +585,11 @@ async function downloadFfmpegLinux(config) {
 
     fs.copyFileSync(sourcePath, outputPath)
     setExecutable(outputPath)
+    const validation = checkBinary(outputPath, ['-version'], 'ffmpeg')
+    if (!validation.ok) {
+      safeUnlink(outputPath)
+      throw new Error(`Downloaded ${output} failed version check: ${validation.message}`)
+    }
     log(`Downloaded ${output} successfully`, 'success')
 
     // Cleanup
@@ -528,6 +616,10 @@ async function downloadDenoRuntime() {
   const outputPath = path.join(RESOURCES_DIR, outputName)
 
   if (fileExists(outputPath)) {
+    const validation = checkBinary(outputPath, ['--version'], 'deno')
+    if (!validation.ok) {
+      log(`Existing ${outputName} failed version check: ${validation.message}`, 'warn')
+    }
     log(`${outputName} already exists, skipping download`, 'info')
     return
   }
@@ -549,6 +641,11 @@ async function downloadDenoRuntime() {
 
     fs.copyFileSync(sourcePath, outputPath)
     setExecutable(outputPath)
+    const validation = checkBinary(outputPath, ['--version'], 'deno')
+    if (!validation.ok) {
+      safeUnlink(outputPath)
+      throw new Error(`Downloaded ${outputName} failed version check: ${validation.message}`)
+    }
     log(`Downloaded ${outputName} successfully`, 'success')
 
     fs.unlinkSync(tempZip)
