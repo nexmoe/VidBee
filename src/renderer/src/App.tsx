@@ -55,7 +55,7 @@ function AppContent() {
   const loadSettings = useSetAtom(loadSettingsAtom)
   const setUpdateReady = useSetAtom(updateReadyAtom)
   const setUpdateAvailable = useSetAtom(updateAvailableAtom)
-  const { t } = useTranslation()
+  const { i18n } = useTranslation()
   const updateDownloadInProgressRef = useRef(false)
   const analyticsScriptRef = useRef<HTMLScriptElement | null>(null)
   const navigate = useNavigate()
@@ -197,14 +197,27 @@ function AppContent() {
         available: true,
         version: info.version
       })
+
+      const versionLabel = info?.version ?? ''
+      const downloadedMessage = versionLabel
+        ? i18n.t('about.notifications.updateDownloadedVersion', { version: versionLabel })
+        : i18n.t('about.notifications.updateDownloaded')
+      toast.info(downloadedMessage, {
+        action: {
+          label: i18n.t('about.notifications.restartNowAction'),
+          onClick: () => {
+            void ipcServices.update.quitAndInstall()
+          }
+        }
+      })
     }
 
     const handleUpdateError = (rawMessage: unknown) => {
       const message = typeof rawMessage === 'string' ? rawMessage : ''
       resetDownloadState()
 
-      const errorMessage = message || t('about.notifications.unknownErrorFallback')
-      toast.error(t('about.notifications.updateError', { error: errorMessage }))
+      const errorMessage = message || i18n.t('about.notifications.unknownErrorFallback')
+      toast.error(i18n.t('about.notifications.updateError', { error: errorMessage }))
     }
 
     const handleDownloadProgress = (rawProgress: unknown) => {
@@ -214,39 +227,20 @@ function AppContent() {
       }
     }
 
-    const handleUpdateNotification = (rawPayload: unknown) => {
-      const payload = (rawPayload ?? {}) as { version?: string }
-      const versionLabel = payload?.version ?? ''
-      const downloadedMessage = versionLabel
-        ? t('about.notifications.updateDownloadedVersion', { version: versionLabel })
-        : t('about.notifications.updateDownloaded')
-
-      toast.info(downloadedMessage, {
-        action: {
-          label: t('about.notifications.restartNowAction'),
-          onClick: () => {
-            void ipcServices.update.quitAndInstall()
-          }
-        }
-      })
-    }
-
     // Only listen to update events that should be shown globally
     // update:available shows a visual indicator in the sidebar
     ipcEvents.on('update:available', handleUpdateAvailable)
     ipcEvents.on('update:downloaded', handleUpdateDownloaded)
     ipcEvents.on('update:error', handleUpdateError)
     ipcEvents.on('update:download-progress', handleDownloadProgress)
-    ipcEvents.on('update:show-notification', handleUpdateNotification)
 
     return () => {
       ipcEvents.removeListener('update:available', handleUpdateAvailable)
       ipcEvents.removeListener('update:downloaded', handleUpdateDownloaded)
       ipcEvents.removeListener('update:error', handleUpdateError)
       ipcEvents.removeListener('update:download-progress', handleDownloadProgress)
-      ipcEvents.removeListener('update:show-notification', handleUpdateNotification)
     }
-  }, [setUpdateAvailable, setUpdateReady, t])
+  }, [i18n, setUpdateAvailable, setUpdateReady])
 
   return (
     <div className="flex flex-row h-screen">

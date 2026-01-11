@@ -364,12 +364,6 @@ function initAutoUpdater(): void {
     autoUpdater.on('update-downloaded', (info) => {
       log.info('Update downloaded:', info.version)
       mainWindow?.webContents.send('update:downloaded', info)
-
-      if (mainWindow) {
-        mainWindow.webContents.send('update:show-notification', {
-          version: info.version
-        })
-      }
     })
 
     log.info('Auto-updater initialized successfully')
