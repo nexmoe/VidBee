@@ -101,7 +101,11 @@ export const buildDownloadArgs = (
 
   // Subtitles
   if (options.downloadSubs || embedSubs) {
-    args.push('--write-subs', '--sub-langs', 'all')
+    args.push('--sub-langs', 'all')
+  }
+
+  if (options.downloadSubs) {
+    args.push('--write-subs')
   }
 
   args.push(embedSubs ? '--embed-subs' : '--no-embed-subs')
