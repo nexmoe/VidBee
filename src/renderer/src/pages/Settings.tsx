@@ -31,6 +31,8 @@ import { ipcServices } from '../lib/ipc'
 import { logger } from '../lib/logger'
 import { loadSettingsAtom, saveSettingAtom, settingsAtom } from '../store/settings'
 
+const normalizeProfileInput = (value: string) => value.trim().replace(/^['"]|['"]$/g, '')
+
 const parseBrowserCookiesSetting = (value: string | undefined) => {
   if (!value || value === 'none') {
     return { browser: 'none', profile: '' }
@@ -42,7 +44,7 @@ const parseBrowserCookiesSetting = (value: string | undefined) => {
   }
 
   const browser = value.slice(0, separatorIndex).trim()
-  const profile = value.slice(separatorIndex + 1)
+  const profile = normalizeProfileInput(value.slice(separatorIndex + 1))
   return { browser: browser || 'none', profile }
 }
 
@@ -52,7 +54,7 @@ const buildBrowserCookiesSetting = (browser: string, profile: string) => {
     return 'none'
   }
 
-  const trimmedProfile = profile.trim()
+  const trimmedProfile = normalizeProfileInput(profile)
   return trimmedProfile ? `${trimmedBrowser}:${trimmedProfile}` : trimmedBrowser
 }
 
@@ -169,6 +171,10 @@ export function Settings() {
   const parsedBrowserCookies = parseBrowserCookiesSetting(settings.browserForCookies)
   const browserForCookiesValue = parsedBrowserCookies.browser
   const browserCookiesProfileValue = parsedBrowserCookies.profile
+  const normalizedBrowserCookiesSetting = buildBrowserCookiesSetting(
+    browserForCookiesValue,
+    browserCookiesProfileValue
+  )
   const hasBrowserProfileValue = browserCookiesProfileValue.trim().length > 0
   const showBrowserProfileCheck = hasBrowserProfileValue && browserProfileValidation.valid
   const showBrowserProfileWarning = hasBrowserProfileValue && !browserProfileValidation.valid
@@ -186,6 +192,12 @@ export function Settings() {
         return t('settings.browserForCookiesProfileInvalid')
     }
   }
+
+  useEffect(() => {
+    if (settings.browserForCookies !== normalizedBrowserCookiesSetting) {
+      void handleSettingChange('browserForCookies', normalizedBrowserCookiesSetting)
+    }
+  }, [handleSettingChange, normalizedBrowserCookiesSetting, settings.browserForCookies])
 
   useEffect(() => {
     const browserChanged = lastAutoDetectBrowser.current !== browserForCookiesValue

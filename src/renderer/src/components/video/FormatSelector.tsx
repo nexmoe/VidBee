@@ -325,11 +325,7 @@ export function FormatSelector({
         </SelectTrigger>
         <SelectContent>
           {audioFormats.map((format) => (
-            <SelectItem
-              key={format.format_id}
-              value={format.format_id}
-              className="cursor-pointer"
-            >
+            <SelectItem key={format.format_id} value={format.format_id} className="cursor-pointer">
               <span>{formatAudioLabel(format)}</span>
             </SelectItem>
           ))}
