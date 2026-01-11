@@ -39,7 +39,7 @@ type LatestVersionState =
   | null
 
 export function About() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [settings, _setSettings] = useAtom(settingsAtom)
   const [updateReady] = useAtom(updateReadyAtom)
   const [updateAvailableState] = useAtom(updateAvailableAtom)
@@ -93,7 +93,7 @@ export function About() {
       const versionLabel = info.version ?? ''
 
       // Update will be downloaded automatically because autoDownload is enabled in main process
-      toast.success(t('about.notifications.updateAvailable', { version: versionLabel }))
+      toast.success(i18n.t('about.notifications.updateAvailable', { version: versionLabel }))
       setLatestVersionState({
         status: 'available',
         version: versionLabel
@@ -127,7 +127,7 @@ export function About() {
       ipcEvents.removeListener('update:download-progress', handleUpdateDownloadProgress)
       ipcEvents.removeListener('update:downloaded', handleUpdateDownloaded)
     }
-  }, [setUpdateAvailable, t])
+  }, [i18n, setUpdateAvailable])
 
   const handleSettingChange = async (
     key: keyof typeof settings,
