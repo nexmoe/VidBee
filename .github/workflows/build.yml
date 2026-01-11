@@ -68,6 +68,8 @@ jobs:
           $source = Join-Path 'ffmpeg' '${{ matrix.ffmpeg_inner_path }}'
           $destination = Join-Path 'resources' '${{ matrix.ffmpeg_output }}'
           Copy-Item -Path $source -Destination $destination -Force
+          Remove-Item ffmpeg.zip -Force
+          Remove-Item ffmpeg -Recurse -Force
 
       - name: Download ffmpeg binary (macOS)
         if: matrix.platform == 'macos'
@@ -112,6 +114,7 @@ jobs:
           tar -xf ffmpeg.tar.xz -C ffmpeg
           cp "ffmpeg/${{ matrix.ffmpeg_inner_path }}" "resources/${{ matrix.ffmpeg_output }}"
           chmod +x "resources/${{ matrix.ffmpeg_output }}"
+          rm -rf ffmpeg.tar.xz ffmpeg
 
       - name: Download yt-dlp binary
         shell: bash
