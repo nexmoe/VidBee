@@ -8,11 +8,16 @@ protocols:
       - vidbee
 files:
   - '!**/.vscode/*'
+  - '!**/.context/**'
+  - '!**/.github/**'
   - '!src/*'
   - '!electron.vite.config.{js,ts,mjs,cjs}'
   - '!{.eslintcache,eslint.config.mjs,dev-app-update.yml,CHANGELOG.md}'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+  - '!extension/**'
+  - '!monkey/**'
+  - '!screenshots/**'
 asarUnpack:
   - resources/**
 win:
