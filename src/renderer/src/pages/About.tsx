@@ -42,6 +42,7 @@ export function About() {
   const { t } = useTranslation()
   const [settings, _setSettings] = useAtom(settingsAtom)
   const [updateReady] = useAtom(updateReadyAtom)
+  const [updateAvailableState] = useAtom(updateAvailableAtom)
   const setUpdateAvailable = useSetAtom(updateAvailableAtom)
   const [appVersion, setAppVersion] = useState<string>('—')
   const [latestVersionState, setLatestVersionState] = useState<LatestVersionState>(null)
@@ -69,6 +70,17 @@ export function About() {
       isActive = false
     }
   }, [])
+
+  useEffect(() => {
+    if (!updateAvailableState.available) {
+      return
+    }
+
+    setLatestVersionState({
+      status: 'available',
+      version: updateAvailableState.version ?? ''
+    })
+  }, [updateAvailableState.available, updateAvailableState.version])
 
   // Listen for update events only in About page
   useEffect(() => {
@@ -264,6 +276,8 @@ export function About() {
         ? 'text-destructive'
         : 'text-muted-foreground'
   const latestVersionStatusText = latestVersionStatusKey ? t(latestVersionStatusKey) : null
+  const shouldShowCheckUpdates =
+    !updateAvailableState.available && latestVersionState?.status !== 'available'
 
   const handleXFeedback = useCallback(() => {
     const versionText = appVersion !== '—' ? ` VidBee v${appVersion}` : ' VidBee'
@@ -379,10 +393,12 @@ export function About() {
                           {t('about.actions.goToDownload')}
                         </Button>
                       ) : null}
-                      <Button onClick={handleCheckForUpdates} size="sm" className="gap-2">
-                        <RefreshCw className="h-3.5 w-3.5" />
-                        {t('about.actions.checkUpdates')}
-                      </Button>
+                      {shouldShowCheckUpdates ? (
+                        <Button onClick={handleCheckForUpdates} size="sm" className="gap-2">
+                          <RefreshCw className="h-3.5 w-3.5" />
+                          {t('about.actions.checkUpdates')}
+                        </Button>
+                      ) : null}
                     </div>
                   </div>
                   <p className="text-sm text-muted-foreground">{t('about.description')}</p>
