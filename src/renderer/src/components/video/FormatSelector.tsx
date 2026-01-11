@@ -253,17 +253,17 @@ export function FormatSelector({
                 onVideoFormatChange?.(value)
               }}
             >
-              <SelectTrigger className="h-11">
+              <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="max-h-[300px] p-1.5">
+              <SelectContent>
                 {videoFormats.map((format) => (
                   <SelectItem
                     key={format.format_id}
                     value={format.format_id}
-                    className="cursor-pointer py-2.5"
+                    className="cursor-pointer"
                   >
-                    <span className="text-sm">{formatVideoLabel(format)}</span>
+                    <span>{formatVideoLabel(format)}</span>
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -281,18 +281,18 @@ export function FormatSelector({
                 onAudioFormatChange?.(value)
               }}
             >
-              <SelectTrigger className="h-11">
+              <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="max-h-[300px] p-1.5">
-                <SelectItem value="none" className="cursor-pointer py-2.5">
-                  <span className="text-sm">{t('download.noAudio')}</span>
+              <SelectContent>
+                <SelectItem value="none" className="cursor-pointer">
+                  <span>{t('download.noAudio')}</span>
                 </SelectItem>
                 {audioFormats.map((format) => (
                   <SelectItem
                     key={format.format_id}
                     value={format.format_id}
-                    className="cursor-pointer py-2.5"
+                    className="cursor-pointer"
                   >
                     <span className="text-sm">{formatAudioLabel(format)}</span>
                   </SelectItem>
@@ -320,17 +320,13 @@ export function FormatSelector({
           onAudioFormatChange?.(value)
         }}
       >
-        <SelectTrigger className="h-11">
+        <SelectTrigger>
           <SelectValue />
         </SelectTrigger>
-        <SelectContent className="max-h-[300px] p-1.5">
+        <SelectContent>
           {audioFormats.map((format) => (
-            <SelectItem
-              key={format.format_id}
-              value={format.format_id}
-              className="cursor-pointer py-2.5"
-            >
-              <span className="text-sm">{formatAudioLabel(format)}</span>
+            <SelectItem key={format.format_id} value={format.format_id} className="cursor-pointer">
+              <span>{formatAudioLabel(format)}</span>
             </SelectItem>
           ))}
         </SelectContent>
