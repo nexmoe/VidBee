@@ -127,6 +127,37 @@ jobs:
       - name: Lint and format check
         run: pnpm run check && pnpm run typecheck
 
+      - name: Setup macOS signing
+        if: matrix.platform == 'macos'
+        shell: bash
+        env:
+          MAC_CERT_P12_BASE64: ${{ secrets.MAC_CERT_P12_BASE64 }}
+          MAC_CERT_P12_PASSWORD: ${{ secrets.MAC_CERT_P12_PASSWORD }}
+          APPLE_API_KEY_P8_BASE64: ${{ secrets.APPLE_API_KEY_P8_BASE64 }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+        run: |
+          set -euo pipefail
+          CERT_PATH="$RUNNER_TEMP/mac_cert.p12"
+          KEYCHAIN_PATH="$RUNNER_TEMP/build.keychain"
+          API_KEY_PATH="$RUNNER_TEMP/AuthKey.p8"
+
+          echo "$MAC_CERT_P12_BASE64" | base64 --decode > "$CERT_PATH"
+          echo "$APPLE_API_KEY_P8_BASE64" | base64 --decode > "$API_KEY_PATH"
+
+          security create-keychain -p "$MAC_CERT_P12_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$MAC_CERT_P12_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERT_PATH" -k "$KEYCHAIN_PATH" -P "$MAC_CERT_P12_PASSWORD" -T /usr/bin/codesign -T /usr/bin/productbuild
+          security list-keychain -d user -s "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$MAC_CERT_P12_PASSWORD" "$KEYCHAIN_PATH"
+
+          echo "CSC_KEYCHAIN=$KEYCHAIN_PATH" >> "$GITHUB_ENV"
+          echo "CSC_KEY_PASSWORD=$MAC_CERT_P12_PASSWORD" >> "$GITHUB_ENV"
+          echo "APPLE_API_KEY=$API_KEY_PATH" >> "$GITHUB_ENV"
+          echo "APPLE_API_KEY_ID=$APPLE_API_KEY_ID" >> "$GITHUB_ENV"
+          echo "APPLE_API_ISSUER=$APPLE_API_ISSUER" >> "$GITHUB_ENV"
+
       - name: Build application
         run: ${{ matrix.build_script }}
 
