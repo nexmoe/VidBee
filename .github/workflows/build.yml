@@ -8,6 +8,17 @@ on:
         type: boolean
         default: false
         description: 'Whether to upload build artifacts'
+    secrets:
+      MAC_CERT_P12_BASE64:
+        required: false
+      MAC_CERT_P12_PASSWORD:
+        required: false
+      APPLE_API_KEY_ID:
+        required: false
+      APPLE_API_ISSUER:
+        required: false
+      APPLE_API_KEY_P8_BASE64:
+        required: false
 
 jobs:
   build:
@@ -138,6 +149,15 @@ jobs:
           APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
         run: |
           set -euo pipefail
+
+          # Check if all required secrets are present
+          if [[ -z "$MAC_CERT_P12_BASE64" ]] || [[ -z "$MAC_CERT_P12_PASSWORD" ]] || \
+             [[ -z "$APPLE_API_KEY_ID" ]] || [[ -z "$APPLE_API_ISSUER" ]] || \
+             [[ -z "$APPLE_API_KEY_P8_BASE64" ]]; then
+            echo "::notice::macOS signing secrets not available, skipping code signing setup"
+            exit 0
+          fi
+
           CERT_PATH="$RUNNER_TEMP/mac_cert.p12"
           KEYCHAIN_PATH="$RUNNER_TEMP/build.keychain"
           API_KEY_PATH="$RUNNER_TEMP/AuthKey.p8"
