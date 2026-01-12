@@ -25,14 +25,14 @@ const signBinary = (targetPath, entitlementsPath) => {
   execFileSync('codesign', args, { stdio: 'inherit' })
 }
 
-exports.default = async function beforeSign(context) {
+exports.default = async function afterPack(context) {
   if (context.electronPlatformName !== 'darwin') {
     return
   }
 
   const appBundle = findAppBundle(context.appOutDir)
   if (!appBundle) {
-    console.warn('beforeSign: No .app bundle found, skipping tool signing.')
+    console.warn('afterPack: No .app bundle found, skipping tool signing.')
     return
   }
 
@@ -49,10 +49,10 @@ exports.default = async function beforeSign(context) {
   for (const binary of BINARIES) {
     const targetPath = path.join(resourcesPath, binary)
     if (!fs.existsSync(targetPath)) {
-      console.warn(`beforeSign: Missing ${binary}, skipping.`)
+      console.warn(`afterPack: Missing ${binary}, skipping.`)
       continue
     }
-    console.log(`beforeSign: Signing ${binary} with entitlements.`)
+    console.log(`afterPack: Signing ${binary} with entitlements.`)
     signBinary(targetPath, entitlementsPath)
   }
 }
