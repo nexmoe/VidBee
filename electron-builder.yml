@@ -2,7 +2,7 @@ appId: com.vidbee
 productName: VidBee
 directories:
   buildResources: build
-afterSign: build/after-sign.cjs
+afterPack: build/after-pack.cjs
 protocols:
   - name: VidBee
     schemes:
