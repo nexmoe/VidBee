@@ -1,4 +1,3 @@
-import { ScrollArea } from '@renderer/components/ui/scroll-area'
 import { Sidebar } from '@renderer/components/ui/sidebar'
 import { Toaster } from '@renderer/components/ui/sonner'
 import { TitleBar } from '@renderer/components/ui/title-bar'
@@ -256,28 +255,23 @@ function AppContent() {
         {/* Custom Title Bar */}
         <TitleBar platform={platform} />
 
-        <ScrollArea
-          className="flex-1 w-full overflow-y-auto overflow-x-hidden"
-          style={{ maxWidth: '100%' }}
-        >
-          <div className="w-full h-full flex flex-col min-h-0" style={{ maxWidth: '100%' }}>
-            <Routes>
-              <Route
-                path="/"
-                element={
-                  <Home
-                    onOpenSupportedSites={handleOpenSupportedSites}
-                    onOpenSettings={() => handlePageChange('settings')}
-                  />
-                }
-              />
-              <Route path="/subscriptions" element={<Subscriptions />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/about" element={<About />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </div>
-        </ScrollArea>
+        <div className="flex-1 h-full overflow-y-auto overflow-x-hidden">
+          <Routes>
+            <Route
+              path="/"
+              element={
+                <Home
+                  onOpenSupportedSites={handleOpenSupportedSites}
+                  onOpenSettings={() => handlePageChange('settings')}
+                />
+              }
+            />
+            <Route path="/subscriptions" element={<Subscriptions />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/about" element={<About />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </div>
       </main>
 
       <Toaster richColors={true} />
