@@ -20,13 +20,19 @@ export const sanitizeFilenameTemplate = (template: string): string => {
 export const resolveVideoFormatSelector = (options: DownloadOptions): string => {
   const format = options.format
   const audioFormat = options.audioFormat
+  const audioFormatIds = (options.audioFormatIds ?? []).filter((id) => id.trim() !== '')
 
   if (format && audioFormat === '') {
     return format
   }
 
-  if (format && (format.includes('/') || (audioFormat === undefined && format.includes('+')))) {
+  if (format && (format.includes('/') || format.includes('+') || format.includes('['))) {
     return format
+  }
+
+  if (audioFormatIds.length > 0) {
+    const baseVideo = format && format !== 'best' ? format : 'bestvideo*'
+    return `${baseVideo}+${audioFormatIds.join('+')}`
   }
 
   if (!format || format === 'best') {
@@ -77,15 +83,16 @@ export const buildDownloadArgs = (
   if (options.type === 'video') {
     const formatSelector = resolveVideoFormatSelector(options)
     args.push('-f', formatSelector)
+    if (options.audioFormatIds && options.audioFormatIds.length > 0) {
+      args.push('--audio-multistreams')
+    } else if (formatSelector.includes('mergeall')) {
+      args.push('--audio-multistreams')
+    }
     // Let yt-dlp automatically choose the best merge format (mkv/webm/mp4)
     // based on codec compatibility. Forcing MP4 can cause failures
     // when codecs are incompatible (e.g., VP9+Opus requires mkv/webm)
   } else if (options.type === 'audio') {
     args.push('-f', resolveAudioFormatSelector(options))
-  } else if (options.type === 'extract') {
-    args.push('-x')
-    args.push('--audio-format', options.extractFormat || 'mp3')
-    args.push('--audio-quality', options.extractQuality || '5')
   }
 
   // Time range
@@ -100,11 +107,9 @@ export const buildDownloadArgs = (
   const embedChapters = settings.embedChapters
 
   // Subtitles
-  if (options.downloadSubs || embedSubs) {
+  if (embedSubs) {
     args.push('--sub-langs', 'all')
-  }
-
-  if (options.downloadSubs) {
+  } else {
     args.push('--write-subs')
   }
 

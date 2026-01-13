@@ -80,6 +80,59 @@ const isLikelyChannelUrl = (url: string): boolean => {
   return /youtube\.com\/(channel\/|c\/|user\/|@)/.test(normalized)
 }
 
+const clampPercent = (value?: number): number => {
+  const normalized = typeof value === 'number' ? value : 0
+  if (Number.isNaN(normalized)) {
+    return 0
+  }
+  return Math.min(100, Math.max(0, normalized))
+}
+
+const estimateProgressParts = (options: DownloadOptions): number => {
+  if (options.type === 'audio') {
+    return 1
+  }
+
+  const audioFormatCount = options.audioFormatIds?.filter((id) => id.trim() !== '').length ?? 0
+  if (audioFormatCount > 0) {
+    return 1 + audioFormatCount
+  }
+
+  const selector = options.format?.trim()
+  if (!selector) {
+    return 2
+  }
+
+  const primary = selector.split('/')[0]?.trim()
+  if (!primary) {
+    return 2
+  }
+
+  const parts = primary
+    .split('+')
+    .map((part) => part.trim())
+    .filter((part) => part !== '')
+
+  if (parts.length <= 1) {
+    return 1
+  }
+
+  if (parts.some((part) => part === 'none')) {
+    return 1
+  }
+
+  return parts.length
+}
+
+const isMuxedFormat = (format?: VideoFormat): boolean => {
+  if (!format) {
+    return false
+  }
+  const hasVideo = !!format.vcodec && format.vcodec !== 'none'
+  const hasAudio = !!format.acodec && format.acodec !== 'none'
+  return hasVideo && hasAudio
+}
+
 const resolveAutoPlaylistDownloadPath = (
   basePath: string,
   info: PlaylistInfo,
@@ -591,6 +644,9 @@ class DownloadEngine extends EventEmitter {
     let actualFormat: string | null = null
     let videoInfo: VideoInfo | undefined
     let lastKnownOutputPath: string | undefined
+    let totalParts = estimateProgressParts(options)
+    let completedParts = 0
+    let lastPercent = 0
 
     // First, get detailed video info to capture basic metadata and formats
     try {
@@ -602,6 +658,14 @@ class DownloadEngine extends EventEmitter {
 
       if (selectedFormat) {
         actualFormat = selectedFormat.ext || actualFormat
+      }
+
+      if (
+        options.type === 'video' &&
+        (!options.audioFormatIds || options.audioFormatIds.length === 0) &&
+        isMuxedFormat(selectedFormat)
+      ) {
+        totalParts = 1
       }
 
       this.updateDownloadInfo(id, {
@@ -785,8 +849,23 @@ class DownloadEngine extends EventEmitter {
               : downloadedBytes
         }
 
+        const normalizedPercent = clampPercent(progress.percent)
+        if (
+          totalParts > 1 &&
+          lastPercent >= 90 &&
+          normalizedPercent <= 10 &&
+          completedParts < totalParts - 1
+        ) {
+          completedParts += 1
+        }
+        lastPercent = normalizedPercent
+        const mergedPercent =
+          totalParts > 1
+            ? ((completedParts + normalizedPercent / 100) / totalParts) * 100
+            : normalizedPercent
+
         const downloadProgress: DownloadProgress = {
-          percent: progress.percent || 0,
+          percent: Math.min(100, mergedPercent),
           currentSpeed: progress.currentSpeed || '',
           eta: progress.eta || '',
           downloaded: progress.downloaded || '',
@@ -844,7 +923,8 @@ class DownloadEngine extends EventEmitter {
         // based on codec compatibility, so we should use actualFormat when available
         let extension: string
         if (options.type === 'audio') {
-          extension = options.extractFormat || 'mp3'
+          // Use format extension from yt-dlp output (actualFormat contains the extension)
+          extension = actualFormat || 'm4a'
         } else if (willMerge) {
           // For merged files, yt-dlp auto-selects format (mkv/webm/mp4)
           // Use actualFormat if available, otherwise default to mkv (most compatible)
