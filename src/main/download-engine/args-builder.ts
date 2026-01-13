@@ -68,6 +68,22 @@ export const resolveAudioFormatSelector = (options: DownloadOptions): string => 
   return format
 }
 
+const isBilibiliUrl = (url: string): boolean => {
+  try {
+    const host = new URL(url).hostname.toLowerCase()
+    return (
+      host === 'bilibili.com' ||
+      host.endsWith('.bilibili.com') ||
+      host === 'b23.tv' ||
+      host.endsWith('.b23.tv') ||
+      host === 'bili.tv' ||
+      host.endsWith('.bili.tv')
+    )
+  } catch {
+    return false
+  }
+}
+
 export const buildDownloadArgs = (
   options: DownloadOptions,
   downloadPath: string,
@@ -105,15 +121,22 @@ export const buildDownloadArgs = (
   const embedSubs = settings.embedSubs
   const embedMetadata = settings.embedMetadata
   const embedChapters = settings.embedChapters
+  const hasSubtitleAuth =
+    (settings.browserForCookies && settings.browserForCookies !== 'none') ||
+    Boolean(settings.cookiesPath?.trim())
+  const shouldAttemptSubtitles = !isBilibiliUrl(options.url) || hasSubtitleAuth
 
   // Subtitles
-  if (embedSubs) {
-    args.push('--sub-langs', 'all')
+  if (shouldAttemptSubtitles) {
+    if (embedSubs) {
+      args.push('--sub-langs', 'all')
+    } else {
+      args.push('--write-subs')
+    }
+    args.push(embedSubs ? '--embed-subs' : '--no-embed-subs')
   } else {
-    args.push('--write-subs')
+    args.push('--no-embed-subs')
   }
-
-  args.push(embedSubs ? '--embed-subs' : '--no-embed-subs')
   if (process.platform !== 'darwin') {
     args.push(settings.embedThumbnail ? '--embed-thumbnail' : '--no-embed-thumbnail')
   }
