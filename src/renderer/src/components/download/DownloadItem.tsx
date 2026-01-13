@@ -149,7 +149,7 @@ const getCodecLabel = (download: DownloadRecord): string | undefined => {
   if (!format) {
     return undefined
   }
-  if (download.type === 'audio' || download.type === 'extract') {
+  if (download.type === 'audio') {
     return sanitizeCodec(format.acodec)
   }
   return sanitizeCodec(format.vcodec) ?? sanitizeCodec(format.acodec)
@@ -678,7 +678,7 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
           : {})}
       >
         {/* Thumbnail */}
-        <div className="relative z-20 shrink-0 overflow-hidden rounded-lg border border-border/60 bg-background/60 w-20 h-14 pointer-events-none">
+        <div className="relative z-20 shrink-0 overflow-hidden rounded-lg border border-border/60 bg-background/60 h-14 aspect-video pointer-events-none">
           {selectionEnabled && (
             <div
               className={`absolute left-1 top-1 z-30 rounded-md transition pointer-events-auto ${
@@ -711,6 +711,11 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
                 <p className="flex-1 wrap-break-word text-sm font-medium line-clamp-1">
                   {download.title}
                 </p>
+                {download.type === 'audio' && (
+                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5 shrink-0">
+                    {t('download.audio')}
+                  </Badge>
+                )}
                 {isSubscriptionDownload && (
                   <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5 shrink-0">
                     {t('subscriptions.labels.subscription')}

@@ -194,7 +194,7 @@ export const resolveSelectedFormat = (
     return selectVideoFormatForPreset(videoFormats, preset)
   }
 
-  if (options.type === 'audio' || options.type === 'extract') {
+  if (options.type === 'audio') {
     const audioFormats = formats.filter(
       (format) =>
         !!format.acodec &&

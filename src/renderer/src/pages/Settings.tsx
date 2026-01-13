@@ -501,27 +501,6 @@ export function Settings() {
             <ItemGroup>
               <Item variant="muted">
                 <ItemContent>
-                  <ItemTitle>{t('settings.showMoreFormats')}</ItemTitle>
-                  <ItemDescription>{t('settings.showMoreFormatsDescription')}</ItemDescription>
-                </ItemContent>
-                <ItemActions>
-                  <Switch
-                    checked={settings.showMoreFormats ?? false}
-                    onCheckedChange={(value) => {
-                      try {
-                        handleSettingChange('showMoreFormats', value)
-                      } catch (error) {
-                        logger.error('[Settings] Error toggling showMoreFormats:', error)
-                      }
-                    }}
-                  />
-                </ItemActions>
-              </Item>
-            </ItemGroup>
-
-            <ItemGroup>
-              <Item variant="muted">
-                <ItemContent>
                   <ItemTitle>{t('settings.embedSubs')}</ItemTitle>
                   <ItemDescription>{t('settings.embedSubsDescription')}</ItemDescription>
                 </ItemContent>
