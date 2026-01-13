@@ -1,4 +1,10 @@
 {
+  "extensionName": {
+    "message": "VidBee Video Downloader"
+  },
+  "extensionDescription": {
+    "message": "Download videos from over 1,000 websites with VidBee."
+  },
   "downloadWithVidBee": {
     "message": "Download with VidBee"
   },

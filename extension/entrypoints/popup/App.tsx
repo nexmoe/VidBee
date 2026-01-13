@@ -265,14 +265,49 @@ function App() {
     return result
   }, [groupedFormats.video])
 
+  const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+  const clientLaunchDelayMs = 2000
+
+  const openClientApp = async () => {
+    window.location.href = 'vidbee://'
+    await wait(clientLaunchDelayMs)
+  }
+
   const handleOpenClient = () => {
     if (!currentUrl) return
     const deepLink = `vidbee://download?url=${encodeURIComponent(currentUrl)}`
     window.location.href = deepLink
   }
 
+  const handleOpenClientAndRetry = async () => {
+    await openClientApp()
+    setRetryTrigger((count) => count + 1)
+  }
+
+  const handleRetry = () => {
+    setRetryTrigger((count) => count + 1)
+  }
+
+  const isInvalidPageError = error === 'Please open a valid video page first.'
+  const isClientConnectionError = Boolean(error?.includes('Client connection failed'))
+  const errorTitle = isInvalidPageError
+    ? 'Open a video page'
+    : isClientConnectionError
+      ? 'Connect the VidBee app'
+      : 'Something went wrong'
+  const errorDescription = isInvalidPageError
+    ? 'Navigate to a supported video page, then try again.'
+    : isClientConnectionError
+      ? 'The extension needs the VidBee desktop app to be running.'
+      : 'Try again in a moment.'
+
   const renderStatus = () => {
-    // if (loading) return null
+    if (loading)
+      return (
+        <span className="status-indicator">
+          <div className="status-dot loading" /> Working
+        </span>
+      )
     if (error)
       return (
         <span className="status-indicator">
@@ -307,31 +342,54 @@ function App() {
 
       {!loading && error && (
         <div className="error-container">
-          <div className="error-banner">{error}</div>
-          <div className="troubleshoot-box">
-            <p className="troubleshoot-title">Having trouble?</p>
-            <div className="troubleshoot-actions">
-              <button
-                type="button"
-                className="link-button"
-                onClick={() => {
-                  window.location.href = 'vidbee://'
-                  setTimeout(() => setRetryTrigger((c) => c + 1), 100)
-                }}
-              >
-                Open Client
-              </button>
-              <span className="divider">•</span>
-              <a
-                href="https://vidbee.app"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="link-button"
-              >
-                Download
-              </a>
-            </div>
+          <div className="error-header">
+            <h2 className="error-title">{errorTitle}</h2>
+            <p className="error-description">{errorDescription}</p>
           </div>
+          <div className="error-banner">{error}</div>
+          {isClientConnectionError ? (
+            <div className="action-grid">
+              <div className="action-card">
+                <p className="action-title">Client installed</p>
+                <p className="action-text">
+                  Start VidBee and keep it running, then we will retry automatically.
+                </p>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={handleOpenClientAndRetry}
+                >
+                  Open Client
+                </button>
+              </div>
+              <div className="action-card">
+                <p className="action-title">Need the app?</p>
+                <p className="action-text">
+                  Download VidBee once, install it, then come back here to try again.
+                </p>
+                <a
+                  href="https://vidbee.app"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="secondary-button"
+                >
+                  Download VidBee
+                </a>
+              </div>
+            </div>
+          ) : (
+            <div className="action-card">
+              <p className="action-title">Try again</p>
+              <p className="action-text">
+                {isInvalidPageError
+                  ? 'Open a supported video page, then retry.'
+                  : 'Retry after a moment.'}
+              </p>
+              <button type="button" className="secondary-button" onClick={handleRetry}>
+                Retry
+              </button>
+            </div>
+          )}
         </div>
       )}
 

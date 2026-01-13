@@ -1,11 +1,5 @@
-import { Label } from '@renderer/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@renderer/components/ui/select'
+import { RadioGroup, RadioGroupItem } from '@renderer/components/ui/radio-group'
+import { Table, TableBody, TableCell, TableRow } from '@renderer/components/ui/table'
 import { useAtom } from 'jotai'
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -26,13 +20,15 @@ interface FormatSelectorProps {
   type: 'video' | 'audio'
   onVideoFormatChange?: (format: string) => void
   onAudioFormatChange?: (format: string) => void
+  codec?: string // 'auto' or specific codec name
 }
 
 export function FormatSelector({
   formats,
   type,
   onVideoFormatChange,
-  onAudioFormatChange
+  onAudioFormatChange,
+  codec
 }: FormatSelectorProps) {
   const { t } = useTranslation()
   const [settings] = useAtom(settingsAtom)
@@ -71,44 +67,72 @@ export function FormatSelector({
   )
 
   useEffect(() => {
-    // Filter and sort formats
-    // Exclude m3u8/HLS formats as they are streaming formats not suitable for direct download
+    // Formats are already filtered by VideoInfoCard based on Container, Codec, etc.
+    // We just need to separate video and audio formats, exclude HLS, and sort them.
+    const isHlsFormat = (format: VideoFormat) =>
+      format.protocol === 'm3u8' || format.protocol === 'm3u8_native'
+
+    // Filter out HLS formats and separate by type
+    const filteredFormats = formats.filter((f) => !isHlsFormat(f))
+
     const isVideoFormat = (format: VideoFormat) =>
       format.video_ext !== 'none' && format.vcodec && format.vcodec !== 'none'
     const isAudioFormat = (format: VideoFormat) =>
       format.acodec &&
       format.acodec !== 'none' &&
-      (format.video_ext === 'none' || !format.video_ext)
-    const isHlsFormat = (format: VideoFormat) =>
-      format.protocol === 'm3u8' || format.protocol === 'm3u8_native'
+      (format.video_ext === 'none' ||
+        !format.video_ext ||
+        !format.vcodec ||
+        format.vcodec === 'none')
 
-    const videoCandidates = formats.filter(
-      (format) => isVideoFormat(format) && !isHlsFormat(format)
-    )
-    const audioCandidates = formats.filter(
-      (format) => isAudioFormat(format) && !isHlsFormat(format)
-    )
+    const videos = filteredFormats.filter(isVideoFormat)
+    const audios = filteredFormats.filter(isAudioFormat)
 
-    const videos =
-      videoCandidates.length > 0
-        ? videoCandidates
-        : formats.filter((format) => isVideoFormat(format))
-    const audios =
-      audioCandidates.length > 0
-        ? audioCandidates
-        : formats.filter((format) => isAudioFormat(format))
+    // Get file size for comparison (prefer filesize over filesize_approx)
+    const getFileSize = (format: VideoFormat): number => {
+      return format.filesize ?? format.filesize_approx ?? 0
+    }
 
-    // Apply showMoreFormats filter
-    const filteredVideos = settings.showMoreFormats
-      ? videos
-      : videos.filter((f) => f.ext !== 'webm' && !f.vcodec?.startsWith('vp'))
+    // When codec is 'auto', filter to show only the largest file size per resolution
+    let finalVideos = videos
+    let finalAudios = audios
 
-    const filteredAudios = settings.showMoreFormats
-      ? audios
-      : audios.filter((f) => f.ext !== 'webm')
+    if (codec === 'auto') {
+      if (type === 'video') {
+        // Group by height (resolution) and keep only the one with largest file size
+        const groupedByHeight = new Map<number, VideoFormat[]>()
+        videos.forEach((format) => {
+          const height = format.height ?? 0
+          const existing = groupedByHeight.get(height) || []
+          existing.push(format)
+          groupedByHeight.set(height, existing)
+        })
 
-    const finalVideos = filteredVideos.length > 0 ? filteredVideos : videos
-    const finalAudios = filteredAudios.length > 0 ? filteredAudios : audios
+        finalVideos = Array.from(groupedByHeight.values()).map((group) => {
+          // Sort by file size descending and take the first (largest)
+          return group.sort((a, b) => getFileSize(b) - getFileSize(a))[0]
+        })
+      } else {
+        // For audio, group by quality/tbr and keep only the one with largest file size
+        const groupedByQuality = new Map<string, VideoFormat[]>()
+        audios.forEach((format) => {
+          // Use tbr or quality as grouping key
+          const qualityKey = format.tbr
+            ? `tbr_${format.tbr}`
+            : format.quality
+              ? `quality_${format.quality}`
+              : 'unknown'
+          const existing = groupedByQuality.get(qualityKey) || []
+          existing.push(format)
+          groupedByQuality.set(qualityKey, existing)
+        })
+
+        finalAudios = Array.from(groupedByQuality.values()).map((group) => {
+          // Sort by file size descending and take the first (largest)
+          return group.sort((a, b) => getFileSize(b) - getFileSize(a))[0]
+        })
+      }
+    }
 
     // Sort formats by quality (best first)
     const sortVideoFormatsByQuality = (a: VideoFormat, b: VideoFormat) => {
@@ -155,39 +179,44 @@ export function FormatSelector({
     setVideoFormats(finalVideos)
     setAudioFormats(finalAudios)
 
-    // Auto-select best format based on preferences.
-    // If no separate audio formats exist, prefer muxed video formats (with audio).
-    const videosWithAudio = finalVideos.filter(
-      (format) => format.acodec && format.acodec !== 'none'
-    )
-    const autoVideos =
-      finalAudios.length > 0
-        ? finalVideos
-        : videosWithAudio.length > 0
-          ? videosWithAudio
-          : finalVideos
+    // Auto-select best format based on preferences
+    if (type === 'video') {
+      const videosWithAudio = finalVideos.filter(
+        (format) => format.acodec && format.acodec !== 'none'
+      )
+      const autoVideos =
+        finalAudios.length > 0
+          ? finalVideos
+          : videosWithAudio.length > 0
+            ? videosWithAudio
+            : finalVideos
 
-    if (autoVideos.length > 0 && !selectedVideo) {
-      const preferred = pickVideoFormatForPreset(autoVideos, settings.oneClickQuality)
-      if (preferred) {
-        setSelectedVideo(preferred.format_id)
-        onVideoFormatChange?.(preferred.format_id)
+      const hasSelectedVideo = finalVideos.some((format) => format.format_id === selectedVideo)
+      if (autoVideos.length > 0 && (!selectedVideo || !hasSelectedVideo)) {
+        const preferred = pickVideoFormatForPreset(autoVideos, settings.oneClickQuality)
+        if (preferred) {
+          setSelectedVideo(preferred.format_id)
+          onVideoFormatChange?.(preferred.format_id)
+        }
       }
-    }
-
-    if (finalAudios.length > 0 && !selectedAudio) {
-      const best = finalAudios[0]
-      setSelectedAudio(best.format_id)
-      onAudioFormatChange?.(best.format_id)
+    } else {
+      const hasSelectedAudio = finalAudios.some((format) => format.format_id === selectedAudio)
+      if (finalAudios.length > 0 && (!selectedAudio || !hasSelectedAudio)) {
+        const best = finalAudios[0]
+        setSelectedAudio(best.format_id)
+        onAudioFormatChange?.(best.format_id)
+      }
     }
   }, [
     formats,
-    settings,
+    settings.oneClickQuality,
+    type,
     selectedVideo,
     selectedAudio,
     onAudioFormatChange,
     onVideoFormatChange,
-    pickVideoFormatForPreset
+    pickVideoFormatForPreset,
+    codec
   ])
 
   const formatSize = (bytes?: number) => {
@@ -196,141 +225,130 @@ export function FormatSelector({
     return `${mb.toFixed(2)} MB`
   }
 
-  const formatVideoLabel = (format: VideoFormat) => {
-    const parts: string[] = []
-    // Resolution
+  const formatVideoQuality = (format: VideoFormat) => {
     if (format.height) {
-      parts.push(`${format.height}p${format.fps === 60 ? '60' : ''}`)
+      return `${format.height}p${format.fps === 60 ? '60' : ''}`
     }
+    if (format.format_note) {
+      return format.format_note
+    }
+    if (typeof format.quality === 'number') {
+      return format.quality.toString()
+    }
+    return t('download.unknownQuality')
+  }
+
+  const formatAudioQuality = (format: VideoFormat) => {
+    if (format.tbr) {
+      return `${Math.round(format.tbr)} kbps`
+    }
+    if (format.format_note) {
+      return format.format_note
+    }
+    if (typeof format.quality === 'number') {
+      return format.quality.toString()
+    }
+    return t('download.unknownQuality')
+  }
+
+  const formatVideoDetail = (format: VideoFormat) => {
+    const parts: string[] = []
     // Format extension
     parts.push(format.ext.toUpperCase())
-    // Codec (if showMoreFormats is enabled)
-    if (settings.showMoreFormats && format.vcodec) {
-      parts.push(format.vcodec.split('.')[0])
+    // Codec information
+    if (format.vcodec) {
+      parts.push(format.vcodec.split('.')[0].toUpperCase())
     }
-    // Audio indicator
-    if (format.acodec !== 'none') {
-      parts.push('🔊')
-    }
-    // File size
-    const size = formatSize(format.filesize || format.filesize_approx)
-    if (size !== t('download.unknownSize')) {
-      parts.push(size)
+    if (format.acodec && format.acodec !== 'none') {
+      parts.push(format.acodec.split('.')[0].toUpperCase())
     }
     return parts.join(' • ')
   }
 
-  const formatAudioLabel = (format: VideoFormat) => {
+  const formatAudioDetail = (format: VideoFormat) => {
     const parts: string[] = []
-    // Quality
-    const quality = format.format_note || t('download.unknownQuality')
-    parts.push(quality)
     // Format extension
     const ext = format.ext === 'webm' ? 'opus' : format.ext
     parts.push(ext.toUpperCase())
-    // File size
-    const size = formatSize(format.filesize || format.filesize_approx)
-    if (size !== t('download.unknownSize')) {
-      parts.push(size)
+    if (format.acodec) {
+      parts.push(format.acodec.split('.')[0].toUpperCase())
     }
     return parts.join(' • ')
   }
 
-  if (type === 'video') {
-    if (videoFormats.length === 0 && audioFormats.length === 0) {
+  // Unified table rendering for both video and audio
+  const renderFormatTable = () => {
+    const formats = type === 'video' ? videoFormats : audioFormats
+    const selected = type === 'video' ? selectedVideo : selectedAudio
+    const onFormatChange =
+      type === 'video'
+        ? (value: string) => {
+            setSelectedVideo(value)
+            onVideoFormatChange?.(value)
+          }
+        : (value: string) => {
+            setSelectedAudio(value)
+            onAudioFormatChange?.(value)
+          }
+
+    if (formats.length === 0) {
       return null
     }
 
     return (
-      <div className="space-y-5">
-        {videoFormats.length > 0 && (
-          <div className="space-y-3">
-            <Label className="text-sm font-semibold">{t('download.selectVideoFormat')}</Label>
-            <Select
-              value={selectedVideo}
-              onValueChange={(value) => {
-                setSelectedVideo(value)
-                onVideoFormatChange?.(value)
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {videoFormats.map((format) => (
-                  <SelectItem
-                    key={format.format_id}
-                    value={format.format_id}
-                    className="cursor-pointer"
-                  >
-                    <span>{formatVideoLabel(format)}</span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
+      <RadioGroup value={selected} onValueChange={onFormatChange} className="w-full">
+        <Table>
+          <TableBody>
+            {formats.map((format) => {
+              const qualityLabel =
+                type === 'video' ? formatVideoQuality(format) : formatAudioQuality(format)
+              const detailLabel =
+                type === 'video' ? formatVideoDetail(format) : formatAudioDetail(format)
+              const thirdColumnLabel =
+                type === 'video'
+                  ? format.fps
+                    ? `${format.fps}fps`
+                    : '-'
+                  : format.acodec
+                    ? format.acodec.split('.')[0].toUpperCase()
+                    : '-'
+              const sizeLabel = formatSize(format.filesize || format.filesize_approx)
 
-        {audioFormats.length > 0 && (
-          <div className="space-y-3">
-            <Label className="text-sm font-semibold">{t('download.selectAudioFormat')}</Label>
-            <Select
-              value={selectedAudio}
-              onValueChange={(value) => {
-                setSelectedAudio(value)
-                onAudioFormatChange?.(value)
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none" className="cursor-pointer">
-                  <span>{t('download.noAudio')}</span>
-                </SelectItem>
-                {audioFormats.map((format) => (
-                  <SelectItem
-                    key={format.format_id}
-                    value={format.format_id}
-                    className="cursor-pointer"
-                  >
-                    <span className="text-sm">{formatAudioLabel(format)}</span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-      </div>
+              return (
+                <TableRow
+                  key={format.format_id}
+                  className="cursor-pointer"
+                  onClick={() => onFormatChange(format.format_id)}
+                >
+                  <TableCell className="w-[24px] pl-0">
+                    <RadioGroupItem
+                      className="bg-background mt-1 border-border"
+                      value={format.format_id}
+                      id={`${type}-${format.format_id}`}
+                    />
+                  </TableCell>
+                  <TableCell className="w-[90px]">
+                    <div className="text-sm font-medium">{qualityLabel}</div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-xs text-muted-foreground truncate">{detailLabel}</div>
+                  </TableCell>
+                  <TableCell className="w-[70px]">
+                    <div className="text-xs text-muted-foreground tabular-nums">
+                      {thirdColumnLabel}
+                    </div>
+                  </TableCell>
+                  <TableCell className="w-[90px] text-right">
+                    <div className="text-xs text-muted-foreground tabular-nums">{sizeLabel}</div>
+                  </TableCell>
+                </TableRow>
+              )
+            })}
+          </TableBody>
+        </Table>
+      </RadioGroup>
     )
   }
 
-  // Audio only
-  if (audioFormats.length === 0) {
-    return null
-  }
-
-  return (
-    <div className="space-y-3">
-      <Label className="text-sm font-semibold">{t('download.selectFormat')}</Label>
-      <Select
-        value={selectedAudio}
-        onValueChange={(value) => {
-          setSelectedAudio(value)
-          onAudioFormatChange?.(value)
-        }}
-      >
-        <SelectTrigger>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {audioFormats.map((format) => (
-            <SelectItem key={format.format_id} value={format.format_id} className="cursor-pointer">
-              <span>{formatAudioLabel(format)}</span>
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
-  )
+  return renderFormatTable()
 }

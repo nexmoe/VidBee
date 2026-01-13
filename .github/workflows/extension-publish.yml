@@ -1,0 +1,84 @@
+name: Publish Extension
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - extension/package.json
+
+jobs:
+  detect-version:
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.version_check.outputs.changed }}
+      current_version: ${{ steps.version_check.outputs.current_version }}
+      previous_version: ${{ steps.version_check.outputs.previous_version }}
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check if extension version changed
+        id: version_check
+        shell: bash
+        run: |
+          set -euo pipefail
+          before_sha="${{ github.event.before }}"
+          current_version=$(node -e "const fs = require('fs'); const v = JSON.parse(fs.readFileSync('extension/package.json', 'utf8')).version; process.stdout.write(v);")
+          previous_version=""
+          if git cat-file -e "${before_sha}:extension/package.json" 2>/dev/null; then
+            previous_version=$(git show "${before_sha}:extension/package.json" | node -e "let data=''; process.stdin.on('data', d => data += d); process.stdin.on('end', () => { const v = JSON.parse(data).version; process.stdout.write(v); });")
+          fi
+
+          echo "current_version=${current_version}" >> "$GITHUB_OUTPUT"
+          echo "previous_version=${previous_version}" >> "$GITHUB_OUTPUT"
+
+          if [[ -n "${previous_version}" && "${current_version}" == "${previous_version}" ]]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+  submit:
+    needs: detect-version
+    if: needs.detect-version.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: extension
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+          cache-dependency-path: extension/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Zip extensions
+        run: |
+          pnpm zip
+
+      - name: Submit to stores
+        run: |
+          pnpm wxt submit \
+            --chrome-zip .output/*-chrome.zip
+        env:
+          CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
+          CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
+          CHROME_CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
+          CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
+          CHROME_PUBLISH_TARGET: "default"
+          CHROME_SKIP_SUBMIT_REVIEW: false

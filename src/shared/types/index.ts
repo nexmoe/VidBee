@@ -18,6 +18,7 @@ export interface VideoFormat {
   tbr?: number
   quality?: number
   protocol?: string // http, https, m3u8, m3u8_native, etc.
+  language?: string
 }
 
 export interface VideoInfo {
@@ -54,7 +55,7 @@ export interface DownloadItem {
   url: string
   title: string
   thumbnail?: string
-  type: 'video' | 'audio' | 'extract'
+  type: 'video' | 'audio'
   status: DownloadStatus
   progress?: DownloadProgress
   error?: string
@@ -99,7 +100,7 @@ export interface DownloadHistoryItem {
   url: string
   title: string
   thumbnail?: string
-  type: 'video' | 'audio' | 'extract'
+  type: 'video' | 'audio'
   status: DownloadStatus
   downloadPath?: string
   savedFileName?: string
@@ -127,11 +128,10 @@ export interface DownloadHistoryItem {
 
 export interface DownloadOptions {
   url: string
-  type: 'video' | 'audio' | 'extract'
+  type: 'video' | 'audio'
   format?: string
   audioFormat?: string
-  extractFormat?: string
-  extractQuality?: string
+  audioFormatIds?: string[]
   startTime?: string
   endTime?: string
   downloadSubs?: boolean
@@ -253,7 +253,6 @@ export type OneClickQualityPreset = 'best' | 'good' | 'normal' | 'bad' | 'worst'
 
 export interface AppSettings {
   downloadPath: string
-  showMoreFormats: boolean
   maxConcurrentDownloads: number
   browserForCookies: string
   cookiesPath: string
@@ -281,7 +280,6 @@ export const DEFAULT_SUBSCRIPTION_FILENAME_TEMPLATE = '%(uploader)s/%(title)s.%(
 
 export const defaultSettings: AppSettings = {
   downloadPath: '',
-  showMoreFormats: false,
   maxConcurrentDownloads: 5,
   browserForCookies: 'none',
   cookiesPath: '',

@@ -105,17 +105,6 @@
     "description": "Download videos and audios from hundreds of sites",
     "title": "VidBee"
   },
-  "audioExtract": {
-    "bad": "Bad",
-    "best": "Best",
-    "extract": "Extract",
-    "good": "Good",
-    "normal": "Normal",
-    "selectFormat": "Select Format",
-    "selectQuality": "Select Quality",
-    "title": "Extract Audio",
-    "worst": "Worst"
-  },
   "download": {
     "active": "Active",
     "all": "All",
@@ -160,6 +149,7 @@
     "paste": "Paste",
     "pastePlaylistUrl": "Click to paste playlist link from clipboard [Ctrl + V]",
     "pasteUrl": "Click to paste video URL or ID [Ctrl + V]",
+    "pasteUrlButton": "Paste URL",
     "preparing": "Preparing...",
     "processing": "Processing",
     "progress": "Progress",
@@ -234,6 +224,7 @@
     "emptyUrl": "Please enter a URL",
     "errorDetails": "Error Details",
     "fetchInfoFailed": "Failed to fetch video information",
+    "invalidUrl": "The clipboard content is not a valid URL",
     "networkError": "Some error has occurred. Check your network and use correct URL",
     "pasteFromClipboard": "Failed to paste from clipboard"
   },
@@ -362,6 +353,8 @@
     "selectedVideos": "{{count}} selected",
     "downloadCurrentRange": "Download Selected",
     "showingCount": "Showing {{count}} videos",
+    "selectEntry": "Select entry {{index}}",
+    "noEntriesSelected": "No entries selected",
     "startIndex": "Start (1)",
     "title": "Download Playlist",
     "totalVideos": "Total videos: {{count}}",
