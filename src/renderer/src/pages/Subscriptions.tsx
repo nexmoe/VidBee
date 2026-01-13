@@ -319,45 +319,48 @@ export function Subscriptions() {
   }, [selectedTab, sortedSubscriptions])
 
   return (
-    <div className="relative">
+    <div className="relative w-full h-full flex flex-col">
       {/* Channel Tabs Header */}
-      <div className="">
-        <div className="overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-          <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-auto">
-            <TabsList className="h-auto w-auto justify-start rounded-none border-none bg-transparent p-0 px-6">
-              {/* Subscription Channel Tabs */}
-              {sortedSubscriptions.map((subscription) => (
-                <SubscriptionTab
-                  key={subscription.id}
-                  subscription={subscription}
-                  isActive={subscription.id === selectedTab}
-                  onRefresh={() => refreshSubscription(subscription.id)}
-                  onRemove={() => removeSubscription(subscription.id)}
-                  onUpdate={(data) => handleUpdateSubscription(subscription.id, data)}
-                />
-              ))}
-              {/* Add RSS Button */}
-              <Button
-                className="flex h-auto w-20 flex-col items-center gap-1 rounded-2xl px-2 py-2 transition-all hover:opacity-80 bg-transparent hover:bg-neutral-100 shrink-0 grow-0"
-                variant="ghost"
-                onClick={() => setAddDialogOpen(true)}
-              >
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-muted-foreground/40 transition-colors">
-                  <Plus className="h-5 w-5 text-muted-foreground" />
-                </div>
-                <div className="flex w-full flex-col items-center text-center">
-                  <span className="w-full truncate text-xs font-medium">
-                    {t('subscriptions.add.title')}
-                  </span>
-                </div>
-              </Button>
-            </TabsList>
-          </Tabs>
-        </div>
+      <div className="flex flex-row pr-6 pb-6">
+        <Tabs
+          value={selectedTab}
+          onValueChange={setSelectedTab}
+          className="w-auto overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+        >
+          <TabsList className="h-auto w-auto justify-start rounded-none border-none bg-transparent p-0 px-6">
+            {/* Subscription Channel Tabs */}
+            {sortedSubscriptions.map((subscription) => (
+              <SubscriptionTab
+                key={subscription.id}
+                subscription={subscription}
+                isActive={subscription.id === selectedTab}
+                onRefresh={() => refreshSubscription(subscription.id)}
+                onRemove={() => removeSubscription(subscription.id)}
+                onUpdate={(data) => handleUpdateSubscription(subscription.id, data)}
+              />
+            ))}
+          </TabsList>
+        </Tabs>
+
+        {/* Add RSS Button */}
+        <Button
+          className="flex h-auto w-20 flex-col items-center gap-1 rounded-2xl px-2 py-2 transition-all hover:opacity-80 bg-transparent hover:bg-neutral-100 shrink-0 grow-0"
+          variant="ghost"
+          onClick={() => setAddDialogOpen(true)}
+        >
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-muted-foreground/40 transition-colors">
+            <Plus className="h-5 w-5 text-muted-foreground" />
+          </div>
+          <div className="flex w-full flex-col items-center text-center">
+            <span className="w-full truncate text-xs font-medium">
+              {t('subscriptions.add.title')}
+            </span>
+          </div>
+        </Button>
       </div>
 
       {/* Content Area */}
-      <div className="relative space-y-8 p-6">
+      <div className="overflow-y-auto relative space-y-8 p-6 pt-0">
         <section className="space-y-4">
           {sortedSubscriptions.length === 0 ? (
             <div className="py-12 text-center text-sm text-muted-foreground">
