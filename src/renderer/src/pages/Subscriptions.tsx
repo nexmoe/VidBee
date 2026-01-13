@@ -20,6 +20,7 @@ import {
 } from '@renderer/components/ui/context-menu'
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@renderer/components/ui/hover-card'
 import { RemoteImage } from '@renderer/components/ui/remote-image'
+import { ScrollArea, ScrollBar } from '@renderer/components/ui/scroll-area'
 import { Tabs, TabsList, TabsTrigger } from '@renderer/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { ipcServices } from '@renderer/lib/ipc'
@@ -321,26 +322,25 @@ export function Subscriptions() {
   return (
     <div className="relative w-full h-full flex flex-col">
       {/* Channel Tabs Header */}
-      <div className="flex flex-row pr-6 pb-6">
-        <Tabs
-          value={selectedTab}
-          onValueChange={setSelectedTab}
-          className="w-auto overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
-        >
-          <TabsList className="h-auto w-auto justify-start rounded-none border-none bg-transparent p-0 px-6">
-            {/* Subscription Channel Tabs */}
-            {sortedSubscriptions.map((subscription) => (
-              <SubscriptionTab
-                key={subscription.id}
-                subscription={subscription}
-                isActive={subscription.id === selectedTab}
-                onRefresh={() => refreshSubscription(subscription.id)}
-                onRemove={() => removeSubscription(subscription.id)}
-                onUpdate={(data) => handleUpdateSubscription(subscription.id, data)}
-              />
-            ))}
-          </TabsList>
-        </Tabs>
+      <div className="flex flex-row pr-6 pb-6 pl-6">
+        <ScrollArea className="w-auto overflow-y-auto">
+          <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-auto">
+            <TabsList className="h-auto w-auto justify-start rounded-none border-none bg-transparent p-0">
+              {/* Subscription Channel Tabs */}
+              {sortedSubscriptions.map((subscription) => (
+                <SubscriptionTab
+                  key={subscription.id}
+                  subscription={subscription}
+                  isActive={subscription.id === selectedTab}
+                  onRefresh={() => refreshSubscription(subscription.id)}
+                  onRemove={() => removeSubscription(subscription.id)}
+                  onUpdate={(data) => handleUpdateSubscription(subscription.id, data)}
+                />
+              ))}
+            </TabsList>
+          </Tabs>
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
 
         {/* Add RSS Button */}
         <Button
