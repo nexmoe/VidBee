@@ -359,46 +359,48 @@ export function Subscriptions() {
         </Button>
       </div>
 
-      {/* Content Area */}
-      <div className="overflow-y-auto relative space-y-8 p-6 pt-0">
-        <section className="space-y-4">
-          {sortedSubscriptions.length === 0 ? (
-            <div className="py-12 text-center text-sm text-muted-foreground">
-              {t('subscriptions.empty')}
-            </div>
-          ) : !selectedTab ? (
-            <div className="py-12 text-center text-sm text-muted-foreground">
-              {t('subscriptions.empty')}
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {displayedSubscriptions.map((subscription) => (
-                <SubscriptionCard key={subscription.id} subscription={subscription} />
-              ))}
-            </div>
-          )}
-        </section>
+      <ScrollArea className="overflow-y-auto ">
+        {/* Content Area */}
+        <div className="relative space-y-8 p-6 pt-0">
+          <section className="space-y-4">
+            {sortedSubscriptions.length === 0 ? (
+              <div className="py-12 text-center text-sm text-muted-foreground">
+                {t('subscriptions.empty')}
+              </div>
+            ) : !selectedTab ? (
+              <div className="py-12 text-center text-sm text-muted-foreground">
+                {t('subscriptions.empty')}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {displayedSubscriptions.map((subscription) => (
+                  <SubscriptionCard key={subscription.id} subscription={subscription} />
+                ))}
+              </div>
+            )}
+          </section>
 
-        {/* RSSHub Info Card */}
-        <Card className="border-primary/20 bg-primary/5">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              {t('subscriptions.rssHub.title')}
-            </CardTitle>
-            <CardDescription>{t('subscriptions.rssHub.description')}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => void handleOpenRSSHubDocs()}
-              className="gap-2"
-            >
-              {t('subscriptions.rssHub.openDocs')}
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+          {/* RSSHub Info Card */}
+          <Card className="border-primary/20 bg-primary/5">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                {t('subscriptions.rssHub.title')}
+              </CardTitle>
+              <CardDescription>{t('subscriptions.rssHub.description')}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => void handleOpenRSSHubDocs()}
+                className="gap-2"
+              >
+                {t('subscriptions.rssHub.openDocs')}
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </ScrollArea>
 
       <SubscriptionFormDialog
         mode="add"
