@@ -4,6 +4,10 @@ import log from 'electron-log/main'
 import Parser from 'rss-parser'
 import type { SubscriptionFeedItem, SubscriptionRule } from '../../shared/types'
 import { DEFAULT_SUBSCRIPTION_FILENAME_TEMPLATE } from '../../shared/types'
+import {
+  buildAudioFormatPreference,
+  buildVideoFormatPreference
+} from '../../shared/utils/format-preferences'
 import { settingsManager } from '../settings'
 import { downloadEngine } from './download-engine'
 import { historyManager } from './history-manager'
@@ -481,6 +485,11 @@ export class SubscriptionScheduler extends EventEmitter {
     const downloadDirectory = subscription.downloadDirectory?.trim() || settings.downloadPath
     const namingTemplate =
       subscription.namingTemplate?.trim() || DEFAULT_SUBSCRIPTION_FILENAME_TEMPLATE
+    const downloadType = settings.oneClickDownloadType ?? 'video'
+    const formatPreference =
+      downloadType === 'video'
+        ? buildVideoFormatPreference(settings)
+        : buildAudioFormatPreference(settings)
     ensureDirectoryExists(downloadDirectory)
 
     const tags = Array.from(new Set([subscription.platform, ...subscription.tags]))
@@ -488,7 +497,8 @@ export class SubscriptionScheduler extends EventEmitter {
     try {
       downloadEngine.startDownload(downloadId, {
         url,
-        type: 'video',
+        type: downloadType,
+        format: formatPreference,
         customDownloadPath: downloadDirectory,
         customFilenameTemplate: namingTemplate,
         tags,
