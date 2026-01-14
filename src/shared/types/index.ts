@@ -298,7 +298,7 @@ export const defaultSettings: AppSettings = {
   subscriptionOnlyLatestDefault: true,
   enableAnalytics: true,
   embedSubs: true,
-  embedThumbnail: true,
+  embedThumbnail: false,
   embedMetadata: true,
   embedChapters: true
 }
