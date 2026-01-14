@@ -438,15 +438,15 @@ export function UnifiedDownloadHistory({
           </div>
         </div>
       </CardHeader>
-      <ScrollArea className="overflow-y-auto px-6 flex-1">
-        <CardContent className="space-y-3 p-0 overflow-x-hidden w-full pb-6">
+      <ScrollArea className="overflow-y-auto flex-1">
+        <CardContent className="space-y-3 p-0 overflow-x-hidden w-full">
           {filteredRecords.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border/60 px-6 py-10 text-center text-muted-foreground">
               <HistoryIcon className="h-10 w-10 opacity-50" />
               <p className="text-sm font-medium">{t('download.noItems')}</p>
             </div>
           ) : (
-            <div className="space-y-4 w-full">
+            <div className="w-full pb-4">
               {groupedView.order.map((item) => {
                 if (item.type === 'single') {
                   return (
