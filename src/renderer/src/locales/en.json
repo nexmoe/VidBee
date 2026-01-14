@@ -130,6 +130,9 @@
     "error": "Error",
     "fetch": "Fetch",
     "fetchingVideoInfo": "Fetching video info...",
+    "feedback": {
+      "title": "Report this error:"
+    },
     "history": "History",
     "imageLoadError": "Image failed to load",
     "imagePlaceholder": "No image available",

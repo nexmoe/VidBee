@@ -17,6 +17,37 @@ class AppService extends IpcService {
   }
 
   @IpcMethod()
+  getOsVersion(_context: IpcContext): string {
+    const platform = os.platform()
+    const platformLabel =
+      platform === 'darwin'
+        ? 'macOS'
+        : platform === 'win32'
+          ? 'Windows'
+          : platform === 'linux'
+            ? 'Linux'
+            : platform
+    const systemVersion =
+      typeof (process as { getSystemVersion?: () => string }).getSystemVersion === 'function'
+        ? (process as { getSystemVersion: () => string }).getSystemVersion()
+        : typeof os.version === 'function'
+          ? os.version()
+          : os.release()
+
+    if (platform === 'win32') {
+      const buildToken = systemVersion.split('.').at(-1) ?? ''
+      const buildNumber = Number.parseInt(buildToken, 10)
+      const windowsName =
+        Number.isFinite(buildNumber) && buildNumber >= 22000 ? 'Windows 11' : 'Windows 10'
+      return Number.isFinite(buildNumber)
+        ? `${windowsName} (build ${buildNumber})`
+        : `${platformLabel} ${systemVersion}`.trim()
+    }
+
+    return `${platformLabel} ${systemVersion}`.trim()
+  }
+
+  @IpcMethod()
   quit(_context: IpcContext): void {
     app.quit()
   }

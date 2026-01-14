@@ -20,7 +20,17 @@ import {
   buildVideoFormatPreference
 } from '@shared/utils/format-preferences'
 import { useAtom, useSetAtom } from 'jotai'
-import { AlertCircle, FolderOpen, List, Loader2, Plus, Video } from 'lucide-react'
+import {
+  AlertCircle,
+  FolderOpen,
+  Github,
+  List,
+  Loader2,
+  MessageCircle,
+  Plus,
+  Twitter,
+  Video
+} from 'lucide-react'
 import { useCallback, useEffect, useId, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -47,6 +57,35 @@ const isLikelyUrl = (value: string): boolean => {
   } catch {
     return false
   }
+}
+
+const normalizeErrorText = (value?: string | null): string =>
+  value ? value.replace(/\s+/g, ' ').trim() : ''
+
+const clampText = (value: string, maxLength: number): string =>
+  value.length > maxLength ? `${value.slice(0, maxLength - 3)}...` : value
+
+const FEEDBACK_TWEET_PREFIX = '@nexmoex VidBee'
+const FEEDBACK_ISSUE_TITLE = 'Download error report'
+const FEEDBACK_ISSUE_OBSERVED_PREFIX = 'Download failed with error: '
+const FEEDBACK_UNKNOWN_ERROR = 'Unknown error'
+const FEEDBACK_UNKNOWN_VALUE = 'Unknown'
+const FEEDBACK_SOURCE_LABEL = 'Source URL'
+const FEEDBACK_ERROR_LABEL = 'Error'
+const FEEDBACK_APP_VERSION_PREFIX = 'VidBee v'
+
+const buildIssueLogs = (
+  errorText: string,
+  sourceUrl: string | undefined,
+  urlLabel: string,
+  errorLabel: string
+): string => {
+  const lines: string[] = []
+  if (sourceUrl) {
+    lines.push(`${urlLabel}: ${sourceUrl}`)
+  }
+  lines.push(`${errorLabel}: ${errorText}`)
+  return lines.join('\n')
 }
 
 const isAudioOnlyFormat = (format: VideoFormat): boolean =>
@@ -112,6 +151,8 @@ export function DownloadDialog({
   onOpenSettings: _onOpenSettings
 }: DownloadDialogProps) {
   const { t } = useTranslation()
+  const [appVersion, setAppVersion] = useState('')
+  const [osVersion, setOsVersion] = useState('')
   const [open, setOpen] = useState(false)
   const [videoInfo, _setVideoInfo] = useAtom(currentVideoInfoAtom)
   const [loading] = useAtom(videoInfoLoadingAtom)
@@ -151,6 +192,74 @@ export function DownloadDialog({
   const playlistBusy = playlistPreviewLoading || playlistDownloadLoading
   const [advancedOptionsOpen, setAdvancedOptionsOpen] = useState(false)
   const [selectedEntryIds, setSelectedEntryIds] = useState<Set<string>>(new Set())
+  const feedbackLinks = useMemo(() => {
+    const compactError = normalizeErrorText(error)
+    const tweetError = compactError ? clampText(compactError, 160) : ''
+    const tweetText = encodeURIComponent(
+      tweetError ? `${FEEDBACK_TWEET_PREFIX} - ${tweetError}` : FEEDBACK_TWEET_PREFIX
+    )
+    const issueError = compactError ? clampText(compactError, 800) : FEEDBACK_UNKNOWN_ERROR
+    const issueTitle = FEEDBACK_ISSUE_TITLE
+    const issueObserved = clampText(`${FEEDBACK_ISSUE_OBSERVED_PREFIX}${issueError}`, 300)
+    const sourceUrl = url.trim() || undefined
+    const issueLogs = clampText(
+      buildIssueLogs(issueError, sourceUrl, FEEDBACK_SOURCE_LABEL, FEEDBACK_ERROR_LABEL),
+      800
+    )
+    const appVersionValue = appVersion
+      ? `${FEEDBACK_APP_VERSION_PREFIX}${appVersion}`
+      : FEEDBACK_UNKNOWN_VALUE
+    const osVersionValue = osVersion || FEEDBACK_UNKNOWN_VALUE
+    return [
+      {
+        icon: Github,
+        label: t('about.resources.githubIssues'),
+        href: `https://github.com/nexmoe/VidBee/issues/new?template=bug_report.yml&title=${encodeURIComponent(
+          issueTitle
+        )}&actual=${encodeURIComponent(issueObserved)}&logs=${encodeURIComponent(
+          issueLogs
+        )}&app_version=${encodeURIComponent(appVersionValue)}&os_version=${encodeURIComponent(
+          osVersionValue
+        )}`
+      },
+      {
+        icon: Twitter,
+        label: t('about.resources.xFeedback'),
+        href: `https://x.com/intent/tweet?text=${tweetText}`
+      },
+      {
+        icon: MessageCircle,
+        label: t('about.resources.discord'),
+        href: 'https://discord.gg/uBqXV6QPdm'
+      }
+    ]
+  }, [appVersion, error, osVersion, t, url])
+
+  useEffect(() => {
+    let isActive = true
+
+    const loadAppInfo = async () => {
+      try {
+        const [version, osRelease] = await Promise.all([
+          ipcServices.app.getVersion(),
+          ipcServices.app.getOsVersion()
+        ])
+        if (!isActive) {
+          return
+        }
+        setAppVersion(version)
+        setOsVersion(osRelease)
+      } catch (loadError) {
+        console.error('Failed to load app info for feedback links:', loadError)
+      }
+    }
+
+    void loadAppInfo()
+
+    return () => {
+      isActive = false
+    }
+  }, [])
 
   const computePlaylistRange = useCallback(
     (info: PlaylistInfo) => {
@@ -889,6 +998,30 @@ export function DownloadDialog({
                       {t('errors.fetchInfoFailed')}
                     </p>
                     <p className="text-xs text-muted-foreground wrap-break-word">{error}</p>
+                  </div>
+                </div>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <span className="text-xs font-medium text-muted-foreground">
+                    {t('download.feedback.title')}
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    {feedbackLinks.map((resource) => {
+                      const Icon = resource.icon
+                      return (
+                        <Button
+                          key={resource.label}
+                          variant="outline"
+                          size="sm"
+                          className="h-6 gap-1 px-1.5 text-[10px]"
+                          asChild
+                        >
+                          <a href={resource.href} target="_blank" rel="noreferrer">
+                            <Icon className="h-3 w-3" />
+                            {resource.label}
+                          </a>
+                        </Button>
+                      )
+                    })}
                   </div>
                 </div>
               </div>
