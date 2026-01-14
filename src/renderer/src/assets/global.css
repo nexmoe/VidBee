@@ -8,11 +8,16 @@
     @apply border-border;
   }
   body {
-    @apply text-foreground;
+    @apply text-foreground select-none;
+  }
+  input,
+  textarea,
+  [contenteditable='true'],
+  [contenteditable=''] {
+    @apply select-text;
   }
   input::placeholder,
   textarea::placeholder {
     opacity: 0.4;
   }
 }
-
