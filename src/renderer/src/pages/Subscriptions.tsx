@@ -288,7 +288,7 @@ export function Subscriptions() {
 
   const handleOpenRSSHubDocs = useCallback(async () => {
     try {
-      await ipcServices.fs.openExternal('https://docs.rsshub.app/routes/social-media#youtube')
+      await ipcServices.fs.openExternal('https://docs.rsshub.app/routes/')
     } catch (error) {
       console.error('Failed to open RSSHub documentation:', error)
       toast.error(t('subscriptions.notifications.openLinkError'))
