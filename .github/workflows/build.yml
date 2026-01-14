@@ -99,6 +99,13 @@ jobs:
           x86_bin="ffmpeg-x86/${{ matrix.ffmpeg_inner_path }}"
 
           if [[ ! -f "$arm_bin" ]]; then
+            arm_bin="$(find ffmpeg-arm -type f -name ffmpeg -print -quit)"
+          fi
+          if [[ ! -f "$x86_bin" ]]; then
+            x86_bin="$(find ffmpeg-x86 -type f -name ffmpeg -print -quit)"
+          fi
+
+          if [[ ! -f "$arm_bin" ]]; then
             echo "::error::Missing arm64 ffmpeg binary at $arm_bin"
             exit 1
           fi

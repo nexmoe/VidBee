@@ -195,6 +195,9 @@
       "formatNote": "Примечание формата",
       "protocol": "Протокол",
       "subscription": "Подписка"
+    },
+    "feedback": {
+      "title": "Report this error:"
     }
   },
   "error": {

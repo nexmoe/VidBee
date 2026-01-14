@@ -195,6 +195,9 @@
       "formatNote": "메모 형식",
       "protocol": "규약",
       "subscription": "신청"
+    },
+    "feedback": {
+      "title": "Report this error:"
     }
   },
   "error": {
