@@ -195,6 +195,9 @@
       "formatNote": "格式註釋",
       "protocol": "協定",
       "subscription": "訂閱"
+    },
+    "feedback": {
+      "title": "Report this error:"
     }
   },
   "error": {

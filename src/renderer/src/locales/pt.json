@@ -195,6 +195,9 @@
       "formatNote": "Formatar nota",
       "protocol": "Protocolo",
       "subscription": "Subscrição"
+    },
+    "feedback": {
+      "title": "Report this error:"
     }
   },
   "error": {

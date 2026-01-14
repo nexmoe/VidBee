@@ -195,6 +195,9 @@
       "formatNote": "ملاحظة التنسيق",
       "protocol": "البروتوكول",
       "subscription": "الاشتراك"
+    },
+    "feedback": {
+      "title": "Report this error:"
     }
   },
   "error": {

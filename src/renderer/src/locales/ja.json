@@ -195,6 +195,9 @@
       "formatNote": "メモのフォーマット",
       "protocol": "プロトコル",
       "subscription": "サブスクリプション"
+    },
+    "feedback": {
+      "title": "Report this error:"
     }
   },
   "error": {

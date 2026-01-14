@@ -195,6 +195,9 @@
       "formatNote": "Format-Hinweis",
       "protocol": "Protokoll",
       "subscription": "Abonnement"
+    },
+    "feedback": {
+      "title": "Report this error:"
     }
   },
   "error": {
