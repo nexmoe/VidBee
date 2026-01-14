@@ -25,6 +25,7 @@ import {
   removeHistoryRecordsByPlaylistAtom
 } from '../../store/downloads'
 import { settingsAtom } from '../../store/settings'
+import { ScrollArea } from '../ui/scroll-area'
 import { DownloadDialog } from './DownloadDialog'
 import { DownloadItem } from './DownloadItem'
 import { PlaylistDownloadGroup } from './PlaylistDownloadGroup'
@@ -398,8 +399,8 @@ export function UnifiedDownloadHistory({
   }, [filteredRecords])
 
   return (
-    <div className={cn('space-y-4', selectedCount > 0 && 'pb-20')}>
-      <CardHeader className="gap-4 p-0 pb-4 sticky top-0 z-50 bg-background backdrop-blur supports-[backdrop-filter]:bg-background/95">
+    <div className={cn('flex flex-col h-full')}>
+      <CardHeader className="gap-4 p-0 px-6 py-4 z-50 bg-background backdrop-blur">
         <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
           <div className="flex flex-wrap items-center gap-2">
             {filters.map((filter) => {
@@ -437,47 +438,49 @@ export function UnifiedDownloadHistory({
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-3 p-0 overflow-x-hidden w-full">
-        {filteredRecords.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border/60 px-6 py-10 text-center text-muted-foreground">
-            <HistoryIcon className="h-10 w-10 opacity-50" />
-            <p className="text-sm font-medium">{t('download.noItems')}</p>
-          </div>
-        ) : (
-          <div className="space-y-4 w-full">
-            {groupedView.order.map((item) => {
-              if (item.type === 'single') {
+      <ScrollArea className="overflow-y-auto flex-1">
+        <CardContent className="space-y-3 p-0 overflow-x-hidden w-full">
+          {filteredRecords.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border/60 px-6 py-10 text-center text-muted-foreground">
+              <HistoryIcon className="h-10 w-10 opacity-50" />
+              <p className="text-sm font-medium">{t('download.noItems')}</p>
+            </div>
+          ) : (
+            <div className="w-full pb-4">
+              {groupedView.order.map((item) => {
+                if (item.type === 'single') {
+                  return (
+                    <DownloadItem
+                      key={`${item.record.entryType}:${item.record.id}`}
+                      download={item.record}
+                      isSelected={selectedIds.has(item.record.id)}
+                      onToggleSelect={handleToggleSelect}
+                    />
+                  )
+                }
+
+                const group = groupedView.groups.get(item.id)
+                if (!group) {
+                  return null
+                }
+
                 return (
-                  <DownloadItem
-                    key={`${item.record.entryType}:${item.record.id}`}
-                    download={item.record}
-                    isSelected={selectedIds.has(item.record.id)}
+                  <PlaylistDownloadGroup
+                    key={`group:${group.id}`}
+                    groupId={group.id}
+                    title={group.title}
+                    totalCount={group.totalCount}
+                    records={group.records}
+                    selectedIds={selectedIds}
                     onToggleSelect={handleToggleSelect}
+                    onDeletePlaylist={handleRequestDeletePlaylist}
                   />
                 )
-              }
-
-              const group = groupedView.groups.get(item.id)
-              if (!group) {
-                return null
-              }
-
-              return (
-                <PlaylistDownloadGroup
-                  key={`group:${group.id}`}
-                  groupId={group.id}
-                  title={group.title}
-                  totalCount={group.totalCount}
-                  records={group.records}
-                  selectedIds={selectedIds}
-                  onToggleSelect={handleToggleSelect}
-                  onDeletePlaylist={handleRequestDeletePlaylist}
-                />
-              )
-            })}
-          </div>
-        )}
-      </CardContent>
+              })}
+            </div>
+          )}
+        </CardContent>
+      </ScrollArea>
       {selectedCount > 0 && (
         <div className="fixed bottom-4 left-1/2 z-40 w-[calc(100%-2rem)] -translate-x-1/2 sm:left-auto sm:right-6 sm:translate-x-0 sm:w-auto">
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-full border border-border/50 bg-background/80 pl-5 pr-2 py-2 shadow-lg backdrop-blur">

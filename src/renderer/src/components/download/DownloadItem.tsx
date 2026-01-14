@@ -651,13 +651,10 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
 
   return (
     <div
-      className={`group relative w-full max-w-full overflow-hidden rounded-lg border border-transparent transition-colors ${
+      className={`px-6 py-2 group relative w-full max-w-full overflow-hidden transition-colors ${
         isSelectedHistory ? 'bg-primary/10' : ''
       }`}
     >
-      {isSelectedHistory && (
-        <div className="absolute left-0 top-0 h-full w-1 bg-primary/70" aria-hidden="true" />
-      )}
       <div
         className={`flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:gap-3 ${
           selectionEnabled ? 'cursor-pointer' : ''
