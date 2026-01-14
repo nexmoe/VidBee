@@ -6,7 +6,8 @@
   "author": "VidBee",
   "homepage": "https://github.com/nexmoe/vidbee",
   "scripts": {
-    "check": "biome check --write . && pnpm run typecheck",
+    "check": "pnpm run check:i18n && biome check --write . && pnpm run typecheck",
+    "check:i18n": "node scripts/check-locales.js",
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",
     "typecheck": "pnpm run typecheck:node && pnpm run typecheck:web",
