@@ -336,7 +336,7 @@
     "groupCollapse": "折りたたむ",
     "groupErrors": "{{count}} 回失敗しました",
     "groupExpand": "展開",
-    "groupSummary": "{{完了}} / {{合計}} 完了",
+    "groupSummary": "{{completed}} / {{total}} 完了",
     "linkLabel": "プレイリストURL",
     "noEntries": "このプレイリストにはビデオが見つかりませんでした",
     "noEntriesInRange": "選択した範囲にビデオがありません",
@@ -349,7 +349,7 @@
     "previewRequired": "ダウンロードする前にプレイリストをプレビューします。",
     "range": "範囲（オプション）",
     "resetToDefault": "デフォルトにリセット",
-    "selectedRange": "範囲: {{開始}}-{{終了}}",
+    "selectedRange": "範囲: {{start}}-{{end}}",
     "selectedVideos": "{{count}} 件選択",
     "downloadCurrentRange": "選択項目をダウンロード",
     "showingCount": "{{count}} 本の動画を表示しています",
@@ -514,9 +514,9 @@
         "error": "失敗した",
         "cancelled": "キャンセル"
       },
-      "fromChannel": "{{チャンネル}} から",
+      "fromChannel": "{{channel}} から",
       "tooltip": {
-        "downloadStatus": "ダウンロードステータス: {{ステータス}}",
+        "downloadStatus": "ダウンロードステータス: {{status}}",
         "downloadPending": "ダウンロードの詳細を待っています...",
         "notQueued": "まだダウンロードキューにありません"
       },
@@ -544,14 +544,14 @@
       "openLinkError": "ビデオリンクを開けませんでした。",
       "resolveError": "RSS フィード URL を解決できませんでした。"
     },
-    "detectedFeed": "{{プラットフォーム}} フィードが検出されました -> {{フィード}}",
+    "detectedFeed": "{{platform}} フィードが検出されました -> {{feed}}",
     "detecting": "フィードを検出中...",
     "latestVideo": "最新の動画: {{title}}",
     "lastChecked": "最終チェック日: {{time}}",
     "never": "一度もない",
     "empty": "まだ購読はありません。\nお気に入りのチャンネルを追加して自動ダウンロードを開始します。",
     "edit": {
-      "title": "{{名前}}を編集",
+      "title": "{{name}}を編集",
       "description": "このフィードのフィルター、タグ、オーバーライドを調整します。"
     },
     "status": {

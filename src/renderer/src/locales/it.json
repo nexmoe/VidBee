@@ -336,7 +336,7 @@
     "groupCollapse": "Comprimi",
     "groupErrors": "{{count}} non riuscito",
     "groupExpand": "Espandi",
-    "groupSummary": "{{completato}} / {{totale}} completati",
+    "groupSummary": "{{completed}} / {{total}} completati",
     "linkLabel": "URL Playlist",
     "noEntries": "Nessun video trovato in questa playlist",
     "noEntriesInRange": "Nessun video nell'intervallo selezionato",
@@ -349,7 +349,7 @@
     "previewRequired": "Anteprima della playlist prima del download.",
     "range": "Intervallo (Opzionale)",
     "resetToDefault": "Ripristina predefinito",
-    "selectedRange": "Intervallo: {{inizio}}-{{fine}}",
+    "selectedRange": "Intervallo: {{start}}-{{end}}",
     "selectedVideos": "{{count}} selezionati",
     "downloadCurrentRange": "Scarica selezionati",
     "showingCount": "Visualizzazione di {{count}} video",
@@ -514,7 +514,7 @@
         "error": "Fallito",
         "cancelled": "Annullato"
       },
-      "fromChannel": "Da {{canale}}",
+      "fromChannel": "Da {{channel}}",
       "tooltip": {
         "downloadStatus": "Stato del download: {{status}}",
         "downloadPending": "In attesa dei dettagli per il download...",
@@ -551,7 +551,7 @@
     "never": "Mai",
     "empty": "Nessun abbonamento ancora. \nAggiungi i tuoi canali preferiti per avviare il download automatico.",
     "edit": {
-      "title": "Modifica {{nome}}",
+      "title": "Modifica {{name}}",
       "description": "Modifica filtri, tag e sostituzioni per questo feed."
     },
     "status": {

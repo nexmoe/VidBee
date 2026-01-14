@@ -334,22 +334,22 @@
     "foundVideos": "Encontrados {{count}} vídeos na playlist",
     "groupActive": "{{count}} ativo",
     "groupCollapse": "Recolher",
-    "groupErrors": "{{contagem}} falhou",
+    "groupErrors": "{{count}} falhou",
     "groupExpand": "Expandir",
-    "groupSummary": "{{concluído}} / {{total}} concluído",
+    "groupSummary": "{{completed}} / {{total}} concluído",
     "linkLabel": "URL da Playlist",
     "noEntries": "Nenhum vídeo foi encontrado nesta playlist",
     "noEntriesInRange": "Nenhum vídeo no intervalo selecionado",
     "noRangeSelected": "Sem definição final - playlist completa selecionada",
     "playlistUrlDescription": "Baixar todos os vídeos de uma playlist em lote",
-    "positionLabel": "Item {{índice}} de {{total}}",
+    "positionLabel": "Item {{index}} de {{total}}",
     "previewButton": "Visualizar lista de reprodução",
     "previewFailed": "Falha ao visualizar a playlist",
     "previewSummary": "Visualize os itens da lista de reprodução antes de fazer o download.",
     "previewRequired": "Visualize a lista de reprodução antes de fazer o download.",
     "range": "Intervalo (Opcional)",
     "resetToDefault": "Redefinir para padrão",
-    "selectedRange": "Intervalo: {{início}}-{{fim}}",
+    "selectedRange": "Intervalo: {{start}}-{{end}}",
     "selectedVideos": "{{count}} selecionados",
     "downloadCurrentRange": "Baixar selecionados",
     "showingCount": "Exibindo {{count}} vídeos",
@@ -502,7 +502,7 @@
     },
     "items": {
       "title": "Últimos envios ({{count}})",
-      "count": "{{contar}} itens",
+      "count": "{{count}} itens",
       "empty": "Nenhum item de feed recente encontrado.",
       "status": {
         "queued": "Na fila",
@@ -514,7 +514,7 @@
         "error": "Fracassado",
         "cancelled": "Cancelado"
       },
-      "fromChannel": "De {{canal}}",
+      "fromChannel": "De {{channel}}",
       "tooltip": {
         "downloadStatus": "Status do download: {{status}}",
         "downloadPending": "Aguardando detalhes do download...",
@@ -544,14 +544,14 @@
       "openLinkError": "Falha ao abrir o link do vídeo.",
       "resolveError": "Falha ao resolver o URL do feed RSS."
     },
-    "detectedFeed": "Feed de {{plataforma}} detectado -> {{feed}}",
+    "detectedFeed": "Feed de {{platform}} detectado -> {{feed}}",
     "detecting": "Detectando feed...",
     "latestVideo": "Vídeo mais recente: {{title}}",
     "lastChecked": "Última verificação: {{time}}",
     "never": "Nunca",
     "empty": "Ainda não há assinaturas. \nAdicione seus canais favoritos para iniciar o download automático.",
     "edit": {
-      "title": "Editar {{nome}}",
+      "title": "Editar {{name}}",
       "description": "Ajuste filtros, tags e substituições para este feed."
     },
     "status": {
@@ -561,7 +561,7 @@
       "failed": "Fracassado",
       "idle": "Parado",
       "tooltip": {
-        "updatedAt": "Atualizado: {{hora}}"
+        "updatedAt": "Atualizado: {{time}}"
       }
     },
     "rssHub": {

@@ -336,7 +336,7 @@
     "groupCollapse": "收合",
     "groupErrors": "{{count}} 失敗",
     "groupExpand": "展開",
-    "groupSummary": "{{已完成}} / {{總計}}已完成",
+    "groupSummary": "{{completed}} / {{total}} 已完成",
     "linkLabel": "播放清單連結",
     "noEntries": "在此播放列表中找不到視頻",
     "noEntriesInRange": "所選範圍內沒有視頻",
@@ -349,7 +349,7 @@
     "previewRequired": "下載前預覽播放列表。",
     "range": "範圍（可選）",
     "resetToDefault": "恢復預設",
-    "selectedRange": "範圍：{{開始}}-{{結束}}",
+    "selectedRange": "範圍：{{start}}-{{end}}",
     "selectedVideos": "已選取 {{count}} 項",
     "downloadCurrentRange": "下載選取項目",
     "showingCount": "顯示 {{count}} 個視頻",
@@ -514,7 +514,7 @@
         "error": "失敗的",
         "cancelled": "取消"
       },
-      "fromChannel": "來自{{頻道}}",
+      "fromChannel": "來自{{channel}}",
       "tooltip": {
         "downloadStatus": "下載狀態：{{status}}",
         "downloadPending": "等待下載詳細信息...",
@@ -561,7 +561,7 @@
       "failed": "失敗的",
       "idle": "閒置的",
       "tooltip": {
-        "updatedAt": "更新時間：{{時間}}"
+        "updatedAt": "更新時間：{{time}}"
       }
     },
     "rssHub": {

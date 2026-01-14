@@ -336,7 +336,7 @@
     "groupCollapse": "접기",
     "groupErrors": "{{count}}개 실패",
     "groupExpand": "펼치기",
-    "groupSummary": "{{완료}} / {{총}} 완료",
+    "groupSummary": "{{completed}} / {{total}} 완료",
     "linkLabel": "재생목록 URL",
     "noEntries": "이 재생목록에는 동영상이 없습니다.",
     "noEntriesInRange": "선택한 범위에 동영상이 없습니다.",
@@ -514,7 +514,7 @@
         "error": "실패한",
         "cancelled": "취소"
       },
-      "fromChannel": "{{채널}}에서",
+      "fromChannel": "{{channel}}에서",
       "tooltip": {
         "downloadStatus": "다운로드 상태: {{status}}",
         "downloadPending": "다운로드 세부정보를 기다리는 중...",
@@ -544,14 +544,14 @@
       "openLinkError": "동영상 링크를 열지 못했습니다.",
       "resolveError": "RSS 피드 URL을 확인하지 못했습니다."
     },
-    "detectedFeed": "{{플랫폼}} 피드 감지됨 -> {{feed}}",
+    "detectedFeed": "{{platform}} 피드 감지됨 -> {{feed}}",
     "detecting": "피드 감지 중...",
-    "latestVideo": "최신 동영상: {{제목}}",
+    "latestVideo": "최신 동영상: {{title}}",
     "lastChecked": "마지막 확인: {{time}}",
     "never": "절대",
     "empty": "아직 구독이 없습니다. \n즐겨찾는 채널을 추가하여 자동 다운로드를 시작하세요.",
     "edit": {
-      "title": "{{이름}} 수정",
+      "title": "{{name}} 수정",
       "description": "이 피드에 대한 필터, 태그 및 재정의를 조정하세요."
     },
     "status": {
