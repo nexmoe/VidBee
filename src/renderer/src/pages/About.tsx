@@ -1,3 +1,4 @@
+import { FeedbackLinkButtons, useAppInfo } from '@renderer/components/feedback/FeedbackLinks'
 import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@renderer/components/ui/card'
@@ -11,7 +12,6 @@ import {
   FileText,
   Github,
   Link as LinkIcon,
-  MessageCircle,
   MessageSquare,
   RefreshCw,
   Twitter
@@ -44,32 +44,12 @@ export function About() {
   const [updateReady] = useAtom(updateReadyAtom)
   const [updateAvailableState] = useAtom(updateAvailableAtom)
   const setUpdateAvailable = useSetAtom(updateAvailableAtom)
-  const [appVersion, setAppVersion] = useState<string>('—')
+  const { appVersion, osVersion } = useAppInfo()
+  const appVersionLabel = appVersion || '—'
   const [latestVersionState, setLatestVersionState] = useState<LatestVersionState>(null)
   const [updateDownloadProgress, setUpdateDownloadProgress] = useState<number | null>(null)
   const saveSetting = useSetAtom(saveSettingAtom)
   const shareTargetUrl = 'https://vidbee.org'
-
-  useEffect(() => {
-    let isActive = true
-
-    const fetchAppVersion = async () => {
-      try {
-        const version = await ipcServices.app.getVersion()
-        if (isActive) {
-          setAppVersion(version)
-        }
-      } catch (error) {
-        console.error('Failed to get app version:', error)
-      }
-    }
-
-    void fetchAppVersion()
-
-    return () => {
-      isActive = false
-    }
-  }, [])
 
   useEffect(() => {
     if (!updateAvailableState.available) {
@@ -163,7 +143,7 @@ export function About() {
           toast.success(t('about.notifications.noUpdatesAvailable'))
           setLatestVersionState({
             status: 'uptodate',
-            version: result.version ?? appVersion
+            version: result.version ?? appVersionLabel
           })
           setUpdateAvailable({
             available: false,
@@ -210,7 +190,7 @@ export function About() {
         toast.success(t('about.notifications.noUpdatesAvailable'))
         setLatestVersionState({
           status: 'uptodate',
-          version: result.version ?? appVersion
+          version: result.version ?? appVersionLabel
         })
         setUpdateAvailable({
           available: false,
@@ -279,39 +259,6 @@ export function About() {
   const shouldShowCheckUpdates =
     !updateAvailableState.available && latestVersionState?.status !== 'available'
 
-  const handleXFeedback = useCallback(() => {
-    const versionText = appVersion !== '—' ? ` VidBee v${appVersion}` : ' VidBee'
-    const tweetText = encodeURIComponent(`@nexmoex${versionText}`)
-    openShareUrl(`https://x.com/intent/tweet?text=${tweetText}`)
-  }, [appVersion, openShareUrl])
-
-  const feedbackResources = useMemo<AboutResource[]>(
-    () => [
-      {
-        icon: Github,
-        label: t('about.resources.githubIssues'),
-        description: t('about.resources.githubIssuesDescription'),
-        actionLabel: t('about.actions.feedback'),
-        href: 'https://github.com/nexmoe/VidBee/issues/new/choose'
-      },
-      {
-        icon: Twitter,
-        label: t('about.resources.xFeedback'),
-        description: t('about.resources.xFeedbackDescription'),
-        actionLabel: t('about.actions.feedback'),
-        onClick: handleXFeedback
-      },
-      {
-        icon: MessageCircle,
-        label: t('about.resources.discord'),
-        description: t('about.resources.discordDescription'),
-        actionLabel: t('about.actions.visit'),
-        href: 'https://discord.gg/uBqXV6QPdm'
-      }
-    ],
-    [t, handleXFeedback]
-  )
-
   const aboutResources = useMemo<AboutResource[]>(
     () => [
       {
@@ -345,7 +292,7 @@ export function About() {
                     <div className="flex items-center gap-3">
                       <h2 className="text-2xl font-semibold leading-tight">{t('about.appName')}</h2>
                       <Badge variant="secondary">
-                        {t('about.versionLabel', { version: appVersion })}
+                        {t('about.versionLabel', { version: appVersionLabel })}
                       </Badge>
                       {latestVersionState ? (
                         <div className="flex flex-wrap items-center gap-2">
@@ -496,28 +443,12 @@ export function About() {
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {feedbackResources.map((resource) => {
-                    const Icon = resource.icon
-                    return resource.href ? (
-                      <Button key={resource.label} variant="outline" size="sm" asChild>
-                        <a href={resource.href} target="_blank" rel="noreferrer" className="gap-2">
-                          <Icon className="h-4 w-4" />
-                          {resource.label}
-                        </a>
-                      </Button>
-                    ) : (
-                      <Button
-                        key={resource.label}
-                        variant="outline"
-                        size="sm"
-                        onClick={resource.onClick}
-                        className="gap-2"
-                      >
-                        <Icon className="h-4 w-4" />
-                        {resource.label}
-                      </Button>
-                    )
-                  })}
+                  <FeedbackLinkButtons
+                    appInfo={{ appVersion, osVersion }}
+                    issueTitle="[bug]: "
+                    buttonClassName="gap-2"
+                    iconClassName="h-4 w-4"
+                  />
                 </div>
               </div>
               {/* Other resources */}

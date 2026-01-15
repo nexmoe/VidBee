@@ -24,6 +24,7 @@ const toHistoryRecord = (item: DownloadHistoryItem): DownloadRecord => ({
   status: item.status,
   progress: undefined,
   error: item.error,
+  ytDlpCommand: item.ytDlpCommand,
   downloadPath: item.downloadPath,
   speed: undefined,
   duration: item.duration,

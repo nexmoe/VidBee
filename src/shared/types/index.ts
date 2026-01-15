@@ -34,6 +34,12 @@ export interface VideoInfo {
   uploader?: string
 }
 
+export interface VideoInfoCommandResult {
+  info?: VideoInfo
+  ytDlpCommand: string
+  error?: string
+}
+
 export interface DownloadProgress {
   percent: number
   currentSpeed?: string
@@ -60,6 +66,7 @@ export interface DownloadItem {
   progress?: DownloadProgress
   error?: string
   speed?: string
+  ytDlpCommand?: string
   // Enhanced video information
   duration?: number
   fileSize?: number
@@ -109,6 +116,7 @@ export interface DownloadHistoryItem {
   downloadedAt: number
   completedAt?: number
   error?: string
+  ytDlpCommand?: string
   // Additional metadata
   description?: string
   channel?: string

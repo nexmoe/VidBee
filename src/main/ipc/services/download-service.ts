@@ -5,7 +5,8 @@ import type {
   PlaylistDownloadOptions,
   PlaylistDownloadResult,
   PlaylistInfo,
-  VideoInfo
+  VideoInfo,
+  VideoInfoCommandResult
 } from '../../../shared/types'
 import { downloadEngine } from '../../lib/download-engine'
 
@@ -15,6 +16,14 @@ class DownloadService extends IpcService {
   @IpcMethod()
   async getVideoInfo(_context: IpcContext, url: string): Promise<VideoInfo> {
     return downloadEngine.getVideoInfo(url)
+  }
+
+  @IpcMethod()
+  async getVideoInfoWithCommand(
+    _context: IpcContext,
+    url: string
+  ): Promise<VideoInfoCommandResult> {
+    return downloadEngine.getVideoInfoWithCommand(url)
   }
 
   @IpcMethod()
