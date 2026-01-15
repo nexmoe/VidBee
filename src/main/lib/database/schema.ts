@@ -15,6 +15,7 @@ export const downloadHistoryTable = sqliteTable('download_history', {
   completedAt: integer('completed_at', { mode: 'number' }),
   sortKey: integer('sort_key', { mode: 'number' }).notNull(),
   error: text('error'),
+  ytDlpCommand: text('yt_dlp_command'),
   description: text('description'),
   channel: text('channel'),
   uploader: text('uploader'),

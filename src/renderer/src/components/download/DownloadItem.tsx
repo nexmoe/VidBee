@@ -1,3 +1,7 @@
+import {
+  DOWNLOAD_FEEDBACK_ISSUE_TITLE,
+  FeedbackLinkButtons
+} from '@renderer/components/feedback/FeedbackLinks'
 import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
 import { Checkbox } from '@renderer/components/ui/checkbox'
@@ -17,16 +21,13 @@ import {
   CheckCircle2,
   Copy,
   FolderOpen,
-  Github,
   Info,
   Loader2,
-  MessageCircle,
   Play,
   Trash2,
-  Twitter,
   X
 } from 'lucide-react'
-import { type ReactNode, useEffect, useMemo, useState } from 'react'
+import { type ReactNode, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { ipcServices } from '../../lib/ipc'
@@ -203,72 +204,8 @@ const formatDateShort = (timestamp?: number) => {
   })
 }
 
-const normalizeErrorText = (value?: string | null): string =>
-  value ? value.replace(/\s+/g, ' ').trim() : ''
-
-const clampText = (value: string, maxLength: number): string =>
-  value.length > maxLength ? `${value.slice(0, maxLength - 3)}...` : value
-
-const FEEDBACK_TWEET_PREFIX = '@nexmoex VidBee'
-const FEEDBACK_ISSUE_TITLE = 'Download error report'
-const FEEDBACK_ISSUE_OBSERVED_PREFIX = 'Download failed with error: '
-const FEEDBACK_UNKNOWN_ERROR = 'Unknown error'
-const FEEDBACK_UNKNOWN_VALUE = 'Unknown'
-const FEEDBACK_SOURCE_LABEL = 'Source URL'
-const FEEDBACK_ERROR_LABEL = 'Error'
-const FEEDBACK_APP_VERSION_PREFIX = 'VidBee v'
-
-const buildIssueLogs = (
-  errorText: string,
-  sourceUrl: string | undefined,
-  urlLabel: string,
-  errorLabel: string
-): string => {
-  const lines: string[] = []
-  if (sourceUrl) {
-    lines.push(`${urlLabel}: ${sourceUrl}`)
-  }
-  lines.push(`${errorLabel}: ${errorText}`)
-  return lines.join('\n')
-}
-
-type AppInfo = {
-  appVersion: string
-  osVersion: string
-}
-
-let cachedAppInfo: AppInfo | null = null
-let appInfoPromise: Promise<AppInfo> | null = null
-
-const loadAppInfo = async (): Promise<AppInfo> => {
-  if (cachedAppInfo) {
-    return cachedAppInfo
-  }
-  if (appInfoPromise) {
-    return appInfoPromise
-  }
-
-  appInfoPromise = (async () => {
-    try {
-      const [version, osRelease] = await Promise.all([
-        ipcServices.app.getVersion(),
-        ipcServices.app.getOsVersion()
-      ])
-      cachedAppInfo = { appVersion: version, osVersion: osRelease }
-    } catch (error) {
-      console.error('Failed to load app info for feedback links:', error)
-      cachedAppInfo = { appVersion: '', osVersion: '' }
-    }
-    return cachedAppInfo
-  })()
-
-  return appInfoPromise
-}
-
 export function DownloadItem({ download, isSelected = false, onToggleSelect }: DownloadItemProps) {
   const { t } = useTranslation()
-  const [appVersion, setAppVersion] = useState('')
-  const [osVersion, setOsVersion] = useState('')
   const settings = useAtomValue(settingsAtom)
   const removeDownload = useSetAtom(removeDownloadAtom)
   const removeHistory = useSetAtom(removeHistoryRecordAtom)
@@ -281,66 +218,6 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
   const resolvedExtension = resolveDownloadExtension(download)
   const normalizedSavedFileName = normalizeSavedFileName(download.savedFileName)
   const selectionEnabled = isHistory && Boolean(onToggleSelect)
-  const feedbackLinks = useMemo(() => {
-    const compactError = normalizeErrorText(download.error)
-    const tweetError = compactError ? clampText(compactError, 160) : ''
-    const tweetText = encodeURIComponent(
-      tweetError ? `${FEEDBACK_TWEET_PREFIX} - ${tweetError}` : FEEDBACK_TWEET_PREFIX
-    )
-    const issueError = compactError ? clampText(compactError, 800) : FEEDBACK_UNKNOWN_ERROR
-    const issueTitle = FEEDBACK_ISSUE_TITLE
-    const issueObserved = clampText(`${FEEDBACK_ISSUE_OBSERVED_PREFIX}${issueError}`, 300)
-    const sourceUrl = download.url?.trim() || undefined
-    const issueLogs = clampText(
-      buildIssueLogs(issueError, sourceUrl, FEEDBACK_SOURCE_LABEL, FEEDBACK_ERROR_LABEL),
-      800
-    )
-    const appVersionValue = appVersion
-      ? `${FEEDBACK_APP_VERSION_PREFIX}${appVersion}`
-      : FEEDBACK_UNKNOWN_VALUE
-    const osVersionValue = osVersion || FEEDBACK_UNKNOWN_VALUE
-    return [
-      {
-        icon: Github,
-        label: t('about.resources.githubIssues'),
-        href: `https://github.com/nexmoe/VidBee/issues/new?template=bug_report.yml&title=${encodeURIComponent(
-          issueTitle
-        )}&actual=${encodeURIComponent(issueObserved)}&logs=${encodeURIComponent(
-          issueLogs
-        )}&app_version=${encodeURIComponent(appVersionValue)}&os_version=${encodeURIComponent(
-          osVersionValue
-        )}`
-      },
-      {
-        icon: Twitter,
-        label: t('about.resources.xFeedback'),
-        href: `https://x.com/intent/tweet?text=${tweetText}`
-      },
-      {
-        icon: MessageCircle,
-        label: t('about.resources.discord'),
-        href: 'https://discord.gg/uBqXV6QPdm'
-      }
-    ]
-  }, [appVersion, download.error, download.url, osVersion, t])
-
-  useEffect(() => {
-    let isActive = true
-    const fetchInfo = async () => {
-      const info = await loadAppInfo()
-      if (!isActive) {
-        return
-      }
-      setAppVersion(info.appVersion)
-      setOsVersion(info.osVersion)
-    }
-
-    void fetchInfo()
-
-    return () => {
-      isActive = false
-    }
-  }, [])
 
   // Track if the file exists
   const [fileExists, setFileExists] = useState(false)
@@ -1065,24 +942,18 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
                   {t('download.feedback.title')}
                 </span>
                 <div className="flex flex-wrap gap-2">
-                  {feedbackLinks.map((resource) => {
-                    const Icon = resource.icon
-                    return (
-                      <Button
-                        key={resource.label}
-                        variant="outline"
-                        size="sm"
-                        className="h-6 gap-1 px-1.5 text-[10px]"
-                        onClick={(event) => event.stopPropagation()}
-                        asChild
-                      >
-                        <a href={resource.href} target="_blank" rel="noreferrer">
-                          <Icon className="h-3 w-3" />
-                          {resource.label}
-                        </a>
-                      </Button>
-                    )
-                  })}
+                  <FeedbackLinkButtons
+                    error={download.error}
+                    sourceUrl={download.url}
+                    issueTitle={DOWNLOAD_FEEDBACK_ISSUE_TITLE}
+                    includeAppInfo
+                    ytDlpCommand={download.ytDlpCommand}
+                    buttonVariant="outline"
+                    buttonSize="sm"
+                    buttonClassName="h-6 gap-1 px-1.5 text-[10px]"
+                    iconClassName="h-3 w-3"
+                    onLinkClick={(event) => event.stopPropagation()}
+                  />
                 </div>
               </div>
             </div>

@@ -36,6 +36,7 @@ const createDownloadHistoryTableSql = sql`
     completed_at INTEGER,
     sort_key INTEGER NOT NULL,
     error TEXT,
+    yt_dlp_command TEXT,
     description TEXT,
     channel TEXT,
     uploader TEXT,
@@ -218,7 +219,12 @@ class HistoryManager {
       }
 
       const deprecatedColumns = ['subscription_title', 'format', 'quality', 'codec']
-      const needsRebuild = columns.some((column) => deprecatedColumns.includes(column.name))
+      const requiredColumns = ['yt_dlp_command']
+      const hasDeprecated = columns.some((column) => deprecatedColumns.includes(column.name))
+      const missingRequired = requiredColumns.some(
+        (columnName) => !columns.some((column) => column.name === columnName)
+      )
+      const needsRebuild = hasDeprecated || missingRequired
       if (needsRebuild) {
         this.rebuildDownloadHistoryTable()
       }
@@ -387,6 +393,7 @@ class HistoryManager {
       completedAt: item.completedAt ?? null,
       sortKey: item.completedAt ?? item.downloadedAt,
       error: item.error ?? null,
+      ytDlpCommand: item.ytDlpCommand ?? null,
       description: item.description ?? null,
       channel: item.channel ?? null,
       uploader: item.uploader ?? null,
@@ -433,6 +440,7 @@ class HistoryManager {
       downloadedAt: row.downloadedAt,
       completedAt: row.completedAt ?? undefined,
       error: row.error ?? undefined,
+      ytDlpCommand: row.ytDlpCommand ?? undefined,
       description: row.description ?? undefined,
       channel: row.channel ?? undefined,
       uploader: row.uploader ?? undefined,

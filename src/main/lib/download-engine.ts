@@ -11,7 +11,8 @@ import type {
   PlaylistDownloadResult,
   PlaylistInfo,
   VideoFormat,
-  VideoInfo
+  VideoInfo,
+  VideoInfoCommandResult
 } from '../../shared/types'
 import {
   buildDownloadArgs,
@@ -218,6 +219,44 @@ const appendJsRuntimeArgs = (args: string[]): void => {
   }
 }
 
+const buildVideoInfoArgs = (url: string, settings: ReturnType<typeof settingsManager.getAll>) => {
+  const args = ['-j', '--no-playlist', '--no-warnings']
+
+  // Add encoding support for proper handling of non-ASCII characters
+  args.push('--encoding', 'utf-8')
+
+  // Note: Some sites (e.g., YouTube) may not provide filesize information
+  // in the initial request. This is normal behavior and filesize may be null/undefined
+  // for many formats. File size information might require additional HTTP HEAD requests
+  // which would significantly slow down info extraction, so yt-dlp doesn't fetch it by default.
+
+  // Add proxy if configured
+  if (settings.proxy) {
+    args.push('--proxy', settings.proxy)
+  }
+
+  // Add browser cookies if configured (skip if 'none')
+  if (settings.browserForCookies && settings.browserForCookies !== 'none') {
+    args.push('--cookies-from-browser', settings.browserForCookies)
+  }
+
+  const cookiesPath = settings.cookiesPath?.trim()
+  if (cookiesPath) {
+    args.push('--cookies', cookiesPath)
+  }
+
+  // Add config file if configured
+  const configPath = resolvePathWithHome(settings.configPath)
+  if (configPath) {
+    args.push('--config-location', configPath)
+  }
+
+  appendJsRuntimeArgs(args)
+  args.push(url)
+
+  return args
+}
+
 class DownloadEngine extends EventEmitter {
   private activeDownloads: Map<string, DownloadProcess> = new Map()
   private queue: DownloadQueue
@@ -236,39 +275,7 @@ class DownloadEngine extends EventEmitter {
     const ytdlp = ytdlpManager.getInstance()
     const settings = settingsManager.getAll()
 
-    const args = ['-j', '--no-playlist', '--no-warnings']
-
-    // Add encoding support for proper handling of non-ASCII characters
-    args.push('--encoding', 'utf-8')
-
-    // Note: Some sites (e.g., YouTube) may not provide filesize information
-    // in the initial request. This is normal behavior and filesize may be null/undefined
-    // for many formats. File size information might require additional HTTP HEAD requests
-    // which would significantly slow down info extraction, so yt-dlp doesn't fetch it by default.
-
-    // Add proxy if configured
-    if (settings.proxy) {
-      args.push('--proxy', settings.proxy)
-    }
-
-    // Add browser cookies if configured (skip if 'none')
-    if (settings.browserForCookies && settings.browserForCookies !== 'none') {
-      args.push('--cookies-from-browser', settings.browserForCookies)
-    }
-
-    const cookiesPath = settings.cookiesPath?.trim()
-    if (cookiesPath) {
-      args.push('--cookies', cookiesPath)
-    }
-
-    // Add config file if configured
-    const configPath = resolvePathWithHome(settings.configPath)
-    if (configPath) {
-      args.push('--config-location', configPath)
-    }
-
-    appendJsRuntimeArgs(args)
-    args.push(url)
+    const args = buildVideoInfoArgs(url, settings)
 
     return new Promise((resolve, reject) => {
       const process = ytdlp.exec(args)
@@ -330,6 +337,90 @@ class DownloadEngine extends EventEmitter {
       process.on('error', (error) => {
         scopedLoggers.download.error('yt-dlp process error for:', url, error)
         reject(error)
+      })
+    })
+  }
+
+  async getVideoInfoWithCommand(url: string): Promise<VideoInfoCommandResult> {
+    const ytdlp = ytdlpManager.getInstance()
+    const settings = settingsManager.getAll()
+    const args = buildVideoInfoArgs(url, settings)
+    const ytDlpCommand = formatYtDlpCommand(args)
+
+    return new Promise((resolve) => {
+      let settled = false
+      const resolveOnce = (payload: VideoInfoCommandResult) => {
+        if (settled) {
+          return
+        }
+        settled = true
+        resolve(payload)
+      }
+
+      const process = ytdlp.exec(args)
+      let stdout = ''
+      let stderr = ''
+
+      process.ytDlpProcess?.stdout?.on('data', (data: Buffer) => {
+        stdout += data.toString()
+      })
+
+      process.ytDlpProcess?.stderr?.on('data', (data: Buffer) => {
+        stderr += data.toString()
+      })
+
+      process.on('close', (code) => {
+        if (code === 0 && stdout) {
+          try {
+            const info = JSON.parse(stdout)
+
+            // Calculate estimated file size for formats missing filesize information
+            // Using tbr (total bitrate in kbps) and duration (in seconds)
+            // Formula: (tbr * 1000) / 8 * duration = size in bytes
+            if (info.formats && Array.isArray(info.formats) && info.duration) {
+              const duration = info.duration
+              for (const format of info.formats) {
+                if (
+                  !format.filesize &&
+                  !format.filesize_approx &&
+                  format.tbr &&
+                  typeof format.tbr === 'number' &&
+                  duration > 0
+                ) {
+                  const estimatedSize = Math.round(((format.tbr * 1000) / 8) * duration)
+                  format.filesize_approx = estimatedSize
+                }
+              }
+            }
+
+            scopedLoggers.download.info('Successfully retrieved video info for:', url)
+            resolveOnce({ info, ytDlpCommand })
+          } catch (error) {
+            scopedLoggers.download.error('Failed to parse video info for:', url, error)
+            resolveOnce({
+              ytDlpCommand,
+              error: `Failed to parse video info: ${error instanceof Error ? error.message : error}`
+            })
+          }
+        } else {
+          scopedLoggers.download.error(
+            'Failed to fetch video info for:',
+            url,
+            'Exit code:',
+            code,
+            'Error:',
+            stderr
+          )
+          resolveOnce({ ytDlpCommand, error: stderr || 'Failed to fetch video info' })
+        }
+      })
+
+      process.on('error', (error) => {
+        scopedLoggers.download.error('yt-dlp process error for:', url, error)
+        resolveOnce({
+          ytDlpCommand,
+          error: error instanceof Error ? error.message : 'Failed to fetch video info'
+        })
       })
     })
   }
@@ -809,7 +900,9 @@ class DownloadEngine extends EventEmitter {
     args.push('--ffmpeg-location', ffmpegPath)
     args.push(urlArg)
 
-    scopedLoggers.download.info('yt-dlp command:', formatYtDlpCommand(args))
+    const ytDlpCommand = formatYtDlpCommand(args)
+    this.updateDownloadInfo(id, { ytDlpCommand })
+    scopedLoggers.download.info('yt-dlp command:', ytDlpCommand)
 
     const controller = new AbortController()
     const ytdlpProcess = ytdlp.exec(args, {
@@ -1146,6 +1239,9 @@ class DownloadEngine extends EventEmitter {
     if (updates.error !== undefined) {
       historyUpdates.error = updates.error
     }
+    if (updates.ytDlpCommand !== undefined) {
+      historyUpdates.ytDlpCommand = updates.ytDlpCommand
+    }
     if (updates.savedFileName !== undefined) {
       historyUpdates.savedFileName = updates.savedFileName
     }
@@ -1210,6 +1306,7 @@ class DownloadEngine extends EventEmitter {
       downloadedAt: updates.downloadedAt ?? Date.now(),
       completedAt: updates.completedAt,
       error: updates.error,
+      ytDlpCommand: updates.ytDlpCommand,
       description: updates.description,
       channel: updates.channel,
       uploader: updates.uploader,

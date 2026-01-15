@@ -14,9 +14,13 @@ import { Separator } from '@renderer/components/ui/separator'
 import { cn } from '@renderer/lib/utils'
 import type { OneClickQualityPreset, VideoFormat, VideoInfo } from '@shared/types'
 import { useAtom } from 'jotai'
-import { AlertCircle, ExternalLink, Loader2, type LucideIcon, Settings2 } from 'lucide-react'
+import { AlertCircle, ExternalLink, Loader2, Settings2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import {
+  DOWNLOAD_FEEDBACK_ISSUE_TITLE,
+  FeedbackLinkButtons
+} from '../feedback/FeedbackLinks'
 import { useCachedThumbnail } from '../../hooks/use-cached-thumbnail'
 import { settingsAtom } from '../../store/settings'
 
@@ -31,18 +35,13 @@ export interface SingleVideoState {
   selectedFps?: string
 }
 
-export interface FeedbackLink {
-  icon: LucideIcon
-  label: string
-  href: string
-}
-
 interface SingleVideoDownloadProps {
   loading: boolean
   error: string | null
   videoInfo: VideoInfo | null
   state: SingleVideoState
-  feedbackLinks: FeedbackLink[]
+  feedbackSourceUrl?: string | null
+  ytDlpCommand?: string
   onStateChange: (state: Partial<SingleVideoState>) => void
 }
 
@@ -392,7 +391,8 @@ export function SingleVideoDownload({
   error,
   videoInfo,
   state,
-  feedbackLinks,
+  feedbackSourceUrl,
+  ytDlpCommand,
   onStateChange
 }: SingleVideoDownloadProps) {
   const { t } = useTranslation()
@@ -546,23 +546,17 @@ export function SingleVideoDownload({
               {t('download.feedback.title')}
             </span>
             <div className="flex flex-wrap gap-1.5">
-              {feedbackLinks.map((resource) => {
-                const Icon = resource.icon
-                return (
-                  <Button
-                    key={resource.label}
-                    variant="outline"
-                    size="sm"
-                    className="h-5 gap-1 px-1.5 text-[10px]"
-                    asChild
-                  >
-                    <a href={resource.href} target="_blank" rel="noreferrer">
-                      <Icon className="h-2.5 w-2.5" />
-                      {resource.label}
-                    </a>
-                  </Button>
-                )
-              })}
+              <FeedbackLinkButtons
+                error={error}
+                sourceUrl={feedbackSourceUrl}
+                issueTitle={DOWNLOAD_FEEDBACK_ISSUE_TITLE}
+                includeAppInfo
+                ytDlpCommand={ytDlpCommand}
+                buttonVariant="outline"
+                buttonSize="sm"
+                buttonClassName="h-5 gap-1 px-1.5 text-[10px]"
+                iconClassName="h-2.5 w-2.5"
+              />
             </div>
           </div>
         </div>
