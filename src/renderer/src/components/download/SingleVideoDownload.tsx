@@ -17,12 +17,9 @@ import { useAtom } from 'jotai'
 import { AlertCircle, ExternalLink, Loader2, Settings2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  DOWNLOAD_FEEDBACK_ISSUE_TITLE,
-  FeedbackLinkButtons
-} from '../feedback/FeedbackLinks'
 import { useCachedThumbnail } from '../../hooks/use-cached-thumbnail'
 import { settingsAtom } from '../../store/settings'
+import { DOWNLOAD_FEEDBACK_ISSUE_TITLE, FeedbackLinkButtons } from '../feedback/FeedbackLinks'
 
 export interface SingleVideoState {
   title: string
