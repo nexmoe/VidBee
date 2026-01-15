@@ -1,30 +1,17 @@
-import {
-  DOWNLOAD_FEEDBACK_ISSUE_TITLE,
-  FeedbackLinkButtons
-} from '@renderer/components/feedback/FeedbackLinks'
 import { Button } from '@renderer/components/ui/button'
 import { Checkbox } from '@renderer/components/ui/checkbox'
 import { Dialog, DialogContent, DialogFooter, DialogHeader } from '@renderer/components/ui/dialog'
 import { Input } from '@renderer/components/ui/input'
 import { Label } from '@renderer/components/ui/label'
-import { ScrollArea } from '@renderer/components/ui/scroll-area'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@renderer/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@renderer/components/ui/tabs'
 
-import { cn } from '@renderer/lib/utils'
 import type { PlaylistInfo, VideoFormat } from '@shared/types'
 import {
   buildAudioFormatPreference,
   buildVideoFormatPreference
 } from '@shared/utils/format-preferences'
 import { useAtom, useSetAtom } from 'jotai'
-import { AlertCircle, FolderOpen, List, Loader2, Plus, Video } from 'lucide-react'
+import { FolderOpen, List, Loader2, Plus, Video } from 'lucide-react'
 import { useCallback, useEffect, useId, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -43,7 +30,8 @@ import {
   videoInfoErrorAtom,
   videoInfoLoadingAtom
 } from '../../store/video'
-import { VideoInfoCard, type VideoInfoCardState } from '../video/VideoInfoCard'
+import { PlaylistDownload } from './PlaylistDownload'
+import { SingleVideoDownload, type SingleVideoState } from './SingleVideoDownload'
 
 const isLikelyUrl = (value: string): boolean => {
   try {
@@ -107,6 +95,7 @@ const pickBestAudioFormatsByLanguage = (formats: VideoFormat[]): string[] => {
     })
     .filter((id): id is string => !!id)
 }
+
 interface DownloadDialogProps {
   onOpenSupportedSites?: () => void
   onOpenSettings?: () => void
@@ -133,13 +122,16 @@ export function DownloadDialog({
   const [url, setUrl] = useState('')
   const [activeTab, setActiveTab] = useState<'single' | 'playlist'>('single')
 
-  // VideoInfoCard state management
-  const [videoInfoCardState, setVideoInfoCardState] = useState<VideoInfoCardState>({
+  // Single video state
+  const [singleVideoState, setSingleVideoState] = useState<SingleVideoState>({
     title: '',
     activeTab: 'video',
     selectedVideoFormat: '',
     selectedAudioFormat: '',
-    customDownloadPath: ''
+    customDownloadPath: '',
+    selectedContainer: undefined,
+    selectedCodec: undefined,
+    selectedFps: undefined
   })
 
   // Playlist states
@@ -270,6 +262,14 @@ export function DownloadDialog({
 
         // Wait for dialog to open and settings to load, then fetch video info
         setTimeout(async () => {
+          setSingleVideoState((prev) => ({
+            ...prev,
+            selectedVideoFormat: '',
+            selectedAudioFormat: '',
+            selectedContainer: undefined,
+            selectedCodec: undefined,
+            selectedFps: undefined
+          }))
           await fetchVideoInfo(url)
         }, 100)
       }
@@ -453,6 +453,14 @@ export function DownloadDialog({
       toast.error(t('errors.emptyUrl'))
       return
     }
+    setSingleVideoState((prev) => ({
+      ...prev,
+      selectedVideoFormat: '',
+      selectedAudioFormat: '',
+      selectedContainer: undefined,
+      selectedCodec: undefined,
+      selectedFps: undefined
+    }))
     await fetchVideoInfo(url.trim())
   }, [url, fetchVideoInfo, t])
 
@@ -760,77 +768,76 @@ export function DownloadDialog({
     selectedEntryIds
   ])
 
-  // Update videoInfoCardState when videoInfo changes
+  // Update single video title when videoInfo changes
   useEffect(() => {
     if (videoInfo) {
-      setVideoInfoCardState((prev) => ({
+      setSingleVideoState((prev) => ({
         ...prev,
         title: videoInfo.title || prev.title
       }))
     }
   }, [videoInfo])
 
-  // Handle video download from VideoInfoCard
-  const handleVideoDownload = useCallback(
-    async (type: 'video' | 'audio') => {
-      if (!videoInfo) return
+  const handleSingleVideoDownload = useCallback(async () => {
+    if (!videoInfo) return
 
-      const id = `download_${Date.now()}_${Math.random().toString(36).substring(7)}`
+    const type = singleVideoState.activeTab
+    const selectedFormat =
+      type === 'video' ? singleVideoState.selectedVideoFormat : singleVideoState.selectedAudioFormat
+    if (!selectedFormat) {
+      return
+    }
+    const id = `download_${Date.now()}_${Math.random().toString(36).substring(7)}`
 
-      const downloadItem = {
-        id,
-        url: videoInfo.webpage_url || '',
-        title: videoInfoCardState.title,
+    const downloadItem = {
+      id,
+      url: videoInfo.webpage_url || '',
+      title: singleVideoState.title || videoInfo.title || t('download.fetchingVideoInfo'),
+      thumbnail: videoInfo.thumbnail,
+      type,
+      status: 'pending' as const,
+      progress: { percent: 0 },
+      duration: videoInfo.duration,
+      description: videoInfo.description,
+      channel: videoInfo.extractor_key,
+      uploader: videoInfo.extractor_key,
+      createdAt: Date.now()
+    }
+
+    const audioFormatIds =
+      type === 'video' ? pickBestAudioFormatsByLanguage(videoInfo.formats || []) : undefined
+
+    const options = {
+      url: videoInfo.webpage_url || '',
+      type,
+      format: selectedFormat || undefined,
+      audioFormat: type === 'video' ? 'best' : undefined,
+      audioFormatIds: audioFormatIds && audioFormatIds.length > 0 ? audioFormatIds : undefined,
+      customDownloadPath: singleVideoState.customDownloadPath.trim() || undefined
+    }
+
+    addDownload(downloadItem)
+
+    try {
+      await ipcServices.download.startDownload(id, options)
+
+      await ipcServices.download.updateDownloadInfo(id, {
+        title: singleVideoState.title || videoInfo.title || t('download.fetchingVideoInfo'),
         thumbnail: videoInfo.thumbnail,
-        type,
-        status: 'pending' as const,
-        progress: { percent: 0 },
         duration: videoInfo.duration,
         description: videoInfo.description,
         channel: videoInfo.extractor_key,
         uploader: videoInfo.extractor_key,
         createdAt: Date.now()
-      }
+      })
 
-      const audioFormatIds =
-        type === 'video' ? pickBestAudioFormatsByLanguage(videoInfo.formats || []) : undefined
-
-      const options = {
-        url: videoInfo.webpage_url || '',
-        type,
-        format:
-          type === 'video'
-            ? videoInfoCardState.selectedVideoFormat || undefined
-            : videoInfoCardState.selectedAudioFormat || undefined,
-        audioFormat: type === 'video' ? 'best' : undefined,
-        audioFormatIds: audioFormatIds && audioFormatIds.length > 0 ? audioFormatIds : undefined,
-        customDownloadPath: videoInfoCardState.customDownloadPath.trim() || undefined
-      }
-
-      addDownload(downloadItem)
-
-      try {
-        await ipcServices.download.startDownload(id, options)
-
-        await ipcServices.download.updateDownloadInfo(id, {
-          title: videoInfoCardState.title,
-          thumbnail: videoInfo.thumbnail,
-          duration: videoInfo.duration,
-          description: videoInfo.description,
-          channel: videoInfo.extractor_key,
-          uploader: videoInfo.extractor_key,
-          createdAt: Date.now()
-        })
-
-        toast.success(t('notifications.downloadStarted'))
-        setOpen(false) // Close dialog after download starts
-      } catch (error) {
-        console.error('Failed to start download:', error)
-        toast.error(t('notifications.downloadFailed'))
-      }
-    },
-    [videoInfo, videoInfoCardState, addDownload, t]
-  )
+      toast.success(t('notifications.downloadStarted'))
+      setOpen(false) // Close dialog after download starts
+    } catch (error) {
+      console.error('Failed to start download:', error)
+      toast.error(t('notifications.downloadFailed'))
+    }
+  }, [videoInfo, singleVideoState, addDownload, t])
 
   // Reset form when dialog closes
   useEffect(() => {
@@ -838,12 +845,15 @@ export function DownloadDialog({
       // Reset single video states
       setUrl('')
       setActiveTab('single')
-      setVideoInfoCardState({
+      setSingleVideoState({
         title: '',
         activeTab: 'video',
         selectedVideoFormat: '',
         selectedAudioFormat: '',
-        customDownloadPath: ''
+        customDownloadPath: '',
+        selectedContainer: undefined,
+        selectedCodec: undefined,
+        selectedFps: undefined
       })
 
       // Reset playlist states
@@ -857,6 +867,14 @@ export function DownloadDialog({
     }
   }, [open])
 
+  const handleSingleVideoStateChange = useCallback((updates: Partial<SingleVideoState>) => {
+    setSingleVideoState((prev) => ({ ...prev, ...updates }))
+  }, [])
+  const selectedSingleFormat =
+    singleVideoState.activeTab === 'video'
+      ? singleVideoState.selectedVideoFormat
+      : singleVideoState.selectedAudioFormat
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <Button
@@ -868,314 +886,107 @@ export function DownloadDialog({
         <Plus className="h-4 w-4" />
         {t('download.pasteUrlButton')}
       </Button>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
+      <DialogContent className="sm:max-w-xl max-h-[90vh] flex flex-col p-5 gap-0">
         <Tabs
           defaultValue="single"
           value={activeTab}
           onValueChange={(value) => setActiveTab(value as 'single' | 'playlist')}
-          className="w-full flex flex-col flex-1 min-h-0"
+          className="w-full flex flex-col flex-1 min-h-0 gap-0"
         >
-          <DialogHeader className="shrink-0">
+          <DialogHeader>
             <TabsList>
               <TabsTrigger value="single" onClick={() => setActiveTab('single')}>
-                <Video className="h-4 w-4 mr-2" />
+                <Video className="h-3.5 w-3.5" />
                 {t('download.singleVideo')}
               </TabsTrigger>
               <TabsTrigger value="playlist" onClick={() => setActiveTab('playlist')}>
-                <List className="h-4 w-4 mr-2" />
+                <List className="h-3.5 w-3.5" />
                 {t('download.metadata.playlist')}
               </TabsTrigger>
             </TabsList>
           </DialogHeader>
           {/* Single Video Download Tab */}
-          <TabsContent value="single" className="flex flex-col flex-1 min-h-0 mt-3">
-            {/* Error Display */}
-            {error && (
-              <div className="shrink-0 mb-3 rounded-lg border border-destructive/20 bg-destructive/5 p-3">
-                <div className="flex items-start gap-2.5">
-                  <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
-                  <div className="flex-1 space-y-0.5 min-w-0">
-                    <p className="text-sm font-semibold text-destructive">
-                      {t('errors.fetchInfoFailed')}
-                    </p>
-                    <p className="text-xs text-muted-foreground wrap-break-word">{error}</p>
-                  </div>
-                </div>
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <span className="text-xs font-medium text-muted-foreground">
-                    {t('download.feedback.title')}
-                  </span>
-                  <div className="flex flex-wrap gap-2">
-                    <FeedbackLinkButtons
-                      error={error}
-                      sourceUrl={url}
-                      issueTitle={DOWNLOAD_FEEDBACK_ISSUE_TITLE}
-                      includeAppInfo
-                      ytDlpCommand={videoInfoCommand ?? undefined}
-                      buttonVariant="outline"
-                      buttonSize="sm"
-                      buttonClassName="h-6 gap-1 px-1.5 text-[10px]"
-                      iconClassName="h-3 w-3"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Video Info and Download Options */}
-            {(loading || videoInfo) && (
-              <VideoInfoCard
-                videoInfo={videoInfo}
-                loading={loading}
-                state={videoInfoCardState}
-                onStateChange={(updates) =>
-                  setVideoInfoCardState((prev) => ({ ...prev, ...updates }))
-                }
-                onTabChange={(tab) => {
-                  setVideoInfoCardState((prev) => ({ ...prev, activeTab: tab }))
-                }}
-              />
-            )}
+          <TabsContent value="single" className="flex flex-col flex-1 min-h-0 mt-0">
+            <SingleVideoDownload
+              loading={loading}
+              error={error}
+              videoInfo={videoInfo}
+              state={singleVideoState}
+              feedbackSourceUrl={url}
+              ytDlpCommand={videoInfoCommand ?? undefined}
+              onStateChange={handleSingleVideoStateChange}
+            />
           </TabsContent>
 
           {/* Playlist Download Tab */}
-          <TabsContent value="playlist" className="px-6 space-y-6 mt-3">
-            <ScrollArea className="flex-1 -mx-6 overflow-y-auto min-h-0">
-              <div className="space-y-6">
-                {/* Preview State */}
-                {playlistInfo && !playlistPreviewLoading && (
-                  <div className="space-y-6">
-                    <div className="space-y-1 shrink-0">
-                      <h3 className="font-semibold leading-none">{playlistInfo.title}</h3>
-                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                        <List className="h-3.5 w-3.5" />
-                        <span>{t('playlist.foundVideos', { count: playlistInfo.entryCount })}</span>
-                        {selectedPlaylistEntries.length !== playlistInfo.entryCount && (
-                          <>
-                            <span>•</span>
-                            <span className="text-primary font-medium">
-                              {t('playlist.selectedVideos', {
-                                count: selectedPlaylistEntries.length
-                              })}
-                            </span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-
-                    <ScrollArea className="h-[320px] w-full rounded-lg border">
-                      <div className="p-1">
-                        {playlistInfo.entries.map((entry) => {
-                          const isSelected = selectedEntryIds.has(entry.id)
-                          const isInRange =
-                            selectedEntryIds.size === 0 &&
-                            selectedPlaylistEntries.some((e) => e.id === entry.id)
-
-                          const handleToggle = () => {
-                            setSelectedEntryIds((prev) => {
-                              const next = new Set(prev)
-                              if (next.has(entry.id)) {
-                                next.delete(entry.id)
-                              } else {
-                                next.add(entry.id)
-                              }
-                              return next
-                            })
-                            // Clear range inputs when manual selection is used
-                            if (selectedEntryIds.size === 0) {
-                              setStartIndex('1')
-                              setEndIndex('')
-                            }
-                          }
-
-                          return (
-                            <button
-                              key={entry.id}
-                              type="button"
-                              className={cn(
-                                'flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors cursor-pointer w-full text-left',
-                                isSelected || isInRange
-                                  ? 'bg-primary/10 hover:bg-primary/20'
-                                  : 'hover:bg-muted/50'
-                              )}
-                              onClick={handleToggle}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter' || e.key === ' ') {
-                                  e.preventDefault()
-                                  handleToggle()
-                                }
-                              }}
-                              aria-label={t('playlist.selectEntry', { index: entry.index })}
-                            >
-                              <Checkbox
-                                checked={isSelected || isInRange}
-                                onCheckedChange={(checked) => {
-                                  setSelectedEntryIds((prev) => {
-                                    const next = new Set(prev)
-                                    if (checked) {
-                                      next.add(entry.id)
-                                    } else {
-                                      next.delete(entry.id)
-                                    }
-                                    return next
-                                  })
-                                  if (selectedEntryIds.size === 0) {
-                                    setStartIndex('1')
-                                    setEndIndex('')
-                                  }
-                                }}
-                                onClick={(e) => e.stopPropagation()}
-                                className="shrink-0"
-                              />
-                              <div className="shrink-0 w-8 text-[10px] font-medium text-muted-foreground tabular-nums">
-                                #{entry.index}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-xs font-medium line-clamp-1 leading-tight">
-                                  {entry.title || t('download.fetchingVideoInfo')}
-                                </p>
-                              </div>
-                            </button>
-                          )
-                        })}
-                      </div>
-                    </ScrollArea>
-                  </div>
-                )}
-
-                {playlistPreviewError && (
-                  <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4">
-                    <div className="flex items-start gap-3">
-                      <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
-                      <div className="flex-1 space-y-1">
-                        <p className="text-sm font-semibold text-destructive">
-                          {t('playlist.previewFailed')}
-                        </p>
-                        <p className="text-xs text-muted-foreground">{playlistPreviewError}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Advanced Options Content - Playlist */}
-                <div
-                  data-state={advancedOptionsOpen ? 'open' : 'closed'}
-                  className={cn(
-                    'grid overflow-hidden transition-[grid-template-rows,opacity] duration-200 ease-out',
-                    advancedOptionsOpen
-                      ? 'grid-rows-[1fr] opacity-100'
-                      : 'grid-rows-[0fr] opacity-0'
-                  )}
-                  aria-hidden={!advancedOptionsOpen}
-                >
-                  <div className={cn('min-h-0', !advancedOptionsOpen && 'pointer-events-none')}>
-                    <div className="w-full pt-4 mt-4 border-t">
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label htmlFor={downloadTypeId}>{t('playlist.downloadType')}</Label>
-                            <Select
-                              value={downloadType}
-                              onValueChange={(v) => setDownloadType(v as 'video' | 'audio')}
-                              disabled={playlistBusy}
-                            >
-                              <SelectTrigger id={downloadTypeId}>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="video">{t('download.video')}</SelectItem>
-                                <SelectItem value="audio">{t('download.audio')}</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label>{t('playlist.range')}</Label>
-                            <div className="flex items-center gap-2">
-                              <Input
-                                placeholder="1"
-                                value={startIndex}
-                                onChange={(e) => {
-                                  setStartIndex(e.target.value)
-                                  // Clear manual selection when using range
-                                  if (selectedEntryIds.size > 0) {
-                                    setSelectedEntryIds(new Set())
-                                  }
-                                }}
-                                className="text-center"
-                                disabled={playlistBusy}
-                              />
-                              <span className="text-muted-foreground text-xs">-</span>
-                              <Input
-                                placeholder={playlistInfo?.entryCount.toString() || 'End'}
-                                value={endIndex}
-                                onChange={(e) => {
-                                  setEndIndex(e.target.value)
-                                  // Clear manual selection when using range
-                                  if (selectedEntryIds.size > 0) {
-                                    setSelectedEntryIds(new Set())
-                                  }
-                                }}
-                                className="text-center"
-                                disabled={playlistBusy}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </ScrollArea>
+          <TabsContent value="playlist" className="flex flex-col flex-1 min-h-0 mt-0">
+            <PlaylistDownload
+              playlistPreviewLoading={playlistPreviewLoading}
+              playlistPreviewError={playlistPreviewError}
+              playlistInfo={playlistInfo}
+              playlistBusy={playlistBusy}
+              selectedPlaylistEntries={selectedPlaylistEntries}
+              selectedEntryIds={selectedEntryIds}
+              downloadType={downloadType}
+              downloadTypeId={downloadTypeId}
+              startIndex={startIndex}
+              endIndex={endIndex}
+              advancedOptionsOpen={advancedOptionsOpen}
+              setSelectedEntryIds={setSelectedEntryIds}
+              setStartIndex={setStartIndex}
+              setEndIndex={setEndIndex}
+              setDownloadType={setDownloadType}
+            />
           </TabsContent>
         </Tabs>
-        <DialogFooter className="shrink-0">
-          <div className="flex items-center justify-between w-full gap-4">
-            <div className="flex items-center gap-4">
+        <DialogFooter className="shrink-0 pt-3 border-t">
+          <div className="flex items-center justify-between w-full gap-3">
+            <div className="flex items-center gap-3">
               {/* Download Location - Single Video */}
               {activeTab === 'single' && videoInfo && !loading && (
                 <div className="flex items-center gap-2">
-                  <div className="relative w-[280px]">
+                  <div className="relative w-[240px]">
                     <Input
-                      value={videoInfoCardState.customDownloadPath || settings.downloadPath}
+                      value={singleVideoState.customDownloadPath || settings.downloadPath}
                       readOnly
-                      className="pr-8 text-xs"
+                      className="pr-7"
                       placeholder={t('download.autoFolderPlaceholder')}
                     />
-                    <div className="absolute right-2.5 top-1/2 -translate-y-1/2">
-                      <FolderOpen className="h-3.5 w-3.5 text-muted-foreground" />
+                    <div className="absolute right-0 top-1/2 -translate-y-1/2">
+                      <Button
+                        onClick={async () => {
+                          try {
+                            const path = await ipcServices.fs.selectDirectory()
+                            if (path) {
+                              setSingleVideoState((prev) => ({
+                                ...prev,
+                                customDownloadPath: path
+                              }))
+                            }
+                          } catch (error) {
+                            console.error('Failed to select directory:', error)
+                            toast.error(t('settings.directorySelectError'))
+                          }
+                        }}
+                        variant="ghost"
+                        size="icon"
+                      >
+                        <FolderOpen className="h-4 w-4 text-muted-foreground" />
+                      </Button>
                     </div>
                   </div>
-                  <Button
-                    onClick={async () => {
-                      try {
-                        const path = await ipcServices.fs.selectDirectory()
-                        if (path) {
-                          setVideoInfoCardState((prev) => ({
-                            ...prev,
-                            customDownloadPath: path
-                          }))
-                        }
-                      } catch (error) {
-                        console.error('Failed to select directory:', error)
-                        toast.error(t('settings.directorySelectError'))
-                      }
-                    }}
-                    variant="outline"
-                  >
-                    {t('settings.selectPath')}
-                  </Button>
-                  {videoInfoCardState.customDownloadPath && (
+
+                  {singleVideoState.customDownloadPath && (
                     <Button
                       onClick={() =>
-                        setVideoInfoCardState((prev) => ({
+                        setSingleVideoState((prev) => ({
                           ...prev,
                           customDownloadPath: ''
                         }))
                       }
                       variant="ghost"
                       size="sm"
+                      className="h-8 text-xs"
                     >
                       {t('download.useAutoFolder')}
                     </Button>
@@ -1190,11 +1001,11 @@ export function DownloadDialog({
                     <Input
                       value={playlistCustomDownloadPath || settings.downloadPath}
                       readOnly
-                      className="pr-8 text-xs"
+                      className="pr-7 text-xs h-8 bg-muted/30"
                       placeholder={t('download.autoFolderPlaceholder')}
                     />
-                    <div className="absolute right-2.5 top-1/2 -translate-y-1/2">
-                      <FolderOpen className="h-3.5 w-3.5 text-muted-foreground" />
+                    <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                      <FolderOpen className="h-3 w-3 text-muted-foreground" />
                     </div>
                   </div>
                   <Button
@@ -1202,6 +1013,7 @@ export function DownloadDialog({
                     variant="outline"
                     size="sm"
                     disabled={playlistBusy}
+                    className="h-8"
                   >
                     {t('settings.selectPath')}
                   </Button>
@@ -1211,6 +1023,7 @@ export function DownloadDialog({
                       variant="ghost"
                       size="sm"
                       disabled={playlistBusy}
+                      className="h-8 text-xs"
                     >
                       {t('download.useAutoFolder')}
                     </Button>
@@ -1219,7 +1032,7 @@ export function DownloadDialog({
               )}
 
               {/* Advanced Options - Playlist (when no playlist info) */}
-              {activeTab === 'playlist' && !playlistInfo && (
+              {activeTab === 'playlist' && !playlistInfo && !playlistPreviewLoading && (
                 <div className="flex items-center gap-2">
                   <Checkbox
                     id={advancedOptionsId}
@@ -1228,7 +1041,7 @@ export function DownloadDialog({
                       setAdvancedOptionsOpen(checked === true)
                     }}
                   />
-                  <Label htmlFor={advancedOptionsId} className="cursor-pointer">
+                  <Label htmlFor={advancedOptionsId} className="cursor-pointer text-xs">
                     {t('advancedOptions.title')}
                   </Label>
                 </div>
@@ -1236,7 +1049,7 @@ export function DownloadDialog({
             </div>
             <div className="ml-auto flex gap-2">
               {activeTab === 'single' ? (
-                !videoInfo ? (
+                !videoInfo && !loading ? (
                   <Button
                     onClick={settings.oneClickDownload ? handleOneClickDownload : handleFetchVideo}
                     disabled={loading || !url.trim()}
@@ -1245,28 +1058,20 @@ export function DownloadDialog({
                       ? t('download.oneClickDownloadNow')
                       : t('download.startDownload')}
                   </Button>
-                ) : videoInfoCardState.activeTab === 'video' ? (
+                ) : !loading && videoInfo ? (
                   <Button
-                    onClick={() => handleVideoDownload('video')}
-                    disabled={loading || !videoInfoCardState.selectedVideoFormat}
-                    size="lg"
+                    onClick={handleSingleVideoDownload}
+                    disabled={loading || !selectedSingleFormat}
                   >
-                    {t('download.downloadVideo')}
+                    {singleVideoState.activeTab === 'video'
+                      ? t('download.downloadVideo')
+                      : t('download.downloadAudio')}
                   </Button>
-                ) : (
-                  <Button
-                    onClick={() => handleVideoDownload('audio')}
-                    disabled={loading || !videoInfoCardState.selectedAudioFormat}
-                    size="lg"
-                  >
-                    {t('download.downloadAudio')}
-                  </Button>
-                )
+                ) : null
               ) : playlistInfo && !playlistPreviewLoading ? (
                 <Button
                   onClick={handleDownloadPlaylist}
                   disabled={playlistDownloadLoading || selectedPlaylistEntries.length === 0}
-                  size="lg"
                 >
                   {playlistDownloadLoading ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -1274,19 +1079,18 @@ export function DownloadDialog({
                     t('playlist.downloadCurrentRange')
                   )}
                 </Button>
-              ) : (
+              ) : !playlistPreviewLoading ? (
                 <Button
                   onClick={handlePreviewPlaylist}
                   disabled={playlistBusy || !playlistUrl.trim()}
-                  size="lg"
                 >
                   {playlistPreviewLoading ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
                   ) : (
                     t('download.startDownload')
                   )}
                 </Button>
-              )}
+              ) : null}
             </div>
           </div>
         </DialogFooter>

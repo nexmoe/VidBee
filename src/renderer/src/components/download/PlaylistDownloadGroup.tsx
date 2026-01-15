@@ -78,7 +78,7 @@ export function PlaylistDownloadGroup({
   const aggregatePercent = totalCount > 0 ? Math.min((totalProgress / totalCount) * 100, 100) : 0
 
   return (
-    <div className="space-y-2 rounded-md bg-muted/30 px-2.5 py-2">
+    <div className="space-y-2 rounded-md bg-muted/30 px-2.5 py-2 mx-6">
       <div className="flex items-center justify-between gap-2">
         <button
           type="button"
