@@ -20,9 +20,7 @@ const ensureDirectoryExists = (dir: string) => {
 }
 
 const resolveDefaultDownloadPath = () => {
-  const downloadDir = path.join(os.homedir(), 'Downloads', 'VidBee')
-  ensureDirectoryExists(downloadDir)
-  return downloadDir
+  return path.join(os.homedir(), 'Downloads', 'VidBee')
 }
 
 const DEFAULT_DOWNLOAD_PATH = resolveDefaultDownloadPath()
@@ -75,7 +73,6 @@ class SettingsManager {
       ...defaultSettings,
       downloadPath: DEFAULT_DOWNLOAD_PATH
     })
-    ensureDirectoryExists(DEFAULT_DOWNLOAD_PATH)
   }
 
   private ensureDownloadDirectory(): void {
@@ -88,7 +85,6 @@ class SettingsManager {
       if (normalizedDownloadPath !== currentPath) {
         this.store.set('downloadPath', normalizedDownloadPath)
       }
-      ensureDirectoryExists(normalizedDownloadPath)
     } catch (error) {
       scopedLoggers.system.error('Failed to verify download directory:', error)
     }
