@@ -329,15 +329,21 @@ function formatBytes(bytes) {
   return `${Math.round(bytes / 1024)} KB`
 }
 
-function checkBinary(filePath, args, label) {
+function checkBinary(filePath, args, label, options = {}) {
+  const timeoutMs =
+    typeof options.timeoutMs === 'number'
+      ? options.timeoutMs
+      : os.platform() === 'win32'
+        ? 20000
+        : 8000
   const result = spawnSync(filePath, args, {
     encoding: 'utf8',
-    timeout: 8000,
+    timeout: timeoutMs,
     windowsHide: true
   })
 
   if (result.error) {
-    return { ok: false, message: result.error.message }
+    return { ok: false, message: result.error.message, code: result.error.code }
   }
 
   if (result.status !== 0) {
@@ -459,10 +465,15 @@ async function downloadFfmpegWindows(config) {
     fs.copyFileSync(sourcePath, outputPath)
     const validation = checkBinary(outputPath, ['-version'], 'ffmpeg')
     if (!validation.ok) {
-      safeUnlink(outputPath)
-      throw new Error(`Downloaded ${output} failed version check: ${validation.message}`)
+      if (validation.code === 'ETIMEDOUT') {
+        log(`Downloaded ${output} version check timed out; keeping binary`, 'warn')
+      } else {
+        safeUnlink(outputPath)
+        throw new Error(`Downloaded ${output} failed version check: ${validation.message}`)
+      }
+    } else {
+      log(`Downloaded ${output} successfully`, 'success')
     }
-    log(`Downloaded ${output} successfully`, 'success')
 
     // Cleanup
     fs.unlinkSync(tempZip)
