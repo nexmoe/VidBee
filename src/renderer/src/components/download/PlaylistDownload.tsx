@@ -91,7 +91,7 @@ export function PlaylistDownload({
             </div>
           </div>
 
-          <ScrollArea className="flex-1 w-full rounded-md border">
+          <ScrollArea className="flex-1 w-full rounded-md border max-h-[45vh]">
             <div className="p-1">
               {playlistInfo.entries.map((entry) => {
                 const isSelected = selectedEntryIds.has(entry.id)
