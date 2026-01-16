@@ -11,7 +11,7 @@ type AppInfo = {
 
 const DEFAULT_APP_INFO: AppInfo = { appVersion: '', osVersion: '' }
 const FEEDBACK_TWEET_PREFIX = '@nexmoex VidBee'
-export const DOWNLOAD_FEEDBACK_ISSUE_TITLE = '[bug]: Download error report'
+export const DOWNLOAD_FEEDBACK_ISSUE_TITLE = '[Bug]: Download error report'
 const FEEDBACK_UNKNOWN_ERROR = 'Unknown error'
 const FEEDBACK_UNKNOWN_VALUE = 'Unknown'
 const FEEDBACK_SOURCE_LABEL = 'Source URL'
@@ -37,12 +37,12 @@ const buildIssueLogs = (
 ): string => {
   const lines: string[] = []
   if (sourceUrl) {
-    lines.push(`${urlLabel}: ${sourceUrl}`)
+    lines.push(`**${urlLabel}:**\n${sourceUrl}\n`)
   }
   if (ytDlpCommand) {
-    lines.push(`${commandLabel}: ${ytDlpCommand}`)
+    lines.push(`**${commandLabel}:**\n\`\`\`bash\n${ytDlpCommand}\n\`\`\`\n`)
   }
-  lines.push(`${errorLabel}: ${errorText}`)
+  lines.push(`**${errorLabel}:**\n${errorText}`)
   return lines.join('\n')
 }
 
@@ -106,12 +106,13 @@ type FeedbackLinkButtonsProps = {
   iconClassName?: string
   onLinkClick?: (event: MouseEvent<HTMLAnchorElement>) => void
   ytDlpCommand?: string
+  useSimpleGithubUrl?: boolean
 }
 
 export const FeedbackLinkButtons = ({
   error,
   sourceUrl,
-  issueTitle = '[bug]: ',
+  issueTitle = '[Bug]: ',
   includeAppInfo = false,
   appInfo,
   buttonVariant = 'outline',
@@ -119,7 +120,8 @@ export const FeedbackLinkButtons = ({
   buttonClassName,
   iconClassName,
   onLinkClick,
-  ytDlpCommand
+  ytDlpCommand,
+  useSimpleGithubUrl = false
 }: FeedbackLinkButtonsProps) => {
   const { t } = useTranslation()
   const fallbackAppInfo = useAppInfo()
@@ -157,24 +159,32 @@ export const FeedbackLinkButtons = ({
       : null
     const appVersionValue = appVersion ? `VidBee v${appVersion}` : FEEDBACK_UNKNOWN_VALUE
     const osVersionValue = osVersion || FEEDBACK_UNKNOWN_VALUE
-    const issueParams = new URLSearchParams({
-      template: 'bug_report.yml',
-      title: issueTitle
-    })
 
-    if (issueLogs) {
-      issueParams.set('logs', issueLogs)
-    }
-    if (includeAppInfo) {
-      issueParams.set('app_version', appVersionValue)
-      issueParams.set('os_version', osVersionValue)
+    let githubUrl: string
+    if (useSimpleGithubUrl) {
+      githubUrl = 'https://github.com/nexmoe/VidBee/issues/new/choose'
+    } else {
+      const issueParams = new URLSearchParams({
+        template: 'bug_report.yml',
+        title: issueTitle
+      })
+
+      if (issueLogs) {
+        issueParams.set('logs', issueLogs)
+      }
+      if (includeAppInfo) {
+        issueParams.set('app_version', appVersionValue)
+        issueParams.set('os_version', osVersionValue)
+      }
+
+      githubUrl = `https://github.com/nexmoe/VidBee/issues/new?${issueParams.toString()}`
     }
 
     return [
       {
         icon: Github,
         label: t('about.resources.githubIssues'),
-        href: `https://github.com/nexmoe/VidBee/issues/new?${issueParams.toString()}`
+        href: githubUrl
       },
       {
         icon: Twitter,
@@ -187,7 +197,17 @@ export const FeedbackLinkButtons = ({
         href: 'https://discord.gg/uBqXV6QPdm'
       }
     ]
-  }, [appVersion, error, includeAppInfo, issueTitle, osVersion, sourceUrl, t, ytDlpCommand])
+  }, [
+    appVersion,
+    error,
+    includeAppInfo,
+    issueTitle,
+    osVersion,
+    sourceUrl,
+    t,
+    ytDlpCommand,
+    useSimpleGithubUrl
+  ])
 
   return (
     <>

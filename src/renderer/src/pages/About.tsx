@@ -445,7 +445,7 @@ export function About() {
                 <div className="flex flex-wrap gap-2">
                   <FeedbackLinkButtons
                     appInfo={{ appVersion, osVersion }}
-                    issueTitle="[bug]: "
+                    useSimpleGithubUrl={true}
                     buttonClassName="gap-2"
                     iconClassName="h-4 w-4"
                   />
