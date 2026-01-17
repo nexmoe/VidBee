@@ -50,6 +50,8 @@ const formatYtDlpCommand = (args: string[]): string => {
   return `yt-dlp ${quoted.join(' ')}`
 }
 
+const resolveFfmpegLocation = (ffmpegPath: string): string => path.dirname(ffmpegPath)
+
 const ensureDirectoryExists = (dir?: string): void => {
   if (!dir) {
     return
@@ -897,7 +899,8 @@ class DownloadEngine extends EventEmitter {
       return
     }
 
-    args.push('--ffmpeg-location', ffmpegPath)
+    const ffmpegLocation = resolveFfmpegLocation(ffmpegPath)
+    args.push('--ffmpeg-location', ffmpegLocation)
     args.push(urlArg)
 
     const ytDlpCommand = formatYtDlpCommand(args)

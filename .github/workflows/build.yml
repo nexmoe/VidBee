@@ -33,16 +33,16 @@ jobs:
             ytdlp_output: yt-dlp.exe
             ffmpeg_url: https://github.com/yt-dlp/FFmpeg-Builds/releases/latest/download/ffmpeg-master-latest-win64-gpl.zip
             ffmpeg_inner_path: ffmpeg-master-latest-win64-gpl\bin\ffmpeg.exe
-            ffmpeg_output: ffmpeg.exe
+            ffprobe_inner_path: ffmpeg-master-latest-win64-gpl\bin\ffprobe.exe
           - platform: macos
             os: macos-latest
             build_script: pnpm run build:mac
             ytdlp_asset: yt-dlp_macos
             ytdlp_output: yt-dlp_macos
-            ffmpeg_arm_url: https://github.com/eko5624/mpv-mac/releases/download/2025-10-25/ffmpeg-arm64-defd5f3f64.zip
-            ffmpeg_x86_url: https://github.com/eko5624/mpv-mac/releases/download/2025-10-25/ffmpeg-x86_64-defd5f3f64.zip
+            ffmpeg_arm_url: https://github.com/eko5624/mpv-mac/releases/download/2026-01-12/ffmpeg-arm64-96e8f3b8cc.zip
+            ffmpeg_x86_url: https://github.com/eko5624/mpv-mac/releases/download/2026-01-12/ffmpeg-x86_64-96e8f3b8cc.zip
             ffmpeg_inner_path: ffmpeg/ffmpeg
-            ffmpeg_output: ffmpeg_macos
+            ffprobe_inner_path: ffmpeg/ffprobe
           - platform: linux
             os: ubuntu-latest
             build_script: pnpm run build:linux
@@ -50,7 +50,7 @@ jobs:
             ytdlp_output: yt-dlp_linux
             ffmpeg_url: https://github.com/yt-dlp/FFmpeg-Builds/releases/latest/download/ffmpeg-master-latest-linux64-gpl.tar.xz
             ffmpeg_inner_path: ffmpeg-master-latest-linux64-gpl/bin/ffmpeg
-            ffmpeg_output: ffmpeg_linux
+            ffprobe_inner_path: ffmpeg-master-latest-linux64-gpl/bin/ffprobe
     steps:
       - name: Check out Git repository
         uses: actions/checkout@v4
@@ -77,8 +77,11 @@ jobs:
           Invoke-WebRequest -Uri $ffmpegUrl -OutFile ffmpeg.zip
           Expand-Archive ffmpeg.zip -DestinationPath ffmpeg -Force
           $source = Join-Path 'ffmpeg' '${{ matrix.ffmpeg_inner_path }}'
-          $destination = Join-Path 'resources' '${{ matrix.ffmpeg_output }}'
-          Copy-Item -Path $source -Destination $destination -Force
+          $ffprobeSource = Join-Path 'ffmpeg' '${{ matrix.ffprobe_inner_path }}'
+          $destinationDir = Join-Path 'resources' 'ffmpeg'
+          New-Item -ItemType Directory -Path $destinationDir -Force | Out-Null
+          Copy-Item -Path $source -Destination (Join-Path $destinationDir 'ffmpeg.exe') -Force
+          Copy-Item -Path $ffprobeSource -Destination (Join-Path $destinationDir 'ffprobe.exe') -Force
           Remove-Item ffmpeg.zip -Force
           Remove-Item ffmpeg -Recurse -Force
 
@@ -86,7 +89,8 @@ jobs:
         if: matrix.platform == 'macos'
         shell: bash
         env:
-          FFMPEG_OUTPUT: ${{ matrix.ffmpeg_output }}
+          FFMPEG_OUTPUT: ffmpeg
+          FFPROBE_OUTPUT: ffprobe
         run: |
           set -euo pipefail
           curl -fL --retry 3 --retry-delay 2 --retry-connrefused "${{ matrix.ffmpeg_arm_url }}" -o ffmpeg-arm.zip
@@ -97,12 +101,20 @@ jobs:
 
           arm_bin="ffmpeg-arm/${{ matrix.ffmpeg_inner_path }}"
           x86_bin="ffmpeg-x86/${{ matrix.ffmpeg_inner_path }}"
+          arm_probe="ffmpeg-arm/${{ matrix.ffprobe_inner_path }}"
+          x86_probe="ffmpeg-x86/${{ matrix.ffprobe_inner_path }}"
 
           if [[ ! -f "$arm_bin" ]]; then
             arm_bin="$(find ffmpeg-arm -type f -name ffmpeg -print -quit)"
           fi
           if [[ ! -f "$x86_bin" ]]; then
             x86_bin="$(find ffmpeg-x86 -type f -name ffmpeg -print -quit)"
+          fi
+          if [[ ! -f "$arm_probe" ]]; then
+            arm_probe="$(find ffmpeg-arm -type f -name ffprobe -print -quit)"
+          fi
+          if [[ ! -f "$x86_probe" ]]; then
+            x86_probe="$(find ffmpeg-x86 -type f -name ffprobe -print -quit)"
           fi
 
           if [[ ! -f "$arm_bin" ]]; then
@@ -113,9 +125,19 @@ jobs:
             echo "::error::Missing x86_64 ffmpeg binary at $x86_bin"
             exit 1
           fi
+          if [[ ! -f "$arm_probe" ]]; then
+            echo "::error::Missing arm64 ffprobe binary at $arm_probe"
+            exit 1
+          fi
+          if [[ ! -f "$x86_probe" ]]; then
+            echo "::error::Missing x86_64 ffprobe binary at $x86_probe"
+            exit 1
+          fi
 
-          lipo -create "$arm_bin" "$x86_bin" -output "resources/$FFMPEG_OUTPUT"
-          chmod +x "resources/$FFMPEG_OUTPUT"
+          mkdir -p resources/ffmpeg
+          lipo -create "$arm_bin" "$x86_bin" -output "resources/ffmpeg/$FFMPEG_OUTPUT"
+          lipo -create "$arm_probe" "$x86_probe" -output "resources/ffmpeg/$FFPROBE_OUTPUT"
+          chmod +x "resources/ffmpeg/$FFMPEG_OUTPUT" "resources/ffmpeg/$FFPROBE_OUTPUT"
           rm -rf ffmpeg-arm ffmpeg-x86 ffmpeg-arm.zip ffmpeg-x86.zip
 
       - name: Download ffmpeg binary (Linux)
@@ -130,8 +152,10 @@ jobs:
           fi
           mkdir ffmpeg
           tar -xf ffmpeg.tar.xz -C ffmpeg
-          cp "ffmpeg/${{ matrix.ffmpeg_inner_path }}" "resources/${{ matrix.ffmpeg_output }}"
-          chmod +x "resources/${{ matrix.ffmpeg_output }}"
+          mkdir -p resources/ffmpeg
+          cp "ffmpeg/${{ matrix.ffmpeg_inner_path }}" "resources/ffmpeg/ffmpeg"
+          cp "ffmpeg/${{ matrix.ffprobe_inner_path }}" "resources/ffmpeg/ffprobe"
+          chmod +x "resources/ffmpeg/ffmpeg" "resources/ffmpeg/ffprobe"
           rm -rf ffmpeg.tar.xz ffmpeg
 
       - name: Download yt-dlp binary
