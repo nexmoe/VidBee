@@ -1,7 +1,14 @@
 import { source } from '@/lib/source';
 import { createFromSource } from 'fumadocs-core/search/server';
 
-// Orama doesn't support Chinese (zh), so we use English for all content
-export const { GET } = createFromSource(source, {
-  language: 'english',
+// statically cached for static export
+export const revalidate = false;
+
+// Configure language support for both English and Chinese
+export const { staticGET: GET } = createFromSource(source, {
+  localeMap: {
+    en: { language: 'english' },
+    // Chinese is not natively supported by Orama, use English tokenizer for zh
+    zh: { language: 'english' },
+  },
 });
