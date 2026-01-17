@@ -197,7 +197,8 @@
       "subscription": "신청"
     },
     "feedback": {
-      "title": "Report this error:"
+      "title": "Report this error:",
+      "githubUrlTooLong": "이 GitHub 링크가 매우 깁니다. 열리지 않으면 이슈 페이지를 열고 로그를 수동으로 붙여 넣어 주세요."
     }
   },
   "error": {

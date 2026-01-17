@@ -197,7 +197,8 @@
       "subscription": "サブスクリプション"
     },
     "feedback": {
-      "title": "Report this error:"
+      "title": "Report this error:",
+      "githubUrlTooLong": "このGitHubリンクは非常に長いです。開けない場合は、issueページを開いてログを手動で貼り付けてください。"
     }
   },
   "error": {

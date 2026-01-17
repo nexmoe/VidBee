@@ -131,7 +131,8 @@
     "fetch": "Fetch",
     "fetchingVideoInfo": "Fetching video info...",
     "feedback": {
-      "title": "Report this error:"
+      "title": "Report this error:",
+      "githubUrlTooLong": "This GitHub link is very long. If it fails to open, please open the issue page and paste the logs manually."
     },
     "history": "History",
     "imageLoadError": "Image failed to load",

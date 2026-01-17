@@ -197,7 +197,8 @@
       "subscription": "Abonnement"
     },
     "feedback": {
-      "title": "Report this error:"
+      "title": "Report this error:",
+      "githubUrlTooLong": "Ce lien GitHub est très long. S'il ne s'ouvre pas, ouvrez la page de l'issue et collez les logs manuellement."
     }
   },
   "error": {

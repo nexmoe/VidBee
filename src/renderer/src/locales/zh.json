@@ -197,7 +197,8 @@
       "subscription": "订阅"
     },
     "feedback": {
-      "title": "Report this error:"
+      "title": "Report this error:",
+      "githubUrlTooLong": "这个 GitHub 链接很长。如果无法打开，请打开 issue 页面并手动粘贴日志。"
     }
   },
   "error": {
