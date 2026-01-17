@@ -371,6 +371,7 @@
     "audio": "Préférences Audio",
     "browserForCookies": "Sélectionner le navigateur pour utiliser les cookies",
     "browserForCookiesDescription": "Navigateur pour extraire les cookies pour l'authentification",
+    "browserForCookiesWindowsNote": "Sous Windows, seuls les cookies de Firefox sont pris en charge. Pour les autres navigateurs, configurez un fichier de cookies manuellement.",
     "browserForCookiesProfile": "Nom du profil ou chemin",
     "browserForCookiesProfileDescription": "Chemin du profil pour le navigateur sélectionné ci-dessus. Rempli automatiquement si possible.",
     "browserForCookiesProfilePlaceholder": "Nom du profil ou chemin complet (facultatif)",

@@ -371,6 +371,7 @@
     "audio": "音频偏好",
     "browserForCookies": "选择用于读取 Cookie 的浏览器",
     "browserForCookiesDescription": "用于身份验证的浏览器 Cookie 提取",
+    "browserForCookiesWindowsNote": "Windows 仅支持 Firefox 的 cookie，其他浏览器请手动配置 cookie 文件。",
     "browserForCookiesProfile": "配置文件名称或路径",
     "browserForCookiesProfileDescription": "上方所选浏览器的配置文件路径。如可用会自动填写。",
     "browserForCookiesProfilePlaceholder": "配置文件名称或完整路径（可选）",

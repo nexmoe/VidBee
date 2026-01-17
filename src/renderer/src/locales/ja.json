@@ -371,6 +371,7 @@
     "audio": "オーディオ設定",
     "browserForCookies": "Cookieに使用するブラウザを選択",
     "browserForCookiesDescription": "認証用のCookieを抽出するブラウザ",
+    "browserForCookiesWindowsNote": "Windows では Firefox の Cookie のみ対応しています。他のブラウザは Cookie ファイルを手動で設定してください。",
     "browserForCookiesProfile": "プロファイル名またはパス",
     "browserForCookiesProfileDescription": "上で選択したブラウザのプロファイルパス。可能な場合は自動入力されます。",
     "browserForCookiesProfilePlaceholder": "プロファイル名または完全なパス（任意）",

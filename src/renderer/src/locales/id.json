@@ -371,6 +371,7 @@
     "audio": "Preferensi Audio",
     "browserForCookies": "Pilih browser untuk menggunakan cookie",
     "browserForCookiesDescription": "Browser untuk mengekstrak cookie untuk autentikasi",
+    "browserForCookiesWindowsNote": "Di Windows, hanya cookie Firefox yang didukung. Untuk browser lain, silakan konfigurasi file cookie secara manual.",
     "browserForCookiesProfile": "Nama profil atau path",
     "browserForCookiesProfileDescription": "Path profil untuk browser yang dipilih di atas. Diisi otomatis bila memungkinkan.",
     "browserForCookiesProfilePlaceholder": "Nama profil atau path lengkap (opsional)",

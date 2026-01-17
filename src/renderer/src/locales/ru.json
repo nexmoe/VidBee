@@ -371,6 +371,7 @@
     "audio": "Настройки аудио",
     "browserForCookies": "Выбрать браузер для использования cookie",
     "browserForCookiesDescription": "Браузер для извлечения cookie для аутентификации",
+    "browserForCookiesWindowsNote": "В Windows поддерживаются только cookie Firefox. Для других браузеров вручную укажите файл cookie.",
     "browserForCookiesProfile": "Имя профиля или путь",
     "browserForCookiesProfileDescription": "Путь профиля для выбранного выше браузера. Заполняется автоматически, если возможно.",
     "browserForCookiesProfilePlaceholder": "Имя профиля или полный путь (необязательно)",

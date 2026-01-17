@@ -371,6 +371,7 @@
     "audio": "تفضيلات الصوت",
     "browserForCookies": "اختر المتصفح لاستخدام ملفات تعريف الارتباط منه",
     "browserForCookiesDescription": "المتصفح لاستخراج ملفات تعريف الارتباط منه للمصادقة",
+    "browserForCookiesWindowsNote": "في Windows، يتم دعم ملفات تعريف الارتباط من Firefox فقط. للمتصفحات الأخرى، يرجى إعداد ملف ملفات تعريف الارتباط يدويًا.",
     "browserForCookiesProfile": "اسم الملف الشخصي أو المسار",
     "browserForCookiesProfileDescription": "مسار الملف الشخصي للمتصفح المحدد أعلاه. يُملأ تلقائيًا عند الإمكان.",
     "browserForCookiesProfilePlaceholder": "اسم الملف الشخصي أو المسار الكامل (اختياري)",
