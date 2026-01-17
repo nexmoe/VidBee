@@ -489,9 +489,6 @@
       "disabled": "Dinonaktifkan",
       "onlyLatestShort": "Hanya terbaru"
     },
-    "placeholders": {
-      "url": "https://rsshub.app/youtube/user/@FKJ"
-    },
     "actions": {
       "add": "Tambah",
       "refresh": "Segarkan",

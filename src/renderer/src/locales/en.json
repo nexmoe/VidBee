@@ -489,9 +489,6 @@
       "disabled": "Disabled",
       "onlyLatestShort": "Only latest"
     },
-    "placeholders": {
-      "url": "https://rsshub.app/youtube/user/@FKJ"
-    },
     "actions": {
       "add": "Add",
       "refresh": "Refresh",

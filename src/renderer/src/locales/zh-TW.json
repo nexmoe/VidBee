@@ -489,9 +489,6 @@
       "disabled": "殘疾人",
       "onlyLatestShort": "僅最新"
     },
-    "placeholders": {
-      "url": "https://rsshub.app/youtube/user/@FKJ"
-    },
     "actions": {
       "add": "添加",
       "refresh": "重新整理",

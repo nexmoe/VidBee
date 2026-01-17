@@ -242,7 +242,7 @@ export function SubscriptionFormDialog({
             <Input
               id={urlInputId}
               value={url}
-              placeholder={t('subscriptions.placeholders.url')}
+              placeholder="https://docs.rsshub.app/routes/youtube/user/@FKJ"
               onChange={(event) => setUrl(event.target.value)}
             />
             {detectingFeed && (

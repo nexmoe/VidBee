@@ -489,9 +489,6 @@
       "disabled": "장애가 있는",
       "onlyLatestShort": "최신만"
     },
-    "placeholders": {
-      "url": "https://rsshub.app/youtube/user/@FKJ"
-    },
     "actions": {
       "add": "추가하다",
       "refresh": "새로 고치다",
