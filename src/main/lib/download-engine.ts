@@ -628,16 +628,34 @@ class DownloadEngine extends EventEmitter {
       `Starting playlist download: ${selectionSize} items from "${playlistInfo.title}"`
     )
 
+    const normalizedTitles = new Set<string>()
+    let hasDuplicateTitles = false
+    for (const entry of selectedEntries) {
+      const key = sanitizeTemplateValue(entry.title || '').toLowerCase()
+      if (normalizedTitles.has(key)) {
+        hasDuplicateTitles = true
+        break
+      }
+      normalizedTitles.add(key)
+    }
+    const indexWidth = hasDuplicateTitles
+      ? String(Math.max(...selectedEntries.map((entry) => entry.index))).length
+      : 0
+
     // Create download items for each video in the playlist
     for (const entry of selectedEntries) {
       const downloadId = `${groupId}_${Math.random().toString(36).substring(2, 10)}`
+      const customFilenameTemplate = hasDuplicateTitles
+        ? `${String(entry.index).padStart(indexWidth, '0')} - %(title)s via VidBee.%(ext)s`
+        : undefined
 
       const downloadOptions: DownloadOptions = {
         url: entry.url,
         type: options.type,
         format: options.format,
         audioFormat: options.type === 'audio' ? options.format : undefined,
-        customDownloadPath: resolvedDownloadPath
+        customDownloadPath: resolvedDownloadPath,
+        customFilenameTemplate
       }
 
       const createdAt = Date.now()
