@@ -474,9 +474,21 @@ app.whenReady().then(async () => {
   handleDeepLinkArgv(process.argv)
 
   app.on('activate', () => {
+    const existingWindow = BrowserWindow.getAllWindows().find((window) => !window.isDestroyed())
+    if (existingWindow) {
+      if (existingWindow.isMinimized()) {
+        existingWindow.restore()
+      }
+      if (!existingWindow.isVisible()) {
+        existingWindow.show()
+      }
+      existingWindow.focus()
+      return
+    }
+
     // On macOS it's common to re-create a window in the app when the
     // dock icon is clicked and there are no other windows open.
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
+    createWindow()
   })
 })
 
