@@ -418,13 +418,26 @@ export function UnifiedDownloadHistory({
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented) {
+        return
+      }
+      if (isEditableTarget(event.target)) {
+        return
+      }
+      if (event.key === 'Escape') {
+        if (confirmAction) {
+          return
+        }
+        if (selectedIds.size === 0) {
+          return
+        }
+        setSelectedIds(new Set())
+        return
+      }
       if (!(event.metaKey || event.ctrlKey)) {
         return
       }
       if (event.key.toLowerCase() !== 'a') {
-        return
-      }
-      if (isEditableTarget(event.target)) {
         return
       }
       if (selectableIds.length === 0) {
@@ -436,7 +449,7 @@ export function UnifiedDownloadHistory({
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectableIds])
+  }, [confirmAction, selectableIds, selectedIds])
 
   return (
     <div className={cn('flex flex-col h-full')}>
