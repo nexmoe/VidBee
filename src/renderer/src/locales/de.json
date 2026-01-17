@@ -27,7 +27,6 @@
     "notifications": {
       "checkingUpdates": "Suche nach Updates...",
       "downloadError": "Update konnte nicht heruntergeladen werden",
-      "downloadStarted": "Download gestartet...",
       "downloadUpdate": "Update {{version}} herunterladen und installieren?",
       "manualDownloadAction": "Jetzt herunterladen",
       "noUpdatesAvailable": "Sie verwenden die neueste Version",
@@ -130,6 +129,10 @@
     "error": "Fehler",
     "fetch": "Abrufen",
     "fetchingVideoInfo": "Video-Informationen werden abgerufen...",
+    "feedback": {
+      "title": "Fehler melden:",
+      "githubUrlTooLong": "Dieser GitHub-Link ist sehr lang. Wenn er sich nicht öffnet, öffnen Sie bitte die Issue-Seite und fügen Sie die Logs manuell ein."
+    },
     "history": "Verlauf",
     "imageLoadError": "Bild konnte nicht geladen werden",
     "imagePlaceholder": "Kein Bild verfügbar",
@@ -195,10 +198,6 @@
       "formatNote": "Format-Hinweis",
       "protocol": "Protokoll",
       "subscription": "Abonnement"
-    },
-    "feedback": {
-      "title": "Report this error:",
-      "githubUrlTooLong": "Dieser GitHub-Link ist sehr lang. Wenn er sich nicht öffnet, öffnen Sie bitte die Issue-Seite und fügen Sie die Logs manuell ein."
     }
   },
   "error": {
@@ -303,7 +302,6 @@
     "copyFailed": "Kopieren in Zwischenablage fehlgeschlagen",
     "downloadCompleted": "Download abgeschlossen",
     "downloadFailed": "Download fehlgeschlagen",
-    "downloadStarted": "Download gestartet",
     "historyCleared": "Verlauf gelöscht",
     "historyClearFailed": "Verlauf konnte nicht gelöscht werden",
     "itemRemoved": "Element entfernt",
@@ -327,7 +325,6 @@
     "description": "Alle Videos aus einer YouTube-Playlist oder einem Kanal herunterladen",
     "downloadFailed": "Playlist-Download konnte nicht gestartet werden",
     "downloadPlaylist": "Playlist herunterladen",
-    "downloadStarted": "Download von {{count}} Videos aus Playlist gestartet",
     "downloadType": "Download-Typ",
     "downloading": "Playlist wird heruntergeladen:",
     "endIndex": "Ende",

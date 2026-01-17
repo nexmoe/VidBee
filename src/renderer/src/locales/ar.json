@@ -27,7 +27,6 @@
     "notifications": {
       "checkingUpdates": "البحث عن التحديثات...",
       "downloadError": "فشل في تنزيل التحديث",
-      "downloadStarted": "بدأ التحميل...",
       "downloadUpdate": "تنزيل وتثبيت التحديث {{version}}؟",
       "manualDownloadAction": "تنزيل الآن",
       "noUpdatesAvailable": "أنت تستخدم أحدث إصدار",
@@ -130,6 +129,10 @@
     "error": "خطأ",
     "fetch": "جلب",
     "fetchingVideoInfo": "جلب معلومات الفيديو...",
+    "feedback": {
+      "title": "أبلغ عن هذا الخطأ:",
+      "githubUrlTooLong": "رابط GitHub هذا طويل جدًا. إذا لم يفتح، فالرجاء فتح صفحة المشكلة ولصق السجلات يدويًا."
+    },
     "history": "السجل",
     "imageLoadError": "فشل تحميل الصورة",
     "imagePlaceholder": "لا توجد صورة متاحة",
@@ -195,10 +198,6 @@
       "formatNote": "ملاحظة التنسيق",
       "protocol": "البروتوكول",
       "subscription": "الاشتراك"
-    },
-    "feedback": {
-      "title": "Report this error:",
-      "githubUrlTooLong": "رابط GitHub هذا طويل جدًا. إذا لم يفتح، فالرجاء فتح صفحة المشكلة ولصق السجلات يدويًا."
     }
   },
   "error": {
@@ -303,7 +302,6 @@
     "copyFailed": "فشل في النسخ إلى الحافظة",
     "downloadCompleted": "اكتمل التحميل",
     "downloadFailed": "فشل التحميل",
-    "downloadStarted": "بدأ التحميل",
     "historyCleared": "تم مسح السجل",
     "historyClearFailed": "فشل مسح السجل",
     "itemRemoved": "تم إزالة العنصر",
@@ -327,7 +325,6 @@
     "description": "تحميل جميع الفيديوهات من قائمة تشغيل أو قناة YouTube",
     "downloadFailed": "فشل في بدء تحميل قائمة التشغيل",
     "downloadPlaylist": "تحميل قائمة التشغيل",
-    "downloadStarted": "بدأ تحميل {{count}} فيديو من قائمة التشغيل",
     "downloadType": "نوع التحميل",
     "downloading": "جاري تحميل قائمة التشغيل:",
     "endIndex": "النهاية",

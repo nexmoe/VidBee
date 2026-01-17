@@ -27,7 +27,6 @@
     "notifications": {
       "checkingUpdates": "アップデートを検索中...",
       "downloadError": "アップデートのダウンロードに失敗",
-      "downloadStarted": "ダウンロード開始...",
       "downloadUpdate": "アップデート{{version}}をダウンロードしてインストールしますか？",
       "manualDownloadAction": "今すぐダウンロード",
       "noUpdatesAvailable": "最新バージョンを使用しています",
@@ -130,6 +129,10 @@
     "error": "エラー",
     "fetch": "取得",
     "fetchingVideoInfo": "ビデオ情報を取得中...",
+    "feedback": {
+      "title": "このエラーを報告:",
+      "githubUrlTooLong": "このGitHubリンクは非常に長いです。開けない場合は、issueページを開いてログを手動で貼り付けてください。"
+    },
     "history": "履歴",
     "imageLoadError": "画像の読み込みに失敗",
     "imagePlaceholder": "利用可能な画像なし",
@@ -195,10 +198,6 @@
       "formatNote": "メモのフォーマット",
       "protocol": "プロトコル",
       "subscription": "サブスクリプション"
-    },
-    "feedback": {
-      "title": "Report this error:",
-      "githubUrlTooLong": "このGitHubリンクは非常に長いです。開けない場合は、issueページを開いてログを手動で貼り付けてください。"
     }
   },
   "error": {
@@ -303,7 +302,6 @@
     "copyFailed": "クリップボードへのコピーに失敗",
     "downloadCompleted": "ダウンロード完了",
     "downloadFailed": "ダウンロードに失敗",
-    "downloadStarted": "ダウンロード開始",
     "historyCleared": "履歴をクリアしました",
     "historyClearFailed": "履歴のクリアに失敗しました",
     "itemRemoved": "アイテムが削除されました",
@@ -327,7 +325,6 @@
     "description": "YouTubeプレイリストまたはチャンネルからすべてのビデオをダウンロード",
     "downloadFailed": "プレイリストダウンロードの開始に失敗",
     "downloadPlaylist": "プレイリストをダウンロード",
-    "downloadStarted": "プレイリストから{{count}}個のビデオのダウンロードを開始",
     "downloadType": "ダウンロードタイプ",
     "downloading": "プレイリストをダウンロード中：",
     "endIndex": "終了",

@@ -27,7 +27,6 @@
     "notifications": {
       "checkingUpdates": "Ricerca aggiornamenti...",
       "downloadError": "Errore nel download dell'aggiornamento",
-      "downloadStarted": "Download iniziato...",
       "downloadUpdate": "Scarica e installa l'aggiornamento {{version}}?",
       "manualDownloadAction": "Scarica ora",
       "noUpdatesAvailable": "Stai usando l'ultima versione",
@@ -130,6 +129,10 @@
     "error": "Errore",
     "fetch": "Recupera",
     "fetchingVideoInfo": "Recupero informazioni video...",
+    "feedback": {
+      "title": "Segnala questo errore:",
+      "githubUrlTooLong": "Questo link GitHub è molto lungo. Se non si apre, apri la pagina dell'issue e incolla i log manualmente."
+    },
     "history": "Cronologia",
     "imageLoadError": "Errore nel caricamento dell'immagine",
     "imagePlaceholder": "Nessuna immagine disponibile",
@@ -195,10 +198,6 @@
       "formatNote": "Nota sul formato",
       "protocol": "Protocollo",
       "subscription": "Sottoscrizione"
-    },
-    "feedback": {
-      "title": "Report this error:",
-      "githubUrlTooLong": "Questo link GitHub è molto lungo. Se non si apre, apri la pagina dell'issue e incolla i log manualmente."
     }
   },
   "error": {
@@ -303,7 +302,6 @@
     "copyFailed": "Errore nella copia negli appunti",
     "downloadCompleted": "Download completato",
     "downloadFailed": "Download fallito",
-    "downloadStarted": "Download iniziato",
     "historyCleared": "Cronologia cancellata",
     "historyClearFailed": "Impossibile cancellare la cronologia",
     "itemRemoved": "Elemento rimosso",
@@ -327,7 +325,6 @@
     "description": "Scarica tutti i video da una playlist o canale YouTube",
     "downloadFailed": "Errore nell'avvio del download playlist",
     "downloadPlaylist": "Scarica Playlist",
-    "downloadStarted": "Iniziato download di {{count}} video dalla playlist",
     "downloadType": "Tipo Download",
     "downloading": "Scaricando playlist:",
     "endIndex": "Fine",

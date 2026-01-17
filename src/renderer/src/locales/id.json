@@ -27,7 +27,6 @@
     "notifications": {
       "checkingUpdates": "Mencari pembaruan...",
       "downloadError": "Gagal mengunduh pembaruan",
-      "downloadStarted": "Unduhan dimulai...",
       "downloadUpdate": "Unduh dan instal pembaruan {{version}}?",
       "manualDownloadAction": "Unduh sekarang",
       "noUpdatesAvailable": "Anda menggunakan versi terbaru",
@@ -130,6 +129,10 @@
     "error": "Kesalahan",
     "fetch": "Ambil",
     "fetchingVideoInfo": "Mengambil info video...",
+    "feedback": {
+      "title": "Laporkan kesalahan ini:",
+      "githubUrlTooLong": "Tautan GitHub ini sangat panjang. Jika tidak terbuka, buka halaman issue dan tempel log secara manual."
+    },
     "history": "Riwayat",
     "imageLoadError": "Gagal memuat gambar",
     "imagePlaceholder": "Tidak ada gambar tersedia",
@@ -195,10 +198,6 @@
       "formatNote": "Catatan format",
       "protocol": "Protokol",
       "subscription": "Berlangganan"
-    },
-    "feedback": {
-      "title": "Report this error:",
-      "githubUrlTooLong": "Tautan GitHub ini sangat panjang. Jika tidak terbuka, buka halaman issue dan tempel log secara manual."
     }
   },
   "error": {
@@ -303,7 +302,6 @@
     "copyFailed": "Gagal menyalin ke clipboard",
     "downloadCompleted": "Unduhan selesai",
     "downloadFailed": "Unduhan gagal",
-    "downloadStarted": "Unduhan dimulai",
     "historyCleared": "Riwayat dihapus",
     "historyClearFailed": "Gagal menghapus riwayat",
     "itemRemoved": "Item dihapus",
@@ -327,7 +325,6 @@
     "description": "Unduh semua video dari playlist atau saluran YouTube",
     "downloadFailed": "Gagal memulai unduhan playlist",
     "downloadPlaylist": "Unduh Playlist",
-    "downloadStarted": "Mulai mengunduh {{count}} video dari playlist",
     "downloadType": "Jenis Unduhan",
     "downloading": "Mengunduh playlist:",
     "endIndex": "Akhir",

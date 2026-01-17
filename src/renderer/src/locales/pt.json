@@ -27,7 +27,6 @@
     "notifications": {
       "checkingUpdates": "Procurando atualizações...",
       "downloadError": "Falha ao baixar atualização",
-      "downloadStarted": "Download iniciado...",
       "downloadUpdate": "Baixar e instalar atualização {{version}}?",
       "manualDownloadAction": "Baixe agora",
       "noUpdatesAvailable": "Você está usando a versão mais recente",
@@ -130,6 +129,10 @@
     "error": "Erro",
     "fetch": "Buscar",
     "fetchingVideoInfo": "Buscando informações do vídeo...",
+    "feedback": {
+      "title": "Relatar este erro:",
+      "githubUrlTooLong": "Este link do GitHub é muito longo. Se não abrir, abra a página da issue e cole os logs manualmente."
+    },
     "history": "Histórico",
     "imageLoadError": "Falha ao carregar imagem",
     "imagePlaceholder": "Nenhuma imagem disponível",
@@ -195,10 +198,6 @@
       "formatNote": "Formatar nota",
       "protocol": "Protocolo",
       "subscription": "Subscrição"
-    },
-    "feedback": {
-      "title": "Report this error:",
-      "githubUrlTooLong": "Este link do GitHub é muito longo. Se não abrir, abra a página da issue e cole os logs manualmente."
     }
   },
   "error": {
@@ -303,7 +302,6 @@
     "copyFailed": "Falha ao copiar para área de transferência",
     "downloadCompleted": "Download concluído",
     "downloadFailed": "Download falhou",
-    "downloadStarted": "Download iniciado",
     "historyCleared": "Histórico limpo",
     "historyClearFailed": "Falha ao limpar histórico",
     "itemRemoved": "Item removido",
@@ -327,7 +325,6 @@
     "description": "Baixar todos os vídeos de uma playlist ou canal do YouTube",
     "downloadFailed": "Falha ao iniciar download da playlist",
     "downloadPlaylist": "Baixar Playlist",
-    "downloadStarted": "Iniciado download de {{count}} vídeos da playlist",
     "downloadType": "Tipo de Download",
     "downloading": "Baixando playlist:",
     "endIndex": "Fim",

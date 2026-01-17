@@ -27,7 +27,6 @@
     "notifications": {
       "checkingUpdates": "Buscando actualizaciones...",
       "downloadError": "Error al descargar la actualización",
-      "downloadStarted": "Descarga iniciada...",
       "downloadUpdate": "¿Descargar e instalar la actualización {{version}}?",
       "manualDownloadAction": "Descargar ahora",
       "noUpdatesAvailable": "Estás usando la última versión",
@@ -130,6 +129,10 @@
     "error": "Error",
     "fetch": "Obtener",
     "fetchingVideoInfo": "Obteniendo información del video...",
+    "feedback": {
+      "title": "Informe este error:",
+      "githubUrlTooLong": "Este enlace de GitHub es muy largo. Si no se abre, abre la página de la incidencia y pega los registros manualmente."
+    },
     "history": "Historial",
     "imageLoadError": "Error al cargar la imagen",
     "imagePlaceholder": "No hay imagen disponible",
@@ -195,10 +198,6 @@
       "formatNote": "Nota de formato",
       "protocol": "Protocolo",
       "subscription": "Suscripción"
-    },
-    "feedback": {
-      "title": "Report this error:",
-      "githubUrlTooLong": "Este enlace de GitHub es muy largo. Si no se abre, abre la página de la incidencia y pega los registros manualmente."
     }
   },
   "error": {
@@ -303,7 +302,6 @@
     "copyFailed": "Error al copiar al portapapeles",
     "downloadCompleted": "Descarga completada",
     "downloadFailed": "Error en la descarga",
-    "downloadStarted": "Descarga iniciada",
     "historyCleared": "Historial borrado",
     "historyClearFailed": "No se pudo borrar el historial",
     "itemRemoved": "Elemento eliminado",
@@ -327,7 +325,6 @@
     "description": "Descarga todos los videos de una lista de reproducción o canal de YouTube",
     "downloadFailed": "Error al iniciar la descarga de la lista de reproducción",
     "downloadPlaylist": "Descargar Lista de Reproducción",
-    "downloadStarted": "Comenzó la descarga de {{count}} videos de la lista de reproducción",
     "downloadType": "Tipo de Descarga",
     "downloading": "Descargando lista de reproducción:",
     "endIndex": "Fin",

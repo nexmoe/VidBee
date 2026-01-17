@@ -27,7 +27,6 @@
     "notifications": {
       "checkingUpdates": "正在查找更新...",
       "downloadError": "下载更新失败",
-      "downloadStarted": "开始下载...",
       "downloadUpdate": "下载并安装更新 {{version}}？",
       "manualDownloadAction": "立即下载",
       "noUpdatesAvailable": "您正在使用最新版本",
@@ -130,6 +129,10 @@
     "error": "错误",
     "fetch": "获取",
     "fetchingVideoInfo": "正在获取视频信息...",
+    "feedback": {
+      "title": "报告此错误:",
+      "githubUrlTooLong": "这个 GitHub 链接很长。如果无法打开，请打开 issue 页面并手动粘贴日志。"
+    },
     "history": "历史",
     "imageLoadError": "图像加载失败",
     "imagePlaceholder": "暂无图像",
@@ -195,10 +198,6 @@
       "formatNote": "格式注释",
       "protocol": "协议",
       "subscription": "订阅"
-    },
-    "feedback": {
-      "title": "Report this error:",
-      "githubUrlTooLong": "这个 GitHub 链接很长。如果无法打开，请打开 issue 页面并手动粘贴日志。"
     }
   },
   "error": {
@@ -303,7 +302,6 @@
     "copyFailed": "复制到剪贴板失败",
     "downloadCompleted": "下载完成",
     "downloadFailed": "下载失败",
-    "downloadStarted": "下载已开始",
     "historyCleared": "历史记录已清除",
     "historyClearFailed": "清除历史记录失败",
     "itemRemoved": "项目已移除",
@@ -327,7 +325,6 @@
     "description": "下载 YouTube 播放列表或频道中的全部视频",
     "downloadFailed": "启动播放列表下载失败",
     "downloadPlaylist": "下载播放列表",
-    "downloadStarted": "已开始下载播放列表中的 {{count}} 个视频",
     "downloadType": "下载类型",
     "downloading": "正在下载播放列表：",
     "endIndex": "结束",

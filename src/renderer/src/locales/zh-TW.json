@@ -27,7 +27,6 @@
     "notifications": {
       "checkingUpdates": "正在搜尋更新...",
       "downloadError": "下載更新失敗",
-      "downloadStarted": "開始下載...",
       "downloadUpdate": "下載並安裝更新 {{version}}？",
       "manualDownloadAction": "立即下載",
       "noUpdatesAvailable": "您正在使用最新版本",
@@ -130,6 +129,10 @@
     "error": "錯誤",
     "fetch": "取得",
     "fetchingVideoInfo": "正在取得影片資訊...",
+    "feedback": {
+      "title": "報告此錯誤:",
+      "githubUrlTooLong": "這個 GitHub 連結很長。如果無法開啟，請開啟 issue 頁面並手動貼上日誌。"
+    },
     "history": "歷史",
     "imageLoadError": "圖片載入失敗",
     "imagePlaceholder": "暫無圖片",
@@ -195,10 +198,6 @@
       "formatNote": "格式註釋",
       "protocol": "協定",
       "subscription": "訂閱"
-    },
-    "feedback": {
-      "title": "Report this error:",
-      "githubUrlTooLong": "這個 GitHub 連結很長。如果無法開啟，請開啟 issue 頁面並手動貼上日誌。"
     }
   },
   "error": {
@@ -303,7 +302,6 @@
     "copyFailed": "複製到剪貼簿失敗",
     "downloadCompleted": "下載完成",
     "downloadFailed": "下載失敗",
-    "downloadStarted": "下載已開始",
     "historyCleared": "歷史紀錄已清除",
     "historyClearFailed": "清除歷史紀錄失敗",
     "itemRemoved": "項目已移除",
@@ -327,7 +325,6 @@
     "description": "下載 YouTube 播放清單或頻道中的全部影片",
     "downloadFailed": "啟動播放清單下載失敗",
     "downloadPlaylist": "下載播放清單",
-    "downloadStarted": "已開始下載播放清單中的 {{count}} 個影片",
     "downloadType": "下載類型",
     "downloading": "正在下載播放清單：",
     "endIndex": "結束",

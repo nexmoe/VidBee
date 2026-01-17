@@ -27,7 +27,6 @@
     "notifications": {
       "checkingUpdates": "Поиск обновлений...",
       "downloadError": "Не удалось загрузить обновление",
-      "downloadStarted": "Загрузка началась...",
       "downloadUpdate": "Загрузить и установить обновление {{version}}?",
       "manualDownloadAction": "Скачать сейчас",
       "noUpdatesAvailable": "Вы используете последнюю версию",
@@ -130,6 +129,10 @@
     "error": "Ошибка",
     "fetch": "Получить",
     "fetchingVideoInfo": "Получение информации о видео...",
+    "feedback": {
+      "title": "Сообщить об этой ошибке:",
+      "githubUrlTooLong": "Эта ссылка GitHub очень длинная. Если она не открывается, откройте страницу issue и вставьте логи вручную."
+    },
     "history": "История",
     "imageLoadError": "Не удалось загрузить изображение",
     "imagePlaceholder": "Изображение недоступно",
@@ -195,10 +198,6 @@
       "formatNote": "Примечание формата",
       "protocol": "Протокол",
       "subscription": "Подписка"
-    },
-    "feedback": {
-      "title": "Report this error:",
-      "githubUrlTooLong": "Эта ссылка GitHub очень длинная. Если она не открывается, откройте страницу issue и вставьте логи вручную."
     }
   },
   "error": {
@@ -303,7 +302,6 @@
     "copyFailed": "Не удалось скопировать в буфер обмена",
     "downloadCompleted": "Загрузка завершена",
     "downloadFailed": "Загрузка не удалась",
-    "downloadStarted": "Загрузка началась",
     "historyCleared": "История очищена",
     "historyClearFailed": "Не удалось очистить историю",
     "itemRemoved": "Элемент удалён",
@@ -327,7 +325,6 @@
     "description": "Загрузить все видео из плейлиста или канала YouTube",
     "downloadFailed": "Не удалось начать загрузку плейлиста",
     "downloadPlaylist": "Загрузить плейлист",
-    "downloadStarted": "Начата загрузка {{count}} видео из плейлиста",
     "downloadType": "Тип загрузки",
     "downloading": "Загрузка плейлиста:",
     "endIndex": "Конец",

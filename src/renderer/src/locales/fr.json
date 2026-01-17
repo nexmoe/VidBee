@@ -27,7 +27,6 @@
     "notifications": {
       "checkingUpdates": "Recherche de mises à jour...",
       "downloadError": "Échec du téléchargement de la mise à jour",
-      "downloadStarted": "Téléchargement démarré...",
       "downloadUpdate": "Télécharger et installer la mise à jour {{version}} ?",
       "manualDownloadAction": "Téléchargez maintenant",
       "noUpdatesAvailable": "Vous utilisez la dernière version",
@@ -130,6 +129,10 @@
     "error": "Erreur",
     "fetch": "Récupérer",
     "fetchingVideoInfo": "Récupération des informations vidéo...",
+    "feedback": {
+      "title": "Signalez cette erreur :",
+      "githubUrlTooLong": "Ce lien GitHub est très long. S'il ne s'ouvre pas, ouvrez la page de l'issue et collez les logs manuellement."
+    },
     "history": "Historique",
     "imageLoadError": "Échec du chargement de l'image",
     "imagePlaceholder": "Aucune image disponible",
@@ -195,10 +198,6 @@
       "formatNote": "Remarque sur le format",
       "protocol": "Protocole",
       "subscription": "Abonnement"
-    },
-    "feedback": {
-      "title": "Report this error:",
-      "githubUrlTooLong": "Ce lien GitHub est très long. S'il ne s'ouvre pas, ouvrez la page de l'issue et collez les logs manuellement."
     }
   },
   "error": {
@@ -303,7 +302,6 @@
     "copyFailed": "Échec de la copie dans le presse-papiers",
     "downloadCompleted": "Téléchargement terminé",
     "downloadFailed": "Échec du téléchargement",
-    "downloadStarted": "Téléchargement démarré",
     "historyCleared": "Historique effacé",
     "historyClearFailed": "Échec de l'effacement de l'historique",
     "itemRemoved": "Élément supprimé",
@@ -327,7 +325,6 @@
     "description": "Télécharger toutes les vidéos d'une playlist ou chaîne YouTube",
     "downloadFailed": "Échec du démarrage du téléchargement de playlist",
     "downloadPlaylist": "Télécharger la Playlist",
-    "downloadStarted": "Démarré le téléchargement de {{count}} vidéos de la playlist",
     "downloadType": "Type de Téléchargement",
     "downloading": "Téléchargement de la playlist :",
     "endIndex": "Fin",
