@@ -449,12 +449,18 @@ app.whenReady().then(async () => {
   }
 
   // Initialize yt-dlp
+  let ytdlpReady = false
   try {
     log.info('Initializing yt-dlp...')
     await ytdlpManager.initialize()
+    ytdlpReady = true
     log.info('yt-dlp initialized successfully')
   } catch (error) {
     log.error('Failed to initialize yt-dlp:', error)
+  }
+
+  if (ytdlpReady) {
+    downloadEngine.restoreActiveDownloads()
   }
 
   await startExtensionApiServer()
@@ -494,6 +500,7 @@ app.whenReady().then(async () => {
 
 app.on('before-quit', () => {
   isQuitting = true
+  downloadEngine.flushDownloadSession()
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common

@@ -47,6 +47,11 @@ class DownloadService extends IpcService {
   }
 
   @IpcMethod()
+  getActiveDownloads(_context: IpcContext): DownloadItem[] {
+    return downloadEngine.getActiveDownloads()
+  }
+
+  @IpcMethod()
   updateDownloadInfo(_context: IpcContext, id: string, updates: Partial<DownloadItem>): void {
     downloadEngine.updateDownloadInfo(id, updates)
   }

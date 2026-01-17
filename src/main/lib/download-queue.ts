@@ -82,6 +82,28 @@ export class DownloadQueue extends EventEmitter {
     }
   }
 
+  getActiveItems(): DownloadItem[] {
+    return Array.from(this.activeDownloads.values()).map((item) => ({ ...item.item }))
+  }
+
+  getQueuedItems(): DownloadItem[] {
+    return this.queue.map((item) => ({ ...item.item }))
+  }
+
+  getActiveEntries(): Array<{ options: DownloadOptions; item: DownloadItem }> {
+    return Array.from(this.activeDownloads.values()).map((entry) => ({
+      options: { ...entry.options },
+      item: { ...entry.item }
+    }))
+  }
+
+  getQueuedEntries(): Array<{ options: DownloadOptions; item: DownloadItem }> {
+    return this.queue.map((entry) => ({
+      options: { ...entry.options },
+      item: { ...entry.item }
+    }))
+  }
+
   isDownloading(id: string): boolean {
     return this.activeDownloads.has(id)
   }

@@ -8,6 +8,9 @@ export type DownloadRecord = DownloadItem & {
   savedFileName?: string
 }
 
+const isFinalStatus = (status: DownloadHistoryItem['status']): boolean =>
+  status === 'completed' || status === 'error' || status === 'cancelled'
+
 const recordKey = (entryType: DownloadRecord['entryType'], id: string) => `${entryType}:${id}`
 
 const toActiveRecord = (item: DownloadItem): DownloadRecord => ({
@@ -51,6 +54,7 @@ export const downloadRecordsAtom = atom<Map<string, DownloadRecord>>(new Map())
 
 export const addDownloadAtom = atom(null, (get, set, item: DownloadItem) => {
   const downloads = new Map(get(downloadRecordsAtom))
+  downloads.delete(recordKey('history', item.id))
   downloads.set(recordKey('active', item.id), toActiveRecord(item))
   set(downloadRecordsAtom, downloads)
 })
@@ -87,6 +91,14 @@ export const clearCompletedAtom = atom(null, (get, set) => {
 
 export const addHistoryRecordAtom = atom(null, (get, set, item: DownloadHistoryItem) => {
   const downloads = new Map(get(downloadRecordsAtom))
+  const activeKey = recordKey('active', item.id)
+  if (downloads.has(activeKey)) {
+    if (!isFinalStatus(item.status)) {
+      set(downloadRecordsAtom, downloads)
+      return
+    }
+    downloads.delete(activeKey)
+  }
   downloads.set(recordKey('history', item.id), toHistoryRecord(item))
   set(downloadRecordsAtom, downloads)
 })

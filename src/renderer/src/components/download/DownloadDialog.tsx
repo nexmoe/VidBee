@@ -16,12 +16,7 @@ import { useCallback, useEffect, useId, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { ipcEvents, ipcServices } from '../../lib/ipc'
-import {
-  addDownloadAtom,
-  addHistoryRecordAtom,
-  removeDownloadAtom,
-  updateDownloadAtom
-} from '../../store/downloads'
+import { addDownloadAtom, updateDownloadAtom } from '../../store/downloads'
 import { loadSettingsAtom, settingsAtom } from '../../store/settings'
 import {
   currentVideoInfoAtom,
@@ -116,8 +111,6 @@ export function DownloadDialog({
   const loadSettings = useSetAtom(loadSettingsAtom)
   const updateDownload = useSetAtom(updateDownloadAtom)
   const addDownload = useSetAtom(addDownloadAtom)
-  const addHistoryRecord = useSetAtom(addHistoryRecordAtom)
-  const removeDownload = useSetAtom(removeDownloadAtom)
 
   const [url, setUrl] = useState('')
   const [activeTab, setActiveTab] = useState<'single' | 'playlist'>('single')
@@ -181,21 +174,6 @@ export function DownloadDialog({
       (entry) => entry.index >= range.start && entry.index <= previewEnd
     )
   }, [playlistInfo, computePlaylistRange, selectedEntryIds])
-
-  const syncHistoryItem = useCallback(
-    async (id: string) => {
-      try {
-        const historyItem = await ipcServices.history.getHistoryById(id)
-        if (historyItem) {
-          addHistoryRecord(historyItem)
-          removeDownload(id)
-        }
-      } catch (error) {
-        console.error('Failed to sync history item:', error)
-      }
-    },
-    [addHistoryRecord, removeDownload]
-  )
 
   // Listen for deep link events
   useEffect(() => {
@@ -283,69 +261,8 @@ export function DownloadDialog({
 
   useEffect(() => {
     if (!open) return
-
-    // Load settings when dialog opens
     loadSettings()
-
-    // Listen for download events from main process
-    ipcEvents.on('download:started', (...args: unknown[]) => {
-      const id = args[0] as string
-      console.log('Download started:', id)
-      updateDownload({ id, changes: { status: 'downloading' } })
-    })
-
-    ipcEvents.on('download:progress', (...args: unknown[]) => {
-      const data = args[0] as { id: string; progress: unknown }
-      console.log('Download progress:', data)
-      const progress = data.progress as {
-        percent: number
-        currentSpeed?: string
-        eta?: string
-        downloaded?: string
-        total?: string
-      }
-      updateDownload({
-        id: data.id,
-        changes: {
-          progress: {
-            percent: progress.percent || 0,
-            currentSpeed: progress.currentSpeed || '',
-            eta: progress.eta || '',
-            downloaded: progress.downloaded || '',
-            total: progress.total || ''
-          },
-          speed: progress.currentSpeed || ''
-        }
-      })
-    })
-
-    ipcEvents.on('download:completed', (...args: unknown[]) => {
-      const id = args[0] as string
-      console.log('Download completed:', id)
-      updateDownload({ id, changes: { status: 'completed' } })
-      toast.success(t('notifications.downloadCompleted'))
-      void syncHistoryItem(id)
-    })
-
-    ipcEvents.on('download:error', (...args: unknown[]) => {
-      const data = args[0] as { id: string; error: string }
-      console.error('Download error:', data)
-      updateDownload({ id: data.id, changes: { status: 'error', error: data.error } })
-      toast.error(t('notifications.downloadFailed'))
-      void syncHistoryItem(data.id)
-    })
-
-    ipcEvents.on('download:cancelled', (...args: unknown[]) => {
-      const id = args[0] as string
-      console.log('Download cancelled:', id)
-      updateDownload({ id, changes: { status: 'cancelled' } })
-      void syncHistoryItem(id)
-    })
-
-    return () => {
-      // Event listeners are automatically cleaned up when the component unmounts
-    }
-  }, [open, loadSettings, syncHistoryItem, t, updateDownload])
+  }, [open, loadSettings])
 
   const startOneClickDownload = useCallback(
     async (targetUrl: string, options?: { clearInput?: boolean; setInputValue?: boolean }) => {
