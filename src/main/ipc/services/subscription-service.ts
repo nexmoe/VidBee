@@ -77,7 +77,7 @@ const resolveFeedFromInput = (rawUrl: string): SubscriptionResolvedFeed => {
   if (biliSpaceMatch) {
     return {
       sourceUrl: normalized,
-      feedUrl: `https://rsshub.app/bilibili/user/video/${biliSpaceMatch[1]}`,
+      feedUrl: `https://docs.rsshub.app/routes/bilibili/user/video/${biliSpaceMatch[1]}`,
       platform: 'bilibili'
     }
   }
