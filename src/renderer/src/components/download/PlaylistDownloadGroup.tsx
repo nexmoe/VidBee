@@ -78,11 +78,11 @@ export function PlaylistDownloadGroup({
   const aggregatePercent = totalCount > 0 ? Math.min((totalProgress / totalCount) * 100, 100) : 0
 
   return (
-    <div className="space-y-2 rounded-md bg-muted/30 px-2.5 py-2 mx-6">
+    <div className="rounded-md bg-muted/30 mx-6">
       <div className="flex items-center justify-between gap-2">
         <button
           type="button"
-          className="flex min-w-0 flex-1 items-center gap-2 rounded-md p-1.5 transition-colors hover:bg-muted/40 active:bg-muted/60 -ml-1.5 -mr-1.5"
+          className="px-3 flex min-w-0 flex-1 items-center gap-2 rounded-md p-1.5 transition-colors hover:bg-muted/40 active:bg-muted/60"
           onClick={() => setIsExpanded((prev) => !prev)}
           aria-expanded={isExpanded}
           aria-label={toggleLabel}
@@ -118,7 +118,7 @@ export function PlaylistDownloadGroup({
             </div>
           </div>
         </button>
-        <div className="flex shrink-0 items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1 pr-3">
           {canDeletePlaylist && (
             <Button
               type="button"
@@ -153,17 +153,15 @@ export function PlaylistDownloadGroup({
         }}
       >
         <div className="min-h-0">
-          <div className="space-y-3 pt-1">
-            {records.map((record) => (
-              <div key={`${groupId}:${record.entryType}:${record.id}`}>
-                <DownloadItem
-                  download={record}
-                  isSelected={selectedIds?.has(record.id) ?? false}
-                  onToggleSelect={onToggleSelect}
-                />
-              </div>
-            ))}
-          </div>
+          {records.map((record) => (
+            <div key={`${groupId}:${record.entryType}:${record.id}`}>
+              <DownloadItem
+                download={record}
+                isSelected={selectedIds?.has(record.id) ?? false}
+                onToggleSelect={onToggleSelect}
+              />
+            </div>
+          ))}
         </div>
       </div>
     </div>
