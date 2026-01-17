@@ -26,48 +26,7 @@ VidBee is a modern, open-source video downloader that lets you download videos a
 
 VidBee is currently under active development, and feedback is welcome for any [issue](https://github.com/nexmoe/VidBee/issues) encountered.
 
-Feel free to try it using the following methods:
-
-<a href="https://vidbee.org/download/" target="_blank"><img src="https://img.shields.io/badge/Download-VidBee-369eff?style=flat-square&logo=github&logoColor=white&labelColor=black" height="55"/></a>
-
-### 🍎 macOS Installation Notes
-
-After downloading and installing VidBee on macOS, you may encounter a "file is damaged" error when trying to run the application. This is due to macOS security restrictions on applications downloaded from the internet.
-
-```bash
-xattr -rd com.apple.quarantine /Applications/VidBee.app/
-```
-
-This command removes the quarantine attribute that macOS applies to applications downloaded from the internet, allowing VidBee to run properly without the "file is damaged" error.
-
-### 🌐 Browser Script (Quick Download)
-
-For a more convenient downloading experience, you can install the VidBee browser script to add a quick download button directly on supported video websites.
-
-![VidBee Browser Script](screenshots/browser-script.png)
-
-**Installation:**
-
-1. Install a userscript manager extension:
-   - [Tampermonkey](https://www.tampermonkey.net/) (Recommended)
-   - [Violentmonkey](https://violentmonkey.github.io/)
-   - [Greasemonkey](https://www.greasespot.net/)
-
-2. Install the VidBee Quick Download script:
-   - [Install from Greasy Fork](https://greasyfork.org/zh-CN/scripts/559595-vidbee-quick-download)
-
-**Usage:**
-
-After installation, when you visit supported video websites (YouTube, Bilibili, TikTok, Instagram, Twitter, etc.), a download button will appear on the page. Click the button to quickly send the video URL to VidBee desktop app for downloading.
-
-**Supported Sites:**
-
-The script works on popular video platforms including:
-
-- YouTube, Bilibili, TikTok, Vimeo, Dailymotion
-- Twitch, Twitter/X, Instagram, Facebook
-- Reddit, SoundCloud, Niconico, Kick
-- Bandcamp, Mixcloud, and more
+[📥 Download VidBee](https://vidbee.org/download/) | [📚 Documentation](https://docs.vidbee.org)
 
 > [!IMPORTANT]
 >
@@ -102,29 +61,14 @@ Automatically subscribe to RSS feeds and auto-download new videos in the backgro
 
 ## 🌐 Supported Sites
 
-VidBee supports hundreds of video and audio platforms through yt-dlp. Here are the most popular platforms:
-
-| Video Platforms | Audio & Other Platforms |
-| :--------------- | :---------------------- |
-| YouTube          | YouTube Music           |
-| TikTok           | SoundCloud              |
-| Facebook         | Mixcloud                |
-| Instagram        | Bandcamp                |
-| X (Twitter)      | Reddit                  |
-| Vimeo            |                         |
-| Dailymotion      |                         |
-| Twitch           |                         |
-| LinkedIn         |                         |
-| Pinterest        |                         |
-| Tumblr           |                         |
-| Niconico         |                         |
-| Kick             |                         |
-
-> **💡 Note:** VidBee uses [yt-dlp](https://github.com/yt-dlp/yt-dlp) under the hood, which supports 1000+ sites. For the complete list, visit the [yt-dlp supported sites documentation](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md).
+VidBee supports 1000+ video and audio platforms through yt-dlp. For the complete list of supported sites, visit [https://vidbee.org/supported-sites/](https://vidbee.org/supported-sites/)
 
 ## 🤝 Contributing
 
-You are welcome to join the open source community to build together. Please check our [Contributing Guide](./CONTRIBUTING.md) for more details.
+You are welcome to join the open source community to build together. For more details, check out:
+
+- [Contributing Guide](./CONTRIBUTING.md)
+- [DeepWiki Documentation](https://deepwiki.com/nexmoe/VidBee)
 
 ## 📄 License
 
