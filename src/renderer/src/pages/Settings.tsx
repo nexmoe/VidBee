@@ -676,6 +676,9 @@ export function Settings() {
                 <ItemContent>
                   <ItemTitle>{t('settings.browserForCookies')}</ItemTitle>
                   <ItemDescription>{t('settings.browserForCookiesDescription')}</ItemDescription>
+                  {platform === 'win32' && (
+                    <ItemDescription>{t('settings.browserForCookiesWindowsNote')}</ItemDescription>
+                  )}
                 </ItemContent>
                 <ItemActions>
                   {(() => {

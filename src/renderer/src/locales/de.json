@@ -371,6 +371,7 @@
     "audio": "Audio-Einstellungen",
     "browserForCookies": "Browser für Cookies auswählen",
     "browserForCookiesDescription": "Browser zum Extrahieren von Cookies für die Authentifizierung",
+    "browserForCookiesWindowsNote": "Unter Windows werden nur Firefox-Cookies unterstützt. Für andere Browser richten Sie bitte manuell eine Cookie-Datei ein.",
     "browserForCookiesProfile": "Profilname oder Pfad",
     "browserForCookiesProfileDescription": "Profilpfad für den oben ausgewählten Browser. Wird wenn möglich automatisch ausgefüllt.",
     "browserForCookiesProfilePlaceholder": "Profilname oder vollständiger Pfad (optional)",

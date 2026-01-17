@@ -371,6 +371,7 @@
     "audio": "Audio Preferences",
     "browserForCookies": "Select browser to use cookies from",
     "browserForCookiesDescription": "Browser to extract cookies from for authentication. We'll try to detect a profile automatically.",
+    "browserForCookiesWindowsNote": "Windows only supports Firefox cookies. For other browsers, please configure a cookies file manually.",
     "browserForCookiesProfile": "Profile name or path",
     "browserForCookiesProfileDescription": "Profile path for the browser selected above. Auto-filled when possible.",
     "browserForCookiesProfilePlaceholder": "Profile name or full path (optional)",

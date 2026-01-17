@@ -371,6 +371,7 @@
     "audio": "오디오 환경설정",
     "browserForCookies": "쿠키를 사용할 브라우저 선택",
     "browserForCookiesDescription": "인증을 위한 쿠키 추출 브라우저",
+    "browserForCookiesWindowsNote": "Windows에서는 Firefox 쿠키만 지원됩니다. 다른 브라우저는 쿠키 파일을 수동으로 설정하세요.",
     "browserForCookiesProfile": "프로필 이름 또는 경로",
     "browserForCookiesProfileDescription": "위에서 선택한 브라우저의 프로필 경로입니다. 가능하면 자동으로 채워집니다.",
     "browserForCookiesProfilePlaceholder": "프로필 이름 또는 전체 경로(선택 사항)",
