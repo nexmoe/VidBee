@@ -137,9 +137,7 @@ export const buildDownloadArgs = (
   } else {
     args.push('--no-embed-subs')
   }
-  if (process.platform !== 'darwin') {
-    args.push(settings.embedThumbnail ? '--embed-thumbnail' : '--no-embed-thumbnail')
-  }
+  args.push(settings.embedThumbnail ? '--embed-thumbnail' : '--no-embed-thumbnail')
   args.push(embedMetadata ? '--embed-metadata' : '--no-embed-metadata')
   args.push(embedChapters ? '--embed-chapters' : '--no-embed-chapters')
 
