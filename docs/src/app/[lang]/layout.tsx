@@ -24,5 +24,16 @@ export default async function Layout({
   const { lang } = await params;
   const locale = isLocale(lang) ? lang : i18n.defaultLanguage;
 
-  return <RootProvider i18n={provider(locale)}>{children}</RootProvider>;
+  return (
+    <RootProvider
+      i18n={provider(locale)}
+      search={{
+        options: {
+          type: 'static',
+        },
+      }}
+    >
+      {children}
+    </RootProvider>
+  );
 }
