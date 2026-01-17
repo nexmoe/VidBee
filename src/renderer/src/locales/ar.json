@@ -197,7 +197,8 @@
       "subscription": "الاشتراك"
     },
     "feedback": {
-      "title": "Report this error:"
+      "title": "Report this error:",
+      "githubUrlTooLong": "رابط GitHub هذا طويل جدًا. إذا لم يفتح، فالرجاء فتح صفحة المشكلة ولصق السجلات يدويًا."
     }
   },
   "error": {

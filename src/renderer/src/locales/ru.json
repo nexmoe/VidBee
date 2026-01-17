@@ -197,7 +197,8 @@
       "subscription": "Подписка"
     },
     "feedback": {
-      "title": "Report this error:"
+      "title": "Report this error:",
+      "githubUrlTooLong": "Эта ссылка GitHub очень длинная. Если она не открывается, откройте страницу issue и вставьте логи вручную."
     }
   },
   "error": {

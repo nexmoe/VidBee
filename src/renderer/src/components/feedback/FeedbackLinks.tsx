@@ -3,6 +3,7 @@ import { ipcServices } from '@renderer/lib/ipc'
 import { Github, MessageCircle, Twitter } from 'lucide-react'
 import { type MouseEvent, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
 
 type AppInfo = {
   appVersion: string
@@ -17,6 +18,7 @@ const FEEDBACK_UNKNOWN_VALUE = 'Unknown'
 const FEEDBACK_SOURCE_LABEL = 'Source URL'
 const FEEDBACK_ERROR_LABEL = 'Error'
 const FEEDBACK_COMMAND_LABEL = 'yt-dlp command'
+const FEEDBACK_MAX_GITHUB_URL_LENGTH = 7000
 
 let cachedAppInfo: AppInfo | null = null
 let appInfoPromise: Promise<AppInfo> | null = null
@@ -140,21 +142,18 @@ export const FeedbackLinkButtons = ({
     const tweetText = encodeURIComponent(
       tweetError ? `${tweetPrefix} - ${tweetError}` : tweetPrefix
     )
-    const issueError = compactError ? clampText(compactError, 800) : FEEDBACK_UNKNOWN_ERROR
+    const issueError = compactError || FEEDBACK_UNKNOWN_ERROR
     const resolvedSourceUrl = sourceUrl?.trim() || undefined
     const normalizedCommand = ytDlpCommand?.trim() || undefined
     const shouldIncludeLogs = Boolean(compactError || resolvedSourceUrl || normalizedCommand)
     const issueLogs = shouldIncludeLogs
-      ? clampText(
-          buildIssueLogs(
-            issueError,
-            resolvedSourceUrl,
-            normalizedCommand,
-            FEEDBACK_SOURCE_LABEL,
-            FEEDBACK_ERROR_LABEL,
-            FEEDBACK_COMMAND_LABEL
-          ),
-          800
+      ? buildIssueLogs(
+          issueError,
+          resolvedSourceUrl,
+          normalizedCommand,
+          FEEDBACK_SOURCE_LABEL,
+          FEEDBACK_ERROR_LABEL,
+          FEEDBACK_COMMAND_LABEL
         )
       : null
     const appVersionValue = appVersion ? `VidBee v${appVersion}` : FEEDBACK_UNKNOWN_VALUE
@@ -209,6 +208,13 @@ export const FeedbackLinkButtons = ({
     useSimpleGithubUrl
   ])
 
+  const handleLinkClick = (event: MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (href.startsWith('https://github.com') && href.length >= FEEDBACK_MAX_GITHUB_URL_LENGTH) {
+      toast.info(t('download.feedback.githubUrlTooLong'))
+    }
+    onLinkClick?.(event)
+  }
+
   return (
     <>
       {links.map((resource) => {
@@ -221,7 +227,12 @@ export const FeedbackLinkButtons = ({
             className={buttonClassName}
             asChild
           >
-            <a href={resource.href} target="_blank" rel="noreferrer" onClick={onLinkClick}>
+            <a
+              href={resource.href}
+              target="_blank"
+              rel="noreferrer"
+              onClick={(event) => handleLinkClick(event, resource.href)}
+            >
               <Icon className={iconClassName} />
               {resource.label}
             </a>

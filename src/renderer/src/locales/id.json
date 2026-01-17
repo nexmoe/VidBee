@@ -197,7 +197,8 @@
       "subscription": "Berlangganan"
     },
     "feedback": {
-      "title": "Report this error:"
+      "title": "Report this error:",
+      "githubUrlTooLong": "Tautan GitHub ini sangat panjang. Jika tidak terbuka, buka halaman issue dan tempel log secara manual."
     }
   },
   "error": {
