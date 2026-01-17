@@ -130,7 +130,7 @@
     "fetch": "取得",
     "fetchingVideoInfo": "正在取得影片資訊...",
     "feedback": {
-      "title": "Report this error:",
+      "title": "報告此錯誤:",
       "githubUrlTooLong": "這個 GitHub 連結很長。如果無法開啟，請開啟 issue 頁面並手動貼上日誌。"
     },
     "history": "歷史",

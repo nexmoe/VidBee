@@ -130,7 +130,7 @@
     "fetch": "جلب",
     "fetchingVideoInfo": "جلب معلومات الفيديو...",
     "feedback": {
-      "title": "Report this error:",
+      "title": "أبلغ عن هذا الخطأ:",
       "githubUrlTooLong": "رابط GitHub هذا طويل جدًا. إذا لم يفتح، فالرجاء فتح صفحة المشكلة ولصق السجلات يدويًا."
     },
     "history": "السجل",

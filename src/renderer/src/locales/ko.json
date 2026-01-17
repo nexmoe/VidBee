@@ -130,7 +130,7 @@
     "fetch": "가져오기",
     "fetchingVideoInfo": "비디오 정보 가져오는 중...",
     "feedback": {
-      "title": "Report this error:",
+      "title": "이 오류를 보고:",
       "githubUrlTooLong": "이 GitHub 링크가 매우 깁니다. 열리지 않으면 이슈 페이지를 열고 로그를 수동으로 붙여 넣어 주세요."
     },
     "history": "기록",

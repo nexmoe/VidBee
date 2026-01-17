@@ -130,7 +130,7 @@
     "fetch": "Obtener",
     "fetchingVideoInfo": "Obteniendo información del video...",
     "feedback": {
-      "title": "Report this error:",
+      "title": "Informe este error:",
       "githubUrlTooLong": "Este enlace de GitHub es muy largo. Si no se abre, abre la página de la incidencia y pega los registros manualmente."
     },
     "history": "Historial",
