@@ -19,6 +19,7 @@ import { useHistorySync } from '../../hooks/use-history-sync'
 import { ipcServices } from '../../lib/ipc'
 import type { DownloadRecord } from '../../store/downloads'
 import {
+  clearHistoryRecordsAtom,
   downloadStatsAtom,
   downloadsArrayAtom,
   removeHistoryRecordsAtom,
@@ -33,6 +34,7 @@ import { PlaylistDownloadGroup } from './PlaylistDownloadGroup'
 type StatusFilter = 'all' | 'active' | 'completed' | 'error'
 type ConfirmAction =
   | { type: 'delete-selected'; ids: string[] }
+  | { type: 'delete-all'; count: number }
   | { type: 'delete-playlist'; playlistId: string; title: string; ids: string[] }
 
 const normalizeSavedFileName = (fileName?: string): string | undefined => {
@@ -113,6 +115,17 @@ const resolveDownloadExtension = (download: DownloadRecord): string => {
   return download.type === 'audio' ? 'mp3' : 'mp4'
 }
 
+const isEditableTarget = (target: EventTarget | null): boolean => {
+  if (!target || !(target instanceof HTMLElement)) {
+    return false
+  }
+  if (target.isContentEditable) {
+    return true
+  }
+  const tagName = target.tagName
+  return tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT'
+}
+
 interface UnifiedDownloadHistoryProps {
   onOpenSupportedSites?: () => void
   onOpenSettings?: () => void
@@ -125,6 +138,7 @@ export function UnifiedDownloadHistory({
   const { t } = useTranslation()
   const allRecords = useAtomValue(downloadsArrayAtom)
   const downloadStats = useAtomValue(downloadStatsAtom)
+  const clearHistoryRecords = useSetAtom(clearHistoryRecordsAtom)
   const removeHistoryRecords = useSetAtom(removeHistoryRecordsAtom)
   const removeHistoryRecordsByPlaylist = useSetAtom(removeHistoryRecordsByPlaylistAtom)
   const settings = useAtomValue(settingsAtom)
@@ -216,11 +230,25 @@ export function UnifiedDownloadHistory({
     setSelectedIds(new Set())
   }
 
+  const handleSelectAll = () => {
+    if (selectableIds.length === 0) {
+      return
+    }
+    setSelectedIds(new Set(selectableIds))
+  }
+
   const handleRequestDeleteSelected = () => {
     if (selectedIds.size === 0) {
       return
     }
     setConfirmAction({ type: 'delete-selected', ids: Array.from(selectedIds) })
+  }
+
+  const handleRequestDeleteAll = () => {
+    if (historyRecords.length === 0) {
+      return
+    }
+    setConfirmAction({ type: 'delete-all', count: historyRecords.length })
   }
 
   const handleRequestDeletePlaylist = (playlistId: string, title: string, ids: string[]) => {
@@ -258,6 +286,13 @@ export function UnifiedDownloadHistory({
             count: confirmAction.ids.length
           }),
           actionLabel: t('history.removeAction')
+        }
+      }
+      case 'delete-all': {
+        return {
+          title: t('history.confirmClearAllTitle'),
+          description: t('history.confirmClearAllDescription', { count: confirmAction.count }),
+          actionLabel: t('history.clearAllAction')
         }
       }
       case 'delete-playlist': {
@@ -321,6 +356,12 @@ export function UnifiedDownloadHistory({
         pruneSelectedIds(confirmAction.ids)
         toast.success(t('notifications.itemsRemoved', { count: confirmAction.ids.length }))
       }
+      if (confirmAction.type === 'delete-all') {
+        await ipcServices.history.clearHistory()
+        clearHistoryRecords()
+        setSelectedIds(new Set())
+        toast.success(t('notifications.historyCleared'))
+      }
       if (confirmAction.type === 'delete-playlist') {
         const idSet = new Set(confirmAction.ids)
         const playlistRecords = historyRecords.filter((record) => idSet.has(record.id))
@@ -338,6 +379,10 @@ export function UnifiedDownloadHistory({
       if (confirmAction.type === 'delete-selected') {
         console.error('Failed to remove selected history items:', error)
         toast.error(t('notifications.itemsRemoveFailed'))
+      }
+      if (confirmAction.type === 'delete-all') {
+        console.error('Failed to clear history:', error)
+        toast.error(t('notifications.historyClearFailed'))
       }
       if (confirmAction.type === 'delete-playlist') {
         console.error('Failed to remove playlist history:', error)
@@ -398,6 +443,28 @@ export function UnifiedDownloadHistory({
     return { order, groups }
   }, [filteredRecords])
 
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!(event.metaKey || event.ctrlKey)) {
+        return
+      }
+      if (event.key.toLowerCase() !== 'a') {
+        return
+      }
+      if (isEditableTarget(event.target)) {
+        return
+      }
+      if (selectableIds.length === 0) {
+        return
+      }
+      event.preventDefault()
+      setSelectedIds(new Set(selectableIds))
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [selectableIds])
+
   return (
     <div className={cn('flex flex-col h-full')}>
       <CardHeader className="gap-4 p-0 px-6 py-4 z-50 bg-background backdrop-blur">
@@ -431,6 +498,24 @@ export function UnifiedDownloadHistory({
             })}
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 rounded-full px-3"
+              onClick={handleSelectAll}
+              disabled={selectableIds.length === 0}
+            >
+              {t('history.selectAll')}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 rounded-full px-3 text-destructive hover:text-destructive"
+              onClick={handleRequestDeleteAll}
+              disabled={historyRecords.length === 0}
+            >
+              {t('history.clearAll')}
+            </Button>
             <DownloadDialog
               onOpenSupportedSites={onOpenSupportedSites}
               onOpenSettings={onOpenSettings}
