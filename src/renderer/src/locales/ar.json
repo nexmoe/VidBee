@@ -545,7 +545,8 @@
       "itemAlreadyQueued": "هذا الفيديو موجود بالفعل في قائمة الانتظار",
       "queueError": "فشل في الإضافة إلى قائمة انتظار التحميل.",
       "openLinkError": "فشل في فتح رابط الفيديو.",
-      "resolveError": "فشل في حل رابط تغذية RSS."
+      "resolveError": "فشل في حل رابط تغذية RSS.",
+      "duplicateUrl": "تم الاشتراك في موجز RSS هذا بالفعل."
     },
     "detectedFeed": "تم اكتشاف تغذية {{platform}} -> {{feed}}",
     "detecting": "جاري اكتشاف التغذية...",

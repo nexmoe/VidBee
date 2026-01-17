@@ -35,6 +35,7 @@ import {
   updateSubscriptionAtom
 } from '@renderer/store/subscriptions'
 import type { DownloadStatus, SubscriptionFeedItem, SubscriptionRule } from '@shared/types'
+import { SUBSCRIPTION_DUPLICATE_FEED_ERROR } from '@shared/types'
 import dayjs from 'dayjs'
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import { Download, Edit, ExternalLink, Plus, Power, RefreshCw, Trash2 } from 'lucide-react'
@@ -85,6 +86,41 @@ const subscriptionItemStatusLabels: Record<SubscriptionItemStatus, string> = {
   completed: 'subscriptions.items.status.completed',
   error: 'subscriptions.items.status.error',
   cancelled: 'subscriptions.items.status.cancelled'
+}
+
+const getErrorMessage = (error: unknown): string | undefined => {
+  if (!error) {
+    return undefined
+  }
+  if (typeof error === 'string') {
+    return error
+  }
+  if (typeof error === 'object') {
+    if ('message' in error && typeof error.message === 'string') {
+      return error.message
+    }
+    if ('code' in error && typeof error.code === 'string') {
+      return error.code
+    }
+    if ('error' in error) {
+      const nested = (error as { error?: unknown }).error
+      if (typeof nested === 'string') {
+        return nested
+      }
+      if (nested && typeof nested === 'object' && 'message' in nested) {
+        const nestedMessage = (nested as { message?: unknown }).message
+        if (typeof nestedMessage === 'string') {
+          return nestedMessage
+        }
+      }
+    }
+  }
+  return undefined
+}
+
+const isDuplicateFeedError = (error: unknown) => {
+  const message = getErrorMessage(error)
+  return Boolean(message?.includes(SUBSCRIPTION_DUPLICATE_FEED_ERROR))
 }
 
 function SubscriptionTab({
@@ -252,8 +288,17 @@ export function Subscriptions() {
         }
       }
 
-      await updateSubscription({ id, data: updatePayload })
-      await refreshSubscription(id)
+      try {
+        await updateSubscription({ id, data: updatePayload })
+        await refreshSubscription(id)
+      } catch (error) {
+        console.error('Failed to update subscription:', error)
+        toast.error(
+          isDuplicateFeedError(error)
+            ? t('subscriptions.notifications.duplicateUrl')
+            : t('subscriptions.notifications.createError')
+        )
+      }
     },
     [refreshSubscription, updateSubscription, resolveFeed, t]
   )
@@ -281,7 +326,11 @@ export function Subscriptions() {
         setAddDialogOpen(false)
       } catch (error) {
         console.error('Failed to create subscription:', error)
-        toast.error(t('subscriptions.notifications.createError'))
+        toast.error(
+          isDuplicateFeedError(error)
+            ? t('subscriptions.notifications.duplicateUrl')
+            : t('subscriptions.notifications.createError')
+        )
       }
     },
     [createSubscription, t]

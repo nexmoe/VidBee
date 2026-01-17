@@ -200,6 +200,8 @@ export type SubscriptionPlatform = 'youtube' | 'bilibili' | 'custom'
 
 export type SubscriptionStatus = 'idle' | 'checking' | 'up-to-date' | 'failed'
 
+export const SUBSCRIPTION_DUPLICATE_FEED_ERROR = 'SUBSCRIPTION_DUPLICATE_FEED_URL'
+
 export interface SubscriptionRule {
   id: string
   title: string

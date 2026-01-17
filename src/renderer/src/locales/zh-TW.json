@@ -545,7 +545,8 @@
       "itemAlreadyQueued": "該視頻已排隊",
       "queueError": "無法添加到下載隊列。",
       "openLinkError": "無法打開視頻鏈接。",
-      "resolveError": "無法解析 RSS 源 URL。"
+      "resolveError": "無法解析 RSS 源 URL。",
+      "duplicateUrl": "此 RSS 訂閱已存在。"
     },
     "detectedFeed": "檢測到 {{platform}} feed -> {{feed}}",
     "detecting": "檢測飼料...",

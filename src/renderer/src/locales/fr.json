@@ -545,7 +545,8 @@
       "itemAlreadyQueued": "Cette vidéo est déjà en file d'attente",
       "queueError": "Échec de l'ajout à la file d'attente de téléchargement.",
       "openLinkError": "Échec de l'ouverture du lien vidéo.",
-      "resolveError": "Échec de la résolution de l'URL du flux RSS."
+      "resolveError": "Échec de la résolution de l'URL du flux RSS.",
+      "duplicateUrl": "Ce flux RSS est déjà abonné."
     },
     "detectedFeed": "Flux {{platform}} détecté -> {{feed}}",
     "detecting": "Détection du flux...",

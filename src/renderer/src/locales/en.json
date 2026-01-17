@@ -538,6 +538,7 @@
       "missingUrl": "Please paste a channel link first.",
       "created": "Subscription added",
       "createError": "Failed to add subscription.",
+      "duplicateUrl": "This RSS feed is already subscribed.",
       "refreshStarted": "Refresh started",
       "removed": "Subscription removed",
       "updated": "Subscription updated",

@@ -545,7 +545,8 @@
       "itemAlreadyQueued": "Video ini sudah diantre",
       "queueError": "Gagal menambahkan ke antrian unduhan.",
       "openLinkError": "Gagal membuka tautan video.",
-      "resolveError": "Gagal menyelesaikan URL feed RSS."
+      "resolveError": "Gagal menyelesaikan URL feed RSS.",
+      "duplicateUrl": "Feed RSS ini sudah berlangganan."
     },
     "detectedFeed": "Feed {{platform}} terdeteksi -> {{feed}}",
     "detecting": "Mendeteksi feed...",

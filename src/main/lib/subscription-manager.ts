@@ -99,6 +99,22 @@ export class SubscriptionManager extends EventEmitter {
     return this.attachFeedItems([this.mapRowToRecord(row)])[0]
   }
 
+  findDuplicateFeed(
+    feedUrl: string,
+    ignoreId?: string
+  ): { id: string; feedUrl: string } | undefined {
+    const database = this.getDatabase()
+    const rows = database
+      .select({ id: subscriptionsTable.id, feedUrl: subscriptionsTable.feedUrl })
+      .from(subscriptionsTable)
+      .all()
+    const targetKey = this.buildFeedKey(feedUrl)
+    if (!targetKey) {
+      return undefined
+    }
+    return rows.find((row) => row.id !== ignoreId && this.buildFeedKey(row.feedUrl) === targetKey)
+  }
+
   add(payload: SubscriptionCreatePayload): SubscriptionRule {
     const timestamp = Date.now()
     const keywords = sanitizeList(payload.keywords)
@@ -299,6 +315,25 @@ export class SubscriptionManager extends EventEmitter {
     this.ensureItemsSchema()
     log.info('subscriptions: database initialized at', databasePath)
     return this.db
+  }
+
+  private buildFeedKey(feedUrl: string): string {
+    const trimmed = feedUrl.trim()
+    if (!trimmed) {
+      return ''
+    }
+    const normalized = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`
+    try {
+      const url = new URL(normalized)
+      let pathname = url.pathname || '/'
+      pathname = pathname.replace(/\/+$/, '')
+      if (!pathname) {
+        pathname = '/'
+      }
+      return `${url.host.toLowerCase()}${pathname}${url.search}`
+    } catch {
+      return trimmed.toLowerCase()
+    }
   }
 
   private ensureItemsSchema(): void {

@@ -545,7 +545,8 @@
       "itemAlreadyQueued": "Это видео уже в очереди",
       "queueError": "Не удалось добавить в очередь загрузки.",
       "openLinkError": "Не удалось открыть ссылку на видео.",
-      "resolveError": "Не удалось разрешить URL RSS-канала."
+      "resolveError": "Не удалось разрешить URL RSS-канала.",
+      "duplicateUrl": "Этот RSS-канал уже добавлен."
     },
     "detectedFeed": "Обнаружен канал {{platform}} -> {{feed}}",
     "detecting": "Определение канала...",
