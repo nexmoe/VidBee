@@ -301,7 +301,7 @@ export const defaultSettings: AppSettings = {
   oneClickDownload: false,
   oneClickDownloadType: 'video',
   oneClickQuality: 'best',
-  closeToTray: false,
+  closeToTray: true,
   hideDockIcon: false,
   launchAtLogin: false,
   autoUpdate: true,
