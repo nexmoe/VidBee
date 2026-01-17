@@ -174,6 +174,12 @@ export function UnifiedDownloadHistory({
     })
   }, [allRecords, statusFilter])
 
+  const visibleHistoryIds = useMemo(
+    () =>
+      filteredRecords.filter((record) => record.entryType === 'history').map((record) => record.id),
+    [filteredRecords]
+  )
+
   const filters: Array<{ key: StatusFilter; label: string; count: number }> = [
     { key: 'all', label: t('download.all'), count: downloadStats.total },
     { key: 'active', label: t('download.active'), count: downloadStats.active },
@@ -181,16 +187,34 @@ export function UnifiedDownloadHistory({
     { key: 'error', label: t('download.error'), count: downloadStats.error }
   ]
 
-  const selectableIds = useMemo(
-    () =>
-      filteredRecords.filter((record) => record.entryType === 'history').map((record) => record.id),
-    [filteredRecords]
-  )
+  const selectableIds = useMemo(() => {
+    if (visibleHistoryIds.length === 0) {
+      return []
+    }
+    const ids = new Set(visibleHistoryIds)
+    const playlistIds = new Set(
+      filteredRecords
+        .filter((record) => record.entryType === 'history' && record.playlistId)
+        .map((record) => record.playlistId as string)
+    )
+    if (playlistIds.size === 0) {
+      return Array.from(ids)
+    }
+    for (const record of historyRecords) {
+      if (record.playlistId && playlistIds.has(record.playlistId)) {
+        ids.add(record.id)
+      }
+    }
+    return Array.from(ids)
+  }, [filteredRecords, historyRecords, visibleHistoryIds])
   const selectableCount = selectableIds.length
+  const visibleSelectableCount = visibleHistoryIds.length
   const selectionSummary =
     selectableCount === 0
       ? t('history.selectedCount', { count: selectedCount })
-      : t('history.selectionSummary', { selected: selectedCount, total: selectableCount })
+      : selectableCount > visibleSelectableCount
+        ? t('history.selectedCount', { count: selectedCount })
+        : t('history.selectionSummary', { selected: selectedCount, total: selectableCount })
 
   useEffect(() => {
     if (selectedIds.size === 0) {
