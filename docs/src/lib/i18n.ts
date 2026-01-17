@@ -3,7 +3,8 @@ import { defineI18n } from 'fumadocs-core/i18n';
 export const i18n = defineI18n({
   languages: ['en', 'zh'],
   defaultLanguage: 'en',
-  hideLocale: 'default-locale',
+  // Use 'never' for static export compatibility (middleware doesn't work in static export)
+  hideLocale: 'never',
   parser: 'dir'
 });
 
