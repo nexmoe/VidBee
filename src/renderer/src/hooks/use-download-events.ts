@@ -127,18 +127,18 @@ export function useDownloadEvents() {
       void syncHistoryItem(id)
     }
 
-    ipcEvents.on('download:started', handleStarted)
-    ipcEvents.on('download:progress', handleProgress)
-    ipcEvents.on('download:completed', handleCompleted)
-    ipcEvents.on('download:error', handleError)
-    ipcEvents.on('download:cancelled', handleCancelled)
+    const startedSubscription = ipcEvents.on('download:started', handleStarted)
+    const progressSubscription = ipcEvents.on('download:progress', handleProgress)
+    const completedSubscription = ipcEvents.on('download:completed', handleCompleted)
+    const errorSubscription = ipcEvents.on('download:error', handleError)
+    const cancelledSubscription = ipcEvents.on('download:cancelled', handleCancelled)
 
     return () => {
-      ipcEvents.removeListener('download:started', handleStarted)
-      ipcEvents.removeListener('download:progress', handleProgress)
-      ipcEvents.removeListener('download:completed', handleCompleted)
-      ipcEvents.removeListener('download:error', handleError)
-      ipcEvents.removeListener('download:cancelled', handleCancelled)
+      ipcEvents.removeListener('download:started', startedSubscription)
+      ipcEvents.removeListener('download:progress', progressSubscription)
+      ipcEvents.removeListener('download:completed', completedSubscription)
+      ipcEvents.removeListener('download:error', errorSubscription)
+      ipcEvents.removeListener('download:cancelled', cancelledSubscription)
     }
   }, [syncHistoryItem, t, updateDownload])
 }
