@@ -113,6 +113,17 @@ const resolveDownloadExtension = (download: DownloadRecord): string => {
   return download.type === 'audio' ? 'mp3' : 'mp4'
 }
 
+const isEditableTarget = (target: EventTarget | null): boolean => {
+  if (!target || !(target instanceof HTMLElement)) {
+    return false
+  }
+  if (target.isContentEditable) {
+    return true
+  }
+  const tagName = target.tagName
+  return tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT'
+}
+
 interface UnifiedDownloadHistoryProps {
   onOpenSupportedSites?: () => void
   onOpenSettings?: () => void
@@ -163,6 +174,12 @@ export function UnifiedDownloadHistory({
     })
   }, [allRecords, statusFilter])
 
+  const visibleHistoryIds = useMemo(
+    () =>
+      filteredRecords.filter((record) => record.entryType === 'history').map((record) => record.id),
+    [filteredRecords]
+  )
+
   const filters: Array<{ key: StatusFilter; label: string; count: number }> = [
     { key: 'all', label: t('download.all'), count: downloadStats.total },
     { key: 'active', label: t('download.active'), count: downloadStats.active },
@@ -170,16 +187,34 @@ export function UnifiedDownloadHistory({
     { key: 'error', label: t('download.error'), count: downloadStats.error }
   ]
 
-  const selectableIds = useMemo(
-    () =>
-      filteredRecords.filter((record) => record.entryType === 'history').map((record) => record.id),
-    [filteredRecords]
-  )
+  const selectableIds = useMemo(() => {
+    if (visibleHistoryIds.length === 0) {
+      return []
+    }
+    const ids = new Set(visibleHistoryIds)
+    const playlistIds = new Set(
+      filteredRecords
+        .filter((record) => record.entryType === 'history' && record.playlistId)
+        .map((record) => record.playlistId as string)
+    )
+    if (playlistIds.size === 0) {
+      return Array.from(ids)
+    }
+    for (const record of historyRecords) {
+      if (record.playlistId && playlistIds.has(record.playlistId)) {
+        ids.add(record.id)
+      }
+    }
+    return Array.from(ids)
+  }, [filteredRecords, historyRecords, visibleHistoryIds])
   const selectableCount = selectableIds.length
+  const visibleSelectableCount = visibleHistoryIds.length
   const selectionSummary =
     selectableCount === 0
       ? t('history.selectedCount', { count: selectedCount })
-      : t('history.selectionSummary', { selected: selectedCount, total: selectableCount })
+      : selectableCount > visibleSelectableCount
+        ? t('history.selectedCount', { count: selectedCount })
+        : t('history.selectionSummary', { selected: selectedCount, total: selectableCount })
 
   useEffect(() => {
     if (selectedIds.size === 0) {
@@ -214,6 +249,13 @@ export function UnifiedDownloadHistory({
 
   const handleClearSelection = () => {
     setSelectedIds(new Set())
+  }
+
+  const handleSelectAll = () => {
+    if (selectableIds.length === 0) {
+      return
+    }
+    setSelectedIds(new Set(selectableIds))
   }
 
   const handleRequestDeleteSelected = () => {
@@ -398,6 +440,41 @@ export function UnifiedDownloadHistory({
     return { order, groups }
   }, [filteredRecords])
 
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented) {
+        return
+      }
+      if (isEditableTarget(event.target)) {
+        return
+      }
+      if (event.key === 'Escape') {
+        if (confirmAction) {
+          return
+        }
+        if (selectedIds.size === 0) {
+          return
+        }
+        setSelectedIds(new Set())
+        return
+      }
+      if (!(event.metaKey || event.ctrlKey)) {
+        return
+      }
+      if (event.key.toLowerCase() !== 'a') {
+        return
+      }
+      if (selectableIds.length === 0) {
+        return
+      }
+      event.preventDefault()
+      setSelectedIds(new Set(selectableIds))
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [confirmAction, selectableIds, selectedIds])
+
   return (
     <div className={cn('flex flex-col h-full')}>
       <CardHeader className="gap-4 p-0 px-6 py-4 z-50 bg-background backdrop-blur">
@@ -431,6 +508,15 @@ export function UnifiedDownloadHistory({
             })}
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 rounded-full px-3"
+              onClick={handleSelectAll}
+              disabled={selectableIds.length === 0}
+            >
+              {t('history.selectAll')}
+            </Button>
             <DownloadDialog
               onOpenSupportedSites={onOpenSupportedSites}
               onOpenSettings={onOpenSettings}
