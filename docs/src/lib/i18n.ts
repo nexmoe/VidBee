@@ -12,7 +12,7 @@ export type Locale = (typeof i18n.languages)[number];
 const localeSet = new Set(i18n.languages);
 
 export function isLocale(value?: string): value is Locale {
-  return Boolean(value && localeSet.has(value));
+  return Boolean(value && localeSet.has(value as Locale));
 }
 
 export function resolveLocaleFromSlug(slug?: string[]): Locale {
