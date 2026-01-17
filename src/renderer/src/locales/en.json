@@ -27,7 +27,6 @@
     "notifications": {
       "checkingUpdates": "Looking for updates...",
       "downloadError": "Failed to download update",
-      "downloadStarted": "Download started...",
       "downloadUpdate": "Download and install update {{version}}?",
       "manualDownloadAction": "Download now",
       "noUpdatesAvailable": "You're using the latest version",
@@ -303,7 +302,6 @@
     "copyFailed": "Failed to copy to clipboard",
     "downloadCompleted": "Download completed",
     "downloadFailed": "Download failed",
-    "downloadStarted": "Download started",
     "historyCleared": "History cleared",
     "historyClearFailed": "Failed to clear history",
     "itemRemoved": "Item removed",
@@ -327,7 +325,6 @@
     "description": "Download all videos from a YouTube playlist or channel",
     "downloadFailed": "Failed to start playlist download",
     "downloadPlaylist": "Download Playlist",
-    "downloadStarted": "Started downloading {{count}} videos from playlist",
     "downloadType": "Download Type",
     "downloading": "Downloading playlist:",
     "endIndex": "End",

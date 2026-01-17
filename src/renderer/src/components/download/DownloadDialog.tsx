@@ -665,7 +665,6 @@ export function DownloadDialog({
         addDownload(downloadItem)
       })
 
-      toast.success(t('playlist.downloadStarted', { count: result.totalCount }))
       setOpen(false) // Close dialog after download starts
     } catch (error) {
       console.error('Failed to start playlist download:', error)
@@ -748,7 +747,6 @@ export function DownloadDialog({
         createdAt: Date.now()
       })
 
-      toast.success(t('notifications.downloadStarted'))
       setOpen(false) // Close dialog after download starts
     } catch (error) {
       console.error('Failed to start download:', error)
