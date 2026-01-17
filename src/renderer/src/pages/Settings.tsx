@@ -520,30 +520,26 @@ export function Settings() {
 
               <ItemSeparator />
 
-              {platform !== 'darwin' && (
-                <>
-                  <Item variant="muted">
-                    <ItemContent>
-                      <ItemTitle>{t('settings.embedThumbnail')}</ItemTitle>
-                      <ItemDescription>{t('settings.embedThumbnailDescription')}</ItemDescription>
-                    </ItemContent>
-                    <ItemActions>
-                      <Switch
-                        checked={settings.embedThumbnail ?? false}
-                        onCheckedChange={(value) => {
-                          try {
-                            handleSettingChange('embedThumbnail', value)
-                          } catch (error) {
-                            logger.error('[Settings] Error toggling embedThumbnail:', error)
-                          }
-                        }}
-                      />
-                    </ItemActions>
-                  </Item>
+              <Item variant="muted">
+                <ItemContent>
+                  <ItemTitle>{t('settings.embedThumbnail')}</ItemTitle>
+                  <ItemDescription>{t('settings.embedThumbnailDescription')}</ItemDescription>
+                </ItemContent>
+                <ItemActions>
+                  <Switch
+                    checked={settings.embedThumbnail ?? false}
+                    onCheckedChange={(value) => {
+                      try {
+                        handleSettingChange('embedThumbnail', value)
+                      } catch (error) {
+                        logger.error('[Settings] Error toggling embedThumbnail:', error)
+                      }
+                    }}
+                  />
+                </ItemActions>
+              </Item>
 
-                  <ItemSeparator />
-                </>
-              )}
+              <ItemSeparator />
 
               <Item variant="muted">
                 <ItemContent>

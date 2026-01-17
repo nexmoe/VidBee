@@ -2,7 +2,12 @@ const { execFileSync } = require('node:child_process')
 const fs = require('node:fs')
 const path = require('node:path')
 
-const BINARIES = ['yt-dlp_macos', 'ffmpeg_macos', 'deno']
+const BINARIES = [
+  'yt-dlp_macos',
+  path.join('ffmpeg', 'ffmpeg'),
+  path.join('ffmpeg', 'ffprobe'),
+  'deno'
+]
 
 const findAppBundle = (appOutDir) => {
   const entries = fs.readdirSync(appOutDir)

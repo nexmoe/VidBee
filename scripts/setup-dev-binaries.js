@@ -14,6 +14,7 @@ const http = require('node:http')
 
 // Configuration
 const RESOURCES_DIR = path.join(__dirname, '..', 'resources')
+const FFMPEG_DIR = path.join(RESOURCES_DIR, 'ffmpeg')
 const YTDLP_BASE_URL = 'https://github.com/yt-dlp/yt-dlp/releases/latest/download'
 const DENO_BASE_URL = 'https://github.com/denoland/deno/releases/latest/download'
 const GITHUB_TOKEN =
@@ -29,7 +30,9 @@ const PLATFORM_CONFIG = {
     ffmpeg: {
       url: 'https://github.com/yt-dlp/FFmpeg-Builds/releases/latest/download/ffmpeg-master-latest-win64-gpl.zip',
       innerPath: 'ffmpeg-master-latest-win64-gpl/bin/ffmpeg.exe',
+      ffprobeInnerPath: 'ffmpeg-master-latest-win64-gpl/bin/ffprobe.exe',
       output: 'ffmpeg.exe',
+      ffprobeOutput: 'ffprobe.exe',
       extract: 'unzip',
       release: {
         repos: ['yt-dlp/FFmpeg-Builds', 'BtbN/FFmpeg-Builds'],
@@ -46,9 +49,11 @@ const PLATFORM_CONFIG = {
     ffmpeg: {
       // For development, download only the architecture matching current system
       arm64: {
-        url: 'https://github.com/eko5624/mpv-mac/releases/download/2025-10-25/ffmpeg-arm64-defd5f3f64.zip',
+        url: 'https://github.com/eko5624/mpv-mac/releases/download/2026-01-12/ffmpeg-arm64-96e8f3b8cc.zip',
         innerPath: 'ffmpeg/ffmpeg',
-        output: 'ffmpeg_macos',
+        ffprobeInnerPath: 'ffmpeg/ffprobe',
+        output: 'ffmpeg',
+        ffprobeOutput: 'ffprobe',
         extract: 'unzip',
         release: {
           repo: 'eko5624/mpv-mac',
@@ -56,9 +61,11 @@ const PLATFORM_CONFIG = {
         }
       },
       x64: {
-        url: 'https://github.com/eko5624/mpv-mac/releases/download/2025-10-25/ffmpeg-x86_64-defd5f3f64.zip',
+        url: 'https://github.com/eko5624/mpv-mac/releases/download/2026-01-12/ffmpeg-x86_64-96e8f3b8cc.zip',
         innerPath: 'ffmpeg/ffmpeg',
-        output: 'ffmpeg_macos',
+        ffprobeInnerPath: 'ffmpeg/ffprobe',
+        output: 'ffmpeg',
+        ffprobeOutput: 'ffprobe',
         extract: 'unzip',
         release: {
           repo: 'eko5624/mpv-mac',
@@ -75,7 +82,9 @@ const PLATFORM_CONFIG = {
     ffmpeg: {
       url: 'https://github.com/yt-dlp/FFmpeg-Builds/releases/latest/download/ffmpeg-master-latest-linux64-gpl.tar.xz',
       innerPath: 'ffmpeg-master-latest-linux64-gpl/bin/ffmpeg',
-      output: 'ffmpeg_linux',
+      ffprobeInnerPath: 'ffmpeg-master-latest-linux64-gpl/bin/ffprobe',
+      output: 'ffmpeg',
+      ffprobeOutput: 'ffprobe',
       extract: 'tar',
       release: {
         repos: ['yt-dlp/FFmpeg-Builds', 'BtbN/FFmpeg-Builds'],
@@ -419,23 +428,43 @@ async function downloadYtDlp(config) {
 }
 
 async function downloadFfmpegWindows(config) {
-  const { url: fallbackUrl, innerPath: fallbackInnerPath, output, release } = config.ffmpeg
-  const outputPath = path.join(RESOURCES_DIR, output)
+  const {
+    url: fallbackUrl,
+    innerPath: fallbackInnerPath,
+    ffprobeInnerPath: fallbackFfprobeInnerPath,
+    output,
+    ffprobeOutput,
+    release
+  } = config.ffmpeg
+  const outputPath = path.join(FFMPEG_DIR, output)
+  const ffprobeOutputPath = ffprobeOutput ? path.join(FFMPEG_DIR, ffprobeOutput) : null
 
-  if (fileExists(outputPath)) {
+  const ffmpegExists = fileExists(outputPath)
+  const ffprobeExists = ffprobeOutputPath ? fileExists(ffprobeOutputPath) : true
+
+  if (ffmpegExists && ffprobeExists) {
     const validation = checkBinary(outputPath, ['-version'], 'ffmpeg')
-    if (!validation.ok) {
-      log(`Existing ${output} failed version check: ${validation.message}`, 'warn')
+    const ffprobeValidation = ffprobeOutputPath
+      ? checkBinary(ffprobeOutputPath, ['-version'], 'ffprobe')
+      : { ok: true }
+    if (!validation.ok || !ffprobeValidation.ok) {
+      log(
+        `Existing ffmpeg/ffprobe failed version check: ${validation.message || ffprobeValidation.message}`,
+        'warn'
+      )
+    } else {
+      log('ffmpeg and ffprobe already exist, skipping download', 'info')
+      return
     }
-    log(`${output} already exists, skipping download`, 'info')
-    return
   }
 
   log(`Downloading ffmpeg for Windows...`, 'download')
+  ensureDir(FFMPEG_DIR)
   const tempZip = path.join(RESOURCES_DIR, 'ffmpeg-temp.zip')
   const extractDir = path.join(RESOURCES_DIR, 'ffmpeg-temp')
   let downloadUrl = fallbackUrl
   let innerPath = fallbackInnerPath
+  let ffprobeInnerPath = fallbackFfprobeInnerPath
 
   if (release) {
     try {
@@ -445,6 +474,10 @@ async function downloadFfmpegWindows(config) {
         const inferred = inferFfmpegInnerPath(resolved.name, release.binaryName ?? 'ffmpeg.exe')
         if (inferred) {
           innerPath = inferred
+        }
+        const inferredFfprobe = inferFfmpegInnerPath(resolved.name, 'ffprobe.exe')
+        if (inferredFfprobe) {
+          ffprobeInnerPath = inferredFfprobe
         }
       }
     } catch (error) {
@@ -463,6 +496,13 @@ async function downloadFfmpegWindows(config) {
     }
 
     fs.copyFileSync(sourcePath, outputPath)
+    if (ffprobeInnerPath && ffprobeOutputPath) {
+      const ffprobeSourcePath = path.join(extractDir, ffprobeInnerPath.replace(/\\/g, path.sep))
+      if (!fileExists(ffprobeSourcePath)) {
+        throw new Error(`ffprobe binary not found at ${ffprobeSourcePath}`)
+      }
+      fs.copyFileSync(ffprobeSourcePath, ffprobeOutputPath)
+    }
     const validation = checkBinary(outputPath, ['-version'], 'ffmpeg')
     if (!validation.ok) {
       if (validation.code === 'ETIMEDOUT') {
@@ -493,19 +533,38 @@ async function downloadFfmpegMac(config) {
     throw new Error(`Unsupported architecture: ${arch}`)
   }
 
-  const { url: fallbackUrl, innerPath, output, release } = ffmpegConfig
-  const outputPath = path.join(RESOURCES_DIR, output)
+  const {
+    url: fallbackUrl,
+    innerPath,
+    ffprobeInnerPath,
+    output,
+    ffprobeOutput,
+    release
+  } = ffmpegConfig
+  const outputPath = path.join(FFMPEG_DIR, output)
+  const ffprobeOutputPath = ffprobeOutput ? path.join(FFMPEG_DIR, ffprobeOutput) : null
 
-  if (fileExists(outputPath)) {
+  const ffmpegExists = fileExists(outputPath)
+  const ffprobeExists = ffprobeOutputPath ? fileExists(ffprobeOutputPath) : true
+
+  if (ffmpegExists && ffprobeExists) {
     const validation = checkBinary(outputPath, ['-version'], 'ffmpeg')
-    if (!validation.ok) {
-      log(`Existing ${output} failed version check: ${validation.message}`, 'warn')
+    const ffprobeValidation = ffprobeOutputPath
+      ? checkBinary(ffprobeOutputPath, ['-version'], 'ffprobe')
+      : { ok: true }
+    if (!validation.ok || !ffprobeValidation.ok) {
+      log(
+        `Existing ffmpeg/ffprobe failed version check: ${validation.message || ffprobeValidation.message}`,
+        'warn'
+      )
+    } else {
+      log('ffmpeg and ffprobe already exist, skipping download', 'info')
+      return
     }
-    log(`${output} already exists, skipping download`, 'info')
-    return
   }
 
   log(`Downloading ffmpeg for macOS (${arch})...`, 'download')
+  ensureDir(FFMPEG_DIR)
   const tempZip = path.join(RESOURCES_DIR, 'ffmpeg-temp.zip')
   const extractDir = path.join(RESOURCES_DIR, 'ffmpeg-temp')
   let downloadUrl = fallbackUrl
@@ -533,6 +592,14 @@ async function downloadFfmpegMac(config) {
 
     fs.copyFileSync(sourcePath, outputPath)
     setExecutable(outputPath)
+    if (ffprobeInnerPath && ffprobeOutputPath) {
+      const ffprobeSourcePath = path.join(extractDir, ffprobeInnerPath)
+      if (!fileExists(ffprobeSourcePath)) {
+        throw new Error(`ffprobe binary not found at ${ffprobeSourcePath}`)
+      }
+      fs.copyFileSync(ffprobeSourcePath, ffprobeOutputPath)
+      setExecutable(ffprobeOutputPath)
+    }
     const validation = checkBinary(outputPath, ['-version'], 'ffmpeg')
     if (!validation.ok) {
       safeUnlink(outputPath)
@@ -551,23 +618,43 @@ async function downloadFfmpegMac(config) {
 }
 
 async function downloadFfmpegLinux(config) {
-  const { url: fallbackUrl, innerPath: fallbackInnerPath, output, release } = config.ffmpeg
-  const outputPath = path.join(RESOURCES_DIR, output)
+  const {
+    url: fallbackUrl,
+    innerPath: fallbackInnerPath,
+    ffprobeInnerPath: fallbackFfprobeInnerPath,
+    output,
+    ffprobeOutput,
+    release
+  } = config.ffmpeg
+  const outputPath = path.join(FFMPEG_DIR, output)
+  const ffprobeOutputPath = ffprobeOutput ? path.join(FFMPEG_DIR, ffprobeOutput) : null
 
-  if (fileExists(outputPath)) {
+  const ffmpegExists = fileExists(outputPath)
+  const ffprobeExists = ffprobeOutputPath ? fileExists(ffprobeOutputPath) : true
+
+  if (ffmpegExists && ffprobeExists) {
     const validation = checkBinary(outputPath, ['-version'], 'ffmpeg')
-    if (!validation.ok) {
-      log(`Existing ${output} failed version check: ${validation.message}`, 'warn')
+    const ffprobeValidation = ffprobeOutputPath
+      ? checkBinary(ffprobeOutputPath, ['-version'], 'ffprobe')
+      : { ok: true }
+    if (!validation.ok || !ffprobeValidation.ok) {
+      log(
+        `Existing ffmpeg/ffprobe failed version check: ${validation.message || ffprobeValidation.message}`,
+        'warn'
+      )
+    } else {
+      log('ffmpeg and ffprobe already exist, skipping download', 'info')
+      return
     }
-    log(`${output} already exists, skipping download`, 'info')
-    return
   }
 
   log(`Downloading ffmpeg for Linux...`, 'download')
+  ensureDir(FFMPEG_DIR)
   const tempTar = path.join(RESOURCES_DIR, 'ffmpeg-temp.tar.xz')
   const extractDir = path.join(RESOURCES_DIR, 'ffmpeg-temp')
   let downloadUrl = fallbackUrl
   let innerPath = fallbackInnerPath
+  let ffprobeInnerPath = fallbackFfprobeInnerPath
 
   if (release) {
     try {
@@ -577,6 +664,10 @@ async function downloadFfmpegLinux(config) {
         const inferred = inferFfmpegInnerPath(resolved.name, release.binaryName ?? 'ffmpeg')
         if (inferred) {
           innerPath = inferred
+        }
+        const inferredFfprobe = inferFfmpegInnerPath(resolved.name, 'ffprobe')
+        if (inferredFfprobe) {
+          ffprobeInnerPath = inferredFfprobe
         }
       }
     } catch (error) {
@@ -596,6 +687,14 @@ async function downloadFfmpegLinux(config) {
 
     fs.copyFileSync(sourcePath, outputPath)
     setExecutable(outputPath)
+    if (ffprobeInnerPath && ffprobeOutputPath) {
+      const ffprobeSourcePath = path.join(extractDir, ffprobeInnerPath)
+      if (!fileExists(ffprobeSourcePath)) {
+        throw new Error(`ffprobe binary not found at ${ffprobeSourcePath}`)
+      }
+      fs.copyFileSync(ffprobeSourcePath, ffprobeOutputPath)
+      setExecutable(ffprobeOutputPath)
+    }
     const validation = checkBinary(outputPath, ['-version'], 'ffmpeg')
     if (!validation.ok) {
       safeUnlink(outputPath)

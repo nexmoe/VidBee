@@ -6,6 +6,9 @@ ffmpeg.exe
 ffmpeg_macos
 ffmpeg_linux
 ffmpeg
+ffmpeg/
+ffprobe
+ffprobe.exe
 deno.exe
 deno
 

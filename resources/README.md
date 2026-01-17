@@ -48,27 +48,27 @@ Invoke-WebRequest -Uri "https://github.com/yt-dlp/yt-dlp/releases/latest/downloa
 Invoke-WebRequest -Uri "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp" -OutFile "resources/yt-dlp_linux"
 ```
 
-## ffmpeg Binaries
+## ffmpeg/ffprobe Binaries
 
-ffmpeg is required for merging audio/video streams and audio extraction. Bundle the matching binary for each target platform:
+ffmpeg is required for merging audio/video streams and audio extraction. ffprobe is required for post-processing metadata. Bundle both binaries under `resources/ffmpeg/`.
 
 ### Required Files
 
-1. **Windows**: `ffmpeg.exe`
-2. **macOS**: `ffmpeg_macos`
-3. **Linux**: `ffmpeg_linux`
+1. **Windows**: `resources/ffmpeg/ffmpeg.exe` and `resources/ffmpeg/ffprobe.exe`
+2. **macOS**: `resources/ffmpeg/ffmpeg` and `resources/ffmpeg/ffprobe`
+3. **Linux**: `resources/ffmpeg/ffmpeg` and `resources/ffmpeg/ffprobe`
 
 ### How to Download
 
-- **Windows / Linux**: Grab static builds from <https://ffmpeg.org/download.html> (or <https://github.com/yt-dlp/FFmpeg-Builds/releases>) and rename the binary to match the filenames above.
-- **macOS**: Download the `ffmpeg-arm64*.zip` and `ffmpeg-x86_64*.zip` assets from <https://github.com/eko5624/mpv-mac/releases/latest>. Extract them and merge into a universal binary with `lipo -create`, then save the result as `resources/ffmpeg_macos`.
-- On macOS/Linux ensure the final binary is executable: `chmod +x resources/ffmpeg_macos` (or `ffmpeg_linux`).
+- **Windows / Linux**: Grab static builds from <https://ffmpeg.org/download.html> (or <https://github.com/yt-dlp/FFmpeg-Builds/releases>) and copy `ffmpeg` and `ffprobe` into `resources/ffmpeg/`.
+- **macOS**: Download the `ffmpeg-*.zip` asset from <https://github.com/eko5624/mpv-mac/releases/latest>, then copy `ffmpeg` and `ffprobe` from the archive into `resources/ffmpeg/`.
+- On macOS/Linux ensure both binaries are executable: `chmod +x resources/ffmpeg/ffmpeg resources/ffmpeg/ffprobe`.
 
 ### Note
 
-- Bundled binaries are required for Windows builds. On macOS/Linux the app can also use ffmpeg/yt-dlp from the system PATH.
-- You can override the lookup paths via the `YTDLP_PATH` or `FFMPEG_PATH` environment variables if you prefer custom locations.
-- File sizes: ~10-15 MB per yt-dlp binary, ~40-80 MB per ffmpeg binary
+- Bundled binaries are required for Windows builds. On macOS/Linux the app can also use ffmpeg/ffprobe from the system PATH.
+- You can override the lookup path via `FFMPEG_PATH`. It must point to a directory containing both `ffmpeg` and `ffprobe`.
+- File sizes: ~40-80 MB per ffmpeg build (ffmpeg + ffprobe)
 
 ## JS Runtime (Deno)
 

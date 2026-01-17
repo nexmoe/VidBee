@@ -28,46 +28,58 @@ class FfmpegManager {
 
   private async findFfmpegBinary(): Promise<string> {
     const platform = os.platform()
-    const resourceCandidates: string[] = []
+    const ffmpegFileName = platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg'
+    const ffprobeFileName = platform === 'win32' ? 'ffprobe.exe' : 'ffprobe'
 
-    if (process.env.FFMPEG_PATH && fs.existsSync(process.env.FFMPEG_PATH)) {
-      scopedLoggers.engine.info('Using ffmpeg from FFMPEG_PATH:', process.env.FFMPEG_PATH)
-      return process.env.FFMPEG_PATH
+    const resolveBundledFfmpeg = (dirPath: string, label: string): string | null => {
+      const ffmpegPath = path.join(dirPath, ffmpegFileName)
+      const ffprobePath = path.join(dirPath, ffprobeFileName)
+      if (!fs.existsSync(ffmpegPath) || !fs.existsSync(ffprobePath)) {
+        return null
+      }
+      if (platform !== 'win32') {
+        try {
+          fs.chmodSync(ffmpegPath, 0o755)
+          fs.chmodSync(ffprobePath, 0o755)
+        } catch (error) {
+          scopedLoggers.engine.warn(`Failed to set executable permission on ${label}:`, error)
+        }
+      }
+      scopedLoggers.engine.info(`Using ${label}:`, ffmpegPath)
+      return ffmpegPath
     }
 
-    if (platform === 'win32') {
-      resourceCandidates.push('ffmpeg.exe')
-    } else if (platform === 'darwin') {
-      resourceCandidates.push('ffmpeg_macos', 'ffmpeg')
-    } else {
-      resourceCandidates.push('ffmpeg_linux', 'ffmpeg')
+    const envPath = process.env.FFMPEG_PATH
+    if (envPath) {
+      if (!fs.existsSync(envPath)) {
+        throw new Error(
+          'FFMPEG_PATH does not exist. Provide a directory containing ffmpeg and ffprobe.'
+        )
+      }
+      const stats = fs.statSync(envPath)
+      if (!stats.isDirectory()) {
+        throw new Error('FFMPEG_PATH must be a directory containing ffmpeg and ffprobe.')
+      }
+      const resolved = resolveBundledFfmpeg(envPath, 'ffmpeg from FFMPEG_PATH directory')
+      if (resolved) {
+        return resolved
+      }
+      throw new Error('FFMPEG_PATH must contain both ffmpeg and ffprobe.')
     }
 
     const resourcesPath = this.getResourcesPath()
-    for (const candidate of resourceCandidates) {
-      const fullPath = path.join(resourcesPath, candidate)
-      if (fs.existsSync(fullPath)) {
-        if (platform !== 'win32') {
-          try {
-            fs.chmodSync(fullPath, 0o755)
-          } catch (error) {
-            scopedLoggers.engine.warn(
-              'Failed to set executable permission on ffmpeg binary:',
-              error
-            )
-          }
-        }
-        scopedLoggers.engine.info('Using bundled ffmpeg:', fullPath)
-        return fullPath
-      }
+    const bundledDir = path.join(resourcesPath, 'ffmpeg')
+    const bundledResolved = resolveBundledFfmpeg(bundledDir, 'bundled ffmpeg')
+    if (bundledResolved) {
+      return bundledResolved
     }
 
     if (platform === 'darwin') {
-      const commonPaths = ['/opt/homebrew/bin/ffmpeg', '/usr/local/bin/ffmpeg']
-      for (const candidate of commonPaths) {
-        if (fs.existsSync(candidate)) {
-          scopedLoggers.engine.info('Using system ffmpeg:', candidate)
-          return candidate
+      const commonDirs = ['/opt/homebrew/bin', '/usr/local/bin']
+      for (const candidate of commonDirs) {
+        const resolved = resolveBundledFfmpeg(candidate, 'system ffmpeg')
+        if (resolved) {
+          return resolved
         }
       }
     }
@@ -76,8 +88,10 @@ class FfmpegManager {
       try {
         const systemPath = execSync('which ffmpeg').toString().trim()
         if (systemPath && fs.existsSync(systemPath)) {
-          scopedLoggers.engine.info('Using system ffmpeg:', systemPath)
-          return systemPath
+          const resolved = resolveBundledFfmpeg(path.dirname(systemPath), 'system ffmpeg')
+          if (resolved) {
+            return resolved
+          }
         }
       } catch (_error) {
         // Ignore error and continue
@@ -88,8 +102,10 @@ class FfmpegManager {
       try {
         const output = execSync('where ffmpeg').toString().split(/\r?\n/)[0]
         if (output && fs.existsSync(output)) {
-          scopedLoggers.engine.info('Using system ffmpeg:', output)
-          return output
+          const resolved = resolveBundledFfmpeg(path.dirname(output), 'system ffmpeg')
+          if (resolved) {
+            return resolved
+          }
         }
       } catch (_error) {
         // Ignore error and continue
@@ -97,7 +113,7 @@ class FfmpegManager {
     }
 
     throw new Error(
-      'ffmpeg not found. Bundle it under resources/ (asarUnpack) or set the FFMPEG_PATH environment variable.'
+      'ffmpeg/ffprobe not found. Bundle them under resources/ffmpeg/ (asarUnpack) or set FFMPEG_PATH to a directory containing both.'
     )
   }
 }

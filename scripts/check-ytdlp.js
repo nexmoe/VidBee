@@ -23,10 +23,10 @@ if (!supportedPlatforms.includes(platform)) {
 const binaries = [
   {
     label: 'yt-dlp',
-    filenameMap: {
-      win: 'yt-dlp.exe',
-      mac: 'yt-dlp_macos',
-      linux: 'yt-dlp_linux'
+    paths: {
+      win: ['yt-dlp.exe'],
+      mac: ['yt-dlp_macos'],
+      linux: ['yt-dlp_linux']
     },
     help: {
       default: 'https://github.com/yt-dlp/yt-dlp/releases/latest'
@@ -34,10 +34,23 @@ const binaries = [
   },
   {
     label: 'ffmpeg',
-    filenameMap: {
-      win: 'ffmpeg.exe',
-      mac: 'ffmpeg_macos',
-      linux: 'ffmpeg_linux'
+    paths: {
+      win: ['ffmpeg/ffmpeg.exe'],
+      mac: ['ffmpeg/ffmpeg'],
+      linux: ['ffmpeg/ffmpeg']
+    },
+    help: {
+      win: 'https://ffmpeg.org/download.html',
+      linux: 'https://ffmpeg.org/download.html',
+      mac: 'https://github.com/eko5624/mpv-mac/releases/latest'
+    }
+  },
+  {
+    label: 'ffprobe',
+    paths: {
+      win: ['ffmpeg/ffprobe.exe'],
+      mac: ['ffmpeg/ffprobe'],
+      linux: ['ffmpeg/ffprobe']
     },
     help: {
       win: 'https://ffmpeg.org/download.html',
@@ -47,10 +60,10 @@ const binaries = [
   },
   {
     label: 'deno',
-    filenameMap: {
-      win: 'deno.exe',
-      mac: 'deno',
-      linux: 'deno'
+    paths: {
+      win: ['deno.exe'],
+      mac: ['deno'],
+      linux: ['deno']
     },
     help: {
       default: 'https://github.com/denoland/deno/releases/latest'
@@ -61,12 +74,15 @@ const binaries = [
 let hasMissingBinary = false
 
 for (const binary of binaries) {
-  const filename = binary.filenameMap[platform]
-  const binaryPath = path.join(__dirname, '..', 'resources', filename)
+  const candidates = binary.paths[platform] || []
+  const found = candidates.find((filename) =>
+    fs.existsSync(path.join(__dirname, '..', 'resources', filename))
+  )
 
-  if (!fs.existsSync(binaryPath)) {
-    console.error(`❌ Error: resources/${filename} not found!`)
-    console.error(`Please download ${filename} to the resources/ directory first.`)
+  if (!found) {
+    const expected = candidates.length ? candidates.join(' or ') : binary.label
+    console.error(`❌ Error: resources/${expected} not found!`)
+    console.error(`Please download ${binary.label} to the resources/ directory first.`)
     const help =
       typeof binary.help === 'string' ? binary.help : binary.help[platform] || binary.help.default
     if (help) {
@@ -74,7 +90,7 @@ for (const binary of binaries) {
     }
     hasMissingBinary = true
   } else {
-    console.log(`✅ ${filename} found in resources/ directory`)
+    console.log(`✅ ${binary.label} found: resources/${found}`)
   }
 }
 
