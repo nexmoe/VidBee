@@ -45,12 +45,13 @@
       "**/*.js",
       "**/*.jsx",
       "**/*.json",
+      "!docs",
       "!monkey/dist",
       "!dist",
       "!out",
       "!build"
     ],
-    "experimentalScannerIgnores": ["monkey/dist/**", "dist/**", "out/**", "build/**"]
+    "experimentalScannerIgnores": ["docs/**", "monkey/dist/**", "dist/**", "out/**", "build/**"]
   },
   "vcs": {
     "enabled": true,
