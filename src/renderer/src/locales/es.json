@@ -545,7 +545,8 @@
       "itemAlreadyQueued": "Este video ya está en cola",
       "queueError": "Error al agregar a la cola de descarga.",
       "openLinkError": "Error al abrir el enlace del video.",
-      "resolveError": "Error al resolver la URL del feed RSS."
+      "resolveError": "Error al resolver la URL del feed RSS.",
+      "duplicateUrl": "Este feed RSS ya está suscrito."
     },
     "detectedFeed": "Feed {{platform}} detectado -> {{feed}}",
     "detecting": "Detectando feed...",

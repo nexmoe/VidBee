@@ -545,7 +545,8 @@
       "itemAlreadyQueued": "Questo video è già in coda",
       "queueError": "Impossibile aggiungere alla coda di download.",
       "openLinkError": "Impossibile aprire il collegamento video.",
-      "resolveError": "Impossibile risolvere l'URL del feed RSS."
+      "resolveError": "Impossibile risolvere l'URL del feed RSS.",
+      "duplicateUrl": "Questo feed RSS è già sottoscritto."
     },
     "detectedFeed": "Feed {{platform}} rilevato -> {{feed}}",
     "detecting": "Rilevamento alimentazione...",

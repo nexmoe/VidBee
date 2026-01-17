@@ -545,7 +545,8 @@
       "itemAlreadyQueued": "Este vídeo já está na fila",
       "queueError": "Falha ao adicionar à fila de download.",
       "openLinkError": "Falha ao abrir o link do vídeo.",
-      "resolveError": "Falha ao resolver o URL do feed RSS."
+      "resolveError": "Falha ao resolver o URL do feed RSS.",
+      "duplicateUrl": "Este feed RSS já está inscrito."
     },
     "detectedFeed": "Feed de {{platform}} detectado -> {{feed}}",
     "detecting": "Detectando feed...",

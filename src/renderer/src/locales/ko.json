@@ -545,7 +545,8 @@
       "itemAlreadyQueued": "이 동영상은 이미 대기열에 있습니다.",
       "queueError": "다운로드 대기열에 추가하지 못했습니다.",
       "openLinkError": "동영상 링크를 열지 못했습니다.",
-      "resolveError": "RSS 피드 URL을 확인하지 못했습니다."
+      "resolveError": "RSS 피드 URL을 확인하지 못했습니다.",
+      "duplicateUrl": "이 RSS 피드는 이미 구독되어 있습니다."
     },
     "detectedFeed": "{{platform}} 피드 감지됨 -> {{feed}}",
     "detecting": "피드 감지 중...",

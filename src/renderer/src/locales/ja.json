@@ -545,7 +545,8 @@
       "itemAlreadyQueued": "このビデオはすでにキューに登録されています",
       "queueError": "ダウンロードキューへの追加に失敗しました。",
       "openLinkError": "ビデオリンクを開けませんでした。",
-      "resolveError": "RSS フィード URL を解決できませんでした。"
+      "resolveError": "RSS フィード URL を解決できませんでした。",
+      "duplicateUrl": "このRSSフィードはすでに登録されています。"
     },
     "detectedFeed": "{{platform}} フィードが検出されました -> {{feed}}",
     "detecting": "フィードを検出中...",

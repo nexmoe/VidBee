@@ -545,7 +545,8 @@
       "itemAlreadyQueued": "Dieses Video ist bereits in der Warteschlange",
       "queueError": "Hinzufügen zur Download-Warteschlange fehlgeschlagen.",
       "openLinkError": "Video-Link konnte nicht geöffnet werden.",
-      "resolveError": "RSS-Feed-URL konnte nicht aufgelöst werden."
+      "resolveError": "RSS-Feed-URL konnte nicht aufgelöst werden.",
+      "duplicateUrl": "Dieser RSS-Feed ist bereits abonniert."
     },
     "detectedFeed": "{{platform}} Feed erkannt -> {{feed}}",
     "detecting": "Feed wird erkannt...",

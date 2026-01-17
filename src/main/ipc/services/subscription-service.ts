@@ -6,7 +6,10 @@ import type {
   SubscriptionRule,
   SubscriptionUpdatePayload
 } from '../../../shared/types'
-import { DEFAULT_SUBSCRIPTION_FILENAME_TEMPLATE } from '../../../shared/types'
+import {
+  DEFAULT_SUBSCRIPTION_FILENAME_TEMPLATE,
+  SUBSCRIPTION_DUPLICATE_FEED_ERROR
+} from '../../../shared/types'
 import { sanitizeFilenameTemplate } from '../../download-engine/args-builder'
 import { subscriptionManager } from '../../lib/subscription-manager'
 import { subscriptionScheduler } from '../../lib/subscription-scheduler'
@@ -113,6 +116,10 @@ class SubscriptionService extends IpcService {
     options: CreateSubscriptionOptions
   ): Promise<SubscriptionRule> {
     const resolved = resolveFeedFromInput(options.url)
+    const duplicate = subscriptionManager.findDuplicateFeed(resolved.feedUrl)
+    if (duplicate) {
+      throw new Error(SUBSCRIPTION_DUPLICATE_FEED_ERROR)
+    }
     const settings = settingsManager.getAll()
     const defaultDownloadDirectory = path.join(settings.downloadPath, 'Subscriptions')
     const payload: SubscriptionCreatePayload = {
@@ -141,6 +148,12 @@ class SubscriptionService extends IpcService {
     id: string,
     updates: SubscriptionUpdatePayload
   ): SubscriptionRule | undefined {
+    if (updates.feedUrl) {
+      const duplicate = subscriptionManager.findDuplicateFeed(updates.feedUrl, id)
+      if (duplicate) {
+        throw new Error(SUBSCRIPTION_DUPLICATE_FEED_ERROR)
+      }
+    }
     const normalized: SubscriptionUpdatePayload = { ...updates }
     if (typeof normalized.namingTemplate === 'string') {
       normalized.namingTemplate = sanitizeFilenameTemplate(normalized.namingTemplate)
