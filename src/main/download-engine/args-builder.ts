@@ -152,8 +152,8 @@ export const buildDownloadArgs = (
   const outputTemplate = path.join(baseDownloadPath, safeTemplate)
   args.push('-o', outputTemplate)
 
-  // Add options for better filename handling
-  args.push('--no-part')
+  // Allow resume support across restarts
+  args.push('--continue')
   args.push('--no-playlist-reverse')
 
   if (process.platform === 'win32') {

@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next'
 import { HashRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { ErrorBoundary } from './components/error/ErrorBoundary'
+import { useDownloadEvents } from './hooks/use-download-events'
 import { ipcEvents, ipcServices } from './lib/ipc'
 import { About } from './pages/About'
 import { Home } from './pages/Home'
@@ -61,6 +62,8 @@ function AppContent() {
   const location = useLocation()
   const currentPage = pathToPage(location.pathname)
   const supportedSitesUrl = 'https://vidbee.org/supported-sites/'
+
+  useDownloadEvents()
 
   const handlePageChange = useCallback(
     (page: Page) => {

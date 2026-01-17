@@ -28,6 +28,11 @@ import { settingsManager } from '../settings'
 import { scopedLoggers } from '../utils/logger'
 import { resolvePathWithHome } from '../utils/path-helpers'
 import { DownloadQueue } from './download-queue'
+import {
+  type DownloadSessionItem,
+  loadDownloadSession,
+  saveDownloadSession
+} from './download-session-store'
 import { ffmpegManager } from './ffmpeg-manager'
 import { historyManager } from './history-manager'
 import { ytdlpManager } from './ytdlp-manager'
@@ -260,6 +265,8 @@ const buildVideoInfoArgs = (url: string, settings: ReturnType<typeof settingsMan
 class DownloadEngine extends EventEmitter {
   private activeDownloads: Map<string, DownloadProcess> = new Map()
   private queue: DownloadQueue
+  private sessionPersistTimer: NodeJS.Timeout | null = null
+  private sessionRestored = false
 
   constructor() {
     super()
@@ -268,6 +275,10 @@ class DownloadEngine extends EventEmitter {
 
     this.queue.on('start-download', async (item) => {
       await this.executeDownload(item.id, item.options)
+    })
+
+    this.queue.on('queue-updated', () => {
+      this.scheduleSessionPersist()
     })
   }
 
@@ -911,6 +922,8 @@ class DownloadEngine extends EventEmitter {
 
     this.activeDownloads.set(id, { controller, process: ytdlpProcess })
 
+    this.queue.updateItemInfo(id, { status: 'downloading', startedAt: Date.now() })
+    this.scheduleSessionPersist()
     this.emit('download-started', id)
 
     this.upsertHistoryEntry(id, options, {
@@ -964,6 +977,11 @@ class DownloadEngine extends EventEmitter {
           downloaded: progress.downloaded || '',
           total: progress.total || ''
         }
+        this.queue.updateItemInfo(id, {
+          progress: downloadProgress,
+          speed: downloadProgress.currentSpeed || ''
+        })
+        this.scheduleSessionPersist()
         this.emit('download-progress', id, downloadProgress)
       }
     )
@@ -1178,6 +1196,72 @@ class DownloadEngine extends EventEmitter {
     return this.queue.getQueueStatus()
   }
 
+  getActiveDownloads(): DownloadItem[] {
+    const items = new Map<string, DownloadItem>()
+    for (const item of this.queue.getActiveItems()) {
+      items.set(item.id, item)
+    }
+    for (const item of this.queue.getQueuedItems()) {
+      items.set(item.id, item)
+    }
+    return Array.from(items.values()).sort((a, b) => b.createdAt - a.createdAt)
+  }
+
+  restoreActiveDownloads(): void {
+    if (this.sessionRestored) {
+      return
+    }
+    this.sessionRestored = true
+
+    const sessionItems = loadDownloadSession()
+    if (sessionItems.length === 0) {
+      return
+    }
+
+    for (const entry of sessionItems) {
+      if (!entry?.id || !entry.options?.url || !entry.options.type) {
+        continue
+      }
+      if (this.queue.getItemDetails(entry.id)) {
+        continue
+      }
+
+      const historyItem = historyManager.getHistoryById(entry.id)
+      if (historyItem && ['completed', 'error', 'cancelled'].includes(historyItem.status)) {
+        continue
+      }
+
+      const createdAt = entry.item?.createdAt ?? Date.now()
+      const restoredItem: DownloadItem = {
+        ...entry.item,
+        id: entry.id,
+        url: entry.options.url,
+        type: entry.options.type,
+        status: 'pending',
+        createdAt,
+        completedAt: undefined
+      }
+
+      this.queue.add(entry.id, entry.options, restoredItem)
+
+      this.upsertHistoryEntry(entry.id, entry.options, {
+        title: restoredItem.title || historyItem?.title || `Download ${entry.id}`,
+        status: 'pending',
+        downloadedAt: historyItem?.downloadedAt ?? createdAt
+      })
+    }
+
+    this.scheduleSessionPersist()
+  }
+
+  flushDownloadSession(): void {
+    if (this.sessionPersistTimer) {
+      clearTimeout(this.sessionPersistTimer)
+      this.sessionPersistTimer = null
+    }
+    this.persistSession()
+  }
+
   updateDownloadInfo(id: string, updates: Partial<DownloadItem>): void {
     this.queue.updateItemInfo(id, updates)
 
@@ -1249,6 +1333,37 @@ class DownloadEngine extends EventEmitter {
     if (Object.keys(historyUpdates).length > 0) {
       this.upsertHistoryEntry(id, snapshot.options, historyUpdates)
     }
+
+    this.scheduleSessionPersist()
+  }
+
+  private scheduleSessionPersist(): void {
+    if (this.sessionPersistTimer) {
+      return
+    }
+    this.sessionPersistTimer = setTimeout(() => {
+      this.sessionPersistTimer = null
+      this.persistSession()
+    }, 1000)
+  }
+
+  private persistSession(): void {
+    const entries: DownloadSessionItem[] = []
+    const activeEntries = this.queue.getActiveEntries()
+    const queuedEntries = this.queue.getQueuedEntries()
+
+    for (const entry of [...activeEntries, ...queuedEntries]) {
+      if (!entry?.item?.id) {
+        continue
+      }
+      entries.push({
+        id: entry.item.id,
+        options: entry.options,
+        item: entry.item
+      })
+    }
+
+    saveDownloadSession(entries)
   }
 
   private addToHistory(
