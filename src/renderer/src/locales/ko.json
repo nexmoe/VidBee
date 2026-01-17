@@ -129,6 +129,10 @@
     "error": "오류",
     "fetch": "가져오기",
     "fetchingVideoInfo": "비디오 정보 가져오는 중...",
+    "feedback": {
+      "title": "Report this error:",
+      "githubUrlTooLong": "이 GitHub 링크가 매우 깁니다. 열리지 않으면 이슈 페이지를 열고 로그를 수동으로 붙여 넣어 주세요."
+    },
     "history": "기록",
     "imageLoadError": "이미지 로드 실패",
     "imagePlaceholder": "사용 가능한 이미지 없음",
@@ -144,6 +148,7 @@
     "oneClickDownloadDescription": "확인 없이 기본 설정으로 직접 다운로드",
     "oneClickDownloadEnabled": "원클릭 다운로드가 활성화되었습니다. \n다운로드는 기본 설정으로 바로 시작됩니다.",
     "oneClickDownloadNow": "지금 다운로드",
+    "oneClickDownloadStarted": "기본 설정으로 다운로드 시작됨",
     "paste": "붙여넣기",
     "pastePlaylistUrl": "클립보드에서 재생목록 링크 붙여넣기 [Ctrl + V]",
     "pasteUrl": "비디오 URL 또는 ID 붙여넣기 [Ctrl + V]",
@@ -193,10 +198,6 @@
       "formatNote": "메모 형식",
       "protocol": "규약",
       "subscription": "신청"
-    },
-    "feedback": {
-      "title": "Report this error:",
-      "githubUrlTooLong": "이 GitHub 링크가 매우 깁니다. 열리지 않으면 이슈 페이지를 열고 로그를 수동으로 붙여 넣어 주세요."
     }
   },
   "error": {

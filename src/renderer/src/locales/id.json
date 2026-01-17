@@ -129,6 +129,10 @@
     "error": "Kesalahan",
     "fetch": "Ambil",
     "fetchingVideoInfo": "Mengambil info video...",
+    "feedback": {
+      "title": "Report this error:",
+      "githubUrlTooLong": "Tautan GitHub ini sangat panjang. Jika tidak terbuka, buka halaman issue dan tempel log secara manual."
+    },
     "history": "Riwayat",
     "imageLoadError": "Gagal memuat gambar",
     "imagePlaceholder": "Tidak ada gambar tersedia",
@@ -144,6 +148,7 @@
     "oneClickDownloadDescription": "Unduh langsung dengan pengaturan default tanpa konfirmasi",
     "oneClickDownloadEnabled": "Unduh Satu Klik diaktifkan. Unduhan akan dimulai langsung dengan pengaturan default.",
     "oneClickDownloadNow": "Unduh Sekarang",
+    "oneClickDownloadStarted": "Unduhan dimulai dengan pengaturan default",
     "paste": "Tempel",
     "pastePlaylistUrl": "Klik untuk menempelkan tautan playlist dari clipboard [Ctrl + V]",
     "pasteUrl": "Klik untuk menempelkan URL video atau ID [Ctrl + V]",
@@ -193,10 +198,6 @@
       "formatNote": "Catatan format",
       "protocol": "Protokol",
       "subscription": "Berlangganan"
-    },
-    "feedback": {
-      "title": "Report this error:",
-      "githubUrlTooLong": "Tautan GitHub ini sangat panjang. Jika tidak terbuka, buka halaman issue dan tempel log secara manual."
     }
   },
   "error": {

@@ -129,6 +129,10 @@
     "error": "خطأ",
     "fetch": "جلب",
     "fetchingVideoInfo": "جلب معلومات الفيديو...",
+    "feedback": {
+      "title": "Report this error:",
+      "githubUrlTooLong": "رابط GitHub هذا طويل جدًا. إذا لم يفتح، فالرجاء فتح صفحة المشكلة ولصق السجلات يدويًا."
+    },
     "history": "السجل",
     "imageLoadError": "فشل تحميل الصورة",
     "imagePlaceholder": "لا توجد صورة متاحة",
@@ -144,6 +148,7 @@
     "oneClickDownloadDescription": "تحميل مباشر بالإعدادات الافتراضية دون تأكيد",
     "oneClickDownloadEnabled": "تم تفعيل التحميل بنقرة واحدة. ستبدأ التحميلات مباشرة بالإعدادات الافتراضية.",
     "oneClickDownloadNow": "تحميل الآن",
+    "oneClickDownloadStarted": "بدأ التحميل بالإعدادات الافتراضية",
     "paste": "لصق",
     "pastePlaylistUrl": "انقر للصق رابط قائمة التشغيل من الحافظة [Ctrl + V]",
     "pasteUrl": "انقر للصق رابط أو معرف الفيديو [Ctrl + V]",
@@ -193,10 +198,6 @@
       "formatNote": "ملاحظة التنسيق",
       "protocol": "البروتوكول",
       "subscription": "الاشتراك"
-    },
-    "feedback": {
-      "title": "Report this error:",
-      "githubUrlTooLong": "رابط GitHub هذا طويل جدًا. إذا لم يفتح، فالرجاء فتح صفحة المشكلة ولصق السجلات يدويًا."
     }
   },
   "error": {

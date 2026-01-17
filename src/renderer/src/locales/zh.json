@@ -129,6 +129,10 @@
     "error": "错误",
     "fetch": "获取",
     "fetchingVideoInfo": "正在获取视频信息...",
+    "feedback": {
+      "title": "Report this error:",
+      "githubUrlTooLong": "这个 GitHub 链接很长。如果无法打开，请打开 issue 页面并手动粘贴日志。"
+    },
     "history": "历史",
     "imageLoadError": "图像加载失败",
     "imagePlaceholder": "暂无图像",
@@ -144,6 +148,7 @@
     "oneClickDownloadDescription": "使用默认设置直接下载，无需确认",
     "oneClickDownloadEnabled": "已启用一键下载。\n下载将直接以默认设置开始。",
     "oneClickDownloadNow": "立即下载",
+    "oneClickDownloadStarted": "已使用默认设置开始下载",
     "paste": "粘贴",
     "pastePlaylistUrl": "点击从剪贴板粘贴播放列表链接 [Ctrl + V]",
     "pasteUrl": "点击粘贴视频链接或 ID [Ctrl + V]",
@@ -193,10 +198,6 @@
       "formatNote": "格式注释",
       "protocol": "协议",
       "subscription": "订阅"
-    },
-    "feedback": {
-      "title": "Report this error:",
-      "githubUrlTooLong": "这个 GitHub 链接很长。如果无法打开，请打开 issue 页面并手动粘贴日志。"
     }
   },
   "error": {

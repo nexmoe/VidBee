@@ -129,6 +129,10 @@
     "error": "Ошибка",
     "fetch": "Получить",
     "fetchingVideoInfo": "Получение информации о видео...",
+    "feedback": {
+      "title": "Report this error:",
+      "githubUrlTooLong": "Эта ссылка GitHub очень длинная. Если она не открывается, откройте страницу issue и вставьте логи вручную."
+    },
     "history": "История",
     "imageLoadError": "Не удалось загрузить изображение",
     "imagePlaceholder": "Изображение недоступно",
@@ -144,6 +148,7 @@
     "oneClickDownloadDescription": "Загрузить напрямую с настройками по умолчанию без подтверждения",
     "oneClickDownloadEnabled": "Загрузка одним кликом включена. Загрузки будут начинаться напрямую с настройками по умолчанию.",
     "oneClickDownloadNow": "Загрузить сейчас",
+    "oneClickDownloadStarted": "Загрузка начата с настройками по умолчанию",
     "paste": "Вставить",
     "pastePlaylistUrl": "Нажмите, чтобы вставить ссылку на плейлист из буфера обмена [Ctrl + V]",
     "pasteUrl": "Нажмите, чтобы вставить URL видео или ID [Ctrl + V]",
@@ -193,10 +198,6 @@
       "formatNote": "Примечание формата",
       "protocol": "Протокол",
       "subscription": "Подписка"
-    },
-    "feedback": {
-      "title": "Report this error:",
-      "githubUrlTooLong": "Эта ссылка GitHub очень длинная. Если она не открывается, откройте страницу issue и вставьте логи вручную."
     }
   },
   "error": {

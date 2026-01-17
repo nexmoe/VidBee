@@ -129,6 +129,10 @@
     "error": "エラー",
     "fetch": "取得",
     "fetchingVideoInfo": "ビデオ情報を取得中...",
+    "feedback": {
+      "title": "Report this error:",
+      "githubUrlTooLong": "このGitHubリンクは非常に長いです。開けない場合は、issueページを開いてログを手動で貼り付けてください。"
+    },
     "history": "履歴",
     "imageLoadError": "画像の読み込みに失敗",
     "imagePlaceholder": "利用可能な画像なし",
@@ -144,6 +148,7 @@
     "oneClickDownloadDescription": "確認なしでデフォルト設定で直接ダウンロード",
     "oneClickDownloadEnabled": "ワンクリックダウンロードが有効になります。\nダウンロードはデフォルト設定で直接開始されます。",
     "oneClickDownloadNow": "今すぐダウンロード",
+    "oneClickDownloadStarted": "デフォルト設定でダウンロード開始",
     "paste": "貼り付け",
     "pastePlaylistUrl": "クリップボードからプレイリストリンクを貼り付け [Ctrl + V]",
     "pasteUrl": "ビデオURLまたはIDを貼り付け [Ctrl + V]",
@@ -193,10 +198,6 @@
       "formatNote": "メモのフォーマット",
       "protocol": "プロトコル",
       "subscription": "サブスクリプション"
-    },
-    "feedback": {
-      "title": "Report this error:",
-      "githubUrlTooLong": "このGitHubリンクは非常に長いです。開けない場合は、issueページを開いてログを手動で貼り付けてください。"
     }
   },
   "error": {

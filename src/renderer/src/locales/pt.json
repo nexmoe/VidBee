@@ -129,6 +129,10 @@
     "error": "Erro",
     "fetch": "Buscar",
     "fetchingVideoInfo": "Buscando informações do vídeo...",
+    "feedback": {
+      "title": "Report this error:",
+      "githubUrlTooLong": "Este link do GitHub é muito longo. Se não abrir, abra a página da issue e cole os logs manualmente."
+    },
     "history": "Histórico",
     "imageLoadError": "Falha ao carregar imagem",
     "imagePlaceholder": "Nenhuma imagem disponível",
@@ -144,6 +148,7 @@
     "oneClickDownloadDescription": "Baixar diretamente com configurações padrão sem confirmação",
     "oneClickDownloadEnabled": "O download com um clique está ativado. \nOs downloads começarão diretamente com as configurações padrão.",
     "oneClickDownloadNow": "Baixar Agora",
+    "oneClickDownloadStarted": "Download iniciado com configurações padrão",
     "paste": "Colar",
     "pastePlaylistUrl": "Clique para colar link da playlist da área de transferência [Ctrl + V]",
     "pasteUrl": "Clique para colar URL do vídeo ou ID [Ctrl + V]",
@@ -193,10 +198,6 @@
       "formatNote": "Formatar nota",
       "protocol": "Protocolo",
       "subscription": "Subscrição"
-    },
-    "feedback": {
-      "title": "Report this error:",
-      "githubUrlTooLong": "Este link do GitHub é muito longo. Se não abrir, abra a página da issue e cole os logs manualmente."
     }
   },
   "error": {
