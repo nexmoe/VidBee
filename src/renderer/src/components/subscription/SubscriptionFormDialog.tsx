@@ -178,7 +178,7 @@ export function SubscriptionFormDialog({
 
   const handleOpenRSSHubDocs = async () => {
     try {
-      await ipcServices.fs.openExternal('https://docs.rsshub.app/routes/social-media#youtube')
+      await ipcServices.fs.openExternal('https://docs.rsshub.app/routes/')
     } catch (error) {
       console.error('Failed to open RSSHub documentation:', error)
       toast.error(t('subscriptions.notifications.openLinkError'))
@@ -242,7 +242,7 @@ export function SubscriptionFormDialog({
             <Input
               id={urlInputId}
               value={url}
-              placeholder={t('subscriptions.placeholders.url')}
+              placeholder="https://docs.rsshub.app/routes/youtube/user/@FKJ"
               onChange={(event) => setUrl(event.target.value)}
             />
             {detectingFeed && (

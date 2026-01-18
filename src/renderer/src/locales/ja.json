@@ -489,9 +489,6 @@
       "disabled": "無効",
       "onlyLatestShort": "最新のもののみ"
     },
-    "placeholders": {
-      "url": "https://rsshub.app/youtube/user/@FKJ"
-    },
     "actions": {
       "add": "追加",
       "refresh": "リフレッシュ",
