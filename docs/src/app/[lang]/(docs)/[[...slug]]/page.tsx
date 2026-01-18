@@ -57,7 +57,7 @@ export async function generateMetadata(
   const page = source.getPage(params.slug, params.lang);
   if (!page) notFound();
 
-  const baseUrl = 'https://docs.vidbee.dev';
+  const baseUrl = 'https://docs.vidbee.org';
   const canonicalUrl = `${baseUrl}${page.url}`;
 
   return {
