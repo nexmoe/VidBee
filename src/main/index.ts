@@ -13,6 +13,10 @@ import {
 import log from 'electron-log/main'
 import { autoUpdater } from 'electron-updater'
 import appIcon from '../../build/icon.png?asset'
+import {
+  buildAudioFormatPreference,
+  buildVideoFormatPreference
+} from '../shared/utils/format-preferences'
 import { configureLogger } from './config/logger-config'
 import { services } from './ipc'
 import { downloadEngine } from './lib/download-engine'
@@ -47,11 +51,13 @@ protocol.registerSchemesAsPrivileged([
 
 let mainWindow: BrowserWindow | null = null
 let isQuitting = false
+let isYtdlpReady = false
 interface DeepLinkData {
   url: string
   type: 'single' | 'playlist'
 }
 const pendingDeepLinkUrls: DeepLinkData[] = []
+const pendingOneClickDownloads: DeepLinkData[] = []
 let isRendererReady = false
 
 const parseDownloadDeepLink = (rawUrl: string): DeepLinkData | null => {
@@ -117,6 +123,10 @@ const handleDeepLinkUrl = (rawUrl: string): void => {
   const data = parseDownloadDeepLink(rawUrl)
   if (!data) {
     log.warn('Ignored unsupported deep link:', rawUrl)
+    return
+  }
+  if (settingsManager.get('oneClickDownload')) {
+    queueOneClickDownload(data)
     return
   }
   deliverDeepLink(data)
@@ -245,6 +255,14 @@ function setupRendererErrorHandling(): void {
 }
 
 function setupDownloadEvents(): void {
+  downloadEngine.on('download-queued', (item: unknown) => {
+    mainWindow?.webContents.send('download:queued', item)
+  })
+
+  downloadEngine.on('download-updated', (id: string, updates: unknown) => {
+    mainWindow?.webContents.send('download:updated', { id, updates })
+  })
+
   downloadEngine.on('download-started', (id: string) => {
     mainWindow?.webContents.send('download:started', id)
   })
@@ -268,6 +286,61 @@ function setupDownloadEvents(): void {
   downloadEngine.on('download-cancelled', (id: string) => {
     mainWindow?.webContents.send('download:cancelled', id)
   })
+}
+
+const createDownloadId = (): string =>
+  `download_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`
+
+const queueOneClickDownload = (data: DeepLinkData): void => {
+  if (!isYtdlpReady) {
+    pendingOneClickDownloads.push(data)
+    return
+  }
+  void startOneClickDownload(data)
+}
+
+const flushPendingOneClickDownloads = (): void => {
+  if (!isYtdlpReady || pendingOneClickDownloads.length === 0) {
+    return
+  }
+  const pending = pendingOneClickDownloads.splice(0, pendingOneClickDownloads.length)
+  for (const data of pending) {
+    void startOneClickDownload(data)
+  }
+}
+
+const startOneClickDownload = async (data: DeepLinkData): Promise<void> => {
+  try {
+    const settings = settingsManager.getAll()
+    const downloadType = settings.oneClickDownloadType ?? 'video'
+    const format =
+      downloadType === 'video'
+        ? buildVideoFormatPreference(settings)
+        : buildAudioFormatPreference(settings)
+
+    if (data.type === 'playlist') {
+      const result = await downloadEngine.startPlaylistDownload({
+        url: data.url,
+        type: downloadType,
+        format
+      })
+      log.info('One-click playlist download queued:', {
+        url: data.url,
+        count: result.totalCount
+      })
+      return
+    }
+
+    const downloadId = createDownloadId()
+    downloadEngine.startDownload(downloadId, {
+      url: data.url,
+      type: downloadType,
+      format
+    })
+    log.info('One-click download queued:', { id: downloadId, url: data.url })
+  } catch (error) {
+    log.error('Failed to start one-click download:', error)
+  }
 }
 
 function sanitizeRequestPath(requestUrl: URL): string {
@@ -453,18 +526,18 @@ app.whenReady().then(async () => {
   }
 
   // Initialize yt-dlp
-  let ytdlpReady = false
   try {
     log.info('Initializing yt-dlp...')
     await ytdlpManager.initialize()
-    ytdlpReady = true
+    isYtdlpReady = true
     log.info('yt-dlp initialized successfully')
   } catch (error) {
     log.error('Failed to initialize yt-dlp:', error)
   }
 
-  if (ytdlpReady) {
+  if (isYtdlpReady) {
     downloadEngine.restoreActiveDownloads()
+    flushPendingOneClickDownloads()
   }
 
   await startExtensionApiServer()

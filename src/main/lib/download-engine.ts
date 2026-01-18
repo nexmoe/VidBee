@@ -59,6 +59,8 @@ class DownloadEngine extends EventEmitter {
   private queue: DownloadQueue
   private sessionPersistTimer: NodeJS.Timeout | null = null
   private sessionRestored = false
+  private prefetchTasks: Map<string, Promise<VideoInfo | null>> = new Map()
+  private prefetchedInfo: Map<string, VideoInfo> = new Map()
 
   constructor() {
     super()
@@ -458,7 +460,7 @@ class DownloadEngine extends EventEmitter {
       })
 
       // Add to queue
-      this.queue.add(downloadId, downloadOptions, {
+      const queueItem: DownloadItem = {
         id: downloadId,
         url: entry.url,
         title: entry.title,
@@ -470,7 +472,9 @@ class DownloadEngine extends EventEmitter {
         playlistTitle: playlistInfo.title,
         playlistIndex: entry.index,
         playlistSize: selectionSize
-      })
+      }
+      this.queue.add(downloadId, downloadOptions, queueItem)
+      this.emit('download-queued', { ...queueItem })
 
       this.upsertHistoryEntry(downloadId, downloadOptions, {
         title: entry.title,
@@ -519,6 +523,7 @@ class DownloadEngine extends EventEmitter {
       title: 'Downloading...',
       type: options.type,
       status: 'pending' as const,
+      progress: { percent: 0 },
       createdAt,
       tags: options.tags,
       origin,
@@ -536,6 +541,45 @@ class DownloadEngine extends EventEmitter {
       origin,
       subscriptionId: options.subscriptionId
     })
+
+    this.emit('download-queued', { ...item })
+    void this.prefetchVideoInfo(id, options)
+  }
+
+  private async prefetchVideoInfo(id: string, options: DownloadOptions): Promise<void> {
+    const url = options.url?.trim()
+    if (!url) {
+      return
+    }
+    if (this.prefetchTasks.has(id) || this.prefetchedInfo.has(id)) {
+      return
+    }
+
+    const task = (async () => {
+      try {
+        const info = await this.getVideoInfo(url)
+        this.prefetchedInfo.set(id, info)
+        this.updateDownloadInfo(id, {
+          title: info.title,
+          thumbnail: info.thumbnail,
+          duration: info.duration,
+          description: info.description,
+          uploader: info.uploader,
+          viewCount: info.view_count
+        })
+        return info
+      } catch (error) {
+        scopedLoggers.download.warn('Failed to prefetch video info for ID:', id, error)
+        return null
+      }
+    })()
+
+    this.prefetchTasks.set(id, task)
+    try {
+      await task
+    } finally {
+      this.prefetchTasks.delete(id)
+    }
   }
 
   private async executeDownload(id: string, options: DownloadOptions): Promise<void> {
@@ -601,11 +645,7 @@ class DownloadEngine extends EventEmitter {
       scheduleLogUpdate()
     }
 
-    // First, get detailed video info to capture basic metadata and formats
-    try {
-      const info = await this.getVideoInfo(options.url)
-      videoInfo = info
-
+    const applyVideoInfo = (info: VideoInfo) => {
       availableFormats = Array.isArray(info.formats) ? info.formats : []
       selectedFormat = resolveSelectedFormat(availableFormats, options, settings)
 
@@ -642,8 +682,33 @@ class DownloadEngine extends EventEmitter {
         // Store only essential download info
         selectedFormat
       })
-    } catch (error) {
-      scopedLoggers.download.warn('Failed to get detailed video info for ID:', id, error)
+    }
+
+    videoInfo = this.prefetchedInfo.get(id)
+    if (!videoInfo) {
+      const prefetchTask = this.prefetchTasks.get(id)
+      if (prefetchTask) {
+        try {
+          await prefetchTask
+        } catch {
+          // Ignore prefetch failures, download will attempt again below.
+        }
+        videoInfo = this.prefetchedInfo.get(id)
+      }
+    }
+
+    if (videoInfo) {
+      this.prefetchedInfo.delete(id)
+      applyVideoInfo(videoInfo)
+    } else {
+      // First, get detailed video info to capture basic metadata and formats
+      try {
+        const info = await this.getVideoInfo(options.url)
+        videoInfo = info
+        applyVideoInfo(info)
+      } catch (error) {
+        scopedLoggers.download.warn('Failed to get detailed video info for ID:', id, error)
+      }
     }
 
     if (!options.customDownloadPath?.trim()) {
@@ -852,6 +917,17 @@ class DownloadEngine extends EventEmitter {
 
     // Handle yt-dlp events to capture format info
     ytdlpProcess.on('ytDlpEvent', (eventType: string, eventData: string) => {
+      if (
+        eventType === 'postprocess' ||
+        eventData.toLowerCase().includes('merging formats') ||
+        eventData.toLowerCase().includes('post-process')
+      ) {
+        const snapshot = this.queue.getItemDetails(id)
+        if (snapshot?.item.status !== 'processing') {
+          this.updateDownloadInfo(id, { status: 'processing' })
+        }
+      }
+
       // Look for format selection messages
       if (eventType === 'info' && eventData.includes('format')) {
         // Extract format info from yt-dlp output
@@ -1276,6 +1352,10 @@ class DownloadEngine extends EventEmitter {
 
     if (Object.keys(historyUpdates).length > 0) {
       this.upsertHistoryEntry(id, snapshot.options, historyUpdates)
+    }
+
+    if (Object.keys(updates).length > 0) {
+      this.emit('download-updated', id, { ...updates })
     }
 
     this.scheduleSessionPersist()

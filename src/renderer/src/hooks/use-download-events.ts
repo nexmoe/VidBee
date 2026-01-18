@@ -1,3 +1,4 @@
+import type { DownloadItem } from '@shared/types'
 import { useSetAtom } from 'jotai'
 import { useCallback, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -137,6 +138,25 @@ export function useDownloadEvents() {
       void syncHistoryItem(id)
     }
 
+    const handleQueued = (rawItem: unknown) => {
+      const item = rawItem as DownloadItem
+      if (!item || typeof item.id !== 'string') {
+        return
+      }
+      addDownload(item)
+    }
+
+    const handleUpdated = (rawData: unknown) => {
+      const data = rawData as { id?: string; updates?: Partial<DownloadItem> }
+      const id = typeof data?.id === 'string' ? data.id : ''
+      if (!id || !data?.updates) {
+        return
+      }
+      updateDownload({ id, changes: data.updates })
+    }
+
+    const queuedSubscription = ipcEvents.on('download:queued', handleQueued)
+    const updatedSubscription = ipcEvents.on('download:updated', handleUpdated)
     const startedSubscription = ipcEvents.on('download:started', handleStarted)
     const progressSubscription = ipcEvents.on('download:progress', handleProgress)
     const logSubscription = ipcEvents.on('download:log', handleLog)
@@ -144,6 +164,8 @@ export function useDownloadEvents() {
     const errorSubscription = ipcEvents.on('download:error', handleError)
     const cancelledSubscription = ipcEvents.on('download:cancelled', handleCancelled)
     return () => {
+      ipcEvents.removeListener('download:queued', queuedSubscription)
+      ipcEvents.removeListener('download:updated', updatedSubscription)
       ipcEvents.removeListener('download:started', startedSubscription)
       ipcEvents.removeListener('download:progress', progressSubscription)
       ipcEvents.removeListener('download:log', logSubscription)
@@ -151,5 +173,5 @@ export function useDownloadEvents() {
       ipcEvents.removeListener('download:error', errorSubscription)
       ipcEvents.removeListener('download:cancelled', cancelledSubscription)
     }
-  }, [syncHistoryItem, t, updateDownload])
+  }, [addDownload, syncHistoryItem, t, updateDownload])
 }
