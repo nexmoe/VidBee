@@ -1,0 +1,149 @@
+---
+title: vidbee:// 协议
+description: 使用 vidbee:// URL 协议快速下载
+---
+
+VidBee 注册了自定义 URL 协议（`vidbee://`），允许您直接从网页浏览器、浏览器扩展或用户脚本触发下载。
+
+## 基本用法
+
+`vidbee://` 协议可用于打开 VidBee 并自动开始下载视频。
+
+### 协议格式
+
+```
+vidbee://download?url=<编码后的视频URL>
+```
+
+**参数：**
+- `url`（必需）：要下载的视频 URL，必须经过 URL 编码
+
+### 示例
+
+下载 YouTube 视频：
+
+```html
+<a href="vidbee://download?url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DdQw4w9WgXcQ">
+  使用 VidBee 下载
+</a>
+```
+
+或使用 JavaScript：
+
+```javascript
+const videoUrl = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+const vidbeeUrl = `vidbee://download?url=${encodeURIComponent(videoUrl)}`
+window.location.href = vidbeeUrl
+```
+
+## 打开 VidBee
+
+仅打开 VidBee 应用而不开始下载：
+
+```
+vidbee://
+```
+
+## 使用场景
+
+### 浏览器扩展
+
+VidBee 浏览器扩展使用此协议将当前标签页的 URL 发送到桌面应用：
+
+```javascript
+const currentUrl = window.location.href
+const deepLink = `vidbee://download?url=${encodeURIComponent(currentUrl)}`
+window.location.href = deepLink
+```
+
+### 用户脚本集成
+
+VidBee 用户脚本在支持的视频网站上添加快速下载按钮：
+
+```javascript
+// 单击通过协议触发下载
+const vidbeeUrl = `vidbee://download?url=${encodeURIComponent(videoUrl)}`
+window.location.href = vidbeeUrl
+```
+
+### 网页集成
+
+您可以在网页中添加直接下载链接：
+
+```html
+<!-- 简单链接 -->
+<a href="vidbee://download?url=https%3A%2F%2Fexample.com%2Fvideo">
+  使用 VidBee 下载
+</a>
+
+<!-- 带 JavaScript 的按钮 -->
+<button onclick="openInVidBee('https://example.com/video')">
+  快速下载
+</button>
+
+<script>
+function openInVidBee(url) {
+  const vidbeeUrl = `vidbee://download?url=${encodeURIComponent(url)}`
+  window.location.href = vidbeeUrl
+}
+</script>
+```
+
+## 播放列表支持
+
+下载整个播放列表：
+
+```
+vidbee://download?url=<编码后的播放列表URL>&type=playlist
+```
+
+**参数：**
+- `url`（必需）：播放列表 URL，必须经过 URL 编码
+- `type`：设置为 `playlist` 以下载播放列表中的所有视频
+
+### 示例
+
+```javascript
+const playlistUrl = 'https://www.youtube.com/playlist?list=PLrAXtmErZgOeiKm4sgNOknGvNjby9efdf'
+const vidbeeUrl = `vidbee://download?url=${encodeURIComponent(playlistUrl)}&type=playlist`
+window.location.href = vidbeeUrl
+```
+
+## 工作原理
+
+1. **协议注册**：VidBee 在安装过程中注册为 `vidbee://` 协议的处理程序
+2. **URL 解析**：当点击 `vidbee://download?url=...` 链接时，操作系统会启动 VidBee
+3. **队列处理**：VidBee 提取视频 URL 并将其添加到下载队列
+4. **自动开始**：如果应用配置为自动下载，下载会自动开始
+
+## 浏览器兼容性
+
+`vidbee://` 协议适用于所有主流浏览器：
+- Chrome/Edge/Brave
+- Firefox
+- Safari
+
+## 安全说明
+
+- 仅以 `vidbee://` 开头的 URL 会触发应用
+- 应用在处理前会验证 URL 格式
+- 格式错误的 URL 将被忽略，并在日志中显示警告
+
+## 故障排除
+
+### 协议不工作
+
+如果点击 `vidbee://` 链接无法打开 VidBee：
+
+1. **检查安装**：确保 VidBee 已正确安装
+2. **重新安装**：尝试重新安装 VidBee 以重新注册协议
+3. **操作系统权限**：在 macOS 上，检查系统设置 > 隐私与安全性 是否有任何阻止
+4. **浏览器设置**：某些浏览器可能需要您在首次使用时允许该协议
+
+### 应用打开但未下载
+
+如果 VidBee 打开但下载未开始：
+
+1. **检查 URL 编码**：确保视频 URL 使用 `encodeURIComponent()` 正确编码
+2. **检查日志**：打开应用并检查开发者控制台是否有错误
+3. **支持的网站**：验证 URL 是否来自[支持的网站](https://vidbee.org/supported-sites/)

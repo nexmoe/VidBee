@@ -4,7 +4,8 @@ const withMDX = createMDX();
 
 /** @type {import('next').NextConfig} */
 const config = {
-  output: 'export',
+  // Only use static export for production builds, not dev mode
+  output: process.env.NODE_ENV === 'production' ? 'export' : undefined,
   reactStrictMode: true,
   // Use trailing slashes to avoid conflicts with route handlers that have file extensions
   trailingSlash: true,

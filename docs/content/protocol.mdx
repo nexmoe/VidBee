@@ -1,0 +1,149 @@
+---
+title: vidbee:// Protocol
+description: Quick download using vidbee:// URL protocol
+---
+
+VidBee registers a custom URL protocol (`vidbee://`) that allows you to trigger downloads directly from web browsers, browser extensions, or userscripts.
+
+## Basic Usage
+
+The `vidbee://` protocol can be used to open VidBee and automatically start downloading videos.
+
+### Protocol Format
+
+```
+vidbee://download?url=<encoded-video-url>
+```
+
+**Parameters:**
+- `url` (required): The video URL to download, must be URL-encoded
+
+### Example
+
+To download a YouTube video:
+
+```html
+<a href="vidbee://download?url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DdQw4w9WgXcQ">
+  Download with VidBee
+</a>
+```
+
+Or in JavaScript:
+
+```javascript
+const videoUrl = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+const vidbeeUrl = `vidbee://download?url=${encodeURIComponent(videoUrl)}`
+window.location.href = vidbeeUrl
+```
+
+## Opening VidBee
+
+To simply open the VidBee app without starting a download:
+
+```
+vidbee://
+```
+
+## Use Cases
+
+### Browser Extension
+
+The VidBee browser extension uses this protocol to send the current tab's URL to the desktop app:
+
+```javascript
+const currentUrl = window.location.href
+const deepLink = `vidbee://download?url=${encodeURIComponent(currentUrl)}`
+window.location.href = deepLink
+```
+
+### Userscript Integration
+
+The VidBee userscript adds quick download buttons to supported video sites:
+
+```javascript
+// Single click triggers download via protocol
+const vidbeeUrl = `vidbee://download?url=${encodeURIComponent(videoUrl)}`
+window.location.href = vidbeeUrl
+```
+
+### Web Pages
+
+You can add direct download links to your web pages:
+
+```html
+<!-- Simple link -->
+<a href="vidbee://download?url=https%3A%2F%2Fexample.com%2Fvideo">
+  Download with VidBee
+</a>
+
+<!-- Button with JavaScript -->
+<button onclick="openInVidBee('https://example.com/video')">
+  Quick Download
+</button>
+
+<script>
+function openInVidBee(url) {
+  const vidbeeUrl = `vidbee://download?url=${encodeURIComponent(url)}`
+  window.location.href = vidbeeUrl
+}
+</script>
+```
+
+## Playlist Support
+
+To download an entire playlist:
+
+```
+vidbee://download?url=<encoded-playlist-url>&type=playlist
+```
+
+**Parameters:**
+- `url` (required): The playlist URL, must be URL-encoded
+- `type`: Set to `playlist` to download all videos in the playlist
+
+### Example
+
+```javascript
+const playlistUrl = 'https://www.youtube.com/playlist?list=PLrAXtmErZgOeiKm4sgNOknGvNjby9efdf'
+const vidbeeUrl = `vidbee://download?url=${encodeURIComponent(playlistUrl)}&type=playlist`
+window.location.href = vidbeeUrl
+```
+
+## How It Works
+
+1. **Protocol Registration**: VidBee registers as the handler for the `vidbee://` protocol during installation
+2. **URL Parsing**: When a `vidbee://download?url=...` link is clicked, the OS launches VidBee
+3. **Queue Processing**: VidBee extracts the video URL and adds it to the download queue
+4. **Auto-start**: The download begins automatically if the app is configured for auto-download
+
+## Browser Compatibility
+
+The `vidbee://` protocol works across all major browsers:
+- Chrome/Edge/Brave
+- Firefox
+- Safari
+
+## Security Notes
+
+- Only URLs starting with `vidbee://` will trigger the app
+- The app validates the URL format before processing
+- Malformed URLs are ignored with a warning in the logs
+
+## Troubleshooting
+
+### Protocol Not Working
+
+If clicking `vidbee://` links doesn't open VidBee:
+
+1. **Check installation**: Ensure VidBee is properly installed
+2. **Reinstall**: Try reinstalling VidBee to re-register the protocol
+3. **OS permissions**: On macOS, check System Settings > Privacy & Security for any blocks
+4. **Browser settings**: Some browsers may require you to allow the protocol on first use
+
+### App Opens But Doesn't Download
+
+If VidBee opens but the download doesn't start:
+
+1. **Check URL encoding**: Ensure the video URL is properly encoded with `encodeURIComponent()`
+2. **Check logs**: Open the app and check the developer console for errors
+3. **Supported sites**: Verify the URL is from a [supported site](https://vidbee.org/supported-sites/)
