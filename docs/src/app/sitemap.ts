@@ -2,6 +2,8 @@ import type { MetadataRoute } from 'next';
 import { i18n } from '@/lib/i18n';
 import { source } from '@/lib/source';
 
+export const dynamic = 'force-static';
+
 const baseUrl = 'https://docs.vidbee.org';
 
 function buildPath(segments: string[]): string {
