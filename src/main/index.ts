@@ -253,6 +253,10 @@ function setupDownloadEvents(): void {
     mainWindow?.webContents.send('download:progress', { id, progress })
   })
 
+  downloadEngine.on('download-log', (id: string, logText: string) => {
+    mainWindow?.webContents.send('download:log', { id, log: logText })
+  })
+
   downloadEngine.on('download-completed', (id: string) => {
     mainWindow?.webContents.send('download:completed', id)
   })

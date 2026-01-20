@@ -28,6 +28,7 @@ const toHistoryRecord = (item: DownloadHistoryItem): DownloadRecord => ({
   progress: undefined,
   error: item.error,
   ytDlpCommand: item.ytDlpCommand,
+  ytDlpLog: item.ytDlpLog,
   downloadPath: item.downloadPath,
   speed: undefined,
   duration: item.duration,
@@ -190,8 +191,9 @@ export const downloadStatsAtom = atom((get) => {
     (acc, item) => {
       acc.total += 1
       if (
-        item.entryType === 'active' &&
-        (item.status === 'downloading' || item.status === 'processing' || item.status === 'pending')
+        (item.entryType === 'active' && item.status === 'downloading') ||
+        item.status === 'processing' ||
+        item.status === 'pending'
       ) {
         acc.active += 1
       }
@@ -209,8 +211,8 @@ export const activeDownloadsCountAtom = atom((get) => {
   let count = 0
   for (const item of downloads.values()) {
     if (
-      item.entryType === 'active' &&
-      (item.status === 'downloading' || item.status === 'processing')
+      (item.entryType === 'active' && item.status === 'downloading') ||
+      item.status === 'processing'
     ) {
       count++
     }

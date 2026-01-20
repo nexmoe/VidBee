@@ -71,14 +71,7 @@ export const resolveAudioFormatSelector = (options: DownloadOptions): string => 
 const isBilibiliUrl = (url: string): boolean => {
   try {
     const host = new URL(url).hostname.toLowerCase()
-    return (
-      host === 'bilibili.com' ||
-      host.endsWith('.bilibili.com') ||
-      host === 'b23.tv' ||
-      host.endsWith('.b23.tv') ||
-      host === 'bili.tv' ||
-      host.endsWith('.bili.tv')
-    )
+    return host.includes('bilibili.com') || host.includes('b23.tv') || host.includes('bili.tv')
   } catch {
     return false
   }
@@ -98,7 +91,9 @@ export const buildDownloadArgs = (
   // Format selection
   if (options.type === 'video') {
     const formatSelector = resolveVideoFormatSelector(options)
-    args.push('-f', formatSelector)
+    if (formatSelector) {
+      args.push('-f', formatSelector)
+    }
     if (options.audioFormatIds && options.audioFormatIds.length > 0) {
       args.push('--audio-multistreams')
     } else if (formatSelector.includes('mergeall')) {

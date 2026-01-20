@@ -769,6 +769,46 @@ class DownloadEngine extends EventEmitter {
     let totalParts = estimateProgressParts(options)
     let completedParts = 0
     let lastPercent = 0
+    let ytDlpLog = ''
+    let logFlushTimer: NodeJS.Timeout | null = null
+    let lastFlushedLog = ''
+
+    const normalizeLogChunk = (chunk: string): string =>
+      chunk.replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+
+    const flushLogUpdate = (): void => {
+      if (logFlushTimer) {
+        clearTimeout(logFlushTimer)
+        logFlushTimer = null
+      }
+      if (ytDlpLog === lastFlushedLog) {
+        return
+      }
+      lastFlushedLog = ytDlpLog
+      this.updateDownloadInfo(id, { ytDlpLog })
+      this.emit('download-log', id, ytDlpLog)
+    }
+
+    const scheduleLogUpdate = (): void => {
+      if (logFlushTimer) {
+        return
+      }
+      logFlushTimer = setTimeout(() => {
+        flushLogUpdate()
+      }, 500)
+    }
+
+    const appendLogChunk = (chunk: string | Buffer): void => {
+      if (!chunk) {
+        return
+      }
+      const text = typeof chunk === 'string' ? chunk : chunk.toString()
+      if (!text) {
+        return
+      }
+      ytDlpLog += normalizeLogChunk(text)
+      scheduleLogUpdate()
+    }
 
     // First, get detailed video info to capture basic metadata and formats
     try {
@@ -943,6 +983,14 @@ class DownloadEngine extends EventEmitter {
 
     this.activeDownloads.set(id, { controller, process: ytdlpProcess })
 
+    ytdlpProcess.ytDlpProcess?.stdout?.on('data', (data: Buffer) => {
+      appendLogChunk(data)
+    })
+
+    ytdlpProcess.ytDlpProcess?.stderr?.on('data', (data: Buffer) => {
+      appendLogChunk(data)
+    })
+
     this.queue.updateItemInfo(id, { status: 'downloading', startedAt: Date.now() })
     this.scheduleSessionPersist()
     this.emit('download-started', id)
@@ -1042,6 +1090,7 @@ class DownloadEngine extends EventEmitter {
 
     // Handle completion
     ytdlpProcess.on('close', async (code: number | null) => {
+      flushLogUpdate()
       this.activeDownloads.delete(id)
       this.queue.downloadCompleted(id)
 
@@ -1172,6 +1221,7 @@ class DownloadEngine extends EventEmitter {
 
     // Handle errors
     ytdlpProcess.on('error', (error: Error) => {
+      flushLogUpdate()
       scopedLoggers.download.error('Download process error for ID:', id, error)
       this.activeDownloads.delete(id)
       this.queue.downloadCompleted(id)
@@ -1347,6 +1397,9 @@ class DownloadEngine extends EventEmitter {
     if (updates.ytDlpCommand !== undefined) {
       historyUpdates.ytDlpCommand = updates.ytDlpCommand
     }
+    if (updates.ytDlpLog !== undefined) {
+      historyUpdates.ytDlpLog = updates.ytDlpLog
+    }
     if (updates.savedFileName !== undefined) {
       historyUpdates.savedFileName = updates.savedFileName
     }
@@ -1395,7 +1448,7 @@ class DownloadEngine extends EventEmitter {
   ): void {
     // Get the download item from the queue to get additional info
     const completedDownload = this.queue.getCompletedDownload(id)
-    scopedLoggers.download.info('Completed download:', completedDownload)
+    // scopedLoggers.download.info('Completed download:', completedDownload)
     const completedAt = Date.now()
 
     this.upsertHistoryEntry(id, options, {
@@ -1443,6 +1496,7 @@ class DownloadEngine extends EventEmitter {
       completedAt: updates.completedAt,
       error: updates.error,
       ytDlpCommand: updates.ytDlpCommand,
+      ytDlpLog: updates.ytDlpLog,
       description: updates.description,
       channel: updates.channel,
       uploader: updates.uploader,

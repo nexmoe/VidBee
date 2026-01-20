@@ -37,6 +37,7 @@ const createDownloadHistoryTableSql = sql`
     sort_key INTEGER NOT NULL,
     error TEXT,
     yt_dlp_command TEXT,
+    yt_dlp_log TEXT,
     description TEXT,
     channel TEXT,
     uploader TEXT,
@@ -219,17 +220,50 @@ class HistoryManager {
       }
 
       const deprecatedColumns = ['subscription_title', 'format', 'quality', 'codec']
-      const requiredColumns = ['yt_dlp_command']
+      const requiredColumns = ['yt_dlp_command', 'yt_dlp_log']
       const hasDeprecated = columns.some((column) => deprecatedColumns.includes(column.name))
-      const missingRequired = requiredColumns.some(
+      const missingRequired = requiredColumns.filter(
         (columnName) => !columns.some((column) => column.name === columnName)
       )
-      const needsRebuild = hasDeprecated || missingRequired
-      if (needsRebuild) {
+      if (hasDeprecated) {
         this.rebuildDownloadHistoryTable()
+        return
+      }
+      if (missingRequired.length > 0) {
+        this.addMissingColumns(missingRequired)
       }
     } catch (error) {
       logger.error('history-db failed to inspect schema', error)
+    }
+  }
+
+  private addMissingColumns(columns: string[]): void {
+    if (columns.length === 0) {
+      return
+    }
+
+    const database = this.getDatabase()
+    const definitions: Record<string, string> = {
+      yt_dlp_command: 'TEXT',
+      yt_dlp_log: 'TEXT'
+    }
+
+    try {
+      database.transaction(
+        (tx) => {
+          for (const column of columns) {
+            const definition = definitions[column]
+            if (!definition) {
+              continue
+            }
+            tx.run(sql.raw(`ALTER TABLE download_history ADD COLUMN ${column} ${definition}`))
+          }
+        },
+        { behavior: 'immediate' }
+      )
+      logger.info(`history-db added missing columns: ${columns.join(', ')}`)
+    } catch (error) {
+      logger.error('history-db failed to add missing columns', error)
     }
   }
 
@@ -394,6 +428,7 @@ class HistoryManager {
       sortKey: item.completedAt ?? item.downloadedAt,
       error: item.error ?? null,
       ytDlpCommand: item.ytDlpCommand ?? null,
+      ytDlpLog: item.ytDlpLog ?? null,
       description: item.description ?? null,
       channel: item.channel ?? null,
       uploader: item.uploader ?? null,
@@ -441,6 +476,7 @@ class HistoryManager {
       completedAt: row.completedAt ?? undefined,
       error: row.error ?? undefined,
       ytDlpCommand: row.ytDlpCommand ?? undefined,
+      ytDlpLog: row.ytDlpLog ?? undefined,
       description: row.description ?? undefined,
       channel: row.channel ?? undefined,
       uploader: row.uploader ?? undefined,

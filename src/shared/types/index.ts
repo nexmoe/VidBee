@@ -67,6 +67,7 @@ export interface DownloadItem {
   error?: string
   speed?: string
   ytDlpCommand?: string
+  ytDlpLog?: string
   // Enhanced video information
   duration?: number
   fileSize?: number
@@ -117,6 +118,7 @@ export interface DownloadHistoryItem {
   completedAt?: number
   error?: string
   ytDlpCommand?: string
+  ytDlpLog?: string
   // Additional metadata
   description?: string
   channel?: string
