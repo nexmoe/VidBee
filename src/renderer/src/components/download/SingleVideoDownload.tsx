@@ -68,6 +68,12 @@ const getCodecShortName = (codec?: string): string => {
   return codec.split('.')[0].toUpperCase()
 }
 
+const isHlsFormat = (format: VideoFormat): boolean =>
+  format.protocol === 'm3u8' || format.protocol === 'm3u8_native'
+
+const isHttpProtocol = (format: VideoFormat): boolean =>
+  !!format.protocol && format.protocol.startsWith('http')
+
 const filterFormatsByType = (
   formats: VideoInfo['formats'],
   activeTab: 'video' | 'audio'
@@ -270,6 +276,30 @@ const FormatList = ({ formats, type, codec, selectedFormat, onFormatChange }: Fo
     return `${mb.toFixed(2)} MB`
   }
 
+  const formatMetaLabel = (format: VideoFormat) => {
+    const parts: string[] = []
+    const pushPart = (label: string, value?: string) => {
+      if (!value) return
+      parts.push(`${label}:${value}`)
+    }
+    pushPart('proto', format.protocol)
+    pushPart('lang', format.language?.trim())
+    if (format.tbr) {
+      pushPart('tbr', `${Math.round(format.tbr)}k`)
+    }
+    if (typeof format.quality === 'number') {
+      pushPart('q', String(format.quality))
+    }
+    if (format.vcodec && format.vcodec !== 'none') {
+      pushPart('vcodec', format.vcodec)
+    }
+    if (format.acodec && format.acodec !== 'none') {
+      pushPart('acodec', format.acodec)
+    }
+
+    return parts.join(' • ')
+  }
+
   const formatVideoQuality = (format: VideoFormat) => {
     if (format.height) {
       return `${format.height}p${format.fps === 60 ? '60' : ''}`
@@ -339,6 +369,7 @@ const FormatList = ({ formats, type, codec, selectedFormat, onFormatChange }: Fo
               ? format.acodec.split('.')[0].toUpperCase()
               : ''
         const sizeLabel = formatSize(format.filesize || format.filesize_approx)
+        const metaLabel = formatMetaLabel(format)
         const isSelected = selectedFormat === format.format_id
 
         return (
@@ -363,12 +394,19 @@ const FormatList = ({ formats, type, codec, selectedFormat, onFormatChange }: Fo
                 {qualityLabel}
               </span>
 
-              <div className="flex-1 flex items-center gap-2 min-w-0">
-                <span className="text-xs text-muted-foreground truncate">{detailLabel}</span>
-                {thirdColumnLabel && thirdColumnLabel !== '-' && (
-                  <span className="shrink-0 px-1.5 py-0.5 rounded bg-muted text-[10px] font-medium text-muted-foreground">
-                    {thirdColumnLabel}
-                  </span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-xs text-muted-foreground truncate">{detailLabel}</span>
+                  {thirdColumnLabel && thirdColumnLabel !== '-' && (
+                    <span className="shrink-0 px-1.5 py-0.5 rounded bg-muted text-[10px] font-medium text-muted-foreground">
+                      {thirdColumnLabel}
+                    </span>
+                  )}
+                </div>
+                {metaLabel && (
+                  <div className="mt-0.5 text-[10px] text-muted-foreground/70 leading-snug break-words">
+                    {metaLabel}
+                  </div>
                 )}
               </div>
 
@@ -401,7 +439,16 @@ export function SingleVideoDownload({
 
   const relevantFormats = useMemo(() => {
     if (!videoInfo?.formats) return []
-    return filterFormatsByType(videoInfo.formats, activeTab)
+    const baseFormats = filterFormatsByType(videoInfo.formats, activeTab)
+    if (baseFormats.length === 0) return []
+
+    const hasHttpFormats = baseFormats.some(isHttpProtocol)
+    if (!hasHttpFormats) {
+      return baseFormats
+    }
+
+    const nonHlsFormats = baseFormats.filter((format) => !isHlsFormat(format))
+    return nonHlsFormats.length > 0 ? nonHlsFormats : baseFormats
   }, [videoInfo?.formats, activeTab])
 
   const containers = useMemo(() => {

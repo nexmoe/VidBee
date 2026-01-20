@@ -96,6 +96,16 @@ export function useDownloadEvents() {
       })
     }
 
+    const handleLog = (rawData: unknown) => {
+      const data = rawData as { id?: string; log?: string }
+      const id = typeof data?.id === 'string' ? data.id : ''
+      if (!id) {
+        return
+      }
+      const logText = typeof data?.log === 'string' ? data.log : ''
+      updateDownload({ id, changes: { ytDlpLog: logText } })
+    }
+
     const handleCompleted = (rawId: unknown) => {
       const id = typeof rawId === 'string' ? rawId : ''
       if (!id) {
@@ -129,13 +139,14 @@ export function useDownloadEvents() {
 
     const startedSubscription = ipcEvents.on('download:started', handleStarted)
     const progressSubscription = ipcEvents.on('download:progress', handleProgress)
+    const logSubscription = ipcEvents.on('download:log', handleLog)
     const completedSubscription = ipcEvents.on('download:completed', handleCompleted)
     const errorSubscription = ipcEvents.on('download:error', handleError)
     const cancelledSubscription = ipcEvents.on('download:cancelled', handleCancelled)
-
     return () => {
       ipcEvents.removeListener('download:started', startedSubscription)
       ipcEvents.removeListener('download:progress', progressSubscription)
+      ipcEvents.removeListener('download:log', logSubscription)
       ipcEvents.removeListener('download:completed', completedSubscription)
       ipcEvents.removeListener('download:error', errorSubscription)
       ipcEvents.removeListener('download:cancelled', cancelledSubscription)

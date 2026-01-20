@@ -35,7 +35,7 @@ const PLATFORM_CONFIG = {
       ffprobeOutput: 'ffprobe.exe',
       extract: 'unzip',
       release: {
-        repos: ['yt-dlp/FFmpeg-Builds', 'BtbN/FFmpeg-Builds'],
+        repos: ['yt-dlp/FFmpeg-Builds', 'yt-dlp/FFmpeg-Builds'],
         assetPattern: /ffmpeg-master-latest-win64-gpl\.zip$/i,
         binaryName: 'ffmpeg.exe'
       }
@@ -87,7 +87,7 @@ const PLATFORM_CONFIG = {
       ffprobeOutput: 'ffprobe',
       extract: 'tar',
       release: {
-        repos: ['yt-dlp/FFmpeg-Builds', 'BtbN/FFmpeg-Builds'],
+        repos: ['yt-dlp/FFmpeg-Builds', 'yt-dlp/FFmpeg-Builds'],
         assetPattern: /ffmpeg-master-latest-linux64-gpl\.tar\.xz$/i,
         binaryName: 'ffmpeg'
       }

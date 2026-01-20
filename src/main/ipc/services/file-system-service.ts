@@ -107,6 +107,35 @@ class FileSystemService extends IpcService {
   }
 
   @IpcMethod()
+  async openFile(_context: IpcContext, filePath: string): Promise<boolean> {
+    try {
+      if (!filePath) {
+        return false
+      }
+
+      const sanitizedPath = this.sanitizePath(filePath)
+      const normalizedPath = path.normalize(sanitizedPath)
+      const stats = await fs.stat(normalizedPath).catch(() => null)
+
+      if (!stats || (!stats.isFile() && !stats.isDirectory())) {
+        scopedLoggers.system.error('File does not exist:', normalizedPath)
+        return false
+      }
+
+      const result = await shell.openPath(normalizedPath)
+      if (result) {
+        scopedLoggers.system.error('Failed to open file:', result)
+        return false
+      }
+
+      return true
+    } catch (error) {
+      scopedLoggers.system.error('Failed to open file:', error)
+      return false
+    }
+  }
+
+  @IpcMethod()
   async copyFileToClipboard(_context: IpcContext, filePath: string): Promise<boolean> {
     try {
       if (!filePath) {
