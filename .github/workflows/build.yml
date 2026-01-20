@@ -31,7 +31,7 @@ jobs:
             build_script: pnpm run build:win
             ytdlp_asset: yt-dlp.exe
             ytdlp_output: yt-dlp.exe
-            ffmpeg_url: https://github.com/yt-dlp/FFmpeg-Builds/releases/latest/download/ffmpeg-master-latest-win64-gpl.zip
+            ffmpeg_url: https://github.com/BtbN/FFmpeg-Builds/releases/latest/download/ffmpeg-master-latest-win64-gpl.zip
             ffmpeg_inner_path: ffmpeg-master-latest-win64-gpl\bin\ffmpeg.exe
             ffprobe_inner_path: ffmpeg-master-latest-win64-gpl\bin\ffprobe.exe
           - platform: macos
@@ -48,7 +48,7 @@ jobs:
             build_script: pnpm run build:linux
             ytdlp_asset: yt-dlp
             ytdlp_output: yt-dlp_linux
-            ffmpeg_url: https://github.com/yt-dlp/FFmpeg-Builds/releases/latest/download/ffmpeg-master-latest-linux64-gpl.tar.xz
+            ffmpeg_url: https://github.com/BtbN/FFmpeg-Builds/releases/latest/download/ffmpeg-master-latest-linux64-gpl.tar.xz
             ffmpeg_inner_path: ffmpeg-master-latest-linux64-gpl/bin/ffmpeg
             ffprobe_inner_path: ffmpeg-master-latest-linux64-gpl/bin/ffprobe
     steps:

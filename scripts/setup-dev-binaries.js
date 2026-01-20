@@ -28,7 +28,7 @@ const PLATFORM_CONFIG = {
       output: 'yt-dlp.exe'
     },
     ffmpeg: {
-      url: 'https://github.com/yt-dlp/FFmpeg-Builds/releases/latest/download/ffmpeg-master-latest-win64-gpl.zip',
+      url: 'https://github.com/BtbN/FFmpeg-Builds/releases/latest/download/ffmpeg-master-latest-win64-gpl.zip',
       innerPath: 'ffmpeg-master-latest-win64-gpl/bin/ffmpeg.exe',
       ffprobeInnerPath: 'ffmpeg-master-latest-win64-gpl/bin/ffprobe.exe',
       output: 'ffmpeg.exe',
@@ -80,7 +80,7 @@ const PLATFORM_CONFIG = {
       output: 'yt-dlp_linux'
     },
     ffmpeg: {
-      url: 'https://github.com/yt-dlp/FFmpeg-Builds/releases/latest/download/ffmpeg-master-latest-linux64-gpl.tar.xz',
+      url: 'https://github.com/BtbN/FFmpeg-Builds/releases/latest/download/ffmpeg-master-latest-linux64-gpl.tar.xz',
       innerPath: 'ffmpeg-master-latest-linux64-gpl/bin/ffmpeg',
       ffprobeInnerPath: 'ffmpeg-master-latest-linux64-gpl/bin/ffprobe',
       output: 'ffmpeg',
