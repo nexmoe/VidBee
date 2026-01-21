@@ -437,6 +437,8 @@
     "embedSubsDescription": "Incorporar legendas no arquivo de vídeo (mp4, webm, mkv)",
     "embedThumbnail": "Incorporar miniatura",
     "embedThumbnailDescription": "Adicionar a miniatura como arte de capa",
+    "shareWatermark": "Marca-d'água de compartilhamento",
+    "shareWatermarkDescription": "Adiciona uma marca-d'água com o título original, o autor e a marca VidBee",
     "maxConcurrentDownloads": "Número máximo de downloads ativos",
     "maxConcurrentDownloadsDescription": "Número máximo de downloads simultâneos",
     "none": "Nenhum",

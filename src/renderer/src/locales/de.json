@@ -437,6 +437,8 @@
     "embedSubsDescription": "Untertitel in die Videodatei einbetten (mp4, webm, mkv)",
     "embedThumbnail": "Vorschaubild einbetten",
     "embedThumbnailDescription": "Vorschaubild als Covergrafik hinzufügen",
+    "shareWatermark": "Wasserzeichen zum Teilen",
+    "shareWatermarkDescription": "Fügt ein Wasserzeichen mit Originaltitel, Autor und VidBee-Branding hinzu",
     "maxConcurrentDownloads": "Maximale Anzahl aktiver Downloads",
     "maxConcurrentDownloadsDescription": "Maximale Anzahl gleichzeitiger Downloads",
     "none": "Keine",

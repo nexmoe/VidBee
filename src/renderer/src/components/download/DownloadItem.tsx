@@ -40,6 +40,10 @@ import {
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import {
+  buildFilePathCandidates,
+  normalizeSavedFileName
+} from '../../../../shared/utils/download-file'
 import { ipcServices } from '../../lib/ipc'
 import {
   addDownloadAtom,
@@ -48,47 +52,6 @@ import {
   removeHistoryRecordAtom
 } from '../../store/downloads'
 import { settingsAtom } from '../../store/settings'
-
-const normalizeSavedFileName = (fileName?: string): string | undefined => {
-  if (!fileName) {
-    return undefined
-  }
-  const trimmed = fileName.trim()
-  if (!trimmed) {
-    return undefined
-  }
-  return trimmed.replace(/\.f\d+(?=\.[^.]+$)/i, '')
-}
-
-const generateFilePathCandidates = (
-  downloadPath: string,
-  title: string,
-  format: string,
-  savedFileName?: string
-): string[] => {
-  const normalizedDownloadPath = downloadPath.replace(/\\/g, '/')
-  const safeTitle = title.trim() || 'Unknown'
-
-  const savedNameCandidates: string[] = []
-  const trimmedSavedFileName = savedFileName?.trim()
-  if (trimmedSavedFileName) {
-    const normalized = normalizeSavedFileName(trimmedSavedFileName)
-    if (normalized) {
-      savedNameCandidates.push(normalized)
-    }
-    if (!normalized || normalized !== trimmedSavedFileName) {
-      savedNameCandidates.push(trimmedSavedFileName)
-    }
-  }
-
-  const candidateFileNames =
-    savedNameCandidates.length > 0
-      ? savedNameCandidates
-      : [`${safeTitle} via VidBee.${format}`, `${safeTitle}.${format}`]
-  return Array.from(
-    new Set(candidateFileNames.map((fileName) => `${normalizedDownloadPath}/${fileName}`))
-  )
-}
 
 const tryFileOperation = async (
   paths: string[],
@@ -251,7 +214,7 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
 
       try {
         const formatForPath = resolvedExtension
-        const filePaths = generateFilePathCandidates(
+        const filePaths = buildFilePathCandidates(
           download.downloadPath,
           download.title,
           formatForPath,
@@ -338,7 +301,7 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
     try {
       const downloadPath = download.downloadPath || settings.downloadPath
       const format = resolvedExtension
-      const filePaths = generateFilePathCandidates(
+      const filePaths = buildFilePathCandidates(
         downloadPath,
         download.title,
         format,
@@ -365,7 +328,7 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
         return
       }
       const format = resolvedExtension
-      const filePaths = generateFilePathCandidates(
+      const filePaths = buildFilePathCandidates(
         downloadPath,
         download.title,
         format,
@@ -427,12 +390,7 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
 
     try {
       // Generate file path using downloadPath + title + ext
-      const filePaths = generateFilePathCandidates(
-        downloadPath,
-        title,
-        format,
-        download.savedFileName
-      )
+      const filePaths = buildFilePathCandidates(downloadPath, title, format, download.savedFileName)
 
       const success = await tryFileOperation(filePaths, (filePath) =>
         ipcServices.fs.copyFileToClipboard(filePath)
@@ -457,7 +415,7 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
       }
 
       const format = resolvedExtension
-      const filePaths = generateFilePathCandidates(
+      const filePaths = buildFilePathCandidates(
         downloadPath,
         download.title,
         format,

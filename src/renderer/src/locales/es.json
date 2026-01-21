@@ -437,6 +437,8 @@
     "embedSubsDescription": "Incrustar subtítulos en el archivo de video (mp4, webm, mkv)",
     "embedThumbnail": "Incrustar miniatura",
     "embedThumbnailDescription": "Agregar la miniatura como portada",
+    "shareWatermark": "Marca de agua para compartir",
+    "shareWatermarkDescription": "Agrega una marca de agua con el título original, el autor y la marca VidBee",
     "maxConcurrentDownloads": "Número máximo de descargas activas",
     "maxConcurrentDownloadsDescription": "Número máximo de descargas simultáneas",
     "none": "Ninguno",

@@ -580,6 +580,27 @@ export function Settings() {
                   />
                 </ItemActions>
               </Item>
+
+              <ItemSeparator />
+
+              <Item variant="muted">
+                <ItemContent>
+                  <ItemTitle>{t('settings.shareWatermark')}</ItemTitle>
+                  <ItemDescription>{t('settings.shareWatermarkDescription')}</ItemDescription>
+                </ItemContent>
+                <ItemActions>
+                  <Switch
+                    checked={settings.shareWatermark ?? false}
+                    onCheckedChange={(value) => {
+                      try {
+                        handleSettingChange('shareWatermark', value)
+                      } catch (error) {
+                        logger.error('[Settings] Error toggling shareWatermark:', error)
+                      }
+                    }}
+                  />
+                </ItemActions>
+              </Item>
             </ItemGroup>
 
             <ItemGroup>

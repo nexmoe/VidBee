@@ -437,6 +437,8 @@
     "embedSubsDescription": "Sematkan subtitle ke file video (mp4, webm, mkv)",
     "embedThumbnail": "Sematkan thumbnail",
     "embedThumbnailDescription": "Tambahkan thumbnail sebagai sampul",
+    "shareWatermark": "Tanda air berbagi",
+    "shareWatermarkDescription": "Tambahkan tanda air dengan judul asli, pembuat, dan merek VidBee",
     "maxConcurrentDownloads": "Jumlah maksimum unduhan aktif",
     "maxConcurrentDownloadsDescription": "Jumlah maksimum unduhan bersamaan",
     "none": "Tidak ada",
