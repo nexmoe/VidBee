@@ -31,8 +31,6 @@ import {
   File,
   FileText,
   FolderOpen,
-  Info,
-  Link2,
   Loader2,
   Play,
   RotateCw,
@@ -241,6 +239,7 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
   const [logAutoScroll, setLogAutoScroll] = useState(true)
   const logContainerRef = useRef<HTMLDivElement | null>(null)
   const lastSheetOpenRef = useRef(false)
+  const [isContextMenuOpen, setIsContextMenuOpen] = useState(false)
 
   // Check if file exists when download data changes
   useEffect(() => {
@@ -475,6 +474,13 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
       }
 
       setFileExists(false)
+      if (isHistory) {
+        await ipcServices.history.removeHistoryItem(download.id)
+        removeHistory(download.id)
+      } else {
+        removeDownload(download.id)
+      }
+      toast.success(t('notifications.itemRemoved'))
     } catch (error) {
       console.error('Failed to delete file:', error)
       toast.error(t('notifications.removeFailed'))
@@ -845,11 +851,11 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
   }
 
   return (
-    <ContextMenu>
+    <ContextMenu onOpenChange={setIsContextMenuOpen}>
       <ContextMenuTrigger asChild>
         <div
           className={`px-6 py-2 group relative w-full max-w-full overflow-hidden transition-colors ${
-            isSelectedHistory ? 'bg-primary/10' : ''
+            isSelectedHistory || isContextMenuOpen ? 'bg-primary/10' : ''
           }`}
         >
           <div
@@ -1231,24 +1237,24 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
       <ContextMenuContent>
         {isInProgressStatus ? (
           <>
+            {canRetry && (
+              <ContextMenuItem onClick={handleRetryDownload}>
+                <RotateCw className="h-4 w-4" />
+                {t('download.retry')}
+              </ContextMenuItem>
+            )}
             <ContextMenuItem onClick={handleOpenFolder} disabled={!showOpenFolderAction}>
               <FolderOpen className="h-4 w-4" />
               {t('history.openFileLocation')}
             </ContextMenuItem>
             <ContextMenuItem onClick={handleCopyLink} disabled={!canCopyLink}>
-              <Link2 className="h-4 w-4" />
+              <span className="h-4 w-4 shrink-0" aria-hidden="true" />
               {t('history.copyUrl')}
             </ContextMenuItem>
             {canShowSheet && (
               <ContextMenuItem onClick={() => setSheetOpen(true)}>
-                <Info className="h-4 w-4" />
+                <span className="h-4 w-4 shrink-0" aria-hidden="true" />
                 {t('download.showDetails')}
-              </ContextMenuItem>
-            )}
-            {canRetry && (
-              <ContextMenuItem onClick={handleRetryDownload}>
-                <RotateCw className="h-4 w-4" />
-                {t('download.retry')}
               </ContextMenuItem>
             )}
             <ContextMenuSeparator />
@@ -1259,28 +1265,34 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
           </>
         ) : (
           <>
-            <ContextMenuItem onClick={handleOpenFile} disabled={!canOpenFile}>
-              <File className="h-4 w-4" />
-              {t('history.openFile')}
-            </ContextMenuItem>
+            {isCompletedStatus && (
+              <ContextMenuItem onClick={handleCopyToClipboard} disabled={!showCopyAction}>
+                <Copy className="h-4 w-4" />
+                {t('history.copyToClipboard')}
+              </ContextMenuItem>
+            )}
             {canRetry && (
               <ContextMenuItem onClick={handleRetryDownload}>
                 <RotateCw className="h-4 w-4" />
                 {t('download.retry')}
               </ContextMenuItem>
             )}
+            <ContextMenuItem onClick={handleOpenFile} disabled={!canOpenFile}>
+              <File className="h-4 w-4" />
+              {t('history.openFile')}
+            </ContextMenuItem>
             <ContextMenuSeparator />
             <ContextMenuItem onClick={handleOpenFolder} disabled={!showOpenFolderAction}>
               <FolderOpen className="h-4 w-4" />
               {t('history.openFileLocation')}
             </ContextMenuItem>
             <ContextMenuItem onClick={handleCopyLink} disabled={!canCopyLink}>
-              <Link2 className="h-4 w-4" />
+              <span className="h-4 w-4 shrink-0" aria-hidden="true" />
               {t('history.copyUrl')}
             </ContextMenuItem>
             {canShowSheet && (
               <ContextMenuItem onClick={() => setSheetOpen(true)}>
-                <Info className="h-4 w-4" />
+                <span className="h-4 w-4 shrink-0" aria-hidden="true" />
                 {t('download.showDetails')}
               </ContextMenuItem>
             )}
@@ -1290,7 +1302,7 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
               {t('history.deleteFile')}
             </ContextMenuItem>
             <ContextMenuItem onClick={handleDeleteRecord}>
-              <X className="h-4 w-4" />
+              <span className="h-4 w-4 shrink-0" aria-hidden="true" />
               {t('history.deleteRecord')}
             </ContextMenuItem>
           </>
