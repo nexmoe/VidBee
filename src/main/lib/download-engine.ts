@@ -14,11 +14,8 @@ import type {
   VideoInfo,
   VideoInfoCommandResult
 } from '../../shared/types'
-import {
-  buildDownloadArgs,
-  resolveVideoFormatSelector,
-  sanitizeFilenameTemplate
-} from '../download-engine/args-builder'
+import { buildFilenameKey } from '../../shared/utils/download-file'
+import { buildDownloadArgs, resolveVideoFormatSelector } from '../download-engine/args-builder'
 import {
   findFormatByIdCandidates,
   parseSizeToBytes,
@@ -27,6 +24,12 @@ import {
 import { settingsManager } from '../settings'
 import { scopedLoggers } from '../utils/logger'
 import { resolvePathWithHome } from '../utils/path-helpers'
+import {
+  appendJsRuntimeArgs,
+  buildVideoInfoArgs,
+  formatYtDlpCommand,
+  resolveFfmpegLocation
+} from './command-utils'
 import { DownloadQueue } from './download-queue'
 import {
   type DownloadSessionItem,
@@ -35,233 +38,20 @@ import {
 } from './download-session-store'
 import { ffmpegManager } from './ffmpeg-manager'
 import { historyManager } from './history-manager'
+import {
+  ensureDirectoryExists,
+  resolveAutoPlaylistDownloadPath,
+  resolveAutoVideoDownloadPath,
+  resolveHistoryDownloadPath,
+  sanitizeTemplateValue
+} from './path-resolver'
+import { clampPercent, estimateProgressParts, isMuxedFormat } from './progress-utils'
+import { applyShareWatermark } from './watermark-utils'
 import { ytdlpManager } from './ytdlp-manager'
 
 interface DownloadProcess {
   controller: AbortController
   process: YTDlpEventEmitter
-}
-
-const formatYtDlpCommand = (args: string[]): string => {
-  const quoted = args.map((arg) => {
-    if (arg === '') {
-      return '""'
-    }
-    if (/[\s"'\\]/.test(arg)) {
-      return `"${arg.replace(/(["\\])/g, '\\$1')}"`
-    }
-    return arg
-  })
-  return `yt-dlp ${quoted.join(' ')}`
-}
-
-const resolveFfmpegLocation = (ffmpegPath: string): string => path.dirname(ffmpegPath)
-
-const ensureDirectoryExists = (dir?: string): void => {
-  if (!dir) {
-    return
-  }
-  try {
-    fs.mkdirSync(dir, { recursive: true })
-  } catch (error) {
-    scopedLoggers.download.error('Failed to ensure download directory:', error)
-  }
-}
-
-const sanitizeFolderName = (value: string, fallback: string): string => {
-  const trimmed = value.trim()
-  if (!trimmed) {
-    return fallback
-  }
-  const sanitized = trimmed
-    .replace(/[\\/:*?"<>|]+/g, '-')
-    .replace(/\s+/g, ' ')
-    .replace(/[. ]+$/g, '')
-  return sanitized || fallback
-}
-
-const isLikelyChannelUrl = (url: string): boolean => {
-  const normalized = url.toLowerCase()
-  if (normalized.includes('list=')) {
-    return false
-  }
-  return /youtube\.com\/(channel\/|c\/|user\/|@)/.test(normalized)
-}
-
-const clampPercent = (value?: number): number => {
-  const normalized = typeof value === 'number' ? value : 0
-  if (Number.isNaN(normalized)) {
-    return 0
-  }
-  return Math.min(100, Math.max(0, normalized))
-}
-
-const estimateProgressParts = (options: DownloadOptions): number => {
-  if (options.type === 'audio') {
-    return 1
-  }
-
-  const audioFormatCount = options.audioFormatIds?.filter((id) => id.trim() !== '').length ?? 0
-  if (audioFormatCount > 0) {
-    return 1 + audioFormatCount
-  }
-
-  const selector = options.format?.trim()
-  if (!selector) {
-    return 2
-  }
-
-  const primary = selector.split('/')[0]?.trim()
-  if (!primary) {
-    return 2
-  }
-
-  const parts = primary
-    .split('+')
-    .map((part) => part.trim())
-    .filter((part) => part !== '')
-
-  if (parts.length <= 1) {
-    return 1
-  }
-
-  if (parts.some((part) => part === 'none')) {
-    return 1
-  }
-
-  return parts.length
-}
-
-const isMuxedFormat = (format?: VideoFormat): boolean => {
-  if (!format) {
-    return false
-  }
-  const hasVideo = !!format.vcodec && format.vcodec !== 'none'
-  const hasAudio = !!format.acodec && format.acodec !== 'none'
-  return hasVideo && hasAudio
-}
-
-const resolveAutoPlaylistDownloadPath = (
-  basePath: string,
-  info: PlaylistInfo,
-  url: string
-): string => {
-  const kindFolder = isLikelyChannelUrl(url) ? 'Channels' : 'Playlists'
-  const title = sanitizeFolderName(
-    info.title || (kindFolder === 'Channels' ? 'Channel' : 'Playlist'),
-    kindFolder === 'Channels' ? 'Channel' : 'Playlist'
-  )
-  return path.join(basePath, kindFolder, title)
-}
-
-const resolveAutoVideoDownloadPath = (basePath: string, info?: VideoInfo): string => {
-  const root = path.join(basePath, 'Videos')
-  if (!info) {
-    return root
-  }
-  const label = info.uploader?.trim() || info.title?.trim()
-  if (!label) {
-    return root
-  }
-  return path.join(root, sanitizeFolderName(label, 'Video'))
-}
-
-const sanitizeTemplateValue = (value: string): string =>
-  value
-    .replace(/[\\/:*?"<>|]+/g, '-')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .replace(/[. ]+$/g, '')
-
-const resolveTemplateToken = (token: string, info?: VideoInfo): string | undefined => {
-  if (!info) {
-    return undefined
-  }
-  switch (token) {
-    case 'uploader':
-      return info.uploader
-    case 'title':
-      return info.title
-    case 'id':
-      return info.id
-    case 'channel':
-      return info.uploader
-    case 'extractor':
-      return info.extractor_key
-    default:
-      return undefined
-  }
-}
-
-const resolveHistoryDownloadPath = (
-  basePath: string,
-  filenameTemplate?: string,
-  info?: VideoInfo
-): string => {
-  if (!filenameTemplate?.trim()) {
-    return basePath
-  }
-  const safeTemplate = sanitizeFilenameTemplate(filenameTemplate)
-  const resolvedTemplate = safeTemplate.replace(/%\(([^)]+)\)s/g, (match, token) => {
-    const value = resolveTemplateToken(token, info)
-    if (!value) {
-      return match
-    }
-    return sanitizeTemplateValue(value)
-  })
-  const templateDir = path.posix.dirname(resolvedTemplate)
-  if (templateDir === '.' || templateDir === '/') {
-    return basePath
-  }
-  if (/%\([^)]+\)s/.test(templateDir)) {
-    return basePath
-  }
-  return path.join(basePath, templateDir)
-}
-
-const appendJsRuntimeArgs = (args: string[]): void => {
-  const runtimeArgs = ytdlpManager.getJsRuntimeArgs()
-  if (runtimeArgs.length > 0) {
-    args.push(...runtimeArgs)
-  }
-}
-
-const buildVideoInfoArgs = (url: string, settings: ReturnType<typeof settingsManager.getAll>) => {
-  const args = ['-j', '--no-playlist', '--no-warnings']
-
-  // Add encoding support for proper handling of non-ASCII characters
-  args.push('--encoding', 'utf-8')
-
-  // Note: Some sites (e.g., YouTube) may not provide filesize information
-  // in the initial request. This is normal behavior and filesize may be null/undefined
-  // for many formats. File size information might require additional HTTP HEAD requests
-  // which would significantly slow down info extraction, so yt-dlp doesn't fetch it by default.
-
-  // Add proxy if configured
-  if (settings.proxy) {
-    args.push('--proxy', settings.proxy)
-  }
-
-  // Add browser cookies if configured (skip if 'none')
-  if (settings.browserForCookies && settings.browserForCookies !== 'none') {
-    args.push('--cookies-from-browser', settings.browserForCookies)
-  }
-
-  const cookiesPath = settings.cookiesPath?.trim()
-  if (cookiesPath) {
-    args.push('--cookies', cookiesPath)
-  }
-
-  // Add config file if configured
-  const configPath = resolvePathWithHome(settings.configPath)
-  if (configPath) {
-    args.push('--config-location', configPath)
-  }
-
-  appendJsRuntimeArgs(args)
-  args.push(url)
-
-  return args
 }
 
 class DownloadEngine extends EventEmitter {
@@ -766,6 +556,7 @@ class DownloadEngine extends EventEmitter {
     let actualFormat: string | null = null
     let videoInfo: VideoInfo | undefined
     let lastKnownOutputPath: string | undefined
+    const outputPathCandidates: string[] = []
     let totalParts = estimateProgressParts(options)
     let completedParts = 0
     let lastPercent = 0
@@ -907,9 +698,13 @@ class DownloadEngine extends EventEmitter {
       if (!trimmed) {
         return
       }
-      lastKnownOutputPath = path.isAbsolute(trimmed)
+      const resolvedPath = path.isAbsolute(trimmed)
         ? trimmed
         : path.join(resolvedDownloadPath, trimmed)
+      lastKnownOutputPath = resolvedPath
+      if (!outputPathCandidates.includes(resolvedPath)) {
+        outputPathCandidates.push(resolvedPath)
+      }
     }
 
     const extractOutputPathFromLog = (message: string): void => {
@@ -1130,9 +925,17 @@ class DownloadEngine extends EventEmitter {
 
         let fileSize: number | undefined
         let actualFilePath = lastKnownOutputPath ?? fallbackOutputPath
-        const candidatePaths = lastKnownOutputPath
-          ? [lastKnownOutputPath, fallbackOutputPath]
-          : [fallbackOutputPath]
+        const candidatePaths: string[] = [...outputPathCandidates].reverse()
+        const pushCandidatePath = (candidate: string | undefined) => {
+          if (!candidate) {
+            return
+          }
+          if (!candidatePaths.includes(candidate)) {
+            candidatePaths.push(candidate)
+          }
+        }
+        pushCandidatePath(lastKnownOutputPath)
+        pushCandidatePath(fallbackOutputPath)
 
         try {
           const fs = await import('node:fs/promises')
@@ -1152,28 +955,64 @@ class DownloadEngine extends EventEmitter {
 
           if (!located) {
             const files = await fs.readdir(resolvedDownloadPath)
-            const matchingFiles = files.filter((file) => {
-              const baseName = file.replace(/\.[^.]+$/, '')
-              const fileExt = file.split('.').pop()?.toLowerCase()
-              return (
-                (baseName === sanitizedTitle || baseName.startsWith(sanitizedTitle)) &&
-                fileExt === extension.toLowerCase()
-              )
-            })
+            const rawTitle = videoInfo?.title ?? this.queue.getItemDetails(id)?.item.title ?? ''
+            const titleKey = buildFilenameKey(rawTitle)
+            const normalizedExt = extension.toLowerCase()
 
-            if (matchingFiles.length > 0) {
+            const matchesTitle = (fileName: string): boolean => {
+              if (!titleKey) {
+                return false
+              }
+              const fileKey = buildFilenameKey(fileName)
+              if (!fileKey) {
+                return false
+              }
+              return fileKey.includes(titleKey) || titleKey.includes(fileKey)
+            }
+
+            const candidates = files
+              .map((file) => {
+                const ext = file.split('.').pop()?.toLowerCase()
+                return { file, ext }
+              })
+              .filter((entry) => entry.ext)
+
+            const withExtension = candidates.filter((entry) => entry.ext === normalizedExt)
+            const titleMatches = withExtension.filter((entry) => matchesTitle(entry.file))
+            const vidbeeMatches = withExtension.filter((entry) =>
+              entry.file.toLowerCase().includes('vidbee')
+            )
+            const fallbackMatches = withExtension.length > 0 ? withExtension : candidates
+            const pickFrom =
+              titleMatches.length > 0
+                ? titleMatches
+                : vidbeeMatches.length > 0
+                  ? vidbeeMatches
+                  : fallbackMatches
+
+            if (pickFrom.length > 0) {
               const fileStats = await Promise.all(
-                matchingFiles.map(async (file) => {
-                  const filePath = path.join(resolvedDownloadPath, file)
+                pickFrom.map(async (entry) => {
+                  const filePath = path.join(resolvedDownloadPath, entry.file)
                   const stats = await fs.stat(filePath)
+                  if (!stats.isFile()) {
+                    return null
+                  }
                   return { path: filePath, mtime: stats.mtime, size: stats.size }
                 })
               )
-              const mostRecent = fileStats.sort((a, b) => b.mtime.getTime() - a.mtime.getTime())[0]
-              actualFilePath = mostRecent.path
-              fileSize = mostRecent.size
-              located = true
-              scopedLoggers.download.info('Found actual file:', actualFilePath, 'Size:', fileSize)
+              const existingStats = fileStats.filter(
+                (entry): entry is { path: string; mtime: Date; size: number } => Boolean(entry)
+              )
+              if (existingStats.length > 0) {
+                const mostRecent = existingStats.sort(
+                  (a, b) => b.mtime.getTime() - a.mtime.getTime()
+                )[0]
+                actualFilePath = mostRecent.path
+                fileSize = mostRecent.size
+                located = true
+                scopedLoggers.download.info('Found actual file:', actualFilePath, 'Size:', fileSize)
+              }
             }
           }
 
@@ -1196,12 +1035,43 @@ class DownloadEngine extends EventEmitter {
           fileSize = latestKnownSizeBytes
         }
 
-        const savedFileName = path.basename(actualFilePath)
+        let finalFilePath = actualFilePath
+        let finalFileSize = fileSize
+
+        if (settings.shareWatermark && options.type === 'video') {
+          if (!fs.existsSync(actualFilePath)) {
+            scopedLoggers.download.warn(
+              'Watermark skipped because file was not found:',
+              actualFilePath
+            )
+          } else {
+            this.updateDownloadInfo(id, { status: 'processing' })
+            const snapshot = this.queue.getItemDetails(id)
+            const watermarkTitle = videoInfo?.title ?? snapshot?.item.title
+            const watermarkAuthor = videoInfo?.uploader ?? snapshot?.item.uploader
+            try {
+              const watermarkResult = await applyShareWatermark({
+                inputPath: actualFilePath,
+                ffmpegPath,
+                title: watermarkTitle,
+                author: watermarkAuthor
+              })
+              if (watermarkResult) {
+                finalFilePath = watermarkResult.outputPath
+                finalFileSize = watermarkResult.fileSize
+              }
+            } catch (error) {
+              scopedLoggers.download.warn('Failed to apply share watermark for ID:', id, error)
+            }
+          }
+        }
+
+        const savedFileName = path.basename(finalFilePath)
 
         this.updateDownloadInfo(id, {
           status: 'completed',
           completedAt: Date.now(),
-          fileSize,
+          fileSize: finalFileSize,
           savedFileName
         })
         scopedLoggers.download.info('Download completed successfully for ID:', id)

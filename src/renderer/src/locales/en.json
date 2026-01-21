@@ -437,6 +437,8 @@
     "embedSubsDescription": "Embed subtitles into the video file (mp4, webm, mkv)",
     "embedThumbnail": "Embed thumbnail",
     "embedThumbnailDescription": "Add the thumbnail as cover art",
+    "shareWatermark": "Share watermark",
+    "shareWatermarkDescription": "Add a watermark with the original title, author, and VidBee branding",
     "maxConcurrentDownloads": "Maximum number of active downloads",
     "maxConcurrentDownloadsDescription": "Maximum number of simultaneous downloads",
     "none": "None",

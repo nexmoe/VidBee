@@ -437,6 +437,8 @@
     "embedSubsDescription": "字幕を動画ファイルに埋め込む（mp4、webm、mkv）",
     "embedThumbnail": "サムネイルを埋め込む",
     "embedThumbnailDescription": "サムネイルをカバーアートとして追加",
+    "shareWatermark": "共有用ウォーターマーク",
+    "shareWatermarkDescription": "元のタイトル、作者、VidBee のブランド名を含むウォーターマークを追加します",
     "maxConcurrentDownloads": "最大アクティブダウンロード数",
     "maxConcurrentDownloadsDescription": "最大同時ダウンロード数",
     "none": "なし",

@@ -437,6 +437,8 @@
     "embedSubsDescription": "تضمين الترجمات داخل ملف الفيديو (mp4، webm، mkv)",
     "embedThumbnail": "تضمين الصورة المصغرة",
     "embedThumbnailDescription": "إضافة الصورة المصغرة كغلاف",
+    "shareWatermark": "علامة مائية للمشاركة",
+    "shareWatermarkDescription": "أضف علامة مائية تتضمن العنوان الأصلي والمؤلف وعلامة VidBee التجارية",
     "maxConcurrentDownloads": "العدد الأقصى للتحميلات النشطة",
     "maxConcurrentDownloadsDescription": "العدد الأقصى للتحميلات المتزامنة",
     "none": "لا شيء",

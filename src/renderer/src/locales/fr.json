@@ -437,6 +437,8 @@
     "embedSubsDescription": "Intégrer les sous-titres dans le fichier vidéo (mp4, webm, mkv)",
     "embedThumbnail": "Intégrer la miniature",
     "embedThumbnailDescription": "Ajouter la miniature comme illustration de couverture",
+    "shareWatermark": "Filigrane de partage",
+    "shareWatermarkDescription": "Ajoute un filigrane avec le titre original, l'auteur et la marque VidBee",
     "maxConcurrentDownloads": "Nombre maximum de téléchargements actifs",
     "maxConcurrentDownloadsDescription": "Nombre maximum de téléchargements simultanés",
     "none": "Aucun",

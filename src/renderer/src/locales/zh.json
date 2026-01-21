@@ -437,6 +437,8 @@
     "embedSubsDescription": "将字幕嵌入视频文件（mp4、webm、mkv）",
     "embedThumbnail": "嵌入缩略图",
     "embedThumbnailDescription": "将缩略图作为封面图",
+    "shareWatermark": "分享水印",
+    "shareWatermarkDescription": "添加包含原视频标题、作者和 VidBee 品牌的水印",
     "maxConcurrentDownloads": "最大活动下载数",
     "maxConcurrentDownloadsDescription": "最大同时下载数量",
     "none": "无",

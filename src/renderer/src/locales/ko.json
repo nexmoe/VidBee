@@ -437,6 +437,8 @@
     "embedSubsDescription": "자막을 비디오 파일에 포함(mp4, webm, mkv)",
     "embedThumbnail": "썸네일 포함",
     "embedThumbnailDescription": "썸네일을 커버 아트로 추가",
+    "shareWatermark": "공유 워터마크",
+    "shareWatermarkDescription": "원본 제목, 작성자, VidBee 브랜드명을 포함한 워터마크를 추가합니다",
     "maxConcurrentDownloads": "최대 활성 다운로드 수",
     "maxConcurrentDownloadsDescription": "최대 동시 다운로드 수",
     "none": "없음",

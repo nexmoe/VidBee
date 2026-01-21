@@ -437,6 +437,8 @@
     "embedSubsDescription": "Встраивать субтитры в файл видео (mp4, webm, mkv)",
     "embedThumbnail": "Встраивать миниатюру",
     "embedThumbnailDescription": "Добавлять миниатюру как обложку",
+    "shareWatermark": "Водяной знак для обмена",
+    "shareWatermarkDescription": "Добавляет водяной знак с оригинальным названием, автором и брендом VidBee",
     "maxConcurrentDownloads": "Максимальное количество активных загрузок",
     "maxConcurrentDownloadsDescription": "Максимальное количество одновременных загрузок",
     "none": "Нет",

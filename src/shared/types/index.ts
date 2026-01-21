@@ -286,6 +286,7 @@ export interface AppSettings {
   embedThumbnail: boolean
   embedMetadata: boolean
   embedChapters: boolean
+  shareWatermark: boolean
 }
 
 export const DEFAULT_SUBSCRIPTION_FILENAME_TEMPLATE = '%(uploader)s/%(title)s.%(ext)s'
@@ -312,5 +313,6 @@ export const defaultSettings: AppSettings = {
   embedSubs: true,
   embedThumbnail: false,
   embedMetadata: true,
-  embedChapters: true
+  embedChapters: true,
+  shareWatermark: false
 }
