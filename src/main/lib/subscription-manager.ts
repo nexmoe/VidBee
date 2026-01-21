@@ -2,10 +2,8 @@ import { randomUUID } from 'node:crypto'
 import { EventEmitter } from 'node:events'
 import fs from 'node:fs'
 import type { Database as BetterSqlite3Instance } from 'better-sqlite3'
-import DatabaseConstructor from 'better-sqlite3'
 import { and, desc, eq, inArray } from 'drizzle-orm'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
-import { drizzle } from 'drizzle-orm/better-sqlite3'
 import log from 'electron-log/main'
 import type {
   SubscriptionCreatePayload,
@@ -15,7 +13,7 @@ import type {
   SubscriptionUpdatePayload
 } from '../../shared/types'
 import { sanitizeFilenameTemplate } from '../download-engine/args-builder'
-import { runMigrations } from './database/migrate'
+import { getDatabaseConnection } from './database'
 import {
   type SubscriptionInsert,
   type SubscriptionItemRow,
@@ -23,7 +21,6 @@ import {
   subscriptionItemsTable,
   subscriptionsTable
 } from './database/schema'
-import { getDatabaseFilePath } from './database-path'
 
 const sanitizeList = (values?: string[]): string[] => {
   if (!values || values.length === 0) {
@@ -70,7 +67,6 @@ export class SubscriptionManager extends EventEmitter {
     super()
     try {
       this.getDatabase()
-      this.migrateLegacyStore()
     } catch (error) {
       log.error('subscriptions: failed to initialize database', error)
     }
@@ -301,19 +297,15 @@ export class SubscriptionManager extends EventEmitter {
   }
 
   private getDatabase(): BetterSQLite3Database {
-    if (this.db) {
+    if (this.db && this.sqlite) {
       return this.db
     }
 
-    const databasePath = this.getDatabasePath()
-    this.sqlite = new DatabaseConstructor(databasePath, { timeout: 5000 })
-    this.sqlite.pragma('journal_mode = WAL')
-    this.sqlite.pragma('foreign_keys = ON')
-    this.db = drizzle(this.sqlite)
-    runMigrations(this.db)
+    const connection = getDatabaseConnection()
+    this.sqlite = connection.sqlite
+    this.db = connection.db
     this.ensureSubscriptionsSchema()
     this.ensureItemsSchema()
-    log.info('subscriptions: database initialized at', databasePath)
     return this.db
   }
 
@@ -346,75 +338,17 @@ export class SubscriptionManager extends EventEmitter {
       }>
       const hasAdded = columns.some((column) => column.name === 'added')
       if (!hasAdded) {
-        this.sqlite
-          .prepare(`ALTER TABLE subscription_items ADD COLUMN added INTEGER NOT NULL DEFAULT 0`)
-          .run()
+        log.error(
+          'subscriptions: schema mismatch in subscription_items (missing added). Drizzle migrations required.'
+        )
       }
       const hasDownloaded = columns.some((column) => column.name === 'downloaded')
       const hasLegacyStatus = columns.some((column) => column.name === 'status')
       const needsMigration = hasDownloaded || hasLegacyStatus
       if (needsMigration) {
-        if (hasDownloaded) {
-          this.sqlite.prepare(`UPDATE subscription_items SET added = 1 WHERE downloaded = 1`).run()
-        }
-        const sqlite = this.sqlite
-        const migrate = sqlite.transaction(() => {
-          sqlite.prepare(`DROP TABLE IF EXISTS subscription_items_new`).run()
-          sqlite
-            .prepare(
-              `CREATE TABLE subscription_items_new (
-                subscription_id TEXT NOT NULL,
-                item_id TEXT NOT NULL,
-                title TEXT NOT NULL,
-                url TEXT NOT NULL,
-                published_at INTEGER NOT NULL,
-                thumbnail TEXT,
-                added INTEGER NOT NULL,
-                download_id TEXT,
-                created_at INTEGER NOT NULL,
-                updated_at INTEGER NOT NULL,
-                PRIMARY KEY (subscription_id, item_id)
-              )`
-            )
-            .run()
-          sqlite
-            .prepare(
-              `INSERT INTO subscription_items_new (
-                subscription_id,
-                item_id,
-                title,
-                url,
-                published_at,
-                thumbnail,
-                added,
-                download_id,
-                created_at,
-                updated_at
-              )
-              SELECT
-                subscription_id,
-                item_id,
-                title,
-                url,
-                published_at,
-                thumbnail,
-                added,
-                download_id,
-                created_at,
-                updated_at
-              FROM subscription_items`
-            )
-            .run()
-          sqlite.prepare(`DROP TABLE subscription_items`).run()
-          sqlite.prepare(`ALTER TABLE subscription_items_new RENAME TO subscription_items`).run()
-          sqlite
-            .prepare(
-              'CREATE INDEX IF NOT EXISTS subscription_items_subscription_idx ON subscription_items (subscription_id)'
-            )
-            .run()
-        })
-        migrate()
-        log.info('subscriptions: removed legacy columns from subscription_items')
+        log.error(
+          'subscriptions: schema mismatch in subscription_items (legacy downloaded/status columns). Drizzle migrations required.'
+        )
       }
     } catch (error) {
       log.warn('subscriptions: failed to ensure subscription_items schema', error)
@@ -435,153 +369,11 @@ export class SubscriptionManager extends EventEmitter {
       if (!hasLegacyColumns) {
         return
       }
-      const sqlite = this.sqlite
-      const migrate = sqlite.transaction(() => {
-        sqlite.prepare(`DROP TABLE IF EXISTS subscriptions_new`).run()
-        sqlite
-          .prepare(
-            `CREATE TABLE subscriptions_new (
-              id TEXT PRIMARY KEY,
-              title TEXT NOT NULL,
-              source_url TEXT NOT NULL,
-              feed_url TEXT NOT NULL,
-              platform TEXT NOT NULL,
-              keywords TEXT NOT NULL,
-              tags TEXT NOT NULL,
-              only_latest INTEGER NOT NULL,
-              enabled INTEGER NOT NULL,
-              cover_url TEXT,
-              latest_video_title TEXT,
-              latest_video_published_at INTEGER,
-              last_checked_at INTEGER,
-              last_success_at INTEGER,
-              status TEXT NOT NULL,
-              last_error TEXT,
-              created_at INTEGER NOT NULL,
-              updated_at INTEGER NOT NULL,
-              download_directory TEXT,
-              naming_template TEXT
-            )`
-          )
-          .run()
-        sqlite
-          .prepare(
-            `INSERT INTO subscriptions_new (
-              id,
-              title,
-              source_url,
-              feed_url,
-              platform,
-              keywords,
-              tags,
-              only_latest,
-              enabled,
-              cover_url,
-              latest_video_title,
-              latest_video_published_at,
-              last_checked_at,
-              last_success_at,
-              status,
-              last_error,
-              created_at,
-              updated_at,
-              download_directory,
-              naming_template
-            )
-            SELECT
-              id,
-              title,
-              source_url,
-              feed_url,
-              platform,
-              keywords,
-              tags,
-              only_latest,
-              enabled,
-              cover_url,
-              latest_video_title,
-              latest_video_published_at,
-              last_checked_at,
-              last_success_at,
-              status,
-              last_error,
-              created_at,
-              updated_at,
-              download_directory,
-              naming_template
-            FROM subscriptions`
-          )
-          .run()
-        sqlite.prepare(`DROP TABLE subscriptions`).run()
-        sqlite.prepare(`ALTER TABLE subscriptions_new RENAME TO subscriptions`).run()
-      })
-      migrate()
-      log.info('subscriptions: removed legacy seen_item_ids and last_item_id columns')
+      log.error(
+        'subscriptions: schema mismatch in subscriptions (legacy seen_item_ids/last_item_id). Drizzle migrations required.'
+      )
     } catch (error) {
       log.warn('subscriptions: failed to ensure subscriptions schema', error)
-    }
-  }
-
-  private getDatabasePath(): string {
-    return getDatabaseFilePath()
-  }
-
-  private migrateLegacyStore(): void {
-    try {
-      const ElectronStore = require('electron-store')
-      // Access the default export
-      const LegacyStore = ElectronStore.default || ElectronStore
-      const store = new LegacyStore({
-        name: 'subscriptions',
-        defaults: {
-          subscriptions: []
-        }
-      })
-      const legacyData = store.get('subscriptions') as SubscriptionRule[] | undefined
-      if (!legacyData || legacyData.length === 0) {
-        return
-      }
-
-      if (this.getAll().length > 0) {
-        return
-      }
-
-      for (const legacyItem of legacyData) {
-        try {
-          const normalized: SubscriptionRule = {
-            ...legacyItem,
-            keywords: sanitizeList(legacyItem.keywords),
-            tags: sanitizeList(legacyItem.tags),
-            items: []
-          }
-          this.insertRecord(normalized)
-          const legacyFeedItemsRaw = Array.isArray(
-            (legacyItem as { items?: SubscriptionFeedItem[] }).items
-          )
-            ? ((legacyItem as { items?: SubscriptionFeedItem[] }).items ?? [])
-            : []
-          if (legacyFeedItemsRaw.length > 0) {
-            const converted = legacyFeedItemsRaw.map((item) => ({
-              id: item.id,
-              url: item.url,
-              title: item.title,
-              publishedAt: item.publishedAt,
-              thumbnail: item.thumbnail,
-              addedToQueue: Boolean((item as { downloaded?: boolean }).downloaded),
-              downloadId: item.downloadId
-            }))
-            this.replaceFeedItems(normalized.id, converted, true)
-          }
-        } catch (error) {
-          log.error('subscriptions: failed to migrate legacy record', error)
-        }
-      }
-
-      store.clear()
-      this.emitUpdates()
-      log.info(`subscriptions: migrated ${legacyData.length} legacy entries`)
-    } catch (error) {
-      log.warn('subscriptions: legacy migration skipped', error)
     }
   }
 

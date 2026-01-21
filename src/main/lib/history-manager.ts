@@ -1,124 +1,17 @@
-import { existsSync, readFileSync, renameSync } from 'node:fs'
-import { join } from 'node:path'
-import DatabaseConstructor from 'better-sqlite3'
 import { eq, inArray, sql } from 'drizzle-orm'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
-import { drizzle } from 'drizzle-orm/better-sqlite3'
-import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
-import { app } from 'electron'
 import log from 'electron-log/main'
 import type { DownloadHistoryItem } from '../../shared/types'
-import { runMigrations } from './database/migrate'
+import { getDatabaseConnection } from './database'
 import {
   type DownloadHistoryInsert,
   type DownloadHistoryRow,
   downloadHistoryTable
 } from './database/schema'
-import { getDatabaseFilePath } from './database-path'
 
 const logger = log.scope('history-manager')
 
 const TAG_SEPARATOR = '\n'
-
-const createDownloadHistoryTableSql = sql`
-  CREATE TABLE IF NOT EXISTS download_history (
-    id TEXT PRIMARY KEY,
-    url TEXT NOT NULL,
-    title TEXT NOT NULL,
-    thumbnail TEXT,
-    type TEXT NOT NULL,
-    status TEXT NOT NULL,
-    download_path TEXT,
-    saved_file_name TEXT,
-    file_size INTEGER,
-    duration INTEGER,
-    downloaded_at INTEGER NOT NULL,
-    completed_at INTEGER,
-    sort_key INTEGER NOT NULL,
-    error TEXT,
-    yt_dlp_command TEXT,
-    yt_dlp_log TEXT,
-    description TEXT,
-    channel TEXT,
-    uploader TEXT,
-    view_count INTEGER,
-    tags TEXT,
-    origin TEXT,
-    subscription_id TEXT,
-    selected_format TEXT,
-    playlist_id TEXT,
-    playlist_title TEXT,
-    playlist_index INTEGER,
-    playlist_size INTEGER
-  )
-`
-
-const renameDownloadHistoryTableSql = sql`
-  ALTER TABLE download_history RENAME TO download_history_legacy
-`
-
-const dropLegacyDownloadHistoryTableSql = sql`
-  DROP TABLE download_history_legacy
-`
-
-const copyDownloadHistoryFromLegacySql = sql`
-  INSERT INTO download_history (
-    id,
-    url,
-    title,
-    thumbnail,
-    type,
-    status,
-    download_path,
-    saved_file_name,
-    file_size,
-    duration,
-    downloaded_at,
-    completed_at,
-    sort_key,
-    error,
-    description,
-    channel,
-    uploader,
-    view_count,
-    tags,
-    origin,
-    subscription_id,
-    selected_format,
-    playlist_id,
-    playlist_title,
-    playlist_index,
-    playlist_size
-  )
-  SELECT
-    id,
-    url,
-    title,
-    thumbnail,
-    type,
-    status,
-    download_path,
-    saved_file_name,
-    file_size,
-    duration,
-    downloaded_at,
-    completed_at,
-    sort_key,
-    error,
-    description,
-    channel,
-    uploader,
-    view_count,
-    tags,
-    origin,
-    subscription_id,
-    selected_format,
-    playlist_id,
-    playlist_title,
-    playlist_index,
-    playlist_size
-  FROM download_history_legacy
-`
 
 const sanitizeList = (values?: string[]): string[] => {
   if (!values || values.length === 0) {
@@ -145,21 +38,10 @@ const parseTags = (value: string | null): string[] | undefined => {
   return parsed.length > 0 ? parsed : undefined
 }
 
-const legacyDownloadHistoryTable = sqliteTable('download_history_legacy', {
-  id: text('id').primaryKey(),
-  status: text('status').notNull(),
-  downloadedAt: integer('downloaded_at', { mode: 'number' }).notNull(),
-  completedAt: integer('completed_at', { mode: 'number' }),
-  sortKey: integer('sort_key', { mode: 'number' }).notNull(),
-  payload: text('payload').notNull()
-})
-type LegacyDownloadHistoryRow = typeof legacyDownloadHistoryTable.$inferSelect
-
 class HistoryManager {
   private db: BetterSQLite3Database | null = null
   private history: Map<string, DownloadHistoryItem> = new Map()
   private schemaChecked = false
-  private migrationChecked = false
 
   constructor() {
     this.initialize()
@@ -169,7 +51,6 @@ class HistoryManager {
     try {
       this.getDatabase()
       this.ensureStructuredSchema()
-      this.ensureLegacyMigration()
       this.loadHistoryFromDatabase()
     } catch (error) {
       logger.error('history-db failed to initialize', error)
@@ -180,27 +61,9 @@ class HistoryManager {
     if (this.db) {
       return this.db
     }
-
-    const databasePath = this.getDatabasePath()
-
-    const sqlite = new DatabaseConstructor(databasePath, { timeout: 5000 })
-    sqlite.pragma('journal_mode = WAL')
-    sqlite.pragma('foreign_keys = ON')
-
-    const database = drizzle(sqlite)
-    runMigrations(database)
-
-    this.db = database
-    logger.info(`history-db initialized at ${databasePath}`)
+    const { db } = getDatabaseConnection()
+    this.db = db
     return this.db
-  }
-
-  private getDatabasePath(): string {
-    return getDatabaseFilePath()
-  }
-
-  private getLegacyStorePath(): string {
-    return join(app.getPath('userData'), 'download-history.json')
   }
 
   private ensureStructuredSchema(): void {
@@ -215,7 +78,9 @@ class HistoryManager {
       const hasPayloadColumn = columns.some((column) => column.name === 'payload')
       const hasUrlColumn = columns.some((column) => column.name === 'url')
       if (hasPayloadColumn || !hasUrlColumn) {
-        this.migrateLegacyPayloadTable()
+        logger.error(
+          'history-db schema mismatch: legacy payload schema detected. Drizzle migrations required.'
+        )
         return
       }
 
@@ -226,165 +91,18 @@ class HistoryManager {
         (columnName) => !columns.some((column) => column.name === columnName)
       )
       if (hasDeprecated) {
-        this.rebuildDownloadHistoryTable()
+        logger.error(
+          'history-db schema mismatch: deprecated columns detected. Drizzle migrations required.'
+        )
         return
       }
       if (missingRequired.length > 0) {
-        this.addMissingColumns(missingRequired)
+        logger.error(
+          `history-db schema mismatch: missing columns (${missingRequired.join(', ')}). Drizzle migrations required.`
+        )
       }
     } catch (error) {
       logger.error('history-db failed to inspect schema', error)
-    }
-  }
-
-  private addMissingColumns(columns: string[]): void {
-    if (columns.length === 0) {
-      return
-    }
-
-    const database = this.getDatabase()
-    const definitions: Record<string, string> = {
-      yt_dlp_command: 'TEXT',
-      yt_dlp_log: 'TEXT'
-    }
-
-    try {
-      database.transaction(
-        (tx) => {
-          for (const column of columns) {
-            const definition = definitions[column]
-            if (!definition) {
-              continue
-            }
-            tx.run(sql.raw(`ALTER TABLE download_history ADD COLUMN ${column} ${definition}`))
-          }
-        },
-        { behavior: 'immediate' }
-      )
-      logger.info(`history-db added missing columns: ${columns.join(', ')}`)
-    } catch (error) {
-      logger.error('history-db failed to add missing columns', error)
-    }
-  }
-
-  private migrateLegacyPayloadTable(): void {
-    const database = this.getDatabase()
-    logger.info('history-db migrating legacy payload schema to structured columns')
-
-    try {
-      let migratedCount = 0
-      database.transaction(
-        (tx) => {
-          tx.run(renameDownloadHistoryTableSql)
-          tx.run(createDownloadHistoryTableSql)
-
-          const legacyRows = tx.select().from(legacyDownloadHistoryTable).all()
-          migratedCount = legacyRows.length
-          for (const legacyRow of legacyRows) {
-            const normalized = this.normalizeItem(this.mapLegacyRowToItem(legacyRow))
-            tx.insert(downloadHistoryTable).values(this.mapItemToInsert(normalized)).run()
-          }
-
-          tx.run(dropLegacyDownloadHistoryTableSql)
-        },
-        { behavior: 'immediate' }
-      )
-      logger.info(`history-db migrated ${migratedCount} rows to new schema`)
-    } catch (error) {
-      logger.error('history-db failed to migrate legacy payload rows', error)
-      throw error
-    }
-  }
-
-  private rebuildDownloadHistoryTable(): void {
-    const database = this.getDatabase()
-    logger.info('history-db rebuilding download_history table to latest schema')
-
-    try {
-      database.transaction(
-        (tx) => {
-          tx.run(renameDownloadHistoryTableSql)
-          tx.run(createDownloadHistoryTableSql)
-          tx.run(copyDownloadHistoryFromLegacySql)
-          tx.run(dropLegacyDownloadHistoryTableSql)
-        },
-        { behavior: 'immediate' }
-      )
-      logger.info('history-db rebuilt download_history table')
-    } catch (error) {
-      logger.error('history-db failed to rebuild download_history schema', error)
-      throw error
-    }
-  }
-
-  private mapLegacyRowToItem(row: LegacyDownloadHistoryRow): DownloadHistoryItem {
-    try {
-      const parsed = JSON.parse(row.payload) as DownloadHistoryItem
-      return {
-        ...parsed,
-        status: (parsed.status ?? row.status) as DownloadHistoryItem['status'],
-        downloadedAt: parsed.downloadedAt ?? row.downloadedAt,
-        completedAt: parsed.completedAt ?? row.completedAt ?? undefined
-      }
-    } catch (error) {
-      logger.warn('history-db falling back while migrating payload row', { id: row.id, error })
-      return {
-        id: row.id,
-        url: row.id,
-        title: `Download ${row.id}`,
-        type: 'video',
-        status: row.status as DownloadHistoryItem['status'],
-        downloadedAt: row.downloadedAt,
-        completedAt: row.completedAt ?? undefined
-      }
-    }
-  }
-
-  private ensureLegacyMigration(): void {
-    if (this.migrationChecked) {
-      return
-    }
-    this.migrationChecked = true
-
-    const legacyPath = this.getLegacyStorePath()
-    if (!existsSync(legacyPath)) {
-      return
-    }
-
-    try {
-      const raw = readFileSync(legacyPath, 'utf-8')
-      const parsed = JSON.parse(raw) as { items?: DownloadHistoryItem[] }
-      const items = parsed.items ?? []
-      if (items.length === 0) {
-        return
-      }
-
-      const database = this.getDatabase()
-      for (const legacyItem of items) {
-        const normalized = this.normalizeItem(legacyItem)
-        const insertPayload = this.mapItemToInsert(normalized)
-        database
-          .insert(downloadHistoryTable)
-          .values(insertPayload)
-          .onConflictDoUpdate({
-            target: downloadHistoryTable.id,
-            set: this.mapItemToUpdate(insertPayload)
-          })
-          .run()
-      }
-
-      try {
-        renameSync(legacyPath, `${legacyPath}.bak`)
-      } catch (renameError) {
-        logger.warn(
-          'history-db migrated legacy store but could not rename original file',
-          renameError
-        )
-      }
-
-      logger.info(`history-db migrated ${items.length} entries from legacy electron-store data`)
-    } catch (error) {
-      logger.error('history-db failed to migrate legacy store', error)
     }
   }
 
