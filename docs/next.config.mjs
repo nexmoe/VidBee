@@ -9,6 +9,10 @@ const config = {
   reactStrictMode: true,
   // Use trailing slashes to avoid conflicts with route handlers that have file extensions
   trailingSlash: true,
+  images: {
+    // Required for Next.js static export to avoid broken images.
+    unoptimized: true,
+  },
   // Note: rewrites are not supported with static export
   // The /llms.mdx route will be pre-rendered as static files
 };

@@ -5,11 +5,14 @@ description: 登录下载、受限内容与 Cookie 配置
 
 Cookie 用于复用浏览器的登录态，帮助 VidBee 下载需要登录或验证的内容，例如订阅内容、年龄限制或私密链接。
 
+如果出现 **“Sign in to confirm you’re not a bot”** 或“需要登录/验证”的提示，说明需要配置 Cookie。
+
 ## 适用场景
 
 - 需要账号登录才能观看或下载的内容。
 - 年龄限制或地区限制页面。
 - 仅对登录用户可见的私密链接或列表。
+- 出现“Sign in to confirm you’re not a bot”等验证提示。
 
 ## VidBee 支持的两种方式
 
@@ -17,7 +20,7 @@ Cookie 用于复用浏览器的登录态，帮助 VidBee 下载需要登录或�
 
 在 **设置** 中选择你的浏览器，VidBee 会尝试自动识别浏览器配置文件路径。你也可以手动填写配置文件路径。
 
-![浏览器 Cookie 设置](/browser-cookies.png)
+![选择浏览器读取 Cookie](/cookies/cookies-settings-select-browser.png)
 
 **支持的浏览器（按平台差异显示）：**
 
@@ -27,9 +30,12 @@ Cookie 用于复用浏览器的登录态，帮助 VidBee 下载需要登录或�
 
 **使用步骤：**
 
-1. 打开 VidBee → 设置 → Cookie。
-2. 选择浏览器并确认配置文件路径。
-3. 返回下载页面，重新开始下载任务。
+1. 先在浏览器中登录对应网站。
+2. 打开 VidBee → 设置 → Cookie。
+3. 选择浏览器并确认配置文件路径。
+4. 返回下载页面，重新开始下载任务。
+
+![Firefox 已登录配置](/cookies/cookies-settings-firefox.png)
 
 如果识别失败或路径无效，请手动选择实际的浏览器配置文件目录。
 在 Windows 上，如果不是 Firefox，请改用 cookies 文件方式。
@@ -42,7 +48,7 @@ Cookie 用于复用浏览器的登录态，帮助 VidBee 下载需要登录或�
 
 **使用步骤：**
 
-1. 使用浏览器扩展导出 Netscape cookies 文件。
+1. 使用浏览器扩展导出 Netscape cookies 文件（例如 **Get cookies.txt**）。
 2. 打开 VidBee → 设置 → Cookies 文件，选择导出的文件。
 3. 如需停用，可点击“清除”。
 
