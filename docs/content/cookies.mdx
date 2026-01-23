@@ -5,11 +5,14 @@ description: Signed-in downloads, restricted content, and cookie setup
 
 Cookies reuse your browser's signed-in session so VidBee can download content that requires login or verification, such as subscriber-only items, age-gated pages, or private links.
 
+If you see a message like **“Sign in to confirm you’re not a bot”** or “login required,” you need cookies.
+
 ## When you need cookies
 
 - Content that requires an account to view or download.
 - Age-gated or region-locked pages.
 - Private links or lists visible only to signed-in users.
+- “Sign in to confirm you’re not a bot” or similar verification prompts.
 
 ## Two ways to use cookies in VidBee
 
@@ -17,7 +20,7 @@ Cookies reuse your browser's signed-in session so VidBee can download content th
 
 In **Settings**, select your browser. VidBee will try to detect the browser profile path automatically. You can also enter the profile path manually.
 
-![Browser cookies settings](/browser-cookies.png)
+![Select browser for cookies](/cookies/cookies-settings-select-browser.png)
 
 **Supported browsers (platform dependent):**
 
@@ -27,9 +30,12 @@ In **Settings**, select your browser. VidBee will try to detect the browser prof
 
 **Steps:**
 
-1. Open VidBee → Settings → Cookies.
-2. Select a browser and confirm the profile path.
-3. Go back and start the download again.
+1. Sign in to the site in your browser first.
+2. Open VidBee → Settings → Cookies.
+3. Select a browser and confirm the profile path.
+4. Go back and start the download again.
+
+![Firefox signed-in profile selected](/cookies/cookies-settings-firefox.png)
 
 If detection fails or the path is invalid, manually choose the actual browser profile directory.
 On Windows, if you are not using Firefox, switch to the cookies file method.
@@ -42,7 +48,7 @@ You can import a **Netscape-formatted** cookies file. This is useful when readin
 
 **Steps:**
 
-1. Export a Netscape cookies file using a browser extension.
+1. Export a Netscape cookies file using a browser extension (for example, **Get cookies.txt**).
 2. Open VidBee → Settings → Cookies file, and select the exported file.
 3. Click Clear to disable it.
 
