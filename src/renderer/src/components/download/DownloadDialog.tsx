@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader } from '@renderer/com
 import { Input } from '@renderer/components/ui/input'
 import { Label } from '@renderer/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@renderer/components/ui/tabs'
-
+import { cn } from '@renderer/lib/utils'
 import type { PlaylistInfo, VideoFormat } from '@shared/types'
 import {
   buildAudioFormatPreference,
@@ -142,6 +142,8 @@ export function DownloadDialog({
   const playlistBusy = playlistPreviewLoading || playlistDownloadLoading
   const [advancedOptionsOpen, setAdvancedOptionsOpen] = useState(false)
   const [selectedEntryIds, setSelectedEntryIds] = useState<Set<string>>(new Set())
+  const lockDialogHeight =
+    activeTab === 'playlist' && (playlistPreviewLoading || playlistInfo !== null)
 
   const computePlaylistRange = useCallback(
     (info: PlaylistInfo) => {
@@ -801,7 +803,12 @@ export function DownloadDialog({
         <Plus className="h-4 w-4" />
         {t('download.pasteUrlButton')}
       </Button>
-      <DialogContent className="sm:max-w-xl max-h-[90vh] flex flex-col p-5 gap-0">
+      <DialogContent
+        className={cn(
+          'sm:max-w-xl max-h-[90vh] flex flex-col p-5 gap-0 overflow-hidden',
+          lockDialogHeight && 'h-[90vh]'
+        )}
+      >
         <Tabs
           defaultValue="single"
           value={activeTab}
@@ -854,7 +861,7 @@ export function DownloadDialog({
             />
           </TabsContent>
         </Tabs>
-        <DialogFooter className="shrink-0 pt-3 border-t">
+        <DialogFooter className="shrink-0 pt-3 border-t bg-background relative z-10">
           <div className="flex items-center justify-between w-full gap-3">
             <div className="flex items-center gap-3">
               {/* Download Location - Single Video */}
