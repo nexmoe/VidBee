@@ -1,5 +1,5 @@
 import type { DownloadItem } from '@shared/types'
-import { useSetAtom } from 'jotai'
+import { useSetAtom, useStore } from 'jotai'
 import { useCallback, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -7,6 +7,7 @@ import { ipcEvents, ipcServices } from '../lib/ipc'
 import {
   addDownloadAtom,
   addHistoryRecordAtom,
+  downloadRecordsAtom,
   removeDownloadAtom,
   updateDownloadAtom
 } from '../store/downloads'
@@ -20,6 +21,7 @@ export function useDownloadEvents() {
   const addHistoryRecord = useSetAtom(addHistoryRecordAtom)
   const removeDownload = useSetAtom(removeDownloadAtom)
   const { t } = useTranslation()
+  const store = useStore()
 
   const syncHistoryItem = useCallback(
     async (id: string) => {
@@ -143,6 +145,10 @@ export function useDownloadEvents() {
       if (!item || typeof item.id !== 'string') {
         return
       }
+      const records = store.get(downloadRecordsAtom)
+      if (records.has(`active:${item.id}`)) {
+        return
+      }
       addDownload(item)
     }
 
@@ -173,5 +179,5 @@ export function useDownloadEvents() {
       ipcEvents.removeListener('download:error', errorSubscription)
       ipcEvents.removeListener('download:cancelled', cancelledSubscription)
     }
-  }, [addDownload, syncHistoryItem, t, updateDownload])
+  }, [addDownload, store, syncHistoryItem, t, updateDownload])
 }
