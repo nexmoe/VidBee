@@ -15,10 +15,31 @@ const resolveImageSrc = (src: React.ComponentProps<typeof Image>['src']) => {
   return src;
 };
 
+const resolveImageSize = (
+  props: React.ComponentProps<typeof Image>,
+  src: React.ComponentProps<typeof Image>['src'],
+) => {
+  if (props.fill) return { fill: true as const };
+  if (typeof src === 'string') {
+    return {
+      width: props.width ?? 1200,
+      height: props.height ?? 675,
+    };
+  }
+  return {
+    width: props.width,
+    height: props.height,
+  };
+};
+
 export function getMDXComponents(components?: MDXComponents): MDXComponents {
   return {
     ...defaultMdxComponents,
-    img: (props) => <Image {...props} src={resolveImageSrc(props.src)} />,
+    img: (props) => {
+      const src = resolveImageSrc(props.src);
+      const sizeProps = resolveImageSize(props, src);
+      return <Image {...props} {...sizeProps} src={src} />;
+    },
     ...components,
   };
 }
