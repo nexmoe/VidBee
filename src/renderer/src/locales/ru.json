@@ -273,6 +273,9 @@
     },
     "noHistory": "Истории загрузок пока нет",
     "noHistoryDescription": "Ваши завершённые загрузки появятся здесь",
+    "cookiesTipTitle": "Повышайте успешность загрузок с cookie",
+    "cookiesTipDescription": "Настройте cookie, чтобы повысить успешность с <strong>70%</strong> до <strong>99%</strong>.",
+    "cookiesTipCta": "Настроить cookie",
     "openDownloadFolder": "Открыть папку загрузок",
     "openFile": "Открыть файл",
     "openFileLocation": "Открыть местоположение файла",
@@ -377,6 +380,7 @@
   "settings": {
     "aboutTab": "О программе",
     "advanced": "Дополнительно",
+    "cookiesTab": "Cookie",
     "app": "Настройки приложения",
     "audio": "Настройки аудио",
     "browserForCookies": "Выбрать браузер для использования cookie",
@@ -396,7 +400,9 @@
     "cookiesHelpTitle": "Использование cookie",
     "cookiesHelpBrowser": "Выберите ваш браузер выше, чтобы автоматически использовать его сеанс входа.",
     "cookiesHelpFile": "Экспортируйте файл cookie Netscape (см. FAQ yt-dlp) и выберите его здесь при необходимости.",
-    "cookiesHelpFaq": "Открыть FAQ по cookie yt-dlp",
+    "cookiesGuideTitle": "Нужна инструкция?",
+    "cookiesGuideDescription": "Посмотрите пошаговое руководство по использованию cookie в VidBee.",
+    "cookiesGuideLink": "Открыть руководство по cookie",
     "openLinkError": "Не удалось открыть ссылку",
     "browserOptions": {
       "brave": "Brave",

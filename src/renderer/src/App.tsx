@@ -75,6 +75,10 @@ function AppContent() {
     [location.pathname, navigate]
   )
 
+  const handleOpenCookiesSettings = useCallback(() => {
+    navigate('/settings?tab=cookies')
+  }, [navigate])
+
   const handleOpenSupportedSites = () => {
     window.open(supportedSitesUrl, '_blank')
   }
@@ -266,6 +270,7 @@ function AppContent() {
                 <Home
                   onOpenSupportedSites={handleOpenSupportedSites}
                   onOpenSettings={() => handlePageChange('settings')}
+                  onOpenCookiesSettings={handleOpenCookiesSettings}
                 />
               }
             />

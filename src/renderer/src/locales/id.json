@@ -273,6 +273,9 @@
     },
     "noHistory": "Belum ada riwayat unduhan",
     "noHistoryDescription": "Unduhan yang selesai akan muncul di sini",
+    "cookiesTipTitle": "Tingkatkan keberhasilan unduhan dengan cookie",
+    "cookiesTipDescription": "Atur cookie untuk menaikkan tingkat keberhasilan dari <strong>70%</strong> ke <strong>99%</strong>.",
+    "cookiesTipCta": "Atur cookie",
     "openDownloadFolder": "Buka Folder Unduhan",
     "openFile": "Buka File",
     "openFileLocation": "Buka Lokasi File",
@@ -377,6 +380,7 @@
   "settings": {
     "aboutTab": "Tentang",
     "advanced": "Lanjutan",
+    "cookiesTab": "Cookie",
     "app": "Pengaturan Aplikasi",
     "audio": "Preferensi Audio",
     "browserForCookies": "Pilih browser untuk menggunakan cookie",
@@ -396,7 +400,9 @@
     "cookiesHelpTitle": "Menggunakan cookie",
     "cookiesHelpBrowser": "Pilih browser Anda di atas untuk menggunakan kembali sesi masuk secara otomatis.",
     "cookiesHelpFile": "Ekspor file cookie Netscape (lihat FAQ yt-dlp) dan pilih di sini saat diperlukan.",
-    "cookiesHelpFaq": "Buka FAQ cookie yt-dlp",
+    "cookiesGuideTitle": "Butuh panduan?",
+    "cookiesGuideDescription": "Lihat panduan langkah demi langkah untuk menggunakan cookie di VidBee.",
+    "cookiesGuideLink": "Buka panduan cookie",
     "openLinkError": "Gagal membuka tautan",
     "browserOptions": {
       "brave": "Brave",
