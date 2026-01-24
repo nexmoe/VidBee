@@ -900,9 +900,9 @@ export function Settings() {
                   })()}
                 </ItemActions>
               </Item>
+            </ItemGroup>
 
-              <ItemSeparator />
-
+            <ItemGroup>
               <Item variant="muted">
                 <ItemContent>
                   <ItemTitle>{t('settings.cookiesFile')}</ItemTitle>
@@ -940,9 +940,9 @@ export function Settings() {
                   })()}
                 </ItemActions>
               </Item>
+            </ItemGroup>
 
-              <ItemSeparator />
-
+            <ItemGroup>
               <Item variant="muted">
                 <ItemContent>
                   <ItemTitle>{t('settings.cookiesHelpTitle')}</ItemTitle>
