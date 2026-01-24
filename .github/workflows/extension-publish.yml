@@ -67,6 +67,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      - name: Build extension
+        run: pnpm build
+
       - name: Zip extensions
         run: |
           pnpm zip
