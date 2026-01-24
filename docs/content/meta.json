@@ -1,4 +1,13 @@
 {
   "title": "VidBee Docs",
-  "pages": ["index", "protocol", "cookies", "faq"]
+  "pages": [
+    "index",
+    "---Download & Access---",
+    "protocol",
+    "cookies",
+    "---Automation---",
+    "rss",
+    "---Help---",
+    "faq"
+  ]
 }
