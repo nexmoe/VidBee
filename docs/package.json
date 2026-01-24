@@ -13,6 +13,7 @@
     "format": "biome format --write --config-path biome.config.json"
   },
   "dependencies": {
+    "@next/third-parties": "^16.1.4",
     "fumadocs-core": "16.4.7",
     "fumadocs-mdx": "14.2.5",
     "fumadocs-ui": "16.4.7",
@@ -23,6 +24,7 @@
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.3.11",
     "@tailwindcss/postcss": "^4.1.18",
     "@types/mdx": "^2.0.13",
     "@types/node": "^25.0.5",
@@ -30,7 +32,6 @@
     "@types/react-dom": "^19.2.3",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.18",
-    "typescript": "^5.9.3",
-    "@biomejs/biome": "^2.3.11"
+    "typescript": "^5.9.3"
   }
 }
