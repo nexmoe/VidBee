@@ -42,15 +42,33 @@ Sous Windows, si vous n’utilisez pas Firefox, passez à la méthode du fichier
 
 ### Option 2 : Importer un fichier de cookies
 
-Vous pouvez importer un fichier cookies au format **Netscape**. C’est utile quand la lecture du profil navigateur n’est pas possible.
+Vous pouvez importer un fichier de cookies. C'est utile quand la lecture du profil navigateur n'est pas possible, par exemple pour les navigateurs autres que Firefox sous Windows.
 
 ![Réglages du fichier cookies](/cookies-file.png)
 
 **Étapes :**
 
-1. Exportez un fichier cookies Netscape avec une extension de navigateur (par exemple, **Get cookies.txt**).
-2. Ouvrez VidBee → Réglages → Fichier cookies, puis sélectionnez le fichier exporté.
-3. Cliquez sur Effacer pour le désactiver.
+1. **Exportez les cookies avec une extension navigateur**
+
+   Choisissez l'une de ces extensions recommandées :
+   - **Chrome/Edge :** [Get cookies.txt LOCALLY](https://chrome.google.com/webstore/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc)
+   - **Firefox :** [cookies.txt](https://addons.mozilla.org/en-US/firefox/addon/cookies-txt/)
+
+   > **Note de sécurité :** installez uniquement les extensions recommandées ci-dessus. Si vous aviez installé "Get cookies.txt" (sans "LOCALLY"), désinstallez-la immédiatement. Cette version a été signalée comme malveillante.
+
+2. **Exportez vos cookies**
+
+   Cliquez sur le bouton d'export dans l'extension et choisissez où enregistrer le fichier. L'extension exportera automatiquement les cookies au format **Netscape**.
+
+3. **Importez dans VidBee**
+
+   - Ouvrez VidBee → Réglages → Fichier cookies
+   - Cliquez sur Sélectionner fichier et choisissez le fichier de cookies exporté
+   - Actualisez la page de téléchargement une fois terminé
+
+4. **Supprimez le fichier de cookies**
+
+   Cliquez sur Effacer pour le désactiver.
 
 ## Recommandations
 
@@ -60,9 +78,17 @@ Vous pouvez importer un fichier cookies au format **Netscape**. C’est utile qu
 
 ## Dépannage
 
+**Méthode basée sur le navigateur :**
+
 - **Chemin du profil invalide** : assurez-vous que le dossier existe et pointe vers le vrai profil navigateur.
-- **Toujours demande la connexion** : vérifiez que votre navigateur est bien connecté et réenregistrez le réglage.
-- **Lecture navigateur échouée** : fermez le navigateur et réessayez, ou utilisez un fichier cookies.
+- **Lecture navigateur échouée** : fermez le navigateur et réessayez, ou utilisez la méthode fichier cookies.
+
+**Méthode fichier de cookies :**
+
+- **Toujours demande la connexion** : vérifiez que votre navigateur est bien connecté au compte. Si connecté, assurez-vous que le fichier de cookies exporté est complet et au bon format.
+- **L'extension d'export ne fonctionne pas** : vérifiez que vous avez installé la version recommandée de l'extension. Certaines versions obsolètes ou non autorisées peuvent ne pas fonctionner correctement.
+- **Fichier de cookies expiré** : si longtemps sans utilisation, votre session de connexion peut avoir expiré. Reconnectez-vous dans votre navigateur et exportez un nouveau fichier de cookies.
+- **Erreur HTTP 400** : cela indique généralement un problème de format. Assurez-vous que le fichier est au format Netscape standard avec un encodage correct.
 
 ## En savoir plus
 

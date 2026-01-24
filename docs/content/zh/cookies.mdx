@@ -42,15 +42,33 @@ Cookie 用于复用浏览器的登录态，帮助 VidBee 下载需要登录或�
 
 ### 方式二：导入 Cookies 文件
 
-你也可以导入 **Netscape 格式** 的 cookies 文件。这个方式适合在不方便读取浏览器配置文件时使用。
+你也可以导入 cookies 文件。这个方式适合在不方便读取浏览器配置文件时使用，比如在 Windows 上使用非 Firefox 浏览器。
 
 ![Cookies 文件设置](/cookies-file.png)
 
 **使用步骤：**
 
-1. 使用浏览器扩展导出 Netscape cookies 文件（例如 **Get cookies.txt**）。
-2. 打开 VidBee → 设置 → Cookies 文件，选择导出的文件。
-3. 如需停用，可点击“清除”。
+1. **使用浏览器扩展导出 Cookies 文件**
+
+   选择以下任一扩展导出 cookies：
+   - **Chrome/Edge：** [Get cookies.txt LOCALLY](https://chrome.google.com/webstore/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc)
+   - **Firefox：** [cookies.txt](https://addons.mozilla.org/en-US/firefox/addon/cookies-txt/)
+
+   > **安全提示：** 只安装上面推荐的扩展。如果你之前安装过"Get cookies.txt"（注意不是"LOCALLY"），请立即卸载。那个版本已被报告为恶意软件。
+
+2. **导出你的 Cookies**
+
+   在浏览器扩展页面点击导出按钮，选择保存位置。扩展会自动导出 **Netscape 格式** 的 cookies 文件。
+
+3. **导入到 VidBee**
+
+   - 打开 VidBee → 设置 → Cookies 文件
+   - 点击选择文件，找到刚导出的 cookies 文件
+   - 完成后刷新下载页面
+
+4. **停用 Cookies 文件**
+
+   如需移除，点击"清除"按钮即可。
 
 ## 使用建议
 
@@ -60,9 +78,17 @@ Cookie 用于复用浏览器的登录态，帮助 VidBee 下载需要登录或�
 
 ## 常见问题
 
+**浏览器读取方式：**
+
 - **提示配置文件路径无效**：请确认路径存在，并指向实际的浏览器配置文件目录。
-- **下载仍提示需要登录**：确认当前浏览器已登录对应账号，并重新保存设置。
 - **浏览器读取失败**：关闭浏览器后重试，或改用 cookies 文件方式。
+
+**Cookies 文件方式：**
+
+- **下载仍提示需要登录**：检查你的浏览器是否已登录账号。如果浏览器中已登录，请确认导出的 cookies 文件完整。
+- **导出扩展无法使用**：确保安装的是推荐的扩展版本。某些旧版或未授权的扩展可能无法正常工作。
+- **Cookies 文件过期**：如果长时间未使用，账号登录状态可能已过期。需要重新在浏览器登录并导出新的 cookies 文件。
+- **提示 HTTP Error 400**：这通常是文件格式问题。确保文件是标准的 Netscape 格式，且文件编码正确。
 
 ## 了解更多
 
