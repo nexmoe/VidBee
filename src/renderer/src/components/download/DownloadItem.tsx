@@ -30,7 +30,6 @@ import {
   CheckCircle2,
   Copy,
   File,
-  FileText,
   FolderOpen,
   Loader2,
   Play,
@@ -1079,42 +1078,41 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
 
               {/* Error message */}
               {download.status === 'error' && download.error && (
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-1.5">
                   <p className="text-xs text-destructive line-clamp-2 w-full overflow-hidden">
                     {download.error}
                   </p>
-                  <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground pointer-events-auto">
-                    <span className="text-xs font-medium text-muted-foreground">
-                      {t('download.feedback.title')}
+                  <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground pointer-events-auto">
+                    <span className="text-xs font-medium text-muted-foreground shrink-0">
+                      {t('download.feedback.title')}:
                     </span>
-                    <div className="flex flex-wrap gap-2">
-                      {canShowSheet && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-6 gap-1 px-1.5 text-[10px]"
-                          onClick={(event) => {
-                            event.stopPropagation()
-                            openLogsSheet()
-                          }}
-                        >
-                          <FileText className="h-3 w-3" />
-                          {t('download.viewLogs')}
-                        </Button>
-                      )}
-                      <FeedbackLinkButtons
-                        error={download.error}
-                        sourceUrl={download.url}
-                        issueTitle={DOWNLOAD_FEEDBACK_ISSUE_TITLE}
-                        includeAppInfo
-                        ytDlpCommand={download.ytDlpCommand}
-                        buttonVariant="outline"
-                        buttonSize="sm"
-                        buttonClassName="h-6 gap-1 px-1.5 text-[10px]"
-                        iconClassName="h-3 w-3"
-                        onLinkClick={(event) => event.stopPropagation()}
-                      />
-                    </div>
+                    {canShowSheet && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-6 px-1.5 text-[10px]"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          openLogsSheet()
+                        }}
+                      >
+                        {t('download.viewLogs')}
+                      </Button>
+                    )}
+                    <FeedbackLinkButtons
+                      error={download.error}
+                      sourceUrl={download.url}
+                      issueTitle={DOWNLOAD_FEEDBACK_ISSUE_TITLE}
+                      includeAppInfo
+                      ytDlpCommand={download.ytDlpCommand}
+                      buttonVariant="outline"
+                      buttonSize="sm"
+                      buttonClassName="h-6 gap-1 px-1.5 text-[10px]"
+                      iconClassName="h-3 w-3"
+                      onLinkClick={(event) => event.stopPropagation()}
+                      wrapperClassName="flex flex-wrap items-center gap-1.5"
+                      showGroupSeparator={canShowSheet}
+                    />
                   </div>
                 </div>
               )}

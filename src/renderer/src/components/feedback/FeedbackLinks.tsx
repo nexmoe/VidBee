@@ -1,6 +1,6 @@
 import { Button, type ButtonProps } from '@renderer/components/ui/button'
 import { ipcServices } from '@renderer/lib/ipc'
-import { Github, MessageCircle, Twitter } from 'lucide-react'
+import { BookOpen, Github, MessageCircle, Twitter } from 'lucide-react'
 import { type MouseEvent, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -19,6 +19,7 @@ const FEEDBACK_SOURCE_LABEL = 'Source URL'
 const FEEDBACK_ERROR_LABEL = 'Error'
 const FEEDBACK_COMMAND_LABEL = 'yt-dlp command'
 const FEEDBACK_MAX_GITHUB_URL_LENGTH = 7000
+const FAQ_URL = 'https://docs.vidbee.org/faq/'
 
 let cachedAppInfo: AppInfo | null = null
 let appInfoPromise: Promise<AppInfo> | null = null
@@ -109,6 +110,8 @@ type FeedbackLinkButtonsProps = {
   onLinkClick?: (event: MouseEvent<HTMLAnchorElement>) => void
   ytDlpCommand?: string
   useSimpleGithubUrl?: boolean
+  wrapperClassName?: string
+  showGroupSeparator?: boolean
 }
 
 export const FeedbackLinkButtons = ({
@@ -123,7 +126,9 @@ export const FeedbackLinkButtons = ({
   iconClassName,
   onLinkClick,
   ytDlpCommand,
-  useSimpleGithubUrl = false
+  useSimpleGithubUrl = false,
+  wrapperClassName = 'flex flex-wrap gap-2',
+  showGroupSeparator = false
 }: FeedbackLinkButtonsProps) => {
   const { t } = useTranslation()
   const fallbackAppInfo = useAppInfo()
@@ -179,23 +184,37 @@ export const FeedbackLinkButtons = ({
       githubUrl = `https://github.com/nexmoe/VidBee/issues/new?${issueParams.toString()}`
     }
 
-    return [
+    const feedbackLinks = [
       {
         icon: Github,
         label: t('about.resources.githubIssues'),
-        href: githubUrl
+        href: githubUrl,
+        group: 'feedback'
       },
       {
         icon: Twitter,
         label: t('about.resources.xFeedback'),
-        href: `https://x.com/intent/tweet?text=${tweetText}`
+        href: `https://x.com/intent/tweet?text=${tweetText}`,
+        group: 'feedback'
       },
       {
         icon: MessageCircle,
         label: t('about.resources.discord'),
-        href: 'https://discord.gg/uBqXV6QPdm'
+        href: 'https://discord.gg/uBqXV6QPdm',
+        group: 'feedback'
       }
     ]
+
+    if (error) {
+      feedbackLinks.push({
+        icon: BookOpen,
+        label: t('about.resources.faq') ?? 'FAQ',
+        href: FAQ_URL,
+        group: 'utility'
+      })
+    }
+
+    return feedbackLinks
   }, [
     appVersion,
     error,
@@ -215,9 +234,37 @@ export const FeedbackLinkButtons = ({
     onLinkClick?.(event)
   }
 
+  const feedbackLinks = links.filter((link) => link.group === 'feedback')
+  const utilityLinks = links.filter((link) => link.group === 'utility')
+
   return (
-    <>
-      {links.map((resource) => {
+    <div className={wrapperClassName}>
+      {utilityLinks.length > 0 && (
+        <>
+          {utilityLinks.map((resource) => {
+            return (
+              <Button
+                key={resource.label}
+                variant={buttonVariant}
+                size={buttonSize}
+                className={buttonClassName}
+                asChild
+              >
+                <a
+                  href={resource.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={(event) => handleLinkClick(event, resource.href)}
+                >
+                  {resource.label}
+                </a>
+              </Button>
+            )
+          })}
+          {showGroupSeparator && <div className="h-4 border-l border-border/40 mx-1" />}
+        </>
+      )}
+      {feedbackLinks.map((resource) => {
         const Icon = resource.icon
         return (
           <Button
@@ -239,6 +286,6 @@ export const FeedbackLinkButtons = ({
           </Button>
         )
       })}
-    </>
+    </div>
   )
 }
