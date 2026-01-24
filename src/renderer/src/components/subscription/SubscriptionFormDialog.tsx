@@ -274,9 +274,11 @@ export function SubscriptionFormDialog({
               </Button>
             </div>
           </div>
-          <div className="flex items-center justify-between gap-4 rounded-md border px-3 py-2">
-            <p className="text-sm">{t('subscriptions.fields.onlyLatest')}</p>
-            <Switch checked={onlyLatest} onCheckedChange={setOnlyLatest} />
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-4 rounded-md border px-3 py-2">
+              <p className="text-sm">{t('subscriptions.fields.onlyLatest')}</p>
+              <Switch checked={onlyLatest} onCheckedChange={setOnlyLatest} />
+            </div>
           </div>
           <div
             data-state={advancedOptionsOpen ? 'open' : 'closed'}
