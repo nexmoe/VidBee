@@ -1,0 +1,46 @@
+---
+title: RSS 订阅
+description: 通过 RSS 自动订阅并下载最新内容
+---
+
+VidBee 支持订阅 RSS 源并自动把最新内容加入下载队列，适合持续更新的频道、列表或作者。
+
+## 获取 RSS 源链接
+
+如果你已经有 RSS 链接，可以直接使用。没有的话，可以通过 **RSSHub** 生成：
+
+1. 打开 RSSHub 路由文档。
+2. 找到对应平台（YouTube、Twitter/X 等）。
+3. 按说明填写参数并复制生成的 RSS 链接。
+
+很多 RSSHub 链接会使用 `rsshub.app` 域名，但官方实例启用了 Cloudflare 安全防护，VidBee 无法直接访问。请改用自建的 RSSHub 域名或可访问的公共实例。
+
+## 添加 RSS 订阅
+
+1. 打开 **VidBee → RSS**。
+2. 点击 **Add RSS**。
+
+![RSS 订阅概览](/rss/rss-overview.png)
+
+3. 粘贴 RSS 源链接，VidBee 会自动识别。
+4. （可选）设置 **Custom directory** 作为下载目录。
+5. （可选）打开 **Download only the latest video** 只下载最新一条。
+6. （可选）打开 **Advanced Options** 进行高级设置：
+   - **Keyword filter**（逗号分隔）
+   - **Auto tags**（逗号分隔）
+   - **Custom filename template**（yt-dlp 风格占位符）
+7. 点击 **Add** 保存。
+
+![添加 RSS 弹窗](/rss/rss-add-dialog.png)
+
+## 后续流程
+
+- VidBee 会定期检查 RSS 源并自动排队新内容。
+- 条目会出现在 RSS 列表中，并显示队列状态。
+- 随时可编辑、刷新、禁用或删除订阅。
+
+## 故障排查
+
+- **链接无效**：确认该 URL 在浏览器中能返回 RSS/Atom XML。
+- **重复订阅**：同一个 RSS 链接只能订阅一次。
+- **没有新下载**：确认订阅已启用且源里有新内容。

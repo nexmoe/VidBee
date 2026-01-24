@@ -1,0 +1,46 @@
+---
+title: RSS
+description: Subscribe to RSS feeds and auto-queue downloads
+---
+
+VidBee can watch RSS feeds and automatically queue new items for download. This is perfect for channels, playlists, or creators that publish regularly.
+
+## Get an RSS feed URL
+
+If you already have an RSS link, use it directly. If you do not have one, generate it with **RSSHub**:
+
+1. Open the RSSHub routes documentation.
+2. Find the platform you want to follow (YouTube, Twitter/X, etc.).
+3. Fill in the required parameters and copy the generated feed URL.
+
+Many RSSHub feeds use the `rsshub.app` domain, but the official instance is protected by Cloudflare. VidBee cannot directly access the official instance, so use a self-hosted RSSHub domain or another public instance you can reach.
+
+## Add an RSS subscription
+
+1. Open **VidBee → RSS**.
+2. Click **Add RSS**.
+
+![RSS subscriptions overview](/rss/rss-overview.png)
+
+3. Paste the RSS feed URL. VidBee will detect the feed automatically.
+4. (Optional) Choose a **Custom directory** for downloads.
+5. (Optional) Enable **Download only the latest video** if you only want the newest item.
+6. (Optional) Open **Advanced Options** for:
+   - **Keyword filter** (comma separated)
+   - **Auto tags** (comma separated)
+   - **Custom filename template** (yt-dlp style placeholders)
+7. Click **Add** to save.
+
+![Add RSS dialog](/rss/rss-add-dialog.png)
+
+## What happens next
+
+- VidBee checks the feed periodically and queues new items automatically.
+- Items appear in the RSS list with their queue status.
+- You can edit, refresh, disable, or remove subscriptions at any time.
+
+## Troubleshooting
+
+- **Feed URL invalid**: Verify the URL opens in a browser and returns RSS/Atom XML.
+- **Duplicate feed**: Each RSS URL can only be subscribed once.
+- **No new downloads**: Confirm the subscription is enabled and the feed has new items.

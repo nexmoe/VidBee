@@ -178,9 +178,9 @@ export function SubscriptionFormDialog({
 
   const handleOpenRSSHubDocs = async () => {
     try {
-      await ipcServices.fs.openExternal('https://docs.rsshub.app/routes/')
+      await ipcServices.fs.openExternal('https://docs.vidbee.org/rss')
     } catch (error) {
-      console.error('Failed to open RSSHub documentation:', error)
+      console.error('Failed to open RSS documentation:', error)
       toast.error(t('subscriptions.notifications.openLinkError'))
     }
   }
