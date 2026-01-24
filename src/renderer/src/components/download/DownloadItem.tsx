@@ -30,7 +30,6 @@ import {
   CheckCircle2,
   Copy,
   File,
-  FileText,
   FolderOpen,
   Loader2,
   Play,

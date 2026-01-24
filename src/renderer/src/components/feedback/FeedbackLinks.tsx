@@ -261,9 +261,7 @@ export const FeedbackLinkButtons = ({
               </Button>
             )
           })}
-          {showGroupSeparator && (
-            <div className="h-4 border-l border-border/40 mx-1" />
-          )}
+          {showGroupSeparator && <div className="h-4 border-l border-border/40 mx-1" />}
         </>
       )}
       {feedbackLinks.map((resource) => {
