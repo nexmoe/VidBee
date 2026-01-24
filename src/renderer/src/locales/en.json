@@ -308,20 +308,44 @@
   },
   "cookiesPage": {
     "title": "Synced cookies",
-    "description": "Cookies synced from the extension appear here.",
+    "description": "Cookies synced from the extension or imported from Netscape cookie files appear here.",
+    "valueTitle": "Your logged-in status can be used to:",
+    "valueList": {
+      "privateVideos": "Download private videos",
+      "privateVideosDescription": "Easily access your personal collections from social media",
+      "higherSuccess": "Increase success rates",
+      "higherSuccessDescription": "Establish a real access environment to avoid being flagged as a bot",
+      "unlockQuality": "Unlock high-quality downloads",
+      "unlockQualityDescription": "Enjoy 4K/8K resolutions and premium member-only content"
+    },
     "entriesTitle": "Websites",
-    "entriesDescription": "Sites found in your last sync.",
+    "entriesDescription": "Sites found in your last sync or import.",
     "empty": "No cookies synced yet.",
     "loading": "Loading cookies...",
     "error": "Failed to load cookies.",
     "actions": {
-      "refresh": "Refresh"
+      "refresh": "Refresh",
+      "import": "Import Cookies",
+      "clear": "Clear All"
     },
     "labels": {
       "cookies": "Cookies"
     },
     "lastSyncedAt": "Last synced: {{time}}",
-    "unknownSite": "Unknown site"
+    "unknownSite": "Unknown site",
+    "import": {
+      "success": "Cookies imported successfully",
+      "successDescription": "Imported {{count}} cookies",
+      "error": "Failed to import cookies"
+    },
+    "clear": {
+      "confirmTitle": "Clear all cookies?",
+      "confirmMessage": "This will remove all synced cookies. This action cannot be undone.",
+      "confirm": "Clear All",
+      "cancel": "Cancel",
+      "success": "All cookies cleared successfully",
+      "error": "Failed to clear cookies"
+    }
   },
   "menu": {
     "about": "About",

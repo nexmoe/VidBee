@@ -309,19 +309,40 @@
   "cookiesPage": {
     "title": "已同步的 Cookies",
     "description": "從擴充功能同步的 Cookies 會顯示在這裡。",
+    "valueTitle": "登入狀態可用於：",
+    "valueList": {
+      "privateVideos": "下載私密影片",
+      "higherSuccess": "提高其他影片的下載成功率",
+      "unlockQuality": "解鎖 4K、8K 高畫質下載以及會員影片下載"
+    },
     "entriesTitle": "網站",
     "entriesDescription": "上次同步中找到的網站。",
     "empty": "尚無已同步的 Cookies。",
     "loading": "正在載入 Cookies...",
     "error": "載入 Cookies 失敗。",
     "actions": {
-      "refresh": "重新整理"
+      "refresh": "重新整理",
+      "import": "匯入 Cookie",
+      "clear": "全部清除"
     },
     "labels": {
       "cookies": "Cookies"
     },
     "lastSyncedAt": "最後同步：{{time}}",
-    "unknownSite": "未知網站"
+    "unknownSite": "未知網站",
+    "import": {
+      "success": "Cookie 匯入成功",
+      "successDescription": "已匯入 {{count}} 個 Cookie",
+      "error": "Cookie 匯入失敗"
+    },
+    "clear": {
+      "confirmTitle": "清除所有 Cookie？",
+      "confirmMessage": "這將移除所有同步的 Cookie。此操作無法復原。",
+      "confirm": "全部清除",
+      "cancel": "取消",
+      "success": "已成功清除所有 Cookie",
+      "error": "清除 Cookie 失敗"
+    }
   },
   "menu": {
     "about": "關於",

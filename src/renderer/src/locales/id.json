@@ -309,19 +309,40 @@
   "cookiesPage": {
     "title": "Cookie tersinkron",
     "description": "Cookie yang disinkronkan dari ekstensi muncul di sini.",
+    "valueTitle": "Status login Anda dapat digunakan untuk:",
+    "valueList": {
+      "privateVideos": "Mengunduh video privat",
+      "higherSuccess": "Meningkatkan tingkat keberhasilan unduhan lainnya",
+      "unlockQuality": "Membuka unduhan 4K, 8K, dan khusus anggota"
+    },
     "entriesTitle": "Situs",
     "entriesDescription": "Situs yang ditemukan pada sinkronisasi terakhir.",
     "empty": "Belum ada cookie yang tersinkron.",
     "loading": "Memuat cookie...",
     "error": "Gagal memuat cookie.",
     "actions": {
-      "refresh": "Segarkan"
+      "refresh": "Segarkan",
+      "import": "Impor cookie",
+      "clear": "Hapus semua"
     },
     "labels": {
       "cookies": "Cookie"
     },
     "lastSyncedAt": "Terakhir disinkronkan: {{time}}",
-    "unknownSite": "Situs tidak dikenal"
+    "unknownSite": "Situs tidak dikenal",
+    "import": {
+      "success": "Cookie berhasil diimpor",
+      "successDescription": "{{count}} cookie diimpor",
+      "error": "Gagal mengimpor cookie"
+    },
+    "clear": {
+      "confirmTitle": "Hapus semua cookie?",
+      "confirmMessage": "Ini akan menghapus semua cookie yang disinkronkan. Tindakan ini tidak dapat dibatalkan.",
+      "confirm": "Hapus semua",
+      "cancel": "Batal",
+      "success": "Semua cookie berhasil dihapus",
+      "error": "Gagal menghapus cookie"
+    }
   },
   "menu": {
     "about": "Tentang",

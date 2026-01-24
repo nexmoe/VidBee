@@ -231,10 +231,7 @@ const convertToNetscapeFormat = (cookies: SyncedCookie[]): string => {
   return lines.join('\n')
 }
 
-const TEMP_COOKIES_FILE = 'synced-cookies-temp.txt'
-
-const getTempCookiesFilePath = (): string =>
-  path.join(app.getPath('userData'), TEMP_COOKIES_FILE)
+const TEMP_COOKIES_PREFIX = 'synced-cookies-temp-'
 
 export const exportCookiesToTempFile = (): string | null => {
   const snapshots = listSyncedCookies()
@@ -248,10 +245,12 @@ export const exportCookiesToTempFile = (): string | null => {
   }
 
   const netscapeContent = convertToNetscapeFormat(cookies)
-  const tempFilePath = getTempCookiesFilePath()
+  // Create unique temp file for each download to avoid conflicts
+  const tempFileName = `${TEMP_COOKIES_PREFIX}${Date.now()}-${Math.random().toString(36).substring(2, 10)}.txt`
+  const tempFilePath = path.join(app.getPath('userData'), tempFileName)
 
   try {
-    fs.writeFileSync(tempFilePath, netscapeContent, 'utf-8')
+    fs.writeFileSync(tempFilePath, netscapeContent, { mode: 0o600, encoding: 'utf-8' })
     scopedLoggers.system.info('Exported cookies to temp file:', tempFilePath)
     return tempFilePath
   } catch (error) {
@@ -260,14 +259,106 @@ export const exportCookiesToTempFile = (): string | null => {
   }
 }
 
-export const cleanupTempCookiesFile = (): void => {
-  const tempFilePath = getTempCookiesFilePath()
+export const cleanupTempCookiesFile = (filePath?: string): void => {
+  if (filePath) {
+    // Clean up specific temp file
+    try {
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath)
+        scopedLoggers.system.info('Cleaned up temp cookies file:', filePath)
+      }
+    } catch (error) {
+      scopedLoggers.system.warn('Failed to cleanup temp cookies file:', filePath, error)
+    }
+  } else {
+    // Clean up all temp cookie files (fallback for app exit)
+    try {
+      const userDataPath = app.getPath('userData')
+      const files = fs.readdirSync(userDataPath)
+      const tempCookieFiles = files.filter((file) => file.startsWith(TEMP_COOKIES_PREFIX))
+
+      for (const file of tempCookieFiles) {
+        const filePath = path.join(userDataPath, file)
+        try {
+          fs.unlinkSync(filePath)
+          scopedLoggers.system.info('Cleaned up temp cookies file:', filePath)
+        } catch (error) {
+          scopedLoggers.system.warn('Failed to cleanup temp cookies file:', filePath, error)
+        }
+      }
+    } catch (error) {
+      scopedLoggers.system.warn('Failed to cleanup temp cookies files:', error)
+    }
+  }
+}
+
+const parseNetscapeCookies = (content: string): SyncedCookie[] => {
+  const cookies: SyncedCookie[] = []
+  const lines = content.split('\n')
+
+  for (const line of lines) {
+    // Skip comments and empty lines
+    if (line.trim().startsWith('#') || line.trim() === '') {
+      continue
+    }
+
+    // Netscape format: domain flag path secure expiration name value
+    const parts = line.split('\t')
+    if (parts.length < 7) {
+      continue
+    }
+
+    const [domain, _flag, cookiePath, secure, expiration, name, ...valueParts] = parts
+    const value = valueParts.join('\t') // Handle values that may contain tabs
+
+    const cookie: SyncedCookie = {
+      domain: domain?.trim() || '',
+      name: name?.trim() || '',
+      value: value?.trim() || '',
+      path: cookiePath?.trim() || '/',
+      secure: secure?.trim().toUpperCase() === 'TRUE',
+      httpOnly: false,
+      sameSite: 'no_restriction',
+      expirationDate: expiration ? Number.parseInt(expiration.trim(), 10) : undefined
+    }
+
+    // Only add valid cookies
+    if (cookie.domain && cookie.name) {
+      cookies.push(cookie)
+    }
+  }
+
+  return cookies
+}
+
+export const importCookiesFromFile = (filePath: string): SyncedCookiesSnapshot => {
   try {
-    if (fs.existsSync(tempFilePath)) {
-      fs.unlinkSync(tempFilePath)
-      scopedLoggers.system.info('Cleaned up temp cookies file')
+    const content = fs.readFileSync(filePath, 'utf-8')
+    const cookies = parseNetscapeCookies(content)
+
+    if (cookies.length === 0) {
+      throw new Error('No valid cookies found in file')
+    }
+
+    scopedLoggers.system.info(`Parsed ${cookies.length} cookies from file:`, filePath)
+
+    // Save to storage
+    return addSyncedCookies({ cookies })
+  } catch (error) {
+    scopedLoggers.system.error('Failed to import cookies from file:', error)
+    throw error
+  }
+}
+
+export const clearAllCookies = (): void => {
+  const filePath = getCookiesFilePath()
+  try {
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath)
+      scopedLoggers.system.info('Cleared all synced cookies')
     }
   } catch (error) {
-    scopedLoggers.system.warn('Failed to cleanup temp cookies file:', error)
+    scopedLoggers.system.error('Failed to clear synced cookies:', error)
+    throw error
   }
 }

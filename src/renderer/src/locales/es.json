@@ -309,19 +309,40 @@
   "cookiesPage": {
     "title": "Cookies sincronizadas",
     "description": "Las cookies sincronizadas desde la extensión aparecen aquí.",
+    "valueTitle": "Tu estado de inicio de sesión se puede usar para:",
+    "valueList": {
+      "privateVideos": "Descargar videos privados",
+      "higherSuccess": "Aumentar la tasa de éxito de otras descargas",
+      "unlockQuality": "Desbloquear descargas en 4K, 8K y de miembros"
+    },
     "entriesTitle": "Sitios web",
     "entriesDescription": "Sitios encontrados en la última sincronización.",
     "empty": "Aún no hay cookies sincronizadas.",
     "loading": "Cargando cookies...",
     "error": "No se pudieron cargar las cookies.",
     "actions": {
-      "refresh": "Actualizar"
+      "refresh": "Actualizar",
+      "import": "Importar cookies",
+      "clear": "Borrar todo"
     },
     "labels": {
       "cookies": "Cookies"
     },
     "lastSyncedAt": "Última sincronización: {{time}}",
-    "unknownSite": "Sitio desconocido"
+    "unknownSite": "Sitio desconocido",
+    "import": {
+      "success": "Cookies importadas correctamente",
+      "successDescription": "{{count}} cookies importadas",
+      "error": "No se pudieron importar las cookies"
+    },
+    "clear": {
+      "confirmTitle": "¿Borrar todas las cookies?",
+      "confirmMessage": "Esto eliminará todas las cookies sincronizadas. Esta acción no se puede deshacer.",
+      "confirm": "Borrar todo",
+      "cancel": "Cancelar",
+      "success": "Todas las cookies se borraron correctamente",
+      "error": "No se pudieron borrar las cookies"
+    }
   },
   "menu": {
     "about": "Acerca de",

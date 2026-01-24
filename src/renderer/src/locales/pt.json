@@ -309,19 +309,40 @@
   "cookiesPage": {
     "title": "Cookies sincronizados",
     "description": "Os cookies sincronizados da extensão aparecem aqui.",
+    "valueTitle": "Seu status de login pode ser usado para:",
+    "valueList": {
+      "privateVideos": "Baixar vídeos privados",
+      "higherSuccess": "Aumentar a taxa de sucesso de outros downloads",
+      "unlockQuality": "Desbloquear downloads em 4K, 8K e para membros"
+    },
     "entriesTitle": "Sites",
     "entriesDescription": "Sites encontrados na última sincronização.",
     "empty": "Nenhum cookie sincronizado ainda.",
     "loading": "Carregando cookies...",
     "error": "Falha ao carregar os cookies.",
     "actions": {
-      "refresh": "Atualizar"
+      "refresh": "Atualizar",
+      "import": "Importar cookies",
+      "clear": "Limpar tudo"
     },
     "labels": {
       "cookies": "Cookies"
     },
     "lastSyncedAt": "Última sincronização: {{time}}",
-    "unknownSite": "Site desconhecido"
+    "unknownSite": "Site desconhecido",
+    "import": {
+      "success": "Cookies importados com sucesso",
+      "successDescription": "{{count}} cookies importados",
+      "error": "Falha ao importar cookies"
+    },
+    "clear": {
+      "confirmTitle": "Limpar todos os cookies?",
+      "confirmMessage": "Isso removerá todos os cookies sincronizados. Esta ação não pode ser desfeita.",
+      "confirm": "Limpar tudo",
+      "cancel": "Cancelar",
+      "success": "Todos os cookies foram limpos",
+      "error": "Falha ao limpar cookies"
+    }
   },
   "menu": {
     "about": "Sobre",

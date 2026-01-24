@@ -133,18 +133,6 @@ export function Settings() {
     }
   }
 
-  const handleSelectCookiesFile = async () => {
-    try {
-      const path = await ipcServices.fs.selectFile()
-      if (path) {
-        await handleSettingChange('cookiesPath', path)
-      }
-    } catch (error) {
-      logger.error('Failed to select cookies file:', error)
-      toast.error(t('settings.fileSelectError'))
-    }
-  }
-
   const handleOpenCookiesGuide = async () => {
     try {
       await ipcServices.fs.openExternal('https://docs.vidbee.org/cookies')
@@ -896,46 +884,6 @@ export function Settings() {
                         error
                       )
                       return <div>Error loading browser cookies profile setting</div>
-                    }
-                  })()}
-                </ItemActions>
-              </Item>
-            </ItemGroup>
-
-            <ItemGroup>
-              <Item variant="muted">
-                <ItemContent>
-                  <ItemTitle>{t('settings.cookiesFile')}</ItemTitle>
-                  <ItemDescription>{t('settings.cookiesFileDescription')}</ItemDescription>
-                </ItemContent>
-                <ItemActions>
-                  {(() => {
-                    try {
-                      const cookiesPathValue = settings.cookiesPath ?? ''
-                      return (
-                        <div className="flex gap-2 w-full max-w-md">
-                          <Input value={cookiesPathValue} readOnly className="flex-1" />
-                          <Button onClick={handleSelectCookiesFile}>
-                            {t('settings.selectPath')}
-                          </Button>
-                          <Button
-                            variant="secondary"
-                            onClick={() => {
-                              try {
-                                void handleSettingChange('cookiesPath', '')
-                              } catch (error) {
-                                logger.error('[Settings] Error clearing cookies path:', error)
-                              }
-                            }}
-                            disabled={!cookiesPathValue}
-                          >
-                            {t('settings.clearCookiesFile')}
-                          </Button>
-                        </div>
-                      )
-                    } catch (error) {
-                      logger.error('[Settings] Error rendering cookies file input:', error)
-                      return <div>Error loading cookies file setting</div>
                     }
                   })()}
                 </ItemActions>

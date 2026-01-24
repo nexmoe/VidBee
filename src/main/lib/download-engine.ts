@@ -46,8 +46,8 @@ import {
   sanitizeTemplateValue
 } from './path-resolver'
 import { clampPercent, estimateProgressParts, isMuxedFormat } from './progress-utils'
+import { cleanupTempCookiesFile, exportCookiesToTempFile } from './synced-cookies-store'
 import { applyShareWatermark } from './watermark-utils'
-import { exportCookiesToTempFile } from './synced-cookies-store'
 import { ytdlpManager } from './ytdlp-manager'
 
 interface DownloadProcess {
@@ -83,11 +83,23 @@ class DownloadEngine extends EventEmitter {
     const settings = settingsManager.getAll()
 
     const args = buildVideoInfoArgs(url, settings)
+    // Extract temp cookie file path if it was added to args
+    const cookieArgIndex = args.indexOf('--cookies')
+    const tempCookieFile =
+      cookieArgIndex !== -1 && args[cookieArgIndex + 1]?.includes('synced-cookies-temp-')
+        ? args[cookieArgIndex + 1]
+        : null
 
     return new Promise((resolve, reject) => {
       const process = ytdlp.exec(args)
       let stdout = ''
       let stderr = ''
+
+      const cleanup = () => {
+        if (tempCookieFile) {
+          cleanupTempCookiesFile(tempCookieFile)
+        }
+      }
 
       process.ytDlpProcess?.stdout?.on('data', (data: Buffer) => {
         stdout += data.toString()
@@ -98,6 +110,7 @@ class DownloadEngine extends EventEmitter {
       })
 
       process.on('close', (code) => {
+        cleanup()
         if (code === 0 && stdout) {
           try {
             const info = JSON.parse(stdout)
@@ -142,6 +155,7 @@ class DownloadEngine extends EventEmitter {
       })
 
       process.on('error', (error) => {
+        cleanup()
         scopedLoggers.download.error('yt-dlp process error for:', url, error)
         reject(error)
       })
@@ -154,6 +168,13 @@ class DownloadEngine extends EventEmitter {
     const args = buildVideoInfoArgs(url, settings)
     const ytDlpCommand = formatYtDlpCommand(args)
 
+    // Extract temp cookie file path if it was added to args
+    const cookieArgIndex = args.indexOf('--cookies')
+    const tempCookieFile =
+      cookieArgIndex !== -1 && args[cookieArgIndex + 1]?.includes('synced-cookies-temp-')
+        ? args[cookieArgIndex + 1]
+        : null
+
     return new Promise((resolve) => {
       let settled = false
       const resolveOnce = (payload: VideoInfoCommandResult) => {
@@ -161,6 +182,9 @@ class DownloadEngine extends EventEmitter {
           return
         }
         settled = true
+        if (tempCookieFile) {
+          cleanupTempCookiesFile(tempCookieFile)
+        }
         resolve(payload)
       }
 
@@ -246,20 +270,13 @@ class DownloadEngine extends EventEmitter {
       args.push('--proxy', settings.proxy)
     }
 
-    // Try to use synced cookies first, then fall back to browser/file cookies
-    const syncedCookiesPath = exportCookiesToTempFile()
-    if (syncedCookiesPath) {
-      args.push('--cookies', syncedCookiesPath)
-    } else {
-      // Fall back to browser cookies or file cookies if no synced cookies available
-      if (settings.browserForCookies && settings.browserForCookies !== 'none') {
-        args.push('--cookies-from-browser', settings.browserForCookies)
-      }
-
-      const cookiesPath = settings.cookiesPath?.trim()
-      if (cookiesPath) {
-        args.push('--cookies', cookiesPath)
-      }
+    // Try to use synced cookies first, then fall back to browser cookies
+    const tempCookieFile = exportCookiesToTempFile()
+    if (tempCookieFile) {
+      args.push('--cookies', tempCookieFile)
+    } else if (settings.browserForCookies && settings.browserForCookies !== 'none') {
+      // Fall back to browser cookies if no synced cookies available
+      args.push('--cookies-from-browser', settings.browserForCookies)
     }
 
     // Add config file if configured
@@ -315,6 +332,12 @@ class DownloadEngine extends EventEmitter {
       let stdout = ''
       let stderr = ''
 
+      const cleanup = () => {
+        if (tempCookieFile) {
+          cleanupTempCookiesFile(tempCookieFile)
+        }
+      }
+
       process.ytDlpProcess?.stdout?.on('data', (data: Buffer) => {
         stdout += data.toString()
       })
@@ -324,6 +347,7 @@ class DownloadEngine extends EventEmitter {
       })
 
       process.on('close', (code) => {
+        cleanup()
         if (code === 0 && stdout) {
           try {
             const parsed = JSON.parse(stdout) as {
@@ -374,6 +398,7 @@ class DownloadEngine extends EventEmitter {
       })
 
       process.on('error', (error) => {
+        cleanup()
         scopedLoggers.download.error('yt-dlp process error while fetching playlist info:', error)
         reject(error)
       })
@@ -806,6 +831,13 @@ class DownloadEngine extends EventEmitter {
       ytdlpManager.getJsRuntimeArgs()
     )
 
+    // Extract temp cookie file path if it was added to args
+    const cookieArgIndex = args.indexOf('--cookies')
+    const tempCookieFile =
+      cookieArgIndex !== -1 && args[cookieArgIndex + 1]?.includes('synced-cookies-temp-')
+        ? args[cookieArgIndex + 1]
+        : null
+
     const captureOutputPath = (rawPath: string | undefined): void => {
       if (!rawPath) {
         return
@@ -849,6 +881,9 @@ class DownloadEngine extends EventEmitter {
 
     const urlArg = args.pop()
     if (!urlArg) {
+      if (tempCookieFile) {
+        cleanupTempCookiesFile(tempCookieFile)
+      }
       const missingUrlError = new Error('Download arguments missing URL.')
       scopedLoggers.download.error('Missing URL argument for download ID:', id)
       this.updateDownloadInfo(id, {
@@ -866,6 +901,9 @@ class DownloadEngine extends EventEmitter {
     try {
       ffmpegPath = ffmpegManager.getPath()
     } catch (error) {
+      if (tempCookieFile) {
+        cleanupTempCookiesFile(tempCookieFile)
+      }
       const ffmpegError = error instanceof Error ? error : new Error(String(error))
       scopedLoggers.download.error('Failed to resolve ffmpeg for download ID:', id, ffmpegError)
       this.updateDownloadInfo(id, {
@@ -1013,6 +1051,10 @@ class DownloadEngine extends EventEmitter {
     // Handle completion
     ytdlpProcess.on('close', async (code: number | null) => {
       flushLogUpdate()
+      // Clean up temp cookie file immediately
+      if (tempCookieFile) {
+        cleanupTempCookiesFile(tempCookieFile)
+      }
       const wasCancelled = controller.signal.aborted || this.cancelledDownloads.has(id)
       this.activeDownloads.delete(id)
       this.queue.downloadCompleted(id)
@@ -1225,6 +1267,10 @@ class DownloadEngine extends EventEmitter {
     // Handle errors
     ytdlpProcess.on('error', (error: Error) => {
       flushLogUpdate()
+      // Clean up temp cookie file immediately
+      if (tempCookieFile) {
+        cleanupTempCookiesFile(tempCookieFile)
+      }
       const wasCancelled = controller.signal.aborted || this.cancelledDownloads.has(id)
       scopedLoggers.download.error('Download process error for ID:', id, error)
       this.activeDownloads.delete(id)

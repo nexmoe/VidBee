@@ -309,19 +309,40 @@
   "cookiesPage": {
     "title": "Cookies synchronisés",
     "description": "Les cookies synchronisés depuis l’extension apparaissent ici.",
+    "valueTitle": "Votre statut de connexion peut servir à :",
+    "valueList": {
+      "privateVideos": "Télécharger des vidéos privées",
+      "higherSuccess": "Augmenter le taux de réussite des autres téléchargements",
+      "unlockQuality": "Débloquer les téléchargements 4K, 8K et réservés aux membres"
+    },
     "entriesTitle": "Sites web",
     "entriesDescription": "Sites trouvés lors de la dernière synchronisation.",
     "empty": "Aucun cookie synchronisé pour l’instant.",
     "loading": "Chargement des cookies...",
     "error": "Impossible de charger les cookies.",
     "actions": {
-      "refresh": "Actualiser"
+      "refresh": "Actualiser",
+      "import": "Importer des cookies",
+      "clear": "Tout effacer"
     },
     "labels": {
       "cookies": "Cookies"
     },
     "lastSyncedAt": "Dernière synchronisation : {{time}}",
-    "unknownSite": "Site inconnu"
+    "unknownSite": "Site inconnu",
+    "import": {
+      "success": "Cookies importés avec succès",
+      "successDescription": "{{count}} cookies importés",
+      "error": "Échec de l'importation des cookies"
+    },
+    "clear": {
+      "confirmTitle": "Effacer tous les cookies ?",
+      "confirmMessage": "Cela supprimera tous les cookies synchronisés. Cette action est irréversible.",
+      "confirm": "Tout effacer",
+      "cancel": "Annuler",
+      "success": "Tous les cookies ont été effacés",
+      "error": "Échec de la suppression des cookies"
+    }
   },
   "menu": {
     "about": "À propos",

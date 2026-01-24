@@ -309,19 +309,43 @@
   "cookiesPage": {
     "title": "已同步的 Cookies",
     "description": "从扩展同步的 Cookies 会显示在这里。",
+    "valueTitle": "登录状态可用于：",
+    "valueList": {
+      "privateVideos": "下载私密视频",
+      "privateVideosDescription": "轻松获取您社交媒体中的私人珍藏内容",
+      "higherSuccess": "提高下载成功率",
+      "higherSuccessDescription": "建立真实访问环境，避免被识别为机器人程序",
+      "unlockQuality": "解锁高清及会员视频",
+      "unlockQualityDescription": "尽享 4K/8K 极清画质与会员特权内容"
+    },
     "entriesTitle": "网站",
     "entriesDescription": "上次同步中发现的网站。",
     "empty": "暂无已同步的 Cookies。",
     "loading": "正在加载 Cookies...",
     "error": "加载 Cookies 失败。",
     "actions": {
-      "refresh": "刷新"
+      "refresh": "刷新",
+      "import": "导入 Cookie",
+      "clear": "清空全部"
     },
     "labels": {
       "cookies": "Cookies"
     },
     "lastSyncedAt": "最后同步：{{time}}",
-    "unknownSite": "未知网站"
+    "unknownSite": "未知网站",
+    "import": {
+      "success": "Cookie 导入成功",
+      "successDescription": "已导入 {{count}} 个 Cookie",
+      "error": "Cookie 导入失败"
+    },
+    "clear": {
+      "confirmTitle": "清空所有 Cookie？",
+      "confirmMessage": "这将移除所有同步的 Cookie。此操作无法撤销。",
+      "confirm": "清空全部",
+      "cancel": "取消",
+      "success": "已成功清空所有 Cookie",
+      "error": "清空 Cookie 失败"
+    }
   },
   "menu": {
     "about": "关于",

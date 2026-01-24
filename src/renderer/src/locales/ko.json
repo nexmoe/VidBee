@@ -309,19 +309,40 @@
   "cookiesPage": {
     "title": "동기화된 쿠키",
     "description": "확장 프로그램에서 동기화된 쿠키가 여기에 표시됩니다.",
+    "valueTitle": "로그인 상태는 다음에 사용할 수 있어요:",
+    "valueList": {
+      "privateVideos": "비공개 동영상 다운로드",
+      "higherSuccess": "다른 다운로드의 성공률 향상",
+      "unlockQuality": "4K, 8K 및 회원 전용 다운로드 잠금 해제"
+    },
     "entriesTitle": "웹사이트",
     "entriesDescription": "마지막 동기화에서 찾은 사이트입니다.",
     "empty": "아직 동기화된 쿠키가 없습니다.",
     "loading": "쿠키를 불러오는 중...",
     "error": "쿠키를 불러오지 못했습니다.",
     "actions": {
-      "refresh": "새로고침"
+      "refresh": "새로고침",
+      "import": "쿠키 가져오기",
+      "clear": "모두 삭제"
     },
     "labels": {
       "cookies": "쿠키"
     },
     "lastSyncedAt": "마지막 동기화: {{time}}",
-    "unknownSite": "알 수 없는 사이트"
+    "unknownSite": "알 수 없는 사이트",
+    "import": {
+      "success": "쿠키를 성공적으로 가져왔어요",
+      "successDescription": "{{count}}개의 쿠키를 가져왔어요",
+      "error": "쿠키 가져오기에 실패했어요"
+    },
+    "clear": {
+      "confirmTitle": "모든 쿠키를 삭제할까요?",
+      "confirmMessage": "동기화된 모든 쿠키가 삭제됩니다. 이 작업은 되돌릴 수 없습니다.",
+      "confirm": "모두 삭제",
+      "cancel": "취소",
+      "success": "모든 쿠키가 삭제되었습니다",
+      "error": "쿠키 삭제에 실패했습니다"
+    }
   },
   "menu": {
     "about": "정보",

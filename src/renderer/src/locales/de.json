@@ -309,19 +309,40 @@
   "cookiesPage": {
     "title": "Synchronisierte Cookies",
     "description": "Von der Erweiterung synchronisierte Cookies erscheinen hier.",
+    "valueTitle": "Ihr Anmeldestatus kann verwendet werden, um:",
+    "valueList": {
+      "privateVideos": "Private Videos herunterzuladen",
+      "higherSuccess": "Die Erfolgsrate anderer Downloads zu erhöhen",
+      "unlockQuality": "4K-, 8K- und Mitglieder-Downloads freizuschalten"
+    },
     "entriesTitle": "Webseiten",
     "entriesDescription": "Webseiten aus der letzten Synchronisierung.",
     "empty": "Noch keine Cookies synchronisiert.",
     "loading": "Cookies werden geladen...",
     "error": "Cookies konnten nicht geladen werden.",
     "actions": {
-      "refresh": "Aktualisieren"
+      "refresh": "Aktualisieren",
+      "import": "Cookies importieren",
+      "clear": "Alle löschen"
     },
     "labels": {
       "cookies": "Cookies"
     },
     "lastSyncedAt": "Zuletzt synchronisiert: {{time}}",
-    "unknownSite": "Unbekannte Website"
+    "unknownSite": "Unbekannte Website",
+    "import": {
+      "success": "Cookies erfolgreich importiert",
+      "successDescription": "{{count}} Cookies importiert",
+      "error": "Cookies konnten nicht importiert werden"
+    },
+    "clear": {
+      "confirmTitle": "Alle Cookies löschen?",
+      "confirmMessage": "Dadurch werden alle synchronisierten Cookies entfernt. Diese Aktion kann nicht rückgängig gemacht werden.",
+      "confirm": "Alle löschen",
+      "cancel": "Abbrechen",
+      "success": "Alle Cookies erfolgreich gelöscht",
+      "error": "Cookies konnten nicht gelöscht werden"
+    }
   },
   "menu": {
     "about": "Über",

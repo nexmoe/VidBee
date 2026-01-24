@@ -309,19 +309,40 @@
   "cookiesPage": {
     "title": "Синхронизированные cookie",
     "description": "Cookie, синхронизированные из расширения, отображаются здесь.",
+    "valueTitle": "Ваш статус входа можно использовать для:",
+    "valueList": {
+      "privateVideos": "Загрузки приватных видео",
+      "higherSuccess": "Повышения успешности других загрузок",
+      "unlockQuality": "Открытия загрузок 4K, 8K и для подписчиков"
+    },
     "entriesTitle": "Сайты",
     "entriesDescription": "Сайты, найденные при последней синхронизации.",
     "empty": "Пока нет синхронизированных cookie.",
     "loading": "Загрузка cookie...",
     "error": "Не удалось загрузить cookie.",
     "actions": {
-      "refresh": "Обновить"
+      "refresh": "Обновить",
+      "import": "Импортировать cookies",
+      "clear": "Очистить все"
     },
     "labels": {
       "cookies": "Cookie"
     },
     "lastSyncedAt": "Последняя синхронизация: {{time}}",
-    "unknownSite": "Неизвестный сайт"
+    "unknownSite": "Неизвестный сайт",
+    "import": {
+      "success": "Cookies успешно импортированы",
+      "successDescription": "Импортировано {{count}} cookies",
+      "error": "Не удалось импортировать cookies"
+    },
+    "clear": {
+      "confirmTitle": "Очистить все cookies?",
+      "confirmMessage": "Это удалит все синхронизированные cookies. Это действие нельзя отменить.",
+      "confirm": "Очистить все",
+      "cancel": "Отмена",
+      "success": "Все cookies успешно очищены",
+      "error": "Не удалось очистить cookies"
+    }
   },
   "menu": {
     "about": "О программе",

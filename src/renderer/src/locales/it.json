@@ -309,19 +309,40 @@
   "cookiesPage": {
     "title": "Cookie sincronizzati",
     "description": "I cookie sincronizzati dall'estensione vengono mostrati qui.",
+    "valueTitle": "Il tuo stato di accesso può essere usato per:",
+    "valueList": {
+      "privateVideos": "Scaricare video privati",
+      "higherSuccess": "Aumentare il tasso di successo degli altri download",
+      "unlockQuality": "Sbloccare download in 4K, 8K e per membri"
+    },
     "entriesTitle": "Siti web",
     "entriesDescription": "Siti trovati nell'ultima sincronizzazione.",
     "empty": "Nessun cookie sincronizzato.",
     "loading": "Caricamento cookie...",
     "error": "Impossibile caricare i cookie.",
     "actions": {
-      "refresh": "Aggiorna"
+      "refresh": "Aggiorna",
+      "import": "Importa cookie",
+      "clear": "Cancella tutto"
     },
     "labels": {
       "cookies": "Cookie"
     },
     "lastSyncedAt": "Ultima sincronizzazione: {{time}}",
-    "unknownSite": "Sito sconosciuto"
+    "unknownSite": "Sito sconosciuto",
+    "import": {
+      "success": "Cookie importati con successo",
+      "successDescription": "{{count}} cookie importati",
+      "error": "Impossibile importare i cookie"
+    },
+    "clear": {
+      "confirmTitle": "Cancellare tutti i cookie?",
+      "confirmMessage": "Questo rimuoverà tutti i cookie sincronizzati. Questa azione non può essere annullata.",
+      "confirm": "Cancella tutto",
+      "cancel": "Annulla",
+      "success": "Tutti i cookie sono stati cancellati",
+      "error": "Impossibile cancellare i cookie"
+    }
   },
   "menu": {
     "about": "Informazioni",

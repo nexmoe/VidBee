@@ -309,19 +309,40 @@
   "cookiesPage": {
     "title": "同期済みクッキー",
     "description": "拡張機能から同期されたクッキーがここに表示されます。",
+    "valueTitle": "ログイン状態は次の目的で利用できます:",
+    "valueList": {
+      "privateVideos": "非公開動画のダウンロード",
+      "higherSuccess": "他のダウンロード成功率の向上",
+      "unlockQuality": "4K・8K・メンバー限定のダウンロードを解放"
+    },
     "entriesTitle": "ウェブサイト",
     "entriesDescription": "前回の同期で見つかったサイトです。",
     "empty": "同期済みクッキーはまだありません。",
     "loading": "クッキーを読み込み中...",
     "error": "クッキーを読み込めませんでした。",
     "actions": {
-      "refresh": "更新"
+      "refresh": "更新",
+      "import": "Cookieをインポート",
+      "clear": "すべて削除"
     },
     "labels": {
       "cookies": "クッキー"
     },
     "lastSyncedAt": "最終同期: {{time}}",
-    "unknownSite": "不明なサイト"
+    "unknownSite": "不明なサイト",
+    "import": {
+      "success": "Cookieを正常にインポートしました",
+      "successDescription": "{{count}} 件のCookieをインポートしました",
+      "error": "Cookieのインポートに失敗しました"
+    },
+    "clear": {
+      "confirmTitle": "すべてのCookieを削除しますか？",
+      "confirmMessage": "同期済みのCookieがすべて削除されます。この操作は元に戻せません。",
+      "confirm": "すべて削除",
+      "cancel": "キャンセル",
+      "success": "すべてのCookieを削除しました",
+      "error": "Cookieの削除に失敗しました"
+    }
   },
   "menu": {
     "about": "について",
