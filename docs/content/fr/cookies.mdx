@@ -1,0 +1,73 @@
+---
+title: Cookies
+description: Téléchargements avec connexion, contenu restreint et configuration des cookies
+---
+
+Les cookies réutilisent la session connectée de votre navigateur pour que VidBee puisse télécharger du contenu qui nécessite une connexion ou une vérification, comme des éléments réservés aux abonnés, des pages avec limite d’âge ou des liens privés.
+
+Si vous voyez un message comme **"Connectez-vous pour confirmer que vous n’êtes pas un robot"** ou "connexion requise", vous avez besoin de cookies.
+
+![Message d’erreur demandant la connexion](/cookies/cookies-error-sign-in.png)
+
+## Quand vous avez besoin des cookies
+
+- Contenu nécessitant un compte pour être consulté ou téléchargé.
+- Pages avec limite d’âge ou blocage régional.
+- Liens privés ou listes visibles uniquement par les utilisateurs connectés.
+- “Connectez-vous pour confirmer que vous n’êtes pas un robot” ou messages similaires.
+
+## Deux façons d’utiliser les cookies dans VidBee
+
+### Option 1 : Lire les cookies depuis votre navigateur
+
+Dans **Réglages**, sélectionnez votre navigateur. VidBee essaiera de détecter automatiquement le chemin du profil. Vous pouvez aussi saisir le chemin du profil manuellement.
+
+![Sélection du navigateur pour les cookies](/cookies/cookies-settings-select-browser.png)
+
+**Navigateurs pris en charge (selon la plateforme) :**
+
+- **Windows : Firefox uniquement. Les autres navigateurs ne peuvent pas être utilisés pour la lecture des cookies.**
+- macOS : tous les navigateurs sont pris en charge.
+- Linux : tous les navigateurs sont pris en charge.
+
+**Étapes :**
+
+1. Connectez-vous d’abord au site dans votre navigateur.
+2. Ouvrez VidBee → Réglages → Cookies.
+3. Sélectionnez un navigateur et confirmez le chemin du profil.
+4. Revenez et relancez le téléchargement.
+
+Si la détection échoue ou si le chemin est invalide, choisissez manuellement le vrai dossier de profil du navigateur.
+Sous Windows, si vous n’utilisez pas Firefox, passez à la méthode du fichier cookies.
+
+### Option 2 : Importer un fichier de cookies
+
+Vous pouvez importer un fichier cookies au format **Netscape**. C’est utile quand la lecture du profil navigateur n’est pas possible.
+
+![Réglages du fichier cookies](/cookies-file.png)
+
+**Étapes :**
+
+1. Exportez un fichier cookies Netscape avec une extension de navigateur (par exemple, **Get cookies.txt**).
+2. Ouvrez VidBee → Réglages → Fichier cookies, puis sélectionnez le fichier exporté.
+3. Cliquez sur Effacer pour le désactiver.
+
+## Recommandations
+
+- Préférez les cookies du navigateur quand c’est possible, c’est plus simple à maintenir.
+- Si la lecture du navigateur échoue, utilisez un fichier cookies.
+- Les fichiers cookies expirent. Réexportez-les lorsque l’état de votre compte change.
+
+## Dépannage
+
+- **Chemin du profil invalide** : assurez-vous que le dossier existe et pointe vers le vrai profil navigateur.
+- **Toujours demande la connexion** : vérifiez que votre navigateur est bien connecté et réenregistrez le réglage.
+- **Lecture navigateur échouée** : fermez le navigateur et réessayez, ou utilisez un fichier cookies.
+
+## En savoir plus
+
+- [FAQ cookies de yt-dlp](https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp)
+
+## Confidentialité et sécurité
+
+Les cookies sont équivalents à votre session de connexion. Gardez-les privés et ne les partagez jamais. Si vous soupçonnez une fuite, déconnectez-vous et changez votre mot de passe.

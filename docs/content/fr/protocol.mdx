@@ -1,0 +1,149 @@
+---
+title: Protocole vidbee://
+description: Téléchargement rapide via le protocole d’URL vidbee://
+---
+
+VidBee enregistre un protocole d’URL personnalisé (`vidbee://`) qui permet de déclencher des téléchargements directement depuis les navigateurs, extensions ou userscripts.
+
+## Utilisation de base
+
+Le protocole `vidbee://` peut ouvrir VidBee et démarrer automatiquement le téléchargement de vidéos.
+
+### Format du protocole
+
+```
+vidbee://download?url=<url-video-encodee>
+```
+
+**Paramètres :**
+- `url` (obligatoire) : l’URL de la vidéo à télécharger, encodée en URL
+
+### Exemple
+
+Pour télécharger une vidéo YouTube :
+
+```html
+<a href="vidbee://download?url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DdQw4w9WgXcQ">
+  Télécharger avec VidBee
+</a>
+```
+
+Ou en JavaScript :
+
+```javascript
+const videoUrl = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+const vidbeeUrl = `vidbee://download?url=${encodeURIComponent(videoUrl)}`
+window.location.href = vidbeeUrl
+```
+
+## Ouvrir VidBee
+
+Pour ouvrir VidBee sans lancer de téléchargement :
+
+```
+vidbee://
+```
+
+## Cas d’usage
+
+### Extension de navigateur
+
+L’extension VidBee utilise ce protocole pour envoyer l’URL de l’onglet actuel à l’application :
+
+```javascript
+const currentUrl = window.location.href
+const deepLink = `vidbee://download?url=${encodeURIComponent(currentUrl)}`
+window.location.href = deepLink
+```
+
+### Intégration userscript
+
+Le userscript VidBee ajoute des boutons de téléchargement rapide sur les sites pris en charge :
+
+```javascript
+// Un clic déclenche le téléchargement via le protocole
+const vidbeeUrl = `vidbee://download?url=${encodeURIComponent(videoUrl)}`
+window.location.href = vidbeeUrl
+```
+
+### Pages web
+
+Vous pouvez ajouter des liens de téléchargement direct à vos pages web :
+
+```html
+<!-- Lien simple -->
+<a href="vidbee://download?url=https%3A%2F%2Fexample.com%2Fvideo">
+  Télécharger avec VidBee
+</a>
+
+<!-- Bouton avec JavaScript -->
+<button onclick="openInVidBee('https://example.com/video')">
+  Téléchargement rapide
+</button>
+
+<script>
+function openInVidBee(url) {
+  const vidbeeUrl = `vidbee://download?url=${encodeURIComponent(url)}`
+  window.location.href = vidbeeUrl
+}
+</script>
+```
+
+## Prise en charge des playlists
+
+Pour télécharger une playlist entière :
+
+```
+vidbee://download?url=<url-playlist-encodee>&type=playlist
+```
+
+**Paramètres :**
+- `url` (obligatoire) : l’URL de la playlist, encodée en URL
+- `type` : définir `playlist` pour télécharger toutes les vidéos de la playlist
+
+### Exemple
+
+```javascript
+const playlistUrl = 'https://www.youtube.com/playlist?list=PLrAXtmErZgOeiKm4sgNOknGvNjby9efdf'
+const vidbeeUrl = `vidbee://download?url=${encodeURIComponent(playlistUrl)}&type=playlist`
+window.location.href = vidbeeUrl
+```
+
+## Comment ça marche
+
+1. **Enregistrement du protocole** : VidBee s’enregistre comme gestionnaire du protocole `vidbee://` lors de l’installation
+2. **Analyse de l’URL** : quand un lien `vidbee://download?url=...` est cliqué, le système lance VidBee
+3. **Traitement de la file** : VidBee extrait l’URL vidéo et l’ajoute à la file de téléchargement
+4. **Démarrage automatique** : le téléchargement commence automatiquement si l’application est configurée pour cela
+
+## Compatibilité des navigateurs
+
+Le protocole `vidbee://` fonctionne sur tous les navigateurs majeurs :
+- Chrome/Edge/Brave
+- Firefox
+- Safari
+
+## Notes de sécurité
+
+- Seules les URL commençant par `vidbee://` déclenchent l’application
+- L’application valide le format d’URL avant traitement
+- Les URL mal formées sont ignorées avec un avertissement dans les logs
+
+## Dépannage
+
+### Le protocole ne fonctionne pas
+
+Si cliquer sur des liens `vidbee://` n’ouvre pas VidBee :
+
+1. **Vérifier l’installation** : assurez-vous que VidBee est bien installé
+2. **Réinstaller** : essayez de réinstaller VidBee pour ré-enregistrer le protocole
+3. **Permissions OS** : sur macOS, vérifiez Réglages Système > Confidentialité et sécurité pour d’éventuels blocages
+4. **Réglages du navigateur** : certains navigateurs demandent une autorisation au premier usage
+
+### L’application s’ouvre mais ne télécharge pas
+
+Si VidBee s’ouvre mais que le téléchargement ne démarre pas :
+
+1. **Vérifier l’encodage** : assurez-vous que l’URL est bien encodée avec `encodeURIComponent()`
+2. **Vérifier les logs** : ouvrez l’application et consultez la console développeur pour les erreurs
+3. **Sites pris en charge** : vérifiez que l’URL provient d’un [site pris en charge](https://vidbee.org/supported-sites/)

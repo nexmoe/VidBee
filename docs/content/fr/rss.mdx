@@ -1,0 +1,46 @@
+---
+title: RSS
+description: S’abonner aux flux RSS et ajouter automatiquement les téléchargements
+---
+
+VidBee peut surveiller des flux RSS et mettre automatiquement en file d’attente les nouveaux éléments à télécharger. C’est parfait pour les chaînes, playlists ou créateurs qui publient régulièrement.
+
+## Obtenir une URL de flux RSS
+
+Si vous avez déjà un lien RSS, utilisez-le directement. Sinon, générez-en un avec **RSSHub** :
+
+1. Ouvrez la documentation des routes RSSHub.
+2. Trouvez la plateforme que vous voulez suivre (YouTube, Twitter/X, etc.).
+3. Renseignez les paramètres requis et copiez l’URL du flux généré.
+
+De nombreux flux RSSHub utilisent le domaine `rsshub.app`, mais l’instance officielle est protégée par Cloudflare. VidBee ne peut pas accéder directement à l’instance officielle, utilisez donc un domaine RSSHub auto-hébergé ou une instance publique accessible.
+
+## Ajouter un abonnement RSS
+
+1. Ouvrez **VidBee → RSS**.
+2. Cliquez sur **Ajouter RSS**.
+
+![Aperçu des abonnements RSS](/rss/rss-overview.png)
+
+3. Collez l’URL du flux RSS. VidBee détectera le flux automatiquement.
+4. (Optionnel) Choisissez un **Répertoire personnalisé** pour les téléchargements.
+5. (Optionnel) Activez **Télécharger uniquement la dernière vidéo** si vous voulez seulement l’élément le plus récent.
+6. (Optionnel) Ouvrez **Options avancées** pour :
+   - **Filtre par mots-clés** (séparés par des virgules)
+   - **Étiquettes automatiques** (séparées par des virgules)
+   - **Modèle de nom de fichier personnalisé** (placeholders de type yt-dlp)
+7. Cliquez sur **Ajouter** pour enregistrer.
+
+![Boîte de dialogue Ajouter RSS](/rss/rss-add-dialog.png)
+
+## Et ensuite
+
+- VidBee vérifie le flux périodiquement et met automatiquement en file d’attente les nouveaux éléments.
+- Les éléments apparaissent dans la liste RSS avec leur statut.
+- Vous pouvez modifier, actualiser, désactiver ou supprimer des abonnements à tout moment.
+
+## Dépannage
+
+- **URL du flux invalide** : vérifiez que l’URL s’ouvre dans un navigateur et renvoie du RSS/Atom XML.
+- **Flux en double** : chaque URL RSS ne peut être abonnée qu’une seule fois.
+- **Aucun nouveau téléchargement** : confirmez que l’abonnement est activé et que le flux contient de nouveaux éléments.

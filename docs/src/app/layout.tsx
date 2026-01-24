@@ -1,5 +1,6 @@
 import './global.css';
 import { Inter } from 'next/font/google';
+import { GoogleAnalytics } from '@next/third-parties/google';
 import type { ReactNode } from 'react';
 import type { Metadata } from 'next';
 import { i18n, isLocale } from '@/lib/i18n';
@@ -29,10 +30,12 @@ export default async function Layout({
 }) {
   const resolvedParams = params ? await params : undefined;
   const lang = isLocale(resolvedParams?.lang) ? resolvedParams.lang : i18n.defaultLanguage;
+
   return (
     <html lang={lang} className={inter.className} suppressHydrationWarning>
       <body className="flex flex-col min-h-screen">
         {children}
+        <GoogleAnalytics gaId="G-2F11GJP6G9" />
       </body>
     </html>
   );
