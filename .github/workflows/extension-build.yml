@@ -1,0 +1,50 @@
+name: Build Extension
+
+on:
+  workflow_call:
+    inputs:
+      upload_artifacts:
+        required: false
+        type: boolean
+        default: false
+        description: 'Whether to upload build artifacts'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+          cache-dependency-path: extension/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install
+        working-directory: extension
+
+      - name: Build extension
+        run: pnpm build
+        working-directory: extension
+
+      - name: Build extension zip
+        run: pnpm zip
+        working-directory: extension
+
+      - name: Upload extension artifacts
+        if: inputs.upload_artifacts == true
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-extension
+          path: extension/.output/*.zip
+          retention-days: 1
+          if-no-files-found: error

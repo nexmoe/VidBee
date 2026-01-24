@@ -12,8 +12,13 @@ jobs:
       upload_artifacts: true
     secrets: inherit
 
+  extension:
+    uses: ./.github/workflows/extension-build.yml
+    with:
+      upload_artifacts: true
+
   release:
-    needs: [build]
+    needs: [build, extension]
     runs-on: ubuntu-latest
     steps:
       - name: Check out Git repository
