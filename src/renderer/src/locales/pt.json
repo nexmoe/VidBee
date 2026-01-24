@@ -314,6 +314,7 @@
   "notifications": {
     "copyFailed": "Falha ao copiar para área de transferência",
     "downloadCompleted": "Download concluído",
+    "downloadAlreadyQueued": "Este download já está em andamento",
     "downloadFailed": "Download falhou",
     "historyCleared": "Histórico limpo",
     "historyClearFailed": "Falha ao limpar histórico",

@@ -59,6 +59,9 @@ class DownloadEngine extends EventEmitter {
   private queue: DownloadQueue
   private sessionPersistTimer: NodeJS.Timeout | null = null
   private sessionRestored = false
+  private prefetchTasks: Map<string, Promise<VideoInfo | null>> = new Map()
+  private prefetchedInfo: Map<string, VideoInfo> = new Map()
+  private cancelledDownloads: Set<string> = new Set()
 
   constructor() {
     super()
@@ -458,7 +461,7 @@ class DownloadEngine extends EventEmitter {
       })
 
       // Add to queue
-      this.queue.add(downloadId, downloadOptions, {
+      const queueItem: DownloadItem = {
         id: downloadId,
         url: entry.url,
         title: entry.title,
@@ -470,7 +473,9 @@ class DownloadEngine extends EventEmitter {
         playlistTitle: playlistInfo.title,
         playlistIndex: entry.index,
         playlistSize: selectionSize
-      })
+      }
+      this.queue.add(downloadId, downloadOptions, queueItem)
+      this.emit('download-queued', { ...queueItem })
 
       this.upsertHistoryEntry(downloadId, downloadOptions, {
         title: entry.title,
@@ -496,10 +501,52 @@ class DownloadEngine extends EventEmitter {
     }
   }
 
-  startDownload(id: string, options: DownloadOptions): void {
-    if (this.activeDownloads.has(id)) {
-      scopedLoggers.engine.warn(`Download ${id} is already active`)
-      return
+  private normalizeDownloadValue(value?: string): string {
+    return value?.trim() ?? ''
+  }
+
+  private buildDownloadSignature(options: DownloadOptions): string {
+    const normalizeList = (values?: string[]): string =>
+      (values ?? [])
+        .map((value) => value.trim())
+        .filter((value) => value.length > 0)
+        .sort()
+        .join(',')
+
+    return [
+      this.normalizeDownloadValue(options.url),
+      options.type,
+      this.normalizeDownloadValue(options.format),
+      this.normalizeDownloadValue(options.audioFormat),
+      normalizeList(options.audioFormatIds),
+      this.normalizeDownloadValue(options.startTime),
+      this.normalizeDownloadValue(options.endTime),
+      this.normalizeDownloadValue(options.customDownloadPath),
+      this.normalizeDownloadValue(options.customFilenameTemplate),
+      this.normalizeDownloadValue(options.origin ?? 'manual'),
+      this.normalizeDownloadValue(options.subscriptionId)
+    ].join('|')
+  }
+
+  private hasDuplicateDownload(options: DownloadOptions): boolean {
+    const signature = this.buildDownloadSignature(options)
+    const entries = [...this.queue.getActiveEntries(), ...this.queue.getQueuedEntries()]
+    return entries.some((entry) => this.buildDownloadSignature(entry.options) === signature)
+  }
+
+  startDownload(id: string, options: DownloadOptions): boolean {
+    if (this.activeDownloads.has(id) || this.queue.getItemDetails(id)) {
+      scopedLoggers.engine.warn(`Download ${id} is already queued`)
+      return false
+    }
+
+    if (this.hasDuplicateDownload(options)) {
+      scopedLoggers.engine.warn('Duplicate download ignored:', {
+        id,
+        url: options.url,
+        type: options.type
+      })
+      return false
     }
 
     const createdAt = Date.now()
@@ -519,6 +566,7 @@ class DownloadEngine extends EventEmitter {
       title: 'Downloading...',
       type: options.type,
       status: 'pending' as const,
+      progress: { percent: 0 },
       createdAt,
       tags: options.tags,
       origin,
@@ -536,6 +584,46 @@ class DownloadEngine extends EventEmitter {
       origin,
       subscriptionId: options.subscriptionId
     })
+
+    this.emit('download-queued', { ...item })
+    void this.prefetchVideoInfo(id, options)
+    return true
+  }
+
+  private async prefetchVideoInfo(id: string, options: DownloadOptions): Promise<void> {
+    const url = options.url?.trim()
+    if (!url) {
+      return
+    }
+    if (this.prefetchTasks.has(id) || this.prefetchedInfo.has(id)) {
+      return
+    }
+
+    const task = (async () => {
+      try {
+        const info = await this.getVideoInfo(url)
+        this.prefetchedInfo.set(id, info)
+        this.updateDownloadInfo(id, {
+          title: info.title,
+          thumbnail: info.thumbnail,
+          duration: info.duration,
+          description: info.description,
+          uploader: info.uploader,
+          viewCount: info.view_count
+        })
+        return info
+      } catch (error) {
+        scopedLoggers.download.warn('Failed to prefetch video info for ID:', id, error)
+        return null
+      }
+    })()
+
+    this.prefetchTasks.set(id, task)
+    try {
+      await task
+    } finally {
+      this.prefetchTasks.delete(id)
+    }
   }
 
   private async executeDownload(id: string, options: DownloadOptions): Promise<void> {
@@ -601,11 +689,7 @@ class DownloadEngine extends EventEmitter {
       scheduleLogUpdate()
     }
 
-    // First, get detailed video info to capture basic metadata and formats
-    try {
-      const info = await this.getVideoInfo(options.url)
-      videoInfo = info
-
+    const applyVideoInfo = (info: VideoInfo) => {
       availableFormats = Array.isArray(info.formats) ? info.formats : []
       selectedFormat = resolveSelectedFormat(availableFormats, options, settings)
 
@@ -642,8 +726,33 @@ class DownloadEngine extends EventEmitter {
         // Store only essential download info
         selectedFormat
       })
-    } catch (error) {
-      scopedLoggers.download.warn('Failed to get detailed video info for ID:', id, error)
+    }
+
+    videoInfo = this.prefetchedInfo.get(id)
+    if (!videoInfo) {
+      const prefetchTask = this.prefetchTasks.get(id)
+      if (prefetchTask) {
+        try {
+          await prefetchTask
+        } catch {
+          // Ignore prefetch failures, download will attempt again below.
+        }
+        videoInfo = this.prefetchedInfo.get(id)
+      }
+    }
+
+    if (videoInfo) {
+      this.prefetchedInfo.delete(id)
+      applyVideoInfo(videoInfo)
+    } else {
+      // First, get detailed video info to capture basic metadata and formats
+      try {
+        const info = await this.getVideoInfo(options.url)
+        videoInfo = info
+        applyVideoInfo(info)
+      } catch (error) {
+        scopedLoggers.download.warn('Failed to get detailed video info for ID:', id, error)
+      }
     }
 
     if (!options.customDownloadPath?.trim()) {
@@ -852,6 +961,17 @@ class DownloadEngine extends EventEmitter {
 
     // Handle yt-dlp events to capture format info
     ytdlpProcess.on('ytDlpEvent', (eventType: string, eventData: string) => {
+      if (
+        eventType === 'postprocess' ||
+        eventData.toLowerCase().includes('merging formats') ||
+        eventData.toLowerCase().includes('post-process')
+      ) {
+        const snapshot = this.queue.getItemDetails(id)
+        if (snapshot?.item.status !== 'processing') {
+          this.updateDownloadInfo(id, { status: 'processing' })
+        }
+      }
+
       // Look for format selection messages
       if (eventType === 'info' && eventData.includes('format')) {
         // Extract format info from yt-dlp output
@@ -886,8 +1006,14 @@ class DownloadEngine extends EventEmitter {
     // Handle completion
     ytdlpProcess.on('close', async (code: number | null) => {
       flushLogUpdate()
+      const wasCancelled = controller.signal.aborted || this.cancelledDownloads.has(id)
       this.activeDownloads.delete(id)
       this.queue.downloadCompleted(id)
+
+      if (wasCancelled) {
+        this.cancelledDownloads.delete(id)
+        return
+      }
 
       if (code === 0) {
         // Generate file path using downloadPath + title + ext
@@ -1092,9 +1218,14 @@ class DownloadEngine extends EventEmitter {
     // Handle errors
     ytdlpProcess.on('error', (error: Error) => {
       flushLogUpdate()
+      const wasCancelled = controller.signal.aborted || this.cancelledDownloads.has(id)
       scopedLoggers.download.error('Download process error for ID:', id, error)
       this.activeDownloads.delete(id)
       this.queue.downloadCompleted(id)
+      if (wasCancelled) {
+        this.cancelledDownloads.delete(id)
+        return
+      }
       this.emit('download-error', id, error)
       this.addToHistory(id, options, 'error', error.message)
     })
@@ -1102,29 +1233,26 @@ class DownloadEngine extends EventEmitter {
 
   cancelDownload(id: string): boolean {
     scopedLoggers.download.info('Cancelling download for ID:', id)
-    const snapshot = this.queue.getItemDetails(id)
 
     const download = this.activeDownloads.get(id)
     if (download) {
+      this.cancelledDownloads.add(id)
       download.controller.abort()
       const removedFromQueue = this.queue.remove(id)
       this.activeDownloads.delete(id)
       scopedLoggers.download.info('Download cancelled successfully for ID:', id)
       this.emit('download-cancelled', id)
-      if (snapshot) {
-        this.upsertHistoryEntry(id, snapshot.options, {
-          status: 'cancelled',
-          completedAt: Date.now()
-        })
-      }
+      historyManager.removeHistoryItem(id)
+      this.prefetchTasks.delete(id)
+      this.prefetchedInfo.delete(id)
       return removedFromQueue
     }
     const removed = this.queue.remove(id)
-    if (removed && snapshot) {
-      this.upsertHistoryEntry(id, snapshot.options, {
-        status: 'cancelled',
-        completedAt: Date.now()
-      })
+    if (removed) {
+      this.emit('download-cancelled', id)
+      historyManager.removeHistoryItem(id)
+      this.prefetchTasks.delete(id)
+      this.prefetchedInfo.delete(id)
     }
     return removed
   }
@@ -1276,6 +1404,10 @@ class DownloadEngine extends EventEmitter {
 
     if (Object.keys(historyUpdates).length > 0) {
       this.upsertHistoryEntry(id, snapshot.options, historyUpdates)
+    }
+
+    if (Object.keys(updates).length > 0) {
+      this.emit('download-updated', id, { ...updates })
     }
 
     this.scheduleSessionPersist()

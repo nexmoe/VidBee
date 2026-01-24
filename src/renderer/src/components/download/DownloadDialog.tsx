@@ -16,7 +16,7 @@ import { useCallback, useEffect, useId, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { ipcEvents, ipcServices } from '../../lib/ipc'
-import { addDownloadAtom, updateDownloadAtom } from '../../store/downloads'
+import { addDownloadAtom } from '../../store/downloads'
 import { loadSettingsAtom, settingsAtom } from '../../store/settings'
 import {
   currentVideoInfoAtom,
@@ -109,7 +109,6 @@ export function DownloadDialog({
   const [settings] = useAtom(settingsAtom)
   const fetchVideoInfo = useSetAtom(fetchVideoInfoAtom)
   const loadSettings = useSetAtom(loadSettingsAtom)
-  const updateDownload = useSetAtom(updateDownloadAtom)
   const addDownload = useSetAtom(addDownloadAtom)
 
   const [url, setUrl] = useState('')
@@ -295,65 +294,17 @@ export function DownloadDialog({
           ? buildVideoFormatPreference(settings)
           : buildAudioFormatPreference(settings)
 
-      addDownload(downloadItem)
-
       try {
-        await ipcServices.download.startDownload(id, {
+        const started = await ipcServices.download.startDownload(id, {
           url: trimmedUrl,
           type: settings.oneClickDownloadType,
           format
         })
-
-        try {
-          const result = await ipcServices.download.getVideoInfoWithCommand(trimmedUrl)
-          if (!result.info) {
-            throw new Error(result.error || 'Failed to fetch video info')
-          }
-          const videoInfo = result.info
-
-          updateDownload({
-            id,
-            changes: {
-              title: videoInfo.title,
-              thumbnail: videoInfo.thumbnail,
-              duration: videoInfo.duration,
-              description: videoInfo.description,
-              channel: videoInfo.extractor_key,
-              uploader: videoInfo.extractor_key,
-              createdAt: Date.now(),
-              startedAt: Date.now()
-            }
-          })
-
-          await ipcServices.download.updateDownloadInfo(id, {
-            title: videoInfo.title,
-            thumbnail: videoInfo.thumbnail,
-            duration: videoInfo.duration,
-            description: videoInfo.description,
-            channel: videoInfo.extractor_key,
-            uploader: videoInfo.extractor_key,
-            createdAt: Date.now(),
-            startedAt: Date.now()
-          })
-
-          toast.success(t('download.videoInfoUpdated'))
-        } catch (infoError) {
-          console.warn('Failed to fetch video info for one-click download:', infoError)
-          updateDownload({
-            id,
-            changes: {
-              title: t('download.infoUnavailable'),
-              createdAt: Date.now(),
-              startedAt: Date.now()
-            }
-          })
-
-          await ipcServices.download.updateDownloadInfo(id, {
-            title: t('download.infoUnavailable'),
-            createdAt: Date.now(),
-            startedAt: Date.now()
-          })
+        if (!started) {
+          toast.info(t('notifications.downloadAlreadyQueued'))
+          return
         }
+        addDownload(downloadItem)
 
         toast.success(t('download.oneClickDownloadStarted'))
         if (options?.clearInput) {
@@ -364,7 +315,7 @@ export function DownloadDialog({
         toast.error(t('notifications.downloadFailed'))
       }
     },
-    [settings, addDownload, updateDownload, t]
+    [settings, addDownload, t]
   )
 
   const handleFetchVideo = useCallback(async () => {
@@ -734,20 +685,13 @@ export function DownloadDialog({
       customDownloadPath: singleVideoState.customDownloadPath.trim() || undefined
     }
 
-    addDownload(downloadItem)
-
     try {
-      await ipcServices.download.startDownload(id, options)
-
-      await ipcServices.download.updateDownloadInfo(id, {
-        title: singleVideoState.title || videoInfo.title || t('download.fetchingVideoInfo'),
-        thumbnail: videoInfo.thumbnail,
-        duration: videoInfo.duration,
-        description: videoInfo.description,
-        channel: videoInfo.extractor_key,
-        uploader: videoInfo.extractor_key,
-        createdAt: Date.now()
-      })
+      const started = await ipcServices.download.startDownload(id, options)
+      if (!started) {
+        toast.info(t('notifications.downloadAlreadyQueued'))
+        return
+      }
+      addDownload(downloadItem)
 
       setOpen(false) // Close dialog after download starts
     } catch (error) {

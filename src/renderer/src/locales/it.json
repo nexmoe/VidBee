@@ -314,6 +314,7 @@
   "notifications": {
     "copyFailed": "Errore nella copia negli appunti",
     "downloadCompleted": "Download completato",
+    "downloadAlreadyQueued": "Questo download è già in corso",
     "downloadFailed": "Download fallito",
     "historyCleared": "Cronologia cancellata",
     "historyClearFailed": "Impossibile cancellare la cronologia",

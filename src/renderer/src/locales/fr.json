@@ -314,6 +314,7 @@
   "notifications": {
     "copyFailed": "Échec de la copie dans le presse-papiers",
     "downloadCompleted": "Téléchargement terminé",
+    "downloadAlreadyQueued": "Ce téléchargement est déjà en cours",
     "downloadFailed": "Échec du téléchargement",
     "historyCleared": "Historique effacé",
     "historyClearFailed": "Échec de l'effacement de l'historique",

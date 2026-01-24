@@ -314,6 +314,7 @@
   "notifications": {
     "copyFailed": "Не удалось скопировать в буфер обмена",
     "downloadCompleted": "Загрузка завершена",
+    "downloadAlreadyQueued": "Эта загрузка уже выполняется",
     "downloadFailed": "Загрузка не удалась",
     "historyCleared": "История очищена",
     "historyClearFailed": "Не удалось очистить историю",

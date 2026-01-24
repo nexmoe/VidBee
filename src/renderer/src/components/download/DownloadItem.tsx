@@ -23,6 +23,7 @@ import {
 } from '@renderer/components/ui/sheet'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@renderer/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
+import type { DownloadItem as DownloadItemPayload } from '@shared/types'
 import { useAtomValue, useSetAtom } from 'jotai'
 import {
   AlertCircle,
@@ -256,7 +257,7 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
     const customDownloadPath = download.downloadPath?.trim() || undefined
     const formatId = download.selectedFormat?.format_id
 
-    addDownload({
+    const downloadItem: DownloadItemPayload = {
       id,
       url: download.url,
       title: download.title || t('download.fetchingVideoInfo'),
@@ -278,10 +279,10 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
       origin: download.origin,
       subscriptionId: download.subscriptionId,
       createdAt: Date.now()
-    })
+    }
 
     try {
-      await ipcServices.download.startDownload(id, {
+      const started = await ipcServices.download.startDownload(id, {
         url: download.url,
         type: download.type,
         format: formatId,
@@ -291,6 +292,11 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
         origin: download.origin,
         subscriptionId: download.subscriptionId
       })
+      if (!started) {
+        toast.info(t('notifications.downloadAlreadyQueued'))
+        return
+      }
+      addDownload(downloadItem)
     } catch (error) {
       console.error('Failed to retry download:', error)
       toast.error(t('notifications.downloadFailed'))

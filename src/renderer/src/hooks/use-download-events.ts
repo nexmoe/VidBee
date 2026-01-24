@@ -1,4 +1,5 @@
-import { useSetAtom } from 'jotai'
+import type { DownloadItem } from '@shared/types'
+import { useSetAtom, useStore } from 'jotai'
 import { useCallback, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -6,7 +7,9 @@ import { ipcEvents, ipcServices } from '../lib/ipc'
 import {
   addDownloadAtom,
   addHistoryRecordAtom,
+  downloadRecordsAtom,
   removeDownloadAtom,
+  removeHistoryRecordAtom,
   updateDownloadAtom
 } from '../store/downloads'
 
@@ -18,7 +21,9 @@ export function useDownloadEvents() {
   const addDownload = useSetAtom(addDownloadAtom)
   const addHistoryRecord = useSetAtom(addHistoryRecordAtom)
   const removeDownload = useSetAtom(removeDownloadAtom)
+  const removeHistoryRecord = useSetAtom(removeHistoryRecordAtom)
   const { t } = useTranslation()
+  const store = useStore()
 
   const syncHistoryItem = useCallback(
     async (id: string) => {
@@ -133,10 +138,33 @@ export function useDownloadEvents() {
       if (!id) {
         return
       }
-      updateDownload({ id, changes: { status: 'cancelled', completedAt: Date.now() } })
-      void syncHistoryItem(id)
+      removeDownload(id)
+      removeHistoryRecord(id)
     }
 
+    const handleQueued = (rawItem: unknown) => {
+      const item = rawItem as DownloadItem
+      if (!item || typeof item.id !== 'string') {
+        return
+      }
+      const records = store.get(downloadRecordsAtom)
+      if (records.has(`active:${item.id}`)) {
+        return
+      }
+      addDownload(item)
+    }
+
+    const handleUpdated = (rawData: unknown) => {
+      const data = rawData as { id?: string; updates?: Partial<DownloadItem> }
+      const id = typeof data?.id === 'string' ? data.id : ''
+      if (!id || !data?.updates) {
+        return
+      }
+      updateDownload({ id, changes: data.updates })
+    }
+
+    const queuedSubscription = ipcEvents.on('download:queued', handleQueued)
+    const updatedSubscription = ipcEvents.on('download:updated', handleUpdated)
     const startedSubscription = ipcEvents.on('download:started', handleStarted)
     const progressSubscription = ipcEvents.on('download:progress', handleProgress)
     const logSubscription = ipcEvents.on('download:log', handleLog)
@@ -144,6 +172,8 @@ export function useDownloadEvents() {
     const errorSubscription = ipcEvents.on('download:error', handleError)
     const cancelledSubscription = ipcEvents.on('download:cancelled', handleCancelled)
     return () => {
+      ipcEvents.removeListener('download:queued', queuedSubscription)
+      ipcEvents.removeListener('download:updated', updatedSubscription)
       ipcEvents.removeListener('download:started', startedSubscription)
       ipcEvents.removeListener('download:progress', progressSubscription)
       ipcEvents.removeListener('download:log', logSubscription)
@@ -151,5 +181,5 @@ export function useDownloadEvents() {
       ipcEvents.removeListener('download:error', errorSubscription)
       ipcEvents.removeListener('download:cancelled', cancelledSubscription)
     }
-  }, [syncHistoryItem, t, updateDownload])
+  }, [addDownload, removeDownload, removeHistoryRecord, store, syncHistoryItem, t, updateDownload])
 }

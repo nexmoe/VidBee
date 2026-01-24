@@ -314,6 +314,7 @@
   "notifications": {
     "copyFailed": "Kopieren in Zwischenablage fehlgeschlagen",
     "downloadCompleted": "Download abgeschlossen",
+    "downloadAlreadyQueued": "Dieser Download läuft bereits",
     "downloadFailed": "Download fehlgeschlagen",
     "historyCleared": "Verlauf gelöscht",
     "historyClearFailed": "Verlauf konnte nicht gelöscht werden",

@@ -314,6 +314,7 @@
   "notifications": {
     "copyFailed": "클립보드에 복사 실패",
     "downloadCompleted": "다운로드 완료",
+    "downloadAlreadyQueued": "이 다운로드는 이미 진행 중입니다",
     "downloadFailed": "다운로드 실패",
     "historyCleared": "기록이 지워졌습니다",
     "historyClearFailed": "기록을 지우지 못했습니다",

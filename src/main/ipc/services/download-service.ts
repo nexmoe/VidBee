@@ -32,8 +32,8 @@ class DownloadService extends IpcService {
   }
 
   @IpcMethod()
-  startDownload(_context: IpcContext, id: string, options: DownloadOptions): void {
-    downloadEngine.startDownload(id, options)
+  startDownload(_context: IpcContext, id: string, options: DownloadOptions): boolean {
+    return downloadEngine.startDownload(id, options)
   }
 
   @IpcMethod()

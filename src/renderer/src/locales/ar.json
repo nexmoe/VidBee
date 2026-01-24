@@ -314,6 +314,7 @@
   "notifications": {
     "copyFailed": "فشل في النسخ إلى الحافظة",
     "downloadCompleted": "اكتمل التحميل",
+    "downloadAlreadyQueued": "هذا التنزيل قيد التنفيذ بالفعل",
     "downloadFailed": "فشل التحميل",
     "historyCleared": "تم مسح السجل",
     "historyClearFailed": "فشل مسح السجل",
