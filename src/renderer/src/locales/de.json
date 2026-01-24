@@ -306,6 +306,23 @@
     },
     "title": "Download-Verlauf"
   },
+  "cookiesPage": {
+    "title": "Synchronisierte Cookies",
+    "description": "Von der Erweiterung synchronisierte Cookies erscheinen hier.",
+    "entriesTitle": "Webseiten",
+    "entriesDescription": "Webseiten aus der letzten Synchronisierung.",
+    "empty": "Noch keine Cookies synchronisiert.",
+    "loading": "Cookies werden geladen...",
+    "error": "Cookies konnten nicht geladen werden.",
+    "actions": {
+      "refresh": "Aktualisieren"
+    },
+    "labels": {
+      "cookies": "Cookies"
+    },
+    "lastSyncedAt": "Zuletzt synchronisiert: {{time}}",
+    "unknownSite": "Unbekannte Website"
+  },
   "menu": {
     "about": "Über",
     "download": "Herunterladen",

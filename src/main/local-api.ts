@@ -5,10 +5,12 @@ import type { AddressInfo } from 'node:net'
 import log from 'electron-log/main'
 
 import { downloadEngine } from './lib/download-engine'
+import { addSyncedCookies } from './lib/synced-cookies-store'
 
 const PORT_RANGE_START = 27100
 const PORT_RANGE_END = 27120
 const TOKEN_TTL_MS = 60_000
+const MAX_BODY_SIZE = 2 * 1024 * 1024
 
 type TokenRecord = {
   expiresAt: number
@@ -27,7 +29,7 @@ const writeJson = (res: http.ServerResponse, status: number, body: unknown): voi
   res.writeHead(status, {
     'Content-Type': 'application/json; charset=utf-8',
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type'
   })
   res.end(JSON.stringify(body))
@@ -36,7 +38,7 @@ const writeJson = (res: http.ServerResponse, status: number, body: unknown): voi
 const writeEmpty = (res: http.ServerResponse, status: number): void => {
   res.writeHead(status, {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type'
   })
   res.end()
@@ -59,6 +61,36 @@ const consumeToken = (token?: string | null): boolean => {
   tokens.delete(token)
   return true
 }
+
+const readJsonBody = async <T>(req: http.IncomingMessage): Promise<T> =>
+  new Promise((resolve, reject) => {
+    let size = 0
+    const chunks: Buffer[] = []
+
+    req.on('data', (chunk) => {
+      const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
+      size += buffer.length
+      if (size > MAX_BODY_SIZE) {
+        reject(new Error('Payload too large'))
+        return
+      }
+      chunks.push(buffer)
+    })
+
+    req.on('end', () => {
+      try {
+        const raw = Buffer.concat(chunks).toString('utf8')
+        const parsed = JSON.parse(raw) as T
+        resolve(parsed)
+      } catch (error) {
+        reject(error)
+      }
+    })
+
+    req.on('error', (error) => {
+      reject(error)
+    })
+  })
 
 const handleRequest = async (
   req: http.IncomingMessage,
@@ -83,57 +115,117 @@ const handleRequest = async (
     const requestUrl = new URL(req.url, 'http://127.0.0.1')
     const pathname = requestUrl.pathname
 
-    if (req.method !== 'GET') {
-      writeJson(res, 405, { error: 'Method not allowed' })
-      return
-    }
-
-    if (pathname === '/token') {
-      const token = issueToken()
-      writeJson(res, 200, { token, expiresInMs: TOKEN_TTL_MS })
-      return
-    }
-
-    if (pathname === '/video-info') {
-      const token = requestUrl.searchParams.get('token')
-      if (!consumeToken(token)) {
-        writeJson(res, 401, { error: 'Invalid token' })
+    if (req.method === 'GET') {
+      if (pathname === '/token') {
+        const token = issueToken()
+        writeJson(res, 200, { token, expiresInMs: TOKEN_TTL_MS })
         return
       }
 
-      const targetUrl = requestUrl.searchParams.get('url')
-      if (!targetUrl || !targetUrl.trim()) {
-        writeJson(res, 400, { error: 'Missing url' })
+      if (pathname === '/video-info') {
+        const token = requestUrl.searchParams.get('token')
+        if (!consumeToken(token)) {
+          writeJson(res, 401, { error: 'Invalid token' })
+          return
+        }
+
+        const targetUrl = requestUrl.searchParams.get('url')
+        if (!targetUrl || !targetUrl.trim()) {
+          writeJson(res, 400, { error: 'Missing url' })
+          return
+        }
+
+        try {
+          const info = await downloadEngine.getVideoInfo(targetUrl.trim())
+          writeJson(res, 200, {
+            title: info.title,
+            thumbnail: info.thumbnail,
+            duration: info.duration,
+            formats: info.formats ?? []
+          })
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Failed to fetch video info'
+          const details =
+            error instanceof Error
+              ? error.stack
+              : typeof error === 'object' && error && 'stderr' in error
+                ? String((error as { stderr?: unknown }).stderr ?? '')
+                : undefined
+          writeJson(res, 500, { error: message, details })
+        }
         return
       }
 
-      try {
-        const info = await downloadEngine.getVideoInfo(targetUrl.trim())
-        writeJson(res, 200, {
-          title: info.title,
-          thumbnail: info.thumbnail,
-          duration: info.duration,
-          formats: info.formats ?? []
-        })
-      } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to fetch video info'
-        const details =
-          error instanceof Error
-            ? error.stack
-            : typeof error === 'object' && error && 'stderr' in error
-              ? String((error as { stderr?: unknown }).stderr ?? '')
-              : undefined
-        writeJson(res, 500, { error: message, details })
+      if (pathname === '/status') {
+        writeJson(res, 200, { ok: true })
+        return
       }
+    }
+
+    if (req.method === 'POST') {
+      if (pathname === '/cookies-sync') {
+        const token = requestUrl.searchParams.get('token')
+        if (!consumeToken(token)) {
+          writeJson(res, 401, { error: 'Invalid token' })
+          return
+        }
+
+        try {
+          const payload = await readJsonBody<{
+            url?: string
+            title?: string
+            cookies?: Array<{
+              domain?: string
+              name?: string
+              value?: string
+              path?: string
+              secure?: boolean
+              httpOnly?: boolean
+              sameSite?: string
+              expirationDate?: number
+            }>
+          }>(req)
+
+          if (!Array.isArray(payload.cookies)) {
+            writeJson(res, 400, { error: 'Missing cookies' })
+            return
+          }
+
+          const entry = addSyncedCookies({
+            cookies: payload.cookies.map((cookie) => ({
+              domain: cookie.domain ?? '',
+              name: cookie.name ?? '',
+              value: cookie.value ?? '',
+              path: cookie.path ?? '/',
+              secure: cookie.secure ?? false,
+              httpOnly: cookie.httpOnly,
+              sameSite: cookie.sameSite,
+              expirationDate: cookie.expirationDate
+            }))
+          })
+
+          writeJson(res, 200, {
+            ok: true,
+            snapshot: {
+              cookieCount: entry.cookieCount,
+              createdAt: entry.createdAt
+            }
+          })
+          return
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Failed to sync cookies'
+          writeJson(res, 500, { error: message })
+          return
+        }
+      }
+    }
+
+    if (req.method === 'GET' || req.method === 'POST') {
+      writeJson(res, 404, { error: 'Not found' })
       return
     }
 
-    if (pathname === '/status') {
-      writeJson(res, 200, { ok: true })
-      return
-    }
-
-    writeJson(res, 404, { error: 'Not found' })
+    writeJson(res, 405, { error: 'Method not allowed' })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unhandled request error'
     writeJson(res, 500, { error: message })

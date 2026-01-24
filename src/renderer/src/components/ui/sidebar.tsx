@@ -4,6 +4,7 @@ import { useAtom } from 'jotai'
 import { useTranslation } from 'react-i18next'
 import '../../assets/title-bar.css'
 import { updateAvailableAtom } from '@renderer/store/update'
+import { Cookie } from 'lucide-react'
 import MingcuteCheckCircleFill from '~icons/mingcute/check-circle-fill'
 import MingcuteCheckCircleLine from '~icons/mingcute/check-circle-line'
 import MingcuteDownload3Fill from '~icons/mingcute/download-3-fill'
@@ -15,7 +16,7 @@ import MingcuteRssLine from '~icons/mingcute/rss-line'
 import MingcuteSettingsFill from '~icons/mingcute/settings-3-fill'
 import MingcuteSettingsLine from '~icons/mingcute/settings-3-line'
 
-type Page = 'home' | 'subscriptions' | 'settings' | 'about'
+type Page = 'home' | 'subscriptions' | 'cookies' | 'settings' | 'about'
 type NavigationTarget = Page | 'supported-sites'
 
 interface NavigationItem {
@@ -63,6 +64,14 @@ export function Sidebar({ currentPage, onPageChange, onOpenSupportedSites }: Sid
         inactive: MingcuteRssLine
       },
       label: t('menu.rss')
+    },
+    {
+      id: 'cookies',
+      icon: {
+        active: Cookie,
+        inactive: Cookie
+      },
+      label: t('settings.cookiesTab')
     },
     {
       id: 'supported-sites',

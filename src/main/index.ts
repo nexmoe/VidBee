@@ -23,6 +23,7 @@ import { downloadEngine } from './lib/download-engine'
 import { ffmpegManager } from './lib/ffmpeg-manager'
 import { subscriptionManager } from './lib/subscription-manager'
 import { subscriptionScheduler } from './lib/subscription-scheduler'
+import { cleanupTempCookiesFile } from './lib/synced-cookies-store'
 import { ytdlpManager } from './lib/ytdlp-manager'
 import { startExtensionApiServer, stopExtensionApiServer } from './local-api'
 import { settingsManager } from './settings'
@@ -635,6 +636,7 @@ app.on('window-all-closed', () => {
 app.on('will-quit', () => {
   destroyTray()
   void stopExtensionApiServer()
+  cleanupTempCookiesFile()
 })
 
 // In this file you can include the rest of your app's specific main process

@@ -306,6 +306,23 @@
     },
     "title": "Histórico de Downloads"
   },
+  "cookiesPage": {
+    "title": "Cookies sincronizados",
+    "description": "Os cookies sincronizados da extensão aparecem aqui.",
+    "entriesTitle": "Sites",
+    "entriesDescription": "Sites encontrados na última sincronização.",
+    "empty": "Nenhum cookie sincronizado ainda.",
+    "loading": "Carregando cookies...",
+    "error": "Falha ao carregar os cookies.",
+    "actions": {
+      "refresh": "Atualizar"
+    },
+    "labels": {
+      "cookies": "Cookies"
+    },
+    "lastSyncedAt": "Última sincronização: {{time}}",
+    "unknownSite": "Site desconhecido"
+  },
   "menu": {
     "about": "Sobre",
     "download": "Download",

@@ -306,6 +306,23 @@
     },
     "title": "ダウンロード履歴"
   },
+  "cookiesPage": {
+    "title": "同期済みクッキー",
+    "description": "拡張機能から同期されたクッキーがここに表示されます。",
+    "entriesTitle": "ウェブサイト",
+    "entriesDescription": "前回の同期で見つかったサイトです。",
+    "empty": "同期済みクッキーはまだありません。",
+    "loading": "クッキーを読み込み中...",
+    "error": "クッキーを読み込めませんでした。",
+    "actions": {
+      "refresh": "更新"
+    },
+    "labels": {
+      "cookies": "クッキー"
+    },
+    "lastSyncedAt": "最終同期: {{time}}",
+    "unknownSite": "不明なサイト"
+  },
   "menu": {
     "about": "について",
     "download": "ダウンロード",

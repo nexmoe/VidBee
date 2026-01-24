@@ -260,6 +260,23 @@ export interface SubscriptionUpdatePayload {
   items?: SubscriptionFeedItem[]
 }
 
+export interface SyncedCookie {
+  domain: string
+  name: string
+  value: string
+  path: string
+  secure: boolean
+  httpOnly?: boolean
+  sameSite?: string
+  expirationDate?: number
+}
+
+export interface SyncedCookiesSnapshot {
+  createdAt: number
+  cookieCount: number
+  cookies: SyncedCookie[]
+}
+
 // Settings types
 export type OneClickQualityPreset = 'best' | 'good' | 'normal' | 'bad' | 'worst'
 

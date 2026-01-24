@@ -306,6 +306,23 @@
     },
     "title": "Riwayat Unduhan"
   },
+  "cookiesPage": {
+    "title": "Cookie tersinkron",
+    "description": "Cookie yang disinkronkan dari ekstensi muncul di sini.",
+    "entriesTitle": "Situs",
+    "entriesDescription": "Situs yang ditemukan pada sinkronisasi terakhir.",
+    "empty": "Belum ada cookie yang tersinkron.",
+    "loading": "Memuat cookie...",
+    "error": "Gagal memuat cookie.",
+    "actions": {
+      "refresh": "Segarkan"
+    },
+    "labels": {
+      "cookies": "Cookie"
+    },
+    "lastSyncedAt": "Terakhir disinkronkan: {{time}}",
+    "unknownSite": "Situs tidak dikenal"
+  },
   "menu": {
     "about": "Tentang",
     "download": "Unduh",

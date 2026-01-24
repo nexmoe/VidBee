@@ -7,7 +7,12 @@ export default defineConfig({
     name: '__MSG_extensionName__',
     description: '__MSG_extensionDescription__',
     default_locale: 'en',
-    host_permissions: ['http://127.0.0.1/*'],
-    permissions: ['activeTab', 'storage']
+    host_permissions: ['http://*/*', 'https://*/*'],
+    permissions: ['activeTab', 'storage', 'cookies', 'downloads']
+  },
+  webExt: {
+    chromiumProfile: '.context/wxt-profiles/chromium',
+    firefoxProfile: '.context/wxt-profiles/firefox',
+    keepProfileChanges: true
   }
 })

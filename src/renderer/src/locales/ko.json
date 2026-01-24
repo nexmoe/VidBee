@@ -306,6 +306,23 @@
     },
     "title": "다운로드 기록"
   },
+  "cookiesPage": {
+    "title": "동기화된 쿠키",
+    "description": "확장 프로그램에서 동기화된 쿠키가 여기에 표시됩니다.",
+    "entriesTitle": "웹사이트",
+    "entriesDescription": "마지막 동기화에서 찾은 사이트입니다.",
+    "empty": "아직 동기화된 쿠키가 없습니다.",
+    "loading": "쿠키를 불러오는 중...",
+    "error": "쿠키를 불러오지 못했습니다.",
+    "actions": {
+      "refresh": "새로고침"
+    },
+    "labels": {
+      "cookies": "쿠키"
+    },
+    "lastSyncedAt": "마지막 동기화: {{time}}",
+    "unknownSite": "알 수 없는 사이트"
+  },
   "menu": {
     "about": "정보",
     "download": "다운로드",

@@ -306,6 +306,23 @@
     },
     "title": "下載歷史"
   },
+  "cookiesPage": {
+    "title": "已同步的 Cookies",
+    "description": "從擴充功能同步的 Cookies 會顯示在這裡。",
+    "entriesTitle": "網站",
+    "entriesDescription": "上次同步中找到的網站。",
+    "empty": "尚無已同步的 Cookies。",
+    "loading": "正在載入 Cookies...",
+    "error": "載入 Cookies 失敗。",
+    "actions": {
+      "refresh": "重新整理"
+    },
+    "labels": {
+      "cookies": "Cookies"
+    },
+    "lastSyncedAt": "最後同步：{{time}}",
+    "unknownSite": "未知網站"
+  },
   "menu": {
     "about": "關於",
     "download": "下載",

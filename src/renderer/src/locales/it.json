@@ -306,6 +306,23 @@
     },
     "title": "Cronologia Download"
   },
+  "cookiesPage": {
+    "title": "Cookie sincronizzati",
+    "description": "I cookie sincronizzati dall'estensione vengono mostrati qui.",
+    "entriesTitle": "Siti web",
+    "entriesDescription": "Siti trovati nell'ultima sincronizzazione.",
+    "empty": "Nessun cookie sincronizzato.",
+    "loading": "Caricamento cookie...",
+    "error": "Impossibile caricare i cookie.",
+    "actions": {
+      "refresh": "Aggiorna"
+    },
+    "labels": {
+      "cookies": "Cookie"
+    },
+    "lastSyncedAt": "Ultima sincronizzazione: {{time}}",
+    "unknownSite": "Sito sconosciuto"
+  },
   "menu": {
     "about": "Informazioni",
     "download": "Scarica",

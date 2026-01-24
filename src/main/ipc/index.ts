@@ -6,6 +6,7 @@ import { FileSystemService } from './services/file-system-service'
 import { HistoryService } from './services/history-service'
 import { SettingsService } from './services/settings-service'
 import { SubscriptionService } from './services/subscription-service'
+import { SyncedCookiesService } from './services/synced-cookies-service'
 import { ThumbnailService } from './services/thumbnail-service'
 import { UpdateService } from './services/update-service'
 import { WindowService } from './services/window-service'
@@ -19,6 +20,7 @@ export const services = createServices([
   HistoryService,
   SettingsService,
   SubscriptionService,
+  SyncedCookiesService,
   ThumbnailService,
   UpdateService,
   WindowService

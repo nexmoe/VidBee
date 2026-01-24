@@ -306,6 +306,23 @@
     },
     "title": "下载历史"
   },
+  "cookiesPage": {
+    "title": "已同步的 Cookies",
+    "description": "从扩展同步的 Cookies 会显示在这里。",
+    "entriesTitle": "网站",
+    "entriesDescription": "上次同步中发现的网站。",
+    "empty": "暂无已同步的 Cookies。",
+    "loading": "正在加载 Cookies...",
+    "error": "加载 Cookies 失败。",
+    "actions": {
+      "refresh": "刷新"
+    },
+    "labels": {
+      "cookies": "Cookies"
+    },
+    "lastSyncedAt": "最后同步：{{time}}",
+    "unknownSite": "未知网站"
+  },
   "menu": {
     "about": "关于",
     "download": "下载",

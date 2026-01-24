@@ -12,6 +12,7 @@ import { ErrorBoundary } from './components/error/ErrorBoundary'
 import { useDownloadEvents } from './hooks/use-download-events'
 import { ipcEvents, ipcServices } from './lib/ipc'
 import { About } from './pages/About'
+import { Cookies } from './pages/Cookies'
 import { Home } from './pages/Home'
 import { Settings } from './pages/Settings'
 import { Subscriptions } from './pages/Subscriptions'
@@ -19,11 +20,12 @@ import { loadSettingsAtom, settingsAtom } from './store/settings'
 import { loadSubscriptionsAtom, setSubscriptionsAtom } from './store/subscriptions'
 import { updateAvailableAtom, updateReadyAtom } from './store/update'
 
-type Page = 'home' | 'subscriptions' | 'settings' | 'about'
+type Page = 'home' | 'subscriptions' | 'cookies' | 'settings' | 'about'
 
 const pageToPath: Record<Page, string> = {
   home: '/',
   subscriptions: '/subscriptions',
+  cookies: '/cookies',
   settings: '/settings',
   about: '/about'
 }
@@ -38,6 +40,8 @@ const pathToPage = (pathname: string): Page => {
   switch (normalized) {
     case '/subscriptions':
       return 'subscriptions'
+    case '/cookies':
+      return 'cookies'
     case '/settings':
       return 'settings'
     case '/about':
@@ -275,6 +279,7 @@ function AppContent() {
               }
             />
             <Route path="/subscriptions" element={<Subscriptions />} />
+            <Route path="/cookies" element={<Cookies />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/about" element={<About />} />
             <Route path="*" element={<Navigate to="/" replace />} />

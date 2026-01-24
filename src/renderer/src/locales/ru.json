@@ -306,6 +306,23 @@
     },
     "title": "История загрузок"
   },
+  "cookiesPage": {
+    "title": "Синхронизированные cookie",
+    "description": "Cookie, синхронизированные из расширения, отображаются здесь.",
+    "entriesTitle": "Сайты",
+    "entriesDescription": "Сайты, найденные при последней синхронизации.",
+    "empty": "Пока нет синхронизированных cookie.",
+    "loading": "Загрузка cookie...",
+    "error": "Не удалось загрузить cookie.",
+    "actions": {
+      "refresh": "Обновить"
+    },
+    "labels": {
+      "cookies": "Cookie"
+    },
+    "lastSyncedAt": "Последняя синхронизация: {{time}}",
+    "unknownSite": "Неизвестный сайт"
+  },
   "menu": {
     "about": "О программе",
     "download": "Загрузить",

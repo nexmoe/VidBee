@@ -306,6 +306,23 @@
     },
     "title": "Download History"
   },
+  "cookiesPage": {
+    "title": "Synced cookies",
+    "description": "Cookies synced from the extension appear here.",
+    "entriesTitle": "Websites",
+    "entriesDescription": "Sites found in your last sync.",
+    "empty": "No cookies synced yet.",
+    "loading": "Loading cookies...",
+    "error": "Failed to load cookies.",
+    "actions": {
+      "refresh": "Refresh"
+    },
+    "labels": {
+      "cookies": "Cookies"
+    },
+    "lastSyncedAt": "Last synced: {{time}}",
+    "unknownSite": "Unknown site"
+  },
   "menu": {
     "about": "About",
     "download": "Download",

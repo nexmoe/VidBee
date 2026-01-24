@@ -49,9 +49,17 @@
       "!monkey/dist",
       "!dist",
       "!out",
-      "!build"
+      "!build",
+      "!extension/.context"
     ],
-    "experimentalScannerIgnores": ["docs/**", "monkey/dist/**", "dist/**", "out/**", "build/**"]
+    "experimentalScannerIgnores": [
+      "docs/**",
+      "monkey/dist/**",
+      "dist/**",
+      "out/**",
+      "build/**",
+      "extension/.context/**"
+    ]
   },
   "vcs": {
     "enabled": true,
