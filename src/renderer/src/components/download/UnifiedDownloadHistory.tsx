@@ -13,7 +13,7 @@ import { cn } from '@renderer/lib/utils'
 import { useAtomValue, useSetAtom } from 'jotai'
 import { History as HistoryIcon } from 'lucide-react'
 import { useEffect, useId, useMemo, useState } from 'react'
-import { useTranslation } from 'react-i18next'
+import { Trans, useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import {
   buildFilePathCandidates,
@@ -90,11 +90,13 @@ const isEditableTarget = (target: EventTarget | null): boolean => {
 interface UnifiedDownloadHistoryProps {
   onOpenSupportedSites?: () => void
   onOpenSettings?: () => void
+  onOpenCookiesSettings?: () => void
 }
 
 export function UnifiedDownloadHistory({
   onOpenSupportedSites,
-  onOpenSettings
+  onOpenSettings,
+  onOpenCookiesSettings
 }: UnifiedDownloadHistoryProps) {
   const { t } = useTranslation()
   const allRecords = useAtomValue(downloadsArrayAtom)
@@ -108,6 +110,16 @@ export function UnifiedDownloadHistory({
   const [confirmBusy, setConfirmBusy] = useState(false)
   const [alsoDeleteFiles, setAlsoDeleteFiles] = useState(false)
   const alsoDeleteFilesId = useId()
+  const hasCookieConfig = useMemo(() => {
+    const cookiesPath = settings.cookiesPath?.trim()
+    if (cookiesPath) {
+      return true
+    }
+    const browserSetting = settings.browserForCookies?.trim()
+    return Boolean(browserSetting && browserSetting !== 'none')
+  }, [settings.browserForCookies, settings.cookiesPath])
+  const showCookiesTip = !hasCookieConfig
+  const canOpenCookiesSettings = Boolean(onOpenCookiesSettings ?? onOpenSettings)
 
   useHistorySync()
 
@@ -489,6 +501,42 @@ export function UnifiedDownloadHistory({
       </CardHeader>
       <ScrollArea className="overflow-y-auto flex-1">
         <CardContent className="space-y-3 p-0 overflow-x-hidden w-full">
+          {showCookiesTip && (
+            <div className="mx-6 mt-4 rounded-xl bg-muted/40 px-6 py-5">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col items-start gap-2.5">
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">
+                      {t('history.cookiesTipTitle')}
+                    </p>
+                    <p className="max-w-[540px] text-sm leading-relaxed text-foreground/85">
+                      <Trans
+                        i18nKey="history.cookiesTipDescription"
+                        components={{
+                          strong: <strong className="font-semibold text-foreground" />
+                        }}
+                      />
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="h-8 rounded-lg px-4 text-xs font-medium"
+                    onClick={() => {
+                      if (onOpenCookiesSettings) {
+                        onOpenCookiesSettings()
+                        return
+                      }
+                      onOpenSettings?.()
+                    }}
+                    disabled={!canOpenCookiesSettings}
+                  >
+                    {t('history.cookiesTipCta')}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
           {filteredRecords.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border/60 px-6 py-10 text-center text-muted-foreground">
               <HistoryIcon className="h-10 w-10 opacity-50" />

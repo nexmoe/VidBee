@@ -22,10 +22,11 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui
 import { type LanguageCode, languageList, normalizeLanguageCode } from '@shared/languages'
 import type { OneClickQualityPreset } from '@shared/types'
 import { useAtom, useSetAtom } from 'jotai'
-import { AlertTriangle, CheckCircle2 } from 'lucide-react'
+import { AlertTriangle } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useLocation } from 'react-router'
 import { toast } from 'sonner'
 import { ipcServices } from '../lib/ipc'
 import { logger } from '../lib/logger'
@@ -61,6 +62,7 @@ const buildBrowserCookiesSetting = (browser: string, profile: string) => {
 export function Settings() {
   const { t, i18n: i18nInstance } = useTranslation()
   const { theme, setTheme } = useTheme()
+  const location = useLocation()
   const [settings, _setSettings] = useAtom(settingsAtom)
   const loadSettings = useSetAtom(loadSettingsAtom)
   const saveSetting = useSetAtom(saveSettingAtom)
@@ -143,13 +145,11 @@ export function Settings() {
     }
   }
 
-  const handleOpenCookiesFaq = async () => {
+  const handleOpenCookiesGuide = async () => {
     try {
-      await ipcServices.fs.openExternal(
-        'https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp'
-      )
+      await ipcServices.fs.openExternal('https://docs.vidbee.org/cookies')
     } catch (error) {
-      logger.error('Failed to open cookies FAQ:', error)
+      logger.error('Failed to open cookies guide:', error)
       toast.error(t('settings.openLinkError'))
     }
   }
@@ -176,8 +176,10 @@ export function Settings() {
     browserCookiesProfileValue
   )
   const hasBrowserProfileValue = browserCookiesProfileValue.trim().length > 0
-  const showBrowserProfileCheck = hasBrowserProfileValue && browserProfileValidation.valid
-  const showBrowserProfileWarning = hasBrowserProfileValue && !browserProfileValidation.valid
+  const showBrowserProfileWarning =
+    hasBrowserProfileValue &&
+    !browserProfileValidation.valid &&
+    browserProfileValidation.reason !== 'empty'
   const getBrowserProfileWarningMessage = (reason?: string) => {
     switch (reason) {
       case 'pathNotFound':
@@ -198,6 +200,14 @@ export function Settings() {
       void handleSettingChange('browserForCookies', normalizedBrowserCookiesSetting)
     }
   }, [handleSettingChange, normalizedBrowserCookiesSetting, settings.browserForCookies])
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search)
+    const tab = searchParams.get('tab')
+    if (tab === 'general' || tab === 'advanced' || tab === 'cookies') {
+      setActiveTab(tab)
+    }
+  }, [location.search])
 
   useEffect(() => {
     const browserChanged = lastAutoDetectBrowser.current !== browserForCookiesValue
@@ -283,8 +293,9 @@ export function Settings() {
             setActiveTab(value)
           }}
         >
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="general">{t('settings.general')}</TabsTrigger>
+            <TabsTrigger value="cookies">{t('settings.cookiesTab')}</TabsTrigger>
             <TabsTrigger value="advanced">{t('settings.advanced')}</TabsTrigger>
           </TabsList>
 
@@ -691,10 +702,85 @@ export function Settings() {
             <ItemGroup>
               <Item variant="muted">
                 <ItemContent>
+                  <ItemTitle>{t('settings.configFile')}</ItemTitle>
+                  <ItemDescription>{t('settings.configFileDescription')}</ItemDescription>
+                </ItemContent>
+                <ItemActions>
+                  {(() => {
+                    try {
+                      const configPathValue = settings.configPath ?? ''
+                      return (
+                        <div className="flex gap-2 w-full max-w-md">
+                          <Input value={configPathValue} readOnly className="flex-1" />
+                          <Button onClick={handleSelectConfigFile}>
+                            {t('settings.selectPath')}
+                          </Button>
+                          <Button
+                            variant="secondary"
+                            onClick={() => {
+                              try {
+                                void handleSettingChange('configPath', '')
+                              } catch (error) {
+                                logger.error('[Settings] Error clearing config path:', error)
+                              }
+                            }}
+                            disabled={!configPathValue}
+                          >
+                            {t('settings.clearConfigFile')}
+                          </Button>
+                        </div>
+                      )
+                    } catch (error) {
+                      logger.error('[Settings] Error rendering config file input:', error)
+                      return <div>Error loading config file setting</div>
+                    }
+                  })()}
+                </ItemActions>
+              </Item>
+            </ItemGroup>
+
+            <ItemGroup>
+              <Item variant="muted">
+                <ItemContent>
+                  <ItemTitle>{t('settings.enableAnalytics')}</ItemTitle>
+                  <ItemDescription>{t('settings.enableAnalyticsDescription')}</ItemDescription>
+                </ItemContent>
+                <ItemActions>
+                  {(() => {
+                    try {
+                      const analyticsValue = settings.enableAnalytics ?? true
+                      return (
+                        <Switch
+                          checked={analyticsValue}
+                          onCheckedChange={(value) => {
+                            try {
+                              handleSettingChange('enableAnalytics', value)
+                            } catch (error) {
+                              logger.error('[Settings] Error changing enable analytics:', error)
+                            }
+                          }}
+                        />
+                      )
+                    } catch (error) {
+                      logger.error('[Settings] Error rendering enable analytics switch:', error)
+                      return <div>Error loading enable analytics setting</div>
+                    }
+                  })()}
+                </ItemActions>
+              </Item>
+            </ItemGroup>
+          </TabsContent>
+
+          <TabsContent value="cookies" className="space-y-4 mt-2">
+            <ItemGroup>
+              <Item variant="muted">
+                <ItemContent>
                   <ItemTitle>{t('settings.browserForCookies')}</ItemTitle>
                   <ItemDescription>{t('settings.browserForCookiesDescription')}</ItemDescription>
                   {platform === 'win32' && (
-                    <ItemDescription>{t('settings.browserForCookiesWindowsNote')}</ItemDescription>
+                    <ItemDescription className="text-red-500">
+                      {t('settings.browserForCookiesWindowsNote')}
+                    </ItemDescription>
                   )}
                 </ItemContent>
                 <ItemActions>
@@ -790,12 +876,6 @@ export function Settings() {
                             disabled={browserForCookiesValue === 'none'}
                             className="w-full pr-10"
                           />
-                          {showBrowserProfileCheck ? (
-                            <CheckCircle2
-                              className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-emerald-500"
-                              aria-hidden
-                            />
-                          ) : null}
                           {showBrowserProfileWarning ? (
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -871,81 +951,19 @@ export function Settings() {
                     <li>{t('settings.cookiesHelpFile')}</li>
                   </ul>
                 </ItemContent>
-                <ItemActions>
-                  <Button variant="link" className="px-0" onClick={handleOpenCookiesFaq}>
-                    {t('settings.cookiesHelpFaq')}
-                  </Button>
-                </ItemActions>
               </Item>
 
               <ItemSeparator />
 
               <Item variant="muted">
                 <ItemContent>
-                  <ItemTitle>{t('settings.configFile')}</ItemTitle>
-                  <ItemDescription>{t('settings.configFileDescription')}</ItemDescription>
+                  <ItemTitle>{t('settings.cookiesGuideTitle')}</ItemTitle>
+                  <ItemDescription>{t('settings.cookiesGuideDescription')}</ItemDescription>
                 </ItemContent>
                 <ItemActions>
-                  {(() => {
-                    try {
-                      const configPathValue = settings.configPath ?? ''
-                      return (
-                        <div className="flex gap-2 w-full max-w-md">
-                          <Input value={configPathValue} readOnly className="flex-1" />
-                          <Button onClick={handleSelectConfigFile}>
-                            {t('settings.selectPath')}
-                          </Button>
-                          <Button
-                            variant="secondary"
-                            onClick={() => {
-                              try {
-                                void handleSettingChange('configPath', '')
-                              } catch (error) {
-                                logger.error('[Settings] Error clearing config path:', error)
-                              }
-                            }}
-                            disabled={!configPathValue}
-                          >
-                            {t('settings.clearConfigFile')}
-                          </Button>
-                        </div>
-                      )
-                    } catch (error) {
-                      logger.error('[Settings] Error rendering config file input:', error)
-                      return <div>Error loading config file setting</div>
-                    }
-                  })()}
-                </ItemActions>
-              </Item>
-            </ItemGroup>
-
-            <ItemGroup>
-              <Item variant="muted">
-                <ItemContent>
-                  <ItemTitle>{t('settings.enableAnalytics')}</ItemTitle>
-                  <ItemDescription>{t('settings.enableAnalyticsDescription')}</ItemDescription>
-                </ItemContent>
-                <ItemActions>
-                  {(() => {
-                    try {
-                      const analyticsValue = settings.enableAnalytics ?? true
-                      return (
-                        <Switch
-                          checked={analyticsValue}
-                          onCheckedChange={(value) => {
-                            try {
-                              handleSettingChange('enableAnalytics', value)
-                            } catch (error) {
-                              logger.error('[Settings] Error changing enable analytics:', error)
-                            }
-                          }}
-                        />
-                      )
-                    } catch (error) {
-                      logger.error('[Settings] Error rendering enable analytics switch:', error)
-                      return <div>Error loading enable analytics setting</div>
-                    }
-                  })()}
+                  <Button variant="link" className="px-0" onClick={handleOpenCookiesGuide}>
+                    {t('settings.cookiesGuideLink')}
+                  </Button>
                 </ItemActions>
               </Item>
             </ItemGroup>

@@ -273,6 +273,9 @@
     },
     "noHistory": "Aún no hay historial de descargas",
     "noHistoryDescription": "Tus descargas completadas aparecerán aquí",
+    "cookiesTipTitle": "Mejora el éxito de descarga con cookies",
+    "cookiesTipDescription": "Configura cookies para aumentar la tasa de éxito del <strong>70%</strong> al <strong>99%</strong>.",
+    "cookiesTipCta": "Configurar cookies",
     "openDownloadFolder": "Abrir Carpeta de Descargas",
     "openFile": "Abrir Archivo",
     "openFileLocation": "Abrir Ubicación del Archivo",
@@ -378,6 +381,7 @@
   "settings": {
     "aboutTab": "Acerca de",
     "advanced": "Avanzado",
+    "cookiesTab": "Cookies",
     "app": "Configuración de la Aplicación",
     "audio": "Preferencias de Audio",
     "browserForCookies": "Seleccionar navegador para usar cookies",
@@ -397,7 +401,9 @@
     "cookiesHelpTitle": "Usar cookies",
     "cookiesHelpBrowser": "Elige tu navegador arriba para reutilizar automáticamente su sesión iniciada.",
     "cookiesHelpFile": "Exporta un archivo de cookies Netscape (consulta las preguntas frecuentes de yt-dlp) y selecciónalo aquí cuando sea necesario.",
-    "cookiesHelpFaq": "Abrir preguntas frecuentes de cookies de yt-dlp",
+    "cookiesGuideTitle": "¿Necesitas una guía?",
+    "cookiesGuideDescription": "Consulta una guía paso a paso para usar cookies en VidBee.",
+    "cookiesGuideLink": "Abrir guía de cookies",
     "openLinkError": "Error al abrir el enlace",
     "browserOptions": {
       "brave": "Brave",
