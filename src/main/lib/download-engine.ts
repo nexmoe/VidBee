@@ -523,7 +523,7 @@ class DownloadEngine extends EventEmitter {
       this.normalizeDownloadValue(options.endTime),
       this.normalizeDownloadValue(options.customDownloadPath),
       this.normalizeDownloadValue(options.customFilenameTemplate),
-      this.normalizeDownloadValue(options.origin),
+      this.normalizeDownloadValue(options.origin ?? 'manual'),
       this.normalizeDownloadValue(options.subscriptionId)
     ].join('|')
   }
