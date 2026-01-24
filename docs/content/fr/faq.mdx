@@ -1,0 +1,38 @@
+---
+title: FAQ
+description: Questions courantes et dépannage pour VidBee
+---
+
+## Que faire si un téléchargement échoue ou affiche une erreur ?
+
+- Vérifiez que le lien est valide et s’ouvre dans votre navigateur.
+- Mettez VidBee à jour vers la dernière version et réessayez.
+- Si le contenu nécessite une connexion ou une vérification d’âge, [configurez les cookies](/cookies).
+
+![Message d’erreur demandant la connexion](/cookies/cookies-error-sign-in.png)
+
+## Pourquoi le même lien fonctionne-t-il parfois et échoue-t-il parfois ?
+
+Certains sites modifient souvent leur structure ou limitent le débit. Étapes suggérées :
+
+- Assurez-vous que VidBee est à jour.
+- Réduisez le nombre de téléchargements simultanés.
+- [Utilisez les cookies pour réutiliser votre session connectée si nécessaire.](/cookies)
+
+## Quels sites sont pris en charge ?
+
+VidBee utilise le système d’extracteurs yt-dlp et prend en charge de nombreux sites. Essayez le téléchargement ; s’il échoue, envoyez un feedback avec le lien et les détails de l’erreur.
+
+## Pourquoi la vitesse de téléchargement est-elle lente ?
+
+- Vérifiez votre réseau et vos réglages de proxy.
+- Évitez de lancer trop de tâches en même temps.
+- Certains sites limitent la bande passante de leur côté.
+
+## macOS indique “fichier endommagé”
+
+Supprimez l’attribut de quarantaine et réessayez :
+
+```bash
+xattr -rd com.apple.quarantine /Applications/VidBee.app/
+```

@@ -1,0 +1,149 @@
+---
+title: Протокол vidbee://
+description: Быстрая загрузка через URL-протокол vidbee://
+---
+
+VidBee регистрирует собственный URL-протокол (`vidbee://`), который позволяет запускать загрузки прямо из браузеров, расширений или userscript-ов.
+
+## Базовое использование
+
+Протокол `vidbee://` может открыть VidBee и автоматически начать загрузку видео.
+
+### Формат протокола
+
+```
+vidbee://download?url=<zakodirovannyi-url-video>
+```
+
+**Параметры:**
+- `url` (обязательный): URL видео для загрузки, должен быть URL-кодирован
+
+### Пример
+
+Чтобы скачать видео с YouTube:
+
+```html
+<a href="vidbee://download?url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DdQw4w9WgXcQ">
+  Скачать через VidBee
+</a>
+```
+
+Или в JavaScript:
+
+```javascript
+const videoUrl = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+const vidbeeUrl = `vidbee://download?url=${encodeURIComponent(videoUrl)}`
+window.location.href = vidbeeUrl
+```
+
+## Открыть VidBee
+
+Чтобы просто открыть приложение без начала загрузки:
+
+```
+vidbee://
+```
+
+## Сценарии использования
+
+### Расширение браузера
+
+Расширение VidBee использует этот протокол, чтобы отправить URL текущей вкладки в настольное приложение:
+
+```javascript
+const currentUrl = window.location.href
+const deepLink = `vidbee://download?url=${encodeURIComponent(currentUrl)}`
+window.location.href = deepLink
+```
+
+### Интеграция userscript
+
+Userscript VidBee добавляет кнопки быстрой загрузки на поддерживаемые сайты:
+
+```javascript
+// Один клик запускает загрузку через протокол
+const vidbeeUrl = `vidbee://download?url=${encodeURIComponent(videoUrl)}`
+window.location.href = vidbeeUrl
+```
+
+### Веб-страницы
+
+Можно добавить прямые ссылки для загрузки на свои страницы:
+
+```html
+<!-- Простая ссылка -->
+<a href="vidbee://download?url=https%3A%2F%2Fexample.com%2Fvideo">
+  Скачать через VidBee
+</a>
+
+<!-- Кнопка с JavaScript -->
+<button onclick="openInVidBee('https://example.com/video')">
+  Быстрая загрузка
+</button>
+
+<script>
+function openInVidBee(url) {
+  const vidbeeUrl = `vidbee://download?url=${encodeURIComponent(url)}`
+  window.location.href = vidbeeUrl
+}
+</script>
+```
+
+## Поддержка плейлистов
+
+Чтобы скачать весь плейлист:
+
+```
+vidbee://download?url=<zakodirovannyi-url-playlista>&type=playlist
+```
+
+**Параметры:**
+- `url` (обязательный): URL плейлиста, должен быть URL-кодирован
+- `type`: установите `playlist`, чтобы скачать все видео в плейлисте
+
+### Пример
+
+```javascript
+const playlistUrl = 'https://www.youtube.com/playlist?list=PLrAXtmErZgOeiKm4sgNOknGvNjby9efdf'
+const vidbeeUrl = `vidbee://download?url=${encodeURIComponent(playlistUrl)}&type=playlist`
+window.location.href = vidbeeUrl
+```
+
+## Как это работает
+
+1. **Регистрация протокола**: VidBee регистрируется как обработчик `vidbee://` при установке
+2. **Разбор URL**: когда нажимают ссылку `vidbee://download?url=...`, ОС запускает VidBee
+3. **Очередь**: VidBee извлекает URL видео и добавляет его в очередь загрузок
+4. **Авто-старт**: загрузка начинается автоматически, если это настроено в приложении
+
+## Совместимость с браузерами
+
+Протокол `vidbee://` работает во всех основных браузерах:
+- Chrome/Edge/Brave
+- Firefox
+- Safari
+
+## Заметки по безопасности
+
+- Только URL, начинающиеся с `vidbee://`, запускают приложение
+- Приложение проверяет формат URL перед обработкой
+- Неверные URL игнорируются с предупреждением в логах
+
+## Устранение проблем
+
+### Протокол не работает
+
+Если ссылки `vidbee://` не открывают VidBee:
+
+1. **Проверьте установку**: убедитесь, что VidBee установлен
+2. **Переустановите**: попробуйте переустановить VidBee, чтобы заново зарегистрировать протокол
+3. **Разрешения ОС**: на macOS проверьте Системные настройки > Конфиденциальность и безопасность
+4. **Настройки браузера**: некоторые браузеры требуют подтверждение при первом использовании
+
+### Приложение открывается, но загрузка не начинается
+
+Если VidBee открывается, но загрузка не стартует:
+
+1. **Проверьте кодирование**: убедитесь, что URL корректно закодирован через `encodeURIComponent()`
+2. **Проверьте логи**: откройте приложение и посмотрите консоль разработчика
+3. **Поддерживаемые сайты**: убедитесь, что URL ведет на [поддерживаемый сайт](https://vidbee.org/supported-sites/)

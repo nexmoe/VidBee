@@ -1,7 +1,7 @@
 import { defineI18n } from 'fumadocs-core/i18n';
 
 export const i18n = defineI18n({
-  languages: ['en', 'zh'],
+  languages: ['en', 'zh', 'fr', 'ru'],
   defaultLanguage: 'en',
   // Hide locale prefix for default language (en) so English content appears at root
   hideLocale: 'default-locale',
