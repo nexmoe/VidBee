@@ -314,6 +314,7 @@
   "notifications": {
     "copyFailed": "複製到剪貼簿失敗",
     "downloadCompleted": "下載完成",
+    "downloadAlreadyQueued": "此下載已在進行中",
     "downloadFailed": "下載失敗",
     "historyCleared": "歷史紀錄已清除",
     "historyClearFailed": "清除歷史紀錄失敗",

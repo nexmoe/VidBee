@@ -314,6 +314,7 @@
   "notifications": {
     "copyFailed": "Error al copiar al portapapeles",
     "downloadCompleted": "Descarga completada",
+    "downloadAlreadyQueued": "Esta descarga ya está en curso",
     "downloadFailed": "Error en la descarga",
     "historyCleared": "Historial borrado",
     "historyClearFailed": "No se pudo borrar el historial",

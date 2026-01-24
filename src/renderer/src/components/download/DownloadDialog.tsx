@@ -294,14 +294,17 @@ export function DownloadDialog({
           ? buildVideoFormatPreference(settings)
           : buildAudioFormatPreference(settings)
 
-      addDownload(downloadItem)
-
       try {
-        await ipcServices.download.startDownload(id, {
+        const started = await ipcServices.download.startDownload(id, {
           url: trimmedUrl,
           type: settings.oneClickDownloadType,
           format
         })
+        if (!started) {
+          toast.info(t('notifications.downloadAlreadyQueued'))
+          return
+        }
+        addDownload(downloadItem)
 
         toast.success(t('download.oneClickDownloadStarted'))
         if (options?.clearInput) {
@@ -682,10 +685,13 @@ export function DownloadDialog({
       customDownloadPath: singleVideoState.customDownloadPath.trim() || undefined
     }
 
-    addDownload(downloadItem)
-
     try {
-      await ipcServices.download.startDownload(id, options)
+      const started = await ipcServices.download.startDownload(id, options)
+      if (!started) {
+        toast.info(t('notifications.downloadAlreadyQueued'))
+        return
+      }
+      addDownload(downloadItem)
 
       setOpen(false) // Close dialog after download starts
     } catch (error) {

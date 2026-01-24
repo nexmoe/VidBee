@@ -9,6 +9,7 @@ import {
   addHistoryRecordAtom,
   downloadRecordsAtom,
   removeDownloadAtom,
+  removeHistoryRecordAtom,
   updateDownloadAtom
 } from '../store/downloads'
 
@@ -20,6 +21,7 @@ export function useDownloadEvents() {
   const addDownload = useSetAtom(addDownloadAtom)
   const addHistoryRecord = useSetAtom(addHistoryRecordAtom)
   const removeDownload = useSetAtom(removeDownloadAtom)
+  const removeHistoryRecord = useSetAtom(removeHistoryRecordAtom)
   const { t } = useTranslation()
   const store = useStore()
 
@@ -136,8 +138,8 @@ export function useDownloadEvents() {
       if (!id) {
         return
       }
-      updateDownload({ id, changes: { status: 'cancelled', completedAt: Date.now() } })
-      void syncHistoryItem(id)
+      removeDownload(id)
+      removeHistoryRecord(id)
     }
 
     const handleQueued = (rawItem: unknown) => {
@@ -179,5 +181,5 @@ export function useDownloadEvents() {
       ipcEvents.removeListener('download:error', errorSubscription)
       ipcEvents.removeListener('download:cancelled', cancelledSubscription)
     }
-  }, [addDownload, store, syncHistoryItem, t, updateDownload])
+  }, [addDownload, removeDownload, removeHistoryRecord, store, syncHistoryItem, t, updateDownload])
 }

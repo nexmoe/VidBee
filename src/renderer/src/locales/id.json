@@ -314,6 +314,7 @@
   "notifications": {
     "copyFailed": "Gagal menyalin ke clipboard",
     "downloadCompleted": "Unduhan selesai",
+    "downloadAlreadyQueued": "Unduhan ini sedang berlangsung",
     "downloadFailed": "Unduhan gagal",
     "historyCleared": "Riwayat dihapus",
     "historyClearFailed": "Gagal menghapus riwayat",

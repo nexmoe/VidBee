@@ -314,6 +314,7 @@
   "notifications": {
     "copyFailed": "Failed to copy to clipboard",
     "downloadCompleted": "Download completed",
+    "downloadAlreadyQueued": "This download is already in progress",
     "downloadFailed": "Download failed",
     "historyCleared": "History cleared",
     "historyClearFailed": "Failed to clear history",

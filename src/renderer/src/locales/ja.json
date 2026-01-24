@@ -314,6 +314,7 @@
   "notifications": {
     "copyFailed": "クリップボードへのコピーに失敗",
     "downloadCompleted": "ダウンロード完了",
+    "downloadAlreadyQueued": "このダウンロードはすでに進行中です",
     "downloadFailed": "ダウンロードに失敗",
     "historyCleared": "履歴をクリアしました",
     "historyClearFailed": "履歴のクリアに失敗しました",

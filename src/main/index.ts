@@ -60,6 +60,28 @@ const pendingDeepLinkUrls: DeepLinkData[] = []
 const pendingOneClickDownloads: DeepLinkData[] = []
 let isRendererReady = false
 
+const getActiveMainWindow = (): BrowserWindow | null => {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    return null
+  }
+  if (mainWindow.webContents.isDestroyed()) {
+    return null
+  }
+  return mainWindow
+}
+
+const sendToRenderer = (channel: string, ...args: unknown[]): void => {
+  const window = getActiveMainWindow()
+  if (!window) {
+    return
+  }
+  try {
+    window.webContents.send(channel, ...args)
+  } catch (error) {
+    log.warn('Failed to send message to renderer:', channel, error)
+  }
+}
+
 const parseDownloadDeepLink = (rawUrl: string): DeepLinkData | null => {
   try {
     const parsed = new URL(rawUrl)
@@ -93,29 +115,30 @@ const parseDownloadDeepLink = (rawUrl: string): DeepLinkData | null => {
 }
 
 const deliverDeepLink = (data: DeepLinkData): void => {
-  if (!mainWindow || !isRendererReady) {
+  const window = getActiveMainWindow()
+  if (!window || !isRendererReady) {
     pendingDeepLinkUrls.push(data)
     return
   }
 
-  if (mainWindow.isMinimized()) {
-    mainWindow.restore()
+  if (window.isMinimized()) {
+    window.restore()
   }
-  if (!mainWindow.isVisible()) {
-    mainWindow.show()
+  if (!window.isVisible()) {
+    window.show()
   }
-  mainWindow.focus()
-  mainWindow.webContents.send('download:deeplink', data)
+  window.focus()
+  sendToRenderer('download:deeplink', data)
 }
 
 const flushPendingDeepLinks = (): void => {
-  if (!mainWindow || !isRendererReady || pendingDeepLinkUrls.length === 0) {
+  if (!getActiveMainWindow() || !isRendererReady || pendingDeepLinkUrls.length === 0) {
     return
   }
 
   const pending = pendingDeepLinkUrls.splice(0, pendingDeepLinkUrls.length)
   for (const data of pending) {
-    mainWindow.webContents.send('download:deeplink', data)
+    sendToRenderer('download:deeplink', data)
   }
 }
 
@@ -141,7 +164,7 @@ const handleDeepLinkArgv = (argv: string[]): void => {
 }
 
 subscriptionManager.on('subscriptions:updated', (subscriptions) => {
-  mainWindow?.webContents.send('subscriptions:updated', subscriptions)
+  sendToRenderer('subscriptions:updated', subscriptions)
 })
 
 export function createWindow(): void {
@@ -186,6 +209,11 @@ export function createWindow(): void {
     }
   })
 
+  mainWindow.on('closed', () => {
+    mainWindow = null
+    isRendererReady = false
+  })
+
   mainWindow.on('ready-to-show', () => {
     if (shouldStartHidden) {
       return
@@ -207,7 +235,7 @@ export function createWindow(): void {
   }
 
   mainWindow.webContents.on('did-finish-load', () => {
-    mainWindow?.webContents.send('subscriptions:updated', subscriptionManager.getAll())
+    sendToRenderer('subscriptions:updated', subscriptionManager.getAll())
     isRendererReady = true
     flushPendingDeepLinks()
   })
@@ -256,35 +284,35 @@ function setupRendererErrorHandling(): void {
 
 function setupDownloadEvents(): void {
   downloadEngine.on('download-queued', (item: unknown) => {
-    mainWindow?.webContents.send('download:queued', item)
+    sendToRenderer('download:queued', item)
   })
 
   downloadEngine.on('download-updated', (id: string, updates: unknown) => {
-    mainWindow?.webContents.send('download:updated', { id, updates })
+    sendToRenderer('download:updated', { id, updates })
   })
 
   downloadEngine.on('download-started', (id: string) => {
-    mainWindow?.webContents.send('download:started', id)
+    sendToRenderer('download:started', id)
   })
 
   downloadEngine.on('download-progress', (id: string, progress: unknown) => {
-    mainWindow?.webContents.send('download:progress', { id, progress })
+    sendToRenderer('download:progress', { id, progress })
   })
 
   downloadEngine.on('download-log', (id: string, logText: string) => {
-    mainWindow?.webContents.send('download:log', { id, log: logText })
+    sendToRenderer('download:log', { id, log: logText })
   })
 
   downloadEngine.on('download-completed', (id: string) => {
-    mainWindow?.webContents.send('download:completed', id)
+    sendToRenderer('download:completed', id)
   })
 
   downloadEngine.on('download-error', (id: string, error: Error) => {
-    mainWindow?.webContents.send('download:error', { id, error: error.message })
+    sendToRenderer('download:error', { id, error: error.message })
   })
 
   downloadEngine.on('download-cancelled', (id: string) => {
-    mainWindow?.webContents.send('download:cancelled', id)
+    sendToRenderer('download:cancelled', id)
   })
 }
 
@@ -332,12 +360,16 @@ const startOneClickDownload = async (data: DeepLinkData): Promise<void> => {
     }
 
     const downloadId = createDownloadId()
-    downloadEngine.startDownload(downloadId, {
+    const started = downloadEngine.startDownload(downloadId, {
       url: data.url,
       type: downloadType,
       format
     })
-    log.info('One-click download queued:', { id: downloadId, url: data.url })
+    if (started) {
+      log.info('One-click download queued:', { id: downloadId, url: data.url })
+    } else {
+      log.info('One-click download already queued:', { id: downloadId, url: data.url })
+    }
   } catch (error) {
     log.error('Failed to start one-click download:', error)
   }
@@ -414,7 +446,7 @@ function initAutoUpdater(): void {
 
     autoUpdater.on('update-available', (info) => {
       log.info('Update available:', info.version)
-      mainWindow?.webContents.send('update:available', info)
+      sendToRenderer('update:available', info)
 
       // If auto-update is enabled, the update will be downloaded automatically
       // because autoDownload is set to true
@@ -425,22 +457,22 @@ function initAutoUpdater(): void {
 
     autoUpdater.on('update-not-available', (info) => {
       log.info('Update not available:', info.version)
-      mainWindow?.webContents.send('update:not-available', info)
+      sendToRenderer('update:not-available', info)
     })
 
     autoUpdater.on('error', (err) => {
       log.error('Update error:', err)
-      mainWindow?.webContents.send('update:error', err.message)
+      sendToRenderer('update:error', err.message)
     })
 
     autoUpdater.on('download-progress', (progressObj) => {
       log.info('Download progress:', progressObj.percent)
-      mainWindow?.webContents.send('update:download-progress', progressObj)
+      sendToRenderer('update:download-progress', progressObj)
     })
 
     autoUpdater.on('update-downloaded', (info) => {
       log.info('Update downloaded:', info.version)
-      mainWindow?.webContents.send('update:downloaded', info)
+      sendToRenderer('update:downloaded', info)
     })
 
     log.info('Auto-updater initialized successfully')

@@ -495,7 +495,7 @@ export class SubscriptionScheduler extends EventEmitter {
     const tags = Array.from(new Set([subscription.platform, ...subscription.tags]))
 
     try {
-      downloadEngine.startDownload(downloadId, {
+      const started = downloadEngine.startDownload(downloadId, {
         url,
         type: downloadType,
         format: formatPreference,
@@ -505,6 +505,10 @@ export class SubscriptionScheduler extends EventEmitter {
         origin: 'subscription',
         subscriptionId
       })
+      if (!started) {
+        logger.info('Subscription download already queued', { subscriptionId, itemId, url })
+        return
+      }
 
       this.downloads.set(downloadId, {
         subscriptionId,
