@@ -1,4 +1,12 @@
 import { Button } from '@renderer/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@renderer/components/ui/dialog'
 import { Input } from '@renderer/components/ui/input'
 import {
   Item,
@@ -20,16 +28,18 @@ import { Switch } from '@renderer/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@renderer/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { type LanguageCode, languageList, normalizeLanguageCode } from '@shared/languages'
-import type { OneClickQualityPreset } from '@shared/types'
+import type { CookiesSource, OneClickQualityPreset, SyncedCookiesSnapshot } from '@shared/types'
+import dayjs from 'dayjs'
 import { useAtom, useSetAtom } from 'jotai'
-import { AlertTriangle } from 'lucide-react'
+import { AlertTriangle, FileUp, Gem, Lock, RefreshCw, ShieldCheck, Trash2 } from 'lucide-react'
 import { useTheme } from 'next-themes'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation } from 'react-router'
 import { toast } from 'sonner'
 import { ipcServices } from '../lib/ipc'
 import { logger } from '../lib/logger'
+import { cn } from '../lib/utils'
 import { loadSettingsAtom, saveSettingAtom, settingsAtom } from '../store/settings'
 
 const normalizeProfileInput = (value: string) => value.trim().replace(/^['"]|['"]$/g, '')
@@ -59,6 +69,33 @@ const buildBrowserCookiesSetting = (browser: string, profile: string) => {
   return trimmedProfile ? `${trimmedBrowser}:${trimmedProfile}` : trimmedBrowser
 }
 
+const formatTimestamp = (value?: number) => {
+  if (!value) return '-'
+  return dayjs(value).format('YYYY-MM-DD HH:mm')
+}
+
+const extractMainDomain = (domain: string): string => {
+  if (!domain) return ''
+
+  // Remove leading dot
+  domain = domain.replace(/^\./, '')
+
+  // Split by dots
+  const parts = domain.split('.')
+
+  // Handle IP addresses
+  if (/^\d+$/.test(parts[parts.length - 1])) {
+    return domain
+  }
+
+  // Return the last two parts (e.g., example.com from www.example.com)
+  if (parts.length > 2) {
+    return parts.slice(-2).join('.')
+  }
+
+  return domain
+}
+
 export function Settings() {
   const { t, i18n: i18nInstance } = useTranslation()
   const { theme, setTheme } = useTheme()
@@ -73,6 +110,13 @@ export function Settings() {
     reason?: string
   }>({ valid: false })
   const lastAutoDetectBrowser = useRef<string | null>(null)
+
+  // Cookie management state
+  const [cookiesSnapshot, setCookiesSnapshot] = useState<SyncedCookiesSnapshot | null>(null)
+  const [cookiesLoading, setCookiesLoading] = useState(false)
+  const [cookiesImporting, setCookiesImporting] = useState(false)
+  const [cookiesError, setCookiesError] = useState<string | null>(null)
+  const [showClearConfirm, setShowClearConfirm] = useState(false)
 
   useEffect(() => {
     try {
@@ -133,23 +177,20 @@ export function Settings() {
     }
   }
 
-  const handleSelectCookiesFile = async () => {
-    try {
-      const path = await ipcServices.fs.selectFile()
-      if (path) {
-        await handleSettingChange('cookiesPath', path)
-      }
-    } catch (error) {
-      logger.error('Failed to select cookies file:', error)
-      toast.error(t('settings.fileSelectError'))
-    }
-  }
-
   const handleOpenCookiesGuide = async () => {
     try {
       await ipcServices.fs.openExternal('https://docs.vidbee.org/cookies')
     } catch (error) {
       logger.error('Failed to open cookies guide:', error)
+      toast.error(t('settings.openLinkError'))
+    }
+  }
+
+  const handleOpenExtensionGuide = async () => {
+    try {
+      await ipcServices.fs.openExternal('https://docs.vidbee.org/extension')
+    } catch (error) {
+      logger.error('Failed to open extension guide:', error)
       toast.error(t('settings.openLinkError'))
     }
   }
@@ -164,6 +205,59 @@ export function Settings() {
     await handleSettingChange('theme', value)
   }
 
+  // Cookie management functions
+  const loadCookiesEntries = useCallback(async () => {
+    setCookiesLoading(true)
+    setCookiesError(null)
+    try {
+      const list = await ipcServices.syncedCookies.list()
+      setCookiesSnapshot(list[0] ?? null)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : t('cookiesPage.error')
+      setCookiesError(message)
+    } finally {
+      setCookiesLoading(false)
+    }
+  }, [t])
+
+  const handleImportCookies = useCallback(async () => {
+    setCookiesImporting(true)
+    try {
+      const result = await ipcServices.syncedCookies.import()
+      if (result) {
+        toast.success(t('cookiesPage.import.success'), {
+          description: t('cookiesPage.import.successDescription', { count: result.cookieCount })
+        })
+        setCookiesSnapshot(result)
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : t('cookiesPage.import.error')
+      toast.error(t('cookiesPage.import.error'), {
+        description: message
+      })
+    } finally {
+      setCookiesImporting(false)
+    }
+  }, [t])
+
+  const handleClearCookies = useCallback(() => {
+    setShowClearConfirm(true)
+  }, [])
+
+  const handleConfirmClear = useCallback(async () => {
+    try {
+      await ipcServices.syncedCookies.clear()
+      toast.success(t('cookiesPage.clear.success'))
+      setCookiesSnapshot(null)
+      setShowClearConfirm(false)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : t('cookiesPage.clear.error')
+      toast.error(t('cookiesPage.clear.error'), {
+        description: message
+      })
+    }
+  }, [t])
+
   const languageOptions = languageList
   const activeLanguageCode = normalizeLanguageCode(i18nInstance.language)
   const currentLanguage =
@@ -171,12 +265,14 @@ export function Settings() {
   const parsedBrowserCookies = parseBrowserCookiesSetting(settings.browserForCookies)
   const browserForCookiesValue = parsedBrowserCookies.browser
   const browserCookiesProfileValue = parsedBrowserCookies.profile
+  const cookiesSource = settings.cookiesSource ?? 'browser'
   const normalizedBrowserCookiesSetting = buildBrowserCookiesSetting(
     browserForCookiesValue,
     browserCookiesProfileValue
   )
   const hasBrowserProfileValue = browserCookiesProfileValue.trim().length > 0
   const showBrowserProfileWarning =
+    cookiesSource === 'browser' &&
     hasBrowserProfileValue &&
     !browserProfileValidation.valid &&
     browserProfileValidation.reason !== 'empty'
@@ -209,7 +305,19 @@ export function Settings() {
     }
   }, [location.search])
 
+  // Load cookies when switching to cookies tab
   useEffect(() => {
+    if (activeTab === 'cookies' && cookiesSource === 'extension') {
+      void loadCookiesEntries()
+    }
+  }, [activeTab, cookiesSource, loadCookiesEntries])
+
+  useEffect(() => {
+    if (cookiesSource !== 'browser') {
+      lastAutoDetectBrowser.current = browserForCookiesValue
+      return
+    }
+
     const browserChanged = lastAutoDetectBrowser.current !== browserForCookiesValue
     const shouldAutoDetect =
       browserForCookiesValue !== 'none' && (browserChanged || !browserCookiesProfileValue)
@@ -236,9 +344,14 @@ export function Settings() {
     }
 
     void detectProfilePath()
-  }, [browserForCookiesValue, browserCookiesProfileValue, handleSettingChange])
+  }, [browserForCookiesValue, browserCookiesProfileValue, cookiesSource, handleSettingChange])
 
   useEffect(() => {
+    if (cookiesSource !== 'browser') {
+      setBrowserProfileValidation({ valid: false, reason: 'empty' })
+      return
+    }
+
     if (browserForCookiesValue === 'none' || !hasBrowserProfileValue) {
       setBrowserProfileValidation({ valid: false, reason: 'empty' })
       return
@@ -268,7 +381,7 @@ export function Settings() {
     return () => {
       isActive = false
     }
-  }, [browserForCookiesValue, browserCookiesProfileValue, hasBrowserProfileValue])
+  }, [browserForCookiesValue, browserCookiesProfileValue, cookiesSource, hasBrowserProfileValue])
 
   const handleLanguageChange = async (value: LanguageCode) => {
     if (activeLanguageCode === value) {
@@ -278,6 +391,21 @@ export function Settings() {
     await saveSetting({ key: 'language', value })
     await i18nInstance.changeLanguage(value)
   }
+
+  const cookiesTotalSites = useMemo(() => {
+    if (!cookiesSnapshot) return 0
+    const domains = new Set<string>()
+    for (const cookie of cookiesSnapshot.cookies) {
+      const domain = extractMainDomain(cookie.domain ?? '')
+      if (domain) {
+        domains.add(domain)
+      }
+    }
+    return domains.size
+  }, [cookiesSnapshot])
+
+  const cookiesIsEmpty =
+    !cookiesLoading && !cookiesError && (!cookiesSnapshot || cookiesTotalSites === 0)
 
   return (
     <div className="h-full bg-background">
@@ -772,204 +900,355 @@ export function Settings() {
           </TabsContent>
 
           <TabsContent value="cookies" className="space-y-4 mt-2">
-            <ItemGroup>
-              <Item variant="muted">
-                <ItemContent>
-                  <ItemTitle>{t('settings.browserForCookies')}</ItemTitle>
-                  <ItemDescription>{t('settings.browserForCookiesDescription')}</ItemDescription>
-                  {platform === 'win32' && (
-                    <ItemDescription className="text-red-500">
-                      {t('settings.browserForCookiesWindowsNote')}
-                    </ItemDescription>
-                  )}
-                </ItemContent>
-                <ItemActions>
-                  {(() => {
-                    try {
-                      return (
-                        <Select
-                          value={browserForCookiesValue}
-                          onValueChange={(value) => {
-                            try {
-                              const nextValue = buildBrowserCookiesSetting(value, '')
-                              handleSettingChange('browserForCookies', nextValue)
-                            } catch (error) {
-                              logger.error('[Settings] Error changing browser for cookies:', error)
-                            }
-                          }}
-                        >
-                          <SelectTrigger className="w-32">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">{t('settings.none')}</SelectItem>
-                            <SelectItem value="chrome">
-                              {t('settings.browserOptions.chrome')}
-                            </SelectItem>
-                            <SelectItem value="chromium">
-                              {t('settings.browserOptions.chromium')}
-                            </SelectItem>
-                            <SelectItem value="firefox">
-                              {t('settings.browserOptions.firefox')}
-                            </SelectItem>
-                            <SelectItem value="edge">
-                              {t('settings.browserOptions.edge')}
-                            </SelectItem>
-                            <SelectItem value="safari">
-                              {t('settings.browserOptions.safari')}
-                            </SelectItem>
-                            <SelectItem value="brave">
-                              {t('settings.browserOptions.brave')}
-                            </SelectItem>
-                            <SelectItem value="opera">
-                              {t('settings.browserOptions.opera')}
-                            </SelectItem>
-                            <SelectItem value="vivaldi">
-                              {t('settings.browserOptions.vivaldi')}
-                            </SelectItem>
-                            <SelectItem value="whale">
-                              {t('settings.browserOptions.whale')}
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      )
-                    } catch (error) {
-                      logger.error('[Settings] Error rendering browser for cookies select:', error)
-                      return <div>Error loading browser for cookies setting</div>
-                    }
-                  })()}
-                </ItemActions>
-              </Item>
+            {/* User Value Section */}
+            <div className="rounded-lg bg-muted/40 p-4 border border-border/50">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/80 mb-3">
+                {t('cookiesPage.valueTitle').replace(/[:：]\s*$/, '')}
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {[
+                  {
+                    key: 'private',
+                    text: t('cookiesPage.valueList.privateVideos'),
+                    desc: t('cookiesPage.valueList.privateVideosDescription'),
+                    icon: <Lock className="h-4 w-4 text-muted-foreground/60" />
+                  },
+                  {
+                    key: 'success',
+                    text: t('cookiesPage.valueList.higherSuccess'),
+                    desc: t('cookiesPage.valueList.higherSuccessDescription'),
+                    icon: <ShieldCheck className="h-4 w-4 text-muted-foreground/60" />
+                  },
+                  {
+                    key: 'unlock',
+                    text: t('cookiesPage.valueList.unlockQuality'),
+                    desc: t('cookiesPage.valueList.unlockQualityDescription'),
+                    icon: <Gem className="h-4 w-4 text-muted-foreground/60" />
+                  }
+                ].map((item) => (
+                  <div key={item.key} className="space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      {item.icon}
+                      <h4 className="font-semibold text-xs uppercase tracking-tight text-foreground/90">
+                        {item.text}
+                      </h4>
+                    </div>
+                    <p className="text-[11px] leading-relaxed text-muted-foreground/80">
+                      {item.desc}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
 
-              <ItemSeparator />
+            <div className="space-y-1">
+              <h3 className="text-sm font-semibold">{t('settings.cookiesUsage')}</h3>
+              <p className="text-sm text-muted-foreground">
+                {t('settings.cookiesUsageDescription')}
+              </p>
+            </div>
 
-              <Item variant="muted">
-                <ItemContent className="basis-full">
-                  <ItemTitle>{t('settings.browserForCookiesProfile')}</ItemTitle>
-                  <ItemDescription>
-                    {t('settings.browserForCookiesProfileDescription')}
-                  </ItemDescription>
-                </ItemContent>
-                <ItemActions className="basis-full">
-                  {(() => {
-                    try {
-                      return (
-                        <div className="relative w-full">
-                          <Input
-                            placeholder={t('settings.browserForCookiesProfilePlaceholder')}
-                            value={browserCookiesProfileValue}
-                            onChange={(event) => {
-                              try {
-                                const newProfileValue = event.target.value
-                                const nextValue = buildBrowserCookiesSetting(
-                                  browserForCookiesValue,
-                                  newProfileValue
-                                )
-                                handleSettingChange('browserForCookies', nextValue)
-                              } catch (error) {
-                                logger.error(
-                                  '[Settings] Error changing browser cookies profile:',
-                                  error
-                                )
-                              }
-                            }}
-                            disabled={browserForCookiesValue === 'none'}
-                            className="w-full pr-10"
-                          />
-                          {showBrowserProfileWarning ? (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <span className="absolute right-3 top-1/2 inline-flex h-4 w-4 -translate-y-1/2 items-center justify-center text-amber-500">
-                                  <AlertTriangle className="h-4 w-4" aria-hidden />
-                                </span>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                {getBrowserProfileWarningMessage(browserProfileValidation.reason)}
-                              </TooltipContent>
-                            </Tooltip>
-                          ) : null}
-                        </div>
-                      )
-                    } catch (error) {
-                      logger.error(
-                        '[Settings] Error rendering browser cookies profile input:',
-                        error
-                      )
-                      return <div>Error loading browser cookies profile setting</div>
-                    }
-                  })()}
-                </ItemActions>
-              </Item>
-            </ItemGroup>
+            <Tabs
+              value={cookiesSource}
+              onValueChange={(value) => {
+                void handleSettingChange('cookiesSource', value as CookiesSource)
+              }}
+              className="space-y-4"
+            >
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="off">{t('settings.cookiesUsageOff')}</TabsTrigger>
+                <TabsTrigger value="browser">{t('settings.cookiesUsageBrowser')}</TabsTrigger>
+                <TabsTrigger value="extension">{t('settings.cookiesUsageExtension')}</TabsTrigger>
+              </TabsList>
 
-            <ItemGroup>
-              <Item variant="muted">
-                <ItemContent>
-                  <ItemTitle>{t('settings.cookiesFile')}</ItemTitle>
-                  <ItemDescription>{t('settings.cookiesFileDescription')}</ItemDescription>
-                </ItemContent>
-                <ItemActions>
-                  {(() => {
-                    try {
-                      const cookiesPathValue = settings.cookiesPath ?? ''
-                      return (
-                        <div className="flex gap-2 w-full max-w-md">
-                          <Input value={cookiesPathValue} readOnly className="flex-1" />
-                          <Button onClick={handleSelectCookiesFile}>
-                            {t('settings.selectPath')}
-                          </Button>
+              <TabsContent value="off" className="space-y-4 mt-2">
+                <ItemGroup>
+                  <Item variant="muted">
+                    <ItemContent>
+                      <ItemTitle>{t('settings.cookiesUsageOffTitle')}</ItemTitle>
+                      <ItemDescription>{t('settings.cookiesUsageOffDescription')}</ItemDescription>
+                    </ItemContent>
+                  </Item>
+                </ItemGroup>
+              </TabsContent>
+
+              <TabsContent value="browser" className="space-y-4 mt-2">
+                <ItemGroup>
+                  <Item variant="muted">
+                    <ItemContent>
+                      <ItemTitle>{t('settings.browserForCookies')}</ItemTitle>
+                      <ItemDescription>
+                        {t('settings.browserForCookiesDescription')}
+                      </ItemDescription>
+                      {platform === 'win32' && (
+                        <ItemDescription className="text-red-500">
+                          {t('settings.browserForCookiesWindowsNote')}
+                        </ItemDescription>
+                      )}
+                    </ItemContent>
+                    <ItemActions>
+                      {(() => {
+                        try {
+                          return (
+                            <Select
+                              value={browserForCookiesValue}
+                              onValueChange={(value) => {
+                                try {
+                                  const nextValue = buildBrowserCookiesSetting(value, '')
+                                  handleSettingChange('browserForCookies', nextValue)
+                                } catch (error) {
+                                  logger.error(
+                                    '[Settings] Error changing browser for cookies:',
+                                    error
+                                  )
+                                }
+                              }}
+                            >
+                              <SelectTrigger className="w-32">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">{t('settings.none')}</SelectItem>
+                                <SelectItem value="chrome">
+                                  {t('settings.browserOptions.chrome')}
+                                </SelectItem>
+                                <SelectItem value="chromium">
+                                  {t('settings.browserOptions.chromium')}
+                                </SelectItem>
+                                <SelectItem value="firefox">
+                                  {t('settings.browserOptions.firefox')}
+                                </SelectItem>
+                                <SelectItem value="edge">
+                                  {t('settings.browserOptions.edge')}
+                                </SelectItem>
+                                <SelectItem value="safari">
+                                  {t('settings.browserOptions.safari')}
+                                </SelectItem>
+                                <SelectItem value="brave">
+                                  {t('settings.browserOptions.brave')}
+                                </SelectItem>
+                                <SelectItem value="opera">
+                                  {t('settings.browserOptions.opera')}
+                                </SelectItem>
+                                <SelectItem value="vivaldi">
+                                  {t('settings.browserOptions.vivaldi')}
+                                </SelectItem>
+                                <SelectItem value="whale">
+                                  {t('settings.browserOptions.whale')}
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          )
+                        } catch (error) {
+                          logger.error(
+                            '[Settings] Error rendering browser for cookies select:',
+                            error
+                          )
+                          return <div>Error loading browser for cookies setting</div>
+                        }
+                      })()}
+                    </ItemActions>
+                  </Item>
+
+                  <ItemSeparator />
+
+                  <Item variant="muted">
+                    <ItemContent className="basis-full">
+                      <ItemTitle>{t('settings.browserForCookiesProfile')}</ItemTitle>
+                      <ItemDescription>
+                        {t('settings.browserForCookiesProfileDescription')}
+                      </ItemDescription>
+                    </ItemContent>
+                    <ItemActions className="basis-full">
+                      {(() => {
+                        try {
+                          return (
+                            <div className="relative w-full">
+                              <Input
+                                placeholder={t('settings.browserForCookiesProfilePlaceholder')}
+                                value={browserCookiesProfileValue}
+                                onChange={(event) => {
+                                  try {
+                                    const newProfileValue = event.target.value
+                                    const nextValue = buildBrowserCookiesSetting(
+                                      browserForCookiesValue,
+                                      newProfileValue
+                                    )
+                                    handleSettingChange('browserForCookies', nextValue)
+                                  } catch (error) {
+                                    logger.error(
+                                      '[Settings] Error changing browser cookies profile:',
+                                      error
+                                    )
+                                  }
+                                }}
+                                disabled={browserForCookiesValue === 'none'}
+                                className="w-full pr-10"
+                              />
+                              {showBrowserProfileWarning ? (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span className="absolute right-3 top-1/2 inline-flex h-4 w-4 -translate-y-1/2 items-center justify-center text-amber-500">
+                                      <AlertTriangle className="h-4 w-4" aria-hidden />
+                                    </span>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    {getBrowserProfileWarningMessage(
+                                      browserProfileValidation.reason
+                                    )}
+                                  </TooltipContent>
+                                </Tooltip>
+                              ) : null}
+                            </div>
+                          )
+                        } catch (error) {
+                          logger.error(
+                            '[Settings] Error rendering browser cookies profile input:',
+                            error
+                          )
+                          return <div>Error loading browser cookies profile setting</div>
+                        }
+                      })()}
+                    </ItemActions>
+                  </Item>
+                </ItemGroup>
+
+                <ItemGroup>
+                  <Item variant="muted">
+                    <ItemContent>
+                      <ItemTitle>{t('settings.cookiesHelpTitle')}</ItemTitle>
+                      <ul className="list-disc list-inside space-y-1 text-muted-foreground text-sm leading-normal">
+                        <li>{t('settings.cookiesHelpBrowser')}</li>
+                        <li>{t('settings.cookiesHelpFile')}</li>
+                      </ul>
+                    </ItemContent>
+                  </Item>
+
+                  <ItemSeparator />
+
+                  <Item variant="muted">
+                    <ItemContent>
+                      <ItemTitle>{t('settings.cookiesGuideTitle')}</ItemTitle>
+                      <ItemDescription>{t('settings.cookiesGuideDescription')}</ItemDescription>
+                    </ItemContent>
+                    <ItemActions>
+                      <Button variant="link" className="px-0" onClick={handleOpenCookiesGuide}>
+                        {t('settings.cookiesGuideLink')}
+                      </Button>
+                    </ItemActions>
+                  </Item>
+                </ItemGroup>
+              </TabsContent>
+
+              <TabsContent value="extension" className="space-y-4 mt-2">
+                {/* Synced Cookies Section */}
+                <ItemGroup>
+                  <Item variant="muted">
+                    <ItemContent>
+                      <ItemTitle>{t('settings.syncedCookies') || 'Synced Cookies'}</ItemTitle>
+                      {cookiesSnapshot ? (
+                        <ItemDescription>
+                          {t('cookiesPage.lastSyncedAt', {
+                            time: formatTimestamp(cookiesSnapshot.createdAt)
+                          })}
+                          {' • '}
+                          {cookiesTotalSites} {t('cookiesPage.labels.sites') || 'sites'}
+                        </ItemDescription>
+                      ) : (
+                        <ItemDescription>{t('cookiesPage.empty')}</ItemDescription>
+                      )}
+                    </ItemContent>
+                    <ItemActions className="gap-1 flex-wrap">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
                           <Button
-                            variant="secondary"
-                            onClick={() => {
-                              try {
-                                void handleSettingChange('cookiesPath', '')
-                              } catch (error) {
-                                logger.error('[Settings] Error clearing cookies path:', error)
-                              }
-                            }}
-                            disabled={!cookiesPathValue}
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleImportCookies}
+                            disabled={cookiesImporting || cookiesLoading}
+                            className="h-8 px-2"
                           >
-                            {t('settings.clearCookiesFile')}
+                            <FileUp className="h-3.5 w-3.5" />
                           </Button>
-                        </div>
-                      )
-                    } catch (error) {
-                      logger.error('[Settings] Error rendering cookies file input:', error)
-                      return <div>Error loading cookies file setting</div>
-                    }
-                  })()}
-                </ItemActions>
-              </Item>
-            </ItemGroup>
+                        </TooltipTrigger>
+                        <TooltipContent>{t('settings.syncedCookiesImportTooltip')}</TooltipContent>
+                      </Tooltip>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={loadCookiesEntries}
+                        disabled={cookiesLoading}
+                        className={cn('h-8 px-2', cookiesLoading && 'animate-pulse')}
+                      >
+                        <RefreshCw
+                          className={cn('h-3.5 w-3.5', cookiesLoading && 'animate-spin')}
+                        />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleClearCookies}
+                        disabled={cookiesLoading || cookiesIsEmpty}
+                        className="h-8 px-2"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </ItemActions>
+                  </Item>
+                </ItemGroup>
 
-            <ItemGroup>
-              <Item variant="muted">
-                <ItemContent>
-                  <ItemTitle>{t('settings.cookiesHelpTitle')}</ItemTitle>
-                  <ul className="list-disc list-inside space-y-1 text-muted-foreground text-sm leading-normal">
-                    <li>{t('settings.cookiesHelpBrowser')}</li>
-                    <li>{t('settings.cookiesHelpFile')}</li>
-                  </ul>
-                </ItemContent>
-              </Item>
+                <ItemGroup>
+                  <Item variant="muted">
+                    <ItemContent>
+                      <ItemTitle>{t('settings.syncedCookiesGuideTitle')}</ItemTitle>
+                      <ItemDescription>
+                        {t('settings.syncedCookiesGuideDescription')}
+                      </ItemDescription>
+                    </ItemContent>
+                    <ItemActions>
+                      <Button variant="link" className="px-0" onClick={handleOpenExtensionGuide}>
+                        {t('settings.syncedCookiesGuideLink')}
+                      </Button>
+                    </ItemActions>
+                  </Item>
+                </ItemGroup>
 
-              <ItemSeparator />
-
-              <Item variant="muted">
-                <ItemContent>
-                  <ItemTitle>{t('settings.cookiesGuideTitle')}</ItemTitle>
-                  <ItemDescription>{t('settings.cookiesGuideDescription')}</ItemDescription>
-                </ItemContent>
-                <ItemActions>
-                  <Button variant="link" className="px-0" onClick={handleOpenCookiesGuide}>
-                    {t('settings.cookiesGuideLink')}
-                  </Button>
-                </ItemActions>
-              </Item>
-            </ItemGroup>
+                <ItemGroup>
+                  <Item variant="muted">
+                    <ItemContent>
+                      <ItemTitle>{t('settings.cookiesGuideTitle')}</ItemTitle>
+                      <ItemDescription>{t('settings.cookiesGuideDescription')}</ItemDescription>
+                    </ItemContent>
+                    <ItemActions>
+                      <Button variant="link" className="px-0" onClick={handleOpenCookiesGuide}>
+                        {t('settings.cookiesGuideLink')}
+                      </Button>
+                    </ItemActions>
+                  </Item>
+                </ItemGroup>
+              </TabsContent>
+            </Tabs>
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Clear Cookies Confirmation Dialog */}
+      <Dialog open={showClearConfirm} onOpenChange={setShowClearConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('cookiesPage.clear.confirmTitle')}</DialogTitle>
+            <DialogDescription>{t('cookiesPage.clear.confirmMessage')}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowClearConfirm(false)}>
+              {t('cookiesPage.clear.cancel')}
+            </Button>
+            <Button variant="destructive" onClick={handleConfirmClear}>
+              {t('cookiesPage.clear.confirm')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

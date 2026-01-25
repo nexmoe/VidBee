@@ -36,6 +36,34 @@ header {
   align-items: center;
 }
 
+.tabs {
+  display: flex;
+  gap: 8px;
+  padding: 4px;
+  background: #f6f6f6;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.tab-button {
+  flex: 1;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg-secondary);
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+
+.tab-button.active {
+  background: var(--bg);
+  color: var(--fg);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
 h1 {
   font-size: 13px;
   font-weight: 600;
@@ -277,6 +305,70 @@ h1 {
 
 .secondary-button:hover {
   background: var(--border);
+}
+
+.secondary-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.cookie-export {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #fafafa;
+}
+
+.cookie-export-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cookie-export-title {
+  font-size: 12px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--fg);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.cookie-export-text {
+  font-size: 12px;
+  color: var(--fg-secondary);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.cookie-export-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cookie-export-status-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cookie-export-status {
+  font-size: 11px;
+  margin: 0;
+  line-height: 1.4;
+  color: var(--fg-secondary);
+}
+
+.cookie-export-status.success {
+  color: var(--success);
+}
+
+.cookie-export-status.error {
+  color: var(--error);
 }
 
 

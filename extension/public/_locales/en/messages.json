@@ -8,6 +8,63 @@
   "downloadWithVidBee": {
     "message": "Download with VidBee"
   },
+  "cookieSectionTitle": {
+    "message": "Cookies"
+  },
+  "exportCookies": {
+    "message": "Export cookies.txt"
+  },
+  "exportCookiesDescription": {
+    "message": "Download cookies.txt for this site."
+  },
+  "exportCookiesLoading": {
+    "message": "Exporting cookies..."
+  },
+  "exportCookiesSuccess": {
+    "message": "Saved cookies.txt to your downloads."
+  },
+  "exportCookiesEmpty": {
+    "message": "No cookies found for this site."
+  },
+  "exportCookiesInvalidPage": {
+    "message": "Open a valid page to export cookies."
+  },
+  "exportCookiesError": {
+    "message": "Failed to export cookies."
+  },
+  "exportAllCookies": {
+    "message": "Export all cookies"
+  },
+  "exportAllCookiesLoading": {
+    "message": "Exporting all cookies..."
+  },
+  "exportAllCookiesSuccess": {
+    "message": "Saved all cookies to your downloads."
+  },
+  "exportAllCookiesEmpty": {
+    "message": "No cookies found in this browser profile."
+  },
+  "exportAllCookiesError": {
+    "message": "Failed to export all cookies."
+  },
+  "syncCookies": {
+    "message": "Sync all cookies to VidBee"
+  },
+  "syncCookiesLoading": {
+    "message": "Syncing all cookies..."
+  },
+  "syncCookiesSuccess": {
+    "message": "Synced all cookies to VidBee."
+  },
+  "syncCookiesError": {
+    "message": "Failed to sync cookies."
+  },
+  "tabVideo": {
+    "message": "Video"
+  },
+  "tabCookies": {
+    "message": "Cookies"
+  },
   "hideButton": {
     "message": "Hide"
   }

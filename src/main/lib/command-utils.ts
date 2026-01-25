@@ -1,6 +1,7 @@
 import path from 'node:path'
 import type { settingsManager } from '../settings'
 import { resolvePathWithHome } from '../utils/path-helpers'
+import { exportCookiesToTempFile } from './synced-cookies-store'
 import { ytdlpManager } from './ytdlp-manager'
 
 export const formatYtDlpCommand = (args: string[]): string => {
@@ -44,14 +45,16 @@ export const buildVideoInfoArgs = (
     args.push('--proxy', settings.proxy)
   }
 
-  // Add browser cookies if configured (skip if 'none')
-  if (settings.browserForCookies && settings.browserForCookies !== 'none') {
+  const cookiesSource = settings.cookiesSource ?? 'browser'
+  const shouldUseBrowserCookies =
+    cookiesSource === 'browser' &&
+    settings.browserForCookies &&
+    settings.browserForCookies !== 'none'
+  const syncedCookiesPath = cookiesSource === 'extension' ? exportCookiesToTempFile() : null
+  if (syncedCookiesPath) {
+    args.push('--cookies', syncedCookiesPath)
+  } else if (shouldUseBrowserCookies) {
     args.push('--cookies-from-browser', settings.browserForCookies)
-  }
-
-  const cookiesPath = settings.cookiesPath?.trim()
-  if (cookiesPath) {
-    args.push('--cookies', cookiesPath)
   }
 
   // Add config file if configured

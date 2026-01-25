@@ -306,6 +306,48 @@
     },
     "title": "سجل التحميل"
   },
+  "cookiesPage": {
+    "title": "ملفات تعريف الارتباط المتزامنة",
+    "description": "ستظهر ملفات تعريف الارتباط التي تمت مزامنتها من الإضافة هنا.",
+    "valueTitle": "يمكن استخدام حالة تسجيل الدخول لديك لـ:",
+    "valueList": {
+      "privateVideos": "تنزيل مقاطع الفيديو الخاصة",
+      "privateVideosDescription": "يمكنك الوصول بسهولة إلى مجموعاتك الشخصية من وسائل التواصل الاجتماعي",
+      "higherSuccess": "زيادة معدلات نجاح التنزيلات الأخرى",
+      "higherSuccessDescription": "أنشئ بيئة وصول حقيقية لتجنب اعتبارك روبوتًا",
+      "unlockQuality": "فتح تنزيلات 4K و8K والتنزيلات الخاصة بالأعضاء",
+      "unlockQualityDescription": "استمتع بدقة 4K/8K ومحتوى مميز للأعضاء فقط"
+    },
+    "entriesTitle": "المواقع",
+    "entriesDescription": "المواقع التي تم العثور عليها في آخر مزامنة.",
+    "empty": "لا توجد ملفات تعريف ارتباط متزامنة بعد.",
+    "loading": "جاري تحميل ملفات تعريف الارتباط...",
+    "error": "تعذر تحميل ملفات تعريف الارتباط.",
+    "actions": {
+      "refresh": "تحديث",
+      "import": "استيراد ملفات تعريف الارتباط",
+      "clear": "مسح الكل"
+    },
+    "labels": {
+      "cookies": "ملفات تعريف الارتباط",
+      "sites": "مواقع"
+    },
+    "lastSyncedAt": "آخر مزامنة: {{time}}",
+    "unknownSite": "موقع غير معروف",
+    "import": {
+      "success": "تم استيراد ملفات تعريف الارتباط بنجاح",
+      "successDescription": "تم استيراد {{count}} من ملفات تعريف الارتباط",
+      "error": "فشل استيراد ملفات تعريف الارتباط"
+    },
+    "clear": {
+      "confirmTitle": "مسح جميع ملفات تعريف الارتباط؟",
+      "confirmMessage": "سيؤدي هذا إلى إزالة جميع ملفات تعريف الارتباط المتزامنة. لا يمكن التراجع عن هذا الإجراء.",
+      "confirm": "مسح الكل",
+      "cancel": "إلغاء",
+      "success": "تم مسح جميع ملفات تعريف الارتباط بنجاح",
+      "error": "فشل مسح ملفات تعريف الارتباط"
+    }
+  },
   "menu": {
     "about": "حول",
     "download": "تحميل",
@@ -384,6 +426,13 @@
     "aboutTab": "حول",
     "advanced": "متقدم",
     "cookiesTab": "Cookies",
+    "cookiesUsage": "استخدام ملفات تعريف الارتباط",
+    "cookiesUsageDescription": "اختر كيفية استخدام VidBee لملفات تعريف الارتباط للمصادقة.",
+    "cookiesUsageOff": "إيقاف",
+    "cookiesUsageBrowser": "من المتصفح",
+    "cookiesUsageExtension": "من الإضافة",
+    "cookiesUsageOffTitle": "تم إيقاف ملفات تعريف الارتباط",
+    "cookiesUsageOffDescription": "سيتم التنزيل بدون ملفات تعريف الارتباط حتى تختار المصدر.",
     "app": "إعدادات التطبيق",
     "audio": "تفضيلات الصوت",
     "browserForCookies": "اختر المتصفح لاستخدام ملفات تعريف الارتباط منه",
@@ -403,6 +452,10 @@
     "cookiesHelpTitle": "استخدام Cookies",
     "cookiesHelpBrowser": "اختر متصفحك أعلاه لإعادة استخدام جلسته الموقعة تلقائياً.",
     "cookiesHelpFile": "قم بتصدير ملف ملفات تعريف الارتباط Netscape (راجع الأسئلة الشائعة لـ yt-dlp) واختره هنا عند الحاجة.",
+    "syncedCookiesGuideTitle": "مزامنة ملفات تعريف الارتباط من المتصفح",
+    "syncedCookiesGuideDescription": "ثبّت إضافة VidBee للمتصفح لمزامنة ملفات تعريف الارتباط بنقرة واحدة.",
+    "syncedCookiesGuideLink": "فتح دليل الإضافة",
+    "syncedCookiesImportTooltip": "استيراد ملف cookies.txt المُصدَّر من متصفحك (تنسيق Netscape).",
     "cookiesGuideTitle": "هل تحتاج إلى شرح؟",
     "cookiesGuideDescription": "اطّلع على دليل خطوة بخطوة لاستخدام ملفات تعريف الارتباط في VidBee.",
     "cookiesGuideLink": "فتح دليل Cookies",
@@ -483,7 +536,8 @@
       "quit": "إنهاء",
       "showHome": "إظهار الصفحة الرئيسية"
     },
-    "video": "تفضيلات الفيديو"
+    "video": "تفضيلات الفيديو",
+    "syncedCookies": "ملفات تعريف الارتباط المتزامنة"
   },
   "subscriptions": {
     "title": "الاشتراكات",

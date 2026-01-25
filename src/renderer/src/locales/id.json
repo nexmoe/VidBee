@@ -306,6 +306,48 @@
     },
     "title": "Riwayat Unduhan"
   },
+  "cookiesPage": {
+    "title": "Cookie tersinkron",
+    "description": "Cookie yang disinkronkan dari ekstensi muncul di sini.",
+    "valueTitle": "Status login Anda dapat digunakan untuk:",
+    "valueList": {
+      "privateVideos": "Mengunduh video privat",
+      "privateVideosDescription": "Akses koleksi pribadi Anda di media sosial dengan mudah",
+      "higherSuccess": "Meningkatkan tingkat keberhasilan unduhan lainnya",
+      "higherSuccessDescription": "Buat lingkungan akses yang nyata agar tidak dianggap bot",
+      "unlockQuality": "Membuka unduhan 4K, 8K, dan khusus anggota",
+      "unlockQualityDescription": "Nikmati resolusi 4K/8K dan konten premium khusus anggota"
+    },
+    "entriesTitle": "Situs",
+    "entriesDescription": "Situs yang ditemukan pada sinkronisasi terakhir.",
+    "empty": "Belum ada cookie yang tersinkron.",
+    "loading": "Memuat cookie...",
+    "error": "Gagal memuat cookie.",
+    "actions": {
+      "refresh": "Segarkan",
+      "import": "Impor cookie",
+      "clear": "Hapus semua"
+    },
+    "labels": {
+      "cookies": "Cookie",
+      "sites": "situs"
+    },
+    "lastSyncedAt": "Terakhir disinkronkan: {{time}}",
+    "unknownSite": "Situs tidak dikenal",
+    "import": {
+      "success": "Cookie berhasil diimpor",
+      "successDescription": "{{count}} cookie diimpor",
+      "error": "Gagal mengimpor cookie"
+    },
+    "clear": {
+      "confirmTitle": "Hapus semua cookie?",
+      "confirmMessage": "Ini akan menghapus semua cookie yang disinkronkan. Tindakan ini tidak dapat dibatalkan.",
+      "confirm": "Hapus semua",
+      "cancel": "Batal",
+      "success": "Semua cookie berhasil dihapus",
+      "error": "Gagal menghapus cookie"
+    }
+  },
   "menu": {
     "about": "Tentang",
     "download": "Unduh",
@@ -384,6 +426,13 @@
     "aboutTab": "Tentang",
     "advanced": "Lanjutan",
     "cookiesTab": "Cookie",
+    "cookiesUsage": "Penggunaan cookie",
+    "cookiesUsageDescription": "Pilih bagaimana VidBee menggunakan cookie untuk autentikasi.",
+    "cookiesUsageOff": "Nonaktif",
+    "cookiesUsageBrowser": "Dari browser",
+    "cookiesUsageExtension": "Dari ekstensi",
+    "cookiesUsageOffTitle": "Cookie dinonaktifkan",
+    "cookiesUsageOffDescription": "Unduhan akan berjalan tanpa cookie sampai Anda memilih sumber.",
     "app": "Pengaturan Aplikasi",
     "audio": "Preferensi Audio",
     "browserForCookies": "Pilih browser untuk menggunakan cookie",
@@ -403,6 +452,10 @@
     "cookiesHelpTitle": "Menggunakan cookie",
     "cookiesHelpBrowser": "Pilih browser Anda di atas untuk menggunakan kembali sesi masuk secara otomatis.",
     "cookiesHelpFile": "Ekspor file cookie Netscape (lihat FAQ yt-dlp) dan pilih di sini saat diperlukan.",
+    "syncedCookiesGuideTitle": "Sinkronkan cookie dari browser",
+    "syncedCookiesGuideDescription": "Pasang ekstensi VidBee untuk menyinkronkan cookie dengan satu klik.",
+    "syncedCookiesGuideLink": "Buka panduan ekstensi",
+    "syncedCookiesImportTooltip": "Impor file cookies.txt yang diekspor dari browser Anda (format Netscape).",
     "cookiesGuideTitle": "Butuh panduan?",
     "cookiesGuideDescription": "Lihat panduan langkah demi langkah untuk menggunakan cookie di VidBee.",
     "cookiesGuideLink": "Buka panduan cookie",
@@ -483,7 +536,8 @@
       "quit": "Keluar",
       "showHome": "Tampilkan Beranda"
     },
-    "video": "Preferensi Video"
+    "video": "Preferensi Video",
+    "syncedCookies": "Cookie tersinkronisasi"
   },
   "subscriptions": {
     "title": "Berlangganan",

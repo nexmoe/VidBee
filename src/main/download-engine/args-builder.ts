@@ -1,5 +1,6 @@
 import path from 'node:path'
 import type { AppSettings, DownloadOptions } from '../../shared/types'
+import { exportCookiesToTempFile } from '../lib/synced-cookies-store'
 import { resolvePathWithHome } from '../utils/path-helpers'
 
 export const sanitizeFilenameTemplate = (template: string): string => {
@@ -116,9 +117,13 @@ export const buildDownloadArgs = (
   const embedSubs = settings.embedSubs
   const embedMetadata = settings.embedMetadata
   const embedChapters = settings.embedChapters
-  const hasSubtitleAuth =
-    (settings.browserForCookies && settings.browserForCookies !== 'none') ||
-    Boolean(settings.cookiesPath?.trim())
+  const cookiesSource = settings.cookiesSource ?? 'browser'
+  const shouldUseBrowserCookies =
+    cookiesSource === 'browser' &&
+    settings.browserForCookies &&
+    settings.browserForCookies !== 'none'
+  const syncedCookiesPath = cookiesSource === 'extension' ? exportCookiesToTempFile() : null
+  const hasSubtitleAuth = Boolean(syncedCookiesPath || shouldUseBrowserCookies)
   const shouldAttemptSubtitles = !isBilibiliUrl(options.url) || hasSubtitleAuth
 
   // Subtitles
@@ -153,13 +158,10 @@ export const buildDownloadArgs = (
     args.push('--windows-filenames')
   }
 
-  if (settings.browserForCookies && settings.browserForCookies !== 'none') {
+  if (syncedCookiesPath) {
+    args.push('--cookies', syncedCookiesPath)
+  } else if (shouldUseBrowserCookies) {
     args.push('--cookies-from-browser', settings.browserForCookies)
-  }
-
-  const cookiesPath = settings.cookiesPath?.trim()
-  if (cookiesPath) {
-    args.push('--cookies', cookiesPath)
   }
 
   if (settings.proxy) {

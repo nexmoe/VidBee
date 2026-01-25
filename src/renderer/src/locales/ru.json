@@ -306,6 +306,48 @@
     },
     "title": "История загрузок"
   },
+  "cookiesPage": {
+    "title": "Синхронизированные cookie",
+    "description": "Cookie, синхронизированные из расширения, отображаются здесь.",
+    "valueTitle": "Ваш статус входа можно использовать для:",
+    "valueList": {
+      "privateVideos": "Загрузки приватных видео",
+      "privateVideosDescription": "Легко получайте доступ к личным коллекциям в соцсетях",
+      "higherSuccess": "Повышения успешности других загрузок",
+      "higherSuccessDescription": "Создайте реальную среду доступа, чтобы вас не пометили как бота",
+      "unlockQuality": "Открытия загрузок 4K, 8K и для подписчиков",
+      "unlockQualityDescription": "Наслаждайтесь 4K/8K и премиальным контентом только для участников"
+    },
+    "entriesTitle": "Сайты",
+    "entriesDescription": "Сайты, найденные при последней синхронизации.",
+    "empty": "Пока нет синхронизированных cookie.",
+    "loading": "Загрузка cookie...",
+    "error": "Не удалось загрузить cookie.",
+    "actions": {
+      "refresh": "Обновить",
+      "import": "Импортировать cookies",
+      "clear": "Очистить все"
+    },
+    "labels": {
+      "cookies": "Cookie",
+      "sites": "сайты"
+    },
+    "lastSyncedAt": "Последняя синхронизация: {{time}}",
+    "unknownSite": "Неизвестный сайт",
+    "import": {
+      "success": "Cookies успешно импортированы",
+      "successDescription": "Импортировано {{count}} cookies",
+      "error": "Не удалось импортировать cookies"
+    },
+    "clear": {
+      "confirmTitle": "Очистить все cookies?",
+      "confirmMessage": "Это удалит все синхронизированные cookies. Это действие нельзя отменить.",
+      "confirm": "Очистить все",
+      "cancel": "Отмена",
+      "success": "Все cookies успешно очищены",
+      "error": "Не удалось очистить cookies"
+    }
+  },
   "menu": {
     "about": "О программе",
     "download": "Загрузить",
@@ -384,6 +426,13 @@
     "aboutTab": "О программе",
     "advanced": "Дополнительно",
     "cookiesTab": "Cookie",
+    "cookiesUsage": "Использование cookie",
+    "cookiesUsageDescription": "Выберите, как VidBee должен использовать cookie для аутентификации.",
+    "cookiesUsageOff": "Выключено",
+    "cookiesUsageBrowser": "Из браузера",
+    "cookiesUsageExtension": "Из расширения",
+    "cookiesUsageOffTitle": "Cookie отключены",
+    "cookiesUsageOffDescription": "Загрузки будут выполняться без cookie, пока вы не выберете источник.",
     "app": "Настройки приложения",
     "audio": "Настройки аудио",
     "browserForCookies": "Выбрать браузер для использования cookie",
@@ -403,6 +452,10 @@
     "cookiesHelpTitle": "Использование cookie",
     "cookiesHelpBrowser": "Выберите ваш браузер выше, чтобы автоматически использовать его сеанс входа.",
     "cookiesHelpFile": "Экспортируйте файл cookie Netscape (см. FAQ yt-dlp) и выберите его здесь при необходимости.",
+    "syncedCookiesGuideTitle": "Синхронизация cookies из браузера",
+    "syncedCookiesGuideDescription": "Установите расширение VidBee, чтобы синхронизировать cookies в один клик.",
+    "syncedCookiesGuideLink": "Открыть руководство по расширению",
+    "syncedCookiesImportTooltip": "Импортируйте файл cookies.txt, экспортированный из браузера (формат Netscape).",
     "cookiesGuideTitle": "Нужна инструкция?",
     "cookiesGuideDescription": "Посмотрите пошаговое руководство по использованию cookie в VidBee.",
     "cookiesGuideLink": "Открыть руководство по cookie",
@@ -483,7 +536,8 @@
       "quit": "Выход",
       "showHome": "Показать главную"
     },
-    "video": "Настройки видео"
+    "video": "Настройки видео",
+    "syncedCookies": "Синхронизированные cookies"
   },
   "subscriptions": {
     "title": "Подписки",

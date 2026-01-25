@@ -260,12 +260,31 @@ export interface SubscriptionUpdatePayload {
   items?: SubscriptionFeedItem[]
 }
 
+export interface SyncedCookie {
+  domain: string
+  name: string
+  value: string
+  path: string
+  secure: boolean
+  httpOnly?: boolean
+  sameSite?: string
+  expirationDate?: number
+}
+
+export interface SyncedCookiesSnapshot {
+  createdAt: number
+  cookieCount: number
+  cookies: SyncedCookie[]
+}
+
 // Settings types
 export type OneClickQualityPreset = 'best' | 'good' | 'normal' | 'bad' | 'worst'
+export type CookiesSource = 'off' | 'browser' | 'extension'
 
 export interface AppSettings {
   downloadPath: string
   maxConcurrentDownloads: number
+  cookiesSource: CookiesSource
   browserForCookies: string
   cookiesPath: string
   proxy: string
@@ -294,6 +313,7 @@ export const DEFAULT_SUBSCRIPTION_FILENAME_TEMPLATE = '%(uploader)s/%(title)s.%(
 export const defaultSettings: AppSettings = {
   downloadPath: '',
   maxConcurrentDownloads: 5,
+  cookiesSource: 'browser',
   browserForCookies: 'none',
   cookiesPath: '',
   proxy: '',

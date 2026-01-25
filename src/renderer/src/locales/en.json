@@ -306,6 +306,48 @@
     },
     "title": "Download History"
   },
+  "cookiesPage": {
+    "title": "Synced cookies",
+    "description": "Cookies synced from the extension or imported from Netscape cookie files appear here.",
+    "valueTitle": "Your logged-in status can be used to:",
+    "valueList": {
+      "privateVideos": "Download private videos",
+      "privateVideosDescription": "Easily access your personal collections from social media",
+      "higherSuccess": "Increase success rates",
+      "higherSuccessDescription": "Establish a real access environment to avoid being flagged as a bot",
+      "unlockQuality": "Unlock high-quality downloads",
+      "unlockQualityDescription": "Enjoy 4K/8K resolutions and premium member-only content"
+    },
+    "entriesTitle": "Websites",
+    "entriesDescription": "Sites found in your last sync or import.",
+    "empty": "No cookies synced yet.",
+    "loading": "Loading cookies...",
+    "error": "Failed to load cookies.",
+    "actions": {
+      "refresh": "Refresh",
+      "import": "Import Cookies",
+      "clear": "Clear All"
+    },
+    "labels": {
+      "cookies": "Cookies",
+      "sites": "sites"
+    },
+    "lastSyncedAt": "Last synced: {{time}}",
+    "unknownSite": "Unknown site",
+    "import": {
+      "success": "Cookies imported successfully",
+      "successDescription": "Imported {{count}} cookies",
+      "error": "Failed to import cookies"
+    },
+    "clear": {
+      "confirmTitle": "Clear all cookies?",
+      "confirmMessage": "This will remove all synced cookies. This action cannot be undone.",
+      "confirm": "Clear All",
+      "cancel": "Cancel",
+      "success": "All cookies cleared successfully",
+      "error": "Failed to clear cookies"
+    }
+  },
   "menu": {
     "about": "About",
     "download": "Download",
@@ -384,6 +426,13 @@
     "aboutTab": "About",
     "advanced": "Advanced",
     "cookiesTab": "Cookies",
+    "cookiesUsage": "Cookies usage",
+    "cookiesUsageDescription": "Choose how VidBee should use cookies for authentication.",
+    "cookiesUsageOff": "Off",
+    "cookiesUsageBrowser": "From browser",
+    "cookiesUsageExtension": "From extension",
+    "cookiesUsageOffTitle": "Cookies are off",
+    "cookiesUsageOffDescription": "Downloads will run without cookies until you select a source.",
     "app": "App Settings",
     "audio": "Audio Preferences",
     "browserForCookies": "Select browser to use cookies from",
@@ -403,6 +452,10 @@
     "cookiesHelpTitle": "Using cookies",
     "cookiesHelpBrowser": "Pick your browser above to reuse its signed-in session automatically.",
     "cookiesHelpFile": "Export a Netscape cookies file (see the yt-dlp FAQ) and select it here when needed.",
+    "syncedCookiesGuideTitle": "Sync cookies from your browser",
+    "syncedCookiesGuideDescription": "Install the VidBee browser extension to sync cookies in one click.",
+    "syncedCookiesGuideLink": "Open extension guide",
+    "syncedCookiesImportTooltip": "Import a cookies.txt file exported from your browser (Netscape format).",
     "cookiesGuideTitle": "Need a walkthrough?",
     "cookiesGuideDescription": "See step-by-step guidance for using cookies in VidBee.",
     "cookiesGuideLink": "Open cookies guide",
@@ -483,7 +536,8 @@
       "quit": "Quit",
       "showHome": "Show Home"
     },
-    "video": "Video Preferences"
+    "video": "Video Preferences",
+    "syncedCookies": "Synced Cookies"
   },
   "subscriptions": {
     "title": "Subscriptions",

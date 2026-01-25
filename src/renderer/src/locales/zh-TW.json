@@ -306,6 +306,48 @@
     },
     "title": "下載歷史"
   },
+  "cookiesPage": {
+    "title": "已同步的 Cookies",
+    "description": "從擴充功能同步的 Cookies 會顯示在這裡。",
+    "valueTitle": "登入狀態可用於：",
+    "valueList": {
+      "privateVideos": "下載私密影片",
+      "privateVideosDescription": "輕鬆存取社群媒體上的個人收藏",
+      "higherSuccess": "提高其他影片的下載成功率",
+      "higherSuccessDescription": "建立真實的存取環境，避免被判定為機器人",
+      "unlockQuality": "解鎖 4K、8K 高畫質下載以及會員影片下載",
+      "unlockQualityDescription": "享受 4K/8K 解析度與會員專屬高級內容"
+    },
+    "entriesTitle": "網站",
+    "entriesDescription": "上次同步中找到的網站。",
+    "empty": "尚無已同步的 Cookies。",
+    "loading": "正在載入 Cookies...",
+    "error": "載入 Cookies 失敗。",
+    "actions": {
+      "refresh": "重新整理",
+      "import": "匯入 Cookie",
+      "clear": "全部清除"
+    },
+    "labels": {
+      "cookies": "Cookies",
+      "sites": "網站"
+    },
+    "lastSyncedAt": "最後同步：{{time}}",
+    "unknownSite": "未知網站",
+    "import": {
+      "success": "Cookie 匯入成功",
+      "successDescription": "已匯入 {{count}} 個 Cookie",
+      "error": "Cookie 匯入失敗"
+    },
+    "clear": {
+      "confirmTitle": "清除所有 Cookie？",
+      "confirmMessage": "這將移除所有同步的 Cookie。此操作無法復原。",
+      "confirm": "全部清除",
+      "cancel": "取消",
+      "success": "已成功清除所有 Cookie",
+      "error": "清除 Cookie 失敗"
+    }
+  },
   "menu": {
     "about": "關於",
     "download": "下載",
@@ -384,6 +426,13 @@
     "aboutTab": "關於",
     "advanced": "進階",
     "cookiesTab": "Cookies",
+    "cookiesUsage": "Cookies 使用方式",
+    "cookiesUsageDescription": "選擇 VidBee 用於驗證的 Cookies 來源。",
+    "cookiesUsageOff": "關閉",
+    "cookiesUsageBrowser": "來自瀏覽器",
+    "cookiesUsageExtension": "來自擴充功能",
+    "cookiesUsageOffTitle": "Cookies 已關閉",
+    "cookiesUsageOffDescription": "在選擇來源之前，下載將不使用 Cookies。",
     "app": "應用程式設定",
     "audio": "音訊偏好",
     "browserForCookies": "選擇用於讀取 Cookies 的瀏覽器",
@@ -403,6 +452,10 @@
     "cookiesHelpTitle": "使用 Cookies",
     "cookiesHelpBrowser": "選擇上面的瀏覽器以自動重用其登錄會話。",
     "cookiesHelpFile": "導出 Netscape Cookies 文件（請參閱 yt-dlp FAQ）並在需要時在此處選擇它。",
+    "syncedCookiesGuideTitle": "從瀏覽器同步 Cookie",
+    "syncedCookiesGuideDescription": "安裝 VidBee 擴充功能，一鍵同步 Cookie。",
+    "syncedCookiesGuideLink": "開啟擴充功能指南",
+    "syncedCookiesImportTooltip": "匯入從瀏覽器匯出的 cookies.txt 檔案（Netscape 格式）。",
     "cookiesGuideTitle": "需要指引嗎？",
     "cookiesGuideDescription": "查看在 VidBee 中使用 Cookies 的分步指南。",
     "cookiesGuideLink": "開啟 Cookies 指南",
@@ -483,7 +536,8 @@
       "quit": "結束",
       "showHome": "顯示首頁"
     },
-    "video": "影片偏好"
+    "video": "影片偏好",
+    "syncedCookies": "已同步的 Cookies"
   },
   "subscriptions": {
     "title": "訂閱",

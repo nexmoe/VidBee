@@ -306,6 +306,48 @@
     },
     "title": "다운로드 기록"
   },
+  "cookiesPage": {
+    "title": "동기화된 쿠키",
+    "description": "확장 프로그램에서 동기화된 쿠키가 여기에 표시됩니다.",
+    "valueTitle": "로그인 상태는 다음에 사용할 수 있어요:",
+    "valueList": {
+      "privateVideos": "비공개 동영상 다운로드",
+      "privateVideosDescription": "소셜 미디어의 개인 컬렉션에 쉽게 접근",
+      "higherSuccess": "다른 다운로드의 성공률 향상",
+      "higherSuccessDescription": "실제 접근 환경을 구성해 봇으로 분류되는 것을 방지",
+      "unlockQuality": "4K, 8K 및 회원 전용 다운로드 잠금 해제",
+      "unlockQualityDescription": "4K/8K 해상도와 회원 전용 프리미엄 콘텐츠를 즐기세요"
+    },
+    "entriesTitle": "웹사이트",
+    "entriesDescription": "마지막 동기화에서 찾은 사이트입니다.",
+    "empty": "아직 동기화된 쿠키가 없습니다.",
+    "loading": "쿠키를 불러오는 중...",
+    "error": "쿠키를 불러오지 못했습니다.",
+    "actions": {
+      "refresh": "새로고침",
+      "import": "쿠키 가져오기",
+      "clear": "모두 삭제"
+    },
+    "labels": {
+      "cookies": "쿠키",
+      "sites": "사이트"
+    },
+    "lastSyncedAt": "마지막 동기화: {{time}}",
+    "unknownSite": "알 수 없는 사이트",
+    "import": {
+      "success": "쿠키를 성공적으로 가져왔어요",
+      "successDescription": "{{count}}개의 쿠키를 가져왔어요",
+      "error": "쿠키 가져오기에 실패했어요"
+    },
+    "clear": {
+      "confirmTitle": "모든 쿠키를 삭제할까요?",
+      "confirmMessage": "동기화된 모든 쿠키가 삭제됩니다. 이 작업은 되돌릴 수 없습니다.",
+      "confirm": "모두 삭제",
+      "cancel": "취소",
+      "success": "모든 쿠키가 삭제되었습니다",
+      "error": "쿠키 삭제에 실패했습니다"
+    }
+  },
   "menu": {
     "about": "정보",
     "download": "다운로드",
@@ -384,6 +426,13 @@
     "aboutTab": "정보",
     "advanced": "고급",
     "cookiesTab": "Cookies",
+    "cookiesUsage": "쿠키 사용 방식",
+    "cookiesUsageDescription": "VidBee가 인증에 쿠키를 사용하는 방법을 선택하세요.",
+    "cookiesUsageOff": "끔",
+    "cookiesUsageBrowser": "브라우저에서",
+    "cookiesUsageExtension": "확장 프로그램에서",
+    "cookiesUsageOffTitle": "쿠키가 꺼져 있습니다",
+    "cookiesUsageOffDescription": "소스를 선택할 때까지 쿠키 없이 다운로드합니다.",
     "app": "앱 설정",
     "audio": "오디오 환경설정",
     "browserForCookies": "쿠키를 사용할 브라우저 선택",
@@ -403,6 +452,10 @@
     "cookiesHelpTitle": "Cookies 사용",
     "cookiesHelpBrowser": "로그인된 세션을 자동으로 재사용하려면 위에서 브라우저를 선택하세요.",
     "cookiesHelpFile": "Netscape 쿠키 파일을 내보내고(yt-dlp FAQ 참조) 필요할 때 여기에서 선택하세요.",
+    "syncedCookiesGuideTitle": "브라우저에서 쿠키 동기화",
+    "syncedCookiesGuideDescription": "VidBee 확장 프로그램을 설치해 쿠키를 한 번에 동기화하세요.",
+    "syncedCookiesGuideLink": "확장 프로그램 안내 열기",
+    "syncedCookiesImportTooltip": "브라우저에서 내보낸 cookies.txt 파일(Netscape 형식)을 가져옵니다.",
     "cookiesGuideTitle": "가이드가 필요하신가요?",
     "cookiesGuideDescription": "VidBee에서 쿠키를 사용하는 단계별 안내를 확인하세요.",
     "cookiesGuideLink": "Cookies 가이드 열기",
@@ -483,7 +536,8 @@
       "quit": "종료",
       "showHome": "홈 표시"
     },
-    "video": "비디오 환경설정"
+    "video": "비디오 환경설정",
+    "syncedCookies": "동기화된 쿠키"
   },
   "subscriptions": {
     "title": "구독",

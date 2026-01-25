@@ -7,6 +7,8 @@
   "scripts": {
     "dev": "wxt",
     "dev:firefox": "wxt -b firefox",
+    "predev": "node scripts/ensure-profiles.mjs",
+    "predev:firefox": "node scripts/ensure-profiles.mjs",
     "build": "wxt build",
     "build:firefox": "wxt build -b firefox",
     "zip": "wxt zip",
