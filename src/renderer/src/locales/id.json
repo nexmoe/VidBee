@@ -312,8 +312,11 @@
     "valueTitle": "Status login Anda dapat digunakan untuk:",
     "valueList": {
       "privateVideos": "Mengunduh video privat",
+      "privateVideosDescription": "Akses koleksi pribadi Anda di media sosial dengan mudah",
       "higherSuccess": "Meningkatkan tingkat keberhasilan unduhan lainnya",
-      "unlockQuality": "Membuka unduhan 4K, 8K, dan khusus anggota"
+      "higherSuccessDescription": "Buat lingkungan akses yang nyata agar tidak dianggap bot",
+      "unlockQuality": "Membuka unduhan 4K, 8K, dan khusus anggota",
+      "unlockQualityDescription": "Nikmati resolusi 4K/8K dan konten premium khusus anggota"
     },
     "entriesTitle": "Situs",
     "entriesDescription": "Situs yang ditemukan pada sinkronisasi terakhir.",
@@ -326,7 +329,8 @@
       "clear": "Hapus semua"
     },
     "labels": {
-      "cookies": "Cookie"
+      "cookies": "Cookie",
+      "sites": "situs"
     },
     "lastSyncedAt": "Terakhir disinkronkan: {{time}}",
     "unknownSite": "Situs tidak dikenal",
@@ -422,6 +426,13 @@
     "aboutTab": "Tentang",
     "advanced": "Lanjutan",
     "cookiesTab": "Cookie",
+    "cookiesUsage": "Penggunaan cookie",
+    "cookiesUsageDescription": "Pilih bagaimana VidBee menggunakan cookie untuk autentikasi.",
+    "cookiesUsageOff": "Nonaktif",
+    "cookiesUsageBrowser": "Dari browser",
+    "cookiesUsageExtension": "Dari ekstensi",
+    "cookiesUsageOffTitle": "Cookie dinonaktifkan",
+    "cookiesUsageOffDescription": "Unduhan akan berjalan tanpa cookie sampai Anda memilih sumber.",
     "app": "Pengaturan Aplikasi",
     "audio": "Preferensi Audio",
     "browserForCookies": "Pilih browser untuk menggunakan cookie",
@@ -441,6 +452,10 @@
     "cookiesHelpTitle": "Menggunakan cookie",
     "cookiesHelpBrowser": "Pilih browser Anda di atas untuk menggunakan kembali sesi masuk secara otomatis.",
     "cookiesHelpFile": "Ekspor file cookie Netscape (lihat FAQ yt-dlp) dan pilih di sini saat diperlukan.",
+    "syncedCookiesGuideTitle": "Sinkronkan cookie dari browser",
+    "syncedCookiesGuideDescription": "Pasang ekstensi VidBee untuk menyinkronkan cookie dengan satu klik.",
+    "syncedCookiesGuideLink": "Buka panduan ekstensi",
+    "syncedCookiesImportTooltip": "Impor file cookies.txt yang diekspor dari browser Anda (format Netscape).",
     "cookiesGuideTitle": "Butuh panduan?",
     "cookiesGuideDescription": "Lihat panduan langkah demi langkah untuk menggunakan cookie di VidBee.",
     "cookiesGuideLink": "Buka panduan cookie",
@@ -521,7 +536,8 @@
       "quit": "Keluar",
       "showHome": "Tampilkan Beranda"
     },
-    "video": "Preferensi Video"
+    "video": "Preferensi Video",
+    "syncedCookies": "Cookie tersinkronisasi"
   },
   "subscriptions": {
     "title": "Berlangganan",

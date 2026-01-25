@@ -312,8 +312,11 @@
     "valueTitle": "Votre statut de connexion peut servir à :",
     "valueList": {
       "privateVideos": "Télécharger des vidéos privées",
+      "privateVideosDescription": "Accédez facilement à vos collections personnelles sur les réseaux sociaux",
       "higherSuccess": "Augmenter le taux de réussite des autres téléchargements",
-      "unlockQuality": "Débloquer les téléchargements 4K, 8K et réservés aux membres"
+      "higherSuccessDescription": "Créez un environnement d’accès réel pour éviter d’être signalé comme bot",
+      "unlockQuality": "Débloquer les téléchargements 4K, 8K et réservés aux membres",
+      "unlockQualityDescription": "Profitez des résolutions 4K/8K et de contenus premium réservés aux membres"
     },
     "entriesTitle": "Sites web",
     "entriesDescription": "Sites trouvés lors de la dernière synchronisation.",
@@ -326,7 +329,8 @@
       "clear": "Tout effacer"
     },
     "labels": {
-      "cookies": "Cookies"
+      "cookies": "Cookies",
+      "sites": "sites"
     },
     "lastSyncedAt": "Dernière synchronisation : {{time}}",
     "unknownSite": "Site inconnu",
@@ -422,6 +426,13 @@
     "aboutTab": "À propos",
     "advanced": "Avancé",
     "cookiesTab": "Cookies",
+    "cookiesUsage": "Utilisation des cookies",
+    "cookiesUsageDescription": "Choisissez comment VidBee doit utiliser les cookies pour l'authentification.",
+    "cookiesUsageOff": "Désactivé",
+    "cookiesUsageBrowser": "Depuis le navigateur",
+    "cookiesUsageExtension": "Depuis l’extension",
+    "cookiesUsageOffTitle": "Les cookies sont désactivés",
+    "cookiesUsageOffDescription": "Les téléchargements s’exécuteront sans cookies jusqu’à ce que vous choisissiez une source.",
     "app": "Paramètres de l'App",
     "audio": "Préférences Audio",
     "browserForCookies": "Sélectionner le navigateur pour utiliser les cookies",
@@ -441,6 +452,10 @@
     "cookiesHelpTitle": "Utiliser des cookies",
     "cookiesHelpBrowser": "Choisissez votre navigateur ci-dessus pour réutiliser automatiquement sa session de connexion.",
     "cookiesHelpFile": "Exportez un fichier de cookies Netscape (voir la FAQ yt-dlp) et sélectionnez-le ici si nécessaire.",
+    "syncedCookiesGuideTitle": "Synchroniser les cookies depuis le navigateur",
+    "syncedCookiesGuideDescription": "Installez l’extension VidBee pour synchroniser les cookies en un clic.",
+    "syncedCookiesGuideLink": "Ouvrir le guide de l’extension",
+    "syncedCookiesImportTooltip": "Importez un fichier cookies.txt exporté depuis votre navigateur (format Netscape).",
     "cookiesGuideTitle": "Besoin d’un guide ?",
     "cookiesGuideDescription": "Consultez un guide étape par étape pour utiliser les cookies dans VidBee.",
     "cookiesGuideLink": "Ouvrir le guide des cookies",
@@ -521,7 +536,8 @@
       "quit": "Quitter",
       "showHome": "Afficher l'Accueil"
     },
-    "video": "Préférences Vidéo"
+    "video": "Préférences Vidéo",
+    "syncedCookies": "Cookies synchronisés"
   },
   "subscriptions": {
     "title": "Abonnements",

@@ -329,7 +329,8 @@
       "clear": "清空全部"
     },
     "labels": {
-      "cookies": "Cookies"
+      "cookies": "Cookies",
+      "sites": "网站"
     },
     "lastSyncedAt": "最后同步：{{time}}",
     "unknownSite": "未知网站",
@@ -425,6 +426,13 @@
     "aboutTab": "关于",
     "advanced": "高级",
     "cookiesTab": "Cookies",
+    "cookiesUsage": "Cookies 使用方式",
+    "cookiesUsageDescription": "选择 VidBee 用于身份验证的 Cookies 来源。",
+    "cookiesUsageOff": "关闭",
+    "cookiesUsageBrowser": "来自浏览器",
+    "cookiesUsageExtension": "来自扩展",
+    "cookiesUsageOffTitle": "Cookies 已关闭",
+    "cookiesUsageOffDescription": "在选择来源之前，下载将不使用 Cookies。",
     "app": "应用设置",
     "audio": "音频偏好",
     "browserForCookies": "选择用于读取 Cookies 的浏览器",
@@ -444,6 +452,10 @@
     "cookiesHelpTitle": "使用 Cookies",
     "cookiesHelpBrowser": "选择上面的浏览器以自动重用其登录会话。",
     "cookiesHelpFile": "导出 Netscape Cookies 文件（请参阅 yt-dlp FAQ）并在需要时在此处选择它。",
+    "syncedCookiesGuideTitle": "从浏览器同步 Cookie",
+    "syncedCookiesGuideDescription": "安装 VidBee 浏览器扩展，一键同步 Cookie。",
+    "syncedCookiesGuideLink": "打开扩展指南",
+    "syncedCookiesImportTooltip": "导入从浏览器导出的 cookies.txt 文件（Netscape 格式）。",
     "cookiesGuideTitle": "需要指引吗？",
     "cookiesGuideDescription": "查看在 VidBee 中使用 Cookies 的分步指南。",
     "cookiesGuideLink": "打开 Cookies 指南",
@@ -524,7 +536,8 @@
       "quit": "退出",
       "showHome": "显示首页"
     },
-    "video": "视频偏好"
+    "video": "视频偏好",
+    "syncedCookies": "已同步的 Cookies"
   },
   "subscriptions": {
     "title": "订阅",

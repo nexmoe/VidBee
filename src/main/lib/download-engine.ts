@@ -270,12 +270,15 @@ class DownloadEngine extends EventEmitter {
       args.push('--proxy', settings.proxy)
     }
 
-    // Try to use synced cookies first, then fall back to browser cookies
-    const tempCookieFile = exportCookiesToTempFile()
+    const cookiesSource = settings.cookiesSource ?? 'browser'
+    const shouldUseBrowserCookies =
+      cookiesSource === 'browser' &&
+      settings.browserForCookies &&
+      settings.browserForCookies !== 'none'
+    const tempCookieFile = cookiesSource === 'extension' ? exportCookiesToTempFile() : null
     if (tempCookieFile) {
       args.push('--cookies', tempCookieFile)
-    } else if (settings.browserForCookies && settings.browserForCookies !== 'none') {
-      // Fall back to browser cookies if no synced cookies available
+    } else if (shouldUseBrowserCookies) {
       args.push('--cookies-from-browser', settings.browserForCookies)
     }
 

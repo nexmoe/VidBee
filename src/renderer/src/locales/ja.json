@@ -312,8 +312,11 @@
     "valueTitle": "ログイン状態は次の目的で利用できます:",
     "valueList": {
       "privateVideos": "非公開動画のダウンロード",
+      "privateVideosDescription": "ソーシャルメディア上の個人コレクションに簡単にアクセス",
       "higherSuccess": "他のダウンロード成功率の向上",
-      "unlockQuality": "4K・8K・メンバー限定のダウンロードを解放"
+      "higherSuccessDescription": "実際のアクセス環境を構築してボット認定を回避",
+      "unlockQuality": "4K・8K・メンバー限定のダウンロードを解放",
+      "unlockQualityDescription": "4K/8K解像度と会員限定のプレミアムコンテンツを楽しめます"
     },
     "entriesTitle": "ウェブサイト",
     "entriesDescription": "前回の同期で見つかったサイトです。",
@@ -326,7 +329,8 @@
       "clear": "すべて削除"
     },
     "labels": {
-      "cookies": "クッキー"
+      "cookies": "クッキー",
+      "sites": "サイト"
     },
     "lastSyncedAt": "最終同期: {{time}}",
     "unknownSite": "不明なサイト",
@@ -422,6 +426,13 @@
     "aboutTab": "について",
     "advanced": "高度",
     "cookiesTab": "Cookies",
+    "cookiesUsage": "Cookie の使用方法",
+    "cookiesUsageDescription": "認証に使用する Cookie の取得元を選択します。",
+    "cookiesUsageOff": "オフ",
+    "cookiesUsageBrowser": "ブラウザから",
+    "cookiesUsageExtension": "拡張機能から",
+    "cookiesUsageOffTitle": "Cookie はオフです",
+    "cookiesUsageOffDescription": "取得元を選択するまで、Cookie なしでダウンロードします。",
     "app": "アプリ設定",
     "audio": "オーディオ設定",
     "browserForCookies": "Cookieに使用するブラウザを選択",
@@ -441,6 +452,10 @@
     "cookiesHelpTitle": "Cookies の使用",
     "cookiesHelpBrowser": "サインイン セッションを自動的に再利用するには、上記のブラウザーを選択してください。",
     "cookiesHelpFile": "Netscape Cookie ファイルをエクスポートし (yt-dlp FAQ を参照)、必要に応じてここで選択します。",
+    "syncedCookiesGuideTitle": "ブラウザからCookieを同期",
+    "syncedCookiesGuideDescription": "VidBeeの拡張機能をインストールして、Cookieをワンクリックで同期します。",
+    "syncedCookiesGuideLink": "拡張機能ガイドを開く",
+    "syncedCookiesImportTooltip": "ブラウザからエクスポートした cookies.txt（Netscape 形式）をインポートします。",
     "cookiesGuideTitle": "使い方の案内が必要ですか？",
     "cookiesGuideDescription": "VidBeeでクッキーを使う手順を確認できます。",
     "cookiesGuideLink": "Cookies ガイドを開く",
@@ -521,7 +536,8 @@
       "quit": "終了",
       "showHome": "ホームを表示"
     },
-    "video": "ビデオ設定"
+    "video": "ビデオ設定",
+    "syncedCookies": "同期済みCookies"
   },
   "subscriptions": {
     "title": "定期購入",

@@ -329,7 +329,8 @@
       "clear": "Clear All"
     },
     "labels": {
-      "cookies": "Cookies"
+      "cookies": "Cookies",
+      "sites": "sites"
     },
     "lastSyncedAt": "Last synced: {{time}}",
     "unknownSite": "Unknown site",
@@ -425,6 +426,13 @@
     "aboutTab": "About",
     "advanced": "Advanced",
     "cookiesTab": "Cookies",
+    "cookiesUsage": "Cookies usage",
+    "cookiesUsageDescription": "Choose how VidBee should use cookies for authentication.",
+    "cookiesUsageOff": "Off",
+    "cookiesUsageBrowser": "From browser",
+    "cookiesUsageExtension": "From extension",
+    "cookiesUsageOffTitle": "Cookies are off",
+    "cookiesUsageOffDescription": "Downloads will run without cookies until you select a source.",
     "app": "App Settings",
     "audio": "Audio Preferences",
     "browserForCookies": "Select browser to use cookies from",
@@ -444,6 +452,10 @@
     "cookiesHelpTitle": "Using cookies",
     "cookiesHelpBrowser": "Pick your browser above to reuse its signed-in session automatically.",
     "cookiesHelpFile": "Export a Netscape cookies file (see the yt-dlp FAQ) and select it here when needed.",
+    "syncedCookiesGuideTitle": "Sync cookies from your browser",
+    "syncedCookiesGuideDescription": "Install the VidBee browser extension to sync cookies in one click.",
+    "syncedCookiesGuideLink": "Open extension guide",
+    "syncedCookiesImportTooltip": "Import a cookies.txt file exported from your browser (Netscape format).",
     "cookiesGuideTitle": "Need a walkthrough?",
     "cookiesGuideDescription": "See step-by-step guidance for using cookies in VidBee.",
     "cookiesGuideLink": "Open cookies guide",
@@ -524,7 +536,8 @@
       "quit": "Quit",
       "showHome": "Show Home"
     },
-    "video": "Video Preferences"
+    "video": "Video Preferences",
+    "syncedCookies": "Synced Cookies"
   },
   "subscriptions": {
     "title": "Subscriptions",

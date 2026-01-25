@@ -111,13 +111,20 @@ export function UnifiedDownloadHistory({
   const [alsoDeleteFiles, setAlsoDeleteFiles] = useState(false)
   const alsoDeleteFilesId = useId()
   const hasCookieConfig = useMemo(() => {
+    const cookiesSource = settings.cookiesSource ?? 'browser'
+    if (cookiesSource === 'off') {
+      return false
+    }
+    if (cookiesSource === 'extension') {
+      return true
+    }
     const cookiesPath = settings.cookiesPath?.trim()
     if (cookiesPath) {
       return true
     }
     const browserSetting = settings.browserForCookies?.trim()
     return Boolean(browserSetting && browserSetting !== 'none')
-  }, [settings.browserForCookies, settings.cookiesPath])
+  }, [settings.browserForCookies, settings.cookiesPath, settings.cookiesSource])
   const showCookiesTip = !hasCookieConfig
   const canOpenCookiesSettings = Boolean(onOpenCookiesSettings ?? onOpenSettings)
 

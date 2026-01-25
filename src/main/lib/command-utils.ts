@@ -45,12 +45,15 @@ export const buildVideoInfoArgs = (
     args.push('--proxy', settings.proxy)
   }
 
-  // Try to use synced cookies first, then fall back to browser cookies
-  const syncedCookiesPath = exportCookiesToTempFile()
+  const cookiesSource = settings.cookiesSource ?? 'browser'
+  const shouldUseBrowserCookies =
+    cookiesSource === 'browser' &&
+    settings.browserForCookies &&
+    settings.browserForCookies !== 'none'
+  const syncedCookiesPath = cookiesSource === 'extension' ? exportCookiesToTempFile() : null
   if (syncedCookiesPath) {
     args.push('--cookies', syncedCookiesPath)
-  } else if (settings.browserForCookies && settings.browserForCookies !== 'none') {
-    // Fall back to browser cookies if no synced cookies available
+  } else if (shouldUseBrowserCookies) {
     args.push('--cookies-from-browser', settings.browserForCookies)
   }
 
