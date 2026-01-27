@@ -13,7 +13,7 @@ import {
   buildVideoFormatPreference
 } from '@shared/utils/format-preferences'
 import { useAtom, useSetAtom } from 'jotai'
-import { Download, FolderOpen, List, Loader2, Plus, Settings, Video } from 'lucide-react'
+import { FolderOpen, List, Loader2, Plus, Rocket, Video } from 'lucide-react'
 import { useCallback, useEffect, useId, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -786,32 +786,19 @@ export function DownloadDialog({
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              variant="ghost"
+              variant={settings.oneClickDownload ? 'default' : 'ghost'}
               size="icon"
               className="rounded-full"
               onClick={() => _onOpenSettings?.()}
             >
-              <Settings className="h-4 w-4" />
+              <Rocket className={`h-4 w-4 ${settings.oneClickDownload ? '' : 'opacity-50'}`} />
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="bottom">{t('settings.title')}</TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-full"
-              onClick={() => {
-                void startOneClickDownload(url, { clearInput: true })
-              }}
-              disabled={!url.trim()}
-            >
-              <Download className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">{t('download.oneClickDownloadNow')}</TooltipContent>
+          <TooltipContent side="bottom" className="max-w-xs">
+            {settings.oneClickDownload
+              ? t('download.oneClickDownloadEnabled')
+              : t('download.oneClickDownloadDisabled')}
+          </TooltipContent>
         </Tooltip>
 
         {clipboardPreviewStatus === 'invalid' ? (

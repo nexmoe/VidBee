@@ -150,6 +150,7 @@
     "oneClickDownload": "一键下载",
     "oneClickDownloadDescription": "使用默认设置直接下载，无需确认",
     "oneClickDownloadEnabled": "已启用一键下载。\n下载将直接以默认设置开始。",
+    "oneClickDownloadDisabled": "一键下载已禁用。\n点击图标打开设置进行启用。",
     "oneClickDownloadNow": "立即下载",
     "oneClickDownloadStarted": "已使用默认设置开始下载",
     "paste": "粘贴",

@@ -150,6 +150,7 @@
     "oneClickDownload": "One-Click Download",
     "oneClickDownloadDescription": "Download directly with default settings without confirmation",
     "oneClickDownloadEnabled": "One-Click Download is enabled. Downloads will start directly with default settings.",
+    "oneClickDownloadDisabled": "One-Click Download is disabled. Click the icon to open settings to enable it.",
     "oneClickDownloadNow": "Download Now",
     "oneClickDownloadStarted": "Download started with default settings",
     "paste": "Paste",
