@@ -807,11 +807,9 @@ export function DownloadDialog({
                   saveSetting({ key: 'oneClickDownload', value: !settings.oneClickDownload })
                 }}
               >
-                <Rocket
-                  className={`h-4 w-4 ${settings.oneClickDownload ? 'text-primary' : 'text-muted-foreground'}`}
-                />
+                <Rocket className="h-4 w-4 text-muted-foreground" />
               </Button>
-              <span className={`absolute -top-2 -right-2 inline-flex items-center justify-center h-5 w-5 rounded-full text-xs font-semibold ${settings.oneClickDownload ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+              <span className={`absolute -top-1 -right-3 inline-flex items-center justify-center px-2 h-4 rounded-full text-xs font-semibold whitespace-nowrap ${settings.oneClickDownload ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
                 {settings.oneClickDownload ? 'ON' : 'OFF'}
               </span>
             </div>
