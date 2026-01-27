@@ -787,14 +787,14 @@ export function DownloadDialog({
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              variant={settings.oneClickDownload ? 'default' : 'ghost'}
+              variant="ghost"
               size="icon"
               className="rounded-full"
               onClick={() => {
                 saveSetting({ key: 'oneClickDownload', value: !settings.oneClickDownload })
               }}
             >
-              <Rocket className={`h-4 w-4 ${settings.oneClickDownload ? '' : 'opacity-50'}`} />
+              <Rocket className={`h-4 w-4 ${settings.oneClickDownload ? 'text-primary' : 'text-muted-foreground'}`} />
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom" className="max-w-xs">
