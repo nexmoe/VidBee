@@ -19,7 +19,7 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { ipcEvents, ipcServices } from '../../lib/ipc'
 import { addDownloadAtom } from '../../store/downloads'
-import { loadSettingsAtom, settingsAtom } from '../../store/settings'
+import { loadSettingsAtom, saveSettingAtom, settingsAtom } from '../../store/settings'
 import {
   currentVideoInfoAtom,
   fetchVideoInfoAtom,
@@ -112,6 +112,7 @@ export function DownloadDialog({
   const fetchVideoInfo = useSetAtom(fetchVideoInfoAtom)
   const loadSettings = useSetAtom(loadSettingsAtom)
   const addDownload = useSetAtom(addDownloadAtom)
+  const saveSetting = useSetAtom(saveSettingAtom)
 
   const [url, setUrl] = useState('')
   const [activeTab, setActiveTab] = useState<'single' | 'playlist'>('single')
@@ -789,7 +790,9 @@ export function DownloadDialog({
               variant={settings.oneClickDownload ? 'default' : 'ghost'}
               size="icon"
               className="rounded-full"
-              onClick={() => _onOpenSettings?.()}
+              onClick={() => {
+                saveSetting({ key: 'oneClickDownload', value: !settings.oneClickDownload })
+              }}
             >
               <Rocket className={`h-4 w-4 ${settings.oneClickDownload ? '' : 'opacity-50'}`} />
             </Button>
