@@ -120,6 +120,8 @@ export function DownloadDialog({
   const [clipboardPreviewStatus, setClipboardPreviewStatus] = useState<
     'idle' | 'url' | 'invalid' | 'empty'
   >('idle')
+  const [clipboardIconLoading, setClipboardIconLoading] = useState(false)
+  const [clipboardIconFailed, setClipboardIconFailed] = useState(false)
 
   // Single video state
   const [singleVideoState, setSingleVideoState] = useState<SingleVideoState>({
@@ -747,6 +749,8 @@ export function DownloadDialog({
     if (!navigator.clipboard?.readText) {
       setClipboardPreviewHost('')
       setClipboardPreviewStatus('empty')
+      setClipboardIconLoading(false)
+      setClipboardIconFailed(false)
       return
     }
 
@@ -756,19 +760,27 @@ export function DownloadDialog({
       if (!trimmed) {
         setClipboardPreviewHost('')
         setClipboardPreviewStatus('empty')
+        setClipboardIconLoading(false)
+        setClipboardIconFailed(false)
         return
       }
       if (!isLikelyUrl(trimmed)) {
         setClipboardPreviewHost('')
         setClipboardPreviewStatus('invalid')
+        setClipboardIconLoading(false)
+        setClipboardIconFailed(false)
         return
       }
       const parsed = new URL(trimmed)
       setClipboardPreviewHost(parsed.hostname)
       setClipboardPreviewStatus('url')
+      setClipboardIconLoading(true)
+      setClipboardIconFailed(false)
     } catch {
       setClipboardPreviewHost('')
       setClipboardPreviewStatus('empty')
+      setClipboardIconLoading(false)
+      setClipboardIconFailed(false)
     }
   }, [])
 
@@ -786,16 +798,23 @@ export function DownloadDialog({
       <div className="flex items-center gap-2">
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-full"
-              onClick={() => {
-                saveSetting({ key: 'oneClickDownload', value: !settings.oneClickDownload })
-              }}
-            >
-              <Rocket className={`h-4 w-4 ${settings.oneClickDownload ? 'text-primary' : 'text-muted-foreground'}`} />
-            </Button>
+            <div className="relative">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full"
+                onClick={() => {
+                  saveSetting({ key: 'oneClickDownload', value: !settings.oneClickDownload })
+                }}
+              >
+                <Rocket
+                  className={`h-4 w-4 ${settings.oneClickDownload ? 'text-primary' : 'text-muted-foreground'}`}
+                />
+              </Button>
+              <span className={`absolute -top-2 -right-2 inline-flex items-center justify-center h-5 w-5 rounded-full text-xs font-semibold ${settings.oneClickDownload ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+                {settings.oneClickDownload ? 'ON' : 'OFF'}
+              </span>
+            </div>
           </TooltipTrigger>
           <TooltipContent side="bottom" className="max-w-xs">
             {t('download.oneClickDownloadTooltip')}
@@ -824,13 +843,20 @@ export function DownloadDialog({
             }}
           >
             {clipboardPreviewStatus === 'url' && clipboardPreviewHost ? (
-              <RemoteImage
-                src={`https://unavatar.io/${clipboardPreviewHost}?fallback=false`}
-                alt={clipboardPreviewHost}
-                className="h-4 w-4"
-                fallbackIcon={<Plus className="h-4 w-4" />}
-                useCache={false}
-              />
+              <>
+                <RemoteImage
+                  src={`https://unavatar.io/${clipboardPreviewHost}?fallback=false`}
+                  alt={clipboardPreviewHost}
+                  className={cn(
+                    'h-4 w-4',
+                    (clipboardIconLoading || clipboardIconFailed) && 'hidden'
+                  )}
+                  useCache={false}
+                  onError={() => setClipboardIconFailed(true)}
+                  onLoadingChange={(loading) => setClipboardIconLoading(loading)}
+                />
+                {(clipboardIconLoading || clipboardIconFailed) && <Plus className="h-4 w-4" />}
+              </>
             ) : (
               <Plus className="h-4 w-4" />
             )}
