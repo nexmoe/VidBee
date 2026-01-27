@@ -150,6 +150,7 @@
     "oneClickDownload": "원클릭 다운로드",
     "oneClickDownloadDescription": "확인 없이 기본 설정으로 직접 다운로드",
     "oneClickDownloadEnabled": "원클릭 다운로드가 활성화되었습니다. \n다운로드는 기본 설정으로 바로 시작됩니다.",
+    "oneClickDownloadDisabled": "비활성화됨\n활성화하면 한 번에 붙여넣기 및 다운로드됩니다",
     "oneClickDownloadNow": "지금 다운로드",
     "oneClickDownloadStarted": "기본 설정으로 다운로드 시작됨",
     "paste": "붙여넣기",

@@ -150,6 +150,7 @@
     "oneClickDownload": "ワンクリックダウンロード",
     "oneClickDownloadDescription": "確認なしでデフォルト設定で直接ダウンロード",
     "oneClickDownloadEnabled": "ワンクリックダウンロードが有効になります。\nダウンロードはデフォルト設定で直接開始されます。",
+    "oneClickDownloadDisabled": "無効\n有効にするとワンクリックで貼り付けてダウンロードできます",
     "oneClickDownloadNow": "今すぐダウンロード",
     "oneClickDownloadStarted": "デフォルト設定でダウンロード開始",
     "paste": "貼り付け",

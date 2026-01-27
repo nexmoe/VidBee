@@ -150,6 +150,7 @@
     "oneClickDownload": "تحميل بنقرة واحدة",
     "oneClickDownloadDescription": "تحميل مباشر بالإعدادات الافتراضية دون تأكيد",
     "oneClickDownloadEnabled": "تم تفعيل التحميل بنقرة واحدة. ستبدأ التحميلات مباشرة بالإعدادات الافتراضية.",
+    "oneClickDownloadDisabled": "معطّل\nفعّل للصق والتنزيل بنقرة واحدة",
     "oneClickDownloadNow": "تحميل الآن",
     "oneClickDownloadStarted": "بدأ التحميل بالإعدادات الافتراضية",
     "paste": "لصق",

@@ -798,9 +798,7 @@ export function DownloadDialog({
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom" className="max-w-xs">
-            {settings.oneClickDownload
-              ? t('download.oneClickDownloadEnabled')
-              : t('download.oneClickDownloadDisabled')}
+            {t('download.oneClickDownloadTooltip')}
           </TooltipContent>
         </Tooltip>
 
@@ -826,14 +824,13 @@ export function DownloadDialog({
             }}
           >
             {clipboardPreviewStatus === 'url' && clipboardPreviewHost ? (
-              <span className="mr-2 inline-flex h-4 w-4 items-center justify-center">
-                <RemoteImage
-                  src={`https://unavatar.io/${clipboardPreviewHost}`}
-                  alt={clipboardPreviewHost}
-                  className="h-4 w-4"
-                  useCache={false}
-                />
-              </span>
+              <RemoteImage
+                src={`https://unavatar.io/${clipboardPreviewHost}?fallback=false`}
+                alt={clipboardPreviewHost}
+                className="h-4 w-4"
+                fallbackIcon={<Plus className="h-4 w-4" />}
+                useCache={false}
+              />
             ) : (
               <Plus className="h-4 w-4" />
             )}

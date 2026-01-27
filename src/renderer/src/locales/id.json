@@ -150,6 +150,7 @@
     "oneClickDownload": "Unduh Satu Klik",
     "oneClickDownloadDescription": "Unduh langsung dengan pengaturan default tanpa konfirmasi",
     "oneClickDownloadEnabled": "Unduh Satu Klik diaktifkan. Unduhan akan dimulai langsung dengan pengaturan default.",
+    "oneClickDownloadDisabled": "Dinonaktifkan\nAktifkan untuk menempel dan mengunduh dalam satu klik",
     "oneClickDownloadNow": "Unduh Sekarang",
     "oneClickDownloadStarted": "Unduhan dimulai dengan pengaturan default",
     "paste": "Tempel",

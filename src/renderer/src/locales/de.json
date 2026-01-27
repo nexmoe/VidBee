@@ -150,6 +150,7 @@
     "oneClickDownload": "Ein-Klick-Download",
     "oneClickDownloadDescription": "Direkt mit Standardeinstellungen ohne Bestätigung herunterladen",
     "oneClickDownloadEnabled": "Ein-Klick-Download ist aktiviert. Downloads starten direkt mit Standardeinstellungen.",
+    "oneClickDownloadDisabled": "Deaktiviert\nAktivieren, um mit einem Klick einzufügen und herunterzuladen",
     "oneClickDownloadNow": "Jetzt herunterladen",
     "oneClickDownloadStarted": "Download mit Standardeinstellungen gestartet",
     "paste": "Einfügen",
