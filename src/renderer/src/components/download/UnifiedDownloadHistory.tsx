@@ -482,16 +482,7 @@ export function UnifiedDownloadHistory({
               )
             })}
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 rounded-full px-3"
-              onClick={handleSelectAll}
-              disabled={selectableIds.length === 0}
-            >
-              {t('history.selectAll')}
-            </Button>
+        <div className="flex items-center gap-2">
             <DownloadDialog
               onOpenSupportedSites={onOpenSupportedSites}
               onOpenSettings={onOpenSettings}
