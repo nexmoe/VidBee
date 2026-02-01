@@ -226,13 +226,6 @@ export function UnifiedDownloadHistory({
     setSelectedIds(new Set())
   }
 
-  const handleSelectAll = () => {
-    if (selectableIds.length === 0) {
-      return
-    }
-    setSelectedIds(new Set(selectableIds))
-  }
-
   const handleRequestDeleteSelected = () => {
     if (selectedIds.size === 0) {
       return
