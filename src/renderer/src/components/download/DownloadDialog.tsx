@@ -39,58 +39,39 @@ const isLikelyUrl = (value: string): boolean => {
   }
 }
 
-const isAudioOnlyFormat = (format: VideoFormat): boolean =>
-  !!format.acodec && format.acodec !== 'none' && (!format.video_ext || format.video_ext === 'none')
+const isMuxedVideoFormat = (format: VideoFormat | undefined): boolean =>
+  Boolean(format?.vcodec && format.vcodec !== 'none' && format.acodec && format.acodec !== 'none')
 
-const isHlsFormat = (format: VideoFormat): boolean =>
-  format.protocol === 'm3u8' || format.protocol === 'm3u8_native'
+const resolvePreferredAudioExt = (videoExt: string | undefined): string | undefined => {
+  if (!videoExt) {
+    return undefined
+  }
 
-const sortAudioFormatsByQuality = (a: VideoFormat, b: VideoFormat): number => {
-  const aQuality = a.tbr ?? a.quality ?? 0
-  const bQuality = b.tbr ?? b.quality ?? 0
-  if (aQuality !== bQuality) {
-    return bQuality - aQuality
+  const normalizedExt = videoExt.toLowerCase()
+  if (normalizedExt === 'mp4') {
+    return 'm4a'
   }
-  const aHasSize = !!(a.filesize || a.filesize_approx)
-  const bHasSize = !!(b.filesize || b.filesize_approx)
-  if (aHasSize !== bHasSize) {
-    return bHasSize ? 1 : -1
+  if (normalizedExt === 'webm') {
+    return 'webm'
   }
-  return 0
+  return undefined
 }
 
-const pickBestAudioFormatsByLanguage = (formats: VideoFormat[]): string[] => {
-  const audioFormats = formats.filter(isAudioOnlyFormat)
-  if (audioFormats.length === 0) {
-    return []
+const buildSingleVideoFormatSelector = (
+  formatId: string,
+  format: VideoFormat | undefined
+): string => {
+  if (!format || isMuxedVideoFormat(format)) {
+    return formatId
   }
 
-  const nonHls = audioFormats.filter((format) => !isHlsFormat(format))
-  const candidates = nonHls.length > 0 ? nonHls : audioFormats
-
-  const grouped = new Map<string, VideoFormat[]>()
-  for (const format of candidates) {
-    const language = format.language?.trim() || 'und'
-    const existing = grouped.get(language)
-    if (existing) {
-      existing.push(format)
-    } else {
-      grouped.set(language, [format])
-    }
+  const preferredAudioExt = resolvePreferredAudioExt(format.ext)
+  if (!preferredAudioExt) {
+    return `${formatId}+bestaudio`
   }
 
-  const sortedLanguages = Array.from(grouped.entries()).sort(([a], [b]) => {
-    if (a === 'und') return 1
-    if (b === 'und') return -1
-    return a.localeCompare(b)
-  })
-
-  return sortedLanguages
-    .map(([, languageFormats]) => {
-      const sorted = [...languageFormats].sort(sortAudioFormatsByQuality)
-      return sorted[0]?.format_id
-    })
-    .filter((id): id is string => !!id)
+  // Prefer same-container audio and keep a fallback when not available.
+  return `${formatId}+bestaudio[ext=${preferredAudioExt}]/${formatId}+bestaudio`
 }
 
 interface DownloadDialogProps {
@@ -682,15 +663,20 @@ export function DownloadDialog({
       createdAt: Date.now()
     }
 
-    const audioFormatIds =
-      type === 'video' ? pickBestAudioFormatsByLanguage(videoInfo.formats || []) : undefined
+    const selectedVideoFormat =
+      type === 'video'
+        ? (videoInfo.formats || []).find((format) => format.format_id === selectedFormat)
+        : undefined
+    const resolvedFormat =
+      type === 'video'
+        ? buildSingleVideoFormatSelector(selectedFormat, selectedVideoFormat)
+        : selectedFormat
 
     const options = {
       url: videoInfo.webpage_url || '',
       type,
-      format: selectedFormat || undefined,
-      audioFormat: type === 'video' ? 'best' : undefined,
-      audioFormatIds: audioFormatIds && audioFormatIds.length > 0 ? audioFormatIds : undefined,
+      format: resolvedFormat || undefined,
+      audioFormat: type === 'video' && isMuxedVideoFormat(selectedVideoFormat) ? '' : undefined,
       customDownloadPath: singleVideoState.customDownloadPath.trim() || undefined
     }
 
