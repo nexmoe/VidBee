@@ -3,7 +3,9 @@ import { Checkbox } from '@renderer/components/ui/checkbox'
 import { Dialog, DialogContent, DialogFooter, DialogHeader } from '@renderer/components/ui/dialog'
 import { Input } from '@renderer/components/ui/input'
 import { Label } from '@renderer/components/ui/label'
+import { RemoteImage } from '@renderer/components/ui/remote-image'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@renderer/components/ui/tabs'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { cn } from '@renderer/lib/utils'
 import type { PlaylistInfo, VideoFormat } from '@shared/types'
 import {
@@ -11,13 +13,13 @@ import {
   buildVideoFormatPreference
 } from '@shared/utils/format-preferences'
 import { useAtom, useSetAtom } from 'jotai'
-import { FolderOpen, List, Loader2, Plus, Video } from 'lucide-react'
+import { FolderOpen, List, Loader2, Plus, Rocket, Video } from 'lucide-react'
 import { useCallback, useEffect, useId, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { ipcEvents, ipcServices } from '../../lib/ipc'
 import { addDownloadAtom } from '../../store/downloads'
-import { loadSettingsAtom, settingsAtom } from '../../store/settings'
+import { loadSettingsAtom, saveSettingAtom, settingsAtom } from '../../store/settings'
 import {
   currentVideoInfoAtom,
   fetchVideoInfoAtom,
@@ -110,9 +112,16 @@ export function DownloadDialog({
   const fetchVideoInfo = useSetAtom(fetchVideoInfoAtom)
   const loadSettings = useSetAtom(loadSettingsAtom)
   const addDownload = useSetAtom(addDownloadAtom)
+  const saveSetting = useSetAtom(saveSettingAtom)
 
   const [url, setUrl] = useState('')
   const [activeTab, setActiveTab] = useState<'single' | 'playlist'>('single')
+  const [clipboardPreviewHost, setClipboardPreviewHost] = useState('')
+  const [clipboardPreviewStatus, setClipboardPreviewStatus] = useState<
+    'idle' | 'url' | 'invalid' | 'empty'
+  >('idle')
+  const [clipboardIconLoading, setClipboardIconLoading] = useState(false)
+  const [clipboardIconFailed, setClipboardIconFailed] = useState(false)
 
   // Single video state
   const [singleVideoState, setSingleVideoState] = useState<SingleVideoState>({
@@ -736,17 +745,123 @@ export function DownloadDialog({
       ? singleVideoState.selectedVideoFormat
       : singleVideoState.selectedAudioFormat
 
+  const loadClipboardPreview = useCallback(async () => {
+    if (!navigator.clipboard?.readText) {
+      setClipboardPreviewHost('')
+      setClipboardPreviewStatus('empty')
+      setClipboardIconLoading(false)
+      setClipboardIconFailed(false)
+      return
+    }
+
+    try {
+      const text = await navigator.clipboard.readText()
+      const trimmed = text.trim()
+      if (!trimmed) {
+        setClipboardPreviewHost('')
+        setClipboardPreviewStatus('empty')
+        setClipboardIconLoading(false)
+        setClipboardIconFailed(false)
+        return
+      }
+      if (!isLikelyUrl(trimmed)) {
+        setClipboardPreviewHost('')
+        setClipboardPreviewStatus('invalid')
+        setClipboardIconLoading(false)
+        setClipboardIconFailed(false)
+        return
+      }
+      const parsed = new URL(trimmed)
+      setClipboardPreviewHost(parsed.hostname)
+      setClipboardPreviewStatus('url')
+      setClipboardIconLoading(true)
+      setClipboardIconFailed(false)
+    } catch {
+      setClipboardPreviewHost('')
+      setClipboardPreviewStatus('empty')
+      setClipboardIconLoading(false)
+      setClipboardIconFailed(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    void loadClipboardPreview()
+    const handleFocus = () => {
+      void loadClipboardPreview()
+    }
+    window.addEventListener('focus', handleFocus)
+    return () => window.removeEventListener('focus', handleFocus)
+  }, [loadClipboardPreview])
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <Button
-        className="rounded-full"
-        onClick={() => {
-          void handleOpenDialog()
-        }}
-      >
-        <Plus className="h-4 w-4" />
-        {t('download.pasteUrlButton')}
-      </Button>
+      <div className="flex items-center gap-4">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="relative">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full"
+                onClick={() => {
+                  saveSetting({ key: 'oneClickDownload', value: !settings.oneClickDownload })
+                }}
+              >
+                <Rocket className="h-4 w-4 text-muted-foreground" />
+              </Button>
+              <span className={`absolute top-0 -right-2 inline-flex items-center justify-center px-1 h-3.5 rounded-full text-xs font-semibold whitespace-nowrap leading-none ${settings.oneClickDownload ? 'bg-being-green-400 text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}>
+                {settings.oneClickDownload ? 'ON' : 'OFF'}
+              </span>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="max-w-xs">
+            {t('download.oneClickDownloadTooltip')}
+          </TooltipContent>
+        </Tooltip>
+
+        {clipboardPreviewStatus === 'invalid' ? (
+          <Tooltip open>
+            <TooltipTrigger asChild>
+              <span className="inline-flex">
+                <Button className="rounded-full" disabled>
+                  <Plus className="h-4 w-4" />
+                  {t('download.pasteUrlButton')}
+                </Button>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" align="end">
+              {t('errors.invalidUrl')}
+            </TooltipContent>
+          </Tooltip>
+        ) : (
+          <Button
+            className="rounded-full"
+            onClick={() => {
+              void handleOpenDialog()
+            }}
+          >
+            {clipboardPreviewStatus === 'url' && clipboardPreviewHost ? (
+              <>
+                <RemoteImage
+                  src={`https://unavatar.io/${clipboardPreviewHost}?fallback=false`}
+                  alt={clipboardPreviewHost}
+                  className={cn(
+                    'h-4 w-4',
+                    (clipboardIconLoading || clipboardIconFailed) && 'hidden'
+                  )}
+                  useCache={false}
+                  onError={() => setClipboardIconFailed(true)}
+                  onLoadingChange={(loading) => setClipboardIconLoading(loading)}
+                />
+                {(clipboardIconLoading || clipboardIconFailed) && <Plus className="h-4 w-4" />}
+              </>
+            ) : (
+              <Plus className="h-4 w-4" />
+            )}
+            {t('download.pasteUrlButton')}
+          </Button>
+        )}
+      </div>
       <DialogContent
         className={cn(
           'sm:max-w-xl max-h-[90vh] flex flex-col p-5 gap-0 overflow-hidden',

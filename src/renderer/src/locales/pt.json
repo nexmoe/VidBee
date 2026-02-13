@@ -149,7 +149,7 @@
     "goToSettings": "Vá para Configurações",
     "oneClickDownload": "Download de Um Clique",
     "oneClickDownloadDescription": "Baixar diretamente com configurações padrão sem confirmação",
-    "oneClickDownloadEnabled": "O download com um clique está ativado. \nOs downloads começarão diretamente com as configurações padrão.",
+    "oneClickDownloadTooltip": "Cole e baixe na hora, sem etapas",
     "oneClickDownloadNow": "Baixar Agora",
     "oneClickDownloadStarted": "Download iniciado com configurações padrão",
     "paste": "Colar",
