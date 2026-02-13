@@ -102,6 +102,17 @@
 }
 
 @theme inline {
+  --color-being-green-50: #effaf4;
+  --color-being-green-100: #d8f3e3;
+  --color-being-green-200: #b4e6cb;
+  --color-being-green-300: #67c99a;
+  --color-being-green-400: #4fb889;
+  --color-being-green-500: #2c9d6e;
+  --color-being-green-600: #1d7e58;
+  --color-being-green-700: #176549;
+  --color-being-green-800: #15503a;
+  --color-being-green-900: #124231;
+  --color-being-green-950: #09251c;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
