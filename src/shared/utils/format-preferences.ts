@@ -20,8 +20,12 @@ const dedupe = (candidates: Array<string | undefined>): string[] => {
   const seen = new Set<string>()
   const result: string[] = []
   for (const candidate of candidates) {
-    if (!candidate) continue
-    if (seen.has(candidate)) continue
+    if (!candidate) {
+      continue
+    }
+    if (seen.has(candidate)) {
+      continue
+    }
     seen.add(candidate)
     result.push(candidate)
   }

@@ -62,7 +62,7 @@ export function ErrorPage({ errorInfo, onReload, onGoHome }: ErrorPageProps) {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background p-4">
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="w-full max-w-3xl">
         <CardHeader>
           <div className="flex items-center gap-3">
@@ -77,9 +77,9 @@ export function ErrorPage({ errorInfo, onReload, onGoHome }: ErrorPageProps) {
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Error Message */}
-          <div className="rounded-md bg-destructive/10 border border-destructive/20 p-4">
-            <p className="text-sm font-medium text-destructive mb-1">{t('error.message')}</p>
-            <p className="text-sm text-foreground break-words">
+          <div className="rounded-md border border-destructive/20 bg-destructive/10 p-4">
+            <p className="mb-1 font-medium text-destructive text-sm">{t('error.message')}</p>
+            <p className="break-words text-foreground text-sm">
               {errorInfo.error.message || t('error.unknownError')}
             </p>
           </div>
@@ -87,20 +87,20 @@ export function ErrorPage({ errorInfo, onReload, onGoHome }: ErrorPageProps) {
           {/* Actions */}
           <div className="flex flex-wrap gap-2">
             {onGoHome && (
-              <Button variant="outline" onClick={onGoHome}>
-                <Home className="h-4 w-4 mr-2" />
+              <Button onClick={onGoHome} variant="outline">
+                <Home className="mr-2 h-4 w-4" />
                 {t('error.goHome')}
               </Button>
             )}
-            <Button variant="outline" onClick={handleReload}>
-              <RefreshCw className="h-4 w-4 mr-2" />
+            <Button onClick={handleReload} variant="outline">
+              <RefreshCw className="mr-2 h-4 w-4" />
               {t('error.reload')}
             </Button>
-            <Button variant="outline" onClick={handleCopy}>
-              <Copy className="h-4 w-4 mr-2" />
+            <Button onClick={handleCopy} variant="outline">
+              <Copy className="mr-2 h-4 w-4" />
               {copied ? t('error.copied') : t('error.copyReport')}
             </Button>
-            <Button variant="ghost" onClick={() => setShowDetails(!showDetails)}>
+            <Button onClick={() => setShowDetails(!showDetails)} variant="ghost">
               {showDetails ? t('error.hideDetails') : t('error.showDetails')}
             </Button>
           </div>
@@ -109,9 +109,9 @@ export function ErrorPage({ errorInfo, onReload, onGoHome }: ErrorPageProps) {
           {showDetails && (
             <div className="space-y-4">
               <div>
-                <p className="text-sm font-medium mb-2">{t('error.stackTrace')}</p>
+                <p className="mb-2 font-medium text-sm">{t('error.stackTrace')}</p>
                 <ScrollArea className="h-48 rounded-md border bg-muted/50 p-4">
-                  <pre className="text-xs font-mono whitespace-pre-wrap break-words">
+                  <pre className="whitespace-pre-wrap break-words font-mono text-xs">
                     {errorInfo.error.stack || t('error.noStackTrace')}
                   </pre>
                 </ScrollArea>
@@ -119,9 +119,9 @@ export function ErrorPage({ errorInfo, onReload, onGoHome }: ErrorPageProps) {
 
               {errorInfo.errorInfo?.componentStack && (
                 <div>
-                  <p className="text-sm font-medium mb-2">{t('error.componentStack')}</p>
+                  <p className="mb-2 font-medium text-sm">{t('error.componentStack')}</p>
                   <ScrollArea className="h-32 rounded-md border bg-muted/50 p-4">
-                    <pre className="text-xs font-mono whitespace-pre-wrap break-words">
+                    <pre className="whitespace-pre-wrap break-words font-mono text-xs">
                       {errorInfo.errorInfo.componentStack}
                     </pre>
                   </ScrollArea>
@@ -129,23 +129,23 @@ export function ErrorPage({ errorInfo, onReload, onGoHome }: ErrorPageProps) {
               )}
 
               <div>
-                <p className="text-sm font-medium mb-2">{t('error.fullReport')}</p>
+                <p className="mb-2 font-medium text-sm">{t('error.fullReport')}</p>
                 <Textarea
-                  readOnly
-                  value={errorReport}
-                  className="font-mono text-xs min-h-48"
+                  className="min-h-48 font-mono text-xs"
                   onClick={(e) => {
                     const target = e.target as HTMLTextAreaElement
                     target.select()
                   }}
+                  readOnly
+                  value={errorReport}
                 />
               </div>
             </div>
           )}
 
           {/* Help Text */}
-          <div className="rounded-md bg-muted/50 border p-4">
-            <p className="text-sm text-muted-foreground">{t('error.helpText')}</p>
+          <div className="rounded-md border bg-muted/50 p-4">
+            <p className="text-muted-foreground text-sm">{t('error.helpText')}</p>
           </div>
         </CardContent>
       </Card>

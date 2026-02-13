@@ -25,11 +25,15 @@ export const useCachedThumbnail = (url?: string | null): string | undefined => {
 
       try {
         const localUrl = await ipcServices.thumbnail.getThumbnailPath(url)
-        if (!isActive) return
+        if (!isActive) {
+          return
+        }
         setCachedUrl(localUrl ?? undefined)
       } catch (error) {
         console.error('Failed to load cached thumbnail:', error)
-        if (!isActive) return
+        if (!isActive) {
+          return
+        }
         setCachedUrl(undefined)
       }
     }

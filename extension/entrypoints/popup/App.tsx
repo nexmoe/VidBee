@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import './App.css'
 
-type VideoFormat = {
+interface VideoFormat {
   format_id?: string
   ext?: string
   format_note?: string
@@ -16,7 +16,7 @@ type VideoFormat = {
   tbr?: number
 }
 
-type VideoInfo = {
+interface VideoInfo {
   title?: string
   thumbnail?: string
   duration?: number
@@ -26,12 +26,16 @@ type VideoInfo = {
 const CACHE_TTL_MS = 60 * 60 * 1000
 
 const isValidHttpUrl = (value?: string): boolean => {
-  if (!value) return false
+  if (!value) {
+    return false
+  }
   return value.startsWith('http://') || value.startsWith('https://')
 }
 
 const formatDuration = (value?: number): string => {
-  if (!value || value <= 0) return 'Unknown'
+  if (!value || value <= 0) {
+    return 'Unknown'
+  }
   const totalSeconds = Math.round(value)
   const hours = Math.floor(totalSeconds / 3600)
   const minutes = Math.floor((totalSeconds % 3600) / 60)
@@ -42,7 +46,9 @@ const formatDuration = (value?: number): string => {
 }
 
 const formatBytes = (value?: number): string => {
-  if (!value || value <= 0) return '-'
+  if (!value || value <= 0) {
+    return '-'
+  }
   const units = ['B', 'KB', 'MB', 'GB']
   let size = value
   let unitIndex = 0
@@ -64,7 +70,7 @@ const isAudioFormat = (format: VideoFormat): boolean => {
   return Boolean(format.acodec && format.acodec !== 'none' && !isVideoFormat(format))
 }
 
-type VideoInfoCacheEntry = {
+interface VideoInfoCacheEntry {
   url: string
   status: 'pending' | 'ready' | 'error'
   fetchedAt: number
@@ -72,7 +78,7 @@ type VideoInfoCacheEntry = {
   error?: string
 }
 
-type VideoGroup = {
+interface VideoGroup {
   label: string
   height: number
   formats: VideoFormat[]
@@ -81,10 +87,16 @@ type VideoGroup = {
 const loadCachedInfo = async (url: string): Promise<VideoInfoCacheEntry | null> => {
   const data = await browser.storage.local.get('videoInfoCacheByUrl')
   const map = data.videoInfoCacheByUrl as Record<string, VideoInfoCacheEntry> | undefined
-  if (!map) return null
+  if (!map) {
+    return null
+  }
   const cached = map[url]
-  if (!cached) return null
-  if (Date.now() - cached.fetchedAt > CACHE_TTL_MS) return null
+  if (!cached) {
+    return null
+  }
+  if (Date.now() - cached.fetchedAt > CACHE_TTL_MS) {
+    return null
+  }
   return cached
 }
 
@@ -117,13 +129,19 @@ function App() {
       changes: Record<string, browser.storage.StorageChange>,
       areaName: string
     ) => {
-      if (!active || areaName !== 'local') return
+      if (!active || areaName !== 'local') {
+        return
+      }
       const change = changes.videoInfoCacheByUrl
-      if (!change?.newValue) return
+      if (!change?.newValue) {
+        return
+      }
 
       const map = change.newValue as Record<string, VideoInfoCacheEntry>
       const next = map[targetState.url]
-      if (!next) return
+      if (!next) {
+        return
+      }
 
       if (next.status === 'ready' && next.info) {
         setInfo(next.info)
@@ -223,7 +241,9 @@ function App() {
 
   const groupedVideoFormats = useMemo(() => {
     const raw = groupedFormats.video
-    if (!raw.length) return []
+    if (!raw.length) {
+      return []
+    }
 
     const groups: Record<number, VideoFormat[]> = {}
     const noHeight: VideoFormat[] = []
@@ -233,7 +253,9 @@ function App() {
       const heightVal = h ? Number(h) : 0
 
       if (heightVal > 0) {
-        if (!groups[heightVal]) groups[heightVal] = []
+        if (!groups[heightVal]) {
+          groups[heightVal] = []
+        }
         groups[heightVal].push(f)
       } else {
         noHeight.push(f)
@@ -274,7 +296,9 @@ function App() {
   }
 
   const handleOpenClient = () => {
-    if (!currentUrl) return
+    if (!currentUrl) {
+      return
+    }
     const deepLink = `vidbee://download?url=${encodeURIComponent(currentUrl)}`
     window.location.href = deepLink
   }
@@ -302,24 +326,27 @@ function App() {
       : 'Try again in a moment.'
 
   const renderStatus = () => {
-    if (loading)
+    if (loading) {
       return (
         <span className="status-indicator">
           <div className="status-dot loading" /> Working
         </span>
       )
-    if (error)
+    }
+    if (error) {
       return (
         <span className="status-indicator">
           <div className="status-dot error" /> Error
         </span>
       )
-    if (info)
+    }
+    if (info) {
       return (
         <span className="status-indicator">
           <div className="status-dot ok" /> Ready
         </span>
       )
+    }
     return (
       <span className="status-indicator">
         <div className="status-dot" /> Idle
@@ -355,9 +382,9 @@ function App() {
                   Start VidBee and keep it running, then we will retry automatically.
                 </p>
                 <button
-                  type="button"
                   className="secondary-button"
                   onClick={handleOpenClientAndRetry}
+                  type="button"
                 >
                   Open Client
                 </button>
@@ -368,10 +395,10 @@ function App() {
                   Download VidBee once, install it, then come back here to try again.
                 </p>
                 <a
-                  href="https://vidbee.app"
-                  target="_blank"
-                  rel="noopener noreferrer"
                   className="secondary-button"
+                  href="https://vidbee.app"
+                  rel="noopener noreferrer"
+                  target="_blank"
                 >
                   Download VidBee
                 </a>
@@ -385,7 +412,7 @@ function App() {
                   ? 'Open a supported video page, then retry.'
                   : 'Retry after a moment.'}
               </p>
-              <button type="button" className="secondary-button" onClick={handleRetry}>
+              <button className="secondary-button" onClick={handleRetry} type="button">
                 Retry
               </button>
             </div>
@@ -393,7 +420,7 @@ function App() {
         </div>
       )}
 
-      {!loading && !error && info && (
+      {!(loading || error) && info && (
         <>
           <section className="video-info">
             <div className="video-details">
@@ -404,10 +431,10 @@ function App() {
                 <span>{formats.length} formats</span>
               </div>
             </div>
-            {info.thumbnail && <img className="thumbnail" src={info.thumbnail} alt="" />}
+            {info.thumbnail && <img alt="" className="thumbnail" src={info.thumbnail} />}
           </section>
 
-          <button type="button" className="primary-button" onClick={handleOpenClient}>
+          <button className="primary-button" onClick={handleOpenClient} type="button">
             Download with VidBee
           </button>
 

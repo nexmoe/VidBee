@@ -34,36 +34,36 @@ export function AdvancedOptions({
     <div className="space-y-6">
       {/* Time Range */}
       <div className="space-y-2">
-        <Label className="text-xs font-medium text-muted-foreground ml-1">
+        <Label className="ml-1 font-medium text-muted-foreground text-xs">
           {t('advancedOptions.timeRange')}
         </Label>
         <div className="flex items-center gap-4">
-          <div className="flex-1 relative group">
+          <div className="group relative flex-1">
             <Input
-              placeholder={t('advancedOptions.startPlaceholder')}
-              value={startTime}
-              onChange={(e) => onStartTimeChange(e.target.value)}
               className="h-9 text-center"
+              onChange={(e) => onStartTimeChange(e.target.value)}
+              placeholder={t('advancedOptions.startPlaceholder')}
               title={t('advancedOptions.startHint')}
+              value={startTime}
             />
           </div>
           <span className="text-muted-foreground text-xs">-</span>
-          <div className="flex-1 relative group">
+          <div className="group relative flex-1">
             <Input
-              placeholder={t('advancedOptions.endPlaceholder')}
-              value={endTime}
-              onChange={(e) => onEndTimeChange(e.target.value)}
               className="h-9 text-center"
+              onChange={(e) => onEndTimeChange(e.target.value)}
+              placeholder={t('advancedOptions.endPlaceholder')}
               title={t('advancedOptions.endHint')}
+              value={endTime}
             />
           </div>
         </div>
       </div>
 
       {/* Subtitles */}
-      <div className="flex items-center justify-between p-3 border rounded-md bg-muted/30">
+      <div className="flex items-center justify-between rounded-md border bg-muted/30 p-3">
         <div className="space-y-0.5">
-          <Label className="text-sm font-semibold">{t('advancedOptions.downloadSubs')}</Label>
+          <Label className="font-semibold text-sm">{t('advancedOptions.downloadSubs')}</Label>
           <p className="text-[11px] text-muted-foreground">
             {t('advancedOptions.downloadSubsHint')}
           </p>
@@ -78,12 +78,12 @@ export function AdvancedOptions({
   }
 
   return (
-    <Accordion type="single" collapsible className="w-full">
-      <AccordionItem value="advanced" className="border-b">
-        <AccordionTrigger className="flex items-center gap-2 py-4 text-sm font-semibold hover:no-underline">
+    <Accordion className="w-full" collapsible type="single">
+      <AccordionItem className="border-b" value="advanced">
+        <AccordionTrigger className="flex items-center gap-2 py-4 font-semibold text-sm hover:no-underline">
           <span className="flex-1 text-left">{t('advancedOptions.title')}</span>
         </AccordionTrigger>
-        <AccordionContent className="pb-6 pt-2">{content}</AccordionContent>
+        <AccordionContent className="pt-2 pb-6">{content}</AccordionContent>
       </AccordionItem>
     </Accordion>
   )

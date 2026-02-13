@@ -46,14 +46,14 @@ export const runMigrations = (database: BetterSQLite3Database): void => {
   }
 }
 
-type JournalEntry = {
+interface JournalEntry {
   idx: number
   tag: string
   when: number
   breakpoints: boolean
 }
 
-type Snapshot = {
+interface Snapshot {
   tables?: Record<string, { columns?: Record<string, unknown> }>
 }
 
@@ -208,7 +208,7 @@ const skipLegacyHistoryMigration = (
 const resolveMigrationsFolder = (): string | null => {
   const candidates = new Set<string>()
   candidates.add(resolve(process.cwd(), MIGRATIONS_RELATIVE_PATH))
-  candidates.add(resolve(__dirname, '../../../../', MIGRATIONS_RELATIVE_PATH))
+  candidates.add(resolve(import.meta.dirname, '../../../../', MIGRATIONS_RELATIVE_PATH))
 
   if (process.resourcesPath) {
     candidates.add(join(process.resourcesPath, MIGRATIONS_RELATIVE_PATH))

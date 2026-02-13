@@ -78,8 +78,12 @@ const pickBestAudioFormatsByLanguage = (formats: VideoFormat[]): string[] => {
   }
 
   const sortedLanguages = Array.from(grouped.entries()).sort(([a], [b]) => {
-    if (a === 'und') return 1
-    if (b === 'und') return -1
+    if (a === 'und') {
+      return 1
+    }
+    if (b === 'und') {
+      return -1
+    }
     return a.localeCompare(b)
   })
 
@@ -146,8 +150,8 @@ export function DownloadDialog({
 
   const computePlaylistRange = useCallback(
     (info: PlaylistInfo) => {
-      const parsedStart = Math.max(parseInt(startIndex, 10) || 1, 1)
-      const rawEnd = endIndex ? Math.max(parseInt(endIndex, 10), parsedStart) : undefined
+      const parsedStart = Math.max(Number.parseInt(startIndex, 10) || 1, 1)
+      const rawEnd = endIndex ? Math.max(Number.parseInt(endIndex, 10), parsedStart) : undefined
       const start = info.entryCount > 0 ? Math.min(parsedStart, info.entryCount) : parsedStart
       const endValue =
         rawEnd !== undefined
@@ -261,7 +265,9 @@ export function DownloadDialog({
   }, [fetchVideoInfo, t])
 
   useEffect(() => {
-    if (!open) return
+    if (!open) {
+      return
+    }
     loadSettings()
   }, [open, loadSettings])
 
@@ -474,7 +480,9 @@ export function DownloadDialog({
   }, [settings.oneClickDownload, startOneClickDownload, t])
 
   useEffect(() => {
-    if (!open) return
+    if (!open) {
+      return
+    }
     void handleAutoDetectClipboard()
   }, [open, handleAutoDetectClipboard])
 
@@ -485,7 +493,9 @@ export function DownloadDialog({
 
   // Playlist handlers
   const handleSelectPlaylistDirectory = useCallback(async () => {
-    if (playlistBusy) return
+    if (playlistBusy) {
+      return
+    }
     try {
       const path = await ipcServices.fs.selectDirectory()
       if (path) {
@@ -566,7 +576,7 @@ export function DownloadDialog({
         }
 
         startIndex = selectedIndices[0]
-        endIndex = selectedIndices[selectedIndices.length - 1]
+        endIndex = selectedIndices.at(-1)
       } else {
         // Range-based selection
         const range = computePlaylistRange(info)
@@ -648,7 +658,9 @@ export function DownloadDialog({
   }, [videoInfo])
 
   const handleSingleVideoDownload = useCallback(async () => {
-    if (!videoInfo) return
+    if (!videoInfo) {
+      return
+    }
 
     const type = singleVideoState.activeTab
     const selectedFormat =
@@ -737,7 +749,7 @@ export function DownloadDialog({
       : singleVideoState.selectedAudioFormat
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog onOpenChange={setOpen} open={open}>
       <Button
         className="rounded-full"
         onClick={() => {
@@ -749,76 +761,76 @@ export function DownloadDialog({
       </Button>
       <DialogContent
         className={cn(
-          'sm:max-w-xl max-h-[90vh] flex flex-col p-5 gap-0 overflow-hidden',
+          'flex max-h-[90vh] flex-col gap-0 overflow-hidden p-5 sm:max-w-xl',
           lockDialogHeight && 'h-[90vh]'
         )}
       >
         <Tabs
+          className="flex min-h-0 w-full flex-1 flex-col gap-0"
           defaultValue="single"
-          value={activeTab}
           onValueChange={(value) => setActiveTab(value as 'single' | 'playlist')}
-          className="w-full flex flex-col flex-1 min-h-0 gap-0"
+          value={activeTab}
         >
           <DialogHeader>
             <TabsList>
-              <TabsTrigger value="single" onClick={() => setActiveTab('single')}>
+              <TabsTrigger onClick={() => setActiveTab('single')} value="single">
                 <Video className="h-3.5 w-3.5" />
                 {t('download.singleVideo')}
               </TabsTrigger>
-              <TabsTrigger value="playlist" onClick={() => setActiveTab('playlist')}>
+              <TabsTrigger onClick={() => setActiveTab('playlist')} value="playlist">
                 <List className="h-3.5 w-3.5" />
                 {t('download.metadata.playlist')}
               </TabsTrigger>
             </TabsList>
           </DialogHeader>
           {/* Single Video Download Tab */}
-          <TabsContent value="single" className="flex flex-col flex-1 min-h-0 mt-0">
+          <TabsContent className="mt-0 flex min-h-0 flex-1 flex-col" value="single">
             <SingleVideoDownload
-              loading={loading}
               error={error}
-              videoInfo={videoInfo}
-              state={singleVideoState}
               feedbackSourceUrl={url}
-              ytDlpCommand={videoInfoCommand ?? undefined}
+              loading={loading}
               onStateChange={handleSingleVideoStateChange}
+              state={singleVideoState}
+              videoInfo={videoInfo}
+              ytDlpCommand={videoInfoCommand ?? undefined}
             />
           </TabsContent>
 
           {/* Playlist Download Tab */}
-          <TabsContent value="playlist" className="flex flex-col flex-1 min-h-0 mt-0">
+          <TabsContent className="mt-0 flex min-h-0 flex-1 flex-col" value="playlist">
             <PlaylistDownload
-              playlistPreviewLoading={playlistPreviewLoading}
-              playlistPreviewError={playlistPreviewError}
-              playlistInfo={playlistInfo}
-              playlistBusy={playlistBusy}
-              selectedPlaylistEntries={selectedPlaylistEntries}
-              selectedEntryIds={selectedEntryIds}
+              advancedOptionsOpen={advancedOptionsOpen}
               downloadType={downloadType}
               downloadTypeId={downloadTypeId}
-              startIndex={startIndex}
               endIndex={endIndex}
-              advancedOptionsOpen={advancedOptionsOpen}
+              playlistBusy={playlistBusy}
+              playlistInfo={playlistInfo}
+              playlistPreviewError={playlistPreviewError}
+              playlistPreviewLoading={playlistPreviewLoading}
+              selectedEntryIds={selectedEntryIds}
+              selectedPlaylistEntries={selectedPlaylistEntries}
+              setDownloadType={setDownloadType}
+              setEndIndex={setEndIndex}
               setSelectedEntryIds={setSelectedEntryIds}
               setStartIndex={setStartIndex}
-              setEndIndex={setEndIndex}
-              setDownloadType={setDownloadType}
+              startIndex={startIndex}
             />
           </TabsContent>
         </Tabs>
-        <DialogFooter className="shrink-0 pt-3 border-t bg-background relative z-10">
-          <div className="flex items-center justify-between w-full gap-3">
+        <DialogFooter className="relative z-10 shrink-0 border-t bg-background pt-3">
+          <div className="flex w-full items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               {/* Download Location - Single Video */}
               {activeTab === 'single' && videoInfo && !loading && (
                 <div className="flex items-center gap-2">
                   <div className="relative w-[240px]">
                     <Input
-                      value={singleVideoState.customDownloadPath || settings.downloadPath}
-                      readOnly
                       className="pr-7"
                       placeholder={t('download.autoFolderPlaceholder')}
+                      readOnly
+                      value={singleVideoState.customDownloadPath || settings.downloadPath}
                     />
-                    <div className="absolute right-0 top-1/2 -translate-y-1/2">
+                    <div className="absolute top-1/2 right-0 -translate-y-1/2">
                       <Button
                         onClick={async () => {
                           try {
@@ -834,8 +846,8 @@ export function DownloadDialog({
                             toast.error(t('settings.directorySelectError'))
                           }
                         }}
-                        variant="ghost"
                         size="icon"
+                        variant="ghost"
                       >
                         <FolderOpen className="h-4 w-4 text-muted-foreground" />
                       </Button>
@@ -844,15 +856,15 @@ export function DownloadDialog({
 
                   {singleVideoState.customDownloadPath && (
                     <Button
+                      className="h-8 text-xs"
                       onClick={() =>
                         setSingleVideoState((prev) => ({
                           ...prev,
                           customDownloadPath: ''
                         }))
                       }
-                      variant="ghost"
                       size="sm"
-                      className="h-8 text-xs"
+                      variant="ghost"
                     >
                       {t('download.useAutoFolder')}
                     </Button>
@@ -865,31 +877,31 @@ export function DownloadDialog({
                 <div className="flex items-center gap-2">
                   <div className="relative w-[200px]">
                     <Input
-                      value={playlistCustomDownloadPath || settings.downloadPath}
-                      readOnly
-                      className="pr-7 text-xs h-8 bg-muted/30"
+                      className="h-8 bg-muted/30 pr-7 text-xs"
                       placeholder={t('download.autoFolderPlaceholder')}
+                      readOnly
+                      value={playlistCustomDownloadPath || settings.downloadPath}
                     />
-                    <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                    <div className="absolute top-1/2 right-2 -translate-y-1/2">
                       <FolderOpen className="h-3 w-3 text-muted-foreground" />
                     </div>
                   </div>
                   <Button
-                    onClick={handleSelectPlaylistDirectory}
-                    variant="outline"
-                    size="sm"
-                    disabled={playlistBusy}
                     className="h-8"
+                    disabled={playlistBusy}
+                    onClick={handleSelectPlaylistDirectory}
+                    size="sm"
+                    variant="outline"
                   >
                     {t('settings.selectPath')}
                   </Button>
                   {playlistCustomDownloadPath && (
                     <Button
-                      onClick={() => setPlaylistCustomDownloadPath('')}
-                      variant="ghost"
-                      size="sm"
-                      disabled={playlistBusy}
                       className="h-8 text-xs"
+                      disabled={playlistBusy}
+                      onClick={() => setPlaylistCustomDownloadPath('')}
+                      size="sm"
+                      variant="ghost"
                     >
                       {t('download.useAutoFolder')}
                     </Button>
@@ -901,13 +913,13 @@ export function DownloadDialog({
               {activeTab === 'playlist' && !playlistInfo && !playlistPreviewLoading && (
                 <div className="flex items-center gap-2">
                   <Checkbox
-                    id={advancedOptionsId}
                     checked={advancedOptionsOpen}
+                    id={advancedOptionsId}
                     onCheckedChange={(checked) => {
                       setAdvancedOptionsOpen(checked === true)
                     }}
                   />
-                  <Label htmlFor={advancedOptionsId} className="cursor-pointer text-xs">
+                  <Label className="cursor-pointer text-xs" htmlFor={advancedOptionsId}>
                     {t('advancedOptions.title')}
                   </Label>
                 </div>
@@ -915,29 +927,31 @@ export function DownloadDialog({
             </div>
             <div className="ml-auto flex gap-2">
               {activeTab === 'single' ? (
-                !videoInfo && !loading ? (
+                videoInfo || loading ? (
+                  !loading && videoInfo ? (
+                    <Button
+                      disabled={loading || !selectedSingleFormat}
+                      onClick={handleSingleVideoDownload}
+                    >
+                      {singleVideoState.activeTab === 'video'
+                        ? t('download.downloadVideo')
+                        : t('download.downloadAudio')}
+                    </Button>
+                  ) : null
+                ) : (
                   <Button
-                    onClick={settings.oneClickDownload ? handleOneClickDownload : handleFetchVideo}
                     disabled={loading || !url.trim()}
+                    onClick={settings.oneClickDownload ? handleOneClickDownload : handleFetchVideo}
                   >
                     {settings.oneClickDownload
                       ? t('download.oneClickDownloadNow')
                       : t('download.startDownload')}
                   </Button>
-                ) : !loading && videoInfo ? (
-                  <Button
-                    onClick={handleSingleVideoDownload}
-                    disabled={loading || !selectedSingleFormat}
-                  >
-                    {singleVideoState.activeTab === 'video'
-                      ? t('download.downloadVideo')
-                      : t('download.downloadAudio')}
-                  </Button>
-                ) : null
+                )
               ) : playlistInfo && !playlistPreviewLoading ? (
                 <Button
-                  onClick={handleDownloadPlaylist}
                   disabled={playlistDownloadLoading || selectedPlaylistEntries.length === 0}
+                  onClick={handleDownloadPlaylist}
                 >
                   {playlistDownloadLoading ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -945,18 +959,18 @@ export function DownloadDialog({
                     t('playlist.downloadCurrentRange')
                   )}
                 </Button>
-              ) : !playlistPreviewLoading ? (
+              ) : playlistPreviewLoading ? null : (
                 <Button
-                  onClick={handlePreviewPlaylist}
                   disabled={playlistBusy || !playlistUrl.trim()}
+                  onClick={handlePreviewPlaylist}
                 >
                   {playlistPreviewLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : (
                     t('download.startDownload')
                   )}
                 </Button>
-              ) : null}
+              )}
             </div>
           </div>
         </DialogFooter>

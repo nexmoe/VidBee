@@ -141,8 +141,8 @@ export class ErrorBoundary extends Component<Props, State> {
       return (
         <ErrorPage
           errorInfo={this.state.errorInfo}
-          onReload={this.handleReload}
           onGoHome={this.handleGoHome}
+          onReload={this.handleReload}
         />
       )
     }

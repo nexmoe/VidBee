@@ -281,16 +281,16 @@ export function About() {
 
   return (
     <div className="h-full bg-background">
-      <div className="container mx-auto max-w-5xl p-6 space-y-6">
+      <div className="container mx-auto max-w-5xl space-y-6 p-6">
         <Card>
           <CardContent className="pt-6">
             <div className="flex flex-col gap-4">
               <div className="flex items-center gap-4">
-                <img src="./app-icon.png" alt="VidBee" className="h-18 w-18 rounded-2xl" />
+                <img alt="VidBee" className="h-18 w-18 rounded-2xl" src="./app-icon.png" />
                 <div className="flex-1 space-y-2">
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
-                      <h2 className="text-2xl font-semibold leading-tight">{t('about.appName')}</h2>
+                      <h2 className="font-semibold text-2xl leading-tight">{t('about.appName')}</h2>
                       <Badge variant="secondary">
                         {t('about.versionLabel', { version: appVersionLabel })}
                       </Badge>
@@ -308,22 +308,22 @@ export function About() {
                       ) : null}
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <Button variant="outline" size="sm" asChild>
+                      <Button asChild size="sm" variant="outline">
                         <a
-                          href="https://github.com/nexmoe/vidbee"
-                          target="_blank"
-                          rel="noreferrer"
                           aria-label={t('about.actions.openRepo')}
+                          href="https://github.com/nexmoe/vidbee"
+                          rel="noreferrer"
+                          target="_blank"
                         >
                           <Github className="h-3.5 w-3.5" />
                         </a>
                       </Button>
                       {updateReady.ready ? (
                         <Button
-                          onClick={handleRestartToUpdate}
-                          variant="default"
-                          size="sm"
                           className="gap-2"
+                          onClick={handleRestartToUpdate}
+                          size="sm"
+                          variant="default"
                         >
                           <RefreshCw className="h-3.5 w-3.5" />
                           {t('about.notifications.restartNowAction')}
@@ -331,46 +331,46 @@ export function About() {
                       ) : null}
                       {latestVersionState?.status === 'available' ? (
                         <Button
-                          onClick={handleGoToDownload}
-                          variant="default"
-                          size="sm"
                           className="gap-2"
+                          onClick={handleGoToDownload}
+                          size="sm"
+                          variant="default"
                         >
                           <Download className="h-3.5 w-3.5" />
                           {t('about.actions.goToDownload')}
                         </Button>
                       ) : null}
                       {shouldShowCheckUpdates ? (
-                        <Button onClick={handleCheckForUpdates} size="sm" className="gap-2">
+                        <Button className="gap-2" onClick={handleCheckForUpdates} size="sm">
                           <RefreshCw className="h-3.5 w-3.5" />
                           {t('about.actions.checkUpdates')}
                         </Button>
                       ) : null}
                     </div>
                   </div>
-                  <p className="text-sm text-muted-foreground">{t('about.description')}</p>
+                  <p className="text-muted-foreground text-sm">{t('about.description')}</p>
                 </div>
               </div>
             </div>
             {updateDownloadProgress !== null && (
               <div className="flex flex-col gap-3 pt-4">
-                <div className="space-y-2 w-full">
+                <div className="w-full space-y-2">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm text-muted-foreground">
+                    <span className="text-muted-foreground text-sm">
                       {t('about.downloadingUpdate')}
                     </span>
-                    <span className="text-sm font-medium">
+                    <span className="font-medium text-sm">
                       {updateDownloadProgress.toFixed(1)}%
                     </span>
                   </div>
-                  <Progress value={updateDownloadProgress} className="h-2" />
+                  <Progress className="h-2" value={updateDownloadProgress} />
                 </div>
               </div>
             )}
             <div className="flex items-center justify-between gap-4 pt-6">
               <div className="space-y-1">
                 <p className="font-medium leading-none">{t('about.autoUpdateTitle')}</p>
-                <p className="text-sm text-muted-foreground">{t('about.autoUpdateDescription')}</p>
+                <p className="text-muted-foreground text-sm">{t('about.autoUpdateDescription')}</p>
               </div>
               <Switch
                 checked={settings.autoUpdate}
@@ -386,21 +386,21 @@ export function About() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <p className="text-sm text-muted-foreground md:max-w-md">{t('about.shareSupport')}</p>
+              <p className="text-muted-foreground text-sm md:max-w-md">{t('about.shareSupport')}</p>
               <div className="flex flex-wrap gap-2">
-                <Button variant="outline" size="sm" onClick={handleShareTwitter} className="gap-2">
+                <Button className="gap-2" onClick={handleShareTwitter} size="sm" variant="outline">
                   <Twitter className="h-4 w-4" />
                   {t('about.shareActions.twitter')}
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleShareFacebook} className="gap-2">
+                <Button className="gap-2" onClick={handleShareFacebook} size="sm" variant="outline">
                   <Facebook className="h-4 w-4" />
                   {t('about.shareActions.facebook')}
                 </Button>
                 <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={handleCopyShareLink}
                   className="gap-2"
+                  onClick={handleCopyShareLink}
+                  size="sm"
+                  variant="secondary"
                 >
                   <LinkIcon className="h-4 w-4" />
                   {t('about.shareActions.copy')}
@@ -408,15 +408,15 @@ export function About() {
               </div>
             </div>
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <p className="text-sm text-muted-foreground md:max-w-md">
+              <p className="text-muted-foreground text-sm md:max-w-md">
                 {t('about.followAuthorSupport')}
               </p>
               <div className="flex flex-wrap gap-2">
                 <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => openShareUrl('https://x.com/nexmoex')}
                   className="gap-2"
+                  onClick={() => openShareUrl('https://x.com/nexmoex')}
+                  size="sm"
+                  variant="outline"
                 >
                   <Twitter className="h-4 w-4" />
                   {t('about.followAuthorActions.follow')}
@@ -437,7 +437,7 @@ export function About() {
                   </div>
                   <div className="space-y-1">
                     <p className="font-medium leading-none">{t('about.resources.feedback')}</p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-muted-foreground text-sm">
                       {t('about.resources.feedbackDescription')}
                     </p>
                   </div>
@@ -445,9 +445,9 @@ export function About() {
                 <div className="flex flex-wrap gap-2">
                   <FeedbackLinkButtons
                     appInfo={{ appVersion, osVersion }}
-                    useSimpleGithubUrl={true}
                     buttonClassName="gap-2"
                     iconClassName="h-4 w-4"
+                    useSimpleGithubUrl={true}
                   />
                 </div>
               </div>
@@ -456,8 +456,8 @@ export function About() {
                 const Icon = resource.icon
                 return (
                   <div
-                    key={resource.label}
                     className="flex items-center justify-between gap-4 px-6 py-4"
+                    key={resource.label}
                   >
                     <div className="flex items-center gap-4">
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted/60">
@@ -466,18 +466,18 @@ export function About() {
                       <div className="space-y-1">
                         <p className="font-medium leading-none">{resource.label}</p>
                         {resource.description ? (
-                          <p className="text-sm text-muted-foreground">{resource.description}</p>
+                          <p className="text-muted-foreground text-sm">{resource.description}</p>
                         ) : null}
                       </div>
                     </div>
                     {resource.href ? (
-                      <Button variant="outline" size="sm" asChild>
-                        <a href={resource.href} target="_blank" rel="noreferrer">
+                      <Button asChild size="sm" variant="outline">
+                        <a href={resource.href} rel="noreferrer" target="_blank">
                           {resource.actionLabel}
                         </a>
                       </Button>
                     ) : (
-                      <Button variant="outline" size="sm" onClick={resource.onClick}>
+                      <Button onClick={resource.onClick} size="sm" variant="outline">
                         {resource.actionLabel}
                       </Button>
                     )}

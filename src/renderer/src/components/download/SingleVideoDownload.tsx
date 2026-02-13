@@ -51,7 +51,9 @@ const qualityPresetToVideoHeight: Record<OneClickQualityPreset, number | null> =
 }
 
 const formatDuration = (seconds?: number): string => {
-  if (!seconds) return '00:00'
+  if (!seconds) {
+    return '00:00'
+  }
   const hours = Math.floor(seconds / 3600)
   const minutes = Math.floor((seconds % 3600) / 60)
   const remainingSeconds = Math.floor(seconds % 60)
@@ -64,7 +66,9 @@ const formatDuration = (seconds?: number): string => {
 }
 
 const getCodecShortName = (codec?: string): string => {
-  if (!codec || codec === 'none') return 'Unknown'
+  if (!codec || codec === 'none') {
+    return 'Unknown'
+  }
   return codec.split('.')[0].toUpperCase()
 }
 
@@ -78,7 +82,9 @@ const filterFormatsByType = (
   formats: VideoInfo['formats'],
   activeTab: 'video' | 'audio'
 ): VideoInfo['formats'] => {
-  if (!formats) return []
+  if (!formats) {
+    return []
+  }
 
   return formats.filter((format) => {
     if (activeTab === 'video') {
@@ -163,7 +169,7 @@ const FormatList = ({ formats, type, codec, selectedFormat, onFormatChange }: Fo
       const sorted = [...presetFormats].sort(sortVideoFormatsByQuality)
 
       if (preset === 'worst') {
-        return sorted[sorted.length - 1] ?? sorted[0]
+        return sorted.at(-1) ?? sorted[0]
       }
 
       if (!heightLimit) {
@@ -171,7 +177,9 @@ const FormatList = ({ formats, type, codec, selectedFormat, onFormatChange }: Fo
       }
 
       const matchingLimit = sorted.find((format) => {
-        if (!format.height) return false
+        if (!format.height) {
+          return false
+        }
         return format.height <= heightLimit
       })
 
@@ -244,7 +252,7 @@ const FormatList = ({ formats, type, codec, selectedFormat, onFormatChange }: Fo
             : finalVideos
 
       const hasSelectedVideo = finalVideos.some((format) => format.format_id === selectedFormat)
-      if (autoVideos.length > 0 && (!selectedFormat || !hasSelectedVideo)) {
+      if (autoVideos.length > 0 && !(selectedFormat && hasSelectedVideo)) {
         const preferred = pickVideoFormatForPreset(autoVideos, settings.oneClickQuality)
         if (preferred) {
           onFormatChange(preferred.format_id)
@@ -252,7 +260,7 @@ const FormatList = ({ formats, type, codec, selectedFormat, onFormatChange }: Fo
       }
     } else {
       const hasSelectedAudio = finalAudios.some((format) => format.format_id === selectedFormat)
-      if (finalAudios.length > 0 && (!selectedFormat || !hasSelectedAudio)) {
+      if (finalAudios.length > 0 && !(selectedFormat && hasSelectedAudio)) {
         const best = finalAudios[0]
         onFormatChange(best.format_id)
       }
@@ -271,15 +279,19 @@ const FormatList = ({ formats, type, codec, selectedFormat, onFormatChange }: Fo
   ])
 
   const formatSize = (bytes?: number) => {
-    if (!bytes) return t('download.unknownSize')
-    const mb = bytes / 1000000
+    if (!bytes) {
+      return t('download.unknownSize')
+    }
+    const mb = bytes / 1_000_000
     return `${mb.toFixed(2)} MB`
   }
 
   const formatMetaLabel = (format: VideoFormat) => {
     const parts: string[] = []
     const pushPart = (label: string, value?: string) => {
-      if (!value) return
+      if (!value) {
+        return
+      }
       parts.push(`${label}:${value}`)
     }
     pushPart('proto', format.protocol)
@@ -355,7 +367,7 @@ const FormatList = ({ formats, type, codec, selectedFormat, onFormatChange }: Fo
   }
 
   return (
-    <RadioGroup value={selectedFormat} onValueChange={onFormatChange} className="w-full gap-1">
+    <RadioGroup className="w-full gap-1" onValueChange={onFormatChange} value={selectedFormat}>
       {list.map((format) => {
         const qualityLabel =
           type === 'video' ? formatVideoQuality(format) : formatAudioQuality(format)
@@ -374,43 +386,43 @@ const FormatList = ({ formats, type, codec, selectedFormat, onFormatChange }: Fo
 
         return (
           <label
-            key={format.format_id}
-            htmlFor={`${type}-${format.format_id}`}
             className={cn(
-              'relative flex items-center gap-3 px-3 py-2 cursor-pointer transition-colors rounded-md',
+              'relative flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 transition-colors',
               isSelected ? 'bg-primary/10' : 'hover:bg-muted'
             )}
+            htmlFor={`${type}-${format.format_id}`}
+            key={format.format_id}
           >
             <RadioGroupItem
-              value={format.format_id}
+              className="hidden shrink-0"
               id={`${type}-${format.format_id}`}
-              className="shrink-0 hidden"
+              value={format.format_id}
             />
 
-            <div className="flex-1 min-w-0 flex items-center gap-4">
+            <div className="flex min-w-0 flex-1 items-center gap-4">
               <span
-                className={cn('text-sm font-medium w-16 shrink-0', isSelected && 'text-primary')}
+                className={cn('w-16 shrink-0 font-medium text-sm', isSelected && 'text-primary')}
               >
                 {qualityLabel}
               </span>
 
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="text-xs text-muted-foreground truncate">{detailLabel}</span>
+              <div className="min-w-0 flex-1">
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="truncate text-muted-foreground text-xs">{detailLabel}</span>
                   {thirdColumnLabel && thirdColumnLabel !== '-' && (
-                    <span className="shrink-0 px-1.5 py-0.5 rounded bg-muted text-[10px] font-medium text-muted-foreground">
+                    <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 font-medium text-[10px] text-muted-foreground">
                       {thirdColumnLabel}
                     </span>
                   )}
                 </div>
                 {metaLabel && (
-                  <div className="mt-0.5 text-[10px] text-muted-foreground/70 leading-snug break-words">
+                  <div className="mt-0.5 break-words text-[10px] text-muted-foreground/70 leading-snug">
                     {metaLabel}
                   </div>
                 )}
               </div>
 
-              <span className="text-xs text-muted-foreground tabular-nums shrink-0 w-20 text-right">
+              <span className="w-20 shrink-0 text-right text-muted-foreground text-xs tabular-nums">
                 {sizeLabel}
               </span>
             </div>
@@ -438,9 +450,13 @@ export function SingleVideoDownload({
   const displayTitle = title || videoInfo?.title || t('download.fetchingVideoInfo')
 
   const relevantFormats = useMemo(() => {
-    if (!videoInfo?.formats) return []
+    if (!videoInfo?.formats) {
+      return []
+    }
     const baseFormats = filterFormatsByType(videoInfo.formats, activeTab)
-    if (baseFormats.length === 0) return []
+    if (baseFormats.length === 0) {
+      return []
+    }
 
     const hasHttpFormats = baseFormats.some(isHttpProtocol)
     if (!hasHttpFormats) {
@@ -452,13 +468,17 @@ export function SingleVideoDownload({
   }, [videoInfo?.formats, activeTab])
 
   const containers = useMemo(() => {
-    if (relevantFormats.length === 0) return []
+    if (relevantFormats.length === 0) {
+      return []
+    }
     const exts = new Set(relevantFormats.map((format) => format.ext))
     return Array.from(exts).sort()
   }, [relevantFormats])
 
   useEffect(() => {
-    if (containers.length === 0) return undefined
+    if (containers.length === 0) {
+      return undefined
+    }
 
     if (selectedContainer && !containers.includes(selectedContainer)) {
       let defaultContainer: string
@@ -498,7 +518,9 @@ export function SingleVideoDownload({
   }, [containers, selectedContainer, activeTab, onStateChange])
 
   const formatsByContainer = useMemo(() => {
-    if (relevantFormats.length === 0) return []
+    if (relevantFormats.length === 0) {
+      return []
+    }
 
     if (!selectedContainer) {
       return relevantFormats
@@ -508,7 +530,9 @@ export function SingleVideoDownload({
   }, [relevantFormats, selectedContainer])
 
   const codecs = useMemo(() => {
-    if (formatsByContainer.length === 0) return []
+    if (formatsByContainer.length === 0) {
+      return []
+    }
 
     const SetVals = new Set<string>()
     formatsByContainer.forEach((format) => {
@@ -528,7 +552,9 @@ export function SingleVideoDownload({
   }, [formatsByContainer, activeTab])
 
   useEffect(() => {
-    if (codecs.length === 0) return undefined
+    if (codecs.length === 0) {
+      return undefined
+    }
     if (selectedCodec && selectedCodec !== 'auto' && !codecs.includes(selectedCodec)) {
       const timer = setTimeout(() => {
         onStateChange({ selectedCodec: 'auto' })
@@ -539,7 +565,9 @@ export function SingleVideoDownload({
   }, [codecs, selectedCodec, onStateChange])
 
   const formatsByCodec = useMemo(() => {
-    if (!selectedCodec || selectedCodec === 'auto') return formatsByContainer
+    if (!selectedCodec || selectedCodec === 'auto') {
+      return formatsByContainer
+    }
     return formatsByContainer.filter((format) => {
       if (activeTab === 'video') {
         const c = format.vcodec
@@ -551,10 +579,14 @@ export function SingleVideoDownload({
   }, [formatsByContainer, selectedCodec, activeTab])
 
   const framerates = useMemo(() => {
-    if (activeTab !== 'video') return []
+    if (activeTab !== 'video') {
+      return []
+    }
     const SetVals = new Set<number>()
     formatsByCodec.forEach((format) => {
-      if (format.fps) SetVals.add(format.fps)
+      if (format.fps) {
+        SetVals.add(format.fps)
+      }
     })
     return Array.from(SetVals).sort((a, b) => b - a)
   }, [formatsByCodec, activeTab])
@@ -568,38 +600,38 @@ export function SingleVideoDownload({
   }, [formatsByCodec, selectedFps, activeTab])
 
   return (
-    <div className="flex flex-col flex-1 min-h-0">
+    <div className="flex min-h-0 flex-1 flex-col">
       {loading && !error && (
-        <div className="flex-1 flex flex-col items-center justify-center gap-3 min-h-[200px]">
+        <div className="flex min-h-[200px] flex-1 flex-col items-center justify-center gap-3">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">{t('download.fetchingVideoInfo')}</p>
+          <p className="text-muted-foreground text-sm">{t('download.fetchingVideoInfo')}</p>
         </div>
       )}
 
       {error && (
-        <div className="shrink-0 mb-3 rounded-md border border-destructive/30 bg-destructive/5 p-3">
+        <div className="mb-3 shrink-0 rounded-md border border-destructive/30 bg-destructive/5 p-3">
           <div className="flex items-start gap-2">
-            <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
-            <div className="flex-1 space-y-1 min-w-0">
-              <p className="text-sm font-medium text-destructive">{t('errors.fetchInfoFailed')}</p>
-              <p className="text-xs text-muted-foreground/80 break-words">{error}</p>
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+            <div className="min-w-0 flex-1 space-y-1">
+              <p className="font-medium text-destructive text-sm">{t('errors.fetchInfoFailed')}</p>
+              <p className="break-words text-muted-foreground/80 text-xs">{error}</p>
             </div>
           </div>
           <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-            <span className="text-[10px] font-medium text-muted-foreground/70">
+            <span className="font-medium text-[10px] text-muted-foreground/70">
               {t('download.feedback.title')}
             </span>
             <div className="flex flex-wrap gap-1.5">
               <FeedbackLinkButtons
-                error={error}
-                sourceUrl={feedbackSourceUrl}
-                issueTitle={DOWNLOAD_FEEDBACK_ISSUE_TITLE}
-                includeAppInfo
-                ytDlpCommand={ytDlpCommand}
-                buttonVariant="outline"
-                buttonSize="sm"
                 buttonClassName="h-5 gap-1 px-1.5 text-[10px]"
+                buttonSize="sm"
+                buttonVariant="outline"
+                error={error}
                 iconClassName="h-2.5 w-2.5"
+                includeAppInfo
+                issueTitle={DOWNLOAD_FEEDBACK_ISSUE_TITLE}
+                sourceUrl={feedbackSourceUrl}
+                ytDlpCommand={ytDlpCommand}
               />
             </div>
           </div>
@@ -607,34 +639,34 @@ export function SingleVideoDownload({
       )}
 
       {!loading && videoInfo && (
-        <div className="flex-1 flex flex-col min-h-0">
-          <div className="flex gap-4 py-4 shrink-0">
-            <div className="shrink-0 w-32 relative rounded-md overflow-hidden bg-muted">
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div className="flex shrink-0 gap-4 py-4">
+            <div className="relative w-32 shrink-0 overflow-hidden rounded-md bg-muted">
               <ImageWithPlaceholder
-                src={cachedThumbnail}
                 alt={displayTitle}
-                className="w-full h-full object-cover aspect-video"
+                className="aspect-video h-full w-full object-cover"
+                src={cachedThumbnail}
               />
-              <div className="absolute bottom-1 right-1 bg-black/80 text-white text-[10px] px-1 rounded">
+              <div className="absolute right-1 bottom-1 rounded bg-black/80 px-1 text-[10px] text-white">
                 {formatDuration(videoInfo.duration)}
               </div>
             </div>
 
-            <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+            <div className="flex min-w-0 flex-1 flex-col justify-between py-0.5">
               <div className="space-y-0.5">
-                <h3 className="font-bold text-[13px] leading-tight line-clamp-2">{displayTitle}</h3>
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <h3 className="line-clamp-2 font-bold text-[13px] leading-tight">{displayTitle}</h3>
+                <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
                   {videoInfo.uploader && (
-                    <span className="truncate max-w-[140px] uppercase tracking-wider font-semibold opacity-70">
+                    <span className="max-w-[140px] truncate font-semibold uppercase tracking-wider opacity-70">
                       {videoInfo.uploader}
                     </span>
                   )}
                   {videoInfo.webpage_url && (
                     <a
+                      className="transition-colors hover:text-primary"
                       href={videoInfo.webpage_url}
-                      target="_blank"
                       rel="noreferrer"
-                      className="hover:text-primary transition-colors"
+                      target="_blank"
                     >
                       <ExternalLink className="h-3 w-3" />
                     </a>
@@ -643,43 +675,43 @@ export function SingleVideoDownload({
               </div>
 
               <div className="flex items-center justify-between">
-                <div className="flex p-0.5 bg-muted rounded-md gap-0.5">
+                <div className="flex gap-0.5 rounded-md bg-muted p-0.5">
                   <Button
-                    variant={activeTab === 'video' ? 'secondary' : 'ghost'}
-                    size="sm"
-                    onClick={() => onStateChange({ activeTab: 'video' })}
                     className={cn(
-                      'h-5 px-2 text-[11px] rounded-sm',
+                      'h-5 rounded-sm px-2 text-[11px]',
                       activeTab === 'video'
                         ? 'bg-background text-foreground'
                         : 'text-muted-foreground/60'
                     )}
+                    onClick={() => onStateChange({ activeTab: 'video' })}
+                    size="sm"
+                    variant={activeTab === 'video' ? 'secondary' : 'ghost'}
                   >
                     {t('download.video')}
                   </Button>
                   <Button
-                    variant={activeTab === 'audio' ? 'secondary' : 'ghost'}
-                    size="sm"
-                    onClick={() => onStateChange({ activeTab: 'audio' })}
                     className={cn(
-                      'h-5 px-2 text-[11px] rounded-sm',
+                      'h-5 rounded-sm px-2 text-[11px]',
                       activeTab === 'audio'
                         ? 'bg-background text-foreground'
                         : 'text-muted-foreground/60'
                     )}
+                    onClick={() => onStateChange({ activeTab: 'audio' })}
+                    size="sm"
+                    variant={activeTab === 'audio' ? 'secondary' : 'ghost'}
                   >
                     {t('download.audio')}
                   </Button>
                 </div>
 
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowAdvanced(!showAdvanced)}
                   className={cn(
-                    'h-6 w-6 p-0 rounded-full hover:bg-muted font-normal text-muted-foreground transition-colors',
+                    'h-6 w-6 rounded-full p-0 font-normal text-muted-foreground transition-colors hover:bg-muted',
                     showAdvanced && 'bg-muted text-foreground'
                   )}
+                  onClick={() => setShowAdvanced(!showAdvanced)}
+                  size="sm"
+                  variant="ghost"
                 >
                   <Settings2 className="h-4 w-4" />
                 </Button>
@@ -689,30 +721,30 @@ export function SingleVideoDownload({
 
           <Separator />
 
-          <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             <div
               className={cn(
                 'grid transition-all duration-300 ease-in-out',
-                showAdvanced ? 'grid-rows-[1fr] py-3 border-b' : 'grid-rows-[0fr]'
+                showAdvanced ? 'grid-rows-[1fr] border-b py-3' : 'grid-rows-[0fr]'
               )}
             >
-              <div className="overflow-hidden min-h-0">
+              <div className="min-h-0 overflow-hidden">
                 <div className="flex flex-wrap items-end gap-3">
-                  <div className="space-y-1.5 flex-1 min-w-[120px]">
-                    <Label className="text-xs text-muted-foreground font-medium px-0.5">
+                  <div className="min-w-[120px] flex-1 space-y-1.5">
+                    <Label className="px-0.5 font-medium text-muted-foreground text-xs">
                       {t('download.container') || 'Format'}
                     </Label>
                     <Select
-                      value={selectedContainer || ''}
-                      onValueChange={(value) => onStateChange({ selectedContainer: value })}
                       disabled={containers.length <= 1}
+                      onValueChange={(value) => onStateChange({ selectedContainer: value })}
+                      value={selectedContainer || ''}
                     >
                       <SelectTrigger className="h-8 text-xs">
                         <SelectValue placeholder="Container" />
                       </SelectTrigger>
                       <SelectContent>
                         {containers.map((ext) => (
-                          <SelectItem key={ext} value={ext} className="text-xs">
+                          <SelectItem className="text-xs" key={ext} value={ext}>
                             {ext.toUpperCase()}
                           </SelectItem>
                         ))}
@@ -720,24 +752,24 @@ export function SingleVideoDownload({
                     </Select>
                   </div>
 
-                  <div className="space-y-1.5 flex-1 min-w-[120px]">
-                    <Label className="text-xs text-muted-foreground font-medium px-0.5">
+                  <div className="min-w-[120px] flex-1 space-y-1.5">
+                    <Label className="px-0.5 font-medium text-muted-foreground text-xs">
                       Codec
                     </Label>
                     <Select
-                      value={selectedCodec || 'auto'}
-                      onValueChange={(value) => onStateChange({ selectedCodec: value })}
                       disabled={codecs.length <= 1}
+                      onValueChange={(value) => onStateChange({ selectedCodec: value })}
+                      value={selectedCodec || 'auto'}
                     >
                       <SelectTrigger className="h-8 text-xs">
                         <SelectValue placeholder="Auto" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="auto" className="text-xs">
+                        <SelectItem className="text-xs" value="auto">
                           Auto
                         </SelectItem>
                         {codecs.map((codecName) => (
-                          <SelectItem key={codecName} value={codecName} className="text-xs">
+                          <SelectItem className="text-xs" key={codecName} value={codecName}>
                             {codecName}
                           </SelectItem>
                         ))}
@@ -746,24 +778,24 @@ export function SingleVideoDownload({
                   </div>
 
                   {activeTab === 'video' && (
-                    <div className="space-y-1.5 flex-1 min-w-[120px]">
-                      <Label className="text-xs text-muted-foreground font-medium px-0.5">
+                    <div className="min-w-[120px] flex-1 space-y-1.5">
+                      <Label className="px-0.5 font-medium text-muted-foreground text-xs">
                         Frame Rate
                       </Label>
                       <Select
-                        value={selectedFps || 'highest'}
-                        onValueChange={(value) => onStateChange({ selectedFps: value })}
                         disabled={framerates.length === 0}
+                        onValueChange={(value) => onStateChange({ selectedFps: value })}
+                        value={selectedFps || 'highest'}
                       >
                         <SelectTrigger className="h-8 text-xs">
                           <SelectValue placeholder="Highest" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="highest" className="text-xs">
+                          <SelectItem className="text-xs" value="highest">
                             Highest
                           </SelectItem>
                           {framerates.map((fps) => (
-                            <SelectItem key={fps} value={String(fps)} className="text-xs">
+                            <SelectItem className="text-xs" key={fps} value={String(fps)}>
                               {fps} fps
                             </SelectItem>
                           ))}
@@ -775,14 +807,10 @@ export function SingleVideoDownload({
               </div>
             </div>
 
-            <ScrollArea className="flex-1 overflow-y-auto my-3 max-h-72">
+            <ScrollArea className="my-3 max-h-72 flex-1 overflow-y-auto">
               <FormatList
-                formats={filteredFormats}
-                type={activeTab}
                 codec={selectedCodec}
-                selectedFormat={
-                  activeTab === 'video' ? state.selectedVideoFormat : state.selectedAudioFormat
-                }
+                formats={filteredFormats}
                 onFormatChange={(formatId) =>
                   onStateChange(
                     activeTab === 'video'
@@ -790,6 +818,10 @@ export function SingleVideoDownload({
                       : { selectedAudioFormat: formatId }
                   )
                 }
+                selectedFormat={
+                  activeTab === 'video' ? state.selectedVideoFormat : state.selectedAudioFormat
+                }
+                type={activeTab}
               />
             </ScrollArea>
           </div>

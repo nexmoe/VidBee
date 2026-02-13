@@ -1,4 +1,4 @@
-type VideoFormat = {
+interface VideoFormat {
   format_id?: string
   ext?: string
   format_note?: string
@@ -13,14 +13,14 @@ type VideoFormat = {
   tbr?: number
 }
 
-type VideoInfo = {
+interface VideoInfo {
   title?: string
   thumbnail?: string
   duration?: number
   formats?: VideoFormat[]
 }
 
-type VideoInfoCacheEntry = {
+interface VideoInfoCacheEntry {
   url: string
   status: 'pending' | 'ready' | 'error'
   fetchedAt: number
@@ -28,10 +28,10 @@ type VideoInfoCacheEntry = {
   error?: string
 }
 
-const PORT_RANGE_START = 27100
-const PORT_RANGE_END = 27120
+const PORT_RANGE_START = 27_100
+const PORT_RANGE_END = 27_120
 const STATUS_TIMEOUT_MS = 800
-const INFO_TIMEOUT_MS = 60000
+const INFO_TIMEOUT_MS = 60_000
 const CACHE_TTL_MS = 5 * 60 * 1000
 
 const pendingRequests = new Map<string, Promise<void>>()
@@ -131,7 +131,9 @@ const requestVideoInfo = async (targetUrl: string): Promise<VideoInfo> => {
 const getCacheMap = async (): Promise<Record<string, VideoInfoCacheEntry>> => {
   const data = await browser.storage.local.get('videoInfoCacheByUrl')
   const map = data.videoInfoCacheByUrl as Record<string, VideoInfoCacheEntry> | undefined
-  if (!map) return {}
+  if (!map) {
+    return {}
+  }
   return map
 }
 
@@ -148,7 +150,9 @@ const loadCache = async (url: string): Promise<VideoInfoCacheEntry | null> => {
   const map = await getCacheMap()
   pruneCache(map)
   const cache = map[url]
-  if (!cache) return null
+  if (!cache) {
+    return null
+  }
   return cache
 }
 

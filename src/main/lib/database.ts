@@ -8,7 +8,7 @@ import { getDatabaseFilePath } from './database-path'
 
 const logger = log.scope('database')
 
-type DatabaseConnection = {
+interface DatabaseConnection {
   sqlite: BetterSqlite3Instance
   db: BetterSQLite3Database
   path: string

@@ -139,20 +139,24 @@ interface DownloadItemProps {
   onToggleSelect?: (id: string) => void
 }
 
-type MetadataDetail = {
+interface MetadataDetail {
   label: string
   value: ReactNode
 }
 
 const formatFileSize = (bytes?: number) => {
-  if (!bytes) return ''
+  if (!bytes) {
+    return ''
+  }
   const sizes = ['B', 'KB', 'MB', 'GB']
   const order = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), sizes.length - 1)
   return `${(bytes / 1024 ** order).toFixed(1)} ${sizes[order]}`
 }
 
 const formatDuration = (seconds?: number) => {
-  if (!seconds) return ''
+  if (!seconds) {
+    return ''
+  }
   const h = Math.floor(seconds / 3600)
   const m = Math.floor((seconds % 3600) / 60)
   const s = Math.floor(seconds % 60)
@@ -163,12 +167,16 @@ const formatDuration = (seconds?: number) => {
 }
 
 const formatDate = (timestamp?: number) => {
-  if (!timestamp) return ''
+  if (!timestamp) {
+    return ''
+  }
   return new Date(timestamp).toLocaleString()
 }
 
 const formatDateShort = (timestamp?: number) => {
-  if (!timestamp) return ''
+  if (!timestamp) {
+    return ''
+  }
   const date = new Date(timestamp)
   return date.toLocaleString(undefined, {
     month: 'numeric',
@@ -207,7 +215,7 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
   // Check if file exists when download data changes
   useEffect(() => {
     const checkFileExists = async () => {
-      if (!download.title || !download.downloadPath) {
+      if (!(download.title && download.downloadPath)) {
         setFileExists(false)
         return
       }
@@ -238,7 +246,9 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
   }, [download.title, download.downloadPath, download.savedFileName, resolvedExtension])
 
   const handleCancel = async () => {
-    if (isHistory) return
+    if (isHistory) {
+      return
+    }
     try {
       await ipcServices.download.cancelDownload(download.id)
       removeDownload(download.id)
@@ -328,7 +338,7 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
   const handleOpenFile = async () => {
     try {
       const downloadPath = download.downloadPath || settings.downloadPath
-      if (!downloadPath || !download.title) {
+      if (!(downloadPath && download.title)) {
         toast.error(t('notifications.openFileFailed'))
         return
       }
@@ -388,7 +398,7 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
     const format = resolvedExtension
     const title = download.title
 
-    if (!downloadPath || !title) {
+    if (!(downloadPath && title)) {
       toast.error(t('notifications.copyFailed'))
       return
     }
@@ -414,7 +424,7 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
   const handleDeleteFile = async () => {
     try {
       const downloadPath = download.downloadPath || settings.downloadPath
-      if (!downloadPath || !download.title) {
+      if (!(downloadPath && download.title)) {
         toast.error(t('notifications.removeFailed'))
         return
       }
@@ -617,10 +627,10 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
       label: t('download.metadata.url'),
       value: (
         <a
+          className="wrap-break-word relative z-20 text-primary hover:underline"
           href={download.url}
-          target="_blank"
           rel="noopener noreferrer"
-          className="relative z-20 wrap-break-word text-primary hover:underline"
+          target="_blank"
         >
           {download.url}
         </a>
@@ -649,7 +659,7 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
       value: (
         <div className="flex flex-wrap gap-1">
           {download.tags.map((tag) => (
-            <Badge key={tag} variant="secondary" className="text-[10px] px-1.5 py-0.5">
+            <Badge className="px-1.5 py-0.5 text-[10px]" key={tag} variant="secondary">
               {tag}
             </Badge>
           ))}
@@ -784,7 +794,7 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
   }, [hasMetadataDetails, pendingTab, sheetOpen])
 
   useEffect(() => {
-    if (!sheetOpen || !logAutoScroll || !logContent) {
+    if (!(sheetOpen && logAutoScroll && logContent)) {
       return
     }
     const container = logContainerRef.current
@@ -817,7 +827,7 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
     <ContextMenu onOpenChange={setIsContextMenuOpen}>
       <ContextMenuTrigger asChild>
         <div
-          className={`px-6 py-2 group relative w-full max-w-full overflow-hidden transition-colors ${
+          className={`group relative w-full max-w-full overflow-hidden px-6 py-2 transition-colors ${
             isSelectedHistory || isContextMenuOpen ? 'bg-primary/10' : ''
           }`}
         >
@@ -841,46 +851,46 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
               : {})}
           >
             {/* Thumbnail */}
-            <div className="relative z-20 shrink-0 overflow-hidden rounded-lg border border-border/60 bg-background/60 h-14 aspect-video pointer-events-none">
+            <div className="pointer-events-none relative z-20 aspect-video h-14 shrink-0 overflow-hidden rounded-lg border border-border/60 bg-background/60">
               {selectionEnabled && (
                 <div
-                  className={`absolute left-1 top-1 z-30 rounded-md transition pointer-events-auto ${
+                  className={`pointer-events-auto absolute top-1 left-1 z-30 rounded-md transition ${
                     isSelected
                       ? 'opacity-100'
-                      : 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'
+                      : 'opacity-0 group-focus-within:opacity-100 group-hover:opacity-100'
                   }`}
                 >
                   <Checkbox
+                    aria-label={t('history.selectItem')}
                     checked={Boolean(isSelected)}
                     onCheckedChange={() => onToggleSelect?.(download.id)}
                     onClick={(event) => event.stopPropagation()}
-                    aria-label={t('history.selectItem')}
                   />
                 </div>
               )}
               <RemoteImage
-                src={download.thumbnail}
                 alt={download.title}
-                className="w-full h-full object-cover"
+                className="h-full w-full object-cover"
                 fallbackIcon={<Play className="h-4 w-4" />}
+                src={download.thumbnail}
               />
             </div>
 
             {/* Content */}
-            <div className="flex-1 min-w-0 max-w-full overflow-hidden pointer-events-none">
-              <div className="flex items-center justify-center h-14 w-full flex-col gap-1.5 sm:flex-row sm:justify-between sm:gap-2">
-                <div className="flex-1 items-center min-w-0 max-w-full space-y-1.5 overflow-hidden">
-                  <div className="w-full min-w-0 overflow-hidden flex flex-wrap items-center gap-1.5">
-                    <p className="flex-1 wrap-break-word text-sm font-medium line-clamp-1">
+            <div className="pointer-events-none min-w-0 max-w-full flex-1 overflow-hidden">
+              <div className="flex h-14 w-full flex-col items-center justify-center gap-1.5 sm:flex-row sm:justify-between sm:gap-2">
+                <div className="min-w-0 max-w-full flex-1 items-center space-y-1.5 overflow-hidden">
+                  <div className="flex w-full min-w-0 flex-wrap items-center gap-1.5 overflow-hidden">
+                    <p className="wrap-break-word line-clamp-1 flex-1 font-medium text-sm">
                       {download.title}
                     </p>
                     {download.type === 'audio' && (
-                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5 shrink-0">
+                      <Badge className="shrink-0 px-1.5 py-0.5 text-[10px]" variant="secondary">
                         {t('download.audio')}
                       </Badge>
                     )}
                     {isSubscriptionDownload && (
-                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5 shrink-0">
+                      <Badge className="shrink-0 px-1.5 py-0.5 text-[10px]" variant="secondary">
                         {t('subscriptions.labels.subscription')}
                       </Badge>
                     )}
@@ -890,7 +900,7 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
                     {statusIcon && (
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <div className="flex items-center shrink-0">{statusIcon}</div>
+                          <div className="flex shrink-0 items-center">{statusIcon}</div>
                         </TooltipTrigger>
                         <TooltipContent>
                           <p>{statusText}</p>
@@ -898,32 +908,32 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
                       </Tooltip>
                     )}
                     {showInlineProgress && (
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="font-medium shrink-0">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span className="shrink-0 font-medium">
                           {(progressInfo?.percent ?? 0).toFixed(1)}%
                         </span>
                         {progressInfo?.downloaded && progressInfo?.total && (
-                          <span className="truncate max-w-[120px]">
+                          <span className="max-w-[120px] truncate">
                             {progressInfo.downloaded} / {progressInfo.total}
                           </span>
                         )}
                         {progressInfo?.currentSpeed && (
-                          <span className="truncate max-w-[80px]">{progressInfo.currentSpeed}</span>
+                          <span className="max-w-[80px] truncate">{progressInfo.currentSpeed}</span>
                         )}
                         {progressInfo?.eta && (
-                          <span className="truncate max-w-[80px]">ETA: {progressInfo.eta}</span>
+                          <span className="max-w-[80px] truncate">ETA: {progressInfo.eta}</span>
                         )}
                       </div>
                     )}
                     {/* Timestamp */}
                     {timestamp && (
-                      <span className="truncate shrink-0">{formatDateShort(timestamp)}</span>
+                      <span className="shrink-0 truncate">{formatDateShort(timestamp)}</span>
                     )}
                     {/* Quality */}
                     {qualityLabel && (
                       <>
                         {(statusIcon || timestamp) && (
-                          <span className="text-muted-foreground/60 shrink-0">•</span>
+                          <span className="shrink-0 text-muted-foreground/60">•</span>
                         )}
                         <span className="shrink-0">{qualityLabel}</span>
                       </>
@@ -932,7 +942,7 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
                     {inlineFileSize && (
                       <>
                         {(statusIcon || timestamp || qualityLabel) && (
-                          <span className="text-muted-foreground/60 shrink-0">•</span>
+                          <span className="shrink-0 text-muted-foreground/60">•</span>
                         )}
                         <span className="shrink-0">{inlineFileSize}</span>
                       </>
@@ -944,13 +954,13 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
-                          variant="ghost"
-                          size="icon"
                           className="h-8 w-8 shrink-0 rounded-full"
                           onClick={(e) => {
                             e.stopPropagation()
                             void handleRetryDownload()
                           }}
+                          size="icon"
+                          variant="ghost"
                         >
                           <RotateCw className="h-4 w-4" />
                         </Button>
@@ -966,14 +976,14 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
-                              variant="ghost"
-                              size="icon"
                               className="h-8 w-8 shrink-0 rounded-full"
+                              disabled={!canCopyToClipboard()}
                               onClick={(e) => {
                                 e.stopPropagation()
                                 handleCopyToClipboard()
                               }}
-                              disabled={!canCopyToClipboard()}
+                              size="icon"
+                              variant="ghost"
                             >
                               <Copy className="h-4 w-4" />
                             </Button>
@@ -987,13 +997,13 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
-                              variant="ghost"
-                              size="icon"
                               className="h-8 w-8 shrink-0 rounded-full"
                               onClick={(e) => {
                                 e.stopPropagation()
                                 handleOpenFolder()
                               }}
+                              size="icon"
+                              variant="ghost"
                             >
                               <FolderOpen className="h-4 w-4" />
                             </Button>
@@ -1010,14 +1020,14 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
-                              variant="ghost"
-                              size="icon"
                               className="h-8 w-8 shrink-0 rounded-full"
+                              disabled={!canCopyToClipboard()}
                               onClick={(e) => {
                                 e.stopPropagation()
                                 handleCopyToClipboard()
                               }}
-                              disabled={!canCopyToClipboard()}
+                              size="icon"
+                              variant="ghost"
                             >
                               <Copy className="h-4 w-4" />
                             </Button>
@@ -1031,13 +1041,13 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
-                              variant="ghost"
-                              size="icon"
                               className="h-8 w-8 shrink-0 rounded-full"
                               onClick={(e) => {
                                 e.stopPropagation()
                                 handleOpenFolder()
                               }}
+                              size="icon"
+                              variant="ghost"
                             >
                               <FolderOpen className="h-4 w-4" />
                             </Button>
@@ -1051,13 +1061,13 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
                         download.status === 'pending' ||
                         download.status === 'processing') && (
                         <Button
-                          variant="ghost"
-                          size="icon"
                           className="h-8 w-8 shrink-0 rounded-full"
                           onClick={(e) => {
                             e.stopPropagation()
                             handleCancel()
                           }}
+                          size="icon"
+                          variant="ghost"
                         >
                           <X className="h-4 w-4" />
                         </Button>
@@ -1071,47 +1081,47 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
               {download.progress &&
                 download.status !== 'completed' &&
                 download.status !== 'error' && (
-                  <div className="bg-background/60 w-full overflow-hidden">
-                    <Progress value={download.progress.percent} className="h-1 w-full" />
+                  <div className="w-full overflow-hidden bg-background/60">
+                    <Progress className="h-1 w-full" value={download.progress.percent} />
                   </div>
                 )}
 
               {/* Error message */}
               {download.status === 'error' && download.error && (
                 <div className="flex flex-col gap-1.5">
-                  <p className="text-xs text-destructive line-clamp-2 w-full overflow-hidden">
+                  <p className="line-clamp-2 w-full overflow-hidden text-destructive text-xs">
                     {download.error}
                   </p>
-                  <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground pointer-events-auto">
-                    <span className="text-xs font-medium text-muted-foreground shrink-0">
+                  <div className="pointer-events-auto flex flex-wrap items-center gap-1.5 text-muted-foreground text-xs">
+                    <span className="shrink-0 font-medium text-muted-foreground text-xs">
                       {t('download.feedback.title')}:
                     </span>
                     {canShowSheet && (
                       <Button
-                        variant="outline"
-                        size="sm"
                         className="h-6 px-1.5 text-[10px]"
                         onClick={(event) => {
                           event.stopPropagation()
                           openLogsSheet()
                         }}
+                        size="sm"
+                        variant="outline"
                       >
                         {t('download.viewLogs')}
                       </Button>
                     )}
                     <FeedbackLinkButtons
-                      error={download.error}
-                      sourceUrl={download.url}
-                      issueTitle={DOWNLOAD_FEEDBACK_ISSUE_TITLE}
-                      includeAppInfo
-                      ytDlpCommand={download.ytDlpCommand}
-                      buttonVariant="outline"
-                      buttonSize="sm"
                       buttonClassName="h-6 gap-1 px-1.5 text-[10px]"
+                      buttonSize="sm"
+                      buttonVariant="outline"
+                      error={download.error}
                       iconClassName="h-3 w-3"
+                      includeAppInfo
+                      issueTitle={DOWNLOAD_FEEDBACK_ISSUE_TITLE}
                       onLinkClick={(event) => event.stopPropagation()}
-                      wrapperClassName="flex flex-wrap items-center gap-1.5"
                       showGroupSeparator={canShowSheet}
+                      sourceUrl={download.url}
+                      wrapperClassName="flex flex-wrap items-center gap-1.5"
+                      ytDlpCommand={download.ytDlpCommand}
                     />
                   </div>
                 </div>
@@ -1121,43 +1131,43 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
 
           {/* Video Details Sheet */}
           {canShowSheet && (
-            <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-              <SheetContent side="right" className="w-full sm:max-w-lg flex flex-col p-0">
-                <div className="flex flex-col h-full overflow-hidden">
-                  <SheetHeader className="px-6 pt-6 pb-4 border-b shrink-0">
+            <Sheet onOpenChange={setSheetOpen} open={sheetOpen}>
+              <SheetContent className="flex w-full flex-col p-0 sm:max-w-lg" side="right">
+                <div className="flex h-full flex-col overflow-hidden">
+                  <SheetHeader className="shrink-0 border-b px-6 pt-6 pb-4">
                     <SheetTitle className="line-clamp-2">{download.title}</SheetTitle>
                     <SheetDescription>{t('download.videoInfo')}</SheetDescription>
                   </SheetHeader>
                   <Tabs
-                    value={activeTab}
-                    onValueChange={(value) => setActiveTab(value as 'details' | 'logs')}
                     className="flex-1 overflow-hidden"
+                    onValueChange={(value) => setActiveTab(value as 'details' | 'logs')}
+                    value={activeTab}
                   >
                     <div className="px-6 pt-4">
                       <TabsList>
-                        <TabsTrigger value="details" disabled={!hasMetadataDetails}>
+                        <TabsTrigger disabled={!hasMetadataDetails} value="details">
                           {t('download.detailsTab')}
                         </TabsTrigger>
                         <TabsTrigger value="logs">{t('download.logsTab')}</TabsTrigger>
                       </TabsList>
                     </div>
-                    <TabsContent value="details" className="flex-1 overflow-y-auto px-6 py-4">
+                    <TabsContent className="flex-1 overflow-y-auto px-6 py-4" value="details">
                       <div className="space-y-4">
                         {metadataDetails.map((item, index) => (
-                          <div key={`${item.label}-${index}`} className="flex flex-col gap-1">
-                            <span className="text-sm font-medium text-muted-foreground">
+                          <div className="flex flex-col gap-1" key={`${item.label}-${index}`}>
+                            <span className="font-medium text-muted-foreground text-sm">
                               {item.label}
                             </span>
-                            <div className="text-sm text-foreground break-words">{item.value}</div>
+                            <div className="break-words text-foreground text-sm">{item.value}</div>
                           </div>
                         ))}
                       </div>
                     </TabsContent>
                     <TabsContent
+                      className="flex flex-1 flex-col gap-3 overflow-hidden px-6 py-4"
                       value="logs"
-                      className="flex-1 overflow-hidden px-6 py-4 flex flex-col gap-3"
                     >
-                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <div className="flex items-center justify-between text-muted-foreground text-xs">
                         <span>
                           {isInProgressStatus
                             ? t('download.logs.live')
@@ -1171,19 +1181,19 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
                       </div>
                       {hasYtDlpCommand && (
                         <div className="rounded-md border border-border/60 bg-muted/20 p-2">
-                          <div className="text-[11px] font-medium text-muted-foreground">
+                          <div className="font-medium text-[11px] text-muted-foreground">
                             {t('download.logs.command')}
                           </div>
-                          <div className="mt-1 text-xs font-mono whitespace-pre-wrap break-words">
+                          <div className="mt-1 whitespace-pre-wrap break-words font-mono text-xs">
                             {ytDlpCommand}
                           </div>
                         </div>
                       )}
-                      <div className="flex-1 min-h-0 rounded-md border border-border/60 bg-muted/30">
+                      <div className="min-h-0 flex-1 rounded-md border border-border/60 bg-muted/30">
                         <div
-                          ref={logContainerRef}
+                          className="h-full overflow-y-auto whitespace-pre-wrap break-words p-3 font-mono text-xs leading-relaxed"
                           onScroll={handleLogScroll}
-                          className="h-full overflow-y-auto p-3 text-xs font-mono leading-relaxed whitespace-pre-wrap break-words"
+                          ref={logContainerRef}
                         >
                           {hasLogContent ? logContent : t('download.logs.empty')}
                         </div>
@@ -1205,17 +1215,17 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
                 {t('download.retry')}
               </ContextMenuItem>
             )}
-            <ContextMenuItem onClick={handleOpenFolder} disabled={!showOpenFolderAction}>
+            <ContextMenuItem disabled={!showOpenFolderAction} onClick={handleOpenFolder}>
               <FolderOpen className="h-4 w-4" />
               {t('history.openFileLocation')}
             </ContextMenuItem>
-            <ContextMenuItem onClick={handleCopyLink} disabled={!canCopyLink}>
-              <span className="h-4 w-4 shrink-0" aria-hidden="true" />
+            <ContextMenuItem disabled={!canCopyLink} onClick={handleCopyLink}>
+              <span aria-hidden="true" className="h-4 w-4 shrink-0" />
               {t('history.copyUrl')}
             </ContextMenuItem>
             {canShowSheet && (
               <ContextMenuItem onClick={() => setSheetOpen(true)}>
-                <span className="h-4 w-4 shrink-0" aria-hidden="true" />
+                <span aria-hidden="true" className="h-4 w-4 shrink-0" />
                 {t('download.showDetails')}
               </ContextMenuItem>
             )}
@@ -1228,7 +1238,7 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
         ) : (
           <>
             {isCompletedStatus && (
-              <ContextMenuItem onClick={handleCopyToClipboard} disabled={!showCopyAction}>
+              <ContextMenuItem disabled={!showCopyAction} onClick={handleCopyToClipboard}>
                 <Copy className="h-4 w-4" />
                 {t('history.copyToClipboard')}
               </ContextMenuItem>
@@ -1239,32 +1249,32 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
                 {t('download.retry')}
               </ContextMenuItem>
             )}
-            <ContextMenuItem onClick={handleOpenFile} disabled={!canOpenFile}>
+            <ContextMenuItem disabled={!canOpenFile} onClick={handleOpenFile}>
               <File className="h-4 w-4" />
               {t('history.openFile')}
             </ContextMenuItem>
             <ContextMenuSeparator />
-            <ContextMenuItem onClick={handleOpenFolder} disabled={!showOpenFolderAction}>
+            <ContextMenuItem disabled={!showOpenFolderAction} onClick={handleOpenFolder}>
               <FolderOpen className="h-4 w-4" />
               {t('history.openFileLocation')}
             </ContextMenuItem>
-            <ContextMenuItem onClick={handleCopyLink} disabled={!canCopyLink}>
-              <span className="h-4 w-4 shrink-0" aria-hidden="true" />
+            <ContextMenuItem disabled={!canCopyLink} onClick={handleCopyLink}>
+              <span aria-hidden="true" className="h-4 w-4 shrink-0" />
               {t('history.copyUrl')}
             </ContextMenuItem>
             {canShowSheet && (
               <ContextMenuItem onClick={() => setSheetOpen(true)}>
-                <span className="h-4 w-4 shrink-0" aria-hidden="true" />
+                <span aria-hidden="true" className="h-4 w-4 shrink-0" />
                 {t('download.showDetails')}
               </ContextMenuItem>
             )}
             <ContextMenuSeparator />
-            <ContextMenuItem onClick={handleDeleteFile} disabled={!canDeleteFile}>
+            <ContextMenuItem disabled={!canDeleteFile} onClick={handleDeleteFile}>
               <Trash2 className="h-4 w-4" />
               {t('history.deleteFile')}
             </ContextMenuItem>
             <ContextMenuItem onClick={handleDeleteRecord}>
-              <span className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <span aria-hidden="true" className="h-4 w-4 shrink-0" />
               {t('history.deleteRecord')}
             </ContextMenuItem>
           </>

@@ -5,7 +5,7 @@ import { type MouseEvent, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
-type AppInfo = {
+interface AppInfo {
   appVersion: string
   osVersion: string
 }
@@ -97,7 +97,7 @@ export const useAppInfo = (): AppInfo => {
   return appInfo
 }
 
-type FeedbackLinkButtonsProps = {
+interface FeedbackLinkButtonsProps {
   error?: string | null
   sourceUrl?: string | null
   issueTitle?: string
@@ -244,41 +244,41 @@ export const FeedbackLinkButtons = ({
           {utilityLinks.map((resource) => {
             return (
               <Button
-                key={resource.label}
-                variant={buttonVariant}
-                size={buttonSize}
-                className={buttonClassName}
                 asChild
+                className={buttonClassName}
+                key={resource.label}
+                size={buttonSize}
+                variant={buttonVariant}
               >
                 <a
                   href={resource.href}
-                  target="_blank"
-                  rel="noreferrer"
                   onClick={(event) => handleLinkClick(event, resource.href)}
+                  rel="noreferrer"
+                  target="_blank"
                 >
                   {resource.label}
                 </a>
               </Button>
             )
           })}
-          {showGroupSeparator && <div className="h-4 border-l border-border/40 mx-1" />}
+          {showGroupSeparator && <div className="mx-1 h-4 border-border/40 border-l" />}
         </>
       )}
       {feedbackLinks.map((resource) => {
         const Icon = resource.icon
         return (
           <Button
-            key={resource.label}
-            variant={buttonVariant}
-            size={buttonSize}
-            className={buttonClassName}
             asChild
+            className={buttonClassName}
+            key={resource.label}
+            size={buttonSize}
+            variant={buttonVariant}
           >
             <a
               href={resource.href}
-              target="_blank"
-              rel="noreferrer"
               onClick={(event) => handleLinkClick(event, resource.href)}
+              rel="noreferrer"
+              target="_blank"
             >
               <Icon className={iconClassName} />
               {resource.label}

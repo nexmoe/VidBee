@@ -55,13 +55,13 @@ interface DownloadProcess {
 }
 
 class DownloadEngine extends EventEmitter {
-  private activeDownloads: Map<string, DownloadProcess> = new Map()
-  private queue: DownloadQueue
+  private readonly activeDownloads: Map<string, DownloadProcess> = new Map()
+  private readonly queue: DownloadQueue
   private sessionPersistTimer: NodeJS.Timeout | null = null
   private sessionRestored = false
-  private prefetchTasks: Map<string, Promise<VideoInfo | null>> = new Map()
-  private prefetchedInfo: Map<string, VideoInfo> = new Map()
-  private cancelledDownloads: Set<string> = new Set()
+  private readonly prefetchTasks: Map<string, Promise<VideoInfo | null>> = new Map()
+  private readonly prefetchedInfo: Map<string, VideoInfo> = new Map()
+  private readonly cancelledDownloads: Set<string> = new Set()
 
   constructor() {
     super()
@@ -108,8 +108,7 @@ class DownloadEngine extends EventEmitter {
               const duration = info.duration
               for (const format of info.formats) {
                 if (
-                  !format.filesize &&
-                  !format.filesize_approx &&
+                  !(format.filesize || format.filesize_approx) &&
                   format.tbr &&
                   typeof format.tbr === 'number' &&
                   duration > 0
@@ -187,8 +186,7 @@ class DownloadEngine extends EventEmitter {
               const duration = info.duration
               for (const format of info.formats) {
                 if (
-                  !format.filesize &&
-                  !format.filesize_approx &&
+                  !(format.filesize || format.filesize_approx) &&
                   format.tbr &&
                   typeof format.tbr === 'number' &&
                   duration > 0
@@ -264,7 +262,7 @@ class DownloadEngine extends EventEmitter {
     appendJsRuntimeArgs(args)
     args.push(url)
 
-    type RawPlaylistEntry = {
+    interface RawPlaylistEntry {
       id?: string
       title?: string
       url?: string
@@ -496,7 +494,7 @@ class DownloadEngine extends EventEmitter {
       type: options.type,
       totalCount: selectionSize,
       startIndex: selectedEntries[0]?.index ?? rangeStart + 1,
-      endIndex: selectedEntries[selectedEntries.length - 1]?.index ?? rangeEnd + 1,
+      endIndex: selectedEntries.at(-1)?.index ?? rangeEnd + 1,
       entries: downloadEntries
     }
   }
@@ -1165,12 +1163,7 @@ class DownloadEngine extends EventEmitter {
         let finalFileSize = fileSize
 
         if (settings.shareWatermark && options.type === 'video') {
-          if (!fs.existsSync(actualFilePath)) {
-            scopedLoggers.download.warn(
-              'Watermark skipped because file was not found:',
-              actualFilePath
-            )
-          } else {
+          if (fs.existsSync(actualFilePath)) {
             this.updateDownloadInfo(id, { status: 'processing' })
             const snapshot = this.queue.getItemDetails(id)
             const watermarkTitle = videoInfo?.title ?? snapshot?.item.title
@@ -1189,6 +1182,11 @@ class DownloadEngine extends EventEmitter {
             } catch (error) {
               scopedLoggers.download.warn('Failed to apply share watermark for ID:', id, error)
             }
+          } else {
+            scopedLoggers.download.warn(
+              'Watermark skipped because file was not found:',
+              actualFilePath
+            )
           }
         }
 
@@ -1288,7 +1286,7 @@ class DownloadEngine extends EventEmitter {
     }
 
     for (const entry of sessionItems) {
-      if (!entry?.id || !entry.options?.url || !entry.options.type) {
+      if (!(entry?.id && entry.options?.url && entry.options.type)) {
         continue
       }
       if (this.queue.getItemDetails(entry.id)) {

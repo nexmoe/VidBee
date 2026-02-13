@@ -76,10 +76,12 @@ let hasMissingBinary = false
 for (const binary of binaries) {
   const candidates = binary.paths[platform] || []
   const found = candidates.find((filename) =>
-    fs.existsSync(path.join(__dirname, '..', 'resources', filename))
+    fs.existsSync(path.join(import.meta.dirname, '..', 'resources', filename))
   )
 
-  if (!found) {
+  if (found) {
+    console.log(`✅ ${binary.label} found: resources/${found}`)
+  } else {
     const expected = candidates.length ? candidates.join(' or ') : binary.label
     console.error(`❌ Error: resources/${expected} not found!`)
     console.error(`Please download ${binary.label} to the resources/ directory first.`)
@@ -89,8 +91,6 @@ for (const binary of binaries) {
       console.error(`See ${help}`)
     }
     hasMissingBinary = true
-  } else {
-    console.log(`✅ ${binary.label} found: resources/${found}`)
   }
 }
 

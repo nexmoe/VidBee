@@ -176,9 +176,15 @@ export const historyStatsAtom = atom((get) => {
   return history.reduce(
     (acc, item) => {
       acc.total += 1
-      if (item.status === 'completed') acc.completed += 1
-      if (item.status === 'error') acc.error += 1
-      if (item.status === 'cancelled') acc.cancelled += 1
+      if (item.status === 'completed') {
+        acc.completed += 1
+      }
+      if (item.status === 'error') {
+        acc.error += 1
+      }
+      if (item.status === 'cancelled') {
+        acc.cancelled += 1
+      }
       return acc
     },
     { total: 0, completed: 0, error: 0, cancelled: 0 }
@@ -197,9 +203,15 @@ export const downloadStatsAtom = atom((get) => {
       ) {
         acc.active += 1
       }
-      if (item.status === 'completed') acc.completed += 1
-      if (item.status === 'error') acc.error += 1
-      if (item.status === 'cancelled') acc.cancelled += 1
+      if (item.status === 'completed') {
+        acc.completed += 1
+      }
+      if (item.status === 'error') {
+        acc.error += 1
+      }
+      if (item.status === 'cancelled') {
+        acc.cancelled += 1
+      }
       return acc
     },
     { total: 0, active: 0, completed: 0, error: 0, cancelled: 0 }

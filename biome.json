@@ -1,20 +1,36 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.2.4/schema.json",
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
   "linter": {
     "enabled": true,
     "rules": {
       "recommended": true,
       "correctness": {
-        "useExhaustiveDependencies": "warn"
+        "useExhaustiveDependencies": "warn",
+        "useImageSize": "off"
       },
       "suspicious": {
-        "noExplicitAny": "warn"
+        "noExplicitAny": "warn",
+        "useAwait": "off",
+        "noEmptyBlockStatements": "off"
       },
       "style": {
-        "useConst": "error"
+        "useConst": "error",
+        "noNestedTernary": "off",
+        "useFilenamingConvention": "off",
+        "noExportedImports": "off",
+        "useCollapsedElseIf": "off"
       },
       "complexity": {
-        "noForEach": "off"
+        "noForEach": "off",
+        "noVoid": "off",
+        "noExcessiveCognitiveComplexity": "off"
+      },
+      "performance": {
+        "useTopLevelRegex": "off",
+        "noNamespaceImport": "off"
+      },
+      "a11y": {
+        "noNoninteractiveElementInteractions": "off"
       }
     }
   },
@@ -27,6 +43,7 @@
     "lineEnding": "lf"
   },
   "javascript": {
+    "globals": ["browser", "defineBackground"],
     "formatter": {
       "quoteStyle": "single",
       "semicolons": "asNeeded",
@@ -50,12 +67,12 @@
       "!dist",
       "!out",
       "!build"
-    ],
-    "experimentalScannerIgnores": ["docs/**", "monkey/dist/**", "dist/**", "out/**", "build/**"]
+    ]
   },
   "vcs": {
     "enabled": true,
     "clientKind": "git",
     "useIgnoreFile": true
-  }
+  },
+  "extends": ["ultracite/biome/core", "ultracite/biome/react"]
 }

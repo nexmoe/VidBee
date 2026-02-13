@@ -165,31 +165,31 @@ function SubscriptionTab({
   return (
     <>
       <ContextMenu>
-        <HoverCard openDelay={0} closeDelay={0}>
+        <HoverCard closeDelay={0} openDelay={0}>
           <ContextMenuTrigger asChild>
             <HoverCardTrigger asChild>
               <TabsTrigger
-                value={subscription.id}
                 className={cn(
-                  'flex h-auto w-20 flex-col rounded-2xl items-center gap-1 px-2 py-2 transition-all hover:opacity-80 shrink-0 grow-0',
+                  'flex h-auto w-20 shrink-0 grow-0 flex-col items-center gap-1 rounded-2xl px-2 py-2 transition-all hover:opacity-80',
                   isActive && 'bg-muted/45'
                 )}
+                value={subscription.id}
               >
                 <div className="relative h-12 w-12 shrink-0 overflow-hidden transition-colors">
                   <RemoteImage
-                    src={subscription.coverUrl}
                     alt={subscription.title || t('subscriptions.labels.unknown')}
-                    className="h-full w-full object-cover rounded-full overflow-hidden"
+                    className="h-full w-full overflow-hidden rounded-full object-cover"
+                    src={subscription.coverUrl}
                   />
                   <span
                     className={cn(
-                      'absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-background transition-colors',
+                      'absolute -right-0.5 -bottom-0.5 h-3.5 w-3.5 rounded-full border-2 border-background transition-colors',
                       statusMeta.dotClass
                     )}
                   />
                 </div>
                 <div className="flex w-full flex-col items-center text-center">
-                  <span className="w-full truncate text-xs font-medium">
+                  <span className="w-full truncate font-medium text-xs">
                     {subscription.title || t('subscriptions.labels.unknown')}
                   </span>
                 </div>
@@ -197,7 +197,7 @@ function SubscriptionTab({
             </HoverCardTrigger>
           </ContextMenuTrigger>
           <HoverCardContent className="max-w-xs space-y-1">
-            <p className="text-sm font-semibold">
+            <p className="font-semibold text-sm">
               {subscription.title || t('subscriptions.labels.unknown')}
             </p>
             <p className="text-xs">{statusDescription}</p>
@@ -231,14 +231,14 @@ function SubscriptionTab({
 
       <SubscriptionFormDialog
         mode="edit"
-        subscription={subscription}
-        open={editOpen}
+        onClose={() => setEditOpen(false)}
         onSave={async (data) => {
           await onUpdate(data)
           toast.success(t('subscriptions.notifications.updated'))
           setEditOpen(false)
         }}
-        onClose={() => setEditOpen(false)}
+        open={editOpen}
+        subscription={subscription}
       />
     </>
   )
@@ -369,21 +369,21 @@ export function Subscriptions() {
   }, [selectedTab, sortedSubscriptions])
 
   return (
-    <div className="relative w-full h-full flex flex-col">
+    <div className="relative flex h-full w-full flex-col">
       {/* Channel Tabs Header */}
       <div className="flex flex-row pr-6 pb-6 pl-6">
         <ScrollArea className="w-auto overflow-y-auto">
-          <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-auto">
+          <Tabs className="w-auto" onValueChange={setSelectedTab} value={selectedTab}>
             <TabsList className="h-auto w-auto justify-start rounded-none border-none bg-transparent p-0">
               {/* Subscription Channel Tabs */}
               {sortedSubscriptions.map((subscription) => (
                 <SubscriptionTab
-                  key={subscription.id}
-                  subscription={subscription}
                   isActive={subscription.id === selectedTab}
+                  key={subscription.id}
                   onRefresh={() => refreshSubscription(subscription.id)}
                   onRemove={() => removeSubscription(subscription.id)}
                   onUpdate={(data) => handleUpdateSubscription(subscription.id, data)}
+                  subscription={subscription}
                 />
               ))}
             </TabsList>
@@ -393,38 +393,38 @@ export function Subscriptions() {
 
         {/* Add RSS Button */}
         <Button
-          className="flex h-auto w-20 flex-col items-center gap-1 rounded-2xl px-2 py-2 transition-all hover:opacity-80 bg-transparent hover:bg-neutral-100 shrink-0 grow-0"
-          variant="ghost"
+          className="flex h-auto w-20 shrink-0 grow-0 flex-col items-center gap-1 rounded-2xl bg-transparent px-2 py-2 transition-all hover:bg-neutral-100 hover:opacity-80"
           onClick={() => setAddDialogOpen(true)}
+          variant="ghost"
         >
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-muted-foreground/40 transition-colors">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-muted-foreground/40 border-dashed transition-colors">
             <Plus className="h-5 w-5 text-muted-foreground" />
           </div>
           <div className="flex w-full flex-col items-center text-center">
-            <span className="w-full truncate text-xs font-medium">
+            <span className="w-full truncate font-medium text-xs">
               {t('subscriptions.add.title')}
             </span>
           </div>
         </Button>
       </div>
 
-      <ScrollArea className="overflow-y-auto ">
+      <ScrollArea className="overflow-y-auto">
         {/* Content Area */}
         <div className="relative space-y-8 p-6 pt-0">
           <section className="space-y-4">
             {sortedSubscriptions.length === 0 ? (
-              <div className="py-12 text-center text-sm text-muted-foreground">
+              <div className="py-12 text-center text-muted-foreground text-sm">
                 {t('subscriptions.empty')}
               </div>
-            ) : !selectedTab ? (
-              <div className="py-12 text-center text-sm text-muted-foreground">
-                {t('subscriptions.empty')}
-              </div>
-            ) : (
+            ) : selectedTab ? (
               <div className="space-y-3">
                 {displayedSubscriptions.map((subscription) => (
                   <SubscriptionCard key={subscription.id} subscription={subscription} />
                 ))}
+              </div>
+            ) : (
+              <div className="py-12 text-center text-muted-foreground text-sm">
+                {t('subscriptions.empty')}
               </div>
             )}
           </section>
@@ -439,10 +439,10 @@ export function Subscriptions() {
             </CardHeader>
             <CardContent>
               <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => void handleOpenRSSHubDocs()}
                 className="gap-2"
+                onClick={() => void handleOpenRSSHubDocs()}
+                size="sm"
+                variant="secondary"
               >
                 {t('subscriptions.rssHub.openDocs')}
               </Button>
@@ -453,9 +453,9 @@ export function Subscriptions() {
 
       <SubscriptionFormDialog
         mode="add"
-        open={addDialogOpen}
-        onSave={handleCreateSubscription}
         onClose={() => setAddDialogOpen(false)}
+        onSave={handleCreateSubscription}
+        open={addDialogOpen}
       />
     </div>
   )
@@ -599,7 +599,7 @@ function SubscriptionCard({ subscription }: { subscription: SubscriptionRule }) 
 
   if (feedItems.length === 0) {
     return (
-      <div className="py-12 text-center text-sm text-muted-foreground">
+      <div className="py-12 text-center text-muted-foreground text-sm">
         {t('subscriptions.items.empty')}
       </div>
     )
@@ -625,31 +625,31 @@ function SubscriptionCard({ subscription }: { subscription: SubscriptionRule }) 
         return (
           <ContextMenu key={`${subscription.id}-${item.id}`}>
             <ContextMenuTrigger asChild>
-              <article className="group  transition-all">
-                <div className="relative w-full overflow-hidden bg-muted aspect-video rounded-2xl">
+              <article className="group transition-all">
+                <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-muted">
                   {item.thumbnail ? (
                     <RemoteImage
-                      src={item.thumbnail}
                       alt={item.title}
                       className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      src={item.thumbnail}
                     />
                   ) : (
-                    <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
+                    <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm">
                       {t('subscriptions.labels.noThumbnail')}
                     </div>
                   )}
                   <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/70 via-black/5 to-transparent" />
-                  <div className="absolute top-3 left-3 flex items-center gap-2 rounded-full bg-black/60 pr-3 pl-1 py-1 text-xs font-medium text-white backdrop-blur">
+                  <div className="absolute top-3 left-3 flex items-center gap-2 rounded-full bg-black/60 py-1 pr-3 pl-1 font-medium text-white text-xs backdrop-blur">
                     {subscription.coverUrl ? (
                       <div className="h-6 w-6 overflow-hidden rounded-full border border-white/40">
                         <RemoteImage
-                          src={subscription.coverUrl}
                           alt={subscription.title || t('subscriptions.labels.unknown')}
                           className="h-full w-full object-cover"
+                          src={subscription.coverUrl}
                         />
                       </div>
                     ) : (
-                      <div className="flex h-6 w-6 items-center justify-center rounded-full border border-white/40 bg-white/10 text-[10px] font-semibold uppercase text-white">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full border border-white/40 bg-white/10 font-semibold text-[10px] text-white uppercase">
                         {(subscription.title || t('subscriptions.labels.unknown')).slice(0, 1)}
                       </div>
                     )}
@@ -657,17 +657,17 @@ function SubscriptionCard({ subscription }: { subscription: SubscriptionRule }) 
                       {subscription.title || t('subscriptions.labels.unknown')}
                     </span>
                   </div>
-                  <div className="absolute bottom-3 left-3 text-xs font-medium text-white">
+                  <div className="absolute bottom-3 left-3 font-medium text-white text-xs">
                     {dayjs(item.publishedAt).format('YYYY-MM-DD HH:mm')}
                   </div>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Badge
-                        variant="secondary"
                         className={cn(
-                          'absolute bottom-3 right-3 rounded-full text-xs text-white backdrop-blur',
+                          'absolute right-3 bottom-3 rounded-full text-white text-xs backdrop-blur',
                           badgeClass
                         )}
+                        variant="secondary"
                       >
                         {badgeLabel}
                       </Badge>
@@ -678,7 +678,7 @@ function SubscriptionCard({ subscription }: { subscription: SubscriptionRule }) 
                 <div className="flex flex-col gap-4 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
                   <div className="space-y-1">
                     <p
-                      className="text-base font-semibold leading-snug text-card-foreground"
+                      className="font-semibold text-base text-card-foreground leading-snug"
                       title={item.title}
                     >
                       {item.title}
@@ -686,11 +686,11 @@ function SubscriptionCard({ subscription }: { subscription: SubscriptionRule }) 
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
-                      variant="secondary"
-                      size="sm"
                       className="rounded-full px-4"
                       onClick={() => void handleOpenItem(item.url)}
+                      size="sm"
                       title={t('subscriptions.items.actions.open')}
+                      variant="secondary"
                     >
                       <ExternalLink className="h-4 w-4" />
                     </Button>
@@ -700,8 +700,8 @@ function SubscriptionCard({ subscription }: { subscription: SubscriptionRule }) 
             </ContextMenuTrigger>
             <ContextMenuContent>
               <ContextMenuItem
-                onClick={() => void handleQueueItem(item)}
                 disabled={item.addedToQueue}
+                onClick={() => void handleQueueItem(item)}
               >
                 <Download className="h-4 w-4" />
                 {t('subscriptions.items.actions.queue')}

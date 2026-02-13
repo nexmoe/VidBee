@@ -100,18 +100,18 @@ export function Sidebar({ currentPage, onPageChange, onOpenSupportedSites }: Sid
     const handleClick = item.onClick ?? (() => onPageChange(item.id as Page))
 
     return (
-      <div key={item.id} className="flex flex-col items-center gap-1">
+      <div className="flex flex-col items-center gap-1" key={item.id}>
         <Button
-          variant="ghost"
-          size="icon"
+          className={`no-drag h-12 w-12 rounded-2xl ${isActive ? 'bg-primary/10' : ''}`}
           onClick={handleClick}
-          className={`no-drag rounded-2xl w-12 h-12 ${isActive ? 'bg-primary/10' : ''}`}
+          size="icon"
+          variant="ghost"
         >
           <IconComponent className={`h-5! w-5! ${isActive ? 'text-primary' : ''}`} />
         </Button>
 
         {showLabel && (
-          <span className="text-xs text-muted-foreground text-center leading-tight px-3">
+          <span className="px-3 text-center text-muted-foreground text-xs leading-tight">
             {item.label}
           </span>
         )}
@@ -120,13 +120,13 @@ export function Sidebar({ currentPage, onPageChange, onOpenSupportedSites }: Sid
   }
 
   return (
-    <aside className="drag-region w-20 max-w-20 min-w-20 border-r border-border/60 bg-background/77 flex flex-col items-center py-4 gap-2">
+    <aside className="drag-region flex w-20 min-w-20 max-w-20 flex-col items-center gap-2 border-border/60 border-r bg-background/77 py-4">
       {/* App Logo */}
-      <div className="flex flex-col items-center gap-1 py-3 mt-4">
-        <div className="w-12 h-12 flex items-center justify-center">
-          <img src="./app-icon.png" alt="VidBee" className="w-10 h-10" />
+      <div className="mt-4 flex flex-col items-center gap-1 py-3">
+        <div className="flex h-12 w-12 items-center justify-center">
+          <img alt="VidBee" className="h-10 w-10" src="./app-icon.png" />
         </div>
-        <span className="text-xs text-muted-foreground font-bold text-center leading-tight">
+        <span className="text-center font-bold text-muted-foreground text-xs leading-tight">
           VidBee
         </span>
       </div>
@@ -143,16 +143,16 @@ export function Sidebar({ currentPage, onPageChange, onOpenSupportedSites }: Sid
         const showUpdateDot = item.id === 'about' && updateAvailable.available
 
         return (
-          <div key={item.id} className="flex flex-col items-center gap-1">
+          <div className="flex flex-col items-center gap-1" key={item.id}>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => onPageChange(item.id)}
-                  className={`no-drag rounded-2xl w-12 h-12 relative ${
+                  className={`no-drag relative h-12 w-12 rounded-2xl ${
                     isActive ? 'bg-primary/10' : ''
                   }`}
+                  onClick={() => onPageChange(item.id)}
+                  size="icon"
+                  variant="ghost"
                 >
                   <IconComponent className={`h-5! w-5! ${isActive ? 'text-primary' : ''}`} />
                   {showUpdateDot ? (

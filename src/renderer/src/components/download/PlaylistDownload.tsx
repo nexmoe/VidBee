@@ -55,35 +55,35 @@ export function PlaylistDownload({
   return (
     <>
       {playlistPreviewLoading && !playlistPreviewError && (
-        <div className="flex-1 flex flex-col items-center justify-center gap-3 min-h-[200px]">
+        <div className="flex min-h-[200px] flex-1 flex-col items-center justify-center gap-3">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">{t('playlist.fetchingInfo')}</p>
+          <p className="text-muted-foreground text-sm">{t('playlist.fetchingInfo')}</p>
         </div>
       )}
 
       {playlistPreviewError && (
-        <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 mb-3">
+        <div className="mb-3 rounded-md border border-destructive/30 bg-destructive/5 p-3">
           <div className="flex items-start gap-2">
-            <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
             <div className="flex-1 space-y-1">
-              <p className="text-sm font-medium text-destructive">{t('playlist.previewFailed')}</p>
-              <p className="text-xs text-muted-foreground/80">{playlistPreviewError}</p>
+              <p className="font-medium text-destructive text-sm">{t('playlist.previewFailed')}</p>
+              <p className="text-muted-foreground/80 text-xs">{playlistPreviewError}</p>
             </div>
           </div>
         </div>
       )}
 
       {playlistInfo && !playlistPreviewLoading && (
-        <div className="flex-1 flex flex-col min-h-0 gap-3">
-          <div className="space-y-0.5 shrink-0">
-            <h3 className="font-bold text-sm leading-tight line-clamp-1">{playlistInfo.title}</h3>
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <div className="flex min-h-0 flex-1 flex-col gap-3">
+          <div className="shrink-0 space-y-0.5">
+            <h3 className="line-clamp-1 font-bold text-sm leading-tight">{playlistInfo.title}</h3>
+            <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
               <List className="h-3 w-3" />
               <span>{t('playlist.foundVideos', { count: playlistInfo.entryCount })}</span>
               {selectedPlaylistEntries.length !== playlistInfo.entryCount && (
                 <>
                   <span>•</span>
-                  <span className="text-primary font-medium">
+                  <span className="font-medium text-primary">
                     {t('playlist.selectedVideos', { count: selectedPlaylistEntries.length })}
                   </span>
                 </>
@@ -91,7 +91,7 @@ export function PlaylistDownload({
             </div>
           </div>
 
-          <ScrollArea className="flex-1 min-h-0 w-full rounded-md border">
+          <ScrollArea className="min-h-0 w-full flex-1 rounded-md border">
             <div className="p-1">
               {playlistInfo.entries.map((entry) => {
                 const isSelected = selectedEntryIds.has(entry.id)
@@ -117,12 +117,12 @@ export function PlaylistDownload({
 
                 return (
                   <button
-                    key={entry.id}
-                    type="button"
+                    aria-label={t('playlist.selectEntry', { index: entry.index })}
                     className={cn(
-                      'flex items-center gap-3 px-2.5 py-1.5 rounded transition-colors cursor-pointer w-full text-left',
+                      'flex w-full cursor-pointer items-center gap-3 rounded px-2.5 py-1.5 text-left transition-colors',
                       isSelected || isInRange ? 'bg-primary/10' : 'hover:bg-muted/50'
                     )}
+                    key={entry.id}
                     onClick={handleToggle}
                     onKeyDown={(event) => {
                       if (event.key === 'Enter' || event.key === ' ') {
@@ -130,10 +130,11 @@ export function PlaylistDownload({
                         handleToggle()
                       }
                     }}
-                    aria-label={t('playlist.selectEntry', { index: entry.index })}
+                    type="button"
                   >
                     <Checkbox
                       checked={isSelected || isInRange}
+                      className="shrink-0"
                       onCheckedChange={(checked) => {
                         setSelectedEntryIds((prev) => {
                           const next = new Set(prev)
@@ -150,13 +151,12 @@ export function PlaylistDownload({
                         }
                       }}
                       onClick={(event) => event.stopPropagation()}
-                      className="shrink-0"
                     />
-                    <div className="shrink-0 w-8 text-xs font-medium text-muted-foreground/70 tabular-nums">
+                    <div className="w-8 shrink-0 font-medium text-muted-foreground/70 text-xs tabular-nums">
                       #{entry.index}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium line-clamp-1 leading-tight">
+                    <div className="min-w-0 flex-1">
+                      <p className="line-clamp-1 font-medium text-xs leading-tight">
                         {entry.title || t('download.fetchingVideoInfo')}
                       </p>
                     </div>
@@ -167,37 +167,37 @@ export function PlaylistDownload({
           </ScrollArea>
 
           <div
-            data-state={advancedOptionsOpen ? 'open' : 'closed'}
+            aria-hidden={!advancedOptionsOpen}
             className={cn(
-              'grid overflow-hidden transition-all duration-300 ease-out shrink-0',
+              'grid shrink-0 overflow-hidden transition-all duration-300 ease-out',
               advancedOptionsOpen ? 'grid-rows-[1fr] py-3 opacity-100' : 'grid-rows-[0fr] opacity-0'
             )}
-            aria-hidden={!advancedOptionsOpen}
+            data-state={advancedOptionsOpen ? 'open' : 'closed'}
           >
             <div className={cn('min-h-0', !advancedOptionsOpen && 'pointer-events-none')}>
-              <div className="w-full pt-3 border-t">
+              <div className="w-full border-t pt-3">
                 <div className="space-y-3">
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">
                       <Label
+                        className="font-medium text-muted-foreground text-xs"
                         htmlFor={downloadTypeId}
-                        className="text-xs font-medium text-muted-foreground"
                       >
                         {t('playlist.downloadType')}
                       </Label>
                       <Select
-                        value={downloadType}
-                        onValueChange={(value) => setDownloadType(value as 'video' | 'audio')}
                         disabled={playlistBusy}
+                        onValueChange={(value) => setDownloadType(value as 'video' | 'audio')}
+                        value={downloadType}
                       >
-                        <SelectTrigger id={downloadTypeId} className="h-8 text-xs">
+                        <SelectTrigger className="h-8 text-xs" id={downloadTypeId}>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="video" className="text-xs">
+                          <SelectItem className="text-xs" value="video">
                             {t('download.video')}
                           </SelectItem>
-                          <SelectItem value="audio" className="text-xs">
+                          <SelectItem className="text-xs" value="audio">
                             {t('download.audio')}
                           </SelectItem>
                         </SelectContent>
@@ -205,34 +205,34 @@ export function PlaylistDownload({
                     </div>
 
                     <div className="space-y-1.5">
-                      <Label className="text-xs font-medium text-muted-foreground">
+                      <Label className="font-medium text-muted-foreground text-xs">
                         {t('playlist.range')}
                       </Label>
                       <div className="flex items-center gap-2">
                         <Input
-                          placeholder="1"
-                          value={startIndex}
+                          className="h-8 text-center text-xs"
+                          disabled={playlistBusy}
                           onChange={(event) => {
                             setStartIndex(event.target.value)
                             if (selectedEntryIds.size > 0) {
                               setSelectedEntryIds(new Set())
                             }
                           }}
-                          className="text-center h-8 text-xs"
-                          disabled={playlistBusy}
+                          placeholder="1"
+                          value={startIndex}
                         />
                         <span className="text-muted-foreground text-xs">-</span>
                         <Input
-                          placeholder={playlistInfo?.entryCount.toString() || 'End'}
-                          value={endIndex}
+                          className="h-8 text-center text-xs"
+                          disabled={playlistBusy}
                           onChange={(event) => {
                             setEndIndex(event.target.value)
                             if (selectedEntryIds.size > 0) {
                               setSelectedEntryIds(new Set())
                             }
                           }}
-                          className="text-center h-8 text-xs"
-                          disabled={playlistBusy}
+                          placeholder={playlistInfo?.entryCount.toString() || 'End'}
+                          value={endIndex}
                         />
                       </div>
                     </div>

@@ -201,19 +201,17 @@ export function SubscriptionFormDialog({
     }
 
     // Include URL if it's provided and different from current (for edit mode)
-    if (url.trim()) {
-      if (
-        mode === 'add' ||
-        (mode === 'edit' && subscription && url.trim() !== subscription.feedUrl)
-      ) {
-        try {
-          await resolveFeed(url.trim())
-          formData.url = url.trim()
-        } catch (error) {
-          console.error('Failed to resolve feed:', error)
-          toast.error(t('subscriptions.notifications.resolveError'))
-          return
-        }
+    if (
+      url.trim() &&
+      (mode === 'add' || (mode === 'edit' && subscription && url.trim() !== subscription.feedUrl))
+    ) {
+      try {
+        await resolveFeed(url.trim())
+        formData.url = url.trim()
+      } catch (error) {
+        console.error('Failed to resolve feed:', error)
+        toast.error(t('subscriptions.notifications.resolveError'))
+        return
       }
     }
 
@@ -226,8 +224,8 @@ export function SubscriptionFormDialog({
   const saveButtonKey = mode === 'add' ? 'subscriptions.actions.add' : 'subscriptions.actions.save'
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+    <Dialog onOpenChange={(isOpen) => !isOpen && onClose()} open={open}>
+      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {mode === 'edit' && subscription
@@ -241,24 +239,24 @@ export function SubscriptionFormDialog({
             <Label htmlFor={urlInputId}>{t('subscriptions.fields.url')}</Label>
             <Input
               id={urlInputId}
-              value={url}
-              placeholder="https://docs.rsshub.app/routes/youtube/user/@FKJ"
               onChange={(event) => setUrl(event.target.value)}
+              placeholder="https://docs.rsshub.app/routes/youtube/user/@FKJ"
+              value={url}
             />
             {detectingFeed && (
-              <p className="text-xs text-muted-foreground">{t('subscriptions.detecting')}</p>
+              <p className="text-muted-foreground text-xs">{t('subscriptions.detecting')}</p>
             )}
             {mode === 'add' && !url.trim() && (
               <div className="flex items-center gap-2 rounded-md bg-primary/5 px-3 py-2">
-                <p className="text-xs text-muted-foreground flex-1">
+                <p className="flex-1 text-muted-foreground text-xs">
                   {t('subscriptions.rssHub.hint')}
                 </p>
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  className="h-5 w-5 shrink-0 p-0"
                   onClick={() => void handleOpenRSSHubDocs()}
-                  className="h-5 w-5 p-0 shrink-0"
+                  size="sm"
                   title={t('subscriptions.rssHub.openDocs')}
+                  variant="ghost"
                 >
                   <ChevronRight className="h-3 w-3" />
                 </Button>
@@ -268,8 +266,8 @@ export function SubscriptionFormDialog({
           <div className="space-y-2">
             <Label>{t('subscriptions.fields.customDirectory')}</Label>
             <div className="flex gap-2">
-              <Input value={downloadDirectory} readOnly />
-              <Button variant="secondary" onClick={() => void handleSelectDirectory()}>
+              <Input readOnly value={downloadDirectory} />
+              <Button onClick={() => void handleSelectDirectory()} variant="secondary">
                 {t('subscriptions.actions.selectDirectory')}
               </Button>
             </div>
@@ -281,30 +279,30 @@ export function SubscriptionFormDialog({
             </div>
           </div>
           <div
-            data-state={advancedOptionsOpen ? 'open' : 'closed'}
+            aria-hidden={!advancedOptionsOpen}
             className={cn(
               'grid overflow-hidden transition-[grid-template-rows,opacity] duration-200 ease-out',
               advancedOptionsOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
             )}
-            aria-hidden={!advancedOptionsOpen}
+            data-state={advancedOptionsOpen ? 'open' : 'closed'}
           >
             <div className={cn('min-h-0', !advancedOptionsOpen && 'pointer-events-none')}>
               <div className="space-y-3 border-t pt-4">
                 <div className="space-y-2">
                   <Label>{t('subscriptions.fields.keywords')}</Label>
-                  <Input value={keywords} onChange={(event) => setKeywords(event.target.value)} />
+                  <Input onChange={(event) => setKeywords(event.target.value)} value={keywords} />
                 </div>
                 <div className="space-y-2">
                   <Label>{t('subscriptions.fields.tags')}</Label>
-                  <Input value={tags} onChange={(event) => setTags(event.target.value)} />
+                  <Input onChange={(event) => setTags(event.target.value)} value={tags} />
                 </div>
                 <div className="space-y-2">
                   <Label>{t('subscriptions.fields.namingTemplate')}</Label>
                   <Input
-                    value={namingTemplate}
                     onChange={(event) =>
                       setNamingTemplate(sanitizeTemplateInput(event.target.value))
                     }
+                    value={namingTemplate}
                   />
                 </div>
               </div>
@@ -312,20 +310,20 @@ export function SubscriptionFormDialog({
           </div>
         </div>
         <DialogFooter>
-          <div className="flex items-center justify-between w-full gap-4">
+          <div className="flex w-full items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <Checkbox
-                id={advancedOptionsId}
                 checked={advancedOptionsOpen}
+                id={advancedOptionsId}
                 onCheckedChange={(checked) => setAdvancedOptionsOpen(checked === true)}
               />
-              <Label htmlFor={advancedOptionsId} className="cursor-pointer">
+              <Label className="cursor-pointer" htmlFor={advancedOptionsId}>
                 {t('advancedOptions.title')}
               </Label>
             </div>
             <div className="ml-auto flex gap-2">
               {mode === 'add' && (
-                <Button variant="outline" onClick={onClose}>
+                <Button onClick={onClose} variant="outline">
                   {t('download.cancel')}
                 </Button>
               )}

@@ -11,7 +11,9 @@
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
   -webkit-font-smoothing: antialiased;
   background: var(--bg);
   color: var(--fg);
@@ -59,9 +61,16 @@ h1 {
   border-radius: 50%;
   background-color: var(--border);
 }
-.status-dot.loading { background-color: var(--warning); box-shadow: 0 0 4px var(--warning); }
-.status-dot.ok { background-color: var(--success); }
-.status-dot.error { background-color: var(--error); }
+.status-dot.loading {
+  background-color: var(--warning);
+  box-shadow: 0 0 4px var(--warning);
+}
+.status-dot.ok {
+  background-color: var(--success);
+}
+.status-dot.error {
+  background-color: var(--error);
+}
 
 .video-info {
   display: grid;
@@ -158,10 +167,20 @@ h1 {
   border-bottom: none;
 }
 
-.col-id { width: 50px; color: var(--fg-secondary); }
-.col-ext { width: 50px; }
-.col-size { width: 60px; text-align: right; }
-.format-table th.col-size { text-align: right; }
+.col-id {
+  width: 50px;
+  color: var(--fg-secondary);
+}
+.col-ext {
+  width: 50px;
+}
+.col-size {
+  width: 60px;
+  text-align: right;
+}
+.format-table th.col-size {
+  text-align: right;
+}
 
 .empty-state {
   font-size: 12px;
@@ -200,7 +219,6 @@ h1 {
 .primary-button:active {
   transform: scale(0.98);
 }
-
 
 .error-container {
   display: flex;
@@ -279,7 +297,6 @@ h1 {
   background: var(--border);
 }
 
-
 .loading-container {
   display: flex;
   flex-direction: column;
@@ -308,10 +325,17 @@ h1 {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
 }

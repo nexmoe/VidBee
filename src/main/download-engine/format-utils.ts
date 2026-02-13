@@ -31,14 +31,18 @@ const selectVideoFormatForPreset = (
 
   const sorted = [...formats].sort((a, b) => {
     const heightDiff = (b.height ?? 0) - (a.height ?? 0)
-    if (heightDiff !== 0) return heightDiff
+    if (heightDiff !== 0) {
+      return heightDiff
+    }
     const fpsDiff = (b.fps ?? 0) - (a.fps ?? 0)
-    if (fpsDiff !== 0) return fpsDiff
+    if (fpsDiff !== 0) {
+      return fpsDiff
+    }
     return (b.tbr ?? 0) - (a.tbr ?? 0)
   })
 
   if (preset === 'worst') {
-    return sorted[sorted.length - 1] ?? sorted[0]
+    return sorted.at(-1) ?? sorted[0]
   }
 
   const heightLimit = qualityPresetToVideoHeight[preset]
@@ -64,15 +68,19 @@ const selectAudioFormatForPreset = (
 
   const sorted = [...formats].sort((a, b) => {
     const bitrateDiff = (b.tbr ?? 0) - (a.tbr ?? 0)
-    if (bitrateDiff !== 0) return bitrateDiff
+    if (bitrateDiff !== 0) {
+      return bitrateDiff
+    }
     const sizeA = a.filesize ?? a.filesize_approx ?? 0
     const sizeB = b.filesize ?? b.filesize_approx ?? 0
-    if (sizeB !== sizeA) return sizeB - sizeA
+    if (sizeB !== sizeA) {
+      return sizeB - sizeA
+    }
     return 0
   })
 
   if (preset === 'worst') {
-    return sorted[sorted.length - 1] ?? sorted[0]
+    return sorted.at(-1) ?? sorted[0]
   }
 
   const abrLimit = qualityPresetToAudioAbr[preset]
@@ -157,8 +165,8 @@ export const parseSizeToBytes = (value?: string): number | undefined => {
   const unit = match[2].toUpperCase()
   const multipliers: Record<string, number> = {
     B: 1,
-    KB: 1_000,
-    KIB: 1_024,
+    KB: 1000,
+    KIB: 1024,
     MB: 1_000_000,
     MIB: 1_048_576,
     GB: 1_000_000_000,

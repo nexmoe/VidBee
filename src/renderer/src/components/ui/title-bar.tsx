@@ -57,20 +57,20 @@ export function TitleBar({ platform }: TitleBarProps) {
   return (
     <div className={containerClass}>
       {/* Window controls */}
-      <div className="flex items-center gap-1 no-drag">
+      <div className="no-drag flex items-center gap-1">
         <Button
-          variant="ghost"
-          size="icon"
           className="h-8 w-8 hover:bg-muted"
           onClick={handleMinimize}
+          size="icon"
+          variant="ghost"
         >
           <IconFluentSubtract20Regular className="h-4 w-4" />
         </Button>
         <Button
-          variant="ghost"
-          size="icon"
           className="h-8 w-8 hover:bg-muted"
           onClick={handleMaximize}
+          size="icon"
+          variant="ghost"
         >
           {isMaximized ? (
             <IconFluentSquareMultiple20Regular className="h-4 w-4" />
@@ -79,10 +79,10 @@ export function TitleBar({ platform }: TitleBarProps) {
           )}
         </Button>
         <Button
-          variant="ghost"
-          size="icon"
           className="h-8 w-8 hover:bg-red-500 hover:text-white"
           onClick={handleClose}
+          size="icon"
+          variant="ghost"
         >
           <IconFluentDismiss20Regular className="h-4 w-4" />
         </Button>

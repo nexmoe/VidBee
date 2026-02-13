@@ -130,10 +130,8 @@ class BrowserCookiesService extends IpcService {
       }
     }
 
-    if (platform === 'freebsd') {
-      if (browser === 'firefox') {
-        return [path.join(homeDir, '.mozilla', 'firefox')]
-      }
+    if (platform === 'freebsd' && browser === 'firefox') {
+      return [path.join(homeDir, '.mozilla', 'firefox')]
     }
 
     return []

@@ -195,11 +195,7 @@ export class SubscriptionManager extends EventEmitter {
     return false
   }
 
-  replaceFeedItems(
-    subscriptionId: string,
-    items: SubscriptionFeedItem[],
-    silent: boolean = false
-  ): void {
+  replaceFeedItems(subscriptionId: string, items: SubscriptionFeedItem[], silent = false): void {
     const database = this.getDatabase()
     const orderedItems = [...items].sort((a, b) => b.publishedAt - a.publishedAt)
     const now = Date.now()
@@ -333,7 +329,7 @@ export class SubscriptionManager extends EventEmitter {
       return
     }
     try {
-      const columns = this.sqlite.prepare(`PRAGMA table_info(subscription_items)`).all() as Array<{
+      const columns = this.sqlite.prepare('PRAGMA table_info(subscription_items)').all() as Array<{
         name: string
       }>
       const hasAdded = columns.some((column) => column.name === 'added')
@@ -360,7 +356,7 @@ export class SubscriptionManager extends EventEmitter {
       return
     }
     try {
-      const columns = this.sqlite.prepare(`PRAGMA table_info(subscriptions)`).all() as Array<{
+      const columns = this.sqlite.prepare('PRAGMA table_info(subscriptions)').all() as Array<{
         name: string
       }>
       const hasLegacyColumns = columns.some((column) =>

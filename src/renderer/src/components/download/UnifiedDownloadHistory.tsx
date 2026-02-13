@@ -77,7 +77,7 @@ const resolveDownloadExtension = (download: DownloadRecord): string => {
 }
 
 const isEditableTarget = (target: EventTarget | null): boolean => {
-  if (!target || !(target instanceof HTMLElement)) {
+  if (!(target && target instanceof HTMLElement)) {
     return false
   }
   if (target.isContentEditable) {
@@ -451,29 +451,29 @@ export function UnifiedDownloadHistory({
   }, [confirmAction, selectableIds, selectedIds])
 
   return (
-    <div className={cn('flex flex-col h-full')}>
-      <CardHeader className="gap-4 p-0 px-6 py-4 z-50 bg-background backdrop-blur">
+    <div className={cn('flex h-full flex-col')}>
+      <CardHeader className="z-50 gap-4 bg-background p-0 px-6 py-4 backdrop-blur">
         <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
           <div className="flex flex-wrap items-center gap-2">
             {filters.map((filter) => {
               const isActive = statusFilter === filter.key
               return (
                 <Button
-                  key={filter.key}
-                  variant={isActive ? 'secondary' : 'ghost'}
-                  size="sm"
                   className={
                     isActive
                       ? 'h-8 rounded-full px-3 shadow-sm'
                       : 'h-8 rounded-full border border-border/60 px-3'
                   }
+                  key={filter.key}
                   onClick={() => setStatusFilter(filter.key)}
+                  size="sm"
+                  variant={isActive ? 'secondary' : 'ghost'}
                 >
                   <span>{filter.label}</span>
                   <span
                     className={cn(
-                      'ml-1 min-w-5 rounded-full px-1 text-xs font-medium text-neutral-900',
-                      isActive ? ' bg-neutral-100' : ' bg-neutral-200'
+                      'ml-1 min-w-5 rounded-full px-1 font-medium text-neutral-900 text-xs',
+                      isActive ? 'bg-neutral-100' : 'bg-neutral-200'
                     )}
                   >
                     {filter.count}
@@ -484,44 +484,43 @@ export function UnifiedDownloadHistory({
           </div>
           <div className="flex items-center gap-2">
             <Button
-              variant="ghost"
-              size="sm"
               className="h-8 rounded-full px-3"
-              onClick={handleSelectAll}
               disabled={selectableIds.length === 0}
+              onClick={handleSelectAll}
+              size="sm"
+              variant="ghost"
             >
               {t('history.selectAll')}
             </Button>
             <DownloadDialog
-              onOpenSupportedSites={onOpenSupportedSites}
               onOpenSettings={onOpenSettings}
+              onOpenSupportedSites={onOpenSupportedSites}
             />
           </div>
         </div>
       </CardHeader>
-      <ScrollArea className="overflow-y-auto flex-1">
-        <CardContent className="space-y-3 p-0 overflow-x-hidden w-full">
+      <ScrollArea className="flex-1 overflow-y-auto">
+        <CardContent className="w-full space-y-3 overflow-x-hidden p-0">
           {showCookiesTip && (
             <div className="mx-6 mt-4 rounded-xl bg-muted/40 px-6 py-5">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex flex-col items-start gap-2.5">
                   <div className="space-y-1">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">
+                    <p className="font-bold text-[10px] text-muted-foreground/70 uppercase tracking-wider">
                       {t('history.cookiesTipTitle')}
                     </p>
-                    <p className="max-w-[540px] text-sm leading-relaxed text-foreground/85">
+                    <p className="max-w-[540px] text-foreground/85 text-sm leading-relaxed">
                       <Trans
-                        i18nKey="history.cookiesTipDescription"
                         components={{
                           strong: <strong className="font-semibold text-foreground" />
                         }}
+                        i18nKey="history.cookiesTipDescription"
                       />
                     </p>
                   </div>
                   <Button
-                    size="sm"
-                    variant="secondary"
-                    className="h-8 rounded-lg px-4 text-xs font-medium"
+                    className="h-8 rounded-lg px-4 font-medium text-xs"
+                    disabled={!canOpenCookiesSettings}
                     onClick={() => {
                       if (onOpenCookiesSettings) {
                         onOpenCookiesSettings()
@@ -529,7 +528,8 @@ export function UnifiedDownloadHistory({
                       }
                       onOpenSettings?.()
                     }}
-                    disabled={!canOpenCookiesSettings}
+                    size="sm"
+                    variant="secondary"
                   >
                     {t('history.cookiesTipCta')}
                   </Button>
@@ -538,9 +538,9 @@ export function UnifiedDownloadHistory({
             </div>
           )}
           {filteredRecords.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border/60 px-6 py-10 text-center text-muted-foreground">
+            <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-border/60 border-dashed px-6 py-10 text-center text-muted-foreground">
               <HistoryIcon className="h-10 w-10 opacity-50" />
-              <p className="text-sm font-medium">{t('download.noItems')}</p>
+              <p className="font-medium text-sm">{t('download.noItems')}</p>
             </div>
           ) : (
             <div className="w-full pb-4">
@@ -548,9 +548,9 @@ export function UnifiedDownloadHistory({
                 if (item.type === 'single') {
                   return (
                     <DownloadItem
-                      key={`${item.record.entryType}:${item.record.id}`}
                       download={item.record}
                       isSelected={selectedIds.has(item.record.id)}
+                      key={`${item.record.entryType}:${item.record.id}`}
                       onToggleSelect={handleToggleSelect}
                     />
                   )
@@ -563,14 +563,14 @@ export function UnifiedDownloadHistory({
 
                 return (
                   <PlaylistDownloadGroup
-                    key={`group:${group.id}`}
                     groupId={group.id}
-                    title={group.title}
-                    totalCount={group.totalCount}
+                    key={`group:${group.id}`}
+                    onDeletePlaylist={handleRequestDeletePlaylist}
+                    onToggleSelect={handleToggleSelect}
                     records={group.records}
                     selectedIds={selectedIds}
-                    onToggleSelect={handleToggleSelect}
-                    onDeletePlaylist={handleRequestDeletePlaylist}
+                    title={group.title}
+                    totalCount={group.totalCount}
                   />
                 )
               })}
@@ -579,25 +579,25 @@ export function UnifiedDownloadHistory({
         </CardContent>
       </ScrollArea>
       {selectedCount > 0 && (
-        <div className="fixed bottom-4 left-1/2 z-40 w-[calc(100%-2rem)] -translate-x-1/2 sm:left-auto sm:right-6 sm:translate-x-0 sm:w-auto">
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-full border border-border/50 bg-background/80 pl-5 pr-2 py-2 shadow-lg backdrop-blur">
+        <div className="fixed bottom-4 left-1/2 z-40 w-[calc(100%-2rem)] -translate-x-1/2 sm:right-6 sm:left-auto sm:w-auto sm:translate-x-0">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-full border border-border/50 bg-background/80 py-2 pr-2 pl-5 shadow-lg backdrop-blur">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs text-muted-foreground">{selectionSummary}</span>
+              <span className="text-muted-foreground text-xs">{selectionSummary}</span>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Button
-                variant="ghost"
-                size="sm"
                 className="h-8 rounded-full px-3"
                 onClick={handleClearSelection}
+                size="sm"
+                variant="ghost"
               >
                 {t('history.clearSelection')}
               </Button>
               <Button
-                variant="destructive"
-                size="sm"
                 className="h-8 rounded-full px-3"
                 onClick={handleRequestDeleteSelected}
+                size="sm"
+                variant="destructive"
               >
                 {t('history.deleteSelected')}
               </Button>
@@ -606,13 +606,13 @@ export function UnifiedDownloadHistory({
         </div>
       )}
       <Dialog
-        open={Boolean(confirmAction)}
         onOpenChange={(open) => {
-          if (!open && !confirmBusy) {
+          if (!(open || confirmBusy)) {
             setConfirmAction(null)
             setAlsoDeleteFiles(false)
           }
         }}
+        open={Boolean(confirmAction)}
       >
         {confirmContent && (
           <DialogContent>
@@ -623,13 +623,13 @@ export function UnifiedDownloadHistory({
             {confirmAction?.type === 'delete-selected' && (
               <div className="flex items-center space-x-2">
                 <Checkbox
-                  id={alsoDeleteFilesId}
                   checked={alsoDeleteFiles}
+                  id={alsoDeleteFilesId}
                   onCheckedChange={(checked) => setAlsoDeleteFiles(checked === true)}
                 />
                 <label
+                  className="cursor-pointer font-medium text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                   htmlFor={alsoDeleteFilesId}
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
                 >
                   {t('history.alsoDeleteFiles')}
                 </label>
@@ -637,16 +637,16 @@ export function UnifiedDownloadHistory({
             )}
             <DialogFooter>
               <Button
-                variant="outline"
+                disabled={confirmBusy}
                 onClick={() => {
                   setConfirmAction(null)
                   setAlsoDeleteFiles(false)
                 }}
-                disabled={confirmBusy}
+                variant="outline"
               >
                 {t('download.cancel')}
               </Button>
-              <Button variant="destructive" onClick={handleConfirmAction} disabled={confirmBusy}>
+              <Button disabled={confirmBusy} onClick={handleConfirmAction} variant="destructive">
                 {confirmContent.actionLabel}
               </Button>
             </DialogFooter>

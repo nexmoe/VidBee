@@ -1,9 +1,12 @@
 #!/usr/bin/env node
 
-const fs = require('node:fs')
-const path = require('node:path')
+import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const localesDir = path.join(__dirname, '..', 'src', 'renderer', 'src', 'locales')
+const currentFilePath = fileURLToPath(import.meta.url)
+const currentDirPath = path.dirname(currentFilePath)
+const localesDir = path.join(currentDirPath, '..', 'src', 'renderer', 'src', 'locales')
 const baseLocaleFile = 'en.json'
 
 const readJson = (filePath) => {

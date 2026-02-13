@@ -281,17 +281,17 @@ export function Settings() {
 
   return (
     <div className="h-full bg-background">
-      <div className="container mx-auto max-w-4xl p-6 space-y-6">
+      <div className="container mx-auto max-w-4xl space-y-6 p-6">
         <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">{t('settings.title')}</h1>
+          <h1 className="font-bold text-3xl tracking-tight">{t('settings.title')}</h1>
           <p className="text-muted-foreground">{t('settings.description')}</p>
         </div>
 
         <Tabs
-          value={activeTab}
           onValueChange={(value) => {
             setActiveTab(value)
           }}
+          value={activeTab}
         >
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="general">{t('settings.general')}</TabsTrigger>
@@ -299,7 +299,7 @@ export function Settings() {
             <TabsTrigger value="advanced">{t('settings.advanced')}</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="general" className="space-y-4 mt-2">
+          <TabsContent className="mt-2 space-y-4" value="general">
             <ItemGroup>
               <Item variant="muted">
                 <ItemContent>
@@ -307,8 +307,8 @@ export function Settings() {
                   <ItemDescription>{t('settings.downloadPathDescription')}</ItemDescription>
                 </ItemContent>
                 <ItemActions>
-                  <div className="flex gap-2 w-full max-w-md">
-                    <Input value={settings.downloadPath} readOnly className="flex-1" />
+                  <div className="flex w-full max-w-md gap-2">
+                    <Input className="flex-1" readOnly value={settings.downloadPath} />
                     <Button onClick={handleSelectPath}>{t('settings.selectPath')}</Button>
                   </div>
                 </ItemActions>
@@ -323,10 +323,10 @@ export function Settings() {
                 </ItemContent>
                 <ItemActions>
                   <Select
-                    value={theme ?? settings.theme ?? 'system'}
                     onValueChange={(value) =>
                       void handleThemeChange(value as 'light' | 'dark' | 'system')
                     }
+                    value={theme ?? settings.theme ?? 'system'}
                   >
                     <SelectTrigger className="w-32">
                       <SelectValue />
@@ -349,15 +349,15 @@ export function Settings() {
                 </ItemContent>
                 <ItemActions>
                   <Select
-                    value={currentLanguage.value}
                     onValueChange={(value) => void handleLanguageChange(value as LanguageCode)}
+                    value={currentLanguage.value}
                   >
                     <SelectTrigger className="w-48">
                       <SelectValue placeholder={currentLanguage.name}>
                         <div className="flex items-center gap-2">
                           <span
-                            className={`${currentLanguage.flag} rounded-xs text-base`}
                             aria-hidden="true"
+                            className={`${currentLanguage.flag} rounded-xs text-base`}
                           />
                           <span lang={currentLanguage.hreflang}>{currentLanguage.name}</span>
                         </div>
@@ -368,14 +368,14 @@ export function Settings() {
                         const isActive = option.value === currentLanguage.value
                         return (
                           <SelectItem
+                            className={isActive ? 'bg-muted font-semibold' : undefined}
                             key={option.value}
                             value={option.value}
-                            className={isActive ? 'font-semibold bg-muted' : undefined}
                           >
                             <div className="flex items-center gap-2">
                               <span
-                                className={`${option.flag} rounded-xs text-base`}
                                 aria-hidden="true"
+                                className={`${option.flag} rounded-xs text-base`}
                               />
                               <span lang={option.hreflang}>{option.name}</span>
                             </div>
@@ -414,10 +414,10 @@ export function Settings() {
                     </ItemContent>
                     <ItemActions>
                       <Select
-                        value={settings.oneClickDownloadType}
                         onValueChange={(value) =>
                           handleSettingChange('oneClickDownloadType', value)
                         }
+                        value={settings.oneClickDownloadType}
                       >
                         <SelectTrigger className="w-32">
                           <SelectValue />
@@ -437,10 +437,10 @@ export function Settings() {
                     </ItemContent>
                     <ItemActions>
                       <Select
-                        value={settings.oneClickQuality}
                         onValueChange={(value) =>
                           handleSettingChange('oneClickQuality', value as OneClickQualityPreset)
                         }
+                        value={settings.oneClickQuality}
                       >
                         <SelectTrigger className="w-40">
                           <SelectValue />
@@ -500,15 +500,15 @@ export function Settings() {
                 <ItemActions>
                   <Switch
                     checked={settings.launchAtLogin}
-                    onCheckedChange={(value) => handleSettingChange('launchAtLogin', value)}
                     disabled={!autoLaunchSupported}
+                    onCheckedChange={(value) => handleSettingChange('launchAtLogin', value)}
                   />
                 </ItemActions>
               </Item>
             </ItemGroup>
           </TabsContent>
 
-          <TabsContent value="advanced" className="space-y-4 mt-2">
+          <TabsContent className="mt-2 space-y-4" value="advanced">
             <ItemGroup>
               <Item variant="muted">
                 <ItemContent>
@@ -629,7 +629,6 @@ export function Settings() {
                       const maxConcurrentStr = maxConcurrent.toString()
                       return (
                         <Select
-                          value={maxConcurrentStr}
                           onValueChange={(value) => {
                             try {
                               const numValue = Number(value)
@@ -641,6 +640,7 @@ export function Settings() {
                               )
                             }
                           }}
+                          value={maxConcurrentStr}
                         >
                           <SelectTrigger className="w-20">
                             <SelectValue />
@@ -678,8 +678,7 @@ export function Settings() {
                       const proxyValue = settings.proxy ?? ''
                       return (
                         <Input
-                          placeholder={t('settings.proxyPlaceholder')}
-                          value={proxyValue}
+                          className="w-64"
                           onChange={(e) => {
                             try {
                               handleSettingChange('proxy', e.target.value)
@@ -687,7 +686,8 @@ export function Settings() {
                               logger.error('[Settings] Error changing proxy:', error)
                             }
                           }}
-                          className="w-64"
+                          placeholder={t('settings.proxyPlaceholder')}
+                          value={proxyValue}
                         />
                       )
                     } catch (error) {
@@ -710,13 +710,13 @@ export function Settings() {
                     try {
                       const configPathValue = settings.configPath ?? ''
                       return (
-                        <div className="flex gap-2 w-full max-w-md">
-                          <Input value={configPathValue} readOnly className="flex-1" />
+                        <div className="flex w-full max-w-md gap-2">
+                          <Input className="flex-1" readOnly value={configPathValue} />
                           <Button onClick={handleSelectConfigFile}>
                             {t('settings.selectPath')}
                           </Button>
                           <Button
-                            variant="secondary"
+                            disabled={!configPathValue}
                             onClick={() => {
                               try {
                                 void handleSettingChange('configPath', '')
@@ -724,7 +724,7 @@ export function Settings() {
                                 logger.error('[Settings] Error clearing config path:', error)
                               }
                             }}
-                            disabled={!configPathValue}
+                            variant="secondary"
                           >
                             {t('settings.clearConfigFile')}
                           </Button>
@@ -771,7 +771,7 @@ export function Settings() {
             </ItemGroup>
           </TabsContent>
 
-          <TabsContent value="cookies" className="space-y-4 mt-2">
+          <TabsContent className="mt-2 space-y-4" value="cookies">
             <ItemGroup>
               <Item variant="muted">
                 <ItemContent>
@@ -788,7 +788,6 @@ export function Settings() {
                     try {
                       return (
                         <Select
-                          value={browserForCookiesValue}
                           onValueChange={(value) => {
                             try {
                               const nextValue = buildBrowserCookiesSetting(value, '')
@@ -797,6 +796,7 @@ export function Settings() {
                               logger.error('[Settings] Error changing browser for cookies:', error)
                             }
                           }}
+                          value={browserForCookiesValue}
                         >
                           <SelectTrigger className="w-32">
                             <SelectValue />
@@ -856,8 +856,8 @@ export function Settings() {
                       return (
                         <div className="relative w-full">
                           <Input
-                            placeholder={t('settings.browserForCookiesProfilePlaceholder')}
-                            value={browserCookiesProfileValue}
+                            className="w-full pr-10"
+                            disabled={browserForCookiesValue === 'none'}
                             onChange={(event) => {
                               try {
                                 const newProfileValue = event.target.value
@@ -873,14 +873,14 @@ export function Settings() {
                                 )
                               }
                             }}
-                            disabled={browserForCookiesValue === 'none'}
-                            className="w-full pr-10"
+                            placeholder={t('settings.browserForCookiesProfilePlaceholder')}
+                            value={browserCookiesProfileValue}
                           />
                           {showBrowserProfileWarning ? (
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <span className="absolute right-3 top-1/2 inline-flex h-4 w-4 -translate-y-1/2 items-center justify-center text-amber-500">
-                                  <AlertTriangle className="h-4 w-4" aria-hidden />
+                                <span className="absolute top-1/2 right-3 inline-flex h-4 w-4 -translate-y-1/2 items-center justify-center text-amber-500">
+                                  <AlertTriangle aria-hidden className="h-4 w-4" />
                                 </span>
                               </TooltipTrigger>
                               <TooltipContent>
@@ -913,13 +913,13 @@ export function Settings() {
                     try {
                       const cookiesPathValue = settings.cookiesPath ?? ''
                       return (
-                        <div className="flex gap-2 w-full max-w-md">
-                          <Input value={cookiesPathValue} readOnly className="flex-1" />
+                        <div className="flex w-full max-w-md gap-2">
+                          <Input className="flex-1" readOnly value={cookiesPathValue} />
                           <Button onClick={handleSelectCookiesFile}>
                             {t('settings.selectPath')}
                           </Button>
                           <Button
-                            variant="secondary"
+                            disabled={!cookiesPathValue}
                             onClick={() => {
                               try {
                                 void handleSettingChange('cookiesPath', '')
@@ -927,7 +927,7 @@ export function Settings() {
                                 logger.error('[Settings] Error clearing cookies path:', error)
                               }
                             }}
-                            disabled={!cookiesPathValue}
+                            variant="secondary"
                           >
                             {t('settings.clearCookiesFile')}
                           </Button>
@@ -946,7 +946,7 @@ export function Settings() {
               <Item variant="muted">
                 <ItemContent>
                   <ItemTitle>{t('settings.cookiesHelpTitle')}</ItemTitle>
-                  <ul className="list-disc list-inside space-y-1 text-muted-foreground text-sm leading-normal">
+                  <ul className="list-inside list-disc space-y-1 text-muted-foreground text-sm leading-normal">
                     <li>{t('settings.cookiesHelpBrowser')}</li>
                     <li>{t('settings.cookiesHelpFile')}</li>
                   </ul>
@@ -961,7 +961,7 @@ export function Settings() {
                   <ItemDescription>{t('settings.cookiesGuideDescription')}</ItemDescription>
                 </ItemContent>
                 <ItemActions>
-                  <Button variant="link" className="px-0" onClick={handleOpenCookiesGuide}>
+                  <Button className="px-0" onClick={handleOpenCookiesGuide} variant="link">
                     {t('settings.cookiesGuideLink')}
                   </Button>
                 </ItemActions>

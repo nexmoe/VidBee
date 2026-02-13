@@ -130,9 +130,8 @@ const resolveWatermarkFontFile = (text: string): string | null => {
     if (fs.existsSync(candidate)) {
       scopedLoggers.download.info(`✓ Using font: ${candidate}`)
       return candidate
-    } else {
-      scopedLoggers.download.info(`✗ Font not found: ${candidate}`)
     }
+    scopedLoggers.download.info(`✗ Font not found: ${candidate}`)
   }
 
   scopedLoggers.download.warn(

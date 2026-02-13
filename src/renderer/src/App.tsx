@@ -249,35 +249,35 @@ function AppContent() {
   }, [i18n, setUpdateAvailable, setUpdateReady])
 
   return (
-    <div className="flex flex-row h-screen">
+    <div className="flex h-screen flex-row">
       {/* Sidebar Navigation */}
       <Sidebar
         currentPage={currentPage}
-        onPageChange={handlePageChange}
         onOpenSupportedSites={handleOpenSupportedSites}
+        onPageChange={handlePageChange}
       />
 
       {/* Main Content */}
-      <main className="flex flex-col flex-1 min-h-0 overflow-hidden bg-background">
+      <main className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
         {/* Custom Title Bar */}
         <TitleBar platform={platform} />
 
-        <div className="flex-1 h-full overflow-y-auto overflow-x-hidden">
+        <div className="h-full flex-1 overflow-y-auto overflow-x-hidden">
           <Routes>
             <Route
-              path="/"
               element={
                 <Home
-                  onOpenSupportedSites={handleOpenSupportedSites}
-                  onOpenSettings={() => handlePageChange('settings')}
                   onOpenCookiesSettings={handleOpenCookiesSettings}
+                  onOpenSettings={() => handlePageChange('settings')}
+                  onOpenSupportedSites={handleOpenSupportedSites}
                 />
               }
+              path="/"
             />
-            <Route path="/subscriptions" element={<Subscriptions />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/about" element={<About />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route element={<Subscriptions />} path="/subscriptions" />
+            <Route element={<Settings />} path="/settings" />
+            <Route element={<About />} path="/about" />
+            <Route element={<Navigate replace to="/" />} path="*" />
           </Routes>
         </div>
       </main>

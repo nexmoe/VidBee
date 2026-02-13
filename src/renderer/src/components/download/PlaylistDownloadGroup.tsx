@@ -78,15 +78,15 @@ export function PlaylistDownloadGroup({
   const aggregatePercent = totalCount > 0 ? Math.min((totalProgress / totalCount) * 100, 100) : 0
 
   return (
-    <div className="rounded-md bg-muted/30 mx-6">
+    <div className="mx-6 rounded-md bg-muted/30">
       <div className="flex items-center justify-between gap-2">
         <button
-          type="button"
-          className="px-3 flex min-w-0 flex-1 items-center gap-2 rounded-md p-1.5 transition-colors hover:bg-muted/40 active:bg-muted/60"
-          onClick={() => setIsExpanded((prev) => !prev)}
           aria-expanded={isExpanded}
           aria-label={toggleLabel}
+          className="flex min-w-0 flex-1 items-center gap-2 rounded-md p-1.5 px-3 transition-colors hover:bg-muted/40 active:bg-muted/60"
+          onClick={() => setIsExpanded((prev) => !prev)}
           title={toggleLabel}
+          type="button"
         >
           <div className="flex shrink-0 items-center justify-center text-muted-foreground">
             {isExpanded ? (
@@ -96,7 +96,7 @@ export function PlaylistDownloadGroup({
             )}
           </div>
           <div className="min-w-0 flex-1 text-left">
-            <p className="truncate text-sm font-medium text-foreground">{displayTitle}</p>
+            <p className="truncate font-medium text-foreground text-sm">{displayTitle}</p>
             <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
               <span>
                 {t('playlist.collapsedProgress', { completed: completedCount, total: totalCount })}
@@ -121,9 +121,7 @@ export function PlaylistDownloadGroup({
         <div className="flex shrink-0 items-center gap-1 pr-3">
           {canDeletePlaylist && (
             <Button
-              type="button"
-              variant="ghost"
-              size="icon"
+              aria-label={t('history.deletePlaylist')}
               className="h-6 w-6 rounded-full"
               onClick={(e) => {
                 e.stopPropagation()
@@ -133,8 +131,10 @@ export function PlaylistDownloadGroup({
                   historyRecords.map((record) => record.id)
                 )
               }}
-              aria-label={t('history.deletePlaylist')}
+              size="icon"
               title={t('history.deletePlaylist')}
+              type="button"
+              variant="ghost"
             >
               <Trash2 className="h-3.5 w-3.5" />
             </Button>
@@ -143,7 +143,7 @@ export function PlaylistDownloadGroup({
       </div>
 
       {!isExpanded && totalCount > 0 && (
-        <Progress value={aggregatePercent} className="h-0.5 w-full" />
+        <Progress className="h-0.5 w-full" value={aggregatePercent} />
       )}
 
       <div

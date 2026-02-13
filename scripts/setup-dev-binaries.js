@@ -13,7 +13,7 @@ const https = require('node:https')
 const http = require('node:http')
 
 // Configuration
-const RESOURCES_DIR = path.join(__dirname, '..', 'resources')
+const RESOURCES_DIR = path.join(import.meta.dirname, '..', 'resources')
 const FFMPEG_DIR = path.join(RESOURCES_DIR, 'ffmpeg')
 const YTDLP_BASE_URL = 'https://github.com/yt-dlp/yt-dlp/releases/latest/download'
 const DENO_BASE_URL = 'https://github.com/denoland/deno/releases/latest/download'
@@ -175,7 +175,7 @@ function downloadFile(url, dest) {
       })
     })
 
-    request.setTimeout(30000, () => {
+    request.setTimeout(30_000, () => {
       request.destroy(new Error('Download timeout'))
     })
 
@@ -343,7 +343,7 @@ function checkBinary(filePath, args, label, options = {}) {
     typeof options.timeoutMs === 'number'
       ? options.timeoutMs
       : os.platform() === 'win32'
-        ? 20000
+        ? 20_000
         : 8000
   const result = spawnSync(filePath, args, {
     encoding: 'utf8',
@@ -447,18 +447,17 @@ async function downloadFfmpegWindows(config) {
     const ffprobeValidation = ffprobeOutputPath
       ? checkBinary(ffprobeOutputPath, ['-version'], 'ffprobe')
       : { ok: true }
-    if (!validation.ok || !ffprobeValidation.ok) {
-      log(
-        `Existing ffmpeg/ffprobe failed version check: ${validation.message || ffprobeValidation.message}`,
-        'warn'
-      )
-    } else {
+    if (validation.ok && ffprobeValidation.ok) {
       log('ffmpeg and ffprobe already exist, skipping download', 'info')
       return
     }
+    log(
+      `Existing ffmpeg/ffprobe failed version check: ${validation.message || ffprobeValidation.message}`,
+      'warn'
+    )
   }
 
-  log(`Downloading ffmpeg for Windows...`, 'download')
+  log('Downloading ffmpeg for Windows...', 'download')
   ensureDir(FFMPEG_DIR)
   const tempZip = path.join(RESOURCES_DIR, 'ffmpeg-temp.zip')
   const extractDir = path.join(RESOURCES_DIR, 'ffmpeg-temp')
@@ -504,23 +503,25 @@ async function downloadFfmpegWindows(config) {
       fs.copyFileSync(ffprobeSourcePath, ffprobeOutputPath)
     }
     const validation = checkBinary(outputPath, ['-version'], 'ffmpeg')
-    if (!validation.ok) {
-      if (validation.code === 'ETIMEDOUT') {
-        log(`Downloaded ${output} version check timed out; keeping binary`, 'warn')
-      } else {
-        safeUnlink(outputPath)
-        throw new Error(`Downloaded ${output} failed version check: ${validation.message}`)
-      }
-    } else {
+    if (validation.ok) {
       log(`Downloaded ${output} successfully`, 'success')
+    } else if (validation.code === 'ETIMEDOUT') {
+      log(`Downloaded ${output} version check timed out; keeping binary`, 'warn')
+    } else {
+      safeUnlink(outputPath)
+      throw new Error(`Downloaded ${output} failed version check: ${validation.message}`)
     }
 
     // Cleanup
     fs.unlinkSync(tempZip)
     fs.rmSync(extractDir, { recursive: true, force: true })
   } catch (error) {
-    if (fs.existsSync(tempZip)) fs.unlinkSync(tempZip)
-    if (fs.existsSync(extractDir)) fs.rmSync(extractDir, { recursive: true, force: true })
+    if (fs.existsSync(tempZip)) {
+      fs.unlinkSync(tempZip)
+    }
+    if (fs.existsSync(extractDir)) {
+      fs.rmSync(extractDir, { recursive: true, force: true })
+    }
     throw error
   }
 }
@@ -552,15 +553,14 @@ async function downloadFfmpegMac(config) {
     const ffprobeValidation = ffprobeOutputPath
       ? checkBinary(ffprobeOutputPath, ['-version'], 'ffprobe')
       : { ok: true }
-    if (!validation.ok || !ffprobeValidation.ok) {
-      log(
-        `Existing ffmpeg/ffprobe failed version check: ${validation.message || ffprobeValidation.message}`,
-        'warn'
-      )
-    } else {
+    if (validation.ok && ffprobeValidation.ok) {
       log('ffmpeg and ffprobe already exist, skipping download', 'info')
       return
     }
+    log(
+      `Existing ffmpeg/ffprobe failed version check: ${validation.message || ffprobeValidation.message}`,
+      'warn'
+    )
   }
 
   log(`Downloading ffmpeg for macOS (${arch})...`, 'download')
@@ -611,8 +611,12 @@ async function downloadFfmpegMac(config) {
     fs.unlinkSync(tempZip)
     fs.rmSync(extractDir, { recursive: true, force: true })
   } catch (error) {
-    if (fs.existsSync(tempZip)) fs.unlinkSync(tempZip)
-    if (fs.existsSync(extractDir)) fs.rmSync(extractDir, { recursive: true, force: true })
+    if (fs.existsSync(tempZip)) {
+      fs.unlinkSync(tempZip)
+    }
+    if (fs.existsSync(extractDir)) {
+      fs.rmSync(extractDir, { recursive: true, force: true })
+    }
     throw error
   }
 }
@@ -637,18 +641,17 @@ async function downloadFfmpegLinux(config) {
     const ffprobeValidation = ffprobeOutputPath
       ? checkBinary(ffprobeOutputPath, ['-version'], 'ffprobe')
       : { ok: true }
-    if (!validation.ok || !ffprobeValidation.ok) {
-      log(
-        `Existing ffmpeg/ffprobe failed version check: ${validation.message || ffprobeValidation.message}`,
-        'warn'
-      )
-    } else {
+    if (validation.ok && ffprobeValidation.ok) {
       log('ffmpeg and ffprobe already exist, skipping download', 'info')
       return
     }
+    log(
+      `Existing ffmpeg/ffprobe failed version check: ${validation.message || ffprobeValidation.message}`,
+      'warn'
+    )
   }
 
-  log(`Downloading ffmpeg for Linux...`, 'download')
+  log('Downloading ffmpeg for Linux...', 'download')
   ensureDir(FFMPEG_DIR)
   const tempTar = path.join(RESOURCES_DIR, 'ffmpeg-temp.tar.xz')
   const extractDir = path.join(RESOURCES_DIR, 'ffmpeg-temp')
@@ -706,8 +709,12 @@ async function downloadFfmpegLinux(config) {
     fs.unlinkSync(tempTar)
     fs.rmSync(extractDir, { recursive: true, force: true })
   } catch (error) {
-    if (fs.existsSync(tempTar)) fs.unlinkSync(tempTar)
-    if (fs.existsSync(extractDir)) fs.rmSync(extractDir, { recursive: true, force: true })
+    if (fs.existsSync(tempTar)) {
+      fs.unlinkSync(tempTar)
+    }
+    if (fs.existsSync(extractDir)) {
+      fs.rmSync(extractDir, { recursive: true, force: true })
+    }
     throw error
   }
 }
@@ -761,8 +768,12 @@ async function downloadDenoRuntime() {
     fs.unlinkSync(tempZip)
     fs.rmSync(extractDir, { recursive: true, force: true })
   } catch (error) {
-    if (fs.existsSync(tempZip)) fs.unlinkSync(tempZip)
-    if (fs.existsSync(extractDir)) fs.rmSync(extractDir, { recursive: true, force: true })
+    if (fs.existsSync(tempZip)) {
+      fs.unlinkSync(tempZip)
+    }
+    if (fs.existsSync(extractDir)) {
+      fs.rmSync(extractDir, { recursive: true, force: true })
+    }
     throw error
   }
 }
