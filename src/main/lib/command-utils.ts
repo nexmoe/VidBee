@@ -1,6 +1,7 @@
 import path from 'node:path'
 import type { settingsManager } from '../settings'
 import { resolvePathWithHome } from '../utils/path-helpers'
+import { appendYouTubeSafeExtractorArgs } from './youtube-extractor-args'
 import { ytdlpManager } from './ytdlp-manager'
 
 export const formatYtDlpCommand = (args: string[]): string => {
@@ -58,6 +59,8 @@ export const buildVideoInfoArgs = (
   const configPath = resolvePathWithHome(settings.configPath)
   if (configPath) {
     args.push('--config-location', configPath)
+  } else {
+    appendYouTubeSafeExtractorArgs(args, url)
   }
 
   appendJsRuntimeArgs(args)
