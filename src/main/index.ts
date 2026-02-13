@@ -36,7 +36,7 @@ log.initialize()
 // Configure logger settings
 configureLogger()
 
-const RENDERER_DIST_PATH = join(__dirname, '../renderer')
+const RENDERER_DIST_PATH = join(import.meta.dirname, '../renderer')
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -97,7 +97,7 @@ const parseDownloadDeepLink = (rawUrl: string): DeepLinkData | null => {
     }
 
     const targetUrl = parsed.searchParams.get('url')
-    if (!targetUrl || !targetUrl.trim()) {
+    if (!targetUrl?.trim()) {
       return null
     }
 
@@ -116,7 +116,7 @@ const parseDownloadDeepLink = (rawUrl: string): DeepLinkData | null => {
 
 const deliverDeepLink = (data: DeepLinkData): void => {
   const window = getActiveMainWindow()
-  if (!window || !isRendererReady) {
+  if (!(window && isRendererReady)) {
     pendingDeepLinkUrls.push(data)
     return
   }
@@ -132,7 +132,7 @@ const deliverDeepLink = (data: DeepLinkData): void => {
 }
 
 const flushPendingDeepLinks = (): void => {
-  if (!getActiveMainWindow() || !isRendererReady || pendingDeepLinkUrls.length === 0) {
+  if (!(getActiveMainWindow() && isRendererReady) || pendingDeepLinkUrls.length === 0) {
     return
   }
 
@@ -180,7 +180,7 @@ export function createWindow(): void {
     icon: appIcon, // Set application icon
     frame: false,
     webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
+      preload: join(import.meta.dirname, '../preload/index.js'),
       sandbox: false,
       contextIsolation: true,
       nodeIntegration: false,
@@ -248,7 +248,9 @@ export function createWindow(): void {
 }
 
 function setupRendererErrorHandling(): void {
-  if (!mainWindow) return
+  if (!mainWindow) {
+    return
+  }
 
   // Handle uncaught exceptions in renderer process
   mainWindow.webContents.on('unresponsive', () => {
@@ -384,7 +386,7 @@ function sanitizeRequestPath(requestUrl: URL): string {
 
 function isWithinBase(targetPath: string, basePath: string): boolean {
   const relativePath = relative(basePath, targetPath)
-  return !relativePath.startsWith('..') && !isAbsolute(relativePath)
+  return !(relativePath.startsWith('..') || isAbsolute(relativePath))
 }
 
 function resolveVidbeeFilePath(requestUrl: URL, userDataPath: string): string | null {
@@ -494,9 +496,7 @@ function initAutoUpdater(): void {
 
 const gotSingleInstanceLock = app.requestSingleInstanceLock()
 
-if (!gotSingleInstanceLock) {
-  app.quit()
-} else {
+if (gotSingleInstanceLock) {
   app.on('second-instance', (_event, argv) => {
     handleDeepLinkArgv(argv)
     if (mainWindow) {
@@ -507,6 +507,8 @@ if (!gotSingleInstanceLock) {
       mainWindow.focus()
     }
   })
+} else {
+  app.quit()
 }
 
 app.on('open-url', (event, url) => {

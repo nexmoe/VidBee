@@ -6,11 +6,11 @@ import log from 'electron-log/main'
 
 import { downloadEngine } from './lib/download-engine'
 
-const PORT_RANGE_START = 27100
-const PORT_RANGE_END = 27120
+const PORT_RANGE_START = 27_100
+const PORT_RANGE_END = 27_120
 const TOKEN_TTL_MS = 60_000
 
-type TokenRecord = {
+interface TokenRecord {
   expiresAt: number
 }
 
@@ -19,7 +19,9 @@ let serverPort: number | null = null
 const tokens = new Map<string, TokenRecord>()
 
 const isLoopbackAddress = (address?: string | null): boolean => {
-  if (!address) return false
+  if (!address) {
+    return false
+  }
   return address === '127.0.0.1' || address === '::1' || address === '::ffff:127.0.0.1'
 }
 
@@ -49,9 +51,13 @@ const issueToken = (): string => {
 }
 
 const consumeToken = (token?: string | null): boolean => {
-  if (!token) return false
+  if (!token) {
+    return false
+  }
   const record = tokens.get(token)
-  if (!record) return false
+  if (!record) {
+    return false
+  }
   if (Date.now() > record.expiresAt) {
     tokens.delete(token)
     return false
@@ -102,7 +108,7 @@ const handleRequest = async (
       }
 
       const targetUrl = requestUrl.searchParams.get('url')
-      if (!targetUrl || !targetUrl.trim()) {
+      if (!targetUrl?.trim()) {
         writeJson(res, 400, { error: 'Missing url' })
         return
       }
@@ -179,7 +185,9 @@ export async function startExtensionApiServer(): Promise<number | null> {
 }
 
 export async function stopExtensionApiServer(): Promise<void> {
-  if (!server) return
+  if (!server) {
+    return
+  }
 
   await new Promise<void>((resolve) => {
     server?.close(() => resolve())

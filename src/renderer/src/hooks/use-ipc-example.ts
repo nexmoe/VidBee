@@ -102,8 +102,8 @@ export function useIpcExample() {
     setLoading(true)
     try {
       // Language switching not implemented in app service
-      setResponse(`Language switching not implemented`)
-      toast.info(`语言切换功能未实现`)
+      setResponse('Language switching not implemented')
+      toast.info('语言切换功能未实现')
       return true
     } catch (error) {
       toast.error('切换语言失败')

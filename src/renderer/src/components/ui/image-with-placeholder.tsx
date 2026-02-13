@@ -47,7 +47,7 @@ export function ImageWithPlaceholder({
   }
 
   return (
-    <div className={cn('relative w-full h-full', className)}>
+    <div className={cn('relative h-full w-full', className)}>
       {isLoading && (
         <div
           className={cn(
@@ -59,11 +59,11 @@ export function ImageWithPlaceholder({
         </div>
       )}
       <img
-        src={src}
         alt={alt}
-        className={cn('w-full h-full object-cover', isLoading && 'opacity-0')}
+        className={cn('h-full w-full object-cover', isLoading && 'opacity-0')}
         onError={handleError}
         onLoad={handleLoad}
+        src={src}
       />
     </div>
   )

@@ -34,7 +34,7 @@ class FfmpegManager {
     const resolveBundledFfmpeg = (dirPath: string, label: string): string | null => {
       const ffmpegPath = path.join(dirPath, ffmpegFileName)
       const ffprobePath = path.join(dirPath, ffprobeFileName)
-      if (!fs.existsSync(ffmpegPath) || !fs.existsSync(ffprobePath)) {
+      if (!(fs.existsSync(ffmpegPath) && fs.existsSync(ffprobePath))) {
         return null
       }
       if (platform !== 'win32') {

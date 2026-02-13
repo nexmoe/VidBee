@@ -157,7 +157,7 @@ export function useDownloadEvents() {
     const handleUpdated = (rawData: unknown) => {
       const data = rawData as { id?: string; updates?: Partial<DownloadItem> }
       const id = typeof data?.id === 'string' ? data.id : ''
-      if (!id || !data?.updates) {
+      if (!(id && data?.updates)) {
         return
       }
       updateDownload({ id, changes: data.updates })

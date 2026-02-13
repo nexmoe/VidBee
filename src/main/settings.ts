@@ -27,7 +27,7 @@ const DEFAULT_DOWNLOAD_PATH = resolveDefaultDownloadPath()
 
 class SettingsManager {
   // biome-ignore lint/suspicious/noExplicitAny: electron-store requires dynamic import
-  private store: any
+  private readonly store: any
 
   constructor() {
     this.store = new Store({

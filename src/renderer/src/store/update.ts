@@ -1,11 +1,11 @@
 import { atom } from 'jotai'
 
-type UpdateReadyState = {
+interface UpdateReadyState {
   ready: boolean
   version?: string
 }
 
-type UpdateAvailableState = {
+interface UpdateAvailableState {
   available: boolean
   version?: string
 }

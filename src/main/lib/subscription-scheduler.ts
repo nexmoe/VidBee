@@ -15,7 +15,7 @@ import { subscriptionManager } from './subscription-manager'
 
 const logger = log.scope('subscriptions')
 
-type ParserItem = {
+interface ParserItem {
   title?: string
   link?: string
   guid?: string
@@ -34,7 +34,7 @@ type ParserItem = {
   [key: string]: unknown
 }
 
-type TrackedDownload = {
+interface TrackedDownload {
   subscriptionId: string
   itemId: string
   url: string
@@ -42,7 +42,7 @@ type TrackedDownload = {
   downloadId: string
 }
 
-type FeedItem = {
+interface FeedItem {
   id: string
   url: string
   title: string
@@ -83,7 +83,7 @@ export class SubscriptionScheduler extends EventEmitter {
   private timer?: NodeJS.Timeout
   private checking = false
   private pendingRun = false
-  private downloads: Map<string, TrackedDownload> = new Map()
+  private readonly downloads: Map<string, TrackedDownload> = new Map()
 
   constructor() {
     super()
@@ -280,7 +280,7 @@ export class SubscriptionScheduler extends EventEmitter {
     const normalized: FeedItem[] = []
     for (const item of items) {
       const id = this.resolveItemId(item)
-      if (!id || !item.link || !item.title) {
+      if (!(id && item.link && item.title)) {
         continue
       }
       normalized.push({
@@ -344,7 +344,9 @@ export class SubscriptionScheduler extends EventEmitter {
     const thumbnail = item.mediaThumbnail
     if (Array.isArray(thumbnail)) {
       const found = thumbnail.find((entry) => entry?.url)
-      if (found?.url) return found.url
+      if (found?.url) {
+        return found.url
+      }
     }
     if (thumbnail && typeof thumbnail === 'object' && 'url' in thumbnail) {
       return thumbnail.url as string | undefined
@@ -356,7 +358,9 @@ export class SubscriptionScheduler extends EventEmitter {
       const imageEnclosure = enclosure.find(
         (entry) => entry?.url && entry?.type?.startsWith('image/')
       )
-      if (imageEnclosure?.url) return imageEnclosure.url
+      if (imageEnclosure?.url) {
+        return imageEnclosure.url
+      }
     }
     if (enclosure && typeof enclosure === 'object' && 'url' in enclosure) {
       const enc = enclosure as { url?: string; type?: string }
@@ -369,7 +373,9 @@ export class SubscriptionScheduler extends EventEmitter {
     const mediaContent = item.mediaContent
     if (Array.isArray(mediaContent)) {
       const found = mediaContent.find((entry) => entry?.url)
-      if (found?.url) return found.url
+      if (found?.url) {
+        return found.url
+      }
     }
     if (mediaContent && typeof mediaContent === 'object' && 'url' in mediaContent) {
       return mediaContent.url as string | undefined

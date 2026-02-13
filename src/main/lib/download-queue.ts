@@ -9,11 +9,11 @@ interface QueueItem {
 
 export class DownloadQueue extends EventEmitter {
   private queue: QueueItem[] = []
-  private activeDownloads: Map<string, QueueItem> = new Map()
-  private completedDownloads: Map<string, QueueItem> = new Map()
+  private readonly activeDownloads: Map<string, QueueItem> = new Map()
+  private readonly completedDownloads: Map<string, QueueItem> = new Map()
   private maxConcurrent: number
 
-  constructor(maxConcurrent: number = 5) {
+  constructor(maxConcurrent = 5) {
     super()
     this.maxConcurrent = maxConcurrent
   }

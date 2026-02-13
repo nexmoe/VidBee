@@ -22,20 +22,20 @@ export function PlaylistPreviewCard({ playlist, entries, onClear }: PlaylistPrev
   const totalCount = playlist.entryCount
   const selectedCount = entries.length
   const firstIndex = entries[0]?.index ?? null
-  const lastIndex = entries[entries.length - 1]?.index ?? firstIndex ?? null
+  const lastIndex = entries.at(-1)?.index ?? firstIndex ?? null
 
   return (
-    <Card className="border border-border/60 bg-background/80 shadow-sm overflow-hidden">
+    <Card className="overflow-hidden border border-border/60 bg-background/80 shadow-sm">
       <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div className="min-w-0 flex-1 space-y-1">
           <CardTitle
-            className="truncate text-base font-semibold sm:text-lg wrap-break-word"
+            className="wrap-break-word truncate font-semibold text-base sm:text-lg"
             title={playlist.title}
           >
             {playlist.title || t('playlist.untitled')}
           </CardTitle>
-          <CardDescription className="text-xs text-muted-foreground sm:text-sm">
-            <div className="flex min-w-0 flex-wrap items-center gap-3 text-xs text-muted-foreground sm:text-sm">
+          <CardDescription className="text-muted-foreground text-xs sm:text-sm">
+            <div className="flex min-w-0 flex-wrap items-center gap-3 text-muted-foreground text-xs sm:text-sm">
               <span className="truncate">{t('playlist.totalVideos', { count: totalCount })}</span>
               {firstIndex !== null && lastIndex !== null ? (
                 <span className="truncate">
@@ -54,30 +54,30 @@ export function PlaylistPreviewCard({ playlist, entries, onClear }: PlaylistPrev
           </CardDescription>
         </div>
         {onClear && (
-          <Button variant="ghost" size="sm" onClick={onClear} className="shrink-0">
+          <Button className="shrink-0" onClick={onClear} size="sm" variant="ghost">
             {t('playlist.clearPreview')}
           </Button>
         )}
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="rounded-md border border-border/60 bg-muted/20">
-          <ScrollArea className="max-h-64 w-full pr-1 overflow-y-auto overflow-x-hidden">
+          <ScrollArea className="max-h-64 w-full overflow-y-auto overflow-x-hidden pr-1">
             <ol className="w-full min-w-0 divide-y divide-border/60 text-sm leading-snug">
               {entries.length === 0 ? (
-                <li className="px-4 py-6 text-center text-xs text-muted-foreground">
+                <li className="px-4 py-6 text-center text-muted-foreground text-xs">
                   {t('playlist.noEntriesInRange')}
                 </li>
               ) : (
                 entries.map((entry) => (
                   <li
+                    className="flex w-full min-w-0 max-w-full items-start gap-3 overflow-hidden px-4 py-2"
                     key={`${entry.index}-${entry.id}`}
-                    className="flex items-start gap-3 px-4 py-2 min-w-0 w-full max-w-full overflow-hidden"
                   >
-                    <span className="w-12 shrink-0 text-xs font-semibold text-muted-foreground text-center">
+                    <span className="w-12 shrink-0 text-center font-semibold text-muted-foreground text-xs">
                       #{entry.index}
                     </span>
                     <span
-                      className="min-w-0 flex-1 truncate text-sm overflow-hidden wrap-break-word"
+                      className="wrap-break-word min-w-0 flex-1 overflow-hidden truncate text-sm"
                       title={entry.title}
                     >
                       {entry.title}

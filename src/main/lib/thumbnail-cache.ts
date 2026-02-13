@@ -9,17 +9,27 @@ import { scopedLoggers } from '../utils/logger'
 const SUPPORTED_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif'])
 
 const contentTypeToExtension = (contentType?: string): string => {
-  if (!contentType) return '.jpg'
-  if (contentType.includes('jpeg')) return '.jpg'
-  if (contentType.includes('png')) return '.png'
-  if (contentType.includes('webp')) return '.webp'
-  if (contentType.includes('gif')) return '.gif'
+  if (!contentType) {
+    return '.jpg'
+  }
+  if (contentType.includes('jpeg')) {
+    return '.jpg'
+  }
+  if (contentType.includes('png')) {
+    return '.png'
+  }
+  if (contentType.includes('webp')) {
+    return '.webp'
+  }
+  if (contentType.includes('gif')) {
+    return '.gif'
+  }
   return '.jpg'
 }
 
 export class ThumbnailCache {
   private cacheDir?: string
-  private pending: Map<string, Promise<string | null>> = new Map()
+  private readonly pending: Map<string, Promise<string | null>> = new Map()
 
   private ensureCacheDir(): string {
     if (this.cacheDir) {

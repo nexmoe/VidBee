@@ -117,7 +117,7 @@ class FileSystemService extends IpcService {
       const normalizedPath = path.normalize(sanitizedPath)
       const stats = await fs.stat(normalizedPath).catch(() => null)
 
-      if (!stats || (!stats.isFile() && !stats.isDirectory())) {
+      if (!(stats && (stats.isFile() || stats.isDirectory()))) {
         scopedLoggers.system.error('File does not exist:', normalizedPath)
         return false
       }

@@ -67,7 +67,7 @@ interface RemoteImageProps {
  * />
  * ```
  */
-const IMAGE_LOAD_TIMEOUT_MS = 30000
+const IMAGE_LOAD_TIMEOUT_MS = 30_000
 
 export function RemoteImage({
   src,
@@ -107,7 +107,9 @@ export function RemoteImage({
   }, [imageSrc])
 
   useEffect(() => {
-    if (!src || hasTimedOut || !isLoading) return
+    if (!src || hasTimedOut || !isLoading) {
+      return
+    }
 
     const timeoutId = window.setTimeout(() => {
       setTimedOutSrc(src)
@@ -128,13 +130,13 @@ export function RemoteImage({
 
   return (
     <ImageWithPlaceholder
-      src={imageSrc}
       alt={alt}
       className={className}
-      placeholderClassName={placeholderClassName}
       fallbackIcon={isLoading ? displayLoadingIcon : fallbackIcon}
       onError={onError}
       onLoad={() => setIsImageLoading(false)}
+      placeholderClassName={placeholderClassName}
+      src={imageSrc}
     />
   )
 }

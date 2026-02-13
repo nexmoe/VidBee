@@ -9,9 +9,9 @@ interface HomeProps {
 export function Home({ onOpenSupportedSites, onOpenSettings, onOpenCookiesSettings }: HomeProps) {
   return (
     <UnifiedDownloadHistory
-      onOpenSupportedSites={onOpenSupportedSites}
-      onOpenSettings={onOpenSettings}
       onOpenCookiesSettings={onOpenCookiesSettings}
+      onOpenSettings={onOpenSettings}
+      onOpenSupportedSites={onOpenSupportedSites}
     />
   )
 }

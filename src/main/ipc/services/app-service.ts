@@ -38,7 +38,7 @@ class AppService extends IpcService {
       const buildToken = systemVersion.split('.').at(-1) ?? ''
       const buildNumber = Number.parseInt(buildToken, 10)
       const windowsName =
-        Number.isFinite(buildNumber) && buildNumber >= 22000 ? 'Windows 11' : 'Windows 10'
+        Number.isFinite(buildNumber) && buildNumber >= 22_000 ? 'Windows 11' : 'Windows 10'
       return Number.isFinite(buildNumber)
         ? `${windowsName} (build ${buildNumber})`
         : `${platformLabel} ${systemVersion}`.trim()

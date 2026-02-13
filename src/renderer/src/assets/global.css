@@ -1,7 +1,6 @@
-@import 'tailwindcss';
-@import './theme.css';
+@import "tailwindcss";
+@import "./theme.css";
 @import "tw-animate-css";
-
 
 @layer base {
   * {
@@ -12,8 +11,8 @@
   }
   input,
   textarea,
-  [contenteditable='true'],
-  [contenteditable=''] {
+  [contenteditable="true"],
+  [contenteditable=""] {
     @apply select-text;
   }
   input::placeholder,
