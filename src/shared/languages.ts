@@ -65,6 +65,11 @@ export const languages = {
     name: 'Русский',
     hreflang: 'ru'
   },
+  tr: {
+    flag: 'fi fi-tr',
+    name: 'Türkçe',
+    hreflang: 'tr'
+  },
   de: {
     flag: 'fi fi-de',
     name: 'Deutsch',

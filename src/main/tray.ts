@@ -1,4 +1,4 @@
-import { normalizeLanguageCode } from '@shared/languages'
+import { type LanguageCode, normalizeLanguageCode } from '@shared/languages'
 import { app, BrowserWindow, Menu, nativeImage, Tray } from 'electron'
 import appIcon from '../../resources/icon.png?asset'
 import trayIcon from '../../resources/tray-icon.png?asset'
@@ -12,19 +12,66 @@ let tray: Tray | null = null
 function t(key: 'showHome' | 'quit'): string {
   const language = normalizeLanguageCode(settingsManager.get('language'))
 
-  const translations = {
+  const translations: Record<LanguageCode, Record<'showHome' | 'quit', string>> = {
     en: {
       showHome: 'Show Home',
       quit: 'Quit'
     },
+    es: {
+      showHome: 'Mostrar inicio',
+      quit: 'Salir'
+    },
+    ar: {
+      showHome: 'إظهار الصفحة الرئيسية',
+      quit: 'إنهاء'
+    },
+    id: {
+      showHome: 'Tampilkan Beranda',
+      quit: 'Keluar'
+    },
+    pt: {
+      showHome: 'Mostrar página inicial',
+      quit: 'Sair'
+    },
+    fr: {
+      showHome: "Afficher l'accueil",
+      quit: 'Quitter'
+    },
+    it: {
+      showHome: 'Mostra Home',
+      quit: 'Esci'
+    },
+    tr: {
+      showHome: 'Ana Sayfayı Göster',
+      quit: 'Çıkış'
+    },
     zh: {
       showHome: '显示主页',
       quit: '退出应用'
+    },
+    'zh-TW': {
+      showHome: '顯示主頁',
+      quit: '退出應用程式'
+    },
+    ko: {
+      showHome: '홈 표시',
+      quit: '종료'
+    },
+    ja: {
+      showHome: 'ホームを表示',
+      quit: '終了'
+    },
+    ru: {
+      showHome: 'Показать главную',
+      quit: 'Выход'
+    },
+    de: {
+      showHome: 'Startseite anzeigen',
+      quit: 'Beenden'
     }
   }
 
-  const displayLang = language.startsWith('zh') ? 'zh' : 'en'
-  return translations[displayLang][key]
+  return translations[language][key]
 }
 
 /**
