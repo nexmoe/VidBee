@@ -149,6 +149,7 @@
     "goToSettings": "Ayarlar'a gidin",
     "oneClickDownload": "Tek Tıklamayla İndir",
     "oneClickDownloadDescription": "Onay almadan doğrudan varsayılan ayarlarla indirin",
+    "oneClickDownloadTooltip": "Yapıştır ve anında indir, adımları atla",
     "oneClickDownloadEnabled": "Tek Tıklamayla İndirme etkinleştirildi. İndirmeler doğrudan varsayılan ayarlarla başlayacaktır.",
     "oneClickDownloadNow": "Şimdi İndir",
     "oneClickDownloadStarted": "İndirme varsayılan ayarlarla başladı",
