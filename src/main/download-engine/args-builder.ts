@@ -1,5 +1,6 @@
 import path from 'node:path'
 import type { AppSettings, DownloadOptions } from '../../shared/types'
+import { appendYouTubeSafeExtractorArgs } from '../lib/youtube-extractor-args'
 import { resolvePathWithHome } from '../utils/path-helpers'
 
 export const sanitizeFilenameTemplate = (template: string): string => {
@@ -50,8 +51,11 @@ export const resolveVideoFormatSelector = (options: DownloadOptions): string => 
     return `${format}+none`
   }
 
-  const audio = audioFormat && audioFormat !== 'best' ? audioFormat : 'bestaudio'
-  return `${format}+${audio}`
+  if (!audioFormat || audioFormat === 'best') {
+    return `${format}+bestaudio/best`
+  }
+
+  return `${format}+${audioFormat}`
 }
 
 export const resolveAudioFormatSelector = (options: DownloadOptions): string => {
@@ -169,6 +173,8 @@ export const buildDownloadArgs = (
   const configPath = resolvePathWithHome(settings.configPath)
   if (configPath) {
     args.push('--config-location', configPath)
+  } else {
+    appendYouTubeSafeExtractorArgs(args, options.url)
   }
 
   if (jsRuntimeArgs.length > 0) {

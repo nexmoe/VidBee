@@ -47,6 +47,7 @@ import {
 } from './path-resolver'
 import { clampPercent, estimateProgressParts, isMuxedFormat } from './progress-utils'
 import { applyShareWatermark } from './watermark-utils'
+import { appendYouTubeSafeExtractorArgs } from './youtube-extractor-args'
 import { ytdlpManager } from './ytdlp-manager'
 
 interface DownloadProcess {
@@ -257,6 +258,8 @@ class DownloadEngine extends EventEmitter {
     const configPath = resolvePathWithHome(settings.configPath)
     if (configPath) {
       args.push('--config-location', configPath)
+    } else {
+      appendYouTubeSafeExtractorArgs(args, url)
     }
 
     appendJsRuntimeArgs(args)
