@@ -149,7 +149,7 @@
     "goToSettings": "前往“設置”",
     "oneClickDownload": "一鍵下載",
     "oneClickDownloadDescription": "使用預設設定直接下載，無需確認",
-    "oneClickDownloadEnabled": "已啟用一鍵下載。下載將直接以默認設置開始。",
+    "oneClickDownloadTooltip": "貼上即可即刻下載，省略步驟",
     "oneClickDownloadNow": "立即下載",
     "oneClickDownloadStarted": "已使用預設設定開始下載",
     "paste": "貼上",

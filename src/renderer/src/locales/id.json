@@ -149,7 +149,7 @@
     "goToSettings": "Buka Pengaturan",
     "oneClickDownload": "Unduh Satu Klik",
     "oneClickDownloadDescription": "Unduh langsung dengan pengaturan default tanpa konfirmasi",
-    "oneClickDownloadEnabled": "Unduh Satu Klik diaktifkan. Unduhan akan dimulai langsung dengan pengaturan default.",
+    "oneClickDownloadTooltip": "Tempel & unduh instan, lewati langkah-langkah",
     "oneClickDownloadNow": "Unduh Sekarang",
     "oneClickDownloadStarted": "Unduhan dimulai dengan pengaturan default",
     "paste": "Tempel",

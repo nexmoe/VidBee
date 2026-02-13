@@ -149,7 +149,7 @@
     "goToSettings": "Go to Settings",
     "oneClickDownload": "One-Click Download",
     "oneClickDownloadDescription": "Download directly with default settings without confirmation",
-    "oneClickDownloadEnabled": "One-Click Download is enabled. Downloads will start directly with default settings.",
+    "oneClickDownloadTooltip": "Paste & download instantly, skip the steps",
     "oneClickDownloadNow": "Download Now",
     "oneClickDownloadStarted": "Download started with default settings",
     "paste": "Paste",

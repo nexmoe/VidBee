@@ -149,7 +149,7 @@
     "goToSettings": "Zu Einstellungen gehen",
     "oneClickDownload": "Ein-Klick-Download",
     "oneClickDownloadDescription": "Direkt mit Standardeinstellungen ohne Bestätigung herunterladen",
-    "oneClickDownloadEnabled": "Ein-Klick-Download ist aktiviert. Downloads starten direkt mit Standardeinstellungen.",
+    "oneClickDownloadTooltip": "Sofort einfügen & herunterladen, Schritte überspringen",
     "oneClickDownloadNow": "Jetzt herunterladen",
     "oneClickDownloadStarted": "Download mit Standardeinstellungen gestartet",
     "paste": "Einfügen",
