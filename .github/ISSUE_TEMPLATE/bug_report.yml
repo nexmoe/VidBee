@@ -4,6 +4,21 @@ title: "[Bug]: "
 labels:
   - bug
 body:
+  - type: textarea
+    id: actual
+    attributes:
+      label: Observed behavior and screenshots
+      placeholder: What actually happened
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots
+      description: Paste relevant logs or add screenshots
+      placeholder: Attach files or paste logs here
+    validations:
+      required: false
   - type: input
     id: app_version
     attributes:
@@ -20,18 +35,3 @@ body:
       placeholder: macOS 14.2
     validations:
       required: true
-  - type: textarea
-    id: actual
-    attributes:
-      label: Observed behavior
-      placeholder: What actually happened
-    validations:
-      required: true
-  - type: textarea
-    id: logs
-    attributes:
-      label: Logs or screenshots
-      description: Paste relevant logs or add screenshots
-      placeholder: Attach files or paste logs here
-    validations:
-      required: false
