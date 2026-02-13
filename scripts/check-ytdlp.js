@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 
-const fs = require('node:fs')
-const path = require('node:path')
+import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const scriptDir = path.dirname(fileURLToPath(import.meta.url))
 
 // Get platform from command line arguments
 const platform = process.argv[2]
@@ -76,7 +79,7 @@ let hasMissingBinary = false
 for (const binary of binaries) {
   const candidates = binary.paths[platform] || []
   const found = candidates.find((filename) =>
-    fs.existsSync(path.join(import.meta.dirname, '..', 'resources', filename))
+    fs.existsSync(path.join(scriptDir, '..', 'resources', filename))
   )
 
   if (found) {
