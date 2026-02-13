@@ -475,7 +475,7 @@ export function UnifiedDownloadHistory({
               )
             })}
           </div>
-        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
             <DownloadDialog
               onOpenSupportedSites={onOpenSupportedSites}
               onOpenSettings={onOpenSettings}

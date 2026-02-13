@@ -795,7 +795,9 @@ export function DownloadDialog({
               >
                 <Rocket className="h-4 w-4 text-muted-foreground" />
               </Button>
-              <span className={`absolute top-0 -right-2 inline-flex items-center justify-center px-1 h-3.5 rounded-full text-xs font-semibold whitespace-nowrap leading-none ${settings.oneClickDownload ? 'bg-being-green-400 text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}>
+              <span
+                className={`absolute top-0 -right-2 inline-flex items-center justify-center px-1 h-3.5 rounded-full text-xs font-semibold whitespace-nowrap leading-none ${settings.oneClickDownload ? 'bg-being-green-400 text-primary-foreground' : 'bg-secondary text-secondary-foreground'}`}
+              >
                 {settings.oneClickDownload ? 'ON' : 'OFF'}
               </span>
             </div>
