@@ -5,15 +5,18 @@
  * Automatically downloads yt-dlp and ffmpeg binaries based on the current system
  */
 
-const fs = require('node:fs')
-const path = require('node:path')
-const os = require('node:os')
-const { execSync, spawnSync } = require('node:child_process')
-const https = require('node:https')
-const http = require('node:http')
+import { execSync, spawnSync } from 'node:child_process'
+import fs from 'node:fs'
+import http from 'node:http'
+import https from 'node:https'
+import os from 'node:os'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 // Configuration
-const RESOURCES_DIR = path.join(import.meta.dirname, '..', 'resources')
+const currentFilePath = fileURLToPath(import.meta.url)
+const currentDirPath = path.dirname(currentFilePath)
+const RESOURCES_DIR = path.join(currentDirPath, '..', 'resources')
 const FFMPEG_DIR = path.join(RESOURCES_DIR, 'ffmpeg')
 const YTDLP_BASE_URL = 'https://github.com/yt-dlp/yt-dlp/releases/latest/download'
 const DENO_BASE_URL = 'https://github.com/denoland/deno/releases/latest/download'
@@ -814,9 +817,12 @@ async function setup() {
   }
 }
 
-// Run setup
-if (require.main === module) {
+// Run setup when executed directly
+const isDirectExecution =
+  process.argv[1] && path.resolve(process.argv[1]) === path.resolve(currentFilePath)
+
+if (isDirectExecution) {
   setup()
 }
 
-module.exports = { setup }
+export { setup }
