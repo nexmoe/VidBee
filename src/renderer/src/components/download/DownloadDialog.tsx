@@ -673,14 +673,24 @@ export function DownloadDialog({
       createdAt: Date.now()
     }
 
+    const selectedVideoFormatMeta =
+      type === 'video'
+        ? (videoInfo.formats || []).find((format) => format.format_id === selectedFormat)
+        : undefined
+    const hasMuxedAudio =
+      type === 'video' &&
+      !!selectedVideoFormatMeta?.acodec &&
+      selectedVideoFormatMeta.acodec !== 'none'
     const audioFormatIds =
-      type === 'video' ? pickBestAudioFormatsByLanguage(videoInfo.formats || []) : undefined
+      type === 'video' && !hasMuxedAudio
+        ? pickBestAudioFormatsByLanguage(videoInfo.formats || [])
+        : undefined
 
     const options = {
       url: videoInfo.webpage_url || '',
       type,
       format: selectedFormat || undefined,
-      audioFormat: type === 'video' ? 'best' : undefined,
+      audioFormat: type === 'video' ? (hasMuxedAudio ? '' : 'best') : undefined,
       audioFormatIds: audioFormatIds && audioFormatIds.length > 0 ? audioFormatIds : undefined,
       customDownloadPath: singleVideoState.customDownloadPath.trim() || undefined
     }

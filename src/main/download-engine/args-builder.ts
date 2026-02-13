@@ -50,8 +50,11 @@ export const resolveVideoFormatSelector = (options: DownloadOptions): string => 
     return `${format}+none`
   }
 
-  const audio = audioFormat && audioFormat !== 'best' ? audioFormat : 'bestaudio'
-  return `${format}+${audio}`
+  if (!audioFormat || audioFormat === 'best') {
+    return `${format}+bestaudio/best`
+  }
+
+  return `${format}+${audioFormat}`
 }
 
 export const resolveAudioFormatSelector = (options: DownloadOptions): string => {
