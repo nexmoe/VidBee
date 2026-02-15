@@ -3,6 +3,15 @@
 Cette page ne présente que les évolutions visibles par les utilisateurs, sans détails techniques.
 Pour les notes de version complètes, consultez [GitHub Releases](https://github.com/nexmoe/VidBee/releases).
 
+## 2026-02
+
+### [v1.3.0](https://github.com/nexmoe/VidBee/releases/tag/v1.3.0) - 2026-02-15
+- Ajout de nouvelles actions en un clic pour coller un lien et lancer le téléchargement plus vite.
+- Ajout de la prise en charge des langues française, russe et turque dans l'application.
+- Amélioration de la compatibilité des téléchargements pour YouTube et les scénarios de repli de format.
+- Le format de conteneur sélectionné est désormais respecté de manière plus cohérente.
+- Les réglages et la documentation ont été améliorés, avec des indications plus claires pour les rapports de bug et le RSS.
+
 ## 2026-01
 
 ### [v1.2.4](https://github.com/nexmoe/VidBee/releases/tag/v1.2.4) - 2026-01-24
