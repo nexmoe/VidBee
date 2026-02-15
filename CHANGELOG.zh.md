@@ -3,6 +3,15 @@
 本页只记录你能直接感知到的更新，不展开技术实现细节。
 完整发布记录请查看 [GitHub Releases](https://github.com/nexmoe/VidBee/releases)。
 
+## 2026-02
+
+### [v1.3.0](https://github.com/nexmoe/VidBee/releases/tag/v1.3.0) - 2026-02-15
+- 新增更快捷的一键操作，粘贴链接后可更快开始下载。
+- 新增法语、俄语与土耳其语界面本地化支持。
+- 提升了 YouTube 与格式回退场景下的下载兼容性。
+- 下载输出会更稳定地遵循你选择的容器格式。
+- 设置页与文档体验持续优化，问题反馈与 RSS 指引更清晰。
+
 ## 2026-01
 
 ### [v1.2.4](https://github.com/nexmoe/VidBee/releases/tag/v1.2.4) - 2026-01-24

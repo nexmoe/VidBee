@@ -3,6 +3,15 @@
 This page only includes user-visible updates and avoids implementation details.
 For full release notes, see [GitHub Releases](https://github.com/nexmoe/VidBee/releases).
 
+## 2026-02
+
+### [v1.3.0](https://github.com/nexmoe/VidBee/releases/tag/v1.3.0) - 2026-02-15
+- Added new one-click actions so you can paste and start downloading faster.
+- Added French, Russian, and Turkish app localization support.
+- Improved download compatibility for YouTube and format fallback scenarios.
+- Download output now follows the selected container format more consistently.
+- Settings and docs were improved, including clearer bug report and RSS guidance.
+
 ## 2026-01
 
 ### [v1.2.4](https://github.com/nexmoe/VidBee/releases/tag/v1.2.4) - 2026-01-24
