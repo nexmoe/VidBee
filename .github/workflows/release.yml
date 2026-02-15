@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - v*.*.*
+  workflow_dispatch:
 
 jobs:
   build:
@@ -12,13 +13,8 @@ jobs:
       upload_artifacts: true
     secrets: inherit
 
-  extension:
-    uses: ./.github/workflows/extension-build.yml
-    with:
-      upload_artifacts: true
-
   release:
-    needs: [build, extension]
+    needs: [build]
     runs-on: ubuntu-latest
     steps:
       - name: Check out Git repository
