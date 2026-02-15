@@ -8,6 +8,7 @@ on:
 
 jobs:
   detect-version:
+    if: vars.ENABLE_EXTENSION_CI == 'true'
     runs-on: ubuntu-latest
     outputs:
       changed: ${{ steps.version_check.outputs.changed }}
@@ -42,8 +43,8 @@ jobs:
           echo "changed=true" >> "$GITHUB_OUTPUT"
 
   submit:
+    if: vars.ENABLE_EXTENSION_CI == 'true' && needs.detect-version.outputs.changed == 'true'
     needs: detect-version
-    if: needs.detect-version.outputs.changed == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
