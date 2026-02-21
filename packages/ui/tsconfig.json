@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "jsx": "react-jsx",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "types": ["react", "react-dom", "unplugin-icons/types/react"]
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"]
+}

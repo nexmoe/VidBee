@@ -63,6 +63,28 @@ Automatically subscribe to RSS feeds and auto-download new videos in the backgro
 
 VidBee supports 1000+ video and audio platforms through yt-dlp. For the complete list of supported sites, visit [https://vidbee.org/supported-sites/](https://vidbee.org/supported-sites/)
 
+## 🧱 Web + API (Docker-ready)
+
+This monorepo now includes:
+
+- `packages/downloader-core`: Shared yt-dlp/ffmpeg download core
+- `apps/api`: Fastify API server with oRPC and SSE events
+- `apps/web`: TanStack Start web client using oRPC
+
+Run locally:
+
+```bash
+pnpm run start:web
+```
+
+This command starts `apps/api` and `apps/web` together.
+
+Run with Docker:
+
+```bash
+docker compose -f docker-compose.web-api.yml up --build
+```
+
 ## 🤝 Contributing
 
 You are welcome to join the open source community to build together. For more details, check out:

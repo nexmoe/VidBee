@@ -1,4 +1,4 @@
-import { Button } from '@renderer/components/ui/button'
+import { TitleBar as SharedTitleBar } from '@vidbee/ui/components/ui/title-bar'
 import { useEffect, useState } from 'react'
 import IconFluentDismiss20Regular from '~icons/fluent/dismiss-20-regular'
 import IconFluentMaximize20Regular from '~icons/fluent/maximize-20-regular'
@@ -15,7 +15,6 @@ export function TitleBar({ platform }: TitleBarProps) {
   const [isMaximized, setIsMaximized] = useState(false)
 
   useEffect(() => {
-    // Listen for window maximize state changes
     const handleMaximized = () => {
       setIsMaximized(true)
     }
@@ -33,60 +32,19 @@ export function TitleBar({ platform }: TitleBarProps) {
     }
   }, [])
 
-  const handleMinimize = () => {
-    ipcServices.window.minimize()
-  }
-
-  const handleMaximize = () => {
-    ipcServices.window.maximize()
-  }
-
-  const handleClose = () => {
-    ipcServices.window.close()
-  }
-
-  const isMac = platform === 'darwin'
-  const containerClass = `flex drag-region bg-background select-none ${
-    isMac ? 'h-10 items-center px-4' : 'justify-end pt-4 px-5'
-  }`
-
-  if (isMac) {
-    return <div className={containerClass} />
-  }
-
   return (
-    <div className={containerClass}>
-      {/* Window controls */}
-      <div className="no-drag flex items-center gap-1">
-        <Button
-          className="h-8 w-8 hover:bg-muted"
-          onClick={handleMinimize}
-          size="icon"
-          variant="ghost"
-        >
-          <IconFluentSubtract20Regular className="h-4 w-4" />
-        </Button>
-        <Button
-          className="h-8 w-8 hover:bg-muted"
-          onClick={handleMaximize}
-          size="icon"
-          variant="ghost"
-        >
-          {isMaximized ? (
-            <IconFluentSquareMultiple20Regular className="h-4 w-4" />
-          ) : (
-            <IconFluentMaximize20Regular className="h-4 w-4" />
-          )}
-        </Button>
-        <Button
-          className="h-8 w-8 hover:bg-red-500 hover:text-white"
-          onClick={handleClose}
-          size="icon"
-          variant="ghost"
-        >
-          <IconFluentDismiss20Regular className="h-4 w-4" />
-        </Button>
-      </div>
-    </div>
+    <SharedTitleBar
+      icons={{
+        close: IconFluentDismiss20Regular,
+        maximize: IconFluentMaximize20Regular,
+        minimize: IconFluentSubtract20Regular,
+        restore: IconFluentSquareMultiple20Regular
+      }}
+      isMaximized={isMaximized}
+      onClose={() => ipcServices.window.close()}
+      onMaximize={() => ipcServices.window.maximize()}
+      onMinimize={() => ipcServices.window.minimize()}
+      platform={platform}
+    />
   )
 }
