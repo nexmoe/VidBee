@@ -15,7 +15,7 @@
     "dev": "node scripts/set-console-encoding.js && electron-vite dev",
     "build": "electron-vite build",
     "setup": "node scripts/setup-dev-binaries.js",
-    "postinstall": "node scripts/setup-dev-binaries.js && electron-builder install-app-deps",
+    "postinstall": "node scripts/postinstall.mjs",
     "build:unpack": "pnpm run setup && pnpm run build && electron-builder --dir",
     "build:win": "pnpm run setup && node scripts/check-ytdlp.js win && pnpm run build && electron-builder --win",
     "build:mac": "pnpm run setup && node scripts/check-ytdlp.js mac && pnpm run build && electron-builder --mac --x64 --arm64",
