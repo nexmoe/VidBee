@@ -18,7 +18,7 @@ export default async function Page(props: PageProps<'/[lang]/[[...slug]]'>) {
     branch: 'main',
   };
 
-  const githubFilePath = `docs/content/${page.path}`;
+  const githubFilePath = `apps/docs/content/${page.path}`;
   const githubBlobUrl = `https://github.com/${gitConfig.user}/${gitConfig.repo}/blob/${gitConfig.branch}/${githubFilePath}`;
   const githubEditUrl = `https://github.com/${gitConfig.user}/${gitConfig.repo}/edit/${gitConfig.branch}/${githubFilePath}`;
 

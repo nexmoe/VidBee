@@ -17,9 +17,6 @@ files:
   - '!changelogs/**'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
-  - '!extension/**'
-  - '!monkey/**'
-  - '!screenshots/**'
 asarUnpack:
   - resources/**
 win:

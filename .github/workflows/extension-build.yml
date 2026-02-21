@@ -26,25 +26,22 @@ jobs:
         with:
           node-version: 22
           cache: 'pnpm'
-          cache-dependency-path: extension/pnpm-lock.yaml
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
-        run: pnpm install
-        working-directory: extension
+        run: pnpm install --filter ./apps/extension...
 
       - name: Build extension
-        run: pnpm build
-        working-directory: extension
+        run: pnpm --filter ./apps/extension build
 
       - name: Build extension zip
-        run: pnpm zip
-        working-directory: extension
+        run: pnpm --filter ./apps/extension zip
 
       - name: Upload extension artifacts
         if: inputs.upload_artifacts == true
         uses: actions/upload-artifact@v4
         with:
           name: dist-extension
-          path: extension/.output/*.zip
+          path: apps/extension/.output/*.zip
           retention-days: 1
           if-no-files-found: error

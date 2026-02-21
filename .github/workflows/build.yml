@@ -66,7 +66,7 @@ jobs:
           version: 8
 
       - name: Install Dependencies
-        run: pnpm install
+        run: pnpm install --filter ./apps/desktop...
 
       - name: Download ffmpeg binary (Windows)
         if: matrix.platform == 'windows'
@@ -78,7 +78,7 @@ jobs:
           Expand-Archive ffmpeg.zip -DestinationPath ffmpeg -Force
           $source = Join-Path 'ffmpeg' '${{ matrix.ffmpeg_inner_path }}'
           $ffprobeSource = Join-Path 'ffmpeg' '${{ matrix.ffprobe_inner_path }}'
-          $destinationDir = Join-Path 'resources' 'ffmpeg'
+          $destinationDir = Join-Path 'apps/desktop/resources' 'ffmpeg'
           New-Item -ItemType Directory -Path $destinationDir -Force | Out-Null
           Copy-Item -Path $source -Destination (Join-Path $destinationDir 'ffmpeg.exe') -Force
           Copy-Item -Path $ffprobeSource -Destination (Join-Path $destinationDir 'ffprobe.exe') -Force
@@ -134,10 +134,10 @@ jobs:
             exit 1
           fi
 
-          mkdir -p resources/ffmpeg
-          lipo -create "$arm_bin" "$x86_bin" -output "resources/ffmpeg/$FFMPEG_OUTPUT"
-          lipo -create "$arm_probe" "$x86_probe" -output "resources/ffmpeg/$FFPROBE_OUTPUT"
-          chmod +x "resources/ffmpeg/$FFMPEG_OUTPUT" "resources/ffmpeg/$FFPROBE_OUTPUT"
+          mkdir -p apps/desktop/resources/ffmpeg
+          lipo -create "$arm_bin" "$x86_bin" -output "apps/desktop/resources/ffmpeg/$FFMPEG_OUTPUT"
+          lipo -create "$arm_probe" "$x86_probe" -output "apps/desktop/resources/ffmpeg/$FFPROBE_OUTPUT"
+          chmod +x "apps/desktop/resources/ffmpeg/$FFMPEG_OUTPUT" "apps/desktop/resources/ffmpeg/$FFPROBE_OUTPUT"
           rm -rf ffmpeg-arm ffmpeg-x86 ffmpeg-arm.zip ffmpeg-x86.zip
 
       - name: Download ffmpeg binary (Linux)
@@ -152,18 +152,18 @@ jobs:
           fi
           mkdir ffmpeg
           tar -xf ffmpeg.tar.xz -C ffmpeg
-          mkdir -p resources/ffmpeg
-          cp "ffmpeg/${{ matrix.ffmpeg_inner_path }}" "resources/ffmpeg/ffmpeg"
-          cp "ffmpeg/${{ matrix.ffprobe_inner_path }}" "resources/ffmpeg/ffprobe"
-          chmod +x "resources/ffmpeg/ffmpeg" "resources/ffmpeg/ffprobe"
+          mkdir -p apps/desktop/resources/ffmpeg
+          cp "ffmpeg/${{ matrix.ffmpeg_inner_path }}" "apps/desktop/resources/ffmpeg/ffmpeg"
+          cp "ffmpeg/${{ matrix.ffprobe_inner_path }}" "apps/desktop/resources/ffmpeg/ffprobe"
+          chmod +x "apps/desktop/resources/ffmpeg/ffmpeg" "apps/desktop/resources/ffmpeg/ffprobe"
           rm -rf ffmpeg.tar.xz ffmpeg
 
       - name: Download yt-dlp binary
         shell: bash
         run: |
-          curl -fL --retry 3 --retry-delay 2 --retry-connrefused "https://github.com/yt-dlp/yt-dlp/releases/latest/download/${{ matrix.ytdlp_asset }}" -o "resources/${{ matrix.ytdlp_output }}"
+          curl -fL --retry 3 --retry-delay 2 --retry-connrefused "https://github.com/yt-dlp/yt-dlp/releases/latest/download/${{ matrix.ytdlp_asset }}" -o "apps/desktop/resources/${{ matrix.ytdlp_output }}"
           if [[ "${{ matrix.platform }}" == "linux" ]] || [[ "${{ matrix.platform }}" == "macos" ]]; then
-            chmod +x "resources/${{ matrix.ytdlp_output }}"
+            chmod +x "apps/desktop/resources/${{ matrix.ytdlp_output }}"
           fi
 
       - name: Lint and format check
@@ -227,7 +227,7 @@ jobs:
             spctl -a -t exec -vv "$app"
             echo "Validating notarization ticket for $app"
             xcrun stapler validate "$app"
-          done < <(find dist -type d -name "*.app" -prune -print)
+          done < <(find apps/desktop/dist -type d -name "*.app" -prune -print)
 
           if [[ "$apps_found" -eq 0 ]]; then
             echo "::error::No .app bundles found in dist"
@@ -243,7 +243,7 @@ jobs:
             xcrun stapler staple "$dmg"
             echo "Validating notarization ticket for $dmg"
             xcrun stapler validate "$dmg"
-          done < <(find dist -type f -name "*.dmg" -print)
+          done < <(find apps/desktop/dist -type f -name "*.dmg" -print)
 
           if [[ "$dmgs_found" -eq 0 ]]; then
             echo "::notice::No DMG artifacts found to validate"
@@ -255,14 +255,14 @@ jobs:
         with:
           name: dist-${{ matrix.os }}
           path: |
-            dist/*.exe
-            dist/*.zip
-            dist/*.dmg
-            dist/*.AppImage
-            dist/*.snap
-            dist/*.deb
-            dist/*.rpm
-            dist/*.tar.gz
-            dist/*.yml
-            dist/*.blockmap
+            apps/desktop/dist/*.exe
+            apps/desktop/dist/*.zip
+            apps/desktop/dist/*.dmg
+            apps/desktop/dist/*.AppImage
+            apps/desktop/dist/*.snap
+            apps/desktop/dist/*.deb
+            apps/desktop/dist/*.rpm
+            apps/desktop/dist/*.tar.gz
+            apps/desktop/dist/*.yml
+            apps/desktop/dist/*.blockmap
           retention-days: 1

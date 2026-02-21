@@ -4,7 +4,7 @@ on:
   push:
     branches: [ main ]
     paths:
-      - extension/package.json
+      - apps/extension/package.json
 
 jobs:
   detect-version:
@@ -26,10 +26,10 @@ jobs:
         run: |
           set -euo pipefail
           before_sha="${{ github.event.before }}"
-          current_version=$(node -e "const fs = require('fs'); const v = JSON.parse(fs.readFileSync('extension/package.json', 'utf8')).version; process.stdout.write(v);")
+          current_version=$(node -e "const fs = require('fs'); const v = JSON.parse(fs.readFileSync('apps/extension/package.json', 'utf8')).version; process.stdout.write(v);")
           previous_version=""
-          if git cat-file -e "${before_sha}:extension/package.json" 2>/dev/null; then
-            previous_version=$(git show "${before_sha}:extension/package.json" | node -e "let data=''; process.stdin.on('data', d => data += d); process.stdin.on('end', () => { const v = JSON.parse(data).version; process.stdout.write(v); });")
+          if git cat-file -e "${before_sha}:apps/extension/package.json" 2>/dev/null; then
+            previous_version=$(git show "${before_sha}:apps/extension/package.json" | node -e "let data=''; process.stdin.on('data', d => data += d); process.stdin.on('end', () => { const v = JSON.parse(data).version; process.stdout.write(v); });")
           fi
 
           echo "current_version=${current_version}" >> "$GITHUB_OUTPUT"
@@ -46,9 +46,6 @@ jobs:
     if: vars.ENABLE_EXTENSION_CI == 'true' && needs.detect-version.outputs.changed == 'true'
     needs: detect-version
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: extension
     steps:
       - name: Check out Git repository
         uses: actions/checkout@v4
@@ -63,21 +60,20 @@ jobs:
         with:
           node-version: 22
           cache: 'pnpm'
-          cache-dependency-path: extension/pnpm-lock.yaml
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --filter ./apps/extension...
 
       - name: Build extension
-        run: pnpm build
+        run: pnpm --filter ./apps/extension build
 
       - name: Zip extensions
-        run: |
-          pnpm zip
+        run: pnpm --filter ./apps/extension zip
 
       - name: Submit to stores
         run: |
-          pnpm wxt submit \
+          pnpm --dir apps/extension wxt submit \
             --chrome-zip .output/*-chrome.zip
         env:
           CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}

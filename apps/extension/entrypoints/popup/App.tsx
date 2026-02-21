@@ -126,7 +126,7 @@ function App() {
     const targetState = { url: '' }
 
     const handleStorageChange = (
-      changes: Record<string, browser.storage.StorageChange>,
+      changes: Record<string, { newValue?: unknown }>,
       areaName: string
     ) => {
       if (!active || areaName !== 'local') {
