@@ -111,9 +111,6 @@ importers:
       '@tailwindcss/vite':
         specifier: ^4.1.13
         version: 4.1.15(vite@7.3.1(@types/node@22.18.12)(jiti@2.6.1)(lightningcss@1.31.1)(tsx@4.21.0)(yaml@2.8.1))
-      '@vidbee/ui':
-        specifier: workspace:*
-        version: link:../../packages/ui
       better-sqlite3:
         specifier: ^12.4.1
         version: 12.4.1
@@ -208,6 +205,9 @@ importers:
       '@types/react-dom':
         specifier: ^19.1.9
         version: 19.2.3(@types/react@19.2.14)
+      '@vidbee/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       '@vitejs/plugin-react':
         specifier: ^5.0.3
         version: 5.0.4(vite@7.3.1(@types/node@22.18.12)(jiti@2.6.1)(lightningcss@1.31.1)(tsx@4.21.0)(yaml@2.8.1))
