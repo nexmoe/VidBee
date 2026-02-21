@@ -25,7 +25,7 @@
     ["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"],
     ["cn\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"]
   ],
-  "i18n-ally.localesPaths": ["src/renderer/src/locales"],
+  "i18n-ally.localesPaths": ["apps/desktop/src/renderer/src/locales"],
   "i18n-ally.keystyle": "nested",
   "[css]": {
     "editor.defaultFormatter": "biomejs.biome"

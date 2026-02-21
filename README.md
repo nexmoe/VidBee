@@ -1,6 +1,6 @@
 <div align="center">
   <a href="https://github.com/nexmoe/VidBee">
-    <img src="build/icon.png" alt="Logo" width="80" height="80">
+    <img src="apps/desktop/build/icon.png" alt="Logo" width="80" height="80">
   </a>
 
   <h3>VidBee</h3>
@@ -67,6 +67,10 @@ VidBee supports 1000+ video and audio platforms through yt-dlp. For the complete
 
 You are welcome to join the open source community to build together. For more details, check out:
 
+- Monorepo apps:
+  - `apps/desktop`: VidBee desktop app (Electron)
+  - `apps/docs`: Documentation site (Next.js)
+  - `apps/extension`: Browser extension (WXT)
 - [Contributing Guide](./CONTRIBUTING.md)
 - [DeepWiki Documentation](https://deepwiki.com/nexmoe/VidBee)
 

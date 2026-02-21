@@ -62,8 +62,10 @@
       "**/*.js",
       "**/*.jsx",
       "**/*.json",
-      "!docs",
-      "!monkey/dist",
+      "!apps/docs",
+      "!apps/desktop/build",
+      "!apps/desktop/dist",
+      "!apps/desktop/out",
       "!dist",
       "!out",
       "!build"

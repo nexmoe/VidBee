@@ -5,7 +5,7 @@ This directory contains the VidBee logo in various sizes for use in the document
 ## Source
 
 All icons are generated from the original VidBee application icon located at:
-`/Users/air15/Documents/GitHub/VidBee/build/icon.png`
+`apps/desktop/build/icon.png`
 
 ## Available Sizes
 
@@ -72,8 +72,8 @@ Add to your `manifest.json` or `site.webmanifest`:
 If you need to regenerate these icons from the source:
 
 ```bash
-cd docs/public
-SOURCE="/Users/air15/Documents/GitHub/VidBee/build/icon.png"
+cd apps/docs/public
+SOURCE="../../desktop/build/icon.png"
 
 # Copy original
 cp $SOURCE icon-original.png
