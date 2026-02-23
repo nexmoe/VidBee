@@ -1,0 +1,23 @@
+{
+  "name": "api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "check": "ultracite check && pnpm run typecheck"
+  },
+  "dependencies": {
+    "@fastify/cors": "^11.2.0",
+    "@orpc/server": "^1.13.5",
+    "@vidbee/downloader-core": "workspace:*",
+    "fastify": "^5.7.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.6",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.2",
+    "ultracite": "7.1.5"
+  }
+}

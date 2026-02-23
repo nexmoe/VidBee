@@ -1,0 +1,10 @@
+node_modules
+.git
+.context
+dist
+out
+build
+**/node_modules
+**/dist
+**/out
+**/.turbo

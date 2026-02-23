@@ -1,9 +1,7 @@
 import crypto from 'node:crypto'
 import http from 'node:http'
 import type { AddressInfo } from 'node:net'
-
 import log from 'electron-log/main'
-
 import { downloadEngine } from './lib/download-engine'
 
 const PORT_RANGE_START = 27_100

@@ -1,6 +1,7 @@
 node_modules
 /dist
 apps/desktop/dist
+apps/web/dist
 out
 .conductor/
 .wxt

@@ -1,0 +1,22 @@
+{
+  "name": "@vidbee/downloader-core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@orpc/contract": "^1.13.5",
+    "yt-dlp-wrap-plus": "^2.3.20",
+    "zod": "^4.1.11"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.6",
+    "typescript": "^5.9.2"
+  }
+}

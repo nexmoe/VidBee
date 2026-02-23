@@ -1,0 +1,24 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      VIDBEE_API_HOST: 0.0.0.0
+      VIDBEE_API_PORT: 3100
+      VIDBEE_DOWNLOAD_DIR: /data/downloads
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./.context/docker-downloads:/data/downloads
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        VITE_API_URL: http://localhost:3100
+    depends_on:
+      - api
+    ports:
+      - "3000:3000"

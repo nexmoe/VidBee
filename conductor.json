@@ -1,6 +1,6 @@
 {
-  "scripts": {
-    "setup": "rm -rf resources && cp -r $CONDUCTOR_ROOT_PATH/resources resources && pnpm install",
-    "run": "pnpm run dev"
-  }
+    "scripts": {
+        "setup": "rm -rf apps/desktop/resources && cp -r $CONDUCTOR_ROOT_PATH/apps/desktop/resources apps/desktop/resources && pnpm install",
+        "run": "pnpm run dev"
+    }
 }
