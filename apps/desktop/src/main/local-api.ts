@@ -2,12 +2,11 @@ import crypto from 'node:crypto'
 import http from 'node:http'
 import type { AddressInfo } from 'node:net'
 import log from 'electron-log/main'
-import { DownloaderCore } from '../../../../packages/downloader-core/src'
+import { downloadEngine } from './lib/download-engine'
 
 const PORT_RANGE_START = 27_100
 const PORT_RANGE_END = 27_120
 const TOKEN_TTL_MS = 60_000
-const sharedDownloaderCore = new DownloaderCore()
 
 interface TokenRecord {
   expiresAt: number
@@ -113,7 +112,7 @@ const handleRequest = async (
       }
 
       try {
-        const info = await sharedDownloaderCore.getVideoInfo(targetUrl.trim())
+        const info = await downloadEngine.getVideoInfo(targetUrl.trim())
         writeJson(res, 200, {
           title: info.title,
           thumbnail: info.thumbnail,
@@ -162,12 +161,6 @@ const startServerOnPort = (port: number): Promise<http.Server> =>
 export async function startExtensionApiServer(): Promise<number | null> {
   if (server && serverPort) {
     return serverPort
-  }
-
-  try {
-    await sharedDownloaderCore.initialize()
-  } catch (error) {
-    log.warn('Shared downloader core failed to initialize for extension API:', error)
   }
 
   for (let port = PORT_RANGE_START; port <= PORT_RANGE_END; port += 1) {

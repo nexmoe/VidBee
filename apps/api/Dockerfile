@@ -2,6 +2,10 @@ FROM node:22-alpine
 
 ENV PNPM_HOME=/pnpm
 ENV PATH=${PNPM_HOME}:${PATH}
+ENV YTDLP_PATH=/usr/bin/yt-dlp
+ENV FFMPEG_PATH=/usr/bin/ffmpeg
+
+RUN apk add --no-cache yt-dlp ffmpeg
 
 RUN corepack enable
 
