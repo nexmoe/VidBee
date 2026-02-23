@@ -13,11 +13,13 @@ ENV VITE_API_URL=${VITE_API_URL}
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY apps/web/package.json apps/web/package.json
 COPY packages/downloader-core/package.json packages/downloader-core/package.json
+COPY packages/ui/package.json packages/ui/package.json
 
 RUN pnpm install --filter ./apps/web... --frozen-lockfile --ignore-scripts
 
 COPY apps/web apps/web
 COPY packages/downloader-core packages/downloader-core
+COPY packages/ui packages/ui
 
 EXPOSE 3000
 
