@@ -29,7 +29,7 @@ export const rpcRouter = os.router({
       const video = await downloaderCore.getVideoInfo(input.url)
       return { video }
     } catch (error) {
-      throw new ORPCError('BAD_REQUEST', {
+      throw new ORPCError('INTERNAL_SERVER_ERROR', {
         message: toErrorMessage(error, 'Failed to fetch video info.')
       })
     }
@@ -43,7 +43,7 @@ export const rpcRouter = os.router({
           const download = await downloaderCore.createDownload(input)
           return { download }
         } catch (error) {
-          throw new ORPCError('BAD_REQUEST', {
+          throw new ORPCError('INTERNAL_SERVER_ERROR', {
             message: toErrorMessage(error, 'Failed to create download.')
           })
         }
@@ -61,7 +61,7 @@ export const rpcRouter = os.router({
         const cancelled = await downloaderCore.cancelDownload(input.id)
         return { cancelled }
       } catch (error) {
-        throw new ORPCError('BAD_REQUEST', {
+        throw new ORPCError('INTERNAL_SERVER_ERROR', {
           message: toErrorMessage(error, 'Failed to cancel download.')
         })
       }

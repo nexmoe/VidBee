@@ -6,9 +6,7 @@ const defaultDownloadDir =
 const maxConcurrentValue = process.env.VIDBEE_MAX_CONCURRENT?.trim()
 const parsedMaxConcurrent = maxConcurrentValue ? Number(maxConcurrentValue) : Number.NaN
 const maxConcurrent =
-  Number.isFinite(parsedMaxConcurrent) && parsedMaxConcurrent > 0
-    ? parsedMaxConcurrent
-    : undefined
+  Number.isFinite(parsedMaxConcurrent) && parsedMaxConcurrent > 0 ? parsedMaxConcurrent : undefined
 
 export const downloaderCore = new DownloaderCore({
   downloadDir: defaultDownloadDir,
