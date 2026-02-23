@@ -340,53 +340,66 @@ export class DownloaderCore extends EventEmitter {
       })
     })
 
-    process.on('close', (code: number | null) => {
+    let settled = false
+    const isCancelled = (): boolean => controller.signal.aborted || this.cancelled.has(nextId)
+    const finalizeTask = (patch: Pick<DownloadTask, 'status'> & Partial<DownloadTask>): void => {
+      if (settled) {
+        return
+      }
+      settled = true
       this.active.delete(nextId)
+      this.cancelled.delete(nextId)
+      this.updateTask(nextId, {
+        ...patch,
+        completedAt: patch.completedAt ?? Date.now()
+      })
+      this.processQueue()
+    }
 
-      if (this.cancelled.has(nextId)) {
-        this.cancelled.delete(nextId)
-        this.updateTask(nextId, {
+    process.on('close', (code: number | null) => {
+      if (settled) {
+        return
+      }
+
+      if (isCancelled()) {
+        finalizeTask({
           status: 'cancelled',
-          completedAt: Date.now(),
           progress: { percent: 0 }
         })
-        this.processQueue()
         return
       }
 
       if (code === 0) {
-        this.updateTask(nextId, {
+        finalizeTask({
           status: 'completed',
-          completedAt: Date.now(),
           progress: { percent: 100 }
         })
-      } else {
-        this.updateTask(nextId, {
-          status: 'error',
-          completedAt: Date.now(),
-          error: `yt-dlp exited with code ${code ?? -1}`
-        })
+        return
       }
 
-      this.processQueue()
+      finalizeTask({
+        status: 'error',
+        error: `yt-dlp exited with code ${code ?? -1}`
+      })
     })
 
     process.on('error', (error: Error) => {
-      this.active.delete(nextId)
-      if (this.cancelled.has(nextId)) {
-        this.cancelled.delete(nextId)
-        this.updateTask(nextId, {
-          status: 'cancelled',
-          completedAt: Date.now()
-        })
-      } else {
-        this.updateTask(nextId, {
-          status: 'error',
-          completedAt: Date.now(),
-          error: error.message
-        })
+      if (settled) {
+        return
       }
-      this.processQueue()
+
+      if (isCancelled()) {
+        finalizeTask({
+          status: 'cancelled',
+          progress: { percent: 0 }
+        })
+        return
+      }
+
+      finalizeTask({
+        status: 'error',
+        error: error.message
+      })
     })
 
     this.processQueue()
