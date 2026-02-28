@@ -187,6 +187,7 @@ export const PlaylistDownloadInputSchema = z.object({
   audioFormatIds: z.array(z.string()).optional(),
   customDownloadPath: z.string().optional(),
   customFilenameTemplate: z.string().optional(),
+  entryIds: z.array(z.string()).optional(),
   startIndex: z.number().int().positive().optional(),
   endIndex: z.number().int().positive().optional(),
   settings: DownloadRuntimeSettingsSchema.optional()

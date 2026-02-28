@@ -785,13 +785,20 @@ export class DownloaderCore extends EventEmitter {
       }
     }
 
-    const requestedStart = Math.max((input.startIndex ?? 1) - 1, 0)
-    const requestedEnd = input.endIndex
-      ? Math.min(input.endIndex - 1, playlist.entryCount - 1)
-      : playlist.entryCount - 1
-    const rangeStart = Math.min(requestedStart, requestedEnd)
-    const rangeEnd = Math.max(requestedStart, requestedEnd)
-    const selectedEntries = playlist.entries.slice(rangeStart, rangeEnd + 1)
+    let selectedEntries: PlaylistInfo['entries'] = []
+
+    if (input.entryIds && input.entryIds.length > 0) {
+      const selectedIdSet = new Set(input.entryIds)
+      selectedEntries = playlist.entries.filter((entry) => selectedIdSet.has(entry.id))
+    } else {
+      const requestedStart = Math.max((input.startIndex ?? 1) - 1, 0)
+      const requestedEnd = input.endIndex
+        ? Math.min(input.endIndex - 1, playlist.entryCount - 1)
+        : playlist.entryCount - 1
+      const rangeStart = Math.min(requestedStart, requestedEnd)
+      const rangeEnd = Math.max(requestedStart, requestedEnd)
+      selectedEntries = playlist.entries.slice(rangeStart, rangeEnd + 1)
+    }
 
     const createdEntries: PlaylistDownloadResult['entries'] = []
 
@@ -828,8 +835,8 @@ export class DownloaderCore extends EventEmitter {
       playlistTitle: playlist.title,
       type: input.type,
       totalCount: selectedEntries.length,
-      startIndex: selectedEntries[0]?.index ?? rangeStart + 1,
-      endIndex: selectedEntries.at(-1)?.index ?? rangeEnd + 1,
+      startIndex: selectedEntries[0]?.index ?? 0,
+      endIndex: selectedEntries.at(-1)?.index ?? 0,
       entries: createdEntries
     }
   }

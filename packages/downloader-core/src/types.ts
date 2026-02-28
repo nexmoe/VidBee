@@ -151,6 +151,7 @@ export interface PlaylistDownloadInput {
   audioFormatIds?: string[]
   customDownloadPath?: string
   customFilenameTemplate?: string
+  entryIds?: string[]
   startIndex?: number
   endIndex?: number
   settings?: DownloadRuntimeSettings

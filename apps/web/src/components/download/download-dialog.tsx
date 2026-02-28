@@ -494,21 +494,24 @@ export function DownloadDialog({ onDownloadsChanged }: DownloadDialogProps) {
 		try {
 			let start: number | undefined;
 			let end: number | undefined;
+			let entryIds: string[] | undefined;
 
 			if (selectedEntryIds.size > 0) {
-				const selectedIndices = Array.from(selectedEntryIds)
+				const selectedEntries = playlistInfo.entries
+					.filter((entry) => selectedEntryIds.has(entry.id))
+					.sort((a, b) => a.index - b.index);
+				const selectedIndices = selectedEntries
 					.map(
-						(id) =>
-							playlistInfo.entries.find((entry) => entry.id === id)?.index,
+						(entry) => entry.index,
 					)
-					.filter((idx): idx is number => idx !== undefined)
 					.sort((a, b) => a - b);
 
-				if (selectedIndices.length === 0) {
+				if (selectedEntries.length === 0) {
 					toast.error(t("playlist.noEntriesSelected"));
 					return;
 				}
 
+				entryIds = selectedEntries.map((entry) => entry.id);
 				start = selectedIndices[0];
 				end = selectedIndices.at(-1);
 			} else {
@@ -536,6 +539,7 @@ export function DownloadDialog({ onDownloadsChanged }: DownloadDialogProps) {
 				audioFormat: downloadType === "audio" ? "mp3" : undefined,
 				startIndex: start,
 				endIndex: end,
+				entryIds,
 				settings: readOrpcDownloadSettings(),
 			});
 

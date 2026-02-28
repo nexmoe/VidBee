@@ -170,6 +170,7 @@ export interface PlaylistDownloadOptions {
   url: string
   type: 'video' | 'audio'
   format?: string
+  entryIds?: string[]
   startIndex?: number
   endIndex?: number
   filenameFormat?: string

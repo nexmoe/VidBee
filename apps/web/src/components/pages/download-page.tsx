@@ -2,6 +2,10 @@ import { Button } from "@vidbee/ui/components/ui/button";
 import { CardContent, CardHeader } from "@vidbee/ui/components/ui/card";
 import { Checkbox } from "@vidbee/ui/components/ui/checkbox";
 import {
+	buildFilePathCandidates,
+	normalizeSavedFileName,
+} from "@vidbee/downloader-core/download-file";
+import {
 	Dialog,
 	DialogContent,
 	DialogDescription,
@@ -21,6 +25,7 @@ import { Trans, useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { eventsUrl, orpcClient } from "../../lib/orpc-client";
 import { readOrpcDownloadSettings } from "../../lib/orpc-download-settings";
+import { readWebSettings } from "../../lib/web-settings";
 import { DownloadDialog } from "../download/download-dialog";
 import { DownloadItem } from "../download/download-item";
 import { PlaylistDownloadGroup } from "../download/playlist-download-group";
@@ -47,6 +52,16 @@ const isEditableTarget = (target: EventTarget | null): boolean => {
 	}
 	const tagName = target.tagName;
 	return tagName === "INPUT" || tagName === "TEXTAREA" || tagName === "SELECT";
+};
+
+const resolveDownloadExtension = (record: DownloadRecord): string => {
+	const savedExt = normalizeSavedFileName(record.savedFileName)
+		? record.savedFileName?.split(".").at(-1)?.toLowerCase()
+		: undefined;
+	if (savedExt) {
+		return savedExt;
+	}
+	return record.type === "audio" ? "mp3" : "mp4";
 };
 
 export const DownloadPage = () => {
@@ -345,6 +360,39 @@ export const DownloadPage = () => {
 		setConfirmBusy(true);
 		try {
 			if (confirmAction.type === "delete-selected") {
+				const selectedHistoryRecords = allRecords.filter(
+					(record) =>
+						confirmAction.ids.includes(record.id) && record.entryType === "history",
+				);
+
+				if (alsoDeleteFiles) {
+					const fallbackPath = readWebSettings().downloadPath.trim();
+					const candidatePaths = new Set<string>();
+
+					for (const record of selectedHistoryRecords) {
+						const downloadPath = record.downloadPath?.trim() || fallbackPath;
+						if (!(downloadPath && record.title)) {
+							continue;
+						}
+						const extension = resolveDownloadExtension(record);
+						const candidates = buildFilePathCandidates(
+							downloadPath,
+							record.title,
+							extension,
+							record.savedFileName,
+						);
+						for (const candidate of candidates) {
+							candidatePaths.add(candidate);
+						}
+					}
+
+					await Promise.allSettled(
+						Array.from(candidatePaths).map(async (candidate) => {
+							await orpcClient.files.deleteFile({ path: candidate });
+						}),
+					);
+				}
+
 				const result = await orpcClient.history.removeItems({
 					ids: confirmAction.ids,
 				});

@@ -7,6 +7,8 @@ import { downloaderCore } from './lib/downloader'
 import { rpcRouter } from './lib/rpc-router'
 import { SseHub } from './lib/sse'
 
+const MAX_PROXY_IMAGE_BYTES = 10 * 1024 * 1024
+
 const parseRemoteImageUrl = (value: string): URL | null => {
   try {
     const parsed = new URL(value)
@@ -81,7 +83,42 @@ export const createApiServer = async () => {
       return reply.code(415).send({ message: 'Remote resource is not an image.' })
     }
 
-    const imageBuffer = Buffer.from(await response.arrayBuffer())
+    const contentLengthHeader = response.headers.get('content-length')
+    if (contentLengthHeader) {
+      const declaredSize = Number.parseInt(contentLengthHeader, 10)
+      if (Number.isFinite(declaredSize) && declaredSize > MAX_PROXY_IMAGE_BYTES) {
+        return reply.code(413).send({ message: 'Remote image is too large.' })
+      }
+    }
+
+    if (!response.body) {
+      return reply.code(502).send({ message: 'Remote image response body is empty.' })
+    }
+
+    const reader = response.body.getReader()
+    const chunks: Buffer[] = []
+    let totalBytes = 0
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) {
+        break
+      }
+
+      if (!value) {
+        continue
+      }
+
+      totalBytes += value.byteLength
+      if (totalBytes > MAX_PROXY_IMAGE_BYTES) {
+        await reader.cancel()
+        return reply.code(413).send({ message: 'Remote image is too large.' })
+      }
+
+      chunks.push(Buffer.from(value))
+    }
+
+    const imageBuffer = Buffer.concat(chunks, totalBytes)
     const cacheControl = response.headers.get('cache-control')
     const etag = response.headers.get('etag')
     const lastModified = response.headers.get('last-modified')

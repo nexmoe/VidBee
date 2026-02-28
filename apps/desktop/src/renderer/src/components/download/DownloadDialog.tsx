@@ -548,19 +548,20 @@ export function DownloadDialog({
       // Use manual selection if available, otherwise use range
       let startIndex: number | undefined
       let endIndex: number | undefined
+      let entryIds: string[] | undefined
 
       if (selectedEntryIds.size > 0) {
-        // Manual selection mode: find min and max indices
-        const selectedIndices = Array.from(selectedEntryIds)
-          .map((id) => info.entries.find((e) => e.id === id)?.index)
-          .filter((idx): idx is number => idx !== undefined)
-          .sort((a, b) => a - b)
+        const selectedEntries = info.entries
+          .filter((entry) => selectedEntryIds.has(entry.id))
+          .sort((a, b) => a.index - b.index)
+        const selectedIndices = selectedEntries.map((entry) => entry.index).sort((a, b) => a - b)
 
-        if (selectedIndices.length === 0) {
+        if (selectedEntries.length === 0) {
           toast.error(t('playlist.noEntriesSelected'))
           return
         }
 
+        entryIds = selectedEntries.map((entry) => entry.id)
         startIndex = selectedIndices[0]
         endIndex = selectedIndices.at(-1)
       } else {
@@ -588,6 +589,7 @@ export function DownloadDialog({
         format,
         startIndex,
         endIndex,
+        entryIds,
         customDownloadPath: playlistCustomDownloadPath.trim() || undefined
       })
 
