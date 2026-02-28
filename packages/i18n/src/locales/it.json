@@ -378,7 +378,8 @@
     "startIndex": "Inizio (1)",
     "title": "Scarica Playlist",
     "totalVideos": "Video totali: {{count}}",
-    "untitled": "Playlist senza titolo"
+    "untitled": "Playlist senza titolo",
+    "fetchingInfo": "Recupero informazioni playlist..."
   },
   "settings": {
     "aboutTab": "Informazioni",

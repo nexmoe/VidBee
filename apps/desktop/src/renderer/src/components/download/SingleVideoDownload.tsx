@@ -13,13 +13,17 @@ import {
 import { Separator } from '@renderer/components/ui/separator'
 import { cn } from '@renderer/lib/utils'
 import type { OneClickQualityPreset, VideoFormat, VideoInfo } from '@shared/types'
+import {
+  DOWNLOAD_FEEDBACK_ISSUE_TITLE,
+  FeedbackLinkButtons
+} from '@vidbee/ui/components/ui/feedback-link-buttons'
 import { useAtom } from 'jotai'
 import { AlertCircle, ExternalLink, Loader2, Settings2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useCachedThumbnail } from '../../hooks/use-cached-thumbnail'
 import { settingsAtom } from '../../store/settings'
-import { DOWNLOAD_FEEDBACK_ISSUE_TITLE, FeedbackLinkButtons } from '../feedback/FeedbackLinks'
+import { useAppInfo } from '../feedback/FeedbackLinks'
 
 export interface SingleVideoState {
   title: string
@@ -445,6 +449,7 @@ export function SingleVideoDownload({
   const { t } = useTranslation()
   const cachedThumbnail = useCachedThumbnail(videoInfo?.thumbnail)
   const [showAdvanced, setShowAdvanced] = useState(false)
+  const appInfo = useAppInfo()
 
   const { title, activeTab, selectedContainer, selectedCodec, selectedFps } = state
   const displayTitle = title || videoInfo?.title || t('download.fetchingVideoInfo')
@@ -623,6 +628,7 @@ export function SingleVideoDownload({
             </span>
             <div className="flex flex-wrap gap-1.5">
               <FeedbackLinkButtons
+                appInfo={appInfo}
                 buttonClassName="h-5 gap-1 px-1.5 text-[10px]"
                 buttonSize="sm"
                 buttonVariant="outline"

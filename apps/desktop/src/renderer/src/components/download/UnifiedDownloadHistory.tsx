@@ -10,8 +10,12 @@ import {
   DialogTitle
 } from '@renderer/components/ui/dialog'
 import { cn } from '@renderer/lib/utils'
+import { DownloadEmptyState } from '@vidbee/ui/components/ui/download-empty-state'
+import {
+  DownloadFilterBar,
+  type DownloadFilterItem
+} from '@vidbee/ui/components/ui/download-filter-bar'
 import { useAtomValue, useSetAtom } from 'jotai'
-import { History as HistoryIcon } from 'lucide-react'
 import { useEffect, useId, useMemo, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -155,7 +159,7 @@ export function UnifiedDownloadHistory({
     [filteredRecords]
   )
 
-  const filters: Array<{ key: StatusFilter; label: string; count: number }> = [
+  const filters: DownloadFilterItem<StatusFilter>[] = [
     { key: 'all', label: t('download.all'), count: downloadStats.total },
     { key: 'active', label: t('download.active'), count: downloadStats.active },
     { key: 'completed', label: t('download.completed'), count: downloadStats.completed },
@@ -446,42 +450,17 @@ export function UnifiedDownloadHistory({
   return (
     <div className={cn('flex h-full flex-col')}>
       <CardHeader className="z-50 gap-4 bg-background p-0 px-6 py-4 backdrop-blur">
-        <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-          <div className="flex flex-wrap items-center gap-2">
-            {filters.map((filter) => {
-              const isActive = statusFilter === filter.key
-              return (
-                <Button
-                  className={
-                    isActive
-                      ? 'h-8 rounded-full px-3 shadow-sm'
-                      : 'h-8 rounded-full border border-border/60 px-3'
-                  }
-                  key={filter.key}
-                  onClick={() => setStatusFilter(filter.key)}
-                  size="sm"
-                  variant={isActive ? 'secondary' : 'ghost'}
-                >
-                  <span>{filter.label}</span>
-                  <span
-                    className={cn(
-                      'ml-1 min-w-5 rounded-full px-1 font-medium text-neutral-900 text-xs',
-                      isActive ? 'bg-neutral-100' : 'bg-neutral-200'
-                    )}
-                  >
-                    {filter.count}
-                  </span>
-                </Button>
-              )
-            })}
-          </div>
-          <div className="flex items-center gap-2">
+        <DownloadFilterBar
+          actions={
             <DownloadDialog
               onOpenSettings={onOpenSettings}
               onOpenSupportedSites={onOpenSupportedSites}
             />
-          </div>
-        </div>
+          }
+          activeFilter={statusFilter}
+          filters={filters}
+          onFilterChange={setStatusFilter}
+        />
       </CardHeader>
       <ScrollArea className="flex-1 overflow-y-auto">
         <CardContent className="w-full space-y-3 overflow-x-hidden p-0">
@@ -522,10 +501,7 @@ export function UnifiedDownloadHistory({
             </div>
           )}
           {filteredRecords.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-border/60 border-dashed px-6 py-10 text-center text-muted-foreground">
-              <HistoryIcon className="h-10 w-10 opacity-50" />
-              <p className="font-medium text-sm">{t('download.noItems')}</p>
-            </div>
+            <DownloadEmptyState message={t('download.noItems')} />
           ) : (
             <div className="w-full pb-4">
               {groupedView.order.map((item) => {

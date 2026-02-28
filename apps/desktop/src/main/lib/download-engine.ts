@@ -26,6 +26,7 @@ import { scopedLoggers } from '../utils/logger'
 import { resolvePathWithHome } from '../utils/path-helpers'
 import {
   appendJsRuntimeArgs,
+  appendYouTubeSafeExtractorArgs,
   buildVideoInfoArgs,
   formatYtDlpCommand,
   resolveFfmpegLocation
@@ -47,7 +48,6 @@ import {
 } from './path-resolver'
 import { clampPercent, estimateProgressParts, isMuxedFormat } from './progress-utils'
 import { applyShareWatermark } from './watermark-utils'
-import { appendYouTubeSafeExtractorArgs } from './youtube-extractor-args'
 import { ytdlpManager } from './ytdlp-manager'
 
 interface DownloadProcess {
@@ -395,13 +395,19 @@ class DownloadEngine extends EventEmitter {
       }
     }
 
-    const requestedStart = Math.max((options.startIndex ?? 1) - 1, 0)
-    const requestedEnd = options.endIndex
-      ? Math.min(options.endIndex - 1, totalEntries - 1)
-      : totalEntries - 1
-    const rangeStart = Math.min(requestedStart, requestedEnd)
-    const rangeEnd = Math.max(requestedStart, requestedEnd)
-    const rawEntries = playlistInfo.entries.slice(rangeStart, rangeEnd + 1)
+    let rawEntries: PlaylistInfo['entries']
+    if (options.entryIds && options.entryIds.length > 0) {
+      const selectedIdSet = new Set(options.entryIds)
+      rawEntries = playlistInfo.entries.filter((entry) => selectedIdSet.has(entry.id))
+    } else {
+      const requestedStart = Math.max((options.startIndex ?? 1) - 1, 0)
+      const requestedEnd = options.endIndex
+        ? Math.min(options.endIndex - 1, totalEntries - 1)
+        : totalEntries - 1
+      const rangeStart = Math.min(requestedStart, requestedEnd)
+      const rangeEnd = Math.max(requestedStart, requestedEnd)
+      rawEntries = playlistInfo.entries.slice(rangeStart, rangeEnd + 1)
+    }
     const settings = settingsManager.getAll()
     const resolvedDownloadPath =
       options.customDownloadPath?.trim() ||
@@ -496,8 +502,8 @@ class DownloadEngine extends EventEmitter {
       playlistTitle: playlistInfo.title,
       type: options.type,
       totalCount: selectionSize,
-      startIndex: selectedEntries[0]?.index ?? rangeStart + 1,
-      endIndex: selectedEntries.at(-1)?.index ?? rangeEnd + 1,
+      startIndex: selectedEntries[0]?.index ?? 0,
+      endIndex: selectedEntries.at(-1)?.index ?? 0,
       entries: downloadEntries
     }
   }

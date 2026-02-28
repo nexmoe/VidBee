@@ -378,7 +378,8 @@
     "startIndex": "Début (1)",
     "title": "Télécharger la Playlist",
     "totalVideos": "Nombre total de vidéos : {{count}}",
-    "untitled": "Liste de lecture sans titre"
+    "untitled": "Liste de lecture sans titre",
+    "fetchingInfo": "Récupération des informations de la playlist..."
   },
   "settings": {
     "aboutTab": "À propos",

@@ -11,14 +11,19 @@ files:
   - '!**/.vscode/*'
   - '!**/.context/**'
   - '!**/.github/**'
+  - '!node_modules/@vidbee/downloader-core{,/**}'
+  - '!node_modules/.pnpm/@vidbee+downloader-core@*/**'
   - '!src/*'
   - '!electron.vite.config.{js,ts,mjs,cjs}'
   - '!{.eslintcache,eslint.config.mjs,dev-app-update.yml}'
   - '!changelogs/**'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
-asarUnpack:
-  - resources/**
+extraResources:
+  - from: resources
+    to: resources
+    filter:
+      - '**/*'
 win:
   executableName: vidbee
 nsis:

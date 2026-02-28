@@ -7,7 +7,7 @@ import { appSidebarIcons } from "@vidbee/ui/components/ui/app-sidebar-icons";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
-type AppPage = "about" | "download";
+type AppPage = "about" | "download" | "settings";
 
 interface AppShellProps {
 	children: ReactNode;
@@ -53,11 +53,14 @@ export const AppShell = ({ children, page }: AppShellProps) => {
 	const bottomItems: AppSidebarItem[] = [
 		{
 			id: "settings",
-			disabled: true,
+			active: page === "settings",
 			icon: appSidebarIcons.settings,
 			label: t("menu.preferences"),
 			showLabel: false,
 			showTooltip: true,
+			onClick: () => {
+				void navigate({ to: "/settings" });
+			},
 		},
 		{
 			id: "about",

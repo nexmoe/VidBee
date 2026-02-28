@@ -1,7 +1,3 @@
-import {
-  DOWNLOAD_FEEDBACK_ISSUE_TITLE,
-  FeedbackLinkButtons
-} from '@renderer/components/feedback/FeedbackLinks'
 import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
 import { Checkbox } from '@renderer/components/ui/checkbox'
@@ -24,6 +20,10 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@renderer/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import type { DownloadItem as DownloadItemPayload } from '@shared/types'
+import {
+  DOWNLOAD_FEEDBACK_ISSUE_TITLE,
+  FeedbackLinkButtons
+} from '@vidbee/ui/components/ui/feedback-link-buttons'
 import { useAtomValue, useSetAtom } from 'jotai'
 import {
   AlertCircle,
@@ -52,6 +52,7 @@ import {
   removeHistoryRecordAtom
 } from '../../store/downloads'
 import { settingsAtom } from '../../store/settings'
+import { useAppInfo } from '../feedback/FeedbackLinks'
 
 const tryFileOperation = async (
   paths: string[],
@@ -188,6 +189,7 @@ const formatDateShort = (timestamp?: number) => {
 
 export function DownloadItem({ download, isSelected = false, onToggleSelect }: DownloadItemProps) {
   const { t } = useTranslation()
+  const appInfo = useAppInfo()
   const settings = useAtomValue(settingsAtom)
   const addDownload = useSetAtom(addDownloadAtom)
   const removeDownload = useSetAtom(removeDownloadAtom)
@@ -453,7 +455,6 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
       } else {
         removeDownload(download.id)
       }
-      toast.success(t('notifications.itemRemoved'))
     } catch (error) {
       console.error('Failed to delete file:', error)
       toast.error(t('notifications.removeFailed'))
@@ -468,7 +469,6 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
       } else {
         removeDownload(download.id)
       }
-      toast.success(t('notifications.itemRemoved'))
     } catch (error) {
       console.error('Failed to remove record:', error)
       toast.error(t('notifications.removeFailed'))
@@ -1110,6 +1110,7 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
                       </Button>
                     )}
                     <FeedbackLinkButtons
+                      appInfo={appInfo}
                       buttonClassName="h-6 gap-1 px-1.5 text-[10px]"
                       buttonSize="sm"
                       buttonVariant="outline"

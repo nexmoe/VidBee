@@ -1,7 +1,10 @@
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
-import "../lib/i18n";
+import { useEffect } from "react";
+import { Toaster } from "sonner";
+import { i18n } from "../lib/i18n";
+import { applyThemeToDocument, readWebSettings } from "../lib/web-settings";
 
 import appCss from "../styles.css?url";
 
@@ -36,7 +39,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 				<HeadContent />
 			</head>
 			<body className="bg-background text-foreground" suppressHydrationWarning>
+				<RootHydrationEffects />
 				{children}
+				<Toaster richColors={true} />
 				<TanStackDevtools
 					config={{
 						position: "bottom-right",
@@ -52,4 +57,14 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 			</body>
 		</html>
 	);
+}
+
+function RootHydrationEffects() {
+	useEffect(() => {
+		const settings = readWebSettings();
+		applyThemeToDocument(settings.theme);
+		void i18n.changeLanguage(settings.language);
+	}, []);
+
+	return null;
 }

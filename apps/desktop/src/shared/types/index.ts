@@ -1,5 +1,4 @@
-import type { LanguageCode } from '../languages'
-import { defaultLanguageCode } from '../languages'
+import { defaultLanguageCode, type LanguageCode } from '@vidbee/i18n/languages'
 
 // Download related types
 export interface VideoFormat {
@@ -171,6 +170,7 @@ export interface PlaylistDownloadOptions {
   url: string
   type: 'video' | 'audio'
   format?: string
+  entryIds?: string[]
   startIndex?: number
   endIndex?: number
   filenameFormat?: string

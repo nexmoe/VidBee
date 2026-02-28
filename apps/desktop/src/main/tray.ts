@@ -1,4 +1,4 @@
-import { type LanguageCode, normalizeLanguageCode } from '@shared/languages'
+import { type LanguageCode, normalizeLanguageCode } from '@vidbee/i18n/languages'
 import { app, BrowserWindow, Menu, nativeImage, Tray } from 'electron'
 import appIcon from '../../resources/icon.png?asset'
 import trayIcon from '../../resources/tray-icon.png?asset'

@@ -41,6 +41,7 @@ type LatestVersionState =
 const AUTO_UPDATE_KEY = "vidbee.web.auto-update";
 const PREVIEW_CHANNEL_KEY = "vidbee.web.preview-channel";
 const SHARE_TARGET_URL = "https://vidbee.org";
+const APP_VERSION = __APP_VERSION__;
 
 const readStoredBoolean = (key: string, fallbackValue: boolean): boolean => {
 	if (typeof window === "undefined") {
@@ -68,7 +69,7 @@ const writeStoredBoolean = (key: string, value: boolean): void => {
 
 export const AboutPage = () => {
 	const { t } = useTranslation();
-	const [appVersion, setAppVersion] = useState("-");
+	const [appVersion] = useState(APP_VERSION);
 	const [osVersion, setOsVersion] = useState("-");
 	const [autoUpdate, setAutoUpdate] = useState(() =>
 		readStoredBoolean(AUTO_UPDATE_KEY, true),
@@ -83,11 +84,9 @@ export const AboutPage = () => {
 	useEffect(() => {
 		const loadStatus = async () => {
 			try {
-				const result = await orpcClient.status();
-				setAppVersion(result.version || "-");
+				await orpcClient.status();
 				setOsVersion(window.navigator.userAgent || "-");
 			} catch {
-				setAppVersion("-");
 				setOsVersion("-");
 			}
 		};

@@ -1,5 +1,6 @@
 {
   "name": "web",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "imports": {
@@ -25,12 +26,15 @@
     "@tanstack/react-start": "^1.132.0",
     "@tanstack/router-plugin": "^1.132.0",
     "@vidbee/downloader-core": "workspace:*",
+    "@vidbee/i18n": "workspace:*",
     "@vidbee/ui": "workspace:*",
+    "flag-icons": "^7.5.0",
     "i18next": "^25.5.3",
     "lucide-react": "^0.545.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-i18next": "^16.0.0",
+    "sonner": "^2.0.7",
     "tailwindcss": "^4.1.18"
   },
   "devDependencies": {

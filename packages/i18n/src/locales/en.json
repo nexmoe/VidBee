@@ -378,7 +378,8 @@
     "startIndex": "Start (1)",
     "title": "Download Playlist",
     "totalVideos": "Total videos: {{count}}",
-    "untitled": "Untitled playlist"
+    "untitled": "Untitled playlist",
+    "fetchingInfo": "Fetching playlist information..."
   },
   "settings": {
     "aboutTab": "About",
