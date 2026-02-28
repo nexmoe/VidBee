@@ -78,6 +78,11 @@
     "yt-dlp-wrap-plus": "^2.3.20",
     "zod": "^4.1.11"
   },
+  "dependenciesMeta": {
+    "@vidbee/downloader-core": {
+      "injected": true
+    }
+  },
   "devDependencies": {
     "@biomejs/biome": "2.3.13",
     "@electron-toolkit/tsconfig": "^2.0.0",

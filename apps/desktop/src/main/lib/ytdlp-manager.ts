@@ -45,8 +45,12 @@ class YtDlpManager {
     if (process.env.NODE_ENV === 'development') {
       return path.join(process.cwd(), 'resources')
     }
-    // In production, unpacked binaries live under app.asar.unpacked/resources
-    return path.join(process.resourcesPath, 'app.asar.unpacked', 'resources')
+    // In production, resources may be bundled under app.asar.unpacked or extraResources.
+    const asarUnpackedPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'resources')
+    if (fs.existsSync(asarUnpackedPath)) {
+      return asarUnpackedPath
+    }
+    return path.join(process.resourcesPath, 'resources')
   }
 
   private async findOrDownloadYtDlp(): Promise<string> {
@@ -112,13 +116,13 @@ class YtDlpManager {
     // For Windows, we do NOT download at runtime. Require bundling.
     if (platform === 'win32') {
       throw new Error(
-        'yt-dlp not found. Ensure resources/yt-dlp.exe is bundled (asarUnpack) in the build.'
+        'yt-dlp not found. Ensure resources/yt-dlp.exe is bundled in the build output.'
       )
     }
 
     // For macOS/Linux, instruct user to bundle or install system yt-dlp.
     throw new Error(
-      'yt-dlp not found. Bundle it under resources/ (asarUnpack) or install yt-dlp in system PATH.'
+      'yt-dlp not found. Bundle it under resources/ in the build output or install yt-dlp in system PATH.'
     )
   }
 

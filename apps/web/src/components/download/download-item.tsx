@@ -265,12 +265,12 @@ export function DownloadItem({
 
 	const getFilePathCandidates = (): string[] => {
 		const downloadPath = getEffectiveDownloadPath();
-		if (!(downloadPath && download.title)) {
+		if (!downloadPath) {
 			return [];
 		}
 		return buildFilePathCandidates(
 			downloadPath,
-			download.title,
+			download.title ?? "",
 			resolvedExtension,
 			download.savedFileName,
 		);
@@ -325,7 +325,7 @@ export function DownloadItem({
 		const checkFileExists = async () => {
 			const downloadPath =
 				download.downloadPath?.trim() || readWebSettings().downloadPath.trim();
-			if (!(downloadPath && download.title)) {
+			if (!downloadPath) {
 				if (!isMounted) {
 					return;
 				}
@@ -336,7 +336,7 @@ export function DownloadItem({
 
 			const candidates = buildFilePathCandidates(
 				downloadPath,
-				download.title,
+				download.title ?? "",
 				resolvedExtension,
 				download.savedFileName,
 			);

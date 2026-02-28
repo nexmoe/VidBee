@@ -23,7 +23,11 @@ class FfmpegManager {
     if (process.env.NODE_ENV === 'development') {
       return path.join(process.cwd(), 'resources')
     }
-    return path.join(process.resourcesPath, 'app.asar.unpacked', 'resources')
+    const asarUnpackedPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'resources')
+    if (fs.existsSync(asarUnpackedPath)) {
+      return asarUnpackedPath
+    }
+    return path.join(process.resourcesPath, 'resources')
   }
 
   private async findFfmpegBinary(): Promise<string> {
@@ -113,7 +117,7 @@ class FfmpegManager {
     }
 
     throw new Error(
-      'ffmpeg/ffprobe not found. Bundle them under resources/ffmpeg/ (asarUnpack) or set FFMPEG_PATH to a directory containing both.'
+      'ffmpeg/ffprobe not found. Bundle them under resources/ffmpeg/ in the build output or set FFMPEG_PATH to a directory containing both.'
     )
   }
 }

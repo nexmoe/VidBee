@@ -192,6 +192,9 @@ importers:
       zod:
         specifier: ^4.1.11
         version: 4.3.6
+    dependenciesMeta:
+      '@vidbee/downloader-core':
+        injected: true
     devDependencies:
       '@biomejs/biome':
         specifier: 2.3.13

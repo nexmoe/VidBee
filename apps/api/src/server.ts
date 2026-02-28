@@ -1,4 +1,6 @@
 import type { ServerResponse } from 'node:http'
+import { lookup } from 'node:dns/promises'
+import net from 'node:net'
 import cors from '@fastify/cors'
 import { RPCHandler } from '@orpc/server/fastify'
 import type { DownloadTask } from '@vidbee/downloader-core'
@@ -8,6 +10,82 @@ import { rpcRouter } from './lib/rpc-router'
 import { SseHub } from './lib/sse'
 
 const MAX_PROXY_IMAGE_BYTES = 10 * 1024 * 1024
+const MAX_PROXY_REDIRECTS = 5
+
+const isPrivateIpv4 = (ip: string): boolean => {
+  const octets = ip.split('.').map((value) => Number.parseInt(value, 10))
+  if (octets.length !== 4 || octets.some((value) => Number.isNaN(value))) {
+    return false
+  }
+
+  const [a, b] = octets
+  if (a === 10) {
+    return true
+  }
+  if (a === 127) {
+    return true
+  }
+  if (a === 169 && b === 254) {
+    return true
+  }
+  if (a === 172 && b >= 16 && b <= 31) {
+    return true
+  }
+  if (a === 192 && b === 168) {
+    return true
+  }
+  return false
+}
+
+const isPrivateIpv6 = (ip: string): boolean => {
+  const normalized = ip.toLowerCase()
+  if (normalized === '::1') {
+    return true
+  }
+  if (normalized.startsWith('fc') || normalized.startsWith('fd')) {
+    return true
+  }
+  if (normalized.startsWith('fe80:')) {
+    return true
+  }
+  return false
+}
+
+const isBlockedHost = async (url: URL): Promise<boolean> => {
+  const hostname = url.hostname.trim().toLowerCase()
+  if (!hostname) {
+    return true
+  }
+
+  if (hostname === 'localhost' || hostname.endsWith('.localhost') || hostname === '0.0.0.0') {
+    return true
+  }
+
+  if (net.isIP(hostname) === 4) {
+    return isPrivateIpv4(hostname)
+  }
+  if (net.isIP(hostname) === 6) {
+    return isPrivateIpv6(hostname)
+  }
+
+  try {
+    const records = await lookup(hostname, { all: true, verbatim: true })
+    if (records.length === 0) {
+      return true
+    }
+    for (const record of records) {
+      if (record.family === 4 && isPrivateIpv4(record.address)) {
+        return true
+      }
+      if (record.family === 6 && isPrivateIpv6(record.address)) {
+        return true
+      }
+    }
+    return false
+  } catch {
+    return true
+  }
+}
 
 const parseRemoteImageUrl = (value: string): URL | null => {
   try {
@@ -62,13 +140,38 @@ export const createApiServer = async () => {
       return reply.code(400).send({ message: 'Invalid remote image URL.' })
     }
 
-    let response: Response
-    try {
-      response = await fetch(parsedUrl.toString(), {
-        signal: AbortSignal.timeout(15_000),
-        redirect: 'follow'
-      })
-    } catch {
+    let response: Response | null = null
+    let currentUrl = parsedUrl
+
+    for (let redirectCount = 0; redirectCount <= MAX_PROXY_REDIRECTS; redirectCount++) {
+      if (await isBlockedHost(currentUrl)) {
+        return reply.code(400).send({ message: 'Remote host is not allowed.' })
+      }
+
+      try {
+        response = await fetch(currentUrl.toString(), {
+          signal: AbortSignal.timeout(15_000),
+          redirect: 'manual'
+        })
+      } catch {
+        return reply.code(502).send({ message: 'Failed to fetch remote image.' })
+      }
+
+      const locationHeader = response.headers.get('location')
+      const isRedirect =
+        response.status >= 300 &&
+        response.status < 400 &&
+        typeof locationHeader === 'string' &&
+        locationHeader.length > 0
+      if (!isRedirect) {
+        break
+      }
+
+      currentUrl = new URL(locationHeader, currentUrl)
+      response.body?.cancel()
+    }
+
+    if (!response) {
       return reply.code(502).send({ message: 'Failed to fetch remote image.' })
     }
 

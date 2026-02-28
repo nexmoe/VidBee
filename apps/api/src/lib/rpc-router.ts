@@ -42,6 +42,14 @@ const pathExists = async (targetPath: string): Promise<boolean> => {
   }
 }
 
+const isPathWithinBase = (basePath: string, targetPath: string): boolean => {
+  const normalizedBase = path.resolve(basePath)
+  const normalizedTarget = path.resolve(targetPath)
+  const relativePath = path.relative(normalizedBase, normalizedTarget)
+
+  return relativePath !== '' && !relativePath.startsWith('..') && !path.isAbsolute(relativePath)
+}
+
 const openFileWithSystem = async (targetPath: string): Promise<boolean> => {
   if (process.platform === 'darwin') {
     return runProcess('open', [targetPath])
@@ -278,7 +286,21 @@ export const rpcRouter = os.router({
     }),
     deleteFile: os.files.deleteFile.handler(async ({ input }) => {
       try {
+        const settings = await webSettingsStore.get()
+        const managedDownloadPath = settings.downloadPath.trim()
+        if (!managedDownloadPath) {
+          throw new ORPCError('FORBIDDEN', {
+            message: 'Deleting files is disabled until a download path is configured.'
+          })
+        }
+
         const resolvedPath = path.resolve(input.path)
+        if (!isPathWithinBase(managedDownloadPath, resolvedPath)) {
+          throw new ORPCError('FORBIDDEN', {
+            message: 'Refusing to delete files outside the managed download directory.'
+          })
+        }
+
         const exists = await pathExists(resolvedPath)
         if (!exists) {
           return { success: false }
