@@ -378,7 +378,8 @@
     "startIndex": "開始（1）",
     "title": "プレイリストをダウンロード",
     "totalVideos": "合計動画: {{count}}",
-    "untitled": "無題のプレイリスト"
+    "untitled": "無題のプレイリスト",
+    "fetchingInfo": "プレイリスト情報を取得中..."
   },
   "settings": {
     "aboutTab": "について",

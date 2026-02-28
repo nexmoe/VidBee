@@ -378,7 +378,8 @@
     "startIndex": "Başlangıç (1)",
     "title": "Oynatma listesini indirin",
     "totalVideos": "Toplam video: {{count}}",
-    "untitled": "Adsız oynatma listesi"
+    "untitled": "Adsız oynatma listesi",
+    "fetchingInfo": "Oynatma listesi bilgileri alınıyor..."
   },
   "settings": {
     "aboutTab": "Hakkında",

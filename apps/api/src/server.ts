@@ -7,11 +7,26 @@ import { downloaderCore } from './lib/downloader'
 import { rpcRouter } from './lib/rpc-router'
 import { SseHub } from './lib/sse'
 
+const parseRemoteImageUrl = (value: string): URL | null => {
+  try {
+    const parsed = new URL(value)
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return null
+    }
+
+    return parsed
+  } catch {
+    return null
+  }
+}
+
 export const createApiServer = async () => {
   await downloaderCore.initialize()
+  const isDev = process.env.NODE_ENV !== 'production'
 
   const fastify = Fastify({
-    logger: true
+    logger: true,
+    disableRequestLogging: isDev
   })
 
   await fastify.register(cors, {
@@ -32,6 +47,56 @@ export const createApiServer = async () => {
 
   fastify.get('/health', async () => {
     return { ok: true }
+  })
+
+  fastify.get<{ Querystring: { url?: string } }>('/images/proxy', async (request, reply) => {
+    const sourceUrl = request.query.url?.trim()
+    if (!sourceUrl) {
+      return reply.code(400).send({ message: 'Missing url query parameter.' })
+    }
+
+    const parsedUrl = parseRemoteImageUrl(sourceUrl)
+    if (!parsedUrl) {
+      return reply.code(400).send({ message: 'Invalid remote image URL.' })
+    }
+
+    let response: Response
+    try {
+      response = await fetch(parsedUrl.toString(), {
+        signal: AbortSignal.timeout(15_000),
+        redirect: 'follow'
+      })
+    } catch {
+      return reply.code(502).send({ message: 'Failed to fetch remote image.' })
+    }
+
+    if (!response.ok) {
+      return reply.code(502).send({
+        message: `Remote image request failed with status ${response.status}.`
+      })
+    }
+
+    const contentType = response.headers.get('content-type')?.toLowerCase() ?? ''
+    if (!contentType.startsWith('image/')) {
+      return reply.code(415).send({ message: 'Remote resource is not an image.' })
+    }
+
+    const imageBuffer = Buffer.from(await response.arrayBuffer())
+    const cacheControl = response.headers.get('cache-control')
+    const etag = response.headers.get('etag')
+    const lastModified = response.headers.get('last-modified')
+
+    reply.header('Content-Type', contentType)
+    reply.header('Content-Length', imageBuffer.length.toString())
+    reply.header('Cache-Control', cacheControl ?? 'public, max-age=3600')
+    if (etag) {
+      reply.header('ETag', etag)
+    }
+    if (lastModified) {
+      reply.header('Last-Modified', lastModified)
+    }
+
+    return reply.send(imageBuffer)
   })
 
   fastify.get('/events', async (request, reply) => {

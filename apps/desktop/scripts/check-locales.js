@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url'
 
 const currentFilePath = fileURLToPath(import.meta.url)
 const currentDirPath = path.dirname(currentFilePath)
-const localesDir = path.join(currentDirPath, '..', 'src', 'renderer', 'src', 'locales')
+const localesDir = path.join(currentDirPath, '..', '..', '..', 'packages', 'i18n', 'src', 'locales')
 const baseLocaleFile = 'en.json'
 
 const readJson = (filePath) => {

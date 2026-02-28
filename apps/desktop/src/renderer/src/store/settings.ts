@@ -1,5 +1,5 @@
+import { normalizeLanguageCode } from '@vidbee/i18n/languages'
 import { atom } from 'jotai'
-import { normalizeLanguageCode } from '../../../shared/languages'
 import type { AppSettings } from '../../../shared/types'
 import { defaultSettings } from '../../../shared/types'
 import i18n from '../i18n'

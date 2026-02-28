@@ -5,8 +5,12 @@ import viteReact from "@vitejs/plugin-react";
 import Icons from "unplugin-icons/vite";
 import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
+import packageJson from "./package.json";
 
 const config = defineConfig({
+	define: {
+		__APP_VERSION__: JSON.stringify(packageJson.version),
+	},
 	plugins: [
 		devtools({
 			eventBusConfig: {
@@ -32,7 +36,14 @@ const config = defineConfig({
 				target: "http://localhost:3100",
 				changeOrigin: true,
 			},
+			"/images": {
+				target: "http://localhost:3100",
+				changeOrigin: true,
+			},
 		},
+	},
+	ssr: {
+		noExternal: ["@vidbee/i18n"],
 	},
 });
 

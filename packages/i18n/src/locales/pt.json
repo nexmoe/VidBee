@@ -378,7 +378,8 @@
     "startIndex": "Início (1)",
     "title": "Baixar Playlist",
     "totalVideos": "Total de vídeos: {{count}}",
-    "untitled": "Playlist sem título"
+    "untitled": "Playlist sem título",
+    "fetchingInfo": "Buscando informações da playlist..."
   },
   "settings": {
     "aboutTab": "Sobre",

@@ -19,8 +19,12 @@ import {
 import { Switch } from '@renderer/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@renderer/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
-import { type LanguageCode, languageList, normalizeLanguageCode } from '@shared/languages'
 import type { OneClickQualityPreset } from '@shared/types'
+import {
+  buildBrowserCookiesSetting,
+  parseBrowserCookiesSetting
+} from '@vidbee/downloader-core/browser-cookies-setting'
+import { type LanguageCode, languageList, normalizeLanguageCode } from '@vidbee/i18n/languages'
 import { useAtom, useSetAtom } from 'jotai'
 import { AlertTriangle } from 'lucide-react'
 import { useTheme } from 'next-themes'
@@ -31,33 +35,6 @@ import { toast } from 'sonner'
 import { ipcServices } from '../lib/ipc'
 import { logger } from '../lib/logger'
 import { loadSettingsAtom, saveSettingAtom, settingsAtom } from '../store/settings'
-
-const normalizeProfileInput = (value: string) => value.trim().replace(/^['"]|['"]$/g, '')
-
-const parseBrowserCookiesSetting = (value: string | undefined) => {
-  if (!value || value === 'none') {
-    return { browser: 'none', profile: '' }
-  }
-
-  const separatorIndex = value.indexOf(':')
-  if (separatorIndex === -1) {
-    return { browser: value, profile: '' }
-  }
-
-  const browser = value.slice(0, separatorIndex).trim()
-  const profile = normalizeProfileInput(value.slice(separatorIndex + 1))
-  return { browser: browser || 'none', profile }
-}
-
-const buildBrowserCookiesSetting = (browser: string, profile: string) => {
-  const trimmedBrowser = browser.trim()
-  if (!trimmedBrowser || trimmedBrowser === 'none') {
-    return 'none'
-  }
-
-  const trimmedProfile = normalizeProfileInput(profile)
-  return trimmedProfile ? `${trimmedBrowser}:${trimmedProfile}` : trimmedBrowser
-}
 
 export function Settings() {
   const { t, i18n: i18nInstance } = useTranslation()

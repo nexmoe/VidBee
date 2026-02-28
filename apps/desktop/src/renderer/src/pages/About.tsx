@@ -1,9 +1,10 @@
-import { FeedbackLinkButtons, useAppInfo } from '@renderer/components/feedback/FeedbackLinks'
+import { useAppInfo } from '@renderer/components/feedback/FeedbackLinks'
 import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@renderer/components/ui/card'
 import { Progress } from '@renderer/components/ui/progress'
 import { Switch } from '@renderer/components/ui/switch'
+import { FeedbackLinkButtons } from '@vidbee/ui/components/ui/feedback-link-buttons'
 import { useAtom, useSetAtom } from 'jotai'
 import type { LucideIcon } from 'lucide-react'
 import {

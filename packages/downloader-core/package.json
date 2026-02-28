@@ -4,7 +4,11 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./browser-cookies-setting": "./src/browser-cookies-setting.ts",
+    "./download-file": "./src/download-file.ts",
+    "./format-preferences": "./src/format-preferences.ts",
+    "./yt-dlp-args": "./src/yt-dlp-args.ts"
   },
   "types": "./src/index.ts",
   "scripts": {

@@ -378,7 +378,8 @@
     "startIndex": "Mulai (1)",
     "title": "Unduh Playlist",
     "totalVideos": "Total video: {{count}}",
-    "untitled": "Playlist tanpa judul"
+    "untitled": "Playlist tanpa judul",
+    "fetchingInfo": "Mengambil informasi playlist..."
   },
   "settings": {
     "aboutTab": "Tentang",

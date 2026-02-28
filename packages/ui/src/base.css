@@ -12,7 +12,7 @@
 	}
 
 	body {
-		@apply bg-background text-foreground select-none;
+		@apply bg-background text-foreground;
 	}
 
 	input,

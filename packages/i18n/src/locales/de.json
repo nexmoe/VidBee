@@ -378,7 +378,8 @@
     "startIndex": "Start (1)",
     "title": "Playlist herunterladen",
     "totalVideos": "Gesamt Videos: {{count}}",
-    "untitled": "Unbenannte Playlist"
+    "untitled": "Unbenannte Playlist",
+    "fetchingInfo": "Playlist-Informationen werden abgerufen..."
   },
   "settings": {
     "aboutTab": "Über",

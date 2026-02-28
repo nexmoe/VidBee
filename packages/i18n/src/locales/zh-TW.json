@@ -378,7 +378,8 @@
     "startIndex": "開始（1）",
     "title": "下載播放清單",
     "totalVideos": "視頻總數：{{count}}",
-    "untitled": "無標題播放列表"
+    "untitled": "無標題播放列表",
+    "fetchingInfo": "正在取得播放清單資訊..."
   },
   "settings": {
     "aboutTab": "關於",

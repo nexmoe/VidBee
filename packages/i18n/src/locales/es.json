@@ -378,7 +378,8 @@
     "startIndex": "Inicio (1)",
     "title": "Descargar Lista de Reproducción",
     "totalVideos": "Total de videos: {{count}}",
-    "untitled": "Lista de reproducción sin título"
+    "untitled": "Lista de reproducción sin título",
+    "fetchingInfo": "Obteniendo información de la lista de reproducción..."
   },
   "settings": {
     "aboutTab": "Acerca de",

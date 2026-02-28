@@ -378,7 +378,8 @@
     "startIndex": "开始（1）",
     "title": "下载播放列表",
     "totalVideos": "视频总数：{{count}}",
-    "untitled": "无标题播放列表"
+    "untitled": "无标题播放列表",
+    "fetchingInfo": "正在获取播放列表信息..."
   },
   "settings": {
     "aboutTab": "关于",

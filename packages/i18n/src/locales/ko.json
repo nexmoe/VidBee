@@ -378,7 +378,8 @@
     "startIndex": "시작 (1)",
     "title": "재생목록 다운로드",
     "totalVideos": "총 동영상 수: {{count}}",
-    "untitled": "제목 없는 재생목록"
+    "untitled": "제목 없는 재생목록",
+    "fetchingInfo": "재생목록 정보를 가져오는 중..."
   },
   "settings": {
     "aboutTab": "정보",

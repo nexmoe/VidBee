@@ -26,6 +26,7 @@ import { scopedLoggers } from '../utils/logger'
 import { resolvePathWithHome } from '../utils/path-helpers'
 import {
   appendJsRuntimeArgs,
+  appendYouTubeSafeExtractorArgs,
   buildVideoInfoArgs,
   formatYtDlpCommand,
   resolveFfmpegLocation
@@ -47,7 +48,6 @@ import {
 } from './path-resolver'
 import { clampPercent, estimateProgressParts, isMuxedFormat } from './progress-utils'
 import { applyShareWatermark } from './watermark-utils'
-import { appendYouTubeSafeExtractorArgs } from './youtube-extractor-args'
 import { ytdlpManager } from './ytdlp-manager'
 
 interface DownloadProcess {
