@@ -10,7 +10,9 @@
   },
   "dependencies": {
     "@fastify/cors": "^11.2.0",
+    "@orpc/openapi": "^1.13.5",
     "@orpc/server": "^1.13.5",
+    "@orpc/zod": "^1.13.5",
     "@vidbee/downloader-core": "workspace:*",
     "fastify": "^5.7.4"
   },

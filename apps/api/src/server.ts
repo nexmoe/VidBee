@@ -1,8 +1,11 @@
-import type { ServerResponse } from 'node:http'
 import { lookup } from 'node:dns/promises'
+import type { ServerResponse } from 'node:http'
 import net from 'node:net'
 import cors from '@fastify/cors'
+import { OpenAPIHandler } from '@orpc/openapi/fastify'
+import { OpenAPIReferencePlugin } from '@orpc/openapi/plugins'
 import { RPCHandler } from '@orpc/server/fastify'
+import { ZodToJsonSchemaConverter } from '@orpc/zod/zod4'
 import type { DownloadTask } from '@vidbee/downloader-core'
 import Fastify from 'fastify'
 import { downloaderCore } from './lib/downloader'
@@ -115,6 +118,24 @@ export const createApiServer = async () => {
   })
 
   const rpcHandler = new RPCHandler(rpcRouter)
+  const openApiHandler = new OpenAPIHandler(rpcRouter, {
+    plugins: [
+      new OpenAPIReferencePlugin({
+        schemaConverters: [new ZodToJsonSchemaConverter()],
+        docsProvider: 'swagger',
+        docsPath: '/swagger',
+        specPath: '/spec.json',
+        docsTitle: 'VidBee API Reference',
+        specGenerateOptions: {
+          info: {
+            title: 'VidBee API',
+            version: '1.0.0'
+          },
+          servers: [{ url: '/openapi' }]
+        }
+      })
+    ]
+  })
 
   const sseHub = new SseHub()
 
@@ -267,6 +288,12 @@ export const createApiServer = async () => {
   fastify.all('/rpc/*', async (request, reply) => {
     await rpcHandler.handle(request, reply, {
       prefix: '/rpc'
+    })
+  })
+
+  fastify.all('/openapi/*', async (request, reply) => {
+    await openApiHandler.handle(request, reply, {
+      prefix: '/openapi'
     })
   })
 
