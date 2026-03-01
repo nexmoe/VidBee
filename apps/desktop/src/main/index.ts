@@ -36,6 +36,12 @@ log.initialize()
 // Configure logger settings
 configureLogger()
 
+if (process.platform === 'linux') {
+  // Force fallback to native GTK/KDE file dialogs when desktop portal is too old.
+  // This avoids folder selection issues on older Linux distributions.
+  app.commandLine.appendSwitch('xdg-portal-required-version', '4')
+}
+
 const RENDERER_DIST_PATH = join(import.meta.dirname, '../renderer')
 
 protocol.registerSchemesAsPrivileged([

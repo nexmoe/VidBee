@@ -16,7 +16,7 @@ class FileSystemService extends IpcService {
   @IpcMethod()
   async selectDirectory(_context: IpcContext): Promise<string | null> {
     const result = await dialog.showOpenDialog({
-      properties: ['openDirectory']
+      properties: ['openDirectory', 'createDirectory']
     })
 
     if (result.canceled || result.filePaths.length === 0) {
