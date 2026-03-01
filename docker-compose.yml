@@ -1,0 +1,36 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      VIDBEE_API_HOST: 0.0.0.0
+      VIDBEE_API_PORT: ${VIDBEE_API_PORT:-3100}
+      VIDBEE_DOWNLOAD_DIR: /data/downloads
+    ports:
+      - "${VIDBEE_API_PORT:-3100}:${VIDBEE_API_PORT:-3100}"
+    volumes:
+      - vidbee-downloads:/data/downloads
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:${VIDBEE_API_PORT:-3100}/health > /dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:${VIDBEE_API_PORT:-3100}}
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${VIDBEE_WEB_PORT:-3000}:3000"
+    restart: unless-stopped
+
+volumes:
+  vidbee-downloads:
