@@ -1,7 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { EventEmitter } from 'node:events'
 import fs from 'node:fs'
-import type { Database as BetterSqlite3Instance } from 'better-sqlite3'
 import { and, desc, eq, inArray } from 'drizzle-orm'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import log from 'electron-log/main'
@@ -60,7 +59,6 @@ const parseStringArray = (value: string | null | undefined): string[] => {
 const stringifyArray = (values: string[]): string => JSON.stringify(sanitizeList(values))
 
 export class SubscriptionManager extends EventEmitter {
-  private sqlite: BetterSqlite3Instance | null = null
   private db: BetterSQLite3Database | null = null
 
   constructor() {
@@ -293,15 +291,12 @@ export class SubscriptionManager extends EventEmitter {
   }
 
   private getDatabase(): BetterSQLite3Database {
-    if (this.db && this.sqlite) {
+    if (this.db) {
       return this.db
     }
 
     const connection = getDatabaseConnection()
-    this.sqlite = connection.sqlite
     this.db = connection.db
-    this.ensureSubscriptionsSchema()
-    this.ensureItemsSchema()
     return this.db
   }
 
@@ -321,55 +316,6 @@ export class SubscriptionManager extends EventEmitter {
       return `${url.host.toLowerCase()}${pathname}${url.search}`
     } catch {
       return trimmed.toLowerCase()
-    }
-  }
-
-  private ensureItemsSchema(): void {
-    if (!this.sqlite) {
-      return
-    }
-    try {
-      const columns = this.sqlite.prepare('PRAGMA table_info(subscription_items)').all() as Array<{
-        name: string
-      }>
-      const hasAdded = columns.some((column) => column.name === 'added')
-      if (!hasAdded) {
-        log.error(
-          'subscriptions: schema mismatch in subscription_items (missing added). Drizzle migrations required.'
-        )
-      }
-      const hasDownloaded = columns.some((column) => column.name === 'downloaded')
-      const hasLegacyStatus = columns.some((column) => column.name === 'status')
-      const needsMigration = hasDownloaded || hasLegacyStatus
-      if (needsMigration) {
-        log.error(
-          'subscriptions: schema mismatch in subscription_items (legacy downloaded/status columns). Drizzle migrations required.'
-        )
-      }
-    } catch (error) {
-      log.warn('subscriptions: failed to ensure subscription_items schema', error)
-    }
-  }
-
-  private ensureSubscriptionsSchema(): void {
-    if (!this.sqlite) {
-      return
-    }
-    try {
-      const columns = this.sqlite.prepare('PRAGMA table_info(subscriptions)').all() as Array<{
-        name: string
-      }>
-      const hasLegacyColumns = columns.some((column) =>
-        ['seen_item_ids', 'last_item_id'].includes(column.name)
-      )
-      if (!hasLegacyColumns) {
-        return
-      }
-      log.error(
-        'subscriptions: schema mismatch in subscriptions (legacy seen_item_ids/last_item_id). Drizzle migrations required.'
-      )
-    } catch (error) {
-      log.warn('subscriptions: failed to ensure subscriptions schema', error)
     }
   }
 

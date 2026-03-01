@@ -7,10 +7,12 @@ services:
       VIDBEE_API_HOST: 0.0.0.0
       VIDBEE_API_PORT: ${VIDBEE_API_PORT:-3100}
       VIDBEE_DOWNLOAD_DIR: /data/downloads
+      VIDBEE_HISTORY_STORE_PATH: /data/vidbee/vidbee.db
     ports:
       - "${VIDBEE_API_PORT:-3100}:${VIDBEE_API_PORT:-3100}"
     volumes:
       - vidbee-downloads:/data/downloads
+      - vidbee-data:/data/vidbee
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:${VIDBEE_API_PORT:-3100}/health > /dev/null || exit 1"]
       interval: 10s
@@ -34,3 +36,4 @@ services:
 
 volumes:
   vidbee-downloads:
+  vidbee-data:

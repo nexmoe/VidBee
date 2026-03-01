@@ -1,4 +1,4 @@
-import { eq, inArray, sql } from 'drizzle-orm'
+import { eq, inArray } from 'drizzle-orm'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import log from 'electron-log/main'
 import type { DownloadHistoryItem } from '../../shared/types'
@@ -41,7 +41,6 @@ const parseTags = (value: string | null): string[] | undefined => {
 class HistoryManager {
   private db: BetterSQLite3Database | null = null
   private history: Map<string, DownloadHistoryItem> = new Map()
-  private schemaChecked = false
 
   constructor() {
     this.initialize()
@@ -50,7 +49,6 @@ class HistoryManager {
   private initialize(): void {
     try {
       this.getDatabase()
-      this.ensureStructuredSchema()
       this.loadHistoryFromDatabase()
     } catch (error) {
       logger.error('history-db failed to initialize', error)
@@ -64,46 +62,6 @@ class HistoryManager {
     const { db } = getDatabaseConnection()
     this.db = db
     return this.db
-  }
-
-  private ensureStructuredSchema(): void {
-    if (this.schemaChecked) {
-      return
-    }
-    this.schemaChecked = true
-
-    try {
-      const database = this.getDatabase()
-      const columns = database.all<{ name: string }>(sql`PRAGMA table_info(download_history)`)
-      const hasPayloadColumn = columns.some((column) => column.name === 'payload')
-      const hasUrlColumn = columns.some((column) => column.name === 'url')
-      if (hasPayloadColumn || !hasUrlColumn) {
-        logger.error(
-          'history-db schema mismatch: legacy payload schema detected. Drizzle migrations required.'
-        )
-        return
-      }
-
-      const deprecatedColumns = ['subscription_title', 'format', 'quality', 'codec']
-      const requiredColumns = ['yt_dlp_command', 'yt_dlp_log']
-      const hasDeprecated = columns.some((column) => deprecatedColumns.includes(column.name))
-      const missingRequired = requiredColumns.filter(
-        (columnName) => !columns.some((column) => column.name === columnName)
-      )
-      if (hasDeprecated) {
-        logger.error(
-          'history-db schema mismatch: deprecated columns detected. Drizzle migrations required.'
-        )
-        return
-      }
-      if (missingRequired.length > 0) {
-        logger.error(
-          `history-db schema mismatch: missing columns (${missingRequired.join(', ')}). Drizzle migrations required.`
-        )
-      }
-    } catch (error) {
-      logger.error('history-db failed to inspect schema', error)
-    }
   }
 
   private loadHistoryFromDatabase(): void {

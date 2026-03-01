@@ -108,19 +108,14 @@ interface ProgressPayload {
 export interface DownloaderCoreOptions {
   downloadDir?: string
   maxConcurrent?: number
-  historyStorePath?: string
   runtimeSettings?: DownloadRuntimeSettings
 }
 
 const DEFAULT_DOWNLOAD_DIR = path.join(os.homedir(), 'Downloads', 'VidBee')
 const DEFAULT_MAX_CONCURRENT = 3
 const MAX_TASK_LOG_LENGTH = 80_000
-const DEFAULT_HISTORY_STORE_DIR = '.vidbee'
-const DEFAULT_HISTORY_STORE_FILE = 'history.json'
 const FFMPEG_NOT_FOUND_ERROR =
   'ffmpeg/ffprobe not found. Use Desktop resources/ffmpeg, install in PATH, or set FFMPEG_PATH.'
-const TERMINAL_STATUSES = new Set(['completed', 'error', 'cancelled'])
-const DOWNLOAD_TYPES = new Set(['video', 'audio'])
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT_FROM_MODULE = path.resolve(MODULE_DIR, '../../..')
 
@@ -392,32 +387,6 @@ const toOptionalStringArray = (value: unknown): string[] | undefined => {
 const toTerminal = (task: DownloadTask): boolean =>
   task.status === 'completed' || task.status === 'error' || task.status === 'cancelled'
 
-const toPersistedHistoryTask = (value: unknown): DownloadTask | null => {
-  if (!value || typeof value !== 'object') {
-    return null
-  }
-
-  const task = value as Partial<DownloadTask>
-  const id = toOptionalString(task.id)
-  const url = toOptionalString(task.url)
-  const type = toOptionalString(task.type)
-  const status = toOptionalString(task.status)
-  const createdAt =
-    typeof task.createdAt === 'number' && Number.isFinite(task.createdAt) ? task.createdAt : undefined
-
-  if (!id || !url || !type || !status || !createdAt) {
-    return null
-  }
-  if (!DOWNLOAD_TYPES.has(type)) {
-    return null
-  }
-  if (!TERMINAL_STATUSES.has(status)) {
-    return null
-  }
-
-  return cloneTask(task as DownloadTask)
-}
-
 const isHttpUrl = (value?: string | null): boolean => {
   if (!value) {
     return false
@@ -520,7 +489,6 @@ const cloneTask = (task: DownloadTask): DownloadTask => ({
 export class DownloaderCore extends EventEmitter {
   private readonly maxConcurrent: number
   private readonly downloadDir: string
-  private readonly historyStorePath: string
   private readonly defaultRuntimeSettings: DownloadRuntimeSettings
   private readonly jsRuntimeArgs: string[]
   private readonly tasks = new Map<string, DownloadTask>()
@@ -538,11 +506,6 @@ export class DownloaderCore extends EventEmitter {
     this.downloadDir = options.downloadDir?.trim() || DEFAULT_DOWNLOAD_DIR
     this.defaultRuntimeSettings = { ...(options.runtimeSettings ?? {}) }
     this.jsRuntimeArgs = resolveJsRuntimeArgs()
-    const configuredHistoryStorePath = options.historyStorePath?.trim()
-    this.historyStorePath =
-      configuredHistoryStorePath && configuredHistoryStorePath.length > 0
-        ? path.resolve(configuredHistoryStorePath)
-        : path.join(this.downloadDir, DEFAULT_HISTORY_STORE_DIR, DEFAULT_HISTORY_STORE_FILE)
   }
 
   async initialize(): Promise<void> {
@@ -550,7 +513,6 @@ export class DownloaderCore extends EventEmitter {
       return
     }
     fs.mkdirSync(this.downloadDir, { recursive: true })
-    this.loadPersistedHistory()
     const ytDlpPath = resolveYtDlpPath()
     this.ffmpegLocation = resolveFfmpegLocation(ytDlpPath)
     if (this.ffmpegLocation) {
@@ -588,57 +550,6 @@ export class DownloaderCore extends EventEmitter {
     }
   }
 
-  private loadPersistedHistory(): void {
-    if (!fs.existsSync(this.historyStorePath)) {
-      return
-    }
-
-    try {
-      const raw = fs.readFileSync(this.historyStorePath, 'utf-8')
-      if (!raw.trim()) {
-        return
-      }
-
-      const parsed = JSON.parse(raw) as
-        | {
-            history?: unknown
-          }
-        | unknown[]
-      const historyEntries = Array.isArray(parsed) ? parsed : parsed.history
-
-      if (!Array.isArray(historyEntries)) {
-        return
-      }
-
-      this.history.clear()
-      for (const item of historyEntries) {
-        const task = toPersistedHistoryTask(item)
-        if (task) {
-          this.history.set(task.id, task)
-        }
-      }
-    } catch (error) {
-      console.error('Failed to load persisted download history:', error)
-    }
-  }
-
-  private persistHistory(): void {
-    try {
-      fs.mkdirSync(path.dirname(this.historyStorePath), { recursive: true })
-      const payload = JSON.stringify(
-        {
-          version: 1,
-          history: this.listHistory()
-        },
-        null,
-        2
-      )
-      fs.writeFileSync(this.historyStorePath, payload, 'utf-8')
-    } catch (error) {
-      console.error('Failed to persist download history:', error)
-    }
-  }
-
   private updateTask(id: string, patch: Partial<DownloadTask>): DownloadTask | null {
     const existing = this.tasks.get(id)
     if (!existing) {
@@ -650,7 +561,6 @@ export class DownloaderCore extends EventEmitter {
     if (toTerminal(next)) {
       this.history.set(id, next)
       this.taskInputs.delete(id)
-      this.persistHistory()
       this.publishHistory()
     }
 
@@ -1111,7 +1021,6 @@ export class DownloaderCore extends EventEmitter {
     }
 
     if (removed > 0) {
-      this.persistHistory()
       this.publishHistory()
     }
 
