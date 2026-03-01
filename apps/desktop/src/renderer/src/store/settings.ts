@@ -33,11 +33,14 @@ export const loadSettingsAtom = atom(null, async (_get, set) => {
 export const saveSettingAtom = atom(
   null,
   async (get, set, update: { key: keyof AppSettings; value: AppSettings[keyof AppSettings] }) => {
+    const previousSettings = get(settingsAtom)
+    const nextSettings = { ...previousSettings, [update.key]: update.value }
+    set(settingsAtom, nextSettings)
+
     try {
       await ipcServices.settings.set(update.key, update.value)
-      const settings = get(settingsAtom)
-      set(settingsAtom, { ...settings, [update.key]: update.value })
     } catch (error) {
+      set(settingsAtom, previousSettings)
       console.error('Failed to save setting:', error)
     }
   }
