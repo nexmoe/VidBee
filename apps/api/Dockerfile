@@ -15,7 +15,7 @@ COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY apps/api/package.json apps/api/package.json
 COPY packages/downloader-core/package.json packages/downloader-core/package.json
 
-RUN pnpm install --filter ./apps/api... --frozen-lockfile --ignore-scripts
+RUN pnpm install --filter "{./apps/api}..." --frozen-lockfile --ignore-scripts
 
 COPY apps/api apps/api
 COPY packages/downloader-core packages/downloader-core

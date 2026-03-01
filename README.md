@@ -82,7 +82,21 @@ This command starts `apps/api` and `apps/web` together.
 Run with Docker:
 
 ```bash
-docker compose -f docker-compose.web-api.yml up --build
+docker compose up -d --build
+```
+
+Stop services:
+
+```bash
+docker compose down
+```
+
+Optional env vars (via `.env`):
+
+```bash
+VIDBEE_API_PORT=3100
+VIDBEE_WEB_PORT=3000
+VITE_API_URL=http://localhost:3100
 ```
 
 ## 🤝 Contributing
