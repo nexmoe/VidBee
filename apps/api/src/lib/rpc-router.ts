@@ -4,7 +4,7 @@ import { access, readdir, rm, stat } from 'node:fs/promises'
 import path from 'node:path'
 import { implement, ORPCError } from '@orpc/server'
 import { downloaderContract } from '@vidbee/downloader-core'
-import { downloaderCore } from './downloader'
+import { downloaderCore, historyStore } from './downloader'
 import { webSettingsStore } from './web-settings-store'
 
 const os = implement(downloaderContract)
@@ -195,12 +195,13 @@ export const rpcRouter = os.router({
   history: {
     list: os.history.list.handler(() => {
       return {
-        history: downloaderCore.listHistory()
+        history: historyStore.list()
       }
     }),
     removeItems: os.history.removeItems.handler(({ input }) => {
       try {
-        const removed = downloaderCore.removeHistoryItems(input.ids)
+        const removed = historyStore.removeItems(input.ids)
+        downloaderCore.removeHistoryItems(input.ids)
         return { removed }
       } catch (error) {
         throw new ORPCError('INTERNAL_SERVER_ERROR', {
@@ -210,7 +211,8 @@ export const rpcRouter = os.router({
     }),
     removeByPlaylist: os.history.removeByPlaylist.handler(({ input }) => {
       try {
-        const removed = downloaderCore.removeHistoryByPlaylist(input.playlistId)
+        const removed = historyStore.removeByPlaylist(input.playlistId)
+        downloaderCore.removeHistoryByPlaylist(input.playlistId)
         return { removed }
       } catch (error) {
         throw new ORPCError('INTERNAL_SERVER_ERROR', {

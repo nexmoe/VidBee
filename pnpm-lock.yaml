@@ -26,16 +26,31 @@ importers:
       '@orpc/zod':
         specifier: ^1.13.5
         version: 1.13.5(@orpc/contract@1.13.5)(@orpc/server@1.13.5(fastify@5.7.4)(ws@8.19.0))(fastify@5.7.4)(ws@8.19.0)(zod@4.3.6)
+      '@vidbee/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       '@vidbee/downloader-core':
         specifier: workspace:*
         version: link:../../packages/downloader-core
+      better-sqlite3:
+        specifier: ^12.4.1
+        version: 12.4.1
+      drizzle-orm:
+        specifier: ^0.44.7
+        version: 0.44.7(@types/better-sqlite3@7.6.13)(better-sqlite3@12.4.1)
       fastify:
         specifier: ^5.7.4
         version: 5.7.4
     devDependencies:
+      '@types/better-sqlite3':
+        specifier: ^7.6.13
+        version: 7.6.13
       '@types/node':
         specifier: ^22.18.6
         version: 22.18.12
+      drizzle-kit:
+        specifier: 0.31.7
+        version: 0.31.7
       tsx:
         specifier: ^4.21.0
         version: 4.21.0
@@ -117,6 +132,9 @@ importers:
       '@tailwindcss/vite':
         specifier: ^4.1.13
         version: 4.1.15(vite@7.3.1(@types/node@22.18.12)(jiti@2.6.1)(lightningcss@1.31.1)(tsx@4.21.0)(yaml@2.8.1))
+      '@vidbee/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       '@vidbee/downloader-core':
         specifier: workspace:*
         version: link:../../packages/downloader-core
@@ -140,7 +158,7 @@ importers:
         version: 1.11.18
       drizzle-orm:
         specifier: ^0.44.7
-        version: 0.44.7(better-sqlite3@12.4.1)
+        version: 0.44.7(@types/better-sqlite3@7.6.13)(better-sqlite3@12.4.1)
       electron-ipc-decorator:
         specifier: ^0.2.0
         version: 0.2.0(electron@38.3.0)
@@ -457,6 +475,16 @@ importers:
       vitest:
         specifier: ^3.0.5
         version: 3.2.4(@types/debug@4.1.12)(@types/node@22.18.12)(jiti@2.6.1)(jsdom@27.4.0)(lightningcss@1.31.1)(tsx@4.21.0)(yaml@2.8.1)
+
+  packages/db:
+    dependencies:
+      drizzle-orm:
+        specifier: ^0.44.7
+        version: 0.44.7(@types/better-sqlite3@7.6.13)(better-sqlite3@12.4.1)
+    devDependencies:
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
 
   packages/downloader-core:
     dependencies:
@@ -3078,6 +3106,9 @@ packages:
 
   '@types/babel__traverse@7.28.0':
     resolution: {integrity: sha512-8PvcXf70gTDZBgt9ptxJ8elBeBjcLOAcOtoO/mPJjtji1+CdGbHgm77om1GrsPxsiE+uXIpNSK64UYaIwQXd4Q==}
+
+  '@types/better-sqlite3@7.6.13':
+    resolution: {integrity: sha512-NMv9ASNARoKksWtsq/SHakpYAYnhBrQgGD8zkLYk/jaK8jUGn08CfEdTRgYhMypUQAfzSP8W6gNLe0q19/t4VA==}
 
   '@types/cacheable-request@6.0.3':
     resolution: {integrity: sha512-IQ3EbTzGxIigb1I3qPZc1rWJnH0BmSKv5QYTalEwweFvyBDLSAe24zP0le/hyi7ecGfZVlIVAg4BZqb8WBwKqw==}
@@ -9852,6 +9883,10 @@ snapshots:
     dependencies:
       '@babel/types': 7.29.0
 
+  '@types/better-sqlite3@7.6.13':
+    dependencies:
+      '@types/node': 22.18.12
+
   '@types/cacheable-request@6.0.3':
     dependencies:
       '@types/http-cache-semantics': 4.0.4
@@ -10964,8 +10999,9 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  drizzle-orm@0.44.7(better-sqlite3@12.4.1):
+  drizzle-orm@0.44.7(@types/better-sqlite3@7.6.13)(better-sqlite3@12.4.1):
     optionalDependencies:
+      '@types/better-sqlite3': 7.6.13
       better-sqlite3: 12.4.1
 
   dunder-proto@1.0.1:

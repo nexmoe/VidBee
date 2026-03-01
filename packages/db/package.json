@@ -1,0 +1,19 @@
+{
+  "name": "@vidbee/db",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./history": "./src/history.ts"
+  },
+  "types": "./src/history.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.44.7"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2"
+  }
+}

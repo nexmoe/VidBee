@@ -30,6 +30,7 @@
     "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",
     "@hookform/resolvers": "^5.2.2",
+    "@vidbee/db": "workspace:*",
     "@vidbee/downloader-core": "workspace:*",
     "@vidbee/i18n": "workspace:*",
     "@radix-ui/react-accordion": "^1.2.12",
