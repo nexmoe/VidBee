@@ -184,6 +184,14 @@ export interface DirectoryListInput {
   path?: string
 }
 
+export type UploadSettingsFileKind = 'cookies' | 'config'
+
+export interface UploadSettingsFileInput {
+  kind: UploadSettingsFileKind
+  fileName: string
+  content: string
+}
+
 export interface DirectoryEntry {
   name: string
   path: string
@@ -201,4 +209,8 @@ export interface ListDirectoriesOutput {
   currentPath: string
   parentPath: string | null
   directories: DirectoryEntry[]
+}
+
+export interface UploadSettingsFileOutput {
+  path: string
 }

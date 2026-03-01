@@ -46,8 +46,9 @@ import {
 	TooltipTrigger,
 } from "@vidbee/ui/components/ui/tooltip";
 import { AlertTriangle, Folder, RefreshCw } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { useWebSettings } from "../../hooks/use-web-settings";
 import type { OneClickQualityPreset } from "../../lib/download-format-preferences";
 import { orpcClient } from "../../lib/orpc-client";
@@ -74,6 +75,7 @@ interface ServerDirectoryEntry {
 
 const WINDOWS_PLATFORM = "win32";
 const MAC_PLATFORM = "darwin";
+const MAX_SETTINGS_UPLOAD_BYTES = 1_000_000;
 
 const parsePlatform = (userAgent: string): string => {
 	const normalizedUserAgent = userAgent.toLowerCase();
@@ -151,13 +153,6 @@ const updateSingleSetting = <K extends keyof WebAppSettings>(
 	updateSettings({ [key]: value } as Pick<WebAppSettings, K>);
 };
 
-const promptForValue = (title: string, initialValue: string): string | null => {
-	if (typeof window === "undefined") {
-		return null;
-	}
-	return window.prompt(title, initialValue);
-};
-
 export const SettingsPage = () => {
 	const { t } = useTranslation();
 	const { settings, updateSettings } = useWebSettings();
@@ -172,6 +167,10 @@ export const SettingsPage = () => {
 	const [serverDirectories, setServerDirectories] = useState<
 		ServerDirectoryEntry[]
 	>([]);
+	const configFileInputRef = useRef<HTMLInputElement>(null);
+	const cookiesFileInputRef = useRef<HTMLInputElement>(null);
+	const [configFileUploading, setConfigFileUploading] = useState(false);
+	const [cookiesFileUploading, setCookiesFileUploading] = useState(false);
 
 	const parsedBrowserCookies = parseBrowserCookiesSetting(
 		settings.browserForCookies,
@@ -304,26 +303,81 @@ export const SettingsPage = () => {
 		setDownloadPathDialogOpen(false);
 	};
 
-	const handleSelectConfigFile = () => {
-		const nextPath = promptForValue(
-			t("settings.selectConfigFile"),
-			settings.configPath ?? "",
-		);
-		if (nextPath === null) {
-			return;
+	const uploadSelectedSettingsFile = async (
+		kind: "config" | "cookies",
+		file: File,
+	): Promise<string> => {
+		if (file.size > MAX_SETTINGS_UPLOAD_BYTES) {
+			throw new Error(t("settings.fileSelectError"));
 		}
-		updateSingleSetting("configPath", nextPath.trim(), updateSettings);
+
+		const content = await file.text();
+		const response = await orpcClient.files.uploadSettingsFile({
+			kind,
+			fileName: file.name,
+			content,
+		});
+		return response.path;
+	};
+
+	const handleSelectConfigFile = () => {
+		configFileInputRef.current?.click();
 	};
 
 	const handleSelectCookiesFile = () => {
-		const nextPath = promptForValue(
-			t("settings.cookiesFile"),
-			settings.cookiesPath ?? "",
-		);
-		if (nextPath === null) {
+		cookiesFileInputRef.current?.click();
+	};
+
+	const handleConfigFileInputChange = (
+		event: ChangeEvent<HTMLInputElement>,
+	) => {
+		const selectedFile = event.target.files?.[0];
+		event.target.value = "";
+		if (!selectedFile) {
 			return;
 		}
-		updateSingleSetting("cookiesPath", nextPath.trim(), updateSettings);
+
+		setConfigFileUploading(true);
+		void uploadSelectedSettingsFile("config", selectedFile)
+			.then((serverPath) => {
+				updateSingleSetting("configPath", serverPath, updateSettings);
+			})
+			.catch((error: unknown) => {
+				const message =
+					error instanceof Error && error.message.trim().length > 0
+						? error.message
+						: t("settings.fileSelectError");
+				toast.error(message);
+			})
+			.finally(() => {
+				setConfigFileUploading(false);
+			});
+	};
+
+	const handleCookiesFileInputChange = (
+		event: ChangeEvent<HTMLInputElement>,
+	) => {
+		const selectedFile = event.target.files?.[0];
+		event.target.value = "";
+		if (!selectedFile) {
+			return;
+		}
+
+		setCookiesFileUploading(true);
+		void uploadSelectedSettingsFile("cookies", selectedFile)
+			.then((serverPath) => {
+				updateSingleSetting("cookiesPath", serverPath, updateSettings);
+			})
+			.catch((error: unknown) => {
+				const message =
+					error instanceof Error && error.message.trim().length > 0
+						? error.message
+						: t("settings.fileSelectError");
+				toast.error(message);
+			})
+			.finally(() => {
+				setCookiesFileUploading(false);
+			});
 	};
 
 	const handleOpenCookiesGuide = () => {
@@ -769,11 +823,16 @@ export const SettingsPage = () => {
 												readOnly
 												value={settings.configPath}
 											/>
-											<Button onClick={handleSelectConfigFile}>
-												{t("settings.selectPath")}
+											<Button
+												disabled={configFileUploading}
+												onClick={handleSelectConfigFile}
+											>
+												{configFileUploading
+													? t("download.loading")
+													: t("settings.selectPath")}
 											</Button>
 											<Button
-												disabled={!settings.configPath}
+												disabled={configFileUploading || !settings.configPath}
 												onClick={() =>
 													updateSingleSetting("configPath", "", updateSettings)
 												}
@@ -940,11 +999,16 @@ export const SettingsPage = () => {
 												readOnly
 												value={settings.cookiesPath}
 											/>
-											<Button onClick={handleSelectCookiesFile}>
-												{t("settings.selectPath")}
+											<Button
+												disabled={cookiesFileUploading}
+												onClick={handleSelectCookiesFile}
+											>
+												{cookiesFileUploading
+													? t("download.loading")
+													: t("settings.selectPath")}
 											</Button>
 											<Button
-												disabled={!settings.cookiesPath}
+												disabled={cookiesFileUploading || !settings.cookiesPath}
 												onClick={() =>
 													updateSingleSetting("cookiesPath", "", updateSettings)
 												}
@@ -990,6 +1054,20 @@ export const SettingsPage = () => {
 							</ItemGroup>
 						</TabsContent>
 					</Tabs>
+
+					<input
+						className="sr-only"
+						onChange={handleConfigFileInputChange}
+						ref={configFileInputRef}
+						type="file"
+					/>
+					<input
+						accept=".txt"
+						className="sr-only"
+						onChange={handleCookiesFileInputChange}
+						ref={cookiesFileInputRef}
+						type="file"
+					/>
 
 					<Dialog
 						onOpenChange={setDownloadPathDialogOpen}

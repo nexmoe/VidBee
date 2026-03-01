@@ -271,6 +271,14 @@ export const DirectoryListInputSchema = z.object({
   path: z.string().optional()
 })
 
+export const UploadSettingsFileKindSchema = z.enum(['cookies', 'config'])
+
+export const UploadSettingsFileInputSchema = z.object({
+  kind: UploadSettingsFileKindSchema,
+  fileName: z.string().trim().min(1).max(255),
+  content: z.string().min(1).max(1_000_000)
+})
+
 export const FileExistsOutputSchema = z.object({
   exists: z.boolean()
 })
@@ -288,6 +296,10 @@ export const ListDirectoriesOutputSchema = z.object({
   currentPath: z.string(),
   parentPath: z.string().nullable(),
   directories: z.array(DirectoryEntrySchema)
+})
+
+export const UploadSettingsFileOutputSchema = z.object({
+  path: z.string()
 })
 
 export const GetWebSettingsOutputSchema = z.object({
