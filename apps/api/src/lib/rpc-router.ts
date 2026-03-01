@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process'
+import { randomUUID } from 'node:crypto'
 import { constants as fsConstants } from 'node:fs'
-import { access, readdir, rm, stat } from 'node:fs/promises'
+import { access, mkdir, readdir, rm, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { implement, ORPCError } from '@orpc/server'
 import { downloaderContract } from '@vidbee/downloader-core'
@@ -8,6 +9,9 @@ import { downloaderCore } from './downloader'
 import { webSettingsStore } from './web-settings-store'
 
 const os = implement(downloaderContract)
+const WEB_SETTINGS_FILES_DIR = path.resolve(process.cwd(), '.data', 'web-settings-files')
+const MAX_WEB_SETTINGS_FILE_BYTES = 1_000_000
+const SAFE_FILE_NAME_REGEX = /[^A-Za-z0-9._-]+/g
 
 const toErrorMessage = (error: unknown, fallbackMessage: string): string => {
   if (error instanceof Error && error.message.trim().length > 0) {
@@ -121,6 +125,42 @@ const listServerDirectories = async (
   const parentPath = currentPath === parsed.root ? null : path.dirname(currentPath)
 
   return { currentPath, parentPath, directories }
+}
+
+const sanitizeUploadedFileName = (fileName: string, fallbackFileName: string): string => {
+  const normalized = path
+    .basename(fileName.trim())
+    .replace(SAFE_FILE_NAME_REGEX, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+
+  if (!normalized) {
+    return fallbackFileName
+  }
+
+  return normalized.slice(0, 120)
+}
+
+const storeWebSettingsFile = async (
+  kind: 'cookies' | 'config',
+  fileName: string,
+  content: string
+): Promise<string> => {
+  const contentBuffer = Buffer.from(content, 'utf-8')
+  if (contentBuffer.byteLength > MAX_WEB_SETTINGS_FILE_BYTES) {
+    throw new Error('Uploaded file is too large.')
+  }
+
+  const destinationDir = path.join(WEB_SETTINGS_FILES_DIR, kind)
+  await mkdir(destinationDir, { recursive: true })
+
+  const fallbackFileName = kind === 'cookies' ? 'cookies.txt' : 'config.txt'
+  const safeFileName = sanitizeUploadedFileName(fileName, fallbackFileName)
+  const storedFileName = `${Date.now()}-${randomUUID()}-${safeFileName}`
+  const destinationPath = path.join(destinationDir, storedFileName)
+
+  await writeFile(destinationPath, contentBuffer)
+  return destinationPath
 }
 
 export const rpcRouter = os.router({
@@ -311,6 +351,16 @@ export const rpcRouter = os.router({
       } catch (error) {
         throw new ORPCError('INTERNAL_SERVER_ERROR', {
           message: toErrorMessage(error, 'Failed to delete file.')
+        })
+      }
+    }),
+    uploadSettingsFile: os.files.uploadSettingsFile.handler(async ({ input }) => {
+      try {
+        const path = await storeWebSettingsFile(input.kind, input.fileName, input.content)
+        return { path }
+      } catch (error) {
+        throw new ORPCError('INTERNAL_SERVER_ERROR', {
+          message: toErrorMessage(error, 'Failed to upload settings file.')
         })
       }
     })
