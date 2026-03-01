@@ -5,7 +5,7 @@ ENV PATH=${PNPM_HOME}:${PATH}
 ENV YTDLP_PATH=/usr/bin/yt-dlp
 ENV FFMPEG_PATH=/usr/bin/ffmpeg
 
-RUN apk add --no-cache yt-dlp ffmpeg
+RUN apk add --no-cache yt-dlp ffmpeg python3 make g++
 
 RUN corepack enable
 
