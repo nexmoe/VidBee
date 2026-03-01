@@ -12,6 +12,7 @@ const os = implement(downloaderContract)
 const WEB_SETTINGS_FILES_DIR = path.resolve(process.cwd(), '.data', 'web-settings-files')
 const MAX_WEB_SETTINGS_FILE_BYTES = 1_000_000
 const SAFE_FILE_NAME_REGEX = /[^A-Za-z0-9._-]+/g
+type ManagedSettingsFileKind = 'cookies' | 'config'
 
 const toErrorMessage = (error: unknown, fallbackMessage: string): string => {
   if (error instanceof Error && error.message.trim().length > 0) {
@@ -161,6 +162,42 @@ const storeWebSettingsFile = async (
 
   await writeFile(destinationPath, contentBuffer)
   return destinationPath
+}
+
+const resolveManagedSettingsFilePath = (
+  rawPath: string,
+  kind: ManagedSettingsFileKind
+): string | null => {
+  const trimmedPath = rawPath.trim()
+  if (!trimmedPath) {
+    return null
+  }
+
+  const resolvedPath = path.resolve(trimmedPath)
+  const managedDirectory = path.join(WEB_SETTINGS_FILES_DIR, kind)
+  if (!isPathWithinBase(managedDirectory, resolvedPath)) {
+    return null
+  }
+
+  return resolvedPath
+}
+
+const cleanupReplacedSettingsFile = async (
+  kind: ManagedSettingsFileKind,
+  previousPath: string,
+  nextPath: string
+): Promise<void> => {
+  const managedPreviousPath = resolveManagedSettingsFilePath(previousPath, kind)
+  if (!managedPreviousPath) {
+    return
+  }
+
+  const managedNextPath = resolveManagedSettingsFilePath(nextPath, kind)
+  if (managedNextPath === managedPreviousPath) {
+    return
+  }
+
+  await rm(managedPreviousPath, { force: true })
 }
 
 export const rpcRouter = os.router({
@@ -378,7 +415,18 @@ export const rpcRouter = os.router({
     }),
     set: os.settings.set.handler(async ({ input }) => {
       try {
+        const previousSettings = await webSettingsStore.get()
         const settings = await webSettingsStore.set(input.settings)
+        await cleanupReplacedSettingsFile(
+          'cookies',
+          previousSettings.cookiesPath,
+          settings.cookiesPath
+        )
+        await cleanupReplacedSettingsFile(
+          'config',
+          previousSettings.configPath,
+          settings.configPath
+        )
         return { settings }
       } catch (error) {
         throw new ORPCError('INTERNAL_SERVER_ERROR', {
