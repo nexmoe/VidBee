@@ -123,8 +123,8 @@ export const createApiServer = async () => {
       new OpenAPIReferencePlugin({
         schemaConverters: [new ZodToJsonSchemaConverter()],
         docsProvider: 'swagger',
-        docsPath: '/swagger',
-        specPath: '/spec.json',
+        docsPath: '/docs',
+        specPath: '/openapi.json',
         docsTitle: 'VidBee API Reference',
         specGenerateOptions: {
           info: {
@@ -291,9 +291,15 @@ export const createApiServer = async () => {
     })
   })
 
-  fastify.all('/openapi/*', async (request, reply) => {
+  fastify.all('/docs', async (request, reply) => {
     await openApiHandler.handle(request, reply, {
-      prefix: '/openapi'
+      prefix: '/'
+    })
+  })
+
+  fastify.all('/openapi.json', async (request, reply) => {
+    await openApiHandler.handle(request, reply, {
+      prefix: '/'
     })
   })
 
