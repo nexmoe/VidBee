@@ -1,4 +1,4 @@
-<div align="center">
+<div align="left">
   <a href="https://github.com/nexmoe/VidBee">
     <img src="apps/desktop/build/icon.png" alt="Logo" width="80" height="80">
   </a>
@@ -32,7 +32,7 @@ VidBee is currently under active development, and feedback is welcome for any [i
 >
 > **Star Us**, You will receive all release notifications from GitHub without any delay ~
 
-<a href="https://next.ossinsight.io/widgets/official/compose-last-28-days-stats?repo_id=1081230042" target="_blank" style="display: block" align="center">
+<a href="https://next.ossinsight.io/widgets/official/compose-last-28-days-stats?repo_id=1081230042" target="_blank" style="display: block" align="left">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://next.ossinsight.io/widgets/official/compose-last-28-days-stats/thumbnail.png?repo_id=1081230042&image_size=auto&color_scheme=dark" width="655" height="auto">
     <img alt="Performance Stats of nexmoe/VidBee - Last 28 days" src="https://next.ossinsight.io/widgets/official/compose-last-28-days-stats/thumbnail.png?repo_id=1081230042&image_size=auto&color_scheme=light" width="655" height="auto">
