@@ -75,6 +75,7 @@ interface ServerDirectoryEntry {
 
 const WINDOWS_PLATFORM = "win32";
 const MAC_PLATFORM = "darwin";
+const MAX_SETTINGS_UPLOAD_BYTES = 1_000_000;
 
 const parsePlatform = (userAgent: string): string => {
 	const normalizedUserAgent = userAgent.toLowerCase();
@@ -306,6 +307,10 @@ export const SettingsPage = () => {
 		kind: "config" | "cookies",
 		file: File,
 	): Promise<string> => {
+		if (file.size > MAX_SETTINGS_UPLOAD_BYTES) {
+			throw new Error(t("settings.fileSelectError"));
+		}
+
 		const content = await file.text();
 		const response = await orpcClient.files.uploadSettingsFile({
 			kind,

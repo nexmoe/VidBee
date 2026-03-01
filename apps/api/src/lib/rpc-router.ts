@@ -11,6 +11,7 @@ import { webSettingsStore } from './web-settings-store'
 const os = implement(downloaderContract)
 const WEB_SETTINGS_FILES_DIR = path.resolve(process.cwd(), '.data', 'web-settings-files')
 const MAX_WEB_SETTINGS_FILE_BYTES = 1_000_000
+const MANAGED_SETTINGS_FILE_RETENTION_MS = 30 * 24 * 60 * 60 * 1000
 const SAFE_FILE_NAME_REGEX = /[^A-Za-z0-9._-]+/g
 type ManagedSettingsFileKind = 'cookies' | 'config'
 
@@ -182,22 +183,64 @@ const resolveManagedSettingsFilePath = (
   return resolvedPath
 }
 
-const cleanupReplacedSettingsFile = async (
+const pruneManagedSettingsFiles = async (
   kind: ManagedSettingsFileKind,
-  previousPath: string,
-  nextPath: string
+  referencedPaths: string[]
 ): Promise<void> => {
-  const managedPreviousPath = resolveManagedSettingsFilePath(previousPath, kind)
-  if (!managedPreviousPath) {
+  const managedDirectory = path.join(WEB_SETTINGS_FILES_DIR, kind)
+  const keepPaths = new Set<string>()
+
+  for (const rawPath of referencedPaths) {
+    const managedPath = resolveManagedSettingsFilePath(rawPath, kind)
+    if (managedPath) {
+      keepPaths.add(managedPath)
+    }
+  }
+
+  let entries: { isFile: () => boolean; name: string }[] = []
+  try {
+    entries = await readdir(managedDirectory, { withFileTypes: true })
+  } catch {
     return
   }
 
-  const managedNextPath = resolveManagedSettingsFilePath(nextPath, kind)
-  if (managedNextPath === managedPreviousPath) {
-    return
-  }
+  const now = Date.now()
+  for (const entry of entries) {
+    if (!entry.isFile()) {
+      continue
+    }
 
-  await rm(managedPreviousPath, { force: true })
+    const candidatePath = path.resolve(path.join(managedDirectory, entry.name))
+    if (keepPaths.has(candidatePath)) {
+      continue
+    }
+
+    try {
+      const candidateInfo = await stat(candidatePath)
+      if (now - candidateInfo.mtimeMs < MANAGED_SETTINGS_FILE_RETENTION_MS) {
+        continue
+      }
+
+      await rm(candidatePath, { force: true })
+    } catch {
+      // Ignore cleanup errors to keep upload and settings updates resilient.
+    }
+  }
+}
+
+const triggerManagedSettingsFilePrune = (
+  kind: ManagedSettingsFileKind,
+  newlyUploadedPath: string
+): void => {
+  void (async () => {
+    try {
+      const settings = await webSettingsStore.get()
+      const currentSettingsPath = kind === 'cookies' ? settings.cookiesPath : settings.configPath
+      await pruneManagedSettingsFiles(kind, [newlyUploadedPath, currentSettingsPath])
+    } catch {
+      // Ignore cleanup errors to keep upload and settings updates resilient.
+    }
+  })()
 }
 
 export const rpcRouter = os.router({
@@ -393,8 +436,9 @@ export const rpcRouter = os.router({
     }),
     uploadSettingsFile: os.files.uploadSettingsFile.handler(async ({ input }) => {
       try {
-        const path = await storeWebSettingsFile(input.kind, input.fileName, input.content)
-        return { path }
+        const storedPath = await storeWebSettingsFile(input.kind, input.fileName, input.content)
+        triggerManagedSettingsFilePrune(input.kind, storedPath)
+        return { path: storedPath }
       } catch (error) {
         throw new ORPCError('INTERNAL_SERVER_ERROR', {
           message: toErrorMessage(error, 'Failed to upload settings file.')
@@ -415,18 +459,7 @@ export const rpcRouter = os.router({
     }),
     set: os.settings.set.handler(async ({ input }) => {
       try {
-        const previousSettings = await webSettingsStore.get()
         const settings = await webSettingsStore.set(input.settings)
-        await cleanupReplacedSettingsFile(
-          'cookies',
-          previousSettings.cookiesPath,
-          settings.cookiesPath
-        )
-        await cleanupReplacedSettingsFile(
-          'config',
-          previousSettings.configPath,
-          settings.configPath
-        )
         return { settings }
       } catch (error) {
         throw new ORPCError('INTERNAL_SERVER_ERROR', {
