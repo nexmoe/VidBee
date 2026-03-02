@@ -75,7 +75,7 @@ interface ServerDirectoryEntry {
 
 const WINDOWS_PLATFORM = "win32";
 const MAC_PLATFORM = "darwin";
-const MAX_SETTINGS_UPLOAD_BYTES = 1_000_000;
+const MAX_SETTINGS_UPLOAD_BYTES = 500_000;
 
 const parsePlatform = (userAgent: string): string => {
 	const normalizedUserAgent = userAgent.toLowerCase();
