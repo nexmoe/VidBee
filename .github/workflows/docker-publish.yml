@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'apps/api/**'
+      - 'apps/desktop/resources/drizzle/**'
       - 'apps/web/**'
       - 'packages/**'
       - 'pnpm-lock.yaml'
