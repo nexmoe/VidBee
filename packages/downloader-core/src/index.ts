@@ -45,6 +45,9 @@ export type {
   PlaylistEntry,
   PlaylistInfoInput,
   PlaylistInfo,
+  UploadSettingsFileInput,
+  UploadSettingsFileKind,
+  UploadSettingsFileOutput,
   VideoFormat,
   VideoInfoInput,
   VideoInfo

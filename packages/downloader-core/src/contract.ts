@@ -21,6 +21,8 @@ import {
   SetWebSettingsInputSchema,
   StatusOutputSchema,
   GetWebSettingsOutputSchema,
+  UploadSettingsFileInputSchema,
+  UploadSettingsFileOutputSchema,
   VideoInfoInputSchema,
   VideoInfoOutputSchema
 } from './schemas'
@@ -54,7 +56,10 @@ export const downloaderContract = {
     copyFileToClipboard: oc
       .input(FilePathInputSchema)
       .output(FileOperationOutputSchema),
-    deleteFile: oc.input(FilePathInputSchema).output(FileOperationOutputSchema)
+    deleteFile: oc.input(FilePathInputSchema).output(FileOperationOutputSchema),
+    uploadSettingsFile: oc
+      .input(UploadSettingsFileInputSchema)
+      .output(UploadSettingsFileOutputSchema)
   },
   settings: {
     get: oc.output(GetWebSettingsOutputSchema),
