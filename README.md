@@ -85,6 +85,37 @@ Run with Docker:
 docker compose up -d --build
 ```
 
+Run with GitHub Container Registry images:
+
+```yaml
+services:
+  api:
+    image: ghcr.io/nexmoe/vidbee-api:latest
+    environment:
+      VIDBEE_API_HOST: 0.0.0.0
+      VIDBEE_API_PORT: 3100
+      VIDBEE_DOWNLOAD_DIR: /data/downloads
+      VIDBEE_HISTORY_STORE_PATH: /data/vidbee/vidbee.db
+    ports:
+      - "3100:3100"
+    volumes:
+      - vidbee-downloads:/data/downloads
+      - vidbee-data:/data/vidbee
+    restart: unless-stopped
+
+  web:
+    image: ghcr.io/nexmoe/vidbee-web:latest
+    depends_on:
+      - api
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+volumes:
+  vidbee-downloads:
+  vidbee-data:
+```
+
 Stop services:
 
 ```bash
