@@ -1154,8 +1154,8 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
                     </div>
                     <TabsContent className="flex-1 overflow-y-auto px-6 py-4" value="details">
                       <div className="space-y-4">
-                        {metadataDetails.map((item, index) => (
-                          <div className="flex flex-col gap-1" key={`${item.label}-${index}`}>
+                        {metadataDetails.map((item) => (
+                          <div className="flex flex-col gap-1" key={item.label}>
                             <span className="font-medium text-muted-foreground text-sm">
                               {item.label}
                             </span>
