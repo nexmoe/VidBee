@@ -3,6 +3,10 @@
 Cette page ne présente que les évolutions visibles par les utilisateurs, sans détails techniques.
 Pour les notes de version complètes, consultez [GitHub Releases](https://github.com/nexmoe/VidBee/releases).
 
+## [v1.3.3-preview.1](https://github.com/nexmoe/VidBee/releases/tag/v1.3.3-preview.1) - 2026-03-14
+### Corrections de bugs
+- Reactivation de npm rebuild pendant le packaging Electron pour preparer plus fiablement les dependances natives dans les builds de release.
+
 ## [v1.3.3-preview.0](https://github.com/nexmoe/VidBee/releases/tag/v1.3.3-preview.0) - 2026-03-14
 ### Mises a jour de fonctionnalites
 - Ajout d'un canal de publication preview pour diffuser les builds de test sans declencher les mises a jour du site de production.
