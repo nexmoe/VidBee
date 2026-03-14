@@ -6,10 +6,31 @@ import { scopedLoggers } from '../utils/logger'
 
 class FfmpegManager {
   private ffmpegPath: string | null = null
+  private initializationPromise: Promise<string> | null = null
 
   async initialize(): Promise<void> {
-    this.ffmpegPath = await this.findFfmpegBinary()
-    scopedLoggers.engine.info('ffmpeg initialized at:', this.ffmpegPath)
+    await this.ensureInitialized()
+  }
+
+  async ensureInitialized(): Promise<string> {
+    if (this.ffmpegPath) {
+      return this.ffmpegPath
+    }
+
+    if (!this.initializationPromise) {
+      this.initializationPromise = this.findFfmpegBinary()
+        .then((ffmpegPath) => {
+          this.ffmpegPath = ffmpegPath
+          scopedLoggers.engine.info('ffmpeg initialized at:', ffmpegPath)
+          return ffmpegPath
+        })
+        .catch((error) => {
+          this.initializationPromise = null
+          throw error
+        })
+    }
+
+    return this.initializationPromise
   }
 
   getPath(): string {
