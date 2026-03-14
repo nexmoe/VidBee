@@ -123,11 +123,11 @@ export function DownloadDialog({
       const rawEnd = endIndex ? Math.max(Number.parseInt(endIndex, 10), parsedStart) : undefined
       const start = info.entryCount > 0 ? Math.min(parsedStart, info.entryCount) : parsedStart
       const endValue =
-        rawEnd !== undefined
-          ? info.entryCount > 0
+        rawEnd === undefined
+          ? undefined
+          : info.entryCount > 0
             ? Math.min(rawEnd, info.entryCount)
             : rawEnd
-          : undefined
       return { start, end: endValue }
     },
     [startIndex, endIndex]
