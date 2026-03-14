@@ -3,6 +3,13 @@
 This page only includes user-visible updates and avoids implementation details.
 For full release notes, see [GitHub Releases](https://github.com/nexmoe/VidBee/releases).
 
+## [v1.3.3-preview.0](https://github.com/nexmoe/VidBee/releases/tag/v1.3.3-preview.0) - 2026-03-14
+### Requirement Updates
+- Added a preview release channel so test builds can be published without triggering production site updates.
+
+### Bug Fixes
+- Bundled shared workspace packages more consistently in desktop builds.
+
 ## [v1.3.2](https://github.com/nexmoe/VidBee/releases/tag/v1.3.2) - 2026-03-14
 ### Bug Fixes
 - Improved desktop packaging reliability so shared downloader components are bundled more consistently.
