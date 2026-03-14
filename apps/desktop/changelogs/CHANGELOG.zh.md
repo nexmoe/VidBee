@@ -3,6 +3,10 @@
 本页只记录你能直接感知到的更新，不展开技术实现细节。
 完整发布记录请查看 [GitHub Releases](https://github.com/nexmoe/VidBee/releases)。
 
+## [v1.3.4](https://github.com/nexmoe/VidBee/releases/tag/v1.3.4) - 2026-03-14
+### Bug 修复
+- 改用 Electron 默认下载源进行打包，提升 macOS 发布构建的稳定性。
+
 ## [v1.3.3](https://github.com/nexmoe/VidBee/releases/tag/v1.3.3) - 2026-03-14
 ### 需求更新
 - 优化了发布流程，preview 测试版现在可以独立于正式更新通知发布。

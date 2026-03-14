@@ -3,6 +3,10 @@
 This page only includes user-visible updates and avoids implementation details.
 For full release notes, see [GitHub Releases](https://github.com/nexmoe/VidBee/releases).
 
+## [v1.3.4](https://github.com/nexmoe/VidBee/releases/tag/v1.3.4) - 2026-03-14
+### Bug Fixes
+- Improved macOS release build reliability by using the default Electron download source during packaging.
+
 ## [v1.3.3](https://github.com/nexmoe/VidBee/releases/tag/v1.3.3) - 2026-03-14
 ### Requirement Updates
 - Improved the release pipeline so preview builds can be published separately from production update notifications.
