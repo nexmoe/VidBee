@@ -6,7 +6,11 @@ import Icons from 'unplugin-icons/vite'
 
 export default defineConfig({
   main: {
-    plugins: [externalizeDepsPlugin()],
+    plugins: [
+      externalizeDepsPlugin({
+        exclude: ['@vidbee/downloader-core']
+      })
+    ],
     resolve: {
       alias: {
         '@main': resolve('src/main'),
