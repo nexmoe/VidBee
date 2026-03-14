@@ -3,6 +3,14 @@
 本页只记录你能直接感知到的更新，不展开技术实现细节。
 完整发布记录请查看 [GitHub Releases](https://github.com/nexmoe/VidBee/releases)。
 
+## [v1.3.3](https://github.com/nexmoe/VidBee/releases/tag/v1.3.3) - 2026-03-14
+### 需求更新
+- 优化了发布流程，preview 测试版现在可以独立于正式更新通知发布。
+
+### Bug 修复
+- 恢复 Electron 打包时的 npm rebuild，原生依赖在发布构建中的准备过程会更可靠。
+- 进一步改善桌面端构建打包，让共享工作区依赖在发布版本中更稳定地被正确包含。
+
 ## [v1.3.3-preview.1](https://github.com/nexmoe/VidBee/releases/tag/v1.3.3-preview.1) - 2026-03-14
 ### Bug 修复
 - 恢复 Electron 打包时的 npm rebuild，原生依赖在发布构建中的准备过程会更可靠。
