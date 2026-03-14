@@ -1,0 +1,85 @@
+name: Auto Release yt-dlp Patch
+
+on:
+  schedule:
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ytdlp-auto-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+      GH_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+      YTDLP_RELEASE_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+    steps:
+      - name: Check release token
+        run: |
+          if [ -z "${GH_TOKEN}" ]; then
+            echo "ACCESS_TOKEN secret is required to push the release commit and tag."
+            exit 1
+          fi
+
+      - name: Check out Git repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.ACCESS_TOKEN }}
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+
+      - name: Install Dependencies
+        run: pnpm install --filter ./apps/desktop...
+
+      - name: Check for yt-dlp updates
+        id: check
+        run: node apps/desktop/scripts/ytdlp-auto-release.mjs check
+
+      - name: Prepare patch release
+        if: steps.check.outputs.update_available == 'true'
+        id: prepare
+        run: node apps/desktop/scripts/ytdlp-auto-release.mjs prepare
+
+      - name: Validate release changes
+        if: steps.check.outputs.update_available == 'true'
+        run: pnpm run check
+
+      - name: Commit release changes
+        if: steps.check.outputs.update_available == 'true'
+        env:
+          RELEASE_VERSION: ${{ steps.prepare.outputs.release_version }}
+          LATEST_YTDLP_VERSION: ${{ steps.prepare.outputs.latest_ytdlp_version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/desktop/package.json apps/desktop/changelogs/CHANGELOG.md apps/desktop/release-metadata.json
+          git commit -m "chore(release): publish v${RELEASE_VERSION} with yt-dlp ${LATEST_YTDLP_VERSION}"
+          git tag "v${RELEASE_VERSION}"
+
+      - name: Push release commit and tag
+        if: steps.check.outputs.update_available == 'true'
+        env:
+          RELEASE_VERSION: ${{ steps.prepare.outputs.release_version }}
+        run: |
+          git push origin HEAD:${DEFAULT_BRANCH}
+          git push origin "v${RELEASE_VERSION}"
+
+      - name: Report up-to-date status
+        if: steps.check.outputs.update_available != 'true'
+        run: echo "yt-dlp is already up to date. No patch release is needed."
