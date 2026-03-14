@@ -13,7 +13,7 @@
     "typecheck": "pnpm run typecheck:node && pnpm run typecheck:web",
     "prepare:native-deps": "node scripts/ensure-native-deps.mjs",
     "start": "pnpm run prepare:native-deps && electron-vite preview",
-    "dev": "pnpm run prepare:native-deps && node scripts/set-console-encoding.js && electron-vite dev",
+    "dev": "pnpm run setup && pnpm run prepare:native-deps && node scripts/set-console-encoding.js && electron-vite dev",
     "build": "electron-vite build",
     "setup": "node scripts/setup-dev-binaries.js",
     "postinstall": "node scripts/postinstall.mjs",

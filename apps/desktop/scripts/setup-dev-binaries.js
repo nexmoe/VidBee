@@ -139,10 +139,24 @@ function downloadFile(url, dest) {
     const protocol = url.startsWith('https') ? https : http
     const file = fs.createWriteStream(dest)
     let downloadedBytes = 0
+    let isSettled = false
 
     const request = protocol.get(url, { headers: getDownloadHeaders(url) }, (response) => {
+      const settleRequest = () => {
+        if (isSettled) {
+          return false
+        }
+        isSettled = true
+        request.setTimeout(0)
+        return true
+      }
+
       if (response.statusCode === 302 || response.statusCode === 301) {
         // Handle redirect
+        if (!settleRequest()) {
+          return
+        }
+        response.resume()
         file.close()
         safeUnlink(dest)
         const redirectUrl = response.headers.location
@@ -155,6 +169,10 @@ function downloadFile(url, dest) {
 
       const contentLength = response.headers['content-length']
       if (response.statusCode !== 200) {
+        if (!settleRequest()) {
+          return
+        }
+        response.resume()
         file.close()
         safeUnlink(dest)
         return reject(
@@ -170,6 +188,9 @@ function downloadFile(url, dest) {
 
       response.pipe(file)
       file.on('finish', () => {
+        if (!settleRequest()) {
+          return
+        }
         file.close()
         log(
           `Downloaded ${formatBytes(downloadedBytes)} from ${url}`,
@@ -180,10 +201,18 @@ function downloadFile(url, dest) {
     })
 
     request.setTimeout(30_000, () => {
+      if (isSettled) {
+        return
+      }
       request.destroy(new Error('Download timeout'))
     })
 
     request.on('error', (err) => {
+      if (isSettled) {
+        return
+      }
+      isSettled = true
+      request.setTimeout(0)
       file.close()
       safeUnlink(dest)
       log(`Download error for ${url}: ${err.message}`, 'error')
@@ -390,6 +419,13 @@ function checkBinary(filePath, args, label, options = {}) {
   return { ok: true, message: firstLine ? firstLine.trim() : `${label} version check ok` }
 }
 
+function logBinaryVersion(label, validation) {
+  if (!validation.ok) {
+    return
+  }
+  log(`${label} version: ${validation.message}`, 'info')
+}
+
 function getDenoAssetName(platform, arch) {
   if (platform === 'win32') {
     if (arch === 'arm64') {
@@ -505,7 +541,9 @@ async function downloadYtDlp(config) {
 
   if (fileExists(outputPath)) {
     const validation = checkBinary(outputPath, ['--version'], 'yt-dlp')
-    if (!validation.ok) {
+    if (validation.ok) {
+      logBinaryVersion('yt-dlp', validation)
+    } else {
       log(`Existing ${output} failed version check: ${validation.message}`, 'warn')
     }
     log(`${output} already exists, skipping download`, 'info')
@@ -525,6 +563,7 @@ async function downloadYtDlp(config) {
       safeUnlink(outputPath)
       throw new Error(`Downloaded ${output} failed version check: ${validation.message}`)
     }
+    logBinaryVersion('yt-dlp', validation)
     log(`Downloaded ${output} successfully`, 'success')
   } catch (error) {
     if (fs.existsSync(tempPath)) {
@@ -555,6 +594,10 @@ async function downloadFfmpegWindows(config) {
       ? checkBinary(ffprobeOutputPath, ['-version'], 'ffprobe')
       : { ok: true }
     if (validation.ok && ffprobeValidation.ok) {
+      logBinaryVersion('ffmpeg', validation)
+      if (ffprobeOutputPath) {
+        logBinaryVersion('ffprobe', ffprobeValidation)
+      }
       log('ffmpeg and ffprobe already exist, skipping download', 'info')
       return
     }
@@ -611,6 +654,13 @@ async function downloadFfmpegWindows(config) {
     }
     const validation = checkBinary(outputPath, ['-version'], 'ffmpeg')
     if (validation.ok) {
+      logBinaryVersion('ffmpeg', validation)
+      if (ffprobeOutputPath) {
+        const ffprobeValidation = checkBinary(ffprobeOutputPath, ['-version'], 'ffprobe')
+        if (ffprobeValidation.ok) {
+          logBinaryVersion('ffprobe', ffprobeValidation)
+        }
+      }
       log(`Downloaded ${output} successfully`, 'success')
     } else if (validation.code === 'ETIMEDOUT') {
       log(`Downloaded ${output} version check timed out; keeping binary`, 'warn')
@@ -669,6 +719,10 @@ async function downloadFfmpegMac(config) {
     }
 
     if (validation.ok && ffprobeValidation.ok && hasExpectedArchitectures) {
+      logBinaryVersion('ffmpeg', validation)
+      if (ffprobeOutputPath) {
+        logBinaryVersion('ffprobe', ffprobeValidation)
+      }
       log(
         `ffmpeg and ffprobe already exist for macOS (${mode === 'universal' ? 'universal' : currentArchitecture}), skipping download`,
         'info'
@@ -778,6 +832,11 @@ async function downloadFfmpegMac(config) {
       }
     }
 
+    logBinaryVersion('ffmpeg', validation)
+    if (ffprobeOutputPath) {
+      const ffprobeValidation = checkBinary(ffprobeOutputPath, ['-version'], 'ffprobe')
+      logBinaryVersion('ffprobe', ffprobeValidation)
+    }
     log(`Downloaded ${output} successfully`, 'success')
   } catch (error) {
     safeUnlink(outputPath)
@@ -814,6 +873,10 @@ async function downloadFfmpegLinux(config) {
       ? checkBinary(ffprobeOutputPath, ['-version'], 'ffprobe')
       : { ok: true }
     if (validation.ok && ffprobeValidation.ok) {
+      logBinaryVersion('ffmpeg', validation)
+      if (ffprobeOutputPath) {
+        logBinaryVersion('ffprobe', ffprobeValidation)
+      }
       log('ffmpeg and ffprobe already exist, skipping download', 'info')
       return
     }
@@ -875,6 +938,11 @@ async function downloadFfmpegLinux(config) {
       safeUnlink(outputPath)
       throw new Error(`Downloaded ${output} failed version check: ${validation.message}`)
     }
+    logBinaryVersion('ffmpeg', validation)
+    if (ffprobeOutputPath) {
+      const ffprobeValidation = checkBinary(ffprobeOutputPath, ['-version'], 'ffprobe')
+      logBinaryVersion('ffprobe', ffprobeValidation)
+    }
     log(`Downloaded ${output} successfully`, 'success')
 
     // Cleanup
@@ -906,7 +974,9 @@ async function downloadDenoRuntime() {
 
   if (fileExists(outputPath)) {
     const validation = checkBinary(outputPath, ['--version'], 'deno')
-    if (!validation.ok) {
+    if (validation.ok) {
+      logBinaryVersion('deno', validation)
+    } else {
       log(`Existing ${outputName} failed version check: ${validation.message}`, 'warn')
     }
     log(`${outputName} already exists, skipping download`, 'info')
@@ -935,6 +1005,7 @@ async function downloadDenoRuntime() {
       safeUnlink(outputPath)
       throw new Error(`Downloaded ${outputName} failed version check: ${validation.message}`)
     }
+    logBinaryVersion('deno', validation)
     log(`Downloaded ${outputName} successfully`, 'success')
 
     fs.unlinkSync(tempZip)
