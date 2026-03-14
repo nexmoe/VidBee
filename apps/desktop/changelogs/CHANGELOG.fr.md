@@ -3,6 +3,19 @@
 Cette page ne présente que les évolutions visibles par les utilisateurs, sans détails techniques.
 Pour les notes de version complètes, consultez [GitHub Releases](https://github.com/nexmoe/VidBee/releases).
 
+## [v1.3.1](https://github.com/nexmoe/VidBee/releases/tag/v1.3.1) - 2026-03-14
+### Mises a jour de fonctionnalites
+- Ajout des editions Web et API, avec des capacites de telechargement partagees et un comportement des reglages harmonise.
+- Ajout de la prise en charge de l'envoi de fichiers Cookie et de configuration depuis les reglages.
+- Migration de l'historique des telechargements vers SQLite pour une meilleure fiabilite et une meilleure coherence multi-plateforme.
+- Ajout d'un flux partage pour l'ajout d'URL dans les boites de dialogue de telechargement et amelioration de la visibilite du curseur en theme sombre.
+
+### Corrections de bugs
+- Amelioration de la robustesse et des diagnostics du processus d'initialisation des binaires embarques sur desktop.
+- Correction du saut de curseur dans le champ de profil des reglages.
+- Correction de la validation du dossier de telechargement sous Linux lors de la selection d'un dossier existant non vide.
+- Amelioration de la coherence des localisations, y compris des corrections de traduction chinoise.
+
 ## [v1.3.0](https://github.com/nexmoe/VidBee/releases/tag/v1.3.0) - 2026-02-15
 ### Mises a jour de fonctionnalites
 - Ajout de nouvelles actions en un clic pour coller un lien et lancer le téléchargement plus vite.

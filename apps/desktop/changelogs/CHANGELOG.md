@@ -3,6 +3,19 @@
 This page only includes user-visible updates and avoids implementation details.
 For full release notes, see [GitHub Releases](https://github.com/nexmoe/VidBee/releases).
 
+## [v1.3.1](https://github.com/nexmoe/VidBee/releases/tag/v1.3.1) - 2026-03-14
+### Requirement Updates
+- Added web and API editions with shared downloader capabilities and aligned settings behavior.
+- Added support for uploading Cookie and config files from Settings.
+- Migrated download history storage to SQLite for better reliability and cross-platform consistency.
+- Added a shared add-url popover flow in download dialogs and refined dark-theme thumb visibility.
+
+### Bug Fixes
+- Improved bundled binary setup resilience and diagnostics in desktop startup scripts.
+- Fixed profile input cursor jumping in Settings.
+- Fixed Linux download-directory validation when selecting existing non-empty folders.
+- Polished localization consistency, including Chinese translation corrections.
+
 ## [v1.3.0](https://github.com/nexmoe/VidBee/releases/tag/v1.3.0) - 2026-02-15
 ### Requirement Updates
 - Added new one-click actions so you can paste and start downloading faster.
