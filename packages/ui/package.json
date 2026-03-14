@@ -7,7 +7,8 @@
     "./theme.css": "./src/theme.css",
     "./base.css": "./src/base.css",
     "./components/ui/*": "./src/components/ui/*.tsx",
-    "./lib/cn": "./src/lib/cn.ts"
+    "./lib/cn": "./src/lib/cn.ts",
+    "./lib/use-add-url-interaction": "./src/lib/use-add-url-interaction.ts"
   },
   "peerDependencies": {
     "react": "^19.0.0",
