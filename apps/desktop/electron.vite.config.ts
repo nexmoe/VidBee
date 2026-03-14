@@ -4,11 +4,13 @@ import react from '@vitejs/plugin-react'
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
 import Icons from 'unplugin-icons/vite'
 
+const bundledWorkspacePackages = ['@vidbee/db', '@vidbee/downloader-core', '@vidbee/i18n']
+
 export default defineConfig({
   main: {
     plugins: [
       externalizeDepsPlugin({
-        exclude: ['@vidbee/downloader-core']
+        exclude: bundledWorkspacePackages
       })
     ],
     resolve: {
@@ -21,7 +23,11 @@ export default defineConfig({
     publicDir: 'build'
   },
   preload: {
-    plugins: [externalizeDepsPlugin()]
+    plugins: [
+      externalizeDepsPlugin({
+        exclude: bundledWorkspacePackages
+      })
+    ]
   },
   renderer: {
     base: './',
