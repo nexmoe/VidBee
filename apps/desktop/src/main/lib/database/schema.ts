@@ -56,4 +56,4 @@ export type SubscriptionInsert = typeof subscriptionsTable.$inferInsert
 export type SubscriptionItemRow = typeof subscriptionItemsTable.$inferSelect
 export type SubscriptionItemInsert = typeof subscriptionItemsTable.$inferInsert
 
-export { downloadHistoryTable, type DownloadHistoryInsert, type DownloadHistoryRow }
+export { type DownloadHistoryInsert, type DownloadHistoryRow, downloadHistoryTable }

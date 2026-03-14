@@ -16,7 +16,7 @@ class YtDlpManager {
   private jsRuntimeArgs: string[] = []
 
   async initialize(): Promise<void> {
-    this.ytdlpPath = await this.findOrDownloadYtDlp()
+    this.ytdlpPath = this.resolveBundledYtDlp()
     this.ytdlpInstance = new YTDlpWrapCtor(this.ytdlpPath)
     this.jsRuntimeArgs = this.resolveJsRuntimeArgs()
     scopedLoggers.engine.info('yt-dlp initialized at:', this.ytdlpPath)
@@ -53,7 +53,7 @@ class YtDlpManager {
     return path.join(process.resourcesPath, 'resources')
   }
 
-  private async findOrDownloadYtDlp(): Promise<string> {
+  private resolveBundledYtDlp(): string {
     const platform = os.platform()
     let bundledName: string
 
@@ -66,13 +66,7 @@ class YtDlpManager {
       bundledName = 'yt-dlp_linux'
     }
 
-    // Check environment variable first
-    if (process.env.YTDLP_PATH && fs.existsSync(process.env.YTDLP_PATH)) {
-      scopedLoggers.engine.info('Using yt-dlp from YTDLP_PATH:', process.env.YTDLP_PATH)
-      return process.env.YTDLP_PATH
-    }
-
-    // Check for bundled yt-dlp in resources directory
+    // Desktop only supports the bundled yt-dlp binary shipped in resources.
     const resourcesPath = this.getResourcesPath()
     const bundledPath = path.join(resourcesPath, bundledName)
     if (fs.existsSync(bundledPath)) {
@@ -88,42 +82,9 @@ class YtDlpManager {
       return bundledPath
     }
 
-    // Check for system-installed yt-dlp on macOS
-    if (os.platform() === 'darwin') {
-      const possiblePaths = ['/opt/homebrew/bin/yt-dlp', '/usr/local/bin/yt-dlp']
-      for (const p of possiblePaths) {
-        if (fs.existsSync(p)) {
-          scopedLoggers.engine.info('Using system yt-dlp:', p)
-          return p
-        }
-      }
-    }
-
-    // Check for system-installed yt-dlp on Linux/FreeBSD
-    if (os.platform() === 'linux' || os.platform() === 'freebsd') {
-      try {
-        const systemPath = execSync('which yt-dlp').toString().trim()
-        if (systemPath && fs.existsSync(systemPath)) {
-          scopedLoggers.engine.info('Using system yt-dlp:', systemPath)
-          return systemPath
-        }
-      } catch (_error) {
-        // yt-dlp not in PATH, continue
-      }
-    }
-
-    // At this point, no bundled/system binary found.
-    // For Windows, we do NOT download at runtime. Require bundling.
-    if (platform === 'win32') {
-      throw new Error(
-        'yt-dlp not found. Ensure resources/yt-dlp.exe is bundled in the build output.'
-      )
-    }
-
-    // For macOS/Linux, instruct user to bundle or install system yt-dlp.
-    throw new Error(
-      'yt-dlp not found. Bundle it under resources/ in the build output or install yt-dlp in system PATH.'
-    )
+    const message = `Bundled yt-dlp not found at ${bundledPath}. Ensure it is packaged in resources.`
+    scopedLoggers.engine.error(message)
+    throw new Error(message)
   }
 
   private resolveJsRuntimeArgs(): string[] {

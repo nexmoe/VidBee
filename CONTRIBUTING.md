@@ -58,7 +58,7 @@ apps/desktop/src/
 - Build production bundles with `pnpm build`.
 - Create platform-specific artifacts with `pnpm build:win`, `pnpm build:mac`, or `pnpm build:linux`.
 - Use `pnpm build:unpack` to generate unpacked directories under `apps/desktop/dist/` for manual inspection.
-- Bundle platform binaries of `yt-dlp` and `ffmpeg/ffprobe` under `apps/desktop/resources/ffmpeg/` (or set `YTDLP_PATH`/`FFMPEG_PATH`) before packaging so merges and audio extraction work out of the box.
+- Bundle `yt-dlp` under `apps/desktop/resources/` and `ffmpeg/ffprobe` under `apps/desktop/resources/ffmpeg/` before packaging so merges and audio extraction work out of the box.
 
 ## Working on Changes
 - Keep each pull request focused on a single problem or feature.

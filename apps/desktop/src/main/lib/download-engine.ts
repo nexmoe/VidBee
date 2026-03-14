@@ -930,9 +930,9 @@ class DownloadEngine extends EventEmitter {
         const downloadedBytes = parseSizeToBytes(progress.downloaded)
         if (downloadedBytes !== undefined) {
           latestKnownSizeBytes =
-            latestKnownSizeBytes !== undefined
-              ? Math.max(latestKnownSizeBytes, downloadedBytes)
-              : downloadedBytes
+            latestKnownSizeBytes === undefined
+              ? downloadedBytes
+              : Math.max(latestKnownSizeBytes, downloadedBytes)
         }
 
         const normalizedPercent = clampPercent(progress.percent)

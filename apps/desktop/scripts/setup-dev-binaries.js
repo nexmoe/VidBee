@@ -20,6 +20,7 @@ const RESOURCES_DIR = path.join(currentDirPath, '..', 'resources')
 const FFMPEG_DIR = path.join(RESOURCES_DIR, 'ffmpeg')
 const YTDLP_BASE_URL = 'https://github.com/yt-dlp/yt-dlp/releases/latest/download'
 const DENO_BASE_URL = 'https://github.com/denoland/deno/releases/latest/download'
+const MAC_FFMPEG_MODE = (process.env.VIDBEE_MAC_FFMPEG_MODE || 'native').trim().toLowerCase()
 const GITHUB_TOKEN =
   process.env.GITHUB_TOKEN || process.env.GH_TOKEN || process.env.GITHUB_API_TOKEN
 
@@ -331,6 +332,27 @@ function fileExists(filePath) {
   return fs.existsSync(filePath)
 }
 
+function findFirstFileByName(dirPath, fileName) {
+  if (!fileExists(dirPath)) {
+    return null
+  }
+
+  for (const entry of fs.readdirSync(dirPath, { withFileTypes: true })) {
+    const fullPath = path.join(dirPath, entry.name)
+    if (entry.isFile() && entry.name === fileName) {
+      return fullPath
+    }
+    if (entry.isDirectory()) {
+      const found = findFirstFileByName(fullPath, fileName)
+      if (found) {
+        return found
+      }
+    }
+  }
+
+  return null
+}
+
 function formatBytes(bytes) {
   if (!bytes || bytes <= 0) {
     return 'unknown size'
@@ -392,6 +414,88 @@ function getDenoAssetName(platform, arch) {
 
 function getDenoOutputName(platform) {
   return platform === 'win32' ? 'deno.exe' : 'deno'
+}
+
+function getMacFfmpegMode() {
+  if (MAC_FFMPEG_MODE === 'native' || MAC_FFMPEG_MODE === 'universal') {
+    return MAC_FFMPEG_MODE
+  }
+
+  throw new Error(
+    `Unsupported VIDBEE_MAC_FFMPEG_MODE value "${MAC_FFMPEG_MODE}". Expected "native" or "universal".`
+  )
+}
+
+function hasRequiredMacArchitectures(filePath, expectedArchitectures) {
+  const result = spawnSync('lipo', ['-archs', filePath], {
+    encoding: 'utf8'
+  })
+
+  if (result.error) {
+    throw new Error(`Failed to inspect Mach-O architectures: ${result.error.message}`)
+  }
+
+  if (result.status !== 0) {
+    const output = `${result.stdout || ''}\n${result.stderr || ''}`.trim()
+    throw new Error(
+      `Failed to inspect Mach-O architectures: ${output || `exit code ${result.status}`}`
+    )
+  }
+
+  const availableArchitectures = result.stdout
+    .trim()
+    .split(/\s+/)
+    .filter((value) => value.length > 0)
+
+  return expectedArchitectures.every((architecture) =>
+    availableArchitectures.includes(architecture)
+  )
+}
+
+function runCommandOrThrow(command, args, label) {
+  const result = spawnSync(command, args, {
+    encoding: 'utf8'
+  })
+
+  if (result.error) {
+    throw new Error(`${label} failed: ${result.error.message}`)
+  }
+
+  if (result.status !== 0) {
+    const output = `${result.stdout || ''}\n${result.stderr || ''}`.trim()
+    throw new Error(`${label} failed: ${output || `exit code ${result.status}`}`)
+  }
+}
+
+function resolveMacExtractedBinary(extractDir, expectedInnerPath, binaryName) {
+  const expectedPath = path.join(extractDir, expectedInnerPath)
+  if (fileExists(expectedPath)) {
+    return expectedPath
+  }
+
+  const discoveredPath = findFirstFileByName(extractDir, binaryName)
+  if (discoveredPath) {
+    return discoveredPath
+  }
+
+  throw new Error(`${binaryName} binary not found under ${extractDir}`)
+}
+
+async function resolveMacFfmpegDownloadUrl(ffmpegConfig) {
+  let downloadUrl = ffmpegConfig.url
+
+  if (ffmpegConfig.release) {
+    try {
+      const resolved = await resolveReleaseAsset(ffmpegConfig.release)
+      if (resolved) {
+        downloadUrl = resolved.url
+      }
+    } catch (error) {
+      log(`Failed to resolve latest ffmpeg asset: ${error.message}`, 'warn')
+    }
+  }
+
+  return downloadUrl
 }
 
 // Main download functions
@@ -530,21 +634,16 @@ async function downloadFfmpegWindows(config) {
 }
 
 async function downloadFfmpegMac(config) {
-  const arch = os.arch()
-  const ffmpegConfig = config.ffmpeg[arch === 'arm64' ? 'arm64' : 'x64']
+  const mode = getMacFfmpegMode()
+  const currentArchitecture = os.arch() === 'arm64' ? 'arm64' : 'x64'
+  const targetArchitectures = mode === 'universal' ? ['arm64', 'x64'] : [currentArchitecture]
 
+  const ffmpegConfig = config.ffmpeg[targetArchitectures[0]]
   if (!ffmpegConfig) {
-    throw new Error(`Unsupported architecture: ${arch}`)
+    throw new Error(`Unsupported architecture: ${currentArchitecture}`)
   }
 
-  const {
-    url: fallbackUrl,
-    innerPath,
-    ffprobeInnerPath,
-    output,
-    ffprobeOutput,
-    release
-  } = ffmpegConfig
+  const { output, ffprobeOutput } = ffmpegConfig
   const outputPath = path.join(FFMPEG_DIR, output)
   const ffprobeOutputPath = ffprobeOutput ? path.join(FFMPEG_DIR, ffprobeOutput) : null
 
@@ -556,71 +655,141 @@ async function downloadFfmpegMac(config) {
     const ffprobeValidation = ffprobeOutputPath
       ? checkBinary(ffprobeOutputPath, ['-version'], 'ffprobe')
       : { ok: true }
-    if (validation.ok && ffprobeValidation.ok) {
-      log('ffmpeg and ffprobe already exist, skipping download', 'info')
+
+    let hasExpectedArchitectures = true
+    if (mode === 'universal' && ffprobeOutputPath) {
+      try {
+        hasExpectedArchitectures =
+          hasRequiredMacArchitectures(outputPath, ['arm64', 'x86_64']) &&
+          hasRequiredMacArchitectures(ffprobeOutputPath, ['arm64', 'x86_64'])
+      } catch (error) {
+        hasExpectedArchitectures = false
+        log(`Failed to validate existing universal ffmpeg binaries: ${error.message}`, 'warn')
+      }
+    }
+
+    if (validation.ok && ffprobeValidation.ok && hasExpectedArchitectures) {
+      log(
+        `ffmpeg and ffprobe already exist for macOS (${mode === 'universal' ? 'universal' : currentArchitecture}), skipping download`,
+        'info'
+      )
       return
     }
+
     log(
       `Existing ffmpeg/ffprobe failed version check: ${validation.message || ffprobeValidation.message}`,
       'warn'
     )
   }
 
-  log(`Downloading ffmpeg for macOS (${arch})...`, 'download')
+  log(
+    `Downloading ffmpeg for macOS (${mode === 'universal' ? 'universal' : currentArchitecture})...`,
+    'download'
+  )
   ensureDir(FFMPEG_DIR)
-  const tempZip = path.join(RESOURCES_DIR, 'ffmpeg-temp.zip')
-  const extractDir = path.join(RESOURCES_DIR, 'ffmpeg-temp')
-  let downloadUrl = fallbackUrl
-
-  if (release) {
-    try {
-      const resolved = await resolveReleaseAsset(release)
-      if (resolved) {
-        downloadUrl = resolved.url
-      }
-    } catch (error) {
-      log(`Failed to resolve latest ffmpeg asset: ${error.message}`, 'warn')
-    }
-  }
+  const tempArtifacts = targetArchitectures.map((targetArchitecture) => ({
+    key: targetArchitecture,
+    tempZip: path.join(RESOURCES_DIR, `ffmpeg-${targetArchitecture}.zip`),
+    extractDir: path.join(RESOURCES_DIR, `ffmpeg-${targetArchitecture}`)
+  }))
 
   try {
-    await downloadFileWithRetry(downloadUrl, tempZip)
-    log('Extracting ffmpeg...', 'info')
-    extractZip(tempZip, extractDir)
+    const resolvedBinaries = []
 
-    const sourcePath = path.join(extractDir, innerPath)
-    if (!fileExists(sourcePath)) {
-      throw new Error(`ffmpeg binary not found at ${sourcePath}`)
+    for (const targetArchitecture of targetArchitectures) {
+      const targetConfig = config.ffmpeg[targetArchitecture]
+      if (!targetConfig) {
+        throw new Error(`Unsupported macOS ffmpeg architecture: ${targetArchitecture}`)
+      }
+
+      const tempArtifact = tempArtifacts.find((artifact) => artifact.key === targetArchitecture)
+      if (!tempArtifact) {
+        throw new Error(`Temporary artifact not configured for ${targetArchitecture}`)
+      }
+
+      const downloadUrl = await resolveMacFfmpegDownloadUrl(targetConfig)
+      await downloadFileWithRetry(downloadUrl, tempArtifact.tempZip)
+      log(`Extracting ffmpeg for macOS (${targetArchitecture})...`, 'info')
+      extractZip(tempArtifact.tempZip, tempArtifact.extractDir)
+
+      resolvedBinaries.push({
+        ffmpegPath: resolveMacExtractedBinary(
+          tempArtifact.extractDir,
+          targetConfig.innerPath,
+          'ffmpeg'
+        ),
+        ffprobePath: resolveMacExtractedBinary(
+          tempArtifact.extractDir,
+          targetConfig.ffprobeInnerPath,
+          'ffprobe'
+        )
+      })
     }
 
-    fs.copyFileSync(sourcePath, outputPath)
-    setExecutable(outputPath)
-    if (ffprobeInnerPath && ffprobeOutputPath) {
-      const ffprobeSourcePath = path.join(extractDir, ffprobeInnerPath)
-      if (!fileExists(ffprobeSourcePath)) {
-        throw new Error(`ffprobe binary not found at ${ffprobeSourcePath}`)
+    if (mode === 'universal') {
+      if (!ffprobeOutputPath) {
+        throw new Error('Universal macOS ffprobe output path is required.')
       }
-      fs.copyFileSync(ffprobeSourcePath, ffprobeOutputPath)
+
+      runCommandOrThrow(
+        'lipo',
+        ['-create', ...resolvedBinaries.map((binary) => binary.ffmpegPath), '-output', outputPath],
+        'Creating universal ffmpeg binary'
+      )
+      runCommandOrThrow(
+        'lipo',
+        [
+          '-create',
+          ...resolvedBinaries.map((binary) => binary.ffprobePath),
+          '-output',
+          ffprobeOutputPath
+        ],
+        'Creating universal ffprobe binary'
+      )
+    } else {
+      fs.copyFileSync(resolvedBinaries[0].ffmpegPath, outputPath)
+      if (ffprobeOutputPath) {
+        fs.copyFileSync(resolvedBinaries[0].ffprobePath, ffprobeOutputPath)
+      }
+    }
+
+    setExecutable(outputPath)
+    if (ffprobeOutputPath) {
       setExecutable(ffprobeOutputPath)
     }
+
     const validation = checkBinary(outputPath, ['-version'], 'ffmpeg')
     if (!validation.ok) {
       safeUnlink(outputPath)
+      safeUnlink(ffprobeOutputPath)
       throw new Error(`Downloaded ${output} failed version check: ${validation.message}`)
     }
-    log(`Downloaded ${output} successfully`, 'success')
 
-    // Cleanup
-    fs.unlinkSync(tempZip)
-    fs.rmSync(extractDir, { recursive: true, force: true })
+    if (mode === 'universal' && ffprobeOutputPath) {
+      const isUniversal =
+        hasRequiredMacArchitectures(outputPath, ['arm64', 'x86_64']) &&
+        hasRequiredMacArchitectures(ffprobeOutputPath, ['arm64', 'x86_64'])
+      if (!isUniversal) {
+        safeUnlink(outputPath)
+        safeUnlink(ffprobeOutputPath)
+        throw new Error(
+          'Created macOS ffmpeg binaries are missing required universal architectures.'
+        )
+      }
+    }
+
+    log(`Downloaded ${output} successfully`, 'success')
   } catch (error) {
-    if (fs.existsSync(tempZip)) {
-      fs.unlinkSync(tempZip)
-    }
-    if (fs.existsSync(extractDir)) {
-      fs.rmSync(extractDir, { recursive: true, force: true })
-    }
+    safeUnlink(outputPath)
+    safeUnlink(ffprobeOutputPath)
     throw error
+  } finally {
+    for (const tempArtifact of tempArtifacts) {
+      safeUnlink(tempArtifact.tempZip)
+      if (fs.existsSync(tempArtifact.extractDir)) {
+        fs.rmSync(tempArtifact.extractDir, { recursive: true, force: true })
+      }
+    }
   }
 }
 
