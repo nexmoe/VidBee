@@ -29,28 +29,15 @@ jobs:
           - platform: windows
             os: windows-latest
             build_script: pnpm run build:win
-            ytdlp_asset: yt-dlp.exe
-            ytdlp_output: yt-dlp.exe
-            ffmpeg_url: https://github.com/yt-dlp/FFmpeg-Builds/releases/latest/download/ffmpeg-master-latest-win64-gpl.zip
-            ffmpeg_inner_path: ffmpeg-master-latest-win64-gpl\bin\ffmpeg.exe
-            ffprobe_inner_path: ffmpeg-master-latest-win64-gpl\bin\ffprobe.exe
+            mac_ffmpeg_mode: native
           - platform: macos
             os: macos-latest
             build_script: pnpm run build:mac
-            ytdlp_asset: yt-dlp_macos
-            ytdlp_output: yt-dlp_macos
-            ffmpeg_arm_url: https://github.com/eko5624/mpv-mac/releases/download/2026-01-12/ffmpeg-arm64-96e8f3b8cc.zip
-            ffmpeg_x86_url: https://github.com/eko5624/mpv-mac/releases/download/2026-01-12/ffmpeg-x86_64-96e8f3b8cc.zip
-            ffmpeg_inner_path: ffmpeg/ffmpeg
-            ffprobe_inner_path: ffmpeg/ffprobe
+            mac_ffmpeg_mode: universal
           - platform: linux
             os: ubuntu-latest
             build_script: pnpm run build:linux
-            ytdlp_asset: yt-dlp
-            ytdlp_output: yt-dlp_linux
-            ffmpeg_url: https://github.com/yt-dlp/FFmpeg-Builds/releases/latest/download/ffmpeg-master-latest-linux64-gpl.tar.xz
-            ffmpeg_inner_path: ffmpeg-master-latest-linux64-gpl/bin/ffmpeg
-            ffprobe_inner_path: ffmpeg-master-latest-linux64-gpl/bin/ffprobe
+            mac_ffmpeg_mode: native
     steps:
       - name: Check out Git repository
         uses: actions/checkout@v4
@@ -67,104 +54,6 @@ jobs:
 
       - name: Install Dependencies
         run: pnpm install --filter ./apps/desktop...
-
-      - name: Download ffmpeg binary (Windows)
-        if: matrix.platform == 'windows'
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $ffmpegUrl = '${{ matrix.ffmpeg_url }}'
-          Invoke-WebRequest -Uri $ffmpegUrl -OutFile ffmpeg.zip
-          Expand-Archive ffmpeg.zip -DestinationPath ffmpeg -Force
-          $source = Join-Path 'ffmpeg' '${{ matrix.ffmpeg_inner_path }}'
-          $ffprobeSource = Join-Path 'ffmpeg' '${{ matrix.ffprobe_inner_path }}'
-          $destinationDir = Join-Path 'apps/desktop/resources' 'ffmpeg'
-          New-Item -ItemType Directory -Path $destinationDir -Force | Out-Null
-          Copy-Item -Path $source -Destination (Join-Path $destinationDir 'ffmpeg.exe') -Force
-          Copy-Item -Path $ffprobeSource -Destination (Join-Path $destinationDir 'ffprobe.exe') -Force
-          Remove-Item ffmpeg.zip -Force
-          Remove-Item ffmpeg -Recurse -Force
-
-      - name: Download ffmpeg binary (macOS)
-        if: matrix.platform == 'macos'
-        shell: bash
-        env:
-          FFMPEG_OUTPUT: ffmpeg
-          FFPROBE_OUTPUT: ffprobe
-        run: |
-          set -euo pipefail
-          curl -fL --retry 3 --retry-delay 2 --retry-connrefused "${{ matrix.ffmpeg_arm_url }}" -o ffmpeg-arm.zip
-          unzip -q ffmpeg-arm.zip -d ffmpeg-arm
-
-          curl -fL --retry 3 --retry-delay 2 --retry-connrefused "${{ matrix.ffmpeg_x86_url }}" -o ffmpeg-x86.zip
-          unzip -q ffmpeg-x86.zip -d ffmpeg-x86
-
-          arm_bin="ffmpeg-arm/${{ matrix.ffmpeg_inner_path }}"
-          x86_bin="ffmpeg-x86/${{ matrix.ffmpeg_inner_path }}"
-          arm_probe="ffmpeg-arm/${{ matrix.ffprobe_inner_path }}"
-          x86_probe="ffmpeg-x86/${{ matrix.ffprobe_inner_path }}"
-
-          if [[ ! -f "$arm_bin" ]]; then
-            arm_bin="$(find ffmpeg-arm -type f -name ffmpeg -print -quit)"
-          fi
-          if [[ ! -f "$x86_bin" ]]; then
-            x86_bin="$(find ffmpeg-x86 -type f -name ffmpeg -print -quit)"
-          fi
-          if [[ ! -f "$arm_probe" ]]; then
-            arm_probe="$(find ffmpeg-arm -type f -name ffprobe -print -quit)"
-          fi
-          if [[ ! -f "$x86_probe" ]]; then
-            x86_probe="$(find ffmpeg-x86 -type f -name ffprobe -print -quit)"
-          fi
-
-          if [[ ! -f "$arm_bin" ]]; then
-            echo "::error::Missing arm64 ffmpeg binary at $arm_bin"
-            exit 1
-          fi
-          if [[ ! -f "$x86_bin" ]]; then
-            echo "::error::Missing x86_64 ffmpeg binary at $x86_bin"
-            exit 1
-          fi
-          if [[ ! -f "$arm_probe" ]]; then
-            echo "::error::Missing arm64 ffprobe binary at $arm_probe"
-            exit 1
-          fi
-          if [[ ! -f "$x86_probe" ]]; then
-            echo "::error::Missing x86_64 ffprobe binary at $x86_probe"
-            exit 1
-          fi
-
-          mkdir -p apps/desktop/resources/ffmpeg
-          lipo -create "$arm_bin" "$x86_bin" -output "apps/desktop/resources/ffmpeg/$FFMPEG_OUTPUT"
-          lipo -create "$arm_probe" "$x86_probe" -output "apps/desktop/resources/ffmpeg/$FFPROBE_OUTPUT"
-          chmod +x "apps/desktop/resources/ffmpeg/$FFMPEG_OUTPUT" "apps/desktop/resources/ffmpeg/$FFPROBE_OUTPUT"
-          rm -rf ffmpeg-arm ffmpeg-x86 ffmpeg-arm.zip ffmpeg-x86.zip
-
-      - name: Download ffmpeg binary (Linux)
-        if: matrix.platform == 'linux'
-        shell: bash
-        run: |
-          set -euo pipefail
-          curl -fL --retry 3 --retry-delay 2 --retry-connrefused "${{ matrix.ffmpeg_url }}" -o ffmpeg.tar.xz
-          if ! tar -tf ffmpeg.tar.xz >/dev/null 2>&1; then
-            echo "::error::Downloaded ffmpeg archive is not a valid tar.xz"
-            exit 1
-          fi
-          mkdir ffmpeg
-          tar -xf ffmpeg.tar.xz -C ffmpeg
-          mkdir -p apps/desktop/resources/ffmpeg
-          cp "ffmpeg/${{ matrix.ffmpeg_inner_path }}" "apps/desktop/resources/ffmpeg/ffmpeg"
-          cp "ffmpeg/${{ matrix.ffprobe_inner_path }}" "apps/desktop/resources/ffmpeg/ffprobe"
-          chmod +x "apps/desktop/resources/ffmpeg/ffmpeg" "apps/desktop/resources/ffmpeg/ffprobe"
-          rm -rf ffmpeg.tar.xz ffmpeg
-
-      - name: Download yt-dlp binary
-        shell: bash
-        run: |
-          curl -fL --retry 3 --retry-delay 2 --retry-connrefused "https://github.com/yt-dlp/yt-dlp/releases/latest/download/${{ matrix.ytdlp_asset }}" -o "apps/desktop/resources/${{ matrix.ytdlp_output }}"
-          if [[ "${{ matrix.platform }}" == "linux" ]] || [[ "${{ matrix.platform }}" == "macos" ]]; then
-            chmod +x "apps/desktop/resources/${{ matrix.ytdlp_output }}"
-          fi
 
       - name: Lint and format check
         run: pnpm run check && pnpm run typecheck
@@ -212,6 +101,8 @@ jobs:
           echo "SIGNING_AVAILABLE=true" >> "$GITHUB_ENV"
 
       - name: Build application
+        env:
+          VIDBEE_MAC_FFMPEG_MODE: ${{ matrix.mac_ffmpeg_mode }}
         run: ${{ matrix.build_script }}
 
       - name: Verify macOS codesign and notarization

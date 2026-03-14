@@ -34,6 +34,9 @@
     "prepare": "husky"
   },
   "devDependencies": {
+    "@svgr/core": "^8.1.0",
+    "@svgr/plugin-jsx": "^8.1.0",
+    "electron": "^38.3.0",
     "husky": "^9.1.7"
   },
   "pnpm": {
