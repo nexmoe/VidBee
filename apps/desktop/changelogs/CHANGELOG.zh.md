@@ -3,6 +3,10 @@
 本页只记录你能直接感知到的更新，不展开技术实现细节。
 完整发布记录请查看 [GitHub Releases](https://github.com/nexmoe/VidBee/releases)。
 
+## [v1.3.2](https://github.com/nexmoe/VidBee/releases/tag/v1.3.2) - 2026-03-14
+### Bug 修复
+- 提升了桌面端打包稳定性，让共享下载组件在发布版本中更稳定地被正确包含。
+
 ## [v1.3.1](https://github.com/nexmoe/VidBee/releases/tag/v1.3.1) - 2026-03-14
 ### 需求更新
 - 新增 Web 与 API 版本，并与桌面端共享下载核心能力和主要设置行为。

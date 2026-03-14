@@ -3,6 +3,10 @@
 This page only includes user-visible updates and avoids implementation details.
 For full release notes, see [GitHub Releases](https://github.com/nexmoe/VidBee/releases).
 
+## [v1.3.2](https://github.com/nexmoe/VidBee/releases/tag/v1.3.2) - 2026-03-14
+### Bug Fixes
+- Improved desktop packaging reliability so shared downloader components are bundled more consistently.
+
 ## [v1.3.1](https://github.com/nexmoe/VidBee/releases/tag/v1.3.1) - 2026-03-14
 ### Requirement Updates
 - Added web and API editions with shared downloader capabilities and aligned settings behavior.
