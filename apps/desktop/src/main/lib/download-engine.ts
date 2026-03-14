@@ -23,10 +23,8 @@ import {
 } from '../download-engine/format-utils'
 import { settingsManager } from '../settings'
 import { scopedLoggers } from '../utils/logger'
-import { resolvePathWithHome } from '../utils/path-helpers'
 import {
-  appendJsRuntimeArgs,
-  appendYouTubeSafeExtractorArgs,
+  buildPlaylistInfoArgs,
   buildVideoInfoArgs,
   formatYtDlpCommand,
   resolveFfmpegLocation
@@ -233,37 +231,7 @@ class DownloadEngine extends EventEmitter {
   async getPlaylistInfo(url: string): Promise<PlaylistInfo> {
     const ytdlp = ytdlpManager.getInstance()
     const settings = settingsManager.getAll()
-
-    const args = ['-J', '--flat-playlist', '--no-warnings']
-
-    // Add encoding support for proper handling of non-ASCII characters
-    args.push('--encoding', 'utf-8')
-
-    // Add proxy if configured
-    if (settings.proxy) {
-      args.push('--proxy', settings.proxy)
-    }
-
-    // Add browser cookies if configured (skip if 'none')
-    if (settings.browserForCookies && settings.browserForCookies !== 'none') {
-      args.push('--cookies-from-browser', settings.browserForCookies)
-    }
-
-    const cookiesPath = settings.cookiesPath?.trim()
-    if (cookiesPath) {
-      args.push('--cookies', cookiesPath)
-    }
-
-    // Add config file if configured
-    const configPath = resolvePathWithHome(settings.configPath)
-    if (configPath) {
-      args.push('--config-location', configPath)
-    } else {
-      appendYouTubeSafeExtractorArgs(args, url)
-    }
-
-    appendJsRuntimeArgs(args)
-    args.push(url)
+    const args = buildPlaylistInfoArgs(url, settings)
 
     interface RawPlaylistEntry {
       id?: string
@@ -864,7 +832,7 @@ class DownloadEngine extends EventEmitter {
 
     let ffmpegPath: string
     try {
-      ffmpegPath = ffmpegManager.getPath()
+      ffmpegPath = await ffmpegManager.ensureInitialized()
     } catch (error) {
       const ffmpegError = error instanceof Error ? error : new Error(String(error))
       scopedLoggers.download.error('Failed to resolve ffmpeg for download ID:', id, ffmpegError)
