@@ -1,3 +1,5 @@
+import path from 'node:path'
+
 export interface BrowserCookiesSetting {
   browser: string
   profile: string
@@ -28,4 +30,33 @@ export const buildBrowserCookiesSetting = (browser: string, profile: string): st
 
   const trimmedProfile = normalizeProfileInput(profile)
   return trimmedProfile ? `${trimmedBrowser}:${trimmedProfile}` : trimmedBrowser
+}
+
+const WINDOWS_ABSOLUTE_PATH_PATTERN = /^[A-Za-z]:[\\/]/
+
+const toYtDlpProfile = (profile: string): string => {
+  const trimmedProfile = normalizeProfileInput(profile).replace(/[\\/]+$/g, '')
+  if (!trimmedProfile) {
+    return ''
+  }
+
+  if (path.isAbsolute(trimmedProfile) || WINDOWS_ABSOLUTE_PATH_PATTERN.test(trimmedProfile)) {
+    return path.posix.basename(trimmedProfile.replace(/\\/g, '/'))
+  }
+
+  return trimmedProfile
+}
+
+export const resolveBrowserCookiesArg = (value: string | undefined): string | undefined => {
+  const { browser, profile } = parseBrowserCookiesSetting(value)
+  if (!browser || browser === 'none') {
+    return undefined
+  }
+
+  if (browser === 'safari') {
+    return 'safari'
+  }
+
+  const ytDlpProfile = toYtDlpProfile(profile)
+  return ytDlpProfile ? `${browser}:${ytDlpProfile}` : browser
 }

@@ -1,5 +1,6 @@
 import {
   appendYouTubeSafeExtractorArgs as appendSharedYouTubeSafeExtractorArgs,
+  buildPlaylistInfoArgs as buildSharedPlaylistInfoArgs,
   buildVideoInfoArgs as buildSharedVideoInfoArgs,
   formatYtDlpCommand,
   resolveFfmpegLocationFromPath,
@@ -42,3 +43,9 @@ export const buildVideoInfoArgs = (
   settings: ReturnType<typeof settingsManager.getAll>
 ): string[] =>
   buildSharedVideoInfoArgs(url, toSharedSettings(settings), ytdlpManager.getJsRuntimeArgs())
+
+export const buildPlaylistInfoArgs = (
+  url: string,
+  settings: ReturnType<typeof settingsManager.getAll>
+): string[] =>
+  buildSharedPlaylistInfoArgs(url, toSharedSettings(settings), ytdlpManager.getJsRuntimeArgs())
