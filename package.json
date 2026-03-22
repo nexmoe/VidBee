@@ -6,6 +6,7 @@
     "check:i18n": "pnpm --filter ./apps/desktop run check:i18n",
     "typecheck": "pnpm --filter ./apps/desktop run typecheck",
     "dev": "pnpm --filter ./apps/desktop run dev",
+    "dev:update-notice": "pnpm --filter ./apps/desktop run dev:update-notice",
     "start": "pnpm --filter ./apps/desktop run start",
     "build": "pnpm --filter ./apps/desktop run build",
     "setup": "pnpm --filter ./apps/desktop run setup",

@@ -30,6 +30,7 @@
       "downloadUpdate": "Update {{version}} herunterladen und installieren?",
       "manualDownloadAction": "Jetzt herunterladen",
       "noUpdatesAvailable": "Sie verwenden die neueste Version",
+      "outdatedVersionRisk": "Ihre Version ist zu alt und kann dazu führen, dass Downloads fehlschlagen.",
       "restartToUpdate": "Jetzt neu starten, um Update zu installieren?",
       "restartNowAction": "Jetzt neu starten",
       "updateAvailable": "Update verfügbar: {{version}}",

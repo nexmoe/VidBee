@@ -37,13 +37,23 @@ class SettingsManager {
       }
     })
     this.ensureDownloadDirectory()
+    this.ensureRequiredSettings()
   }
 
   get<K extends keyof AppSettings>(key: K): AppSettings[K] {
+    if (key === 'autoUpdate') {
+      return true as AppSettings[K]
+    }
+
     return this.store.get(key)
   }
 
   set<K extends keyof AppSettings>(key: K, value: AppSettings[K]): void {
+    if (key === 'autoUpdate') {
+      this.store.set(key, true)
+      return
+    }
+
     if (key === 'downloadPath' && typeof value === 'string') {
       ensureDirectoryExists(value)
     }
@@ -54,12 +64,18 @@ class SettingsManager {
     return {
       ...defaultSettings,
       downloadPath: DEFAULT_DOWNLOAD_PATH,
-      ...this.store.store
+      ...this.store.store,
+      autoUpdate: true
     }
   }
 
   setAll(settings: Partial<AppSettings>): void {
     for (const [key, value] of Object.entries(settings)) {
+      if (key === 'autoUpdate') {
+        this.store.set(key, true)
+        continue
+      }
+
       if (key === 'downloadPath' && typeof value === 'string') {
         ensureDirectoryExists(value)
       }
@@ -87,6 +103,16 @@ class SettingsManager {
       }
     } catch (error) {
       scopedLoggers.system.error('Failed to verify download directory:', error)
+    }
+  }
+
+  private ensureRequiredSettings(): void {
+    try {
+      if (this.store.get('autoUpdate') !== true) {
+        this.store.set('autoUpdate', true)
+      }
+    } catch (error) {
+      scopedLoggers.system.error('Failed to enforce required settings:', error)
     }
   }
 }

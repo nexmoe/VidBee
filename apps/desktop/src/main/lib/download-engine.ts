@@ -377,7 +377,7 @@ class DownloadEngine extends EventEmitter {
   async startPlaylistDownload(options: PlaylistDownloadOptions): Promise<PlaylistDownloadResult> {
     const playlistInfo = await this.getPlaylistInfo(options.url)
     const downloadEntries: PlaylistDownloadResult['entries'] = []
-    const groupId = `playlist_group_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`
+    const groupId = `playlist_group_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
 
     // Calculate the range of entries to download
     const totalEntries = playlistInfo.entries.length
@@ -444,7 +444,7 @@ class DownloadEngine extends EventEmitter {
 
     // Create download items for each video in the playlist
     for (const entry of selectedEntries) {
-      const downloadId = `${groupId}_${Math.random().toString(36).substring(2, 10)}`
+      const downloadId = `${groupId}_${Math.random().toString(36).slice(2, 10)}`
       const customFilenameTemplate = hasDuplicateTitles
         ? `${String(entry.index).padStart(indexWidth, '0')} - %(title)s via VidBee.%(ext)s`
         : undefined
@@ -1025,7 +1025,7 @@ class DownloadEngine extends EventEmitter {
       if (code === 0) {
         // Generate file path using downloadPath + title + ext
         const title = videoInfo?.title || 'Unknown'
-        const sanitizedTitle = title.replace(/[<>:"/\\|?*]/g, '_').substring(0, 50)
+        const sanitizedTitle = title.replace(/[<>:"/\\|?*]/g, '_').slice(0, 50)
 
         // Determine file extension based on download type and format
         // yt-dlp automatically chooses the best merge format (mkv/webm/mp4)

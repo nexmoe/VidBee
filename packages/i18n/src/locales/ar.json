@@ -30,6 +30,7 @@
       "downloadUpdate": "تنزيل وتثبيت التحديث {{version}}؟",
       "manualDownloadAction": "تنزيل الآن",
       "noUpdatesAvailable": "أنت تستخدم أحدث إصدار",
+      "outdatedVersionRisk": "إصدارك قديم جدًا وقد يتسبب في فشل التنزيلات.",
       "restartToUpdate": "إعادة التشغيل الآن لتثبيت التحديث؟",
       "restartNowAction": "إعادة التشغيل الآن",
       "updateAvailable": "تحديث متاح: {{version}}",

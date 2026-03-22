@@ -3,7 +3,6 @@ import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@renderer/components/ui/card'
 import { Progress } from '@renderer/components/ui/progress'
-import { Switch } from '@renderer/components/ui/switch'
 import { FeedbackLinkButtons } from '@vidbee/ui/components/ui/feedback-link-buttons'
 import { useAtom, useSetAtom } from 'jotai'
 import type { LucideIcon } from 'lucide-react'
@@ -21,7 +20,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { ipcEvents, ipcServices } from '../lib/ipc'
-import { saveSettingAtom, settingsAtom } from '../store/settings'
 import { updateAvailableAtom, updateReadyAtom } from '../store/update'
 
 interface AboutResource {
@@ -41,7 +39,6 @@ type LatestVersionState =
 
 export function About() {
   const { t, i18n } = useTranslation()
-  const [settings, _setSettings] = useAtom(settingsAtom)
   const [updateReady] = useAtom(updateReadyAtom)
   const [updateAvailableState] = useAtom(updateAvailableAtom)
   const setUpdateAvailable = useSetAtom(updateAvailableAtom)
@@ -49,7 +46,6 @@ export function About() {
   const appVersionLabel = appVersion || '—'
   const [latestVersionState, setLatestVersionState] = useState<LatestVersionState>(null)
   const [updateDownloadProgress, setUpdateDownloadProgress] = useState<number | null>(null)
-  const saveSetting = useSetAtom(saveSettingAtom)
   const shareTargetUrl = 'https://vidbee.org'
 
   useEffect(() => {
@@ -109,54 +105,6 @@ export function About() {
       ipcEvents.removeListener('update:downloaded', handleUpdateDownloaded)
     }
   }, [i18n, setUpdateAvailable])
-
-  const handleSettingChange = async (
-    key: keyof typeof settings,
-    value: (typeof settings)[keyof typeof settings]
-  ) => {
-    await saveSetting({ key, value })
-    toast.success(t('notifications.settingsSaved'))
-
-    // If auto-update is enabled, check for updates immediately
-    if (key === 'autoUpdate' && value === true) {
-      try {
-        toast.info(t('about.notifications.checkingUpdates'))
-        const result = await ipcServices.update.checkForUpdates()
-
-        if (result.available) {
-          // The update will be downloaded automatically because autoDownload is enabled
-          toast.success(t('about.notifications.updateAvailable', { version: result.version }))
-          setLatestVersionState({
-            status: 'available',
-            version: result.version ?? ''
-          })
-          setUpdateAvailable({
-            available: true,
-            version: result.version
-          })
-        } else if (result.error) {
-          toast.error(t('about.notifications.updateError', { error: result.error }))
-          setLatestVersionState({
-            status: 'error',
-            error: result.error
-          })
-        } else {
-          toast.success(t('about.notifications.noUpdatesAvailable'))
-          setLatestVersionState({
-            status: 'uptodate',
-            version: result.version ?? appVersionLabel
-          })
-          setUpdateAvailable({
-            available: false,
-            version: undefined
-          })
-        }
-      } catch (error) {
-        console.error('Failed to check for updates:', error)
-        toast.error(t('about.notifications.updateError', { error: 'Unknown error' }))
-      }
-    }
-  }
 
   const handleGoToDownload = () => {
     openShareUrl('https://vidbee.org/download/')
@@ -368,16 +316,6 @@ export function About() {
                 </div>
               </div>
             )}
-            <div className="flex items-center justify-between gap-4 pt-6">
-              <div className="space-y-1">
-                <p className="font-medium leading-none">{t('about.autoUpdateTitle')}</p>
-                <p className="text-muted-foreground text-sm">{t('about.autoUpdateDescription')}</p>
-              </div>
-              <Switch
-                checked={settings.autoUpdate}
-                onCheckedChange={(value) => handleSettingChange('autoUpdate', value)}
-              />
-            </div>
           </CardContent>
         </Card>
 

@@ -30,6 +30,7 @@
       "downloadUpdate": "下载并安装更新 {{version}}？",
       "manualDownloadAction": "立即下载",
       "noUpdatesAvailable": "您正在使用最新版本",
+      "outdatedVersionRisk": "您的版本过旧，可能会导致下载失败。",
       "restartToUpdate": "立即重启以安装更新？",
       "restartNowAction": "立即重新启动",
       "updateAvailable": "发现新版本: {{version}}",

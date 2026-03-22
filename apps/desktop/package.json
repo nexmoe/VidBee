@@ -12,6 +12,7 @@
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",
     "typecheck": "pnpm run typecheck:node && pnpm run typecheck:web",
     "prepare:native-deps": "node scripts/ensure-native-deps.mjs",
+    "dev:update-notice": "node scripts/dev-update-notice.mjs",
     "start": "pnpm run prepare:native-deps && electron-vite preview",
     "dev": "pnpm run setup && pnpm run prepare:native-deps && node scripts/set-console-encoding.js && electron-vite dev",
     "build": "electron-vite build",

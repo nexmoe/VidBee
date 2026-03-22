@@ -1,7 +1,6 @@
 import { app } from 'electron'
 import { type IpcContext, IpcMethod, IpcService } from 'electron-ipc-decorator'
 import { autoUpdater } from 'electron-updater'
-import { settingsManager } from '../../settings'
 
 const isNewerVersion = (latest: string, current: string): boolean => {
   const toSegments = (version: string) =>
@@ -86,7 +85,7 @@ class UpdateService extends IpcService {
 
   @IpcMethod()
   isAutoUpdateEnabled(_context: IpcContext): boolean {
-    return settingsManager.get('autoUpdate')
+    return true
   }
 }
 

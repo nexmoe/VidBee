@@ -30,6 +30,7 @@
       "downloadUpdate": "{{version}} güncellemesini indirip yüklemek ister misiniz?",
       "manualDownloadAction": "Şimdi indir",
       "noUpdatesAvailable": "En son sürümü kullanıyorsunuz",
+      "outdatedVersionRisk": "Sürümünüz çok eski ve indirmelerin başarısız olmasına neden olabilir.",
       "restartToUpdate": "Güncellemek için şimdi yeniden başlatmak ister misiniz?",
       "restartNowAction": "Şimdi yeniden başlat",
       "updateAvailable": "Güncelleme mevcut: {{version}}",

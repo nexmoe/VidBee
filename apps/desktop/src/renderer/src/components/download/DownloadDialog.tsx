@@ -252,7 +252,7 @@ export function DownloadDialog({
         setUrl(trimmedUrl)
       }
 
-      const id = `download_${Date.now()}_${Math.random().toString(36).substring(7)}`
+      const id = `download_${Date.now()}_${Math.random().toString(36).slice(7)}`
 
       const downloadItem = {
         id,
@@ -574,7 +574,7 @@ export function DownloadDialog({
     if (!selectedFormat) {
       return
     }
-    const id = `download_${Date.now()}_${Math.random().toString(36).substring(7)}`
+    const id = `download_${Date.now()}_${Math.random().toString(36).slice(7)}`
 
     const downloadItem = {
       id,

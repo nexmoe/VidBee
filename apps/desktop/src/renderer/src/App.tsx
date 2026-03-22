@@ -10,6 +10,8 @@ import { HashRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'r
 import { toast } from 'sonner'
 import { ErrorBoundary } from './components/error/ErrorBoundary'
 import { useDownloadEvents } from './hooks/use-download-events'
+import { useRybbitDailyClientVersion } from './hooks/use-rybbit-daily-client-version'
+import { useRybbitScript } from './hooks/use-rybbit-script'
 import { ipcEvents, ipcServices } from './lib/ipc'
 import { About } from './pages/About'
 import { Home } from './pages/Home'
@@ -49,6 +51,7 @@ const pathToPage = (pathname: string): Page => {
 
 function AppContent() {
   const [platform, setPlatform] = useState<string>('')
+  const [appVersion, setAppVersion] = useState<string>('')
   const loadSubscriptions = useSetAtom(loadSubscriptionsAtom)
   const setSubscriptions = useSetAtom(setSubscriptionsAtom)
   const [settings] = useAtom(settingsAtom)
@@ -57,13 +60,21 @@ function AppContent() {
   const setUpdateAvailable = useSetAtom(updateAvailableAtom)
   const { i18n } = useTranslation()
   const updateDownloadInProgressRef = useRef(false)
-  const analyticsScriptRef = useRef<HTMLScriptElement | null>(null)
   const navigate = useNavigate()
   const location = useLocation()
   const currentPage = pathToPage(location.pathname)
   const supportedSitesUrl = 'https://vidbee.org/supported-sites/'
+  const analyticsEnabled = settings.enableAnalytics ?? true
+  const isRybbitReady = useRybbitScript(analyticsEnabled)
 
   useDownloadEvents()
+  useRybbitDailyClientVersion({
+    appName: 'VidBee',
+    enabled: analyticsEnabled,
+    isReady: isRybbitReady,
+    platform,
+    version: appVersion
+  })
 
   const handlePageChange = useCallback(
     (page: Page) => {
@@ -121,56 +132,23 @@ function AppContent() {
     }
   }, [loadSubscriptions, setSubscriptions])
 
-  // Load or remove analytics script based on settings
   useEffect(() => {
-    const scriptId = 'analytics-script'
-    const existingScript = document.getElementById(scriptId) as HTMLScriptElement | null
-
-    if (settings.enableAnalytics) {
-      // Remove existing script if it exists
-      if (existingScript) {
-        existingScript.remove()
-      }
-
-      // Create and append new script
-      const script = document.createElement('script')
-      script.id = scriptId
-      script.src = 'https://rybbit.102417.xyz/api/script.js'
-      script.setAttribute('data-site-id', '7bc6f6d625a4')
-      script.defer = true
-      script.async = true
-      document.head.appendChild(script)
-      analyticsScriptRef.current = script
-    } else {
-      // Remove script if analytics is disabled
-      if (existingScript) {
-        existingScript.remove()
-        analyticsScriptRef.current = null
-      }
-    }
-
-    return () => {
-      // Cleanup on unmount
-      const script = document.getElementById(scriptId)
-      if (script) {
-        script.remove()
-      }
-    }
-  }, [settings.enableAnalytics])
-
-  useEffect(() => {
-    // Get platform info to determine if we should show title bar
-    const getPlatform = async () => {
+    const getRuntimeInfo = async () => {
       try {
-        const platformInfo = await ipcServices.app.getPlatform()
+        const [platformInfo, version] = await Promise.all([
+          ipcServices.app.getPlatform(),
+          ipcServices.app.getVersion()
+        ])
         setPlatform(platformInfo)
+        setAppVersion(version)
       } catch (error) {
-        console.error('Failed to get platform info:', error)
-        // Default to showing title bar if platform detection fails
+        console.error('Failed to get runtime info:', error)
         setPlatform('unknown')
+        setAppVersion('')
       }
     }
-    getPlatform()
+
+    void getRuntimeInfo()
   }, [])
 
   useEffect(() => {
@@ -267,6 +245,8 @@ function AppContent() {
             <Route
               element={
                 <Home
+                  appVersion={appVersion}
+                  onOpenAbout={() => handlePageChange('about')}
                   onOpenCookiesSettings={handleOpenCookiesSettings}
                   onOpenSettings={() => handlePageChange('settings')}
                   onOpenSupportedSites={handleOpenSupportedSites}

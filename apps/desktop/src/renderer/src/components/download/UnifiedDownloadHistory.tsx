@@ -16,7 +16,7 @@ import {
   type DownloadFilterItem
 } from '@vidbee/ui/components/ui/download-filter-bar'
 import { useAtomValue, useSetAtom } from 'jotai'
-import { useEffect, useId, useMemo, useState } from 'react'
+import { type ReactNode, useEffect, useId, useMemo, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import {
@@ -92,12 +92,14 @@ const isEditableTarget = (target: EventTarget | null): boolean => {
 }
 
 interface UnifiedDownloadHistoryProps {
+  topContent?: ReactNode
   onOpenSupportedSites?: () => void
   onOpenSettings?: () => void
   onOpenCookiesSettings?: () => void
 }
 
 export function UnifiedDownloadHistory({
+  topContent,
   onOpenSupportedSites,
   onOpenSettings,
   onOpenCookiesSettings
@@ -464,6 +466,7 @@ export function UnifiedDownloadHistory({
       </CardHeader>
       <ScrollArea className="flex-1 overflow-y-auto">
         <CardContent className="w-full space-y-3 overflow-x-hidden p-0">
+          {topContent}
           {showCookiesTip && (
             <div className="mx-6 mt-4 rounded-xl bg-muted/40 px-6 py-5">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

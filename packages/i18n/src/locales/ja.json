@@ -30,6 +30,7 @@
       "downloadUpdate": "アップデート{{version}}をダウンロードしてインストールしますか？",
       "manualDownloadAction": "今すぐダウンロード",
       "noUpdatesAvailable": "最新バージョンを使用しています",
+      "outdatedVersionRisk": "現在のバージョンは古すぎるため、ダウンロードに失敗する可能性があります。",
       "restartToUpdate": "今すぐ再起動してアップデートをインストールしますか？",
       "restartNowAction": "今すぐ再起動してください",
       "updateAvailable": "利用可能なアップデート：{{version}}",

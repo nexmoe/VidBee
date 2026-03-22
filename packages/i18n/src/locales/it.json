@@ -30,6 +30,7 @@
       "downloadUpdate": "Scarica e installa l'aggiornamento {{version}}?",
       "manualDownloadAction": "Scarica ora",
       "noUpdatesAvailable": "Stai usando l'ultima versione",
+      "outdatedVersionRisk": "La tua versione è troppo vecchia e potrebbe causare errori nei download.",
       "restartToUpdate": "Riavvia ora per installare l'aggiornamento?",
       "restartNowAction": "Ricomincia adesso",
       "updateAvailable": "Aggiornamento disponibile: {{version}}",

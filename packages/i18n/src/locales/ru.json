@@ -30,6 +30,7 @@
       "downloadUpdate": "Загрузить и установить обновление {{version}}?",
       "manualDownloadAction": "Скачать сейчас",
       "noUpdatesAvailable": "Вы используете последнюю версию",
+      "outdatedVersionRisk": "Ваша версия слишком старая и может приводить к сбоям загрузки.",
       "restartToUpdate": "Перезапустить сейчас для установки обновления?",
       "restartNowAction": "Перезапустить сейчас",
       "updateAvailable": "Доступно обновление: {{version}}",

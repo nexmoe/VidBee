@@ -11,7 +11,7 @@
       "visit": "Visit"
     },
     "appName": "VidBee",
-    "autoUpdateDescription": "Download and install new releases automatically in the background.",
+    "autoUpdateDescription": "Automatic updates are always enabled and new releases download in the background.",
     "autoUpdateTitle": "Auto updates",
     "betaProgramDescription": "Receive early builds and upcoming features before everyone else.",
     "betaProgramTitle": "Preview channel",
@@ -30,6 +30,7 @@
       "downloadUpdate": "Download and install update {{version}}?",
       "manualDownloadAction": "Download now",
       "noUpdatesAvailable": "You're using the latest version",
+      "outdatedVersionRisk": "Your version is too old and may cause downloads to fail.",
       "restartToUpdate": "Restart now to install update?",
       "restartNowAction": "Restart now",
       "updateAvailable": "Update available: {{version}}",

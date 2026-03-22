@@ -264,7 +264,7 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
       toast.error(t('errors.emptyUrl'))
       return
     }
-    const id = `download_${Date.now()}_${Math.random().toString(36).substring(7)}`
+    const id = `download_${Date.now()}_${Math.random().toString(36).slice(7)}`
     const customDownloadPath = download.downloadPath?.trim() || undefined
     const formatId = download.selectedFormat?.format_id
 
