@@ -138,6 +138,7 @@ You are welcome to join the open source community to build together. For more de
   - `apps/desktop`: VidBee desktop app (Electron)
   - `apps/docs`: Documentation site (Next.js)
   - `apps/extension`: Browser extension (WXT)
+  - `apps/desktop/docs/glitchtip.md`: GlitchTip and `sentry-cli` setup for desktop monitoring
 - [Contributing Guide](./CONTRIBUTING.md)
 - [DeepWiki Documentation](https://deepwiki.com/nexmoe/VidBee)
 

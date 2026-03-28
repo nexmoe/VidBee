@@ -134,6 +134,8 @@
     "fetch": "Getir",
     "fetchingVideoInfo": "Video bilgileri alınıyor...",
     "feedback": {
+      "reportNow": "Hemen bildir",
+      "reportingNow": "Bildiriliyor...",
       "title": "Bu hatayı bildir:",
       "githubUrlTooLong": "Bu GitHub bağlantısı çok uzundur. Açılmıyorsa, lütfen sorun sayfasını açın ve günlükleri manuel olarak yapıştırın."
     },

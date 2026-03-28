@@ -12,6 +12,7 @@ import { ErrorBoundary } from './components/error/ErrorBoundary'
 import { useDownloadEvents } from './hooks/use-download-events'
 import { useRybbitDailyClientVersion } from './hooks/use-rybbit-daily-client-version'
 import { useRybbitScript } from './hooks/use-rybbit-script'
+import { addRendererBreadcrumb, setRendererTelemetryEnabled } from './lib/glitchtip'
 import { ipcEvents, ipcServices } from './lib/ipc'
 import { About } from './pages/About'
 import { Home } from './pages/Home'
@@ -80,6 +81,10 @@ function AppContent() {
     (page: Page) => {
       const targetPath = pageToPath[page] ?? '/'
       if (normalizePathname(location.pathname) !== targetPath) {
+        addRendererBreadcrumb('navigation', 'Navigated to page', {
+          page,
+          targetPath
+        })
         navigate(targetPath)
       }
     },
@@ -93,6 +98,10 @@ function AppContent() {
   const handleOpenSupportedSites = () => {
     window.open(supportedSitesUrl, '_blank')
   }
+
+  useEffect(() => {
+    setRendererTelemetryEnabled(analyticsEnabled)
+  }, [analyticsEnabled])
 
   useEffect(() => {
     loadSettings()

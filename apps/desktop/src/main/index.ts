@@ -21,6 +21,12 @@ import { configureLogger } from './config/logger-config'
 import { services } from './ipc'
 import { downloadEngine } from './lib/download-engine'
 import { ffmpegManager } from './lib/ffmpeg-manager'
+import {
+  addMainBreadcrumb,
+  captureMainException,
+  captureMainMessage,
+  initGlitchTipMain
+} from './lib/glitchtip'
 import { subscriptionManager } from './lib/subscription-manager'
 import { subscriptionScheduler } from './lib/subscription-scheduler'
 import { ytdlpManager } from './lib/ytdlp-manager'
@@ -35,6 +41,25 @@ log.initialize()
 
 // Configure logger settings
 configureLogger()
+initGlitchTipMain()
+
+process.on('uncaughtException', (error) => {
+  log.error('Main process uncaught exception:', error)
+  captureMainException(error, {
+    tags: {
+      source: 'process.uncaughtException'
+    }
+  })
+})
+
+process.on('unhandledRejection', (reason) => {
+  log.error('Main process unhandled rejection:', reason)
+  captureMainException(reason, {
+    tags: {
+      source: 'process.unhandledRejection'
+    }
+  })
+})
 
 if (process.platform === 'linux') {
   // Force fallback to native GTK/KDE file dialogs when desktop portal is too old.
@@ -152,8 +177,15 @@ const handleDeepLinkUrl = (rawUrl: string): void => {
   const data = parseDownloadDeepLink(rawUrl)
   if (!data) {
     log.warn('Ignored unsupported deep link:', rawUrl)
+    addMainBreadcrumb('deeplink', 'Ignored unsupported deep link', {
+      url: rawUrl
+    })
     return
   }
+  addMainBreadcrumb('deeplink', 'Received deep link', {
+    type: data.type,
+    url: data.url
+  })
   if (settingsManager.get('oneClickDownload')) {
     queueOneClickDownload(data)
     return
@@ -261,10 +293,20 @@ function setupRendererErrorHandling(): void {
   // Handle uncaught exceptions in renderer process
   mainWindow.webContents.on('unresponsive', () => {
     log.error('Renderer process became unresponsive')
+    captureMainMessage(
+      'Renderer process became unresponsive',
+      {
+        tags: {
+          source: 'renderer.unresponsive'
+        }
+      },
+      'warning'
+    )
   })
 
   mainWindow.webContents.on('responsive', () => {
     log.info('Renderer process became responsive again')
+    addMainBreadcrumb('renderer', 'Renderer process became responsive again')
   })
 
   // Listen for renderer errors via IPC
@@ -287,11 +329,34 @@ function setupRendererErrorHandling(): void {
     if (errorData.context) {
       log.error('Error context:', errorData.context)
     }
+
+    const rendererError =
+      errorData?.error && typeof errorData.error === 'object'
+        ? new Error(errorData.error.message ?? 'Unknown renderer error')
+        : new Error('Unknown renderer error')
+
+    if (errorData?.error?.stack) {
+      rendererError.stack = errorData.error.stack
+    }
+
+    captureMainException(rendererError, {
+      extra: {
+        componentStack: errorData?.errorInfo?.componentStack,
+        rendererContext: errorData?.context,
+        timestamp: errorData?.timestamp
+      },
+      fingerprint: ['renderer-error', errorData?.error?.name ?? 'Error'],
+      tags: {
+        error_name: errorData?.error?.name ?? 'Error',
+        source: 'renderer.ipc'
+      }
+    })
   })
 }
 
 function setupDownloadEvents(): void {
   downloadEngine.on('download-queued', (item: unknown) => {
+    addMainBreadcrumb('download', 'Download queued')
     sendToRenderer('download:queued', item)
   })
 
@@ -300,6 +365,7 @@ function setupDownloadEvents(): void {
   })
 
   downloadEngine.on('download-started', (id: string) => {
+    addMainBreadcrumb('download', 'Download started', { downloadId: id })
     sendToRenderer('download:started', id)
   })
 
@@ -312,10 +378,18 @@ function setupDownloadEvents(): void {
   })
 
   downloadEngine.on('download-completed', (id: string) => {
+    addMainBreadcrumb('download', 'Download completed', { downloadId: id })
     sendToRenderer('download:completed', id)
   })
 
   downloadEngine.on('download-error', (id: string, error: Error) => {
+    captureMainException(error, {
+      fingerprint: ['download-error', error.name, error.message],
+      tags: {
+        download_id: id,
+        source: 'download-engine'
+      }
+    })
     sendToRenderer('download:error', { id, error: error.message })
   })
 
@@ -364,6 +438,11 @@ const startOneClickDownload = async (data: DeepLinkData): Promise<void> => {
         url: data.url,
         count: result.totalCount
       })
+      addMainBreadcrumb('download', 'One-click playlist download queued', {
+        count: result.totalCount,
+        type: data.type,
+        url: data.url
+      })
       return
     }
 
@@ -375,11 +454,28 @@ const startOneClickDownload = async (data: DeepLinkData): Promise<void> => {
     })
     if (started) {
       log.info('One-click download queued:', { id: downloadId, url: data.url })
+      addMainBreadcrumb('download', 'One-click download queued', {
+        downloadId,
+        type: data.type,
+        url: data.url
+      })
     } else {
       log.info('One-click download already queued:', { id: downloadId, url: data.url })
+      addMainBreadcrumb('download', 'One-click download was already queued', {
+        downloadId,
+        url: data.url
+      })
     }
   } catch (error) {
     log.error('Failed to start one-click download:', error)
+    captureMainException(error, {
+      extra: {
+        deepLink: data
+      },
+      tags: {
+        source: 'one-click-download'
+      }
+    })
   }
 }
 
@@ -454,6 +550,9 @@ function initAutoUpdater(): void {
 
     autoUpdater.on('update-available', (info) => {
       log.info('Update available:', info.version)
+      addMainBreadcrumb('update', 'Update available', {
+        version: info.version
+      })
       sendToRenderer('update:available', info)
       log.info('Automatic updates are required, update will download in the background')
     })
@@ -465,6 +564,11 @@ function initAutoUpdater(): void {
 
     autoUpdater.on('error', (err) => {
       log.error('Update error:', err)
+      captureMainException(err, {
+        tags: {
+          source: 'auto-updater'
+        }
+      })
       sendToRenderer('update:error', err.message)
     })
 
@@ -475,6 +579,9 @@ function initAutoUpdater(): void {
 
     autoUpdater.on('update-downloaded', (info) => {
       log.info('Update downloaded:', info.version)
+      addMainBreadcrumb('update', 'Update downloaded', {
+        version: info.version
+      })
       sendToRenderer('update:downloaded', info)
     })
 
@@ -485,6 +592,11 @@ function initAutoUpdater(): void {
     void autoUpdater.checkForUpdates()
   } catch (error) {
     log.error('Failed to initialize auto-updater:', error)
+    captureMainException(error, {
+      tags: {
+        source: 'auto-updater.init'
+      }
+    })
   }
 }
 
@@ -551,6 +663,11 @@ app.whenReady().then(async () => {
     log.info('ffmpeg initialized successfully')
   } catch (error) {
     log.error('Failed to initialize ffmpeg:', error)
+    captureMainException(error, {
+      tags: {
+        source: 'ffmpeg.initialize'
+      }
+    })
   }
 
   // Initialize yt-dlp
@@ -561,6 +678,11 @@ app.whenReady().then(async () => {
     log.info('yt-dlp initialized successfully')
   } catch (error) {
     log.error('Failed to initialize yt-dlp:', error)
+    captureMainException(error, {
+      tags: {
+        source: 'ytdlp.initialize'
+      }
+    })
   }
 
   if (isYtdlpReady) {

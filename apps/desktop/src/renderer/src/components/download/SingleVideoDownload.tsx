@@ -22,6 +22,7 @@ import { AlertCircle, ExternalLink, Loader2, Settings2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useCachedThumbnail } from '../../hooks/use-cached-thumbnail'
+import { sendGlitchTipFeedback } from '../../lib/glitchtip-feedback'
 import { settingsAtom } from '../../store/settings'
 import { useAppInfo } from '../feedback/FeedbackLinks'
 
@@ -636,6 +637,15 @@ export function SingleVideoDownload({
                 iconClassName="h-2.5 w-2.5"
                 includeAppInfo
                 issueTitle={DOWNLOAD_FEEDBACK_ISSUE_TITLE}
+                onGlitchTipFeedback={() =>
+                  sendGlitchTipFeedback({
+                    appInfo,
+                    error,
+                    sourceUrl: feedbackSourceUrl,
+                    ytDlpCommand,
+                    ytDlpLog: error
+                  })
+                }
                 sourceUrl={feedbackSourceUrl}
                 ytDlpCommand={ytDlpCommand}
               />

@@ -10,3 +10,13 @@ out
 .DS_Store
 .eslintcache
 *.log*
+.cache/
+.pnpm-home/
+.pnpm-store/
+.claude-plugin/
+.superset/
+config.json
+labels/
+statuses/
+
+.env

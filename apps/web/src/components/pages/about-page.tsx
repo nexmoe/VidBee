@@ -419,36 +419,6 @@ export const AboutPage = () => {
 												{t("about.resources.githubIssues")}
 											</a>
 										</Button>
-										<Button
-											asChild
-											className="gap-2"
-											size="sm"
-											variant="outline"
-										>
-											<a
-												href="https://x.com/intent/tweet?text=%40nexmoex%20VidBee"
-												rel="noreferrer"
-												target="_blank"
-											>
-												<Twitter className="h-4 w-4" />
-												{t("about.resources.xFeedback")}
-											</a>
-										</Button>
-										<Button
-											asChild
-											className="gap-2"
-											size="sm"
-											variant="outline"
-										>
-											<a
-												href="https://discord.gg/uBqXV6QPdm"
-												rel="noreferrer"
-												target="_blank"
-											>
-												<MessageSquare className="h-4 w-4" />
-												{t("about.resources.discord")}
-											</a>
-										</Button>
 									</div>
 								</div>
 

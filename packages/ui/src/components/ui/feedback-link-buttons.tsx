@@ -1,12 +1,11 @@
-import { BookOpen, Github, MessageCircle, Twitter } from 'lucide-react'
-import { type MouseEvent, useMemo } from 'react'
+import { BookOpen, Bug, Github } from 'lucide-react'
+import { type MouseEvent, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Button, type ButtonProps } from './button'
 
 export const DOWNLOAD_FEEDBACK_ISSUE_TITLE = '[Bug]: Download error report'
 
-const FEEDBACK_TWEET_PREFIX = '@nexmoex VidBee'
 const FEEDBACK_UNKNOWN_ERROR = 'Unknown error'
 const FEEDBACK_UNKNOWN_VALUE = 'Unknown'
 const FEEDBACK_SOURCE_LABEL = 'Source URL'
@@ -17,9 +16,6 @@ const FAQ_URL = 'https://docs.vidbee.org/faq/'
 
 const normalizeErrorText = (value?: string | null): string =>
   value ? value.replace(/\s+/g, ' ').trim() : ''
-
-const clampText = (value: string, maxLength: number): string =>
-  value.length > maxLength ? `${value.slice(0, maxLength - 3)}...` : value
 
 const buildIssueLogs = (
   errorText: string,
@@ -53,6 +49,7 @@ interface FeedbackLinkButtonsProps {
   buttonSize?: ButtonProps['size']
   buttonClassName?: string
   iconClassName?: string
+  onGlitchTipFeedback?: (event: MouseEvent<HTMLButtonElement>) => Promise<void> | void
   onLinkClick?: (event: MouseEvent<HTMLAnchorElement>) => void
   ytDlpCommand?: string
   useSimpleGithubUrl?: boolean
@@ -70,6 +67,7 @@ export const FeedbackLinkButtons = ({
   buttonSize = 'sm',
   buttonClassName,
   iconClassName,
+  onGlitchTipFeedback,
   onLinkClick,
   ytDlpCommand,
   useSimpleGithubUrl = false,
@@ -77,22 +75,12 @@ export const FeedbackLinkButtons = ({
   showGroupSeparator = false
 }: FeedbackLinkButtonsProps) => {
   const { t } = useTranslation()
+  const [isSubmittingToGlitchTip, setIsSubmittingToGlitchTip] = useState(false)
   const appVersion = appInfo?.appVersion ?? ''
   const osVersion = appInfo?.osVersion ?? ''
 
   const links = useMemo(() => {
     const compactError = normalizeErrorText(error)
-    const tweetError = compactError ? clampText(compactError, 160) : ''
-    const versionLabels = [
-      appVersion ? `v${appVersion}` : null,
-      osVersion ? osVersion : null
-    ].filter(Boolean)
-    const tweetPrefix = versionLabels.length
-      ? `${FEEDBACK_TWEET_PREFIX} ${versionLabels.join(' ')}`
-      : FEEDBACK_TWEET_PREFIX
-    const tweetText = encodeURIComponent(
-      tweetError ? `${tweetPrefix} - ${tweetError}` : tweetPrefix
-    )
     const issueError = compactError || FEEDBACK_UNKNOWN_ERROR
     const resolvedSourceUrl = sourceUrl?.trim() || undefined
     const normalizedCommand = ytDlpCommand?.trim() || undefined
@@ -136,18 +124,6 @@ export const FeedbackLinkButtons = ({
         label: t('about.resources.githubIssues'),
         href: githubUrl,
         group: 'feedback'
-      },
-      {
-        icon: Twitter,
-        label: t('about.resources.xFeedback'),
-        href: `https://x.com/intent/tweet?text=${tweetText}`,
-        group: 'feedback'
-      },
-      {
-        icon: MessageCircle,
-        label: t('about.resources.discord'),
-        href: 'https://discord.gg/uBqXV6QPdm',
-        group: 'feedback'
       }
     ]
 
@@ -182,6 +158,19 @@ export const FeedbackLinkButtons = ({
 
   const feedbackLinks = links.filter((link) => link.group === 'feedback')
   const utilityLinks = links.filter((link) => link.group === 'utility')
+
+  const handleGlitchTipFeedback = async (event: MouseEvent<HTMLButtonElement>) => {
+    if (!(onGlitchTipFeedback && !isSubmittingToGlitchTip)) {
+      return
+    }
+
+    setIsSubmittingToGlitchTip(true)
+    try {
+      await onGlitchTipFeedback(event)
+    } finally {
+      setIsSubmittingToGlitchTip(false)
+    }
+  }
 
   return (
     <div className={wrapperClassName}>
@@ -232,6 +221,20 @@ export const FeedbackLinkButtons = ({
           </Button>
         )
       })}
+      {onGlitchTipFeedback && (
+        <Button
+          className={buttonClassName}
+          disabled={isSubmittingToGlitchTip}
+          onClick={(event) => void handleGlitchTipFeedback(event)}
+          size={buttonSize}
+          variant="secondary"
+        >
+          <Bug className={iconClassName} />
+          {isSubmittingToGlitchTip
+            ? t('download.feedback.reportingNow')
+            : t('download.feedback.reportNow')}
+        </Button>
+      )}
     </div>
   )
 }

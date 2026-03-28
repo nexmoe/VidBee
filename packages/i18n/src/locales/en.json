@@ -50,7 +50,7 @@
       "documentation": "Help center",
       "documentationDescription": "Guides, FAQs, and common workflows.",
       "feedback": "Feedback & issues",
-      "feedbackDescription": "Share ideas, report issues, or provide feedback through multiple channels.",
+      "feedbackDescription": "Share ideas or report issues on GitHub.",
       "githubIssues": "GitHub",
       "githubIssuesDescription": "Report bugs or request features on GitHub.",
       "xFeedback": "Twitter",
@@ -134,6 +134,8 @@
     "fetch": "Fetch",
     "fetchingVideoInfo": "Fetching video info...",
     "feedback": {
+      "reportNow": "Report instantly",
+      "reportingNow": "Reporting...",
       "title": "Report this error:",
       "githubUrlTooLong": "This GitHub link is very long. If it fails to open, please open the issue page and paste the logs manually."
     },

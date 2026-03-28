@@ -10,6 +10,7 @@ import {
 } from '../../shared/utils/format-preferences'
 import { settingsManager } from '../settings'
 import { downloadEngine } from './download-engine'
+import { addMainBreadcrumb, captureMainException } from './glitchtip'
 import { historyManager } from './history-manager'
 import { subscriptionManager } from './subscription-manager'
 
@@ -117,6 +118,17 @@ export class SubscriptionScheduler extends EventEmitter {
           currentRetries + 1
         ).catch((queueError) => {
           logger.error('Retry queue failed:', queueError)
+          captureMainException(queueError, {
+            extra: {
+              downloadId: id,
+              itemId: tracked.itemId,
+              subscriptionId: tracked.subscriptionId,
+              url: tracked.url
+            },
+            tags: {
+              source: 'subscription.retry'
+            }
+          })
         })
         return
       }
@@ -128,6 +140,18 @@ export class SubscriptionScheduler extends EventEmitter {
       })
       subscriptionManager.updateFeedItemQueueState(tracked.subscriptionId, tracked.itemId, {
         downloadId: null
+      })
+      captureMainException(error, {
+        extra: {
+          downloadId: id,
+          itemId: tracked.itemId,
+          subscriptionId: tracked.subscriptionId,
+          url: tracked.url
+        },
+        fingerprint: ['subscription-download-error', tracked.subscriptionId, tracked.itemId],
+        tags: {
+          source: 'subscription.download'
+        }
       })
     })
   }
@@ -193,6 +217,11 @@ export class SubscriptionScheduler extends EventEmitter {
       }
     } catch (error) {
       logger.error('Failed to run subscription sync', error)
+      captureMainException(error, {
+        tags: {
+          source: 'subscription.sync'
+        }
+      })
     } finally {
       this.checking = false
       if (this.pendingRun) {
@@ -273,6 +302,17 @@ export class SubscriptionScheduler extends EventEmitter {
         lastCheckedAt: Date.now()
       })
       logger.error('Subscription check failed:', { id: subscription.id, error })
+      captureMainException(error, {
+        extra: {
+          feedUrl: subscription.feedUrl,
+          sourceUrl: subscription.sourceUrl
+        },
+        fingerprint: ['subscription-check-error', subscription.id],
+        tags: {
+          source: 'subscription.check',
+          subscription_id: subscription.id
+        }
+      })
     }
   }
 
@@ -513,6 +553,11 @@ export class SubscriptionScheduler extends EventEmitter {
       })
       if (!started) {
         logger.info('Subscription download already queued', { subscriptionId, itemId, url })
+        addMainBreadcrumb('subscription', 'Subscription download was already queued', {
+          itemId,
+          subscriptionId,
+          url
+        })
         return
       }
 
@@ -527,6 +572,12 @@ export class SubscriptionScheduler extends EventEmitter {
         added: true,
         downloadId
       })
+      addMainBreadcrumb('subscription', 'Subscription download queued', {
+        downloadId,
+        itemId,
+        subscriptionId,
+        url
+      })
     } catch (error) {
       logger.error('Failed to start subscription download', { subscriptionId, itemId, error })
       subscriptionManager.update(subscriptionId, {
@@ -535,6 +586,17 @@ export class SubscriptionScheduler extends EventEmitter {
       subscriptionManager.updateFeedItemQueueState(subscriptionId, itemId, {
         added: false,
         downloadId: null
+      })
+      captureMainException(error, {
+        extra: {
+          itemId,
+          subscriptionId,
+          url
+        },
+        fingerprint: ['subscription-queue-error', subscriptionId, itemId],
+        tags: {
+          source: 'subscription.queue'
+        }
       })
     }
   }

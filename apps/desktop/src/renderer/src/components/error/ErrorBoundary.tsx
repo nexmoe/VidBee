@@ -1,6 +1,7 @@
 import { ipcServices } from '@renderer/lib/ipc'
 import { logger } from '@renderer/lib/logger'
 import { Component, type ErrorInfo, type ReactNode } from 'react'
+import { captureRendererException } from '../../lib/glitchtip'
 import { type ErrorInfo as ErrorInfoType, ErrorPage } from './ErrorPage'
 
 interface Props {
@@ -56,6 +57,17 @@ export class ErrorBoundary extends Component<Props, State> {
       errorStack: error.stack,
       componentStack: errorInfo.componentStack,
       errorInfo: JSON.stringify(errorInfo, null, 2)
+    })
+
+    captureRendererException(error, {
+      extra: {
+        componentStack: errorInfo.componentStack,
+        url: window.location.href
+      },
+      fingerprint: ['react-error-boundary', error.name, error.message],
+      tags: {
+        source: 'react.error-boundary'
+      }
     })
 
     // Get app version if available

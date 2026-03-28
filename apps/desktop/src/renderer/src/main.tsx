@@ -6,7 +6,10 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App'
 import './i18n'
+import { captureRendererException, initGlitchTipRenderer } from './lib/glitchtip'
 import { logger } from './lib/logger'
+
+initGlitchTipRenderer()
 
 // Setup global error handlers
 setupGlobalErrorHandlers()
@@ -28,6 +31,17 @@ function setupGlobalErrorHandlers(): void {
   // Handle uncaught JavaScript errors
   window.addEventListener('error', (event) => {
     logger.error('Uncaught error:', event.error)
+    captureRendererException(event.error ?? new Error(event.message || 'Unknown window error'), {
+      extra: {
+        colno: event.colno,
+        filename: event.filename,
+        lineno: event.lineno,
+        url: window.location.href
+      },
+      tags: {
+        source: 'window.error'
+      }
+    })
 
     if (window?.api) {
       try {
@@ -57,6 +71,14 @@ function setupGlobalErrorHandlers(): void {
   // Handle unhandled promise rejections
   window.addEventListener('unhandledrejection', (event) => {
     logger.error('Unhandled promise rejection:', event.reason)
+    captureRendererException(event.reason, {
+      extra: {
+        url: window.location.href
+      },
+      tags: {
+        source: 'window.unhandledrejection'
+      }
+    })
 
     if (window?.api) {
       try {
