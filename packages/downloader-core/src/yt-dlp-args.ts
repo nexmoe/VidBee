@@ -1,5 +1,6 @@
 import os from 'node:os'
 import path from 'node:path'
+import { resolveBrowserCookiesArg } from './browser-cookies-setting'
 
 export interface YtDlpDownloadSettings {
   downloadPath?: string
@@ -25,12 +26,7 @@ export interface YtDlpDownloadOptions {
   customFilenameTemplate?: string
 }
 
-const YOUTUBE_HOST_SUFFIXES = ['youtube.com', 'youtu.be', 'youtube-nocookie.com'] as const
-const YOUTUBE_SAFE_PLAYER_CLIENTS = 'default,-web,-web_safari'
 const DEFAULT_FILENAME_TEMPLATE = '%(title)s via VidBee.%(ext)s'
-
-const hasYouTubeHost = (host: string): boolean =>
-  YOUTUBE_HOST_SUFFIXES.some((suffix) => host === suffix || host.endsWith(`.${suffix}`))
 
 const trim = (value?: string | null): string => value?.trim() ?? ''
 
@@ -78,18 +74,20 @@ export const sanitizeFilenameTemplate = (template: string): string => {
 export const isYouTubeUrl = (url: string): boolean => {
   try {
     const host = new URL(url).hostname.toLowerCase()
-    return hasYouTubeHost(host)
+    return (
+      host === 'youtube.com' ||
+      host.endsWith('.youtube.com') ||
+      host === 'youtu.be' ||
+      host.endsWith('.youtu.be') ||
+      host === 'youtube-nocookie.com' ||
+      host.endsWith('.youtube-nocookie.com')
+    )
   } catch {
     return false
   }
 }
 
-export const appendYouTubeSafeExtractorArgs = (args: string[], url: string): void => {
-  if (!isYouTubeUrl(url)) {
-    return
-  }
-  args.push('--extractor-args', `youtube:player_client=${YOUTUBE_SAFE_PLAYER_CLIENTS}`)
-}
+export const appendYouTubeSafeExtractorArgs = (_args: string[], _url: string): void => {}
 
 export const formatYtDlpCommand = (args: string[]): string => {
   const quoted = args.map((arg) => {
@@ -171,6 +169,9 @@ export const buildDownloadArgs = (
     const formatSelector = resolveVideoFormatSelector(options)
     if (formatSelector) {
       args.push('-f', formatSelector)
+      if (formatSelector.includes('+') && !formatSelector.includes('+none')) {
+        args.push('--merge-output-format', 'mkv')
+      }
     }
     if ((options.audioFormatIds?.length ?? 0) > 0 || formatSelector.includes('mergeall')) {
       args.push('--audio-multistreams')
@@ -223,8 +224,9 @@ export const buildDownloadArgs = (
     args.push('--windows-filenames')
   }
 
-  if (browserForCookies && browserForCookies !== 'none') {
-    args.push('--cookies-from-browser', browserForCookies)
+  const browserCookiesArg = resolveBrowserCookiesArg(settings.browserForCookies)
+  if (browserCookiesArg) {
+    args.push('--cookies-from-browser', browserCookiesArg)
   }
 
   if (cookiesPath) {
@@ -263,9 +265,9 @@ export const buildVideoInfoArgs = (
     args.push('--proxy', proxy)
   }
 
-  const browserForCookies = trim(settings.browserForCookies)
-  if (browserForCookies && browserForCookies !== 'none') {
-    args.push('--cookies-from-browser', browserForCookies)
+  const browserCookiesArg = resolveBrowserCookiesArg(settings.browserForCookies)
+  if (browserCookiesArg) {
+    args.push('--cookies-from-browser', browserCookiesArg)
   }
 
   const cookiesPath = trim(settings.cookiesPath)
@@ -300,9 +302,9 @@ export const buildPlaylistInfoArgs = (
     args.push('--proxy', proxy)
   }
 
-  const browserForCookies = trim(settings.browserForCookies)
-  if (browserForCookies && browserForCookies !== 'none') {
-    args.push('--cookies-from-browser', browserForCookies)
+  const browserCookiesArg = resolveBrowserCookiesArg(settings.browserForCookies)
+  if (browserCookiesArg) {
+    args.push('--cookies-from-browser', browserCookiesArg)
   }
 
   const cookiesPath = trim(settings.cookiesPath)
