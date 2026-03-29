@@ -3,6 +3,14 @@
 本页只记录你能直接感知到的更新，不展开技术实现细节。
 完整发布记录请查看 [GitHub Releases](https://github.com/nexmoe/VidBee/releases)。
 
+## [v1.3.6](https://github.com/nexmoe/VidBee/releases/tag/v1.3.6) - 2026-03-29
+
+### 新功能
+- 集成 GlitchTip 错误上报与用户反馈支持
+- 新增版本过期更新提醒通知
+- 集成 Rybbit 分析
+- 优化下载界面细节
+
 ## [v1.3.4](https://github.com/nexmoe/VidBee/releases/tag/v1.3.4) - 2026-03-14
 ### Bug 修复
 - 改用 Electron 默认下载源进行打包，提升 macOS 发布构建的稳定性。
