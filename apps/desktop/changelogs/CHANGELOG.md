@@ -3,6 +3,12 @@
 This page only includes user-visible updates and avoids implementation details.
 For full release notes, see [GitHub Releases](https://github.com/nexmoe/VidBee/releases).
 
+## [v1.3.7](https://github.com/nexmoe/VidBee/releases/tag/v1.3.7) - 2026-03-29
+### Bug Fixes
+- Improved filename sanitization to handle special Unicode characters and control codes.
+- Windows downloads now automatically trim overly long filenames.
+- Changing the concurrent download limit now takes effect immediately without restarting.
+
 ## [v1.3.6](https://github.com/nexmoe/VidBee/releases/tag/v1.3.6) - 2026-03-29
 
 ### Features

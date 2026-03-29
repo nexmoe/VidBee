@@ -3,6 +3,12 @@
 本页只记录你能直接感知到的更新，不展开技术实现细节。
 完整发布记录请查看 [GitHub Releases](https://github.com/nexmoe/VidBee/releases)。
 
+## [v1.3.7](https://github.com/nexmoe/VidBee/releases/tag/v1.3.7) - 2026-03-29
+### Bug 修复
+- 改进文件名清理逻辑，正确处理特殊 Unicode 字符和控制符。
+- Windows 下载现在会自动截断过长的文件名。
+- 修改并发下载数限制后立即生效，无需重启。
+
 ## [v1.3.6](https://github.com/nexmoe/VidBee/releases/tag/v1.3.6) - 2026-03-29
 
 ### 新功能
