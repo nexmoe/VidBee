@@ -29,6 +29,7 @@
     "fix": "ultracite fix"
   },
   "dependencies": {
+    "@opentelemetry/api": "^1.9.0",
     "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",
     "@hookform/resolvers": "^5.2.2",
@@ -92,6 +93,7 @@
     "@biomejs/biome": "2.3.13",
     "@electron-toolkit/tsconfig": "^2.0.0",
     "@iconify/json": "^2.2.394",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^22.18.6",
     "@types/react": "^19.1.13",
     "@types/react-dom": "^19.1.9",

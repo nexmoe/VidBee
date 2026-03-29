@@ -14,10 +14,12 @@
     "drizzle-orm": "^0.44.7"
   },
   "peerDependencies": {
+    "@opentelemetry/api": "^1.9.0",
     "@types/better-sqlite3": "^7.6.13",
     "better-sqlite3": "^12.4.1"
   },
   "devDependencies": {
+    "@opentelemetry/api": "^1.9.0",
     "@types/better-sqlite3": "^7.6.13",
     "better-sqlite3": "^12.4.1",
     "typescript": "^5.9.2"

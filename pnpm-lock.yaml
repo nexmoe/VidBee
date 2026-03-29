@@ -81,6 +81,9 @@ importers:
       '@hookform/resolvers':
         specifier: ^5.2.2
         version: 5.2.2(react-hook-form@7.65.0(react@19.2.4))
+      '@opentelemetry/api':
+        specifier: ^1.9.0
+        version: 1.9.1
       '@radix-ui/react-accordion':
         specifier: ^1.2.12
         version: 1.2.12(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -244,6 +247,9 @@ importers:
       '@iconify/json':
         specifier: ^2.2.394
         version: 2.2.398
+      '@types/better-sqlite3':
+        specifier: ^7.6.13
+        version: 7.6.13
       '@types/node':
         specifier: ^22.18.6
         version: 22.18.12
@@ -497,6 +503,9 @@ importers:
         specifier: ^0.44.7
         version: 0.44.7(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(@types/pg@8.15.6)(better-sqlite3@12.4.1)
     devDependencies:
+      '@opentelemetry/api':
+        specifier: ^1.9.0
+        version: 1.9.1
       '@types/better-sqlite3':
         specifier: ^7.6.13
         version: 7.6.13
