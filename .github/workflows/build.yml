@@ -19,6 +19,16 @@ on:
         required: false
       APPLE_API_KEY_P8_BASE64:
         required: false
+      VITE_GLITCHTIP_DSN:
+        required: false
+      SENTRY_URL:
+        required: false
+      SENTRY_ORG:
+        required: false
+      SENTRY_PROJECT:
+        required: false
+      SENTRY_AUTH_TOKEN:
+        required: false
 
 jobs:
   build:
@@ -103,6 +113,12 @@ jobs:
       - name: Build application
         env:
           VIDBEE_MAC_FFMPEG_MODE: ${{ matrix.mac_ffmpeg_mode }}
+          VITE_GLITCHTIP_DSN: ${{ secrets.VITE_GLITCHTIP_DSN }}
+          VITE_GLITCHTIP_ENVIRONMENT: production
+          SENTRY_URL: ${{ secrets.SENTRY_URL }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: ${{ matrix.build_script }}
 
       - name: Verify macOS codesign and notarization

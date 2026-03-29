@@ -4,6 +4,25 @@ import type { PlaylistInfo, VideoInfo } from '../../shared/types'
 import { sanitizeFilenameTemplate } from '../download-engine/args-builder'
 import { scopedLoggers } from '../utils/logger'
 
+const INVALID_VARIATION_SELECTOR_REGEX = /[\ufe00-\ufe0f]/gu
+const INVALID_PATH_SEGMENT_PUNCTUATION_REGEX = /[\\/:*?"<>|]+/g
+
+/**
+ * Returns whether a code point is unsafe inside a path segment.
+ */
+const isInvalidPathCodePoint = (codePoint: number): boolean => {
+  if (codePoint <= 0x1f) {
+    return true
+  }
+  if (codePoint >= 0x7f && codePoint <= 0x9f) {
+    return true
+  }
+  return codePoint >= 0xff_f0 && codePoint <= 0xff_ff
+}
+
+/**
+ * Ensures a target directory exists before writing files into it.
+ */
 export const ensureDirectoryExists = (dir?: string): void => {
   if (!dir) {
     return
@@ -15,24 +34,41 @@ export const ensureDirectoryExists = (dir?: string): void => {
   }
 }
 
+/**
+ * Normalizes user-derived path segments so they remain valid on desktop filesystems.
+ */
+const sanitizePathSegment = (value: string): string => {
+  const filtered = Array.from(value)
+    .filter((character) => {
+      const codePoint = character.codePointAt(0)
+      return codePoint !== undefined && !isInvalidPathCodePoint(codePoint)
+    })
+    .join('')
+
+  return filtered
+    .replace(INVALID_VARIATION_SELECTOR_REGEX, '')
+    .replace(INVALID_PATH_SEGMENT_PUNCTUATION_REGEX, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/[. ]+$/g, '')
+}
+
+/**
+ * Sanitizes a folder name generated from remote metadata.
+ */
 export const sanitizeFolderName = (value: string, fallback: string): string => {
   const trimmed = value.trim()
   if (!trimmed) {
     return fallback
   }
-  const sanitized = trimmed
-    .replace(/[\\/:*?"<>|]+/g, '-')
-    .replace(/\s+/g, ' ')
-    .replace(/[. ]+$/g, '')
+  const sanitized = sanitizePathSegment(trimmed)
   return sanitized || fallback
 }
 
-export const sanitizeTemplateValue = (value: string): string =>
-  value
-    .replace(/[\\/:*?"<>|]+/g, '-')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .replace(/[. ]+$/g, '')
+/**
+ * Sanitizes a template value before interpolating it into a download path.
+ */
+export const sanitizeTemplateValue = (value: string): string => sanitizePathSegment(value)
 
 const resolveTemplateToken = (token: string, info?: VideoInfo): string | undefined => {
   if (!info) {

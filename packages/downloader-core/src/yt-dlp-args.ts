@@ -28,6 +28,7 @@ export interface YtDlpDownloadOptions {
 const YOUTUBE_HOST_SUFFIXES = ['youtube.com', 'youtu.be', 'youtube-nocookie.com'] as const
 const YOUTUBE_SAFE_PLAYER_CLIENTS = 'default,-web,-web_safari'
 const DEFAULT_FILENAME_TEMPLATE = '%(title)s via VidBee.%(ext)s'
+const WINDOWS_FILENAME_TRIM_LENGTH = '120'
 
 const hasYouTubeHost = (host: string): boolean =>
   YOUTUBE_HOST_SUFFIXES.some((suffix) => host === suffix || host.endsWith(`.${suffix}`))
@@ -73,6 +74,19 @@ export const sanitizeFilenameTemplate = (template: string): string => {
     .map((part) => part.replace(/[<>:"|?*]/g, '-').replace(/[. ]+$/g, ''))
     .filter((part) => part !== '')
   return safeParts.length === 0 ? DEFAULT_FILENAME_TEMPLATE : safeParts.join('/')
+}
+
+/**
+ * Appends platform-specific filename safety flags.
+ */
+export const appendPlatformFilenameSafetyArgs = (
+  args: string[],
+  platform: NodeJS.Platform = process.platform
+): void => {
+  if (platform !== 'win32') {
+    return
+  }
+  args.push('--windows-filenames', '--trim-filenames', WINDOWS_FILENAME_TRIM_LENGTH)
 }
 
 export const isYouTubeUrl = (url: string): boolean => {
@@ -219,9 +233,7 @@ export const buildDownloadArgs = (
   args.push('--continue')
   args.push('--no-playlist-reverse')
 
-  if (process.platform === 'win32') {
-    args.push('--windows-filenames')
-  }
+  appendPlatformFilenameSafetyArgs(args)
 
   if (browserForCookies && browserForCookies !== 'none') {
     args.push('--cookies-from-browser', browserForCookies)

@@ -1,9 +1,29 @@
 import { type IpcContext, IpcMethod, IpcService } from 'electron-ipc-decorator'
 import type { AppSettings } from '../../../shared/types'
+import { downloadEngine } from '../../lib/download-engine'
+import {
+  applyBatchSettingSideEffects,
+  applySingleSettingSideEffects
+} from '../../lib/settings-effects'
 import { settingsManager } from '../../settings'
 import { updateTrayMenu } from '../../tray'
 import { applyAutoLaunchSetting } from '../../utils/auto-launch'
 import { applyDockVisibility } from '../../utils/dock'
+
+const settingSideEffectHandlers = {
+  onLanguage: () => {
+    updateTrayMenu()
+  },
+  onHideDockIcon: (value: boolean) => {
+    applyDockVisibility(value)
+  },
+  onLaunchAtLogin: (value: boolean) => {
+    applyAutoLaunchSetting(value)
+  },
+  onMaxConcurrentDownloads: (value: number) => {
+    downloadEngine.updateMaxConcurrent(value)
+  }
+}
 
 class SettingsService extends IpcService {
   static readonly groupName = 'settings'
@@ -16,18 +36,7 @@ class SettingsService extends IpcService {
   @IpcMethod()
   set<K extends keyof AppSettings>(_context: IpcContext, key: K, value: AppSettings[K]): void {
     settingsManager.set(key, value)
-
-    if (key === 'language') {
-      updateTrayMenu()
-    }
-
-    if (key === 'hideDockIcon') {
-      applyDockVisibility(value as AppSettings['hideDockIcon'])
-    }
-
-    if (key === 'launchAtLogin') {
-      applyAutoLaunchSetting(value as AppSettings['launchAtLogin'])
-    }
+    applySingleSettingSideEffects(key, value, settingSideEffectHandlers)
   }
 
   @IpcMethod()
@@ -38,18 +47,7 @@ class SettingsService extends IpcService {
   @IpcMethod()
   setAll(_context: IpcContext, settings: Partial<AppSettings>): void {
     settingsManager.setAll(settings)
-
-    if (settings.language) {
-      updateTrayMenu()
-    }
-
-    if (typeof settings.hideDockIcon === 'boolean') {
-      applyDockVisibility(settings.hideDockIcon)
-    }
-
-    if (typeof settings.launchAtLogin === 'boolean') {
-      applyAutoLaunchSetting(settings.launchAtLogin)
-    }
+    applyBatchSettingSideEffects(settings, settingSideEffectHandlers)
   }
 
   @IpcMethod()
@@ -57,6 +55,7 @@ class SettingsService extends IpcService {
     settingsManager.reset()
     applyDockVisibility(settingsManager.get('hideDockIcon'))
     applyAutoLaunchSetting(settingsManager.get('launchAtLogin'))
+    downloadEngine.updateMaxConcurrent(settingsManager.get('maxConcurrentDownloads'))
   }
 }
 
