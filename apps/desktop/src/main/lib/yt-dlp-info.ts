@@ -54,9 +54,93 @@ const parseVideoInfoPayload = (stdout: string): VideoInfo => {
   }
 }
 
-export const fetchVideoInfo = async (url: string): Promise<VideoInfo> => {
-  const ytdlp = ytdlpManager.getInstance()
+interface RawVideoInfoWithFallbacks extends VideoInfo {
+  entries?: RawVideoInfoWithFallbacks[]
+  requested_formats?: VideoInfo['formats']
+  format_id?: string
+  ext?: string
+  height?: number
+  width?: number
+  fps?: number
+  vcodec?: string
+  acodec?: string
+  filesize?: number
+  filesize_approx?: number
+  format_note?: string
+  video_ext?: string
+  audio_ext?: string
+  tbr?: number
+  quality?: number
+  protocol?: string
+  language?: string
+}
+
+const hasFormats = (info: VideoInfo): boolean =>
+  Array.isArray(info.formats) && info.formats.length > 0
+
+const normalizeVideoInfo = (info: RawVideoInfoWithFallbacks, fallbackUrl: string): VideoInfo => {
+  if (hasFormats(info)) {
+    return inflateEstimatedSizes(info)
+  }
+
+  const entryWithFormats = info.entries?.find((entry) => hasFormats(entry))
+  if (entryWithFormats) {
+    return normalizeVideoInfo(entryWithFormats, fallbackUrl)
+  }
+
+  const requestedFormats = Array.isArray(info.requested_formats) ? info.requested_formats : []
+  if (requestedFormats.length > 0) {
+    return inflateEstimatedSizes({
+      ...info,
+      formats: requestedFormats
+    })
+  }
+
+  if (info.format_id) {
+    return inflateEstimatedSizes({
+      ...info,
+      formats: [
+        {
+          format_id: info.format_id,
+          ext: info.ext ?? 'unknown',
+          height: info.height,
+          width: info.width,
+          fps: info.fps,
+          vcodec: info.vcodec,
+          acodec: info.acodec,
+          filesize: info.filesize,
+          filesize_approx: info.filesize_approx,
+          format_note: info.format_note,
+          video_ext: info.video_ext,
+          audio_ext: info.audio_ext,
+          tbr: info.tbr,
+          quality: info.quality,
+          protocol: info.protocol,
+          language: info.language
+        }
+      ]
+    })
+  }
+
+  return {
+    ...info,
+    id: info.id || fallbackUrl,
+    title: info.title || fallbackUrl,
+    formats: []
+  }
+}
+
+const buildVideoInfoFallbackArgs = (url: string): string[] => {
   const args = buildVideoInfoArgs(url, settingsManager.getAll())
+  const jsonArgIndex = args.indexOf('-j')
+  if (jsonArgIndex >= 0) {
+    args[jsonArgIndex] = '-J'
+  }
+  return args
+}
+
+const fetchVideoInfoPayload = async (url: string, args: string[]): Promise<VideoInfo> => {
+  const ytdlp = ytdlpManager.getInstance()
   return new Promise<VideoInfo>((resolve, reject) => {
     const proc = ytdlp.exec(args)
     const stdout = createBoundedTextBuffer()
@@ -68,7 +152,7 @@ export const fetchVideoInfo = async (url: string): Promise<VideoInfo> => {
       const err = stderr.get()
       if (code === 0 && out) {
         try {
-          resolve(inflateEstimatedSizes(parseVideoInfoPayload(out)))
+          resolve(normalizeVideoInfo(parseVideoInfoPayload(out) as RawVideoInfoWithFallbacks, url))
         } catch (error) {
           reject(new Error(`Failed to parse video info: ${error}`))
         }
@@ -79,6 +163,15 @@ export const fetchVideoInfo = async (url: string): Promise<VideoInfo> => {
     })
     proc.on('error', reject)
   })
+}
+
+export const fetchVideoInfo = async (url: string): Promise<VideoInfo> => {
+  const args = buildVideoInfoArgs(url, settingsManager.getAll())
+  const info = await fetchVideoInfoPayload(url, args)
+  if (hasFormats(info)) {
+    return info
+  }
+  return fetchVideoInfoPayload(url, buildVideoInfoFallbackArgs(url))
 }
 
 export const fetchVideoInfoWithCommand = async (url: string): Promise<VideoInfoCommandResult> => {
@@ -96,7 +189,25 @@ export const fetchVideoInfoWithCommand = async (url: string): Promise<VideoInfoC
       const err = stderr.get()
       if (code === 0 && out) {
         try {
-          resolve({ info: inflateEstimatedSizes(parseVideoInfoPayload(out)), ytDlpCommand })
+          const info = normalizeVideoInfo(
+            parseVideoInfoPayload(out) as RawVideoInfoWithFallbacks,
+            url
+          )
+          if (hasFormats(info)) {
+            resolve({ info, ytDlpCommand })
+            return
+          }
+          fetchVideoInfoPayload(url, buildVideoInfoFallbackArgs(url))
+            .then((fallbackInfo) => {
+              resolve({ info: fallbackInfo, ytDlpCommand })
+            })
+            .catch((error) => {
+              resolve({
+                info,
+                ytDlpCommand,
+                error: error instanceof Error ? error.message : String(error)
+              })
+            })
           return
         } catch (error) {
           resolve({
