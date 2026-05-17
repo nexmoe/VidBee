@@ -1,0 +1,69 @@
+name: Build Windows EXE
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Branch or tag to build'
+        required: true
+        default: 'v1.3.11'
+      upload_to_release:
+        description: 'Upload Windows assets to the matching GitHub Release'
+        required: true
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref }}
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+
+      - name: Install dependencies
+        run: pnpm install --filter ./apps/desktop...
+
+      - name: Validate desktop app
+        run: pnpm --filter ./apps/desktop run check
+
+      - name: Build Windows installer
+        env:
+          VITE_GLITCHTIP_ENVIRONMENT: production
+        run: pnpm --filter ./apps/desktop run build:win
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vidbee-windows-${{ github.event.inputs.ref }}
+          path: |
+            apps/desktop/dist/*.exe
+            apps/desktop/dist/*.yml
+            apps/desktop/dist/*.blockmap
+          if-no-files-found: error
+
+      - name: Upload assets to release
+        if: ${{ github.event.inputs.upload_to_release == 'true' && startsWith(github.event.inputs.ref, 'v') }}
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.event.inputs.ref }}
+          files: |
+            apps/desktop/dist/*.exe
+            apps/desktop/dist/*.yml
+            apps/desktop/dist/*.blockmap
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
