@@ -1,5 +1,6 @@
 export interface VideoInfoRequestCoordinator {
   beginRequest: () => number
+  invalidate: () => void
   isCurrentRequest: (requestId: number) => boolean
 }
 
@@ -15,6 +16,9 @@ export const createVideoInfoRequestCoordinator = (): VideoInfoRequestCoordinator
     beginRequest: () => {
       currentRequestId += 1
       return currentRequestId
+    },
+    invalidate: () => {
+      currentRequestId += 1
     },
     isCurrentRequest: (requestId: number) => requestId === currentRequestId
   }

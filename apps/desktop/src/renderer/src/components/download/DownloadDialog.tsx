@@ -26,7 +26,9 @@ import { ipcEvents, ipcServices } from '../../lib/ipc'
 import { addDownloadAtom } from '../../store/downloads'
 import { loadSettingsAtom, saveSettingAtom, settingsAtom } from '../../store/settings'
 import {
+  clearVideoInfoAtom,
   currentVideoInfoAtom,
+  currentVideoInfoSourceUrlAtom,
   fetchVideoInfoAtom,
   videoInfoCommandAtom,
   videoInfoErrorAtom,
@@ -88,11 +90,13 @@ export function DownloadDialog({
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const [videoInfo, _setVideoInfo] = useAtom(currentVideoInfoAtom)
+  const [videoInfoSourceUrl] = useAtom(currentVideoInfoSourceUrlAtom)
   const [videoInfoCommand] = useAtom(videoInfoCommandAtom)
   const [loading] = useAtom(videoInfoLoadingAtom)
   const [error] = useAtom(videoInfoErrorAtom)
   const [settings] = useAtom(settingsAtom)
   const fetchVideoInfo = useSetAtom(fetchVideoInfoAtom)
+  const clearVideoInfo = useSetAtom(clearVideoInfoAtom)
   const loadSettings = useSetAtom(loadSettingsAtom)
   const addDownload = useSetAtom(addDownloadAtom)
   const saveSetting = useSetAtom(saveSettingAtom)
@@ -187,6 +191,7 @@ export function DownloadDialog({
       }
 
       // Open dialog and set URL
+      clearVideoInfo()
       setOpen(true)
       setActiveTab(type)
 
@@ -244,7 +249,7 @@ export function DownloadDialog({
     return () => {
       ipcEvents.removeListener('download:deeplink', handleDeepLink)
     }
-  }, [fetchVideoInfo, t])
+  }, [clearVideoInfo, fetchVideoInfo, t])
 
   useEffect(() => {
     if (!open) {
@@ -335,6 +340,7 @@ export function DownloadDialog({
 
   const handleParsePlaylistUrl = useCallback(
     async (trimmedUrl: string) => {
+      clearVideoInfo()
       setOpen(true)
       setPlaylistUrl(trimmedUrl)
       setPlaylistInfo(null)
@@ -363,7 +369,7 @@ export function DownloadDialog({
         setPlaylistPreviewLoading(false)
       }
     },
-    [t]
+    [clearVideoInfo, t]
   )
 
   const handleFetchVideo = useCallback(async () => {
@@ -388,6 +394,7 @@ export function DownloadDialog({
 
   const handleParseSingleUrl = useCallback(
     async (trimmedUrl: string) => {
+      clearVideoInfo()
       setOpen(true)
       setUrl(trimmedUrl)
       setSingleVideoState((prev) => ({
@@ -400,7 +407,7 @@ export function DownloadDialog({
       }))
       await fetchVideoInfo(trimmedUrl)
     },
-    [fetchVideoInfo]
+    [clearVideoInfo, fetchVideoInfo]
   )
 
   const handleOneClickFromAddUrl = useCallback(
@@ -620,6 +627,10 @@ export function DownloadDialog({
     if (!videoInfo) {
       return
     }
+    if (videoInfoSourceUrl !== url.trim()) {
+      toast.error(t('errors.fetchInfoFailed'))
+      return
+    }
 
     const downloadTargetUrl = resolveDownloadTargetUrl({
       fallbackUrl: url,
@@ -695,12 +706,13 @@ export function DownloadDialog({
       console.error('Failed to start download:', error)
       toast.error(t('notifications.downloadFailed'))
     }
-  }, [videoInfo, singleVideoState, addDownload, t, url])
+  }, [videoInfo, videoInfoSourceUrl, singleVideoState, addDownload, t, url])
 
   // Reset form when dialog closes
   useEffect(() => {
     if (!open) {
       // Reset single video states
+      clearVideoInfo()
       setUrl('')
       setActiveTab('single')
       setSingleVideoState({
@@ -723,7 +735,7 @@ export function DownloadDialog({
       setEndIndex('')
       setSelectedEntryIds(new Set())
     }
-  }, [open])
+  }, [open, clearVideoInfo])
 
   const handleSingleVideoStateChange = useCallback(
     (updates: Partial<SingleVideoState>) => {
