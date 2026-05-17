@@ -30,12 +30,19 @@ jobs:
         with:
           node-version: 20
 
+      - name: Install Python for native modules
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 8
 
       - name: Install dependencies
+        env:
+          npm_config_python: ${{ env.pythonLocation }}\python.exe
         run: pnpm install --filter ./apps/desktop...
 
       - name: Validate desktop app
