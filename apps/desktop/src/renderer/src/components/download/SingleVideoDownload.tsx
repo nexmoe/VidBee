@@ -109,6 +109,30 @@ const filterFormatsByType = (
   })
 }
 
+const buildFallbackFormat = (type: 'video' | 'audio'): VideoFormat => {
+  if (type === 'audio') {
+    return {
+      format_id: 'bestaudio',
+      ext: 'm4a',
+      acodec: 'best',
+      vcodec: 'none',
+      video_ext: 'none',
+      audio_ext: 'm4a',
+      format_note: 'Best audio'
+    }
+  }
+
+  return {
+    format_id: 'best',
+    ext: 'mp4',
+    acodec: 'best',
+    vcodec: 'best',
+    video_ext: 'mp4',
+    audio_ext: 'best',
+    format_note: 'Best'
+  }
+}
+
 interface FormatListProps {
   formats: VideoFormat[]
   type: 'video' | 'audio'
@@ -407,7 +431,7 @@ export function SingleVideoDownload({
     }
     const baseFormats = filterFormatsByType(videoInfo.formats, activeTab)
     if (baseFormats.length === 0) {
-      return []
+      return [buildFallbackFormat(activeTab)]
     }
 
     const hasHttpFormats = baseFormats.some(isHttpProtocol)
