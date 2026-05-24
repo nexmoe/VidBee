@@ -78,6 +78,14 @@ const buildSingleVideoFormatSelector = (
   return `${formatId}+bestaudio[ext=${preferredAudioExt}]/${formatId}+bestaudio/${SINGLE_FORMAT_FALLBACK}`
 }
 
+const hasPlaylistQuery = (value: string): boolean => {
+  try {
+    return Boolean(new URL(value).searchParams.get('list')?.trim())
+  } catch {
+    return false
+  }
+}
+
 interface DownloadDialogProps {
   onOpenSupportedSites?: () => void
   onOpenSettings?: () => void
@@ -395,6 +403,33 @@ export function DownloadDialog({
     }))
     await fetchVideoInfo(url.trim())
   }, [url, fetchVideoInfo, handleParsePlaylistUrl, t])
+
+  const handleActiveTabChange = useCallback(
+    (tab: 'single' | 'playlist') => {
+      setActiveTab(tab)
+      if (tab !== 'playlist') {
+        return
+      }
+
+      const candidateUrl = url.trim() || videoInfoSourceUrl?.trim() || ''
+      if (!(candidateUrl && hasPlaylistQuery(candidateUrl))) {
+        return
+      }
+      if (playlistUrl.trim() === candidateUrl && (playlistInfo || playlistPreviewLoading)) {
+        return
+      }
+
+      void handleParsePlaylistUrl(candidateUrl)
+    },
+    [
+      handleParsePlaylistUrl,
+      playlistInfo,
+      playlistPreviewLoading,
+      playlistUrl,
+      url,
+      videoInfoSourceUrl
+    ]
+  )
 
   const handleParseSingleUrl = useCallback(
     async (trimmedUrl: string) => {
@@ -961,7 +996,7 @@ export function DownloadDialog({
         </div>
       }
       lockDialogHeight={lockDialogHeight}
-      onActiveTabChange={setActiveTab}
+      onActiveTabChange={handleActiveTabChange}
       oneClickDownloadEnabled={settings.oneClickDownload}
       oneClickTooltip={t('download.oneClickDownloadTooltip')}
       onOpenChange={setOpen}
