@@ -278,6 +278,7 @@ const buildPlaylistArgs = (url: string): string[] => {
   const args: string[] = [
     '--flat-playlist',
     '--no-warnings',
+    '--ignore-errors',
     '--encoding',
     'utf-8',
     '--socket-timeout',
@@ -383,10 +384,13 @@ export const fetchPlaylistInfo = async (url: string): Promise<PlaylistInfo> => {
     proc.on('close', (code) => {
       const out = stdout.get()
       const err = stderr.get()
-      if (code === 0 && out) {
+      if (out) {
         try {
-          resolve(parsePrintedPlaylistInfo(out, url))
-          return
+          const playlist = parsePrintedPlaylistInfo(out, url)
+          if (playlist.entryCount > 0 || code === 0) {
+            resolve(playlist)
+            return
+          }
         } catch (error) {
           reject(new Error(`Failed to parse playlist info: ${error}`))
           return
