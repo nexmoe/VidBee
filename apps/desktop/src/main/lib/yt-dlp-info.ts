@@ -260,9 +260,31 @@ const resolveEntryUrl = (entry: RawPlaylistEntry): string => {
   return entry.id ?? ''
 }
 
+const PLAYLIST_FIELD_SEPARATOR = '\t'
+const PLAYLIST_LINE_TEMPLATE = [
+  '%(playlist_id|)s',
+  '%(playlist_title|)s',
+  '%(playlist_index|)s',
+  '%(id|)s',
+  '%(title|)s',
+  '%(url|)s',
+  '%(webpage_url|)s',
+  '%(original_url|)s',
+  '%(ie_key|)s'
+].join(PLAYLIST_FIELD_SEPARATOR)
+
 const buildPlaylistArgs = (url: string): string[] => {
   const settings = settingsManager.getAll()
-  const args: string[] = ['-J', '--flat-playlist', '--no-warnings', '--encoding', 'utf-8']
+  const args: string[] = [
+    '--flat-playlist',
+    '--no-warnings',
+    '--encoding',
+    'utf-8',
+    '--socket-timeout',
+    '30',
+    '--print',
+    PLAYLIST_LINE_TEMPLATE
+  ]
   if (settings.proxy) {
     args.push('--proxy', settings.proxy)
   }
@@ -284,6 +306,71 @@ const buildPlaylistArgs = (url: string): string[] => {
   return args
 }
 
+const parsePlaylistIndex = (value: string, fallback: number): number => {
+  const parsed = Number.parseInt(value, 10)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback
+}
+
+const normalizePrintedPlaylistField = (value: string | undefined): string => {
+  const trimmed = value?.trim() ?? ''
+  return trimmed === 'NA' ? '' : trimmed
+}
+
+const parsePrintedPlaylistInfo = (stdout: string, fallbackUrl: string): PlaylistInfo => {
+  const entries: PlaylistInfo['entries'] = []
+  let playlistId = ''
+  let playlistTitle = ''
+
+  for (const line of stdout.split(/\r?\n/)) {
+    if (!line.trim()) {
+      continue
+    }
+
+    const [
+      rawPlaylistId,
+      rawPlaylistTitle,
+      rawIndex,
+      rawId,
+      rawTitle,
+      rawUrl,
+      rawWebpageUrl,
+      rawOriginalUrl,
+      rawIeKey
+    ] = line.replace(/\r$/, '').split(PLAYLIST_FIELD_SEPARATOR)
+
+    playlistId ||= normalizePrintedPlaylistField(rawPlaylistId)
+    playlistTitle ||= normalizePrintedPlaylistField(rawPlaylistTitle)
+
+    const id = normalizePrintedPlaylistField(rawId) || `${entries.length}`
+    const entryUrl = resolveEntryUrl({
+      id,
+      title: normalizePrintedPlaylistField(rawTitle),
+      url: normalizePrintedPlaylistField(rawUrl),
+      webpage_url: normalizePrintedPlaylistField(rawWebpageUrl),
+      original_url: normalizePrintedPlaylistField(rawOriginalUrl),
+      ie_key: normalizePrintedPlaylistField(rawIeKey)
+    })
+
+    if (!entryUrl) {
+      continue
+    }
+
+    entries.push({
+      id,
+      title: normalizePrintedPlaylistField(rawTitle) || `Entry ${entries.length + 1}`,
+      url: entryUrl,
+      index: parsePlaylistIndex(rawIndex, entries.length + 1)
+    })
+  }
+
+  return {
+    id: playlistId || fallbackUrl,
+    title: playlistTitle || 'Playlist',
+    entries,
+    entryCount: entries.length
+  }
+}
+
 export const fetchPlaylistInfo = async (url: string): Promise<PlaylistInfo> => {
   const ytdlp = ytdlpManager.getInstance()
   const args = buildPlaylistArgs(url)
@@ -298,26 +385,7 @@ export const fetchPlaylistInfo = async (url: string): Promise<PlaylistInfo> => {
       const err = stderr.get()
       if (code === 0 && out) {
         try {
-          const parsed = JSON.parse(out) as {
-            id?: string
-            title?: string
-            entries?: RawPlaylistEntry[]
-          }
-          const rawEntries = Array.isArray(parsed.entries) ? parsed.entries : []
-          const entries = rawEntries
-            .map((entry, i) => ({
-              id: entry.id || `${i}`,
-              title: entry.title || `Entry ${i + 1}`,
-              url: resolveEntryUrl(entry),
-              index: i + 1
-            }))
-            .filter((e) => e.url.length > 0)
-          resolve({
-            id: parsed.id || url,
-            title: parsed.title || 'Playlist',
-            entries,
-            entryCount: entries.length
-          })
+          resolve(parsePrintedPlaylistInfo(out, url))
           return
         } catch (error) {
           reject(new Error(`Failed to parse playlist info: ${error}`))

@@ -4,7 +4,7 @@ import { Checkbox } from '@renderer/components/ui/checkbox'
 import { DownloadDialogLayout } from '@renderer/components/ui/download-dialog-layout'
 import { Input } from '@renderer/components/ui/input'
 import { Label } from '@renderer/components/ui/label'
-import type { PlaylistInfo, VideoFormat, VideoInfo } from '@shared/types'
+import type { OneClickQualityPreset, PlaylistInfo, VideoFormat, VideoInfo } from '@shared/types'
 import {
   buildAudioFormatPreference,
   buildVideoFormatPreference
@@ -118,9 +118,11 @@ export function DownloadDialog({
 
   // Playlist states
   const downloadTypeId = useId()
+  const playlistQualityId = useId()
   const advancedOptionsId = useId()
   const [playlistUrl, setPlaylistUrl] = useState('')
   const [downloadType, setDownloadType] = useState<'video' | 'audio'>('video')
+  const [playlistQuality, setPlaylistQuality] = useState<OneClickQualityPreset>('best')
   const [startIndex, setStartIndex] = useState('1')
   const [endIndex, setEndIndex] = useState('')
   const [playlistCustomDownloadPath, setPlaylistCustomDownloadPath] = useState('')
@@ -202,6 +204,7 @@ export function DownloadDialog({
         setPlaylistPreviewError(null)
         setPlaylistCustomDownloadPath('')
         setSelectedEntryIds(new Set())
+        setPlaylistQuality(settings.oneClickQuality)
 
         // Wait for dialog to open, then fetch playlist info
         setTimeout(async () => {
@@ -249,7 +252,7 @@ export function DownloadDialog({
     return () => {
       ipcEvents.removeListener('download:deeplink', handleDeepLink)
     }
-  }, [clearVideoInfo, fetchVideoInfo, t])
+  }, [clearVideoInfo, fetchVideoInfo, settings.oneClickQuality, t])
 
   useEffect(() => {
     if (!open) {
@@ -347,6 +350,7 @@ export function DownloadDialog({
       setPlaylistPreviewError(null)
       setPlaylistCustomDownloadPath('')
       setSelectedEntryIds(new Set())
+      setPlaylistQuality(settings.oneClickQuality)
 
       setPlaylistPreviewError(null)
       setPlaylistPreviewLoading(true)
@@ -369,7 +373,7 @@ export function DownloadDialog({
         setPlaylistPreviewLoading(false)
       }
     },
-    [clearVideoInfo, t]
+    [clearVideoInfo, settings.oneClickQuality, t]
   )
 
   const handleFetchVideo = useCallback(async () => {
@@ -556,8 +560,8 @@ export function DownloadDialog({
 
       const format =
         downloadType === 'video'
-          ? buildVideoFormatPreference(settings)
-          : buildAudioFormatPreference(settings)
+          ? buildVideoFormatPreference({ oneClickQuality: playlistQuality })
+          : buildAudioFormatPreference({ oneClickQuality: playlistQuality })
       const containerFormat = downloadType === 'video' ? settings.oneClickContainer : undefined
 
       const result = await ipcServices.download.startPlaylistDownload({
@@ -606,6 +610,7 @@ export function DownloadDialog({
     playlistInfo,
     computePlaylistRange,
     downloadType,
+    playlistQuality,
     settings,
     addDownload,
     t,
@@ -734,8 +739,9 @@ export function DownloadDialog({
       setStartIndex('1')
       setEndIndex('')
       setSelectedEntryIds(new Set())
+      setPlaylistQuality(settings.oneClickQuality)
     }
-  }, [open, clearVideoInfo])
+  }, [open, clearVideoInfo, settings.oneClickQuality])
 
   const handleSingleVideoStateChange = useCallback(
     (updates: Partial<SingleVideoState>) => {
@@ -888,11 +894,12 @@ export function DownloadDialog({
               </div>
             )}
 
-            {/* Advanced Options - Playlist (when no playlist info) */}
-            {activeTab === 'playlist' && !playlistInfo && !playlistPreviewLoading && (
+            {/* Advanced Options - Playlist */}
+            {activeTab === 'playlist' && !playlistPreviewLoading && (
               <div className="flex items-center gap-2">
                 <Checkbox
                   checked={advancedOptionsOpen}
+                  disabled={playlistBusy}
                   id={advancedOptionsId}
                   onCheckedChange={(checked) => {
                     setAdvancedOptionsOpen(checked === true)
@@ -972,10 +979,13 @@ export function DownloadDialog({
           playlistInfo={playlistInfo}
           playlistPreviewError={playlistPreviewError}
           playlistPreviewLoading={playlistPreviewLoading}
+          quality={playlistQuality}
+          qualityId={playlistQualityId}
           selectedEntryIds={selectedEntryIds}
           selectedPlaylistEntries={selectedPlaylistEntries}
           setDownloadType={setDownloadType}
           setEndIndex={setEndIndex}
+          setQuality={setPlaylistQuality}
           setSelectedEntryIds={setSelectedEntryIds}
           setStartIndex={setStartIndex}
           startIndex={startIndex}
