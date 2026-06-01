@@ -10,7 +10,7 @@ import {
   SelectValue
 } from '@renderer/components/ui/select'
 import { cn } from '@renderer/lib/utils'
-import type { PlaylistInfo } from '@shared/types'
+import type { OneClickQualityPreset, PlaylistInfo } from '@shared/types'
 import { AlertCircle, List, Loader2 } from 'lucide-react'
 import type { Dispatch, SetStateAction } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -24,6 +24,8 @@ interface PlaylistDownloadProps {
   selectedEntryIds: Set<string>
   downloadType: 'video' | 'audio'
   downloadTypeId: string
+  qualityId: string
+  quality: OneClickQualityPreset
   startIndex: string
   endIndex: string
   advancedOptionsOpen: boolean
@@ -31,6 +33,7 @@ interface PlaylistDownloadProps {
   setStartIndex: Dispatch<SetStateAction<string>>
   setEndIndex: Dispatch<SetStateAction<string>>
   setDownloadType: Dispatch<SetStateAction<'video' | 'audio'>>
+  setQuality: Dispatch<SetStateAction<OneClickQualityPreset>>
 }
 
 export function PlaylistDownload({
@@ -42,13 +45,16 @@ export function PlaylistDownload({
   selectedEntryIds,
   downloadType,
   downloadTypeId,
+  qualityId,
+  quality,
   startIndex,
   endIndex,
   advancedOptionsOpen,
   setSelectedEntryIds,
   setStartIndex,
   setEndIndex,
-  setDownloadType
+  setDownloadType,
+  setQuality
 }: PlaylistDownloadProps) {
   const { t } = useTranslation()
 
@@ -177,7 +183,7 @@ export function PlaylistDownload({
             <div className={cn('min-h-0', !advancedOptionsOpen && 'pointer-events-none')}>
               <div className="w-full border-t pt-3">
                 <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-3 gap-3">
                     <div className="space-y-1.5">
                       <Label
                         className="font-medium text-muted-foreground text-xs"
@@ -199,6 +205,41 @@ export function PlaylistDownload({
                           </SelectItem>
                           <SelectItem className="text-xs" value="audio">
                             {t('download.audio')}
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label
+                        className="font-medium text-muted-foreground text-xs"
+                        htmlFor={qualityId}
+                      >
+                        {t('settings.oneClickQuality')}
+                      </Label>
+                      <Select
+                        disabled={playlistBusy}
+                        onValueChange={(value) => setQuality(value as OneClickQualityPreset)}
+                        value={quality}
+                      >
+                        <SelectTrigger className="h-8 text-xs" id={qualityId}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem className="text-xs" value="best">
+                            {t('settings.oneClickQualityOptions.best')}
+                          </SelectItem>
+                          <SelectItem className="text-xs" value="good">
+                            {t('settings.oneClickQualityOptions.good')}
+                          </SelectItem>
+                          <SelectItem className="text-xs" value="normal">
+                            {t('settings.oneClickQualityOptions.normal')}
+                          </SelectItem>
+                          <SelectItem className="text-xs" value="bad">
+                            {t('settings.oneClickQualityOptions.bad')}
+                          </SelectItem>
+                          <SelectItem className="text-xs" value="worst">
+                            {t('settings.oneClickQualityOptions.worst')}
                           </SelectItem>
                         </SelectContent>
                       </Select>

@@ -4,8 +4,10 @@ import {
 } from '@vidbee/downloader-core/format-preferences'
 import type { AppSettings } from '../types'
 
-export const buildVideoFormatPreference = (settings: AppSettings): string =>
+type QualityPreferenceSettings = Pick<AppSettings, 'oneClickQuality'>
+
+export const buildVideoFormatPreference = (settings: QualityPreferenceSettings): string =>
   buildSharedVideoFormatPreference({ oneClickQuality: settings.oneClickQuality })
 
-export const buildAudioFormatPreference = (settings: AppSettings): string =>
+export const buildAudioFormatPreference = (settings: QualityPreferenceSettings): string =>
   buildSharedAudioFormatPreference({ oneClickQuality: settings.oneClickQuality })

@@ -54,9 +54,93 @@ const parseVideoInfoPayload = (stdout: string): VideoInfo => {
   }
 }
 
-export const fetchVideoInfo = async (url: string): Promise<VideoInfo> => {
-  const ytdlp = ytdlpManager.getInstance()
+interface RawVideoInfoWithFallbacks extends VideoInfo {
+  entries?: RawVideoInfoWithFallbacks[]
+  requested_formats?: VideoInfo['formats']
+  format_id?: string
+  ext?: string
+  height?: number
+  width?: number
+  fps?: number
+  vcodec?: string
+  acodec?: string
+  filesize?: number
+  filesize_approx?: number
+  format_note?: string
+  video_ext?: string
+  audio_ext?: string
+  tbr?: number
+  quality?: number
+  protocol?: string
+  language?: string
+}
+
+const hasFormats = (info: VideoInfo): boolean =>
+  Array.isArray(info.formats) && info.formats.length > 0
+
+const normalizeVideoInfo = (info: RawVideoInfoWithFallbacks, fallbackUrl: string): VideoInfo => {
+  if (hasFormats(info)) {
+    return inflateEstimatedSizes(info)
+  }
+
+  const entryWithFormats = info.entries?.find((entry) => hasFormats(entry))
+  if (entryWithFormats) {
+    return normalizeVideoInfo(entryWithFormats, fallbackUrl)
+  }
+
+  const requestedFormats = Array.isArray(info.requested_formats) ? info.requested_formats : []
+  if (requestedFormats.length > 0) {
+    return inflateEstimatedSizes({
+      ...info,
+      formats: requestedFormats
+    })
+  }
+
+  if (info.format_id) {
+    return inflateEstimatedSizes({
+      ...info,
+      formats: [
+        {
+          format_id: info.format_id,
+          ext: info.ext ?? 'unknown',
+          height: info.height,
+          width: info.width,
+          fps: info.fps,
+          vcodec: info.vcodec,
+          acodec: info.acodec,
+          filesize: info.filesize,
+          filesize_approx: info.filesize_approx,
+          format_note: info.format_note,
+          video_ext: info.video_ext,
+          audio_ext: info.audio_ext,
+          tbr: info.tbr,
+          quality: info.quality,
+          protocol: info.protocol,
+          language: info.language
+        }
+      ]
+    })
+  }
+
+  return {
+    ...info,
+    id: info.id || fallbackUrl,
+    title: info.title || fallbackUrl,
+    formats: []
+  }
+}
+
+const buildVideoInfoFallbackArgs = (url: string): string[] => {
   const args = buildVideoInfoArgs(url, settingsManager.getAll())
+  const jsonArgIndex = args.indexOf('-j')
+  if (jsonArgIndex >= 0) {
+    args[jsonArgIndex] = '-J'
+  }
+  return args
+}
+
+const fetchVideoInfoPayload = async (url: string, args: string[]): Promise<VideoInfo> => {
+  const ytdlp = ytdlpManager.getInstance()
   return new Promise<VideoInfo>((resolve, reject) => {
     const proc = ytdlp.exec(args)
     const stdout = createBoundedTextBuffer()
@@ -68,7 +152,7 @@ export const fetchVideoInfo = async (url: string): Promise<VideoInfo> => {
       const err = stderr.get()
       if (code === 0 && out) {
         try {
-          resolve(inflateEstimatedSizes(parseVideoInfoPayload(out)))
+          resolve(normalizeVideoInfo(parseVideoInfoPayload(out) as RawVideoInfoWithFallbacks, url))
         } catch (error) {
           reject(new Error(`Failed to parse video info: ${error}`))
         }
@@ -79,6 +163,15 @@ export const fetchVideoInfo = async (url: string): Promise<VideoInfo> => {
     })
     proc.on('error', reject)
   })
+}
+
+export const fetchVideoInfo = async (url: string): Promise<VideoInfo> => {
+  const args = buildVideoInfoArgs(url, settingsManager.getAll())
+  const info = await fetchVideoInfoPayload(url, args)
+  if (hasFormats(info)) {
+    return info
+  }
+  return fetchVideoInfoPayload(url, buildVideoInfoFallbackArgs(url))
 }
 
 export const fetchVideoInfoWithCommand = async (url: string): Promise<VideoInfoCommandResult> => {
@@ -96,7 +189,25 @@ export const fetchVideoInfoWithCommand = async (url: string): Promise<VideoInfoC
       const err = stderr.get()
       if (code === 0 && out) {
         try {
-          resolve({ info: inflateEstimatedSizes(parseVideoInfoPayload(out)), ytDlpCommand })
+          const info = normalizeVideoInfo(
+            parseVideoInfoPayload(out) as RawVideoInfoWithFallbacks,
+            url
+          )
+          if (hasFormats(info)) {
+            resolve({ info, ytDlpCommand })
+            return
+          }
+          fetchVideoInfoPayload(url, buildVideoInfoFallbackArgs(url))
+            .then((fallbackInfo) => {
+              resolve({ info: fallbackInfo, ytDlpCommand })
+            })
+            .catch((error) => {
+              resolve({
+                info,
+                ytDlpCommand,
+                error: error instanceof Error ? error.message : String(error)
+              })
+            })
           return
         } catch (error) {
           resolve({
@@ -149,9 +260,32 @@ const resolveEntryUrl = (entry: RawPlaylistEntry): string => {
   return entry.id ?? ''
 }
 
+const PLAYLIST_FIELD_SEPARATOR = '\t'
+const PLAYLIST_LINE_TEMPLATE = [
+  '%(playlist_id|)s',
+  '%(playlist_title|)s',
+  '%(playlist_index|)s',
+  '%(id|)s',
+  '%(title|)s',
+  '%(url|)s',
+  '%(webpage_url|)s',
+  '%(original_url|)s',
+  '%(ie_key|)s'
+].join(PLAYLIST_FIELD_SEPARATOR)
+
 const buildPlaylistArgs = (url: string): string[] => {
   const settings = settingsManager.getAll()
-  const args: string[] = ['-J', '--flat-playlist', '--no-warnings', '--encoding', 'utf-8']
+  const args: string[] = [
+    '--flat-playlist',
+    '--no-warnings',
+    '--ignore-errors',
+    '--encoding',
+    'utf-8',
+    '--socket-timeout',
+    '30',
+    '--print',
+    PLAYLIST_LINE_TEMPLATE
+  ]
   if (settings.proxy) {
     args.push('--proxy', settings.proxy)
   }
@@ -173,6 +307,71 @@ const buildPlaylistArgs = (url: string): string[] => {
   return args
 }
 
+const parsePlaylistIndex = (value: string, fallback: number): number => {
+  const parsed = Number.parseInt(value, 10)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback
+}
+
+const normalizePrintedPlaylistField = (value: string | undefined): string => {
+  const trimmed = value?.trim() ?? ''
+  return trimmed === 'NA' ? '' : trimmed
+}
+
+const parsePrintedPlaylistInfo = (stdout: string, fallbackUrl: string): PlaylistInfo => {
+  const entries: PlaylistInfo['entries'] = []
+  let playlistId = ''
+  let playlistTitle = ''
+
+  for (const line of stdout.split(/\r?\n/)) {
+    if (!line.trim()) {
+      continue
+    }
+
+    const [
+      rawPlaylistId,
+      rawPlaylistTitle,
+      rawIndex,
+      rawId,
+      rawTitle,
+      rawUrl,
+      rawWebpageUrl,
+      rawOriginalUrl,
+      rawIeKey
+    ] = line.replace(/\r$/, '').split(PLAYLIST_FIELD_SEPARATOR)
+
+    playlistId ||= normalizePrintedPlaylistField(rawPlaylistId)
+    playlistTitle ||= normalizePrintedPlaylistField(rawPlaylistTitle)
+
+    const id = normalizePrintedPlaylistField(rawId) || `${entries.length}`
+    const entryUrl = resolveEntryUrl({
+      id,
+      title: normalizePrintedPlaylistField(rawTitle),
+      url: normalizePrintedPlaylistField(rawUrl),
+      webpage_url: normalizePrintedPlaylistField(rawWebpageUrl),
+      original_url: normalizePrintedPlaylistField(rawOriginalUrl),
+      ie_key: normalizePrintedPlaylistField(rawIeKey)
+    })
+
+    if (!entryUrl) {
+      continue
+    }
+
+    entries.push({
+      id,
+      title: normalizePrintedPlaylistField(rawTitle) || `Entry ${entries.length + 1}`,
+      url: entryUrl,
+      index: parsePlaylistIndex(rawIndex, entries.length + 1)
+    })
+  }
+
+  return {
+    id: playlistId || fallbackUrl,
+    title: playlistTitle || 'Playlist',
+    entries,
+    entryCount: entries.length
+  }
+}
+
 export const fetchPlaylistInfo = async (url: string): Promise<PlaylistInfo> => {
   const ytdlp = ytdlpManager.getInstance()
   const args = buildPlaylistArgs(url)
@@ -185,29 +384,13 @@ export const fetchPlaylistInfo = async (url: string): Promise<PlaylistInfo> => {
     proc.on('close', (code) => {
       const out = stdout.get()
       const err = stderr.get()
-      if (code === 0 && out) {
+      if (out) {
         try {
-          const parsed = JSON.parse(out) as {
-            id?: string
-            title?: string
-            entries?: RawPlaylistEntry[]
+          const playlist = parsePrintedPlaylistInfo(out, url)
+          if (playlist.entryCount > 0 || code === 0) {
+            resolve(playlist)
+            return
           }
-          const rawEntries = Array.isArray(parsed.entries) ? parsed.entries : []
-          const entries = rawEntries
-            .map((entry, i) => ({
-              id: entry.id || `${i}`,
-              title: entry.title || `Entry ${i + 1}`,
-              url: resolveEntryUrl(entry),
-              index: i + 1
-            }))
-            .filter((e) => e.url.length > 0)
-          resolve({
-            id: parsed.id || url,
-            title: parsed.title || 'Playlist',
-            entries,
-            entryCount: entries.length
-          })
-          return
         } catch (error) {
           reject(new Error(`Failed to parse playlist info: ${error}`))
           return

@@ -60,7 +60,14 @@ class YtDlpManager {
    * Resolve the resources directory used by packaged desktop binaries.
    */
   private getResourcesPath(): string {
-    return resolveBundledResourcesPath(['yt-dlp.exe', 'yt-dlp_macos', 'yt-dlp_linux'])
+    const platform = os.platform()
+    if (platform === 'win32') {
+      return resolveBundledResourcesPath(['yt-dlp.exe'])
+    }
+    if (platform === 'darwin') {
+      return resolveBundledResourcesPath(['yt-dlp_macos'])
+    }
+    return resolveBundledResourcesPath(['yt-dlp_linux'])
   }
 
   /**

@@ -4,7 +4,7 @@ import { Checkbox } from '@renderer/components/ui/checkbox'
 import { DownloadDialogLayout } from '@renderer/components/ui/download-dialog-layout'
 import { Input } from '@renderer/components/ui/input'
 import { Label } from '@renderer/components/ui/label'
-import type { PlaylistInfo, VideoFormat, VideoInfo } from '@shared/types'
+import type { OneClickQualityPreset, PlaylistInfo, VideoFormat, VideoInfo } from '@shared/types'
 import {
   buildAudioFormatPreference,
   buildVideoFormatPreference
@@ -26,7 +26,9 @@ import { ipcEvents, ipcServices } from '../../lib/ipc'
 import { addDownloadAtom } from '../../store/downloads'
 import { loadSettingsAtom, saveSettingAtom, settingsAtom } from '../../store/settings'
 import {
+  clearVideoInfoAtom,
   currentVideoInfoAtom,
+  currentVideoInfoSourceUrlAtom,
   fetchVideoInfoAtom,
   videoInfoCommandAtom,
   videoInfoErrorAtom,
@@ -76,6 +78,14 @@ const buildSingleVideoFormatSelector = (
   return `${formatId}+bestaudio[ext=${preferredAudioExt}]/${formatId}+bestaudio/${SINGLE_FORMAT_FALLBACK}`
 }
 
+const hasPlaylistQuery = (value: string): boolean => {
+  try {
+    return Boolean(new URL(value).searchParams.get('list')?.trim())
+  } catch {
+    return false
+  }
+}
+
 interface DownloadDialogProps {
   onOpenSupportedSites?: () => void
   onOpenSettings?: () => void
@@ -88,11 +98,13 @@ export function DownloadDialog({
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const [videoInfo, _setVideoInfo] = useAtom(currentVideoInfoAtom)
+  const [videoInfoSourceUrl] = useAtom(currentVideoInfoSourceUrlAtom)
   const [videoInfoCommand] = useAtom(videoInfoCommandAtom)
   const [loading] = useAtom(videoInfoLoadingAtom)
   const [error] = useAtom(videoInfoErrorAtom)
   const [settings] = useAtom(settingsAtom)
   const fetchVideoInfo = useSetAtom(fetchVideoInfoAtom)
+  const clearVideoInfo = useSetAtom(clearVideoInfoAtom)
   const loadSettings = useSetAtom(loadSettingsAtom)
   const addDownload = useSetAtom(addDownloadAtom)
   const saveSetting = useSetAtom(saveSettingAtom)
@@ -114,9 +126,11 @@ export function DownloadDialog({
 
   // Playlist states
   const downloadTypeId = useId()
+  const playlistQualityId = useId()
   const advancedOptionsId = useId()
   const [playlistUrl, setPlaylistUrl] = useState('')
   const [downloadType, setDownloadType] = useState<'video' | 'audio'>('video')
+  const [playlistQuality, setPlaylistQuality] = useState<OneClickQualityPreset>('best')
   const [startIndex, setStartIndex] = useState('1')
   const [endIndex, setEndIndex] = useState('')
   const [playlistCustomDownloadPath, setPlaylistCustomDownloadPath] = useState('')
@@ -187,6 +201,7 @@ export function DownloadDialog({
       }
 
       // Open dialog and set URL
+      clearVideoInfo()
       setOpen(true)
       setActiveTab(type)
 
@@ -197,6 +212,7 @@ export function DownloadDialog({
         setPlaylistPreviewError(null)
         setPlaylistCustomDownloadPath('')
         setSelectedEntryIds(new Set())
+        setPlaylistQuality(settings.oneClickQuality)
 
         // Wait for dialog to open, then fetch playlist info
         setTimeout(async () => {
@@ -244,7 +260,7 @@ export function DownloadDialog({
     return () => {
       ipcEvents.removeListener('download:deeplink', handleDeepLink)
     }
-  }, [fetchVideoInfo, t])
+  }, [clearVideoInfo, fetchVideoInfo, settings.oneClickQuality, t])
 
   useEffect(() => {
     if (!open) {
@@ -335,12 +351,14 @@ export function DownloadDialog({
 
   const handleParsePlaylistUrl = useCallback(
     async (trimmedUrl: string) => {
+      clearVideoInfo()
       setOpen(true)
       setPlaylistUrl(trimmedUrl)
       setPlaylistInfo(null)
       setPlaylistPreviewError(null)
       setPlaylistCustomDownloadPath('')
       setSelectedEntryIds(new Set())
+      setPlaylistQuality(settings.oneClickQuality)
 
       setPlaylistPreviewError(null)
       setPlaylistPreviewLoading(true)
@@ -363,7 +381,7 @@ export function DownloadDialog({
         setPlaylistPreviewLoading(false)
       }
     },
-    [t]
+    [clearVideoInfo, settings.oneClickQuality, t]
   )
 
   const handleFetchVideo = useCallback(async () => {
@@ -386,8 +404,36 @@ export function DownloadDialog({
     await fetchVideoInfo(url.trim())
   }, [url, fetchVideoInfo, handleParsePlaylistUrl, t])
 
+  const handleActiveTabChange = useCallback(
+    (tab: 'single' | 'playlist') => {
+      setActiveTab(tab)
+      if (tab !== 'playlist') {
+        return
+      }
+
+      const candidateUrl = url.trim() || videoInfoSourceUrl?.trim() || ''
+      if (!(candidateUrl && hasPlaylistQuery(candidateUrl))) {
+        return
+      }
+      if (playlistUrl.trim() === candidateUrl && (playlistInfo || playlistPreviewLoading)) {
+        return
+      }
+
+      void handleParsePlaylistUrl(candidateUrl)
+    },
+    [
+      handleParsePlaylistUrl,
+      playlistInfo,
+      playlistPreviewLoading,
+      playlistUrl,
+      url,
+      videoInfoSourceUrl
+    ]
+  )
+
   const handleParseSingleUrl = useCallback(
     async (trimmedUrl: string) => {
+      clearVideoInfo()
       setOpen(true)
       setUrl(trimmedUrl)
       setSingleVideoState((prev) => ({
@@ -400,7 +446,7 @@ export function DownloadDialog({
       }))
       await fetchVideoInfo(trimmedUrl)
     },
-    [fetchVideoInfo]
+    [clearVideoInfo, fetchVideoInfo]
   )
 
   const handleOneClickFromAddUrl = useCallback(
@@ -549,8 +595,8 @@ export function DownloadDialog({
 
       const format =
         downloadType === 'video'
-          ? buildVideoFormatPreference(settings)
-          : buildAudioFormatPreference(settings)
+          ? buildVideoFormatPreference({ oneClickQuality: playlistQuality })
+          : buildAudioFormatPreference({ oneClickQuality: playlistQuality })
       const containerFormat = downloadType === 'video' ? settings.oneClickContainer : undefined
 
       const result = await ipcServices.download.startPlaylistDownload({
@@ -599,6 +645,7 @@ export function DownloadDialog({
     playlistInfo,
     computePlaylistRange,
     downloadType,
+    playlistQuality,
     settings,
     addDownload,
     t,
@@ -618,6 +665,10 @@ export function DownloadDialog({
 
   const handleSingleVideoDownload = useCallback(async () => {
     if (!videoInfo) {
+      return
+    }
+    if (videoInfoSourceUrl !== url.trim()) {
+      toast.error(t('errors.fetchInfoFailed'))
       return
     }
 
@@ -695,12 +746,13 @@ export function DownloadDialog({
       console.error('Failed to start download:', error)
       toast.error(t('notifications.downloadFailed'))
     }
-  }, [videoInfo, singleVideoState, addDownload, t, url])
+  }, [videoInfo, videoInfoSourceUrl, singleVideoState, addDownload, t, url])
 
   // Reset form when dialog closes
   useEffect(() => {
     if (!open) {
       // Reset single video states
+      clearVideoInfo()
       setUrl('')
       setActiveTab('single')
       setSingleVideoState({
@@ -722,8 +774,9 @@ export function DownloadDialog({
       setStartIndex('1')
       setEndIndex('')
       setSelectedEntryIds(new Set())
+      setPlaylistQuality(settings.oneClickQuality)
     }
-  }, [open])
+  }, [open, clearVideoInfo, settings.oneClickQuality])
 
   const handleSingleVideoStateChange = useCallback(
     (updates: Partial<SingleVideoState>) => {
@@ -876,11 +929,12 @@ export function DownloadDialog({
               </div>
             )}
 
-            {/* Advanced Options - Playlist (when no playlist info) */}
-            {activeTab === 'playlist' && !playlistInfo && !playlistPreviewLoading && (
+            {/* Advanced Options - Playlist */}
+            {activeTab === 'playlist' && !playlistPreviewLoading && (
               <div className="flex items-center gap-2">
                 <Checkbox
                   checked={advancedOptionsOpen}
+                  disabled={playlistBusy}
                   id={advancedOptionsId}
                   onCheckedChange={(checked) => {
                     setAdvancedOptionsOpen(checked === true)
@@ -942,7 +996,7 @@ export function DownloadDialog({
         </div>
       }
       lockDialogHeight={lockDialogHeight}
-      onActiveTabChange={setActiveTab}
+      onActiveTabChange={handleActiveTabChange}
       oneClickDownloadEnabled={settings.oneClickDownload}
       oneClickTooltip={t('download.oneClickDownloadTooltip')}
       onOpenChange={setOpen}
@@ -960,10 +1014,13 @@ export function DownloadDialog({
           playlistInfo={playlistInfo}
           playlistPreviewError={playlistPreviewError}
           playlistPreviewLoading={playlistPreviewLoading}
+          quality={playlistQuality}
+          qualityId={playlistQualityId}
           selectedEntryIds={selectedEntryIds}
           selectedPlaylistEntries={selectedPlaylistEntries}
           setDownloadType={setDownloadType}
           setEndIndex={setEndIndex}
+          setQuality={setPlaylistQuality}
           setSelectedEntryIds={setSelectedEntryIds}
           setStartIndex={setStartIndex}
           startIndex={startIndex}

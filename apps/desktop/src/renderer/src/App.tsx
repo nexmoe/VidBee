@@ -115,7 +115,15 @@ function AppContent() {
 
   useEffect(() => {
     const handleDeepLink = (rawUrl: unknown) => {
-      const url = typeof rawUrl === 'string' ? rawUrl.trim() : ''
+      const url =
+        typeof rawUrl === 'string'
+          ? rawUrl.trim()
+          : rawUrl &&
+              typeof rawUrl === 'object' &&
+              'url' in rawUrl &&
+              typeof rawUrl.url === 'string'
+            ? rawUrl.url.trim()
+            : ''
       if (!url) {
         return
       }

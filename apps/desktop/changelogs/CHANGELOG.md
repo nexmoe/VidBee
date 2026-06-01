@@ -3,6 +3,11 @@
 This page only includes user-visible updates and avoids implementation details.
 For full release notes, see [GitHub Releases](https://github.com/nexmoe/VidBee/releases).
 
+## [v1.3.11](https://github.com/nexmoe/VidBee/releases/tag/v1.3.11) - 2026-05-17
+### Bug Fixes
+- Fixed stale video information being reused after downloading a previous video, so newly pasted links resolve to the correct item.
+- Deep links now return to the download page when the app is open on another page.
+
 ## [v1.3.10](https://github.com/nexmoe/VidBee/releases/tag/v1.3.10) - 2026-04-11
 ### Improvements
 - One-click download is enabled by default so you can start downloads faster on first use.
