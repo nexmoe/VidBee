@@ -3,7 +3,13 @@ import os from 'node:os'
 import path from 'node:path'
 import type { AppSettings } from '../shared/types'
 import { defaultSettings } from '../shared/types'
-import { getPortableDownloadsPath, isPortableMode } from './portable'
+import {
+  getPortableDownloadsPath,
+  isPortableMode,
+  portableRoot,
+  previousPortableRoot,
+  rememberPortableRoot
+} from './portable'
 import { scopedLoggers } from './utils/logger'
 
 // Use require for electron-store to avoid CommonJS/ESM issues
@@ -18,6 +24,26 @@ const ensureDirectoryExists = (dir: string) => {
   } catch (error) {
     scopedLoggers.system.error('Failed to ensure download directory:', error)
   }
+}
+
+const isPathInsideOrEqual = (candidate: string, root: string): boolean => {
+  if (!(candidate && root)) {
+    return false
+  }
+
+  const relativePath = path.relative(path.resolve(root), path.resolve(candidate))
+  return (
+    relativePath === '' ||
+    (!!relativePath && !relativePath.startsWith('..') && !path.isAbsolute(relativePath))
+  )
+}
+
+const remapFromPreviousPortableRoot = (candidate: string): string => {
+  if (!(previousPortableRoot && isPathInsideOrEqual(candidate, previousPortableRoot))) {
+    return ''
+  }
+
+  return path.join(portableRoot, path.relative(previousPortableRoot, candidate))
 }
 
 const resolveDefaultDownloadPath = () => {
@@ -47,6 +73,7 @@ class SettingsManager {
     })
     this.ensureDownloadDirectory()
     this.ensureRequiredSettings()
+    rememberPortableRoot()
   }
 
   get<K extends keyof AppSettings>(key: K): AppSettings[K] {
@@ -122,13 +149,23 @@ class SettingsManager {
   private ensureDownloadDirectory(): void {
     try {
       const currentPath: string | undefined = this.store.get('downloadPath')
-      const normalizedDownloadPath =
-        !currentPath || currentPath === OLD_DEFAULT_DOWNLOAD_PATH
-          ? DEFAULT_DOWNLOAD_PATH
-          : currentPath
+      let normalizedDownloadPath = currentPath || DEFAULT_DOWNLOAD_PATH
+
+      if (!currentPath || currentPath === OLD_DEFAULT_DOWNLOAD_PATH) {
+        normalizedDownloadPath = DEFAULT_DOWNLOAD_PATH
+      } else if (isPortableMode) {
+        const remappedPath = remapFromPreviousPortableRoot(currentPath)
+        if (remappedPath) {
+          normalizedDownloadPath = remappedPath
+        } else if (!isPathInsideOrEqual(currentPath, portableRoot)) {
+          normalizedDownloadPath = DEFAULT_DOWNLOAD_PATH
+        }
+      }
+
       if (normalizedDownloadPath !== currentPath) {
         this.store.set('downloadPath', normalizedDownloadPath)
       }
+      ensureDirectoryExists(normalizedDownloadPath)
     } catch (error) {
       scopedLoggers.system.error('Failed to verify download directory:', error)
     }

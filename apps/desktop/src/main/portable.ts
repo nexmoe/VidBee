@@ -6,6 +6,33 @@ export const portableRoot =
   process.env.PORTABLE_EXECUTABLE_DIR || process.env.VIDBEE_PORTABLE_DIR || ''
 
 export const isPortableMode = portableRoot.length > 0
+const portableRootMarkerPath = portableRoot ? path.join(portableRoot, 'Data', '.portable-root') : ''
+
+const readPortableRootMarker = (): string => {
+  if (!portableRootMarkerPath) {
+    return ''
+  }
+
+  try {
+    return fs.readFileSync(portableRootMarkerPath, 'utf8').trim()
+  } catch {
+    return ''
+  }
+}
+
+export const previousPortableRoot = readPortableRootMarker()
+
+export const rememberPortableRoot = (): void => {
+  if (!isPortableMode) {
+    return
+  }
+
+  try {
+    fs.writeFileSync(portableRootMarkerPath, portableRoot, 'utf8')
+  } catch {
+    // The app can still run; the next launch just will not know the old root.
+  }
+}
 
 const ensureDirectoryExists = (dir: string): void => {
   fs.mkdirSync(dir, { recursive: true })

@@ -211,7 +211,7 @@ public static class PortableShortcutMaker {
 Add-Type -TypeDefinition $ShellLinkCode
 $ShortcutPath = Join-Path $PortableDir 'VidBee Portable.lnk'
 $VbsPath = Join-Path $PortableDir 'Start-VidBee-Portable.vbs'
-$IconPath = Join-Path $AppOutputDir 'vidbee.exe'
+$IconPath = 'app\vidbee.exe'
 [PortableShortcutMaker]::Create($ShortcutPath, $VbsPath, $PortableDir, $IconPath)
 
 $RequiredFiles = @(
