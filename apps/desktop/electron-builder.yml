@@ -32,11 +32,16 @@ extraResources:
   # `npm install -g @vidbee/cli` (or one of the other channels).
 win:
   executableName: vidbee
+  target:
+    - nsis
+    - portable
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
+portable:
+  artifactName: ${name}-${version}-portable.${ext}
 mac:
   hardenedRuntime: true
   entitlements: build/entitlements.mac.plist

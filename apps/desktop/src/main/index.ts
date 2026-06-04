@@ -42,6 +42,7 @@ import {
 import { runDesktopTaskQueueMigration } from './lib/task-queue-migrate'
 import { ytdlpManager } from './lib/ytdlp-manager'
 import { startExtensionApiServer, stopExtensionApiServer } from './local-api'
+import { isPortableMode } from './portable'
 import { settingsManager } from './settings'
 import { createTray, destroyTray } from './tray'
 import { applyAutoLaunchSetting } from './utils/auto-launch'
@@ -654,6 +655,11 @@ function registerVidbeeProtocol(): void {
 }
 
 function initAutoUpdater(): void {
+  if (isPortableMode) {
+    log.info('Portable mode is active, skipping auto-updater initialization')
+    return
+  }
+
   try {
     log.info('Initializing auto-updater...')
 
@@ -745,9 +751,13 @@ app.whenReady().then(async () => {
 
   registerVidbeeProtocol()
 
-  const registered = app.setAsDefaultProtocolClient(APP_PROTOCOL)
-  if (!registered) {
-    log.warn(`Failed to register ${APP_PROTOCOL} protocol handler`)
+  if (isPortableMode) {
+    log.info(`Portable mode is active, skipping ${APP_PROTOCOL} protocol handler registration`)
+  } else {
+    const registered = app.setAsDefaultProtocolClient(APP_PROTOCOL)
+    if (!registered) {
+      log.warn(`Failed to register ${APP_PROTOCOL} protocol handler`)
+    }
   }
 
   // Default open or close DevTools by F12 in development
