@@ -20,7 +20,7 @@
     "setup": "node scripts/setup-dev-binaries.js",
     "postinstall": "node scripts/postinstall.mjs",
     "build:unpack": "pnpm run setup && pnpm run build && electron-builder --dir",
-    "build:win": "pnpm run setup && node scripts/check-ytdlp.js win && pnpm run build && electron-builder --win",
+    "build:win": "pnpm run setup && node scripts/check-ytdlp.js win && pnpm run build && electron-builder --win && powershell -NoProfile -ExecutionPolicy Bypass -File scripts/create-windows-portable-folder.ps1",
     "build:mac": "pnpm run setup && node scripts/check-ytdlp.js mac && pnpm run build && electron-builder --mac --x64 --arm64",
     "build:linux": "pnpm run setup && node scripts/check-ytdlp.js linux && pnpm run build && electron-builder --linux",
     "release": "git checkout main && git pull && pnpm run check && bumpp",

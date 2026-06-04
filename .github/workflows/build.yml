@@ -126,7 +126,7 @@ jobs:
         shell: pwsh
         run: |
           $dist = "apps/desktop/dist"
-          $requiredPatterns = @("*-setup.exe", "*-portable.exe")
+          $requiredPatterns = @("*-setup.exe", "*-portable.exe", "*-windows-portable.zip")
           foreach ($pattern in $requiredPatterns) {
             $matches = Get-ChildItem -Path $dist -Filter $pattern -File
             if ($matches.Count -eq 0) {
