@@ -109,6 +109,8 @@ interface DeepLinkData {
 const pendingDeepLinkUrls: DeepLinkData[] = []
 const pendingOneClickDownloads: DeepLinkData[] = []
 let isRendererReady = false
+let isMainWindowReadyToShow = false
+let shouldKeepMainWindowHiddenAtStartup = false
 
 const getActiveMainWindow = (): BrowserWindow | null => {
   if (!mainWindow || mainWindow.isDestroyed()) {
@@ -131,6 +133,33 @@ const sendToRenderer = (channel: string, ...args: unknown[]): void => {
     log.warn('Failed to send message to renderer:', channel, error)
   }
 }
+
+const showMainWindowWhenReady = (): void => {
+  const window = getActiveMainWindow()
+  if (!window) {
+    return
+  }
+
+  if (shouldKeepMainWindowHiddenAtStartup) {
+    applyDockVisibility(settingsManager.get('hideDockIcon'))
+    return
+  }
+
+  if (isMainWindowReadyToShow && isRendererReady && !window.isVisible()) {
+    window.show()
+  }
+}
+
+ipcMain.on('app:renderer-ready', (event) => {
+  const window = getActiveMainWindow()
+  if (!window || event.sender !== window.webContents) {
+    return
+  }
+
+  isRendererReady = true
+  showMainWindowWhenReady()
+  flushPendingDeepLinks()
+})
 
 const parseDownloadDeepLink = (rawUrl: string): DeepLinkData | null => {
   try {
@@ -232,8 +261,10 @@ getDesktopSubscriptions().on('changed', () => {
 export function createWindow(): void {
   const isMac = process.platform === 'darwin'
   const isWindows = process.platform === 'win32'
-  const shouldStartHidden =
+  shouldKeepMainWindowHiddenAtStartup =
     BACKGROUND_MODE || (isWindows && app.getLoginItemSettings().wasOpenedAtLogin)
+  isMainWindowReadyToShow = false
+  isRendererReady = false
 
   const windowOptions: BrowserWindowConstructorOptions = {
     width: 1200,
@@ -287,11 +318,8 @@ export function createWindow(): void {
   })
 
   mainWindow.on('ready-to-show', () => {
-    if (shouldStartHidden) {
-      applyDockVisibility(settingsManager.get('hideDockIcon'))
-      return
-    }
-    mainWindow?.show()
+    isMainWindowReadyToShow = true
+    showMainWindowWhenReady()
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -311,8 +339,17 @@ export function createWindow(): void {
     void listDesktopSubscriptionsSnapshot()
       .then((snapshot) => sendToRenderer('subscriptions:updated', snapshot))
       .catch((err) => log.warn('Failed to send initial subscriptions snapshot:', err))
-    isRendererReady = true
-    flushPendingDeepLinks()
+
+    setTimeout(() => {
+      if (isRendererReady || shouldKeepMainWindowHiddenAtStartup) {
+        return
+      }
+
+      log.warn('Renderer ready signal was not received; showing window via fallback')
+      isRendererReady = true
+      showMainWindowWhenReady()
+      flushPendingDeepLinks()
+    }, 5000)
   })
 
   // Setup error handling for renderer process

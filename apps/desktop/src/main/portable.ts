@@ -41,6 +41,12 @@ export const configurePortableMode = (): void => {
   const userDataDir = getPortablePath('Data', 'UserData')
   const sessionDataDir = getPortablePath('Data', 'SessionData')
   const homeDir = getPortablePath('Data', 'Home')
+  const desktopDir = path.join(homeDir, 'Desktop')
+  const documentsDir = path.join(homeDir, 'Documents')
+  const homeDownloadsDir = path.join(homeDir, 'Downloads')
+  const musicDir = path.join(homeDir, 'Music')
+  const picturesDir = path.join(homeDir, 'Pictures')
+  const videosDir = path.join(homeDir, 'Videos')
   const cacheDir = getPortablePath('Data', 'Cache')
   const configDir = getPortablePath('Data', 'Config')
   const localShareDir = getPortablePath('Data', 'LocalShare')
@@ -56,6 +62,12 @@ export const configurePortableMode = (): void => {
     userDataDir,
     sessionDataDir,
     homeDir,
+    desktopDir,
+    documentsDir,
+    homeDownloadsDir,
+    musicDir,
+    picturesDir,
+    videosDir,
     cacheDir,
     configDir,
     localShareDir,
@@ -83,8 +95,14 @@ export const configurePortableMode = (): void => {
   setAppPath('appData', roamingDir)
   setAppPath('userData', userDataDir)
   setAppPath('sessionData', sessionDataDir)
+  setAppPath('home', homeDir)
+  setAppPath('desktop', desktopDir)
+  setAppPath('documents', documentsDir)
   setAppPath('temp', tempDir)
   setAppPath('downloads', downloadsDir)
+  setAppPath('music', musicDir)
+  setAppPath('pictures', picturesDir)
+  setAppPath('videos', videosDir)
   setAppPath('logs', logsDir)
   setAppPath('crashDumps', crashDumpsDir)
 }
