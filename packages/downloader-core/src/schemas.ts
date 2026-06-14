@@ -7,7 +7,8 @@ export const DownloadStatusSchema = z.enum([
   'processing',
   'completed',
   'error',
-  'cancelled'
+  'cancelled',
+  'paused'
 ])
 
 export const DownloadProgressSchema = z.object({

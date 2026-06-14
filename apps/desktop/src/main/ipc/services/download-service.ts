@@ -42,6 +42,16 @@ class DownloadService extends IpcService {
   }
 
   @IpcMethod()
+  pauseDownload(_context: IpcContext, id: string): boolean {
+    return downloadEngine.pauseDownload(id)
+  }
+
+  @IpcMethod()
+  resumeDownload(_context: IpcContext, id: string): boolean {
+    return downloadEngine.resumeDownload(id)
+  }
+
+  @IpcMethod()
   getQueueStatus(_context: IpcContext) {
     return downloadEngine.getQueueStatus()
   }

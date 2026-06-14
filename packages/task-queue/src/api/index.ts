@@ -120,6 +120,8 @@ export class TaskQueueAPI {
   private readonly progressLastWrite = new Map<string, number>()
   private readonly progressDirty = new Map<string, TaskProgress>()
   private started = false
+  /** Tasks where pause() was invoked on Windows; onFinish should transition to paused, not cancelled. */
+  private readonly pendingPause = new Set<string>()
 
   constructor(opts: TaskQueueAPIOptions) {
     this.persist = opts.persist
@@ -341,11 +343,32 @@ export class TaskQueueAPI {
     if (t.status === 'running' || t.status === 'processing') {
       const active = this.active.get(id)
       if (active) {
-        try {
-          await active.run.pause()
-        } catch (err) {
-          // eslint-disable-next-line no-console
-          console.error('[task-queue] pause run threw', err)
+        if (process.platform === 'win32') {
+          // Windows: pause() internally cancels the process. Mark this as a
+          // pause-intent so handleFinish transitions to paused not cancelled.
+          this.pendingPause.add(id)
+          try {
+            await active.run.pause()
+          } catch (err) {
+            this.pendingPause.delete(id)
+            // eslint-disable-next-line no-console
+            console.error('[task-queue] pause run threw', err)
+          }
+          // handleFinish will clear pendingPause and apply paused transition.
+        } else {
+          // Unix: SIGSTOP suspends the process in-place; onFinish will NOT fire.
+          // We drive the FSM transition and release the scheduler slot ourselves.
+          try {
+            await active.run.pause()
+          } catch (err) {
+            // eslint-disable-next-line no-console
+            console.error('[task-queue] pause run threw', err)
+            return
+          }
+          this.watchdog.disarm(id)
+          this.active.delete(id)
+          await this.applyTransition(id, 'paused', { trigger: 'pause', reason })
+          await this.scheduler.releaseSlot(id)
         }
       }
     }
@@ -569,9 +592,6 @@ export class TaskQueueAPI {
 
     if (e.result.type === 'cancelled') {
       // The cancel may have been user-driven, demote-driven, or pause-driven.
-      // We already disarmed; figure out the post-state from the most recent
-      // intent. Default → cancelled. The orchestrator's pause()/demote()
-      // path overrides this by transitioning to `paused` itself.
       await this.persist.closeAttempt({
         taskId: id,
         attemptId,
@@ -582,6 +602,22 @@ export class TaskQueueAPI {
         stderrTail: e.stderrTail
       })
       await this.processes.recordClose(id, attemptId, null, 'SIGTERM')
+
+      // Windows pause path: the executor terminates the process to simulate
+      // pause. Honour the original intent by transitioning to paused instead.
+      if (this.pendingPause.has(id)) {
+        this.pendingPause.delete(id)
+        const cur = this.store.get(id)
+        if (cur && (cur.status === 'running' || cur.status === 'processing')) {
+          await this.applyTransition(id, 'paused', {
+            trigger: 'pause',
+            reason: 'user'
+          })
+        }
+        await this.scheduler.releaseSlot(id)
+        return
+      }
+
       const t = this.store.get(id)
       if (t && (t.status === 'running' || t.status === 'processing')) {
         await this.applyTransition(id, 'cancelled', {

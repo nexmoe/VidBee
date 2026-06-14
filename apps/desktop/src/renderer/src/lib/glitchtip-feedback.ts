@@ -1,4 +1,4 @@
-import * as BrowserSentry from '@sentry/browser'
+import * as BrowserSentry from '@sentry/electron/renderer'
 import { toast } from 'sonner'
 
 interface AppInfo {
