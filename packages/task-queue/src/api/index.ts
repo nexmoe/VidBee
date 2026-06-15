@@ -117,6 +117,7 @@ export class TaskQueueAPI {
   private readonly filePresent: (p: string) => boolean
   private readonly rng: () => number
   private readonly active = new Map<string, ActiveRun>()
+  private readonly suspended = new Map<string, ActiveRun>()
   private readonly progressLastWrite = new Map<string, number>()
   private readonly progressDirty = new Map<string, TaskProgress>()
   private started = false
@@ -224,6 +225,15 @@ export class TaskQueueAPI {
         /* noop */
       }
     }
+    // Also cancel suspended runs
+    for (const a of [...this.suspended.values()]) {
+      try {
+        await a.run.cancel(0)
+        this.suspended.delete(a.taskId)
+      } catch {
+        /* noop */
+      }
+    }
     if (this.persist.close) await this.persist.close()
     this.started = false
   }
@@ -323,6 +333,16 @@ export class TaskQueueAPI {
         console.error('[task-queue] cancel run threw', err)
       }
     }
+    const suspended = this.suspended.get(id)
+    if (suspended) {
+      try {
+        await suspended.run.cancel()
+        this.suspended.delete(id)
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error('[task-queue] cancel suspended run threw', err)
+      }
+    }
     // The orchestrator transitions to `cancelled` from the onFinish callback
     // (executor reports `result.type === 'cancelled'`).
   }
@@ -367,6 +387,7 @@ export class TaskQueueAPI {
           }
           this.watchdog.disarm(id)
           this.active.delete(id)
+          this.suspended.set(id, active)
           await this.applyTransition(id, 'paused', { trigger: 'pause', reason })
           await this.scheduler.releaseSlot(id)
         }
@@ -523,17 +544,30 @@ export class TaskQueueAPI {
   private async demoteOne(id: string): Promise<void> {
     const a = this.active.get(id)
     if (a) {
-      try {
-        await a.run.pause()
-      } catch (err) {
-        // eslint-disable-next-line no-console
-        console.error('[task-queue] demote pause threw', err)
+      if (process.platform !== 'win32') {
+        try {
+          await a.run.pause()
+        } catch (err) {
+          // eslint-disable-next-line no-console
+          console.error('[task-queue] demote pause threw', err)
+          return
+        }
+        this.watchdog.disarm(id)
+        this.active.delete(id)
+        this.suspended.set(id, a)
+        await this.applyTransition(id, 'paused', { trigger: 'pause', reason: 'demote' })
+        await this.scheduler.releaseSlot(id)
+      } else {
+        this.pendingPause.add(id)
+        try {
+          await a.run.pause()
+        } catch (err) {
+          this.pendingPause.delete(id)
+          // eslint-disable-next-line no-console
+          console.error('[task-queue] demote pause threw', err)
+        }
       }
     }
-    // applyTransition(running -> paused) happens from the executor's
-    // onFinish callback when the child reports cancelled/paused. If it
-    // doesn't fire (executor is stuck), the watchdog will eventually
-    // surface it.
   }
 
   private async handleFinish(

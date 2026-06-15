@@ -772,3 +772,4 @@ function createTailBuffer(maxBytes: number): TailBuffer {
 
 // Re-export types adapters need to wire host-specific args building.
 export type { TaskInput, ExecutorContext, ExecutorEvents, ExecutorRun }
+// End of file

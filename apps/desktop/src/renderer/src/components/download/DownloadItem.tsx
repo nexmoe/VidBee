@@ -1142,9 +1142,7 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
                           </TooltipContent>
                         </Tooltip>
                       )}
-                      {(download.status === 'downloading' ||
-                        download.status === 'pending' ||
-                        download.status === 'processing') && (
+                      {isInProgressStatus && download.status !== 'paused' && download.subStatus !== 'paused' && (
                         <>
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -1178,7 +1176,7 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
                           </Button>
                         </>
                       )}
-                      {download.status === 'paused' && (
+                      {(download.status === 'paused' || download.subStatus === 'paused') && (
                         <>
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -1398,7 +1396,7 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
               </ContextMenuItem>
             )}
             <ContextMenuSeparator />
-            {download.status === 'paused' ? (
+            {(download.status === 'paused' || download.subStatus === 'paused') ? (
               <ContextMenuItem onClick={() => void handleResume()}>
                 <Play className="h-4 w-4" />
                 {t('download.resume')}
