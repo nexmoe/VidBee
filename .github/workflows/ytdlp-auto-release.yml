@@ -106,7 +106,14 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: ytdlp-release-changes
-          path: .
+          path: .ytdlp-release-changes
+
+      - name: Apply release changes
+        run: |
+          cp .ytdlp-release-changes/package.json apps/desktop/package.json
+          cp .ytdlp-release-changes/release-metadata.json apps/desktop/release-metadata.json
+          cp .ytdlp-release-changes/changelogs/CHANGELOG.md apps/desktop/changelogs/CHANGELOG.md
+          rm -rf .ytdlp-release-changes
 
       - name: Commit release changes
         run: |
