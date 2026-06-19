@@ -1,22 +1,17 @@
-import { defineConfig, defineDocs, frontmatterSchema, metaSchema } from 'fumadocs-mdx/config';
+import { defineDocs } from 'fumadocs-mdx/config';
+import { metaSchema, pageSchema } from 'fumapress/adapters/mdx/schema';
 
-// You can customise Zod schemas for frontmatter and `meta.json` here
-// see https://fumadocs.dev/docs/mdx/collections
+/** Fumadocs MDX collection config for VidBee docs content. */
 export const docs = defineDocs({
   dir: 'content',
   docs: {
-    schema: frontmatterSchema,
+    async: true,
+    schema: pageSchema,
     postprocess: {
       includeProcessedMarkdown: true,
     },
   },
   meta: {
     schema: metaSchema,
-  },
-});
-
-export default defineConfig({
-  mdxOptions: {
-    // MDX options
   },
 });

@@ -3,35 +3,32 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "sideEffects": false,
   "scripts": {
-    "build": "next build && node scripts/post-export.js",
-    "dev": "next dev",
-    "start": "next start",
-    "types:check": "fumadocs-mdx && next typegen && tsc --noEmit",
+    "build": "waku build && node scripts/post-build.mjs",
+    "dev": "waku dev --host 127.0.0.1",
     "postinstall": "fumadocs-mdx",
-    "lint": "biome check --config-path biome.config.json",
-    "format": "biome format --write --config-path biome.config.json"
+    "start": "waku start",
+    "types:check": "fumadocs-mdx && tsc --noEmit"
   },
   "dependencies": {
-    "@next/third-parties": "^16.1.4",
-    "fumadocs-core": "16.4.7",
-    "fumadocs-mdx": "14.2.5",
-    "fumadocs-ui": "16.4.7",
-    "lucide-react": "^0.562.0",
-    "next": "16.1.1",
-    "react": "^19.2.3",
-    "react-dom": "^19.2.3",
-    "tailwind-merge": "^3.4.0"
+    "fumadocs-core": "^16.10.2",
+    "fumadocs-mdx": "^15.0.12",
+    "fumadocs-ui": "^16.10.2",
+    "fumapress": "^0.6.2",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-server-dom-webpack": "^19.2.7",
+    "waku": "1.0.0-beta.3"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.3.11",
-    "@tailwindcss/postcss": "^4.1.18",
-    "@types/mdx": "^2.0.13",
-    "@types/node": "^25.0.5",
-    "@types/react": "^19.2.8",
+    "@tailwindcss/vite": "^4.3.0",
+    "@types/mdx": "^2.0.14",
+    "@types/node": "^25.9.3",
+    "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
-    "postcss": "^8.5.6",
-    "tailwindcss": "^4.1.18",
-    "typescript": "^5.9.3"
+    "tailwindcss": "^4.3.0",
+    "typescript": "^5.9.3",
+    "vite": "^8.0.16"
   }
 }

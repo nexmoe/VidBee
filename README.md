@@ -140,7 +140,7 @@ You are welcome to join the open source community to build together. For more de
 
 - Monorepo apps:
   - `apps/desktop`: VidBee desktop app (Electron)
-  - `apps/docs`: Documentation site (Next.js)
+  - `apps/docs`: Documentation site (Fumapress)
   - `apps/extension`: Browser extension (WXT)
   - `apps/desktop/docs/glitchtip.md`: GlitchTip and `sentry-cli` setup for desktop monitoring
 - [Contributing Guide](./CONTRIBUTING.md)

@@ -98,7 +98,7 @@ var init_core = __esm({
     NEVER = Object.freeze({
       status: "aborted"
     });
-    $brand = /* @__PURE__ */ Symbol("zod_brand");
+    $brand = Symbol("zod_brand");
     $ZodAsyncError = class extends Error {
       constructor() {
         super(`Encountered Promise during synchronous parse. Use .parseAsync() instead.`);
@@ -719,7 +719,7 @@ function uint8ArrayToHex(bytes) {
 var EVALUATING, captureStackTrace, allowsEval, getParsedType, propertyKeyTypes, primitiveTypes, NUMBER_FORMAT_RANGES, BIGINT_FORMAT_RANGES, Class;
 var init_util = __esm({
   "../../node_modules/.pnpm/zod@4.3.6/node_modules/zod/v4/core/util.js"() {
-    EVALUATING = /* @__PURE__ */ Symbol("evaluating");
+    EVALUATING = Symbol("evaluating");
     captureStackTrace = "captureStackTrace" in Error ? Error.captureStackTrace : (..._args) => {
     };
     allowsEval = cached(() => {
@@ -9722,8 +9722,8 @@ function registry() {
 var _a, $output, $input, $ZodRegistry, globalRegistry;
 var init_registries = __esm({
   "../../node_modules/.pnpm/zod@4.3.6/node_modules/zod/v4/core/registries.js"() {
-    $output = /* @__PURE__ */ Symbol("ZodOutput");
-    $input = /* @__PURE__ */ Symbol("ZodInput");
+    $output = Symbol("ZodOutput");
+    $input = Symbol("ZodInput");
     $ZodRegistry = class {
       constructor() {
         this._map = /* @__PURE__ */ new WeakMap();
@@ -14522,7 +14522,7 @@ var init_dist = __esm({
     ORPC_SHARED_PACKAGE_NAME = "@orpc/shared";
     ORPC_SHARED_PACKAGE_VERSION = "1.14.0";
     GLOBAL_OTEL_CONFIG_KEY = `__${ORPC_SHARED_PACKAGE_NAME}@${ORPC_SHARED_PACKAGE_VERSION}/otel/config__`;
-    fallbackAsyncDisposeSymbol = /* @__PURE__ */ Symbol.for("asyncDispose");
+    fallbackAsyncDisposeSymbol = Symbol.for("asyncDispose");
     asyncDisposeSymbol = Symbol.asyncDispose ?? fallbackAsyncDisposeSymbol;
     AsyncIteratorClass = class {
       #isDone = false;
@@ -14682,7 +14682,7 @@ var init_client_KWZYf6QD = __esm({
         message: "Gateway Timeout"
       }
     };
-    GLOBAL_ORPC_ERROR_CONSTRUCTORS_SYMBOL = /* @__PURE__ */ Symbol.for(`__${ORPC_CLIENT_PACKAGE_NAME}@${ORPC_CLIENT_PACKAGE_VERSION}/error/ORPC_ERROR_CONSTRUCTORS__`);
+    GLOBAL_ORPC_ERROR_CONSTRUCTORS_SYMBOL = Symbol.for(`__${ORPC_CLIENT_PACKAGE_NAME}@${ORPC_CLIENT_PACKAGE_VERSION}/error/ORPC_ERROR_CONSTRUCTORS__`);
     void (globalThis[GLOBAL_ORPC_ERROR_CONSTRUCTORS_SYMBOL] ??= /* @__PURE__ */ new WeakSet());
     globalORPCErrorConstructors = globalThis[GLOBAL_ORPC_ERROR_CONSTRUCTORS_SYMBOL];
     ORPCError = class extends Error {
@@ -14771,7 +14771,7 @@ function decodeEventMessage(encoded) {
   message.data = message.data?.replace(/\n$/, "");
   return message;
 }
-var EventDecoderError, EventDecoder, EventDecoderStream;
+var EventDecoderError, EventDecoder, EventDecoderStream, EVENT_SOURCE_META_SYMBOL;
 var init_dist2 = __esm({
   "../../node_modules/.pnpm/@orpc+standard-server@1.14.0_@opentelemetry+api@1.9.1/node_modules/@orpc/standard-server/dist/index.mjs"() {
     init_dist();
@@ -14825,6 +14825,7 @@ var init_dist2 = __esm({
         });
       }
     };
+    EVENT_SOURCE_META_SYMBOL = Symbol("ORPC_EVENT_SOURCE_META");
   }
 });
 
@@ -14967,7 +14968,7 @@ function enhanceContractRouter(router, options) {
   }
   return enhanced;
 }
-var ContractBuilder, oc;
+var ContractBuilder, oc, EVENT_ITERATOR_DETAILS_SYMBOL;
 var init_dist5 = __esm({
   "../../node_modules/.pnpm/@orpc+contract@1.14.0_@opentelemetry+api@1.9.1/node_modules/@orpc/contract/dist/index.mjs"() {
     init_contract_D_dZrO();
@@ -15118,6 +15119,7 @@ var init_dist5 = __esm({
       route: {},
       meta: {}
     });
+    EVENT_ITERATOR_DETAILS_SYMBOL = Symbol("ORPC_EVENT_ITERATOR_DETAILS");
   }
 });
 
@@ -16980,7 +16982,11 @@ var init_api2 = __esm({
       // ───────────── RPC surface ─────────────
       async add(req) {
         const now = this.clock();
-        const id = randomUUID();
+        if (req.id) {
+          const existing = this.store.get(req.id);
+          if (existing) return { id: existing.id };
+        }
+        const id = req.id ?? randomUUID();
         const task = {
           id,
           kind: req.input.kind,
@@ -17543,6 +17549,7 @@ function projectTaskToLegacy(task) {
     proj.savedFileName = basenameOf(out.filePath);
     proj.downloadPath = dirnameOf(out.filePath);
     if (out.durationMs != null) proj.duration = Math.round(out.durationMs / 1e3);
+    if (out.formatId) proj.resolvedFormatId = out.formatId;
   }
   if (task.lastError) {
     const err = task.lastError;
@@ -19165,6 +19172,7 @@ var init_downloader_core = __esm({
 });
 
 // ../../packages/downloader-core/src/yt-dlp-executor.ts
+import { existsSync as existsSync4, statSync as statSync3 } from "node:fs";
 import { createRequire as createRequire2 } from "node:module";
 function makeNoopRun() {
   return {
@@ -19217,6 +19225,16 @@ function parseEtaMs(value2) {
 }
 function hasPostprocessSignal(text2) {
   return PROCESSING_DETECT_PATTERNS.some((re) => re.test(text2));
+}
+function extractFormatId(rawLog) {
+  const log = rawLog.trim();
+  if (!log) return void 0;
+  const re = /Downloading\s+\d+\s+format\(s\):\s+([^\r\n]+)/gi;
+  const matches = Array.from(log.matchAll(re));
+  const last = matches.at(-1);
+  const value2 = last?.[1]?.trim();
+  if (!value2) return void 0;
+  return value2;
 }
 function extractSavedFilePath2(rawLog) {
   const log = rawLog.trim();
@@ -19321,6 +19339,7 @@ var init_yt_dlp_executor = __esm({
         let cancelRequested = false;
         let killTimer = null;
         let proc = null;
+        let formatIdSeen;
         const finishOnce = (e) => {
           if (settled) return;
           settled = true;
@@ -19413,6 +19432,10 @@ var init_yt_dlp_executor = __esm({
           if (!postprocessSeen && hasPostprocessSignal(text2)) {
             postprocessSeen = true;
           }
+          const fid = extractFormatId(text2);
+          if (fid) {
+            formatIdSeen = fid;
+          }
         };
         const pumpStderrPostprocess = (chunk) => {
           const text2 = chunk.toString();
@@ -19463,13 +19486,22 @@ var init_yt_dlp_executor = __esm({
           }
           if (code === 0) {
             const filePath = extractSavedFilePath2(stdout) || "";
+            let realSize = 0;
+            if (filePath) {
+              try {
+                if (existsSync4(filePath)) realSize = statSync3(filePath).size;
+              } catch {
+              }
+            }
             const output = {
               filePath,
-              // size will be re-validated by the kernel via filePresent guard;
-              // we don't stat() here to keep the executor side-effect free.
-              size: filePath ? 1 : 0,
+              size: realSize,
               durationMs: null,
-              sha256: null
+              sha256: null,
+              // Prefer the streaming sniff (captures even if pushed out of the
+              // tail buffer); fall back to a tail re-scan when running with
+              // tiny test fixtures whose entire run fits in 8KB.
+              formatId: formatIdSeen ?? extractFormatId(stdout) ?? null
             };
             finishOnce({
               taskId: ctx.taskId,
@@ -19705,7 +19737,7 @@ var init_src2 = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/entity.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/entity.js
 function is(value2, type) {
   if (!value2 || typeof value2 !== "object") {
     return false;
@@ -19729,17 +19761,18 @@ function is(value2, type) {
   }
   return false;
 }
-var entityKind;
+var entityKind, hasOwnEntityKind;
 var init_entity = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/entity.js"() {
-    entityKind = /* @__PURE__ */ Symbol.for("drizzle:entityKind");
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/entity.js"() {
+    entityKind = Symbol.for("drizzle:entityKind");
+    hasOwnEntityKind = Symbol.for("drizzle:hasOwnEntityKind");
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/column.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/column.js
 var Column;
 var init_column = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/column.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/column.js"() {
     init_entity();
     Column = class {
       constructor(table, config2) {
@@ -19793,10 +19826,10 @@ var init_column = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/column-builder.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/column-builder.js
 var ColumnBuilder;
 var init_column_builder = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/column-builder.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/column-builder.js"() {
     init_entity();
     ColumnBuilder = class {
       static [entityKind] = "ColumnBuilder";
@@ -19902,18 +19935,18 @@ var init_column_builder = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/table.utils.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/table.utils.js
 var TableName;
 var init_table_utils = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/table.utils.js"() {
-    TableName = /* @__PURE__ */ Symbol.for("drizzle:Name");
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/table.utils.js"() {
+    TableName = Symbol.for("drizzle:Name");
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/pg-core/foreign-keys.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/pg-core/foreign-keys.js
 var ForeignKeyBuilder, ForeignKey;
 var init_foreign_keys = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/pg-core/foreign-keys.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/pg-core/foreign-keys.js"() {
     init_entity();
     init_table_utils();
     ForeignKeyBuilder = class {
@@ -19974,22 +20007,22 @@ var init_foreign_keys = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/tracing-utils.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/tracing-utils.js
 function iife(fn, ...args) {
   return fn(...args);
 }
 var init_tracing_utils = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/tracing-utils.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/tracing-utils.js"() {
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/pg-core/unique-constraint.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/pg-core/unique-constraint.js
 function uniqueKeyName(table, columns) {
   return `${table[TableName]}_${columns.join("_")}_unique`;
 }
 var UniqueConstraintBuilder, UniqueOnConstraintBuilder, UniqueConstraint;
 var init_unique_constraint = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/pg-core/unique-constraint.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/pg-core/unique-constraint.js"() {
     init_entity();
     init_table_utils();
     UniqueConstraintBuilder = class {
@@ -20040,7 +20073,7 @@ var init_unique_constraint = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/pg-core/utils/array.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/pg-core/utils/array.js
 function parsePgArrayValue(arrayString, startFrom, inQuotes) {
   for (let i = startFrom; i < arrayString.length; i++) {
     const char = arrayString[i];
@@ -20116,14 +20149,14 @@ function makePgArray(array2) {
   }).join(",")}}`;
 }
 var init_array = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/pg-core/utils/array.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/pg-core/utils/array.js"() {
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/pg-core/columns/common.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/pg-core/columns/common.js
 var PgColumnBuilder, PgColumn, ExtraConfigColumn, IndexedColumn, PgArrayBuilder, PgArray;
 var init_common = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/pg-core/columns/common.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/pg-core/columns/common.js"() {
     init_column_builder();
     init_column();
     init_entity();
@@ -20316,13 +20349,13 @@ var init_common = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/pg-core/columns/enum.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/pg-core/columns/enum.js
 function isPgEnum(obj) {
   return !!obj && typeof obj === "function" && isPgEnumSym in obj && obj[isPgEnumSym] === true;
 }
 var PgEnumObjectColumnBuilder, PgEnumObjectColumn, isPgEnumSym, PgEnumColumnBuilder, PgEnumColumn;
 var init_enum = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/pg-core/columns/enum.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/pg-core/columns/enum.js"() {
     init_entity();
     init_common();
     PgEnumObjectColumnBuilder = class extends PgColumnBuilder {
@@ -20351,7 +20384,7 @@ var init_enum = __esm({
         return this.enum.enumName;
       }
     };
-    isPgEnumSym = /* @__PURE__ */ Symbol.for("drizzle:isPgEnum");
+    isPgEnumSym = Symbol.for("drizzle:isPgEnum");
     PgEnumColumnBuilder = class extends PgColumnBuilder {
       static [entityKind] = "PgEnumColumnBuilder";
       constructor(name, enumInstance) {
@@ -20381,10 +20414,10 @@ var init_enum = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/subquery.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/subquery.js
 var Subquery, WithSubquery;
 var init_subquery = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/subquery.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/subquery.js"() {
     init_entity();
     Subquery = class {
       static [entityKind] = "Subquery";
@@ -20408,18 +20441,18 @@ var init_subquery = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/version.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/version.js
 var version2;
 var init_version = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/version.js"() {
-    version2 = "0.45.2";
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/version.js"() {
+    version2 = "0.44.7";
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/tracing.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/tracing.js
 var otel, rawTracer, tracer;
 var init_tracing = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/tracing.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/tracing.js"() {
     init_tracing_utils();
     init_version();
     tracer = {
@@ -20456,15 +20489,15 @@ var init_tracing = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/view-common.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/view-common.js
 var ViewBaseConfig;
 var init_view_common = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/view-common.js"() {
-    ViewBaseConfig = /* @__PURE__ */ Symbol.for("drizzle:ViewBaseConfig");
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/view-common.js"() {
+    ViewBaseConfig = Symbol.for("drizzle:ViewBaseConfig");
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/table.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/table.js
 function getTableName(table) {
   return table[TableName];
 }
@@ -20473,17 +20506,17 @@ function getTableUniqueName(table) {
 }
 var Schema, Columns, ExtraConfigColumns, OriginalName, BaseName, IsAlias, ExtraConfigBuilder, IsDrizzleTable, Table;
 var init_table = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/table.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/table.js"() {
     init_entity();
     init_table_utils();
-    Schema = /* @__PURE__ */ Symbol.for("drizzle:Schema");
-    Columns = /* @__PURE__ */ Symbol.for("drizzle:Columns");
-    ExtraConfigColumns = /* @__PURE__ */ Symbol.for("drizzle:ExtraConfigColumns");
-    OriginalName = /* @__PURE__ */ Symbol.for("drizzle:OriginalName");
-    BaseName = /* @__PURE__ */ Symbol.for("drizzle:BaseName");
-    IsAlias = /* @__PURE__ */ Symbol.for("drizzle:IsAlias");
-    ExtraConfigBuilder = /* @__PURE__ */ Symbol.for("drizzle:ExtraConfigBuilder");
-    IsDrizzleTable = /* @__PURE__ */ Symbol.for("drizzle:IsDrizzleTable");
+    Schema = Symbol.for("drizzle:Schema");
+    Columns = Symbol.for("drizzle:Columns");
+    ExtraConfigColumns = Symbol.for("drizzle:ExtraConfigColumns");
+    OriginalName = Symbol.for("drizzle:OriginalName");
+    BaseName = Symbol.for("drizzle:BaseName");
+    IsAlias = Symbol.for("drizzle:IsAlias");
+    ExtraConfigBuilder = Symbol.for("drizzle:ExtraConfigBuilder");
+    IsDrizzleTable = Symbol.for("drizzle:IsDrizzleTable");
     Table = class {
       static [entityKind] = "Table";
       /** @internal */
@@ -20533,7 +20566,7 @@ var init_table = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sql/sql.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sql/sql.js
 function isSQLWrapper(value2) {
   return value2 !== null && value2 !== void 0 && typeof value2.getSQL === "function";
 }
@@ -20566,7 +20599,7 @@ function sql(strings, ...params) {
 }
 var FakePrimitiveParam, StringChunk, SQL, Name, noopDecoder, noopEncoder, noopMapper, Param, Placeholder, IsDrizzleView, View;
 var init_sql = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sql/sql.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sql/sql.js"() {
     init_entity();
     init_enum();
     init_subquery();
@@ -20888,7 +20921,7 @@ var init_sql = __esm({
         return new SQL([this]);
       }
     };
-    IsDrizzleView = /* @__PURE__ */ Symbol.for("drizzle:IsDrizzleView");
+    IsDrizzleView = Symbol.for("drizzle:IsDrizzleView");
     View = class {
       static [entityKind] = "View";
       /** @internal */
@@ -20922,7 +20955,7 @@ var init_sql = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/alias.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/alias.js
 function aliasedTable(table, tableAlias) {
   return new Proxy(table, new TableAliasProxyHandler(tableAlias, false));
 }
@@ -20951,7 +20984,7 @@ function mapColumnsInSQLToAlias(query, alias) {
 }
 var ColumnAliasProxyHandler, TableAliasProxyHandler, RelationTableAliasProxyHandler;
 var init_alias = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/alias.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/alias.js"() {
     init_column();
     init_entity();
     init_sql();
@@ -21028,16 +21061,16 @@ var init_alias = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/alias.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/alias.js
 var init_alias2 = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/alias.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/alias.js"() {
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/checks.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/checks.js
 var CheckBuilder, Check;
 var init_checks3 = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/checks.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/checks.js"() {
     init_entity();
     CheckBuilder = class {
       constructor(name, value2) {
@@ -21063,14 +21096,14 @@ var init_checks3 = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/utils.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/utils.js
 function orderSelectedFields(fields, pathPrefix) {
   return Object.entries(fields).reduce((result, [name, field]) => {
     if (typeof name !== "string") {
       return result;
     }
     const newPath = pathPrefix ? [...pathPrefix, name] : [name];
-    if (is(field, Column) || is(field, SQL) || is(field, SQL.Aliased) || is(field, Subquery)) {
+    if (is(field, Column) || is(field, SQL) || is(field, SQL.Aliased)) {
       result.push({ path: newPath, field });
     } else if (is(field, Table)) {
       result.push(...orderSelectedFields(field[Table.Symbol.Columns], newPath));
@@ -21132,7 +21165,7 @@ function getColumnNameAndConfig(a, b) {
 }
 var textDecoder;
 var init_utils = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/utils.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/utils.js"() {
     init_column();
     init_entity();
     init_sql();
@@ -21143,10 +21176,10 @@ var init_utils = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/foreign-keys.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/foreign-keys.js
 var ForeignKeyBuilder2, ForeignKey2;
 var init_foreign_keys2 = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/foreign-keys.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/foreign-keys.js"() {
     init_entity();
     init_table_utils();
     ForeignKeyBuilder2 = class {
@@ -21207,13 +21240,13 @@ var init_foreign_keys2 = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/unique-constraint.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/unique-constraint.js
 function uniqueKeyName2(table, columns) {
   return `${table[TableName]}_${columns.join("_")}_unique`;
 }
 var UniqueConstraintBuilder2, UniqueOnConstraintBuilder2, UniqueConstraint2;
 var init_unique_constraint2 = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/unique-constraint.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/unique-constraint.js"() {
     init_entity();
     init_table_utils();
     UniqueConstraintBuilder2 = class {
@@ -21256,10 +21289,10 @@ var init_unique_constraint2 = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/columns/common.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/columns/common.js
 var SQLiteColumnBuilder, SQLiteColumn;
 var init_common2 = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/columns/common.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/columns/common.js"() {
     init_column_builder();
     init_column();
     init_entity();
@@ -21317,7 +21350,7 @@ var init_common2 = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/columns/blob.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/columns/blob.js
 function blob(a, b) {
   const { name, config: config2 } = getColumnNameAndConfig(a, b);
   if (config2?.mode === "json") {
@@ -21330,7 +21363,7 @@ function blob(a, b) {
 }
 var SQLiteBigIntBuilder, SQLiteBigInt, SQLiteBlobJsonBuilder, SQLiteBlobJson, SQLiteBlobBufferBuilder, SQLiteBlobBuffer;
 var init_blob = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/columns/blob.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/columns/blob.js"() {
     init_entity();
     init_utils();
     init_common2();
@@ -21414,7 +21447,7 @@ var init_blob = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/columns/custom.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/columns/custom.js
 function customType(customTypeParams) {
   return (a, b) => {
     const { name, config: config2 } = getColumnNameAndConfig(a, b);
@@ -21427,7 +21460,7 @@ function customType(customTypeParams) {
 }
 var SQLiteCustomColumnBuilder, SQLiteCustomColumn;
 var init_custom = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/columns/custom.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/columns/custom.js"() {
     init_entity();
     init_utils();
     init_common2();
@@ -21470,7 +21503,7 @@ var init_custom = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/columns/integer.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/columns/integer.js
 function integer2(a, b) {
   const { name, config: config2 } = getColumnNameAndConfig(a, b);
   if (config2?.mode === "timestamp" || config2?.mode === "timestamp_ms") {
@@ -21483,7 +21516,7 @@ function integer2(a, b) {
 }
 var SQLiteBaseIntegerBuilder, SQLiteBaseInteger, SQLiteIntegerBuilder, SQLiteInteger, SQLiteTimestampBuilder, SQLiteTimestamp, SQLiteBooleanBuilder, SQLiteBoolean;
 var init_integer = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/columns/integer.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/columns/integer.js"() {
     init_entity();
     init_sql();
     init_utils();
@@ -21588,7 +21621,7 @@ var init_integer = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/columns/numeric.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/columns/numeric.js
 function numeric(a, b) {
   const { name, config: config2 } = getColumnNameAndConfig(a, b);
   const mode = config2?.mode;
@@ -21596,7 +21629,7 @@ function numeric(a, b) {
 }
 var SQLiteNumericBuilder, SQLiteNumeric, SQLiteNumericNumberBuilder, SQLiteNumericNumber, SQLiteNumericBigIntBuilder, SQLiteNumericBigInt;
 var init_numeric = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/columns/numeric.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/columns/numeric.js"() {
     init_entity();
     init_utils();
     init_common2();
@@ -21671,13 +21704,13 @@ var init_numeric = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/columns/real.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/columns/real.js
 function real(name) {
   return new SQLiteRealBuilder(name ?? "");
 }
 var SQLiteRealBuilder, SQLiteReal;
 var init_real = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/columns/real.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/columns/real.js"() {
     init_entity();
     init_common2();
     SQLiteRealBuilder = class extends SQLiteColumnBuilder {
@@ -21699,7 +21732,7 @@ var init_real = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/columns/text.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/columns/text.js
 function text(a, b = {}) {
   const { name, config: config2 } = getColumnNameAndConfig(a, b);
   if (config2.mode === "json") {
@@ -21709,7 +21742,7 @@ function text(a, b = {}) {
 }
 var SQLiteTextBuilder, SQLiteText, SQLiteTextJsonBuilder, SQLiteTextJson;
 var init_text = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/columns/text.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/columns/text.js"() {
     init_entity();
     init_utils();
     init_common2();
@@ -21767,9 +21800,9 @@ var init_text = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/columns/index.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/columns/index.js
 var init_columns = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/columns/index.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/columns/index.js"() {
     init_blob();
     init_common2();
     init_custom();
@@ -21780,10 +21813,10 @@ var init_columns = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/selection-proxy.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/selection-proxy.js
 var SelectionProxyHandler;
 var init_selection_proxy = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/selection-proxy.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/selection-proxy.js"() {
     init_alias();
     init_column();
     init_entity();
@@ -21859,10 +21892,10 @@ var init_selection_proxy = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/query-promise.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/query-promise.js
 var QueryPromise;
 var init_query_promise = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/query-promise.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/query-promise.js"() {
     init_entity();
     QueryPromise = class {
       static [entityKind] = "QueryPromise";
@@ -21889,7 +21922,7 @@ var init_query_promise = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/columns/all.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/columns/all.js
 function getSQLiteColumnBuilders() {
   return {
     blob,
@@ -21901,7 +21934,7 @@ function getSQLiteColumnBuilders() {
   };
 }
 var init_all = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/columns/all.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/columns/all.js"() {
     init_blob();
     init_custom();
     init_integer();
@@ -21911,7 +21944,7 @@ var init_all = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/table.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/table.js
 function sqliteTableBase(name, columns, extraConfig, schema, baseName = name) {
   const rawTable = new SQLiteTable(name, schema, baseName);
   const parsedColumns = typeof columns === "function" ? columns(getSQLiteColumnBuilders()) : columns;
@@ -21934,11 +21967,11 @@ function sqliteTableBase(name, columns, extraConfig, schema, baseName = name) {
 }
 var InlineForeignKeys, SQLiteTable, sqliteTable;
 var init_table2 = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/table.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/table.js"() {
     init_entity();
     init_table();
     init_all();
-    InlineForeignKeys = /* @__PURE__ */ Symbol.for("drizzle:SQLiteInlineForeignKeys");
+    InlineForeignKeys = Symbol.for("drizzle:SQLiteInlineForeignKeys");
     SQLiteTable = class extends Table {
       static [entityKind] = "SQLiteTable";
       /** @internal */
@@ -21958,13 +21991,13 @@ var init_table2 = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/indexes.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/indexes.js
 function index(name) {
   return new IndexBuilderOn(name, false);
 }
 var IndexBuilderOn, IndexBuilder, Index;
 var init_indexes = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/indexes.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/indexes.js"() {
     init_entity();
     IndexBuilderOn = class {
       constructor(name, unique) {
@@ -22010,10 +22043,10 @@ var init_indexes = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/primary-keys.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/primary-keys.js
 var PrimaryKeyBuilder, PrimaryKey;
 var init_primary_keys = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/primary-keys.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/primary-keys.js"() {
     init_entity();
     init_table2();
     PrimaryKeyBuilder = class {
@@ -22047,7 +22080,7 @@ var init_primary_keys = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/utils.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/utils.js
 function extractUsedTable(table) {
   if (is(table, SQLiteTable)) {
     return [`${table[Table.Symbol.BaseName]}`];
@@ -22061,7 +22094,7 @@ function extractUsedTable(table) {
   return [];
 }
 var init_utils2 = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/utils.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/utils.js"() {
     init_entity();
     init_sql();
     init_subquery();
@@ -22070,10 +22103,10 @@ var init_utils2 = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/query-builders/delete.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/query-builders/delete.js
 var SQLiteDeleteBase;
 var init_delete = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/query-builders/delete.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/query-builders/delete.js"() {
     init_entity();
     init_query_promise();
     init_selection_proxy();
@@ -22196,7 +22229,7 @@ var init_delete = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/casing.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/casing.js
 function toSnakeCase(input) {
   const words = input.replace(/['\u2019]/g, "").match(/[\da-z]+|[A-Z]+(?![a-z])|[A-Z][\da-z]+/g) ?? [];
   return words.map((word) => word.toLowerCase()).join("_");
@@ -22213,7 +22246,7 @@ function noopCase(input) {
 }
 var CasingCache;
 var init_casing = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/casing.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/casing.js"() {
     init_entity();
     init_table();
     CasingCache = class {
@@ -22255,10 +22288,10 @@ var init_casing = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/errors.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/errors.js
 var DrizzleError, DrizzleQueryError, TransactionRollbackError;
 var init_errors3 = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/errors.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/errors.js"() {
     init_entity();
     DrizzleError = class extends Error {
       static [entityKind] = "DrizzleError";
@@ -22288,7 +22321,7 @@ params: ${params}`);
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sql/expressions/conditions.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sql/expressions/conditions.js
 function bindIfParam(value2, column) {
   if (isDriverValueEncoder(column) && !isSQLWrapper(value2) && !is(value2, Param) && !is(value2, Placeholder) && !is(value2, Column) && !is(value2, Table) && !is(value2, View)) {
     return new Param(value2, column);
@@ -22386,7 +22419,7 @@ function notIlike(column, value2) {
 }
 var eq, ne, gt, gte, lt, lte;
 var init_conditions = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sql/expressions/conditions.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sql/expressions/conditions.js"() {
     init_column();
     init_entity();
     init_table();
@@ -22412,7 +22445,7 @@ var init_conditions = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sql/expressions/select.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sql/expressions/select.js
 function asc(column) {
   return sql`${column} asc`;
 }
@@ -22420,20 +22453,20 @@ function desc(column) {
   return sql`${column} desc`;
 }
 var init_select = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sql/expressions/select.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sql/expressions/select.js"() {
     init_sql();
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sql/expressions/index.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sql/expressions/index.js
 var init_expressions = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sql/expressions/index.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sql/expressions/index.js"() {
     init_conditions();
     init_select();
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/relations.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/relations.js
 function getOperators() {
   return {
     and,
@@ -22559,7 +22592,7 @@ function mapRelationalRow(tablesConfig, tableConfig, row, buildQueryResultSelect
 }
 var Relation, Relations, One, Many;
 var init_relations = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/relations.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/relations.js"() {
     init_table();
     init_column();
     init_entity();
@@ -22620,39 +22653,39 @@ var init_relations = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sql/functions/aggregate.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sql/functions/aggregate.js
 var init_aggregate = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sql/functions/aggregate.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sql/functions/aggregate.js"() {
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sql/functions/vector.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sql/functions/vector.js
 var init_vector = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sql/functions/vector.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sql/functions/vector.js"() {
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sql/functions/index.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sql/functions/index.js
 var init_functions = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sql/functions/index.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sql/functions/index.js"() {
     init_aggregate();
     init_vector();
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sql/index.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sql/index.js
 var init_sql2 = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sql/index.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sql/index.js"() {
     init_expressions();
     init_functions();
     init_sql();
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/view-base.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/view-base.js
 var SQLiteViewBase;
 var init_view_base = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/view-base.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/view-base.js"() {
     init_entity();
     init_sql();
     SQLiteViewBase = class extends View {
@@ -22661,10 +22694,10 @@ var init_view_base = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/dialect.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/dialect.js
 var SQLiteDialect, SQLiteSyncDialect, SQLiteAsyncDialect;
 var init_dialect = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/dialect.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/dialect.js"() {
     init_alias();
     init_casing();
     init_column();
@@ -22688,7 +22721,7 @@ var init_dialect = __esm({
         this.casing = new CasingCache(config2?.casing);
       }
       escapeName(name) {
-        return `"${name.replace(/"/g, '""')}"`;
+        return `"${name}"`;
       }
       escapeParam(_num) {
         return "?";
@@ -22708,14 +22741,7 @@ var init_dialect = __esm({
         withSqlChunks.push(sql` `);
         return sql.join(withSqlChunks);
       }
-      buildDeleteQuery({
-        table,
-        where,
-        returning,
-        withList,
-        limit,
-        orderBy
-      }) {
+      buildDeleteQuery({ table, where, returning, withList, limit, orderBy }) {
         const withSql = this.buildWithCTE(withList);
         const returningSql = returning ? sql` returning ${this.buildSelection(returning, { isSingleTable: true })}` : void 0;
         const whereSql = where ? sql` where ${where}` : void 0;
@@ -22729,30 +22755,17 @@ var init_dialect = __esm({
           (colName) => set2[colName] !== void 0 || tableColumns[colName]?.onUpdateFn !== void 0
         );
         const setSize = columnNames.length;
-        return sql.join(
-          columnNames.flatMap((colName, i) => {
-            const col = tableColumns[colName];
-            const onUpdateFnResult = col.onUpdateFn?.();
-            const value2 = set2[colName] ?? (is(onUpdateFnResult, SQL) ? onUpdateFnResult : sql.param(onUpdateFnResult, col));
-            const res = sql`${sql.identifier(this.casing.getColumnCasing(col))} = ${value2}`;
-            if (i < setSize - 1) {
-              return [res, sql.raw(", ")];
-            }
-            return [res];
-          })
-        );
+        return sql.join(columnNames.flatMap((colName, i) => {
+          const col = tableColumns[colName];
+          const value2 = set2[colName] ?? sql.param(col.onUpdateFn(), col);
+          const res = sql`${sql.identifier(this.casing.getColumnCasing(col))} = ${value2}`;
+          if (i < setSize - 1) {
+            return [res, sql.raw(", ")];
+          }
+          return [res];
+        }));
       }
-      buildUpdateQuery({
-        table,
-        set: set2,
-        where,
-        returning,
-        withList,
-        joins,
-        from,
-        limit,
-        orderBy
-      }) {
+      buildUpdateQuery({ table, set: set2, where, returning, withList, joins, from, limit, orderBy }) {
         const withSql = this.buildWithCTE(withList);
         const setSql = this.buildUpdateSet(table, set2);
         const fromSql = from && sql.join([sql.raw(" from "), this.buildFromTable(from)]);
@@ -22803,9 +22816,7 @@ var init_dialect = __esm({
             const tableName = field.table[Table.Symbol.Name];
             if (field.columnType === "SQLiteNumericBigInt") {
               if (isSingleTable) {
-                chunk.push(
-                  sql`cast(${sql.identifier(this.casing.getColumnCasing(field))} as text)`
-                );
+                chunk.push(sql`cast(${sql.identifier(this.casing.getColumnCasing(field))} as text)`);
               } else {
                 chunk.push(
                   sql`cast(${sql.identifier(tableName)}.${sql.identifier(this.casing.getColumnCasing(field))} as text)`
@@ -22815,19 +22826,9 @@ var init_dialect = __esm({
               if (isSingleTable) {
                 chunk.push(sql.identifier(this.casing.getColumnCasing(field)));
               } else {
-                chunk.push(
-                  sql`${sql.identifier(tableName)}.${sql.identifier(this.casing.getColumnCasing(field))}`
-                );
+                chunk.push(sql`${sql.identifier(tableName)}.${sql.identifier(this.casing.getColumnCasing(field))}`);
               }
             }
-          } else if (is(field, Subquery)) {
-            const entries = Object.entries(field._.selectedFields);
-            if (entries.length === 1) {
-              const entry = entries[0][1];
-              const fieldDecoder = is(entry, SQL) ? entry.decoder : is(entry, Column) ? { mapFromDriverValue: (v) => entry.mapFromDriverValue(v) } : entry.sql.decoder;
-              if (fieldDecoder) field._.sql.decoder = fieldDecoder;
-            }
-            chunk.push(field);
           }
           if (i < columnsLen - 1) {
             chunk.push(sql`, `);
@@ -22854,9 +22855,7 @@ var init_dialect = __esm({
               const origTableName = table[SQLiteTable.Symbol.OriginalName];
               const alias = tableName === origTableName ? void 0 : joinMeta.alias;
               joinsArray.push(
-                sql`${sql.raw(joinMeta.joinType)} join ${tableSchema ? sql`${sql.identifier(tableSchema)}.` : void 0}${sql.identifier(
-                  origTableName
-                )}${alias && sql` ${sql.identifier(alias)}`}${onSql}`
+                sql`${sql.raw(joinMeta.joinType)} join ${tableSchema ? sql`${sql.identifier(tableSchema)}.` : void 0}${sql.identifier(origTableName)}${alias && sql` ${sql.identifier(alias)}`}${onSql}`
               );
             } else {
               joinsArray.push(
@@ -22887,9 +22886,7 @@ var init_dialect = __esm({
       }
       buildFromTable(table) {
         if (is(table, Table) && table[Table.Symbol.IsAlias]) {
-          return sql`${sql`${sql.identifier(table[Table.Symbol.Schema] ?? "")}.`.if(table[Table.Symbol.Schema])}${sql.identifier(
-            table[Table.Symbol.OriginalName]
-          )} ${sql.identifier(table[Table.Symbol.Name])}`;
+          return sql`${sql`${sql.identifier(table[Table.Symbol.Schema] ?? "")}.`.if(table[Table.Symbol.Schema])}${sql.identifier(table[Table.Symbol.OriginalName])} ${sql.identifier(table[Table.Symbol.Name])}`;
         }
         return table;
       }
@@ -22915,9 +22912,7 @@ var init_dialect = __esm({
           ))(f.field.table)) {
             const tableName = getTableName(f.field.table);
             throw new Error(
-              `Your "${f.path.join(
-                "->"
-              )}" field references a column "${tableName}"."${f.field.name}", but the table "${tableName}" is not part of the query! Did you forget to join it?`
+              `Your "${f.path.join("->")}" field references a column "${tableName}"."${f.field.name}", but the table "${tableName}" is not part of the query! Did you forget to join it?`
             );
           }
         }
@@ -22977,9 +22972,7 @@ var init_dialect = __esm({
               for (let i = 0; i < singleOrderBy.queryChunks.length; i++) {
                 const chunk = singleOrderBy.queryChunks[i];
                 if (is(chunk, SQLiteColumn)) {
-                  singleOrderBy.queryChunks[i] = sql.identifier(
-                    this.casing.getColumnCasing(chunk)
-                  );
+                  singleOrderBy.queryChunks[i] = sql.identifier(this.casing.getColumnCasing(chunk));
                 }
               }
               orderByValues.push(sql`${singleOrderBy}`);
@@ -22994,14 +22987,7 @@ var init_dialect = __esm({
         const offsetSql = offset ? sql` offset ${offset}` : void 0;
         return sql`${leftChunk}${operatorChunk}${rightChunk}${orderBySql}${limitSql}${offsetSql}`;
       }
-      buildInsertQuery({
-        table,
-        values: valuesOrSelect,
-        onConflict,
-        returning,
-        withList,
-        select
-      }) {
+      buildInsertQuery({ table, values: valuesOrSelect, onConflict, returning, withList, select }) {
         const valuesSqlList = [];
         const columns = table[Table.Symbol.Columns];
         const colEntries = Object.entries(columns).filter(
@@ -23087,10 +23073,7 @@ var init_dialect = __esm({
           }));
         } else {
           const aliasedColumns = Object.fromEntries(
-            Object.entries(tableConfig.columns).map(([key, value2]) => [
-              key,
-              aliasedTableColumn(value2, tableAlias)
-            ])
+            Object.entries(tableConfig.columns).map(([key, value2]) => [key, aliasedTableColumn(value2, tableAlias)])
           );
           if (config2.where) {
             const whereSql = typeof config2.where === "function" ? config2.where(aliasedColumns, getOperators()) : config2.where;
@@ -23112,9 +23095,7 @@ var init_dialect = __esm({
               }
             }
             if (selectedColumns.length > 0) {
-              selectedColumns = isIncludeMode ? selectedColumns.filter((c) => config2.columns?.[c] === true) : Object.keys(tableConfig.columns).filter(
-                (key) => !selectedColumns.includes(key)
-              );
+              selectedColumns = isIncludeMode ? selectedColumns.filter((c) => config2.columns?.[c] === true) : Object.keys(tableConfig.columns).filter((key) => !selectedColumns.includes(key));
             }
           } else {
             selectedColumns = Object.keys(tableConfig.columns);
@@ -23125,13 +23106,7 @@ var init_dialect = __esm({
           }
           let selectedRelations = [];
           if (config2.with) {
-            selectedRelations = Object.entries(config2.with).filter(
-              (entry) => !!entry[1]
-            ).map(([tsKey, queryConfig]) => ({
-              tsKey,
-              queryConfig,
-              relation: tableConfig.relations[tsKey]
-            }));
+            selectedRelations = Object.entries(config2.with).filter((entry) => !!entry[1]).map(([tsKey, queryConfig]) => ({ tsKey, queryConfig, relation: tableConfig.relations[tsKey] }));
           }
           let extras;
           if (config2.extras) {
@@ -23170,21 +23145,14 @@ var init_dialect = __esm({
             queryConfig: selectedRelationConfigValue,
             relation
           } of selectedRelations) {
-            const normalizedRelation = normalizeRelation(
-              schema,
-              tableNamesMap,
-              relation
-            );
+            const normalizedRelation = normalizeRelation(schema, tableNamesMap, relation);
             const relationTableName = getTableUniqueName(relation.referencedTable);
             const relationTableTsName = tableNamesMap[relationTableName];
             const relationTableAlias = `${tableAlias}_${selectedRelationTsKey}`;
             const joinOn2 = and(
               ...normalizedRelation.fields.map(
                 (field2, i) => eq(
-                  aliasedTableColumn(
-                    normalizedRelation.references[i],
-                    relationTableAlias
-                  ),
+                  aliasedTableColumn(normalizedRelation.references[i], relationTableAlias),
                   aliasedTableColumn(field2, tableAlias)
                 )
               )
@@ -23228,16 +23196,14 @@ var init_dialect = __esm({
           if (is(nestedQueryRelation, Many)) {
             field = sql`coalesce(json_group_array(${field}), json_array())`;
           }
-          const nestedSelection = [
-            {
-              dbKey: "data",
-              tsKey: "data",
-              field: field.as("data"),
-              isJson: true,
-              relationTableTsKey: tableConfig.tsName,
-              selection
-            }
-          ];
+          const nestedSelection = [{
+            dbKey: "data",
+            tsKey: "data",
+            field: field.as("data"),
+            isJson: true,
+            relationTableTsKey: tableConfig.tsName,
+            selection
+          }];
           const needsSubquery = limit !== void 0 || offset !== void 0 || orderBy.length > 0;
           if (needsSubquery) {
             result = this.buildSelectQuery({
@@ -23323,9 +23289,7 @@ var init_dialect = __esm({
                 session.run(sql.raw(stmt));
               }
               session.run(
-                sql`INSERT INTO ${sql.identifier(
-                  migrationsTable
-                )} ("hash", "created_at") VALUES(${migration.hash}, ${migration.folderMillis})`
+                sql`INSERT INTO ${sql.identifier(migrationsTable)} ("hash", "created_at") VALUES(${migration.hash}, ${migration.folderMillis})`
               );
             }
           }
@@ -23359,9 +23323,7 @@ var init_dialect = __esm({
                 await tx.run(sql.raw(stmt));
               }
               await tx.run(
-                sql`INSERT INTO ${sql.identifier(
-                  migrationsTable
-                )} ("hash", "created_at") VALUES(${migration.hash}, ${migration.folderMillis})`
+                sql`INSERT INTO ${sql.identifier(migrationsTable)} ("hash", "created_at") VALUES(${migration.hash}, ${migration.folderMillis})`
               );
             }
           }
@@ -23371,10 +23333,10 @@ var init_dialect = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/query-builders/query-builder.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/query-builders/query-builder.js
 var TypedQueryBuilder;
 var init_query_builder = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/query-builders/query-builder.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/query-builders/query-builder.js"() {
     init_entity();
     TypedQueryBuilder = class {
       static [entityKind] = "TypedQueryBuilder";
@@ -23386,7 +23348,7 @@ var init_query_builder = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/query-builders/select.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/query-builders/select.js
 function createSetOperator(type, isAll) {
   return (leftSelect, rightSelect, ...restSelects) => {
     const setOperators = [rightSelect, ...restSelects].map((select) => ({
@@ -23406,7 +23368,7 @@ function createSetOperator(type, isAll) {
 }
 var SQLiteSelectBuilder, SQLiteSelectQueryBuilderBase, SQLiteSelectBase, getSQLiteSetOperators, union2, unionAll, intersect, except;
 var init_select2 = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/query-builders/select.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/query-builders/select.js"() {
     init_entity();
     init_query_builder();
     init_query_promise();
@@ -24067,10 +24029,10 @@ var init_select2 = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/query-builders/query-builder.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/query-builders/query-builder.js
 var QueryBuilder;
 var init_query_builder2 = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/query-builders/query-builder.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/query-builders/query-builder.js"() {
     init_entity();
     init_selection_proxy();
     init_dialect();
@@ -24145,10 +24107,10 @@ var init_query_builder2 = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/query-builders/insert.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/query-builders/insert.js
 var SQLiteInsertBuilder, SQLiteInsertBase;
 var init_insert = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/query-builders/insert.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/query-builders/insert.js"() {
     init_entity();
     init_query_promise();
     init_sql();
@@ -24331,16 +24293,16 @@ var init_insert = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/query-builders/select.types.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/query-builders/select.types.js
 var init_select_types = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/query-builders/select.types.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/query-builders/select.types.js"() {
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/query-builders/update.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/query-builders/update.js
 var SQLiteUpdateBuilder, SQLiteUpdateBase;
 var init_update = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/query-builders/update.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/query-builders/update.js"() {
     init_entity();
     init_query_promise();
     init_selection_proxy();
@@ -24518,9 +24480,9 @@ var init_update = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/query-builders/index.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/query-builders/index.js
 var init_query_builders = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/query-builders/index.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/query-builders/index.js"() {
     init_delete();
     init_insert();
     init_query_builder2();
@@ -24530,10 +24492,10 @@ var init_query_builders = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/query-builders/count.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/query-builders/count.js
 var SQLiteCountBuilder;
 var init_count = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/query-builders/count.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/query-builders/count.js"() {
     init_entity();
     init_sql();
     SQLiteCountBuilder = class _SQLiteCountBuilder extends SQL {
@@ -24581,10 +24543,10 @@ var init_count = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/query-builders/query.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/query-builders/query.js
 var RelationalQueryBuilder, SQLiteRelationalQuery, SQLiteSyncRelationalQuery;
 var init_query = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/query-builders/query.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/query-builders/query.js"() {
     init_entity();
     init_query_promise();
     init_relations();
@@ -24733,10 +24695,10 @@ var init_query = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/query-builders/raw.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/query-builders/raw.js
 var SQLiteRaw;
 var init_raw = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/query-builders/raw.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/query-builders/raw.js"() {
     init_entity();
     init_query_promise();
     SQLiteRaw = class extends QueryPromise {
@@ -24768,10 +24730,10 @@ var init_raw = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/db.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/db.js
 var BaseSQLiteDatabase;
 var init_db = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/db.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/db.js"() {
     init_entity();
     init_selection_proxy();
     init_sql();
@@ -25072,7 +25034,7 @@ var init_db = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/cache/core/cache.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/cache/core/cache.js
 async function hashQuery(sql2, params) {
   const dataToHash = `${sql2}-${JSON.stringify(params)}`;
   const encoder = new TextEncoder();
@@ -25084,7 +25046,7 @@ async function hashQuery(sql2, params) {
 }
 var Cache, NoopCache;
 var init_cache = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/cache/core/cache.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/cache/core/cache.js"() {
     init_entity();
     Cache = class {
       static [entityKind] = "Cache";
@@ -25105,10 +25067,10 @@ var init_cache = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/session.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/session.js
 var ExecuteResultSync, SQLitePreparedQuery, SQLiteSession, SQLiteTransaction;
 var init_session = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/session.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/session.js"() {
     init_cache();
     init_entity();
     init_errors3();
@@ -25311,16 +25273,16 @@ var init_session = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/subquery.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/subquery.js
 var init_subquery2 = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/subquery.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/subquery.js"() {
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/view.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/view.js
 var ViewBuilderCore, ViewBuilder, ManualViewBuilder, SQLiteView;
 var init_view = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/view.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/view.js"() {
     init_entity();
     init_selection_proxy();
     init_utils();
@@ -25414,9 +25376,9 @@ var init_view = __esm({
   }
 });
 
-// ../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/index.js
+// ../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/index.js
 var init_sqlite_core = __esm({
-  "../../node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/index.js"() {
+  "../../node_modules/.pnpm/drizzle-orm@0.44.7_@opentelemetry+api@1.9.1_@types+better-sqlite3@7.6.13_@types+pg@8.15.6_better-sqlite3@12.9.0/node_modules/drizzle-orm/sqlite-core/index.js"() {
     init_alias2();
     init_checks3();
     init_columns();
