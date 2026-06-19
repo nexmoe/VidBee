@@ -1,6 +1,7 @@
 {
   "name": "vidbee-workspace",
   "private": true,
+  "packageManager": "pnpm@11.1.2",
   "scripts": {
     "check": "pnpm --filter ./apps/desktop run check",
     "check:i18n": "pnpm --filter ./apps/desktop run check:i18n",

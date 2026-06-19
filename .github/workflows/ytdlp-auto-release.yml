@@ -50,7 +50,7 @@ jobs:
         if: steps.check.outputs.update_available == 'true'
         uses: pnpm/action-setup@v4
         with:
-          version: 10.23.0
+          version: 11.1.2
 
       - name: Install Dependencies
         if: steps.check.outputs.update_available == 'true'

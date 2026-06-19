@@ -1,4 +1,4 @@
-import * as BrowserSentry from '@sentry/browser'
+import * as RendererSentry from '@sentry/electron/renderer'
 import { toast } from 'sonner'
 
 interface AppInfo {
@@ -59,21 +59,21 @@ const buildFeedbackMessage = ({
 export const sendGlitchTipFeedback = async (
   options: SendGlitchTipFeedbackOptions
 ): Promise<void> => {
-  if (!BrowserSentry.isInitialized()) {
+  if (!RendererSentry.isInitialized()) {
     toast.error('GlitchTip is not configured.')
     return
   }
 
   const associatedEventId =
     options.associatedEventId?.trim() ||
-    BrowserSentry.captureMessage('manual download feedback submitted', 'info')
+    RendererSentry.captureMessage('manual download feedback submitted', 'info')
   if (!associatedEventId) {
     toast.error('GlitchTip feedback needs an associated error event.')
     return
   }
 
   const feedbackMessage = buildFeedbackMessage(options)
-  BrowserSentry.withScope((scope) => {
+  RendererSentry.withScope((scope) => {
     scope.setLevel('info')
     scope.setTag('feedback_source', 'manual')
     scope.setContext('download_feedback', {
@@ -83,7 +83,7 @@ export const sendGlitchTipFeedback = async (
       ytDlpCommand: options.ytDlpCommand?.trim() || 'Unknown',
       ytDlpLog: clampLog(options.ytDlpLog)
     })
-    BrowserSentry.captureFeedback({
+    RendererSentry.captureFeedback({
       associatedEventId,
       message: feedbackMessage,
       name: 'VidBee user',

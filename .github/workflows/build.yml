@@ -60,7 +60,7 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 8
+          version: 11.1.2
 
       - name: Install Dependencies
         run: pnpm install --filter ./apps/desktop...
