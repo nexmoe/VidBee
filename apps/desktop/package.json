@@ -111,6 +111,6 @@
     "typescript": "^5.9.2",
     "ultracite": "7.1.5",
     "unplugin-icons": "^22.4.2",
-    "vite": "^7.1.6"
+    "vite": "^7.3.5"
   }
 }
