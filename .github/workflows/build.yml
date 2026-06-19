@@ -63,7 +63,7 @@ jobs:
           version: 11.1.2
 
       - name: Install Dependencies
-        run: pnpm install --filter ./apps/desktop...
+        run: pnpm install --frozen-lockfile
 
       - name: Lint and format check
         run: pnpm run check && pnpm run typecheck

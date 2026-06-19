@@ -54,7 +54,7 @@ jobs:
 
       - name: Install Dependencies
         if: steps.check.outputs.update_available == 'true'
-        run: pnpm install --filter ./apps/desktop... --frozen-lockfile --ignore-scripts
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Validate release changes
         if: steps.check.outputs.update_available == 'true'
