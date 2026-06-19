@@ -3,6 +3,9 @@
 This page only includes user-visible updates and avoids implementation details.
 For full release notes, see [GitHub Releases](https://github.com/nexmoe/VidBee/releases).
 
+## [v1.3.11](https://github.com/nexmoe/VidBee/releases/tag/v1.3.11) - 2026-06-19
+### Requirement Updates
+- Updated the bundled yt-dlp runtime from v2026.03.17 to v2026.06.09 so site compatibility stays current.
 ## [v1.3.10](https://github.com/nexmoe/VidBee/releases/tag/v1.3.10) - 2026-04-11
 ### Improvements
 - One-click download is enabled by default so you can start downloads faster on first use.
