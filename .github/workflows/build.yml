@@ -129,6 +129,23 @@ jobs:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: ${{ matrix.build_script }}
 
+      - name: Verify Windows release artifacts
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          $dist = "apps/desktop/dist"
+          $requiredPatterns = @("*-setup.exe", "*-portable.exe", "*-windows-portable.zip")
+          foreach ($pattern in $requiredPatterns) {
+            $matches = Get-ChildItem -Path $dist -Filter $pattern -File
+            if ($matches.Count -eq 0) {
+              Write-Error "Missing Windows release artifact matching $pattern"
+              exit 1
+            }
+            $matches | ForEach-Object {
+              Write-Host "Found Windows release artifact: $($_.Name)"
+            }
+          }
+
       - name: Verify macOS codesign and notarization
         if: matrix.platform == 'macos' && env.SIGNING_AVAILABLE == 'true'
         shell: bash
@@ -181,3 +198,4 @@ jobs:
             apps/desktop/dist/*.yml
             apps/desktop/dist/*.blockmap
           retention-days: 1
+          if-no-files-found: error

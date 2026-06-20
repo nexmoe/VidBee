@@ -6,6 +6,7 @@ import { pathToFileURL } from 'node:url'
 import { promisify } from 'node:util'
 import { clipboard, dialog, Notification, shell } from 'electron'
 import { type IpcContext, IpcMethod, IpcService } from 'electron-ipc-decorator'
+import { getPortableDownloadsPath, isPortableMode } from '../../portable'
 import { scopedLoggers } from '../../utils/logger'
 
 const execFileAsync = promisify(execFile)
@@ -99,6 +100,10 @@ class FileSystemService extends IpcService {
 
   @IpcMethod()
   getDefaultDownloadPath(_context: IpcContext): string {
+    if (isPortableMode) {
+      return getPortableDownloadsPath()
+    }
+
     const fallbackPath = path.join(os.homedir(), 'Downloads')
 
     if (process.platform === 'linux' || process.platform === 'freebsd') {

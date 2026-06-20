@@ -79,6 +79,10 @@ function AppContent() {
     version: appVersion
   })
 
+  useEffect(() => {
+    window.api?.send('app:renderer-ready')
+  }, [])
+
   const handlePageChange = useCallback(
     (page: Page) => {
       const targetPath = pageToPath[page] ?? '/'
