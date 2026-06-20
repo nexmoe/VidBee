@@ -30,6 +30,23 @@ const signBinary = (targetPath, entitlementsPath) => {
   execFileSync('codesign', args, { stdio: 'inherit' })
 }
 
+/**
+ * Resolves the packaged runtime binary directory for the app bundle.
+ */
+const resolveBinaryResourcesPath = (appBundle) => {
+  const contentsResourcesPath = path.join(appBundle, 'Contents', 'Resources')
+  const candidates = [
+    path.join(contentsResourcesPath, 'resources'),
+    path.join(contentsResourcesPath, 'app.asar.unpacked', 'resources')
+  ]
+
+  return (
+    candidates.find((candidate) =>
+      BINARIES.some((binary) => fs.existsSync(path.join(candidate, binary)))
+    ) || candidates[0]
+  )
+}
+
 exports.default = async function afterPack(context) {
   if (context.electronPlatformName !== 'darwin') {
     return
@@ -41,14 +58,7 @@ exports.default = async function afterPack(context) {
     return
   }
 
-  const resourcesPath = path.join(
-    appBundle,
-    'Contents',
-    'Resources',
-    'app.asar.unpacked',
-    'resources'
-  )
-
+  const resourcesPath = resolveBinaryResourcesPath(appBundle)
   const entitlementsPath = path.resolve(__dirname, 'entitlements.mac.plist')
 
   for (const binary of BINARIES) {
@@ -61,3 +71,5 @@ exports.default = async function afterPack(context) {
     signBinary(targetPath, entitlementsPath)
   }
 }
+
+exports.resolveBinaryResourcesPath = resolveBinaryResourcesPath
