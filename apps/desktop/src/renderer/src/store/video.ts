@@ -6,6 +6,9 @@ import { createVideoInfoRequestCoordinator } from './video-request-coordinator'
 // Current video info being prepared for download
 export const currentVideoInfoAtom = atom<VideoInfo | null>(null)
 
+// Original URL used to fetch the current video info (#379)
+export const currentVideoInfoSourceUrlAtom = atom<string | null>(null)
+
 // Loading state for video info
 export const videoInfoLoadingAtom = atom<boolean>(false)
 
@@ -23,6 +26,7 @@ export const fetchVideoInfoAtom = atom(null, async (_get, set, url: string) => {
   set(videoInfoErrorAtom, null)
   set(videoInfoCommandAtom, null)
   set(currentVideoInfoAtom, null)
+  set(currentVideoInfoSourceUrlAtom, null)
 
   try {
     const result = await ipcServices.download.getVideoInfoWithCommand(url)
@@ -32,6 +36,7 @@ export const fetchVideoInfoAtom = atom(null, async (_get, set, url: string) => {
     set(videoInfoCommandAtom, result.ytDlpCommand)
     if (result.info) {
       set(currentVideoInfoAtom, result.info)
+      set(currentVideoInfoSourceUrlAtom, url)
       return
     }
     set(videoInfoErrorAtom, result.error || 'Failed to fetch video info')
@@ -50,7 +55,10 @@ export const fetchVideoInfoAtom = atom(null, async (_get, set, url: string) => {
 
 // Clear video info
 export const clearVideoInfoAtom = atom(null, (_get, set) => {
+  videoInfoRequestCoordinator.invalidate()
   set(currentVideoInfoAtom, null)
+  set(currentVideoInfoSourceUrlAtom, null)
+  set(videoInfoLoadingAtom, false)
   set(videoInfoErrorAtom, null)
   set(videoInfoCommandAtom, null)
 })

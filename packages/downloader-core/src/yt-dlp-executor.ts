@@ -23,6 +23,7 @@ import type {
   TaskOutput,
   TaskProgress
 } from '@vidbee/task-queue'
+import { killProcessTree } from '@vidbee/task-queue/process'
 import { virtualError } from '@vidbee/task-queue'
 
 import type { DownloadRuntimeSettings } from './types'
@@ -417,7 +418,7 @@ export class YtDlpExecutor implements Executor {
         /* noop */
       }
       try {
-        proc?.ytDlpProcess?.kill('SIGTERM')
+        killProcessTree(proc?.ytDlpProcess?.pid, 'SIGTERM')
       } catch {
         /* noop */
       }
@@ -425,14 +426,14 @@ export class YtDlpExecutor implements Executor {
       if (grace > 0) {
         killTimer = setTimeout(() => {
           try {
-            proc?.ytDlpProcess?.kill('SIGKILL')
+            killProcessTree(proc?.ytDlpProcess?.pid, 'SIGKILL')
           } catch {
             /* noop */
           }
         }, grace)
       } else {
         try {
-          proc?.ytDlpProcess?.kill('SIGKILL')
+          killProcessTree(proc?.ytDlpProcess?.pid, 'SIGKILL')
         } catch {
           /* noop */
         }

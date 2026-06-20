@@ -1,3 +1,4 @@
+export { killProcessTree } from './kill-process-tree'
 export { ProcessRegistry } from './registry'
 export type { ProcessHandle, ProcessRegistryDeps } from './registry'
 export { Watchdog } from './watchdog'

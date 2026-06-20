@@ -63,6 +63,9 @@ linux:
     - deb
   maintainer: nexmoex@gmail.com
   category: Utility
+deb:
+  # Issue #378: fix chrome-sandbox SUID perms so the .deb launches.
+  afterInstall: build/after-install.sh
 appImage:
   artifactName: ${name}-${version}.${ext}
 npmRebuild: true

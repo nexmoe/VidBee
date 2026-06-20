@@ -27,6 +27,11 @@ services:
       dockerfile: apps/web/Dockerfile
       args:
         VITE_API_URL: ${VITE_API_URL:-http://localhost:${VIDBEE_API_PORT:-3100}}
+    environment:
+      # Self-hosting behind a reverse proxy? Allow your domain through Vite's
+      # host check (GitHub issue #404): set "*" to allow any host, or a
+      # comma-separated list like "vidbee.example.com".
+      VIDBEE_ALLOWED_HOSTS: ${VIDBEE_ALLOWED_HOSTS:-}
     depends_on:
       api:
         condition: service_healthy

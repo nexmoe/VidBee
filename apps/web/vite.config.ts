@@ -7,6 +7,24 @@ import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 import packageJson from "./package.json";
 
+// Self-hosters behind a reverse proxy (e.g. Traefik) must allow their domain
+// in Vite's host check (GitHub issue #404). VIDBEE_ALLOWED_HOSTS="*" (or "all")
+// disables the check; a comma-separated list allows specific hosts; unset keeps
+// Vite's secure localhost default.
+function resolveAllowedHosts(): true | string[] | undefined {
+	const raw = process.env.VIDBEE_ALLOWED_HOSTS?.trim();
+	if (!raw) {
+		return undefined;
+	}
+	if (raw === "*" || raw === "all") {
+		return true;
+	}
+	return raw
+		.split(",")
+		.map((host) => host.trim())
+		.filter(Boolean);
+}
+
 const config = defineConfig({
 	define: {
 		__APP_VERSION__: JSON.stringify(packageJson.version),
@@ -27,6 +45,7 @@ const config = defineConfig({
 		viteReact(),
 	],
 	server: {
+		allowedHosts: resolveAllowedHosts(),
 		proxy: {
 			"/events": {
 				target: "http://localhost:3100",
