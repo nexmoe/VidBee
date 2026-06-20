@@ -16,6 +16,7 @@
     "build:mac": "pnpm --filter ./apps/desktop run build:mac",
     "build:linux": "pnpm --filter ./apps/desktop run build:linux",
     "release": "pnpm --filter ./apps/desktop run release",
+    "release:preview": "pnpm --filter ./apps/desktop run release:preview",
     "db:generate": "pnpm --filter ./apps/desktop run db:generate",
     "db:migrate": "pnpm --filter ./apps/desktop run db:migrate",
     "fix": "pnpm --filter ./apps/desktop run fix",

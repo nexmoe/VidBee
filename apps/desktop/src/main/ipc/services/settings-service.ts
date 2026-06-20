@@ -5,6 +5,7 @@ import {
   applyBatchSettingSideEffects,
   applySingleSettingSideEffects
 } from '../../lib/settings-effects'
+import { applyUpdateChannel, refreshUpdateChannel } from '../../lib/update-channel'
 import { settingsManager } from '../../settings'
 import { updateTrayMenu } from '../../tray'
 import { applyAutoLaunchSetting } from '../../utils/auto-launch'
@@ -22,6 +23,9 @@ const settingSideEffectHandlers = {
   },
   onMaxConcurrentDownloads: (value: number) => {
     downloadEngine.updateMaxConcurrent(value)
+  },
+  onBetaProgram: (value: boolean) => {
+    refreshUpdateChannel(value)
   }
 }
 
@@ -56,6 +60,7 @@ class SettingsService extends IpcService {
     applyDockVisibility(settingsManager.get('hideDockIcon'))
     applyAutoLaunchSetting(settingsManager.get('launchAtLogin'))
     downloadEngine.updateMaxConcurrent(settingsManager.get('maxConcurrentDownloads'))
+    applyUpdateChannel(settingsManager.get('betaProgram'))
   }
 }
 

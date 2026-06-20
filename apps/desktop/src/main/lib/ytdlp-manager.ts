@@ -23,6 +23,16 @@ class YtDlpManager {
    * Resolve and cache the packaged yt-dlp executable.
    */
   async initialize(): Promise<void> {
+    this.load()
+  }
+
+  /**
+   * Resolve and cache the yt-dlp binary, wrapper instance, and runtime args.
+   *
+   * Idempotent and synchronous; throws the underlying resolution error (e.g.
+   * "Bundled yt-dlp not found at ...") so callers surface an actionable reason.
+   */
+  private load(): void {
     this.ytdlpPath = this.resolveBundledYtDlp()
     this.ytdlpInstance = new YTDlpWrapCtor(this.ytdlpPath)
     this.jsRuntimeArgs = this.resolveJsRuntimeArgs()
@@ -30,9 +40,12 @@ class YtDlpManager {
   }
 
   /**
-   * Return the initialized yt-dlp wrapper instance.
+   * Return the yt-dlp wrapper instance, lazily initializing if startup init failed.
    */
   getInstance(): YTDlpWrapInstance {
+    if (!this.ytdlpInstance) {
+      this.load()
+    }
     if (!this.ytdlpInstance) {
       throw new Error('yt-dlp not initialized. Call initialize() first.')
     }
@@ -40,13 +53,28 @@ class YtDlpManager {
   }
 
   /**
-   * Return the resolved yt-dlp binary path.
+   * Return the resolved yt-dlp binary path, lazily initializing if needed.
    */
   getPath(): string {
+    if (!this.ytdlpPath) {
+      this.load()
+    }
     if (!this.ytdlpPath) {
       throw new Error('yt-dlp not initialized. Call initialize() first.')
     }
     return this.ytdlpPath
+  }
+
+  /**
+   * Report whether yt-dlp is usable, attempting a lazy initialization if needed.
+   */
+  isReady(): boolean {
+    try {
+      this.getInstance()
+      return true
+    } catch {
+      return false
+    }
   }
 
   /**
@@ -57,27 +85,34 @@ class YtDlpManager {
   }
 
   /**
-   * Resolve the resources directory used by packaged desktop binaries.
+   * Resolve the platform-specific bundled yt-dlp binary file name.
+   */
+  private getBundledYtDlpName(): string {
+    const platform = os.platform()
+    if (platform === 'win32') {
+      return 'yt-dlp.exe'
+    }
+    if (platform === 'darwin') {
+      return 'yt-dlp_macos'
+    }
+    return 'yt-dlp_linux'
+  }
+
+  /**
+   * Resolve the resources directory that ships the current platform's binaries.
+   *
+   * Probe for the active platform's yt-dlp binary only; the bundle ships one
+   * platform binary, so requiring all three would never match.
    */
   private getResourcesPath(): string {
-    return resolveBundledResourcesPath(['yt-dlp.exe', 'yt-dlp_macos', 'yt-dlp_linux'])
+    return resolveBundledResourcesPath([this.getBundledYtDlpName()])
   }
 
   /**
    * Locate the packaged yt-dlp executable for the active platform.
    */
   private resolveBundledYtDlp(): string {
-    const platform = os.platform()
-    let bundledName: string
-
-    // Determine the binary name based on platform
-    if (platform === 'win32') {
-      bundledName = 'yt-dlp.exe'
-    } else if (platform === 'darwin') {
-      bundledName = 'yt-dlp_macos'
-    } else {
-      bundledName = 'yt-dlp_linux'
-    }
+    const bundledName = this.getBundledYtDlpName()
 
     // Desktop only supports the bundled yt-dlp binary shipped in resources.
     const resourcesPath = this.getResourcesPath()
@@ -88,7 +123,7 @@ class YtDlpManager {
       // copied directly into `process.resourcesPath`.
       scopedLoggers.engine.info('Using bundled yt-dlp:', bundledPath)
       // Make executable on Unix-like systems if needed
-      if (platform !== 'win32') {
+      if (os.platform() !== 'win32') {
         try {
           fs.chmodSync(bundledPath, 0o755)
         } catch (error) {

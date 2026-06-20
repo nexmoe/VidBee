@@ -40,6 +40,7 @@ import {
   stopDesktopSubscriptions
 } from './lib/subscriptions-host'
 import { runDesktopTaskQueueMigration } from './lib/task-queue-migrate'
+import { applyUpdateChannel } from './lib/update-channel'
 import { ytdlpManager } from './lib/ytdlp-manager'
 import { startExtensionApiServer, stopExtensionApiServer } from './local-api'
 import { settingsManager } from './settings'
@@ -701,6 +702,8 @@ function initAutoUpdater(): void {
 
     log.info('Auto-updater initialized successfully')
     log.info('Automatic updates are required, checking for updates immediately...')
+    // Select stable/preview channel from the user's preview-program setting before checking.
+    applyUpdateChannel(settingsManager.get('betaProgram'))
     // Use checkForUpdates instead of checkForUpdatesAndNotify
     // because we have our own notification system and want to ensure immediate download
     void autoUpdater.checkForUpdates()

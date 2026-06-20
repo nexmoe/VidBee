@@ -110,6 +110,14 @@ jobs:
           echo "APPLE_API_ISSUER=$APPLE_API_ISSUER" >> "$GITHUB_ENV"
           echo "SIGNING_AVAILABLE=true" >> "$GITHUB_ENV"
 
+      - name: Stamp release version and channel from tag
+        if: github.ref_type == 'tag'
+        shell: bash
+        # Stamp the tag version into package.json and, for prerelease tags, set the publish
+        # channel so electron-builder emits preview*.yml instead of latest*.yml (its GitHub
+        # provider does not derive the channel from the version on its own).
+        run: node apps/desktop/scripts/stamp-release.mjs "${GITHUB_REF_NAME}"
+
       - name: Build application
         env:
           VIDBEE_MAC_FFMPEG_MODE: ${{ matrix.mac_ffmpeg_mode }}

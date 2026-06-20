@@ -6,6 +6,12 @@ on:
       - v*.*.*
   workflow_dispatch:
 
+# Never run two releases for the same ref at once, and never cancel an in-progress
+# release (cancelling mid-publish could leave a half-uploaded GitHub release).
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build:
     uses: ./.github/workflows/build.yml
@@ -16,6 +22,9 @@ jobs:
   release:
     needs: [build]
     runs-on: ubuntu-latest
+    # Only publish a GitHub release for tag pushes. A manual workflow_dispatch run
+    # has no tag, so it acts as a build-only smoke test (artifacts only, no release).
+    if: github.ref_type == 'tag'
     steps:
       - name: Check out Git repository
         uses: actions/checkout@v4

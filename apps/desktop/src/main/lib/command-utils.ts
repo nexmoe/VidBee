@@ -8,7 +8,7 @@ import {
 import type { settingsManager } from '../settings'
 import { ytdlpManager } from './ytdlp-manager'
 
-const toSharedSettings = (
+export const toSharedSettings = (
   settings: ReturnType<typeof settingsManager.getAll>
 ): YtDlpDownloadSettings => ({
   downloadPath: settings.downloadPath,

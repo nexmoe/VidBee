@@ -1,6 +1,8 @@
 import os from 'node:os'
 import { app, BrowserWindow, dialog } from 'electron'
 import { type IpcContext, IpcMethod, IpcService } from 'electron-ipc-decorator'
+import { ffmpegManager } from '../../lib/ffmpeg-manager'
+import { ytdlpManager } from '../../lib/ytdlp-manager'
 import { scopedLoggers } from '../../utils/logger'
 import { buildSiteIconUrl } from './site-icon-url'
 
@@ -15,6 +17,14 @@ class AppService extends IpcService {
   @IpcMethod()
   getPlatform(_context: IpcContext): string {
     return os.platform()
+  }
+
+  @IpcMethod()
+  async getDownloaderStatus(
+    _context: IpcContext
+  ): Promise<{ ytdlpReady: boolean; ffmpegReady: boolean }> {
+    const ffmpegReady = await ffmpegManager.isReady()
+    return { ytdlpReady: ytdlpManager.isReady(), ffmpegReady }
   }
 
   @IpcMethod()

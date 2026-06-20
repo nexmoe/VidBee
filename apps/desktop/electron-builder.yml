@@ -62,7 +62,8 @@ appImage:
   artifactName: ${name}-${version}.${ext}
 npmRebuild: true
 publish:
-  provider: generic
-  url: https://github.com/nexmoe/vidbee/releases/latest/download
+  provider: github
+  owner: nexmoe
+  repo: vidbee
 electronLanguages:
   - en

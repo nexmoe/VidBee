@@ -24,6 +24,7 @@
     "build:mac": "pnpm run setup && node scripts/check-ytdlp.js mac && pnpm run build && electron-builder --mac --x64 --arm64",
     "build:linux": "pnpm run setup && node scripts/check-ytdlp.js linux && pnpm run build && electron-builder --linux",
     "release": "git checkout main && git pull && pnpm run check && bumpp",
+    "release:preview": "git checkout main && git pull && pnpm run check && bumpp --preid preview",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "fix": "ultracite fix"

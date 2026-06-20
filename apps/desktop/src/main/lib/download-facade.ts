@@ -32,6 +32,7 @@ import type {
 import { buildVideoInfoDownloadMetadata } from '../../shared/utils/video-info-metadata'
 import { settingsManager } from '../settings'
 import { scopedLoggers } from '../utils/logger'
+import { toSharedSettings } from './command-utils'
 import { projectProgressForRenderer, projectTaskForRenderer } from './projection'
 import { getDesktopTaskQueue, startDesktopTaskQueue } from './task-queue-host'
 import { fetchPlaylistInfo, fetchVideoInfo, fetchVideoInfoWithCommand } from './yt-dlp-info'
@@ -111,6 +112,11 @@ const buildTaskInput = (id: string, options: DownloadOptions): TaskInput => {
       customDownloadPath: options.customDownloadPath || downloadPath,
       customFilenameTemplate: options.customFilenameTemplate,
       containerFormat: options.containerFormat,
+      // Snapshot the runtime download settings (cookies, proxy, embed flags) at
+      // enqueue time. Without these the task-queue executor falls back to empty
+      // defaults, so cookie-gated sites (e.g. Bilibili) fail with HTTP 412 and
+      // embed/proxy preferences are silently ignored.
+      settings: toSharedSettings(settings),
       // Renderer hint: stash original client id for diagnostics; not used
       // for correlation (the kernel id is canonical).
       clientId: id,
@@ -294,6 +300,9 @@ class DownloadFacade extends EventEmitter {
               audioFormat: options.type === 'audio' ? options.format : undefined,
               customDownloadPath: resolvedDownloadPath,
               containerFormat: options.containerFormat,
+              // Same runtime settings (cookies, proxy, embed flags) as single
+              // downloads, otherwise playlist entries ignore them too.
+              settings: toSharedSettings(settings),
               title: entry.title,
               playlistTitle: playlist.title,
               playlistSize: selected.length,
