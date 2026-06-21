@@ -41,7 +41,7 @@ jobs:
       - name: Install dependencies
         env:
           npm_config_python: ${{ env.pythonLocation }}\python.exe
-        run: pnpm install --filter ./apps/desktop... --no-frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
 
       - name: Validate desktop app
         run: pnpm --filter ./apps/desktop run check
