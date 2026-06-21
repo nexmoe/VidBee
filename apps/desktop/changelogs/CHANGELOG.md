@@ -3,6 +3,17 @@
 This page only includes user-visible updates and avoids implementation details.
 For full release notes, see [GitHub Releases](https://github.com/nexmoe/VidBee/releases).
 
+## [v1.3.14](https://github.com/Vendetta-86/VidBee/releases/tag/v1.3.14) - 2026-06-21
+### What's New
+- Added access to detailed download logs for each task, including completed items in history.
+- Added Windows portable package support alongside the installer.
+
+### Improvements
+- Updated the bundled yt-dlp runtime to improve site compatibility.
+- Improved Windows, macOS, and release packaging reliability.
+- Improved download, Cookie, and update behavior from the latest upstream release.
+- Kept the existing fixes for stale video information, YouTube video links with playlist parameters, playlist preview, and playlist quality selection.
+
 ## [v1.3.11](https://github.com/nexmoe/VidBee/releases/tag/v1.3.11) - 2026-05-17
 ### Bug Fixes
 - Fixed stale video information being reused after downloading a previous video, so newly pasted links resolve to the correct item.
