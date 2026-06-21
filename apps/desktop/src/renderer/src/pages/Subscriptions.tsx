@@ -55,7 +55,8 @@ const subscriptionItemStatusLabels: Record<SubscriptionItemStatus, string> = {
   processing: 'subscriptions.items.status.processing',
   completed: 'subscriptions.items.status.completed',
   error: 'subscriptions.items.status.error',
-  cancelled: 'subscriptions.items.status.cancelled'
+  cancelled: 'subscriptions.items.status.cancelled',
+  paused: 'download.paused'
 }
 
 const getErrorMessage = (error: unknown): string | undefined => {

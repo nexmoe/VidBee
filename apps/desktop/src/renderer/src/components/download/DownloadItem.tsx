@@ -32,6 +32,7 @@ import {
   File,
   FolderOpen,
   Loader2,
+  Pause,
   Play,
   RotateCw,
   Trash2,
@@ -283,6 +284,28 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
     }
   }
 
+  const handlePause = async () => {
+    if (isHistory) {
+      return
+    }
+    try {
+      await ipcServices.download.pauseDownload(download.id)
+    } catch (error) {
+      console.error('Failed to pause download:', error)
+    }
+  }
+
+  const handleResume = async () => {
+    if (isHistory) {
+      return
+    }
+    try {
+      await ipcServices.download.resumeDownload(download.id)
+    } catch (error) {
+      console.error('Failed to resume download:', error)
+    }
+  }
+
   const handleRetryDownload = async () => {
     if (!download.url) {
       toast.error(t('errors.emptyUrl'))
@@ -520,6 +543,8 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
         return <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
       case 'cancelled':
         return <X className="h-4 w-4 text-muted-foreground" />
+      case 'paused':
+        return <Pause className="h-4 w-4 text-amber-500" />
       default:
         return null
     }
@@ -539,6 +564,8 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
         return t('download.downloadPending')
       case 'cancelled':
         return t('download.cancelled')
+      case 'paused':
+        return t('download.paused')
       default:
         return ''
     }
@@ -550,7 +577,8 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
   const isInProgressStatus =
     download.status === 'downloading' ||
     download.status === 'processing' ||
-    download.status === 'pending'
+    download.status === 'pending' ||
+    download.status === 'paused'
   const isCompletedStatus = download.status === 'completed'
   const isTerminalStatus =
     download.status === 'completed' ||
@@ -1145,20 +1173,73 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
                           </TooltipContent>
                         </Tooltip>
                       )}
-                      {(download.status === 'downloading' ||
-                        download.status === 'pending' ||
-                        download.status === 'processing') && (
-                        <Button
-                          className="h-8 w-8 shrink-0 rounded-full"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleCancel()
-                          }}
-                          size="icon"
-                          variant="ghost"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
+                      {isInProgressStatus && download.status !== 'paused' && download.subStatus !== 'paused' && (
+                        <>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                className="h-8 w-8 shrink-0 rounded-full"
+                                id={`pause-btn-${download.id}`}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  void handlePause()
+                                }}
+                                size="icon"
+                                variant="ghost"
+                              >
+                                <Pause className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>{t('download.pause')}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                          <Button
+                            className="h-8 w-8 shrink-0 rounded-full"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              void handleCancel()
+                            }}
+                            size="icon"
+                            variant="ghost"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
+                      {(download.status === 'paused' || download.subStatus === 'paused') && (
+                        <>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                className="h-8 w-8 shrink-0 rounded-full"
+                                id={`resume-btn-${download.id}`}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  void handleResume()
+                                }}
+                                size="icon"
+                                variant="ghost"
+                              >
+                                <Play className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>{t('download.resume')}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                          <Button
+                            className="h-8 w-8 shrink-0 rounded-full"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              void handleCancel()
+                            }}
+                            size="icon"
+                            variant="ghost"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </>
                       )}
                     </>
                   )}
@@ -1346,7 +1427,18 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
               </ContextMenuItem>
             )}
             <ContextMenuSeparator />
-            <ContextMenuItem onClick={handleCancel}>
+            {(download.status === 'paused' || download.subStatus === 'paused') ? (
+              <ContextMenuItem onClick={() => void handleResume()}>
+                <Play className="h-4 w-4" />
+                {t('download.resume')}
+              </ContextMenuItem>
+            ) : (
+              <ContextMenuItem onClick={() => void handlePause()}>
+                <Pause className="h-4 w-4" />
+                {t('download.pause')}
+              </ContextMenuItem>
+            )}
+            <ContextMenuItem onClick={() => void handleCancel()}>
               <X className="h-4 w-4" />
               {t('download.cancel')}
             </ContextMenuItem>

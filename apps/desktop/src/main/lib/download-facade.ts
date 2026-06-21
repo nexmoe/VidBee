@@ -261,6 +261,28 @@ class DownloadFacade extends EventEmitter {
     return true
   }
 
+  pauseDownload(id: string): boolean {
+    this.subscribeOnce()
+    if (!this.queue.get(id)) {
+      return false
+    }
+    void this.queue.pause(id, 'user').catch((err) => {
+      logger.error('download-facade: pauseDownload failed', err)
+    })
+    return true
+  }
+
+  resumeDownload(id: string): boolean {
+    this.subscribeOnce()
+    if (!this.queue.get(id)) {
+      return false
+    }
+    void this.queue.resume(id).catch((err) => {
+      logger.error('download-facade: resumeDownload failed', err)
+    })
+    return true
+  }
+
   async startPlaylistDownload(options: PlaylistDownloadOptions): Promise<PlaylistDownloadResult> {
     this.subscribeOnce()
     await startDesktopTaskQueue()

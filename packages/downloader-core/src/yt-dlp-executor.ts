@@ -150,6 +150,20 @@ export class YtDlpExecutor implements Executor {
     }
   private cachedYtDlp: YtDlpWrapInstance | null = null
   private cachedYtDlpPath: string | null = null
+  private readonly suspended = new Map<
+    string,
+    {
+      proc: YtDlpExecProcess
+      controller: AbortController
+      eventHolder: {
+        onSpawn: ExecutorEvents['onSpawn']
+        onProgress: ExecutorEvents['onProgress']
+        onStd: ExecutorEvents['onStd']
+        onFinish: ExecutorEvents['onFinish']
+      }
+      cancel: (timeout?: number) => Promise<void>
+    }
+  >()
 
   constructor(options: YtDlpExecutorOptions) {
     this.opts = {
@@ -166,6 +180,70 @@ export class YtDlpExecutor implements Executor {
   }
 
   run(ctx: ExecutorContext, events: ExecutorEvents): ExecutorRun {
+    const taskId = ctx.taskId
+    const attemptId = ctx.attemptId
+
+    // Check if there is a suspended process for this taskId (only on macOS/Linux)
+    if (process.platform !== 'win32' && this.suspended.has(taskId)) {
+      const entry = this.suspended.get(taskId)!
+      this.suspended.delete(taskId)
+
+      // Update event callbacks for the new attempt
+      entry.eventHolder.onSpawn = events.onSpawn
+      entry.eventHolder.onProgress = events.onProgress
+      entry.eventHolder.onStd = events.onStd
+      entry.eventHolder.onFinish = events.onFinish
+
+      // Call onSpawn immediately for the resumed run
+      const pid = entry.proc.ytDlpProcess?.pid ?? -1
+      events.onSpawn({
+        taskId,
+        attemptId,
+        pid,
+        pidStartedAt: null,
+        kind: 'yt-dlp',
+        spawnedAt: this.opts.clock()
+      })
+
+      // Send SIGCONT to resume the process
+      try {
+        entry.proc.ytDlpProcess?.kill('SIGCONT')
+      } catch (err) {
+        // If SIGCONT fails, trigger error on the finish event
+        const error = virtualError('unknown', `Failed to resume process: ${err}`)
+        events.onFinish({
+          taskId,
+          attemptId,
+          result: { type: 'error', error, exitCode: null },
+          closedAt: this.opts.clock(),
+          stdoutTail: '',
+          stderrTail: String(err)
+        })
+      }
+
+      // Return control handles for the resumed run
+      const pause = async (): Promise<void> => {
+        try {
+          entry.proc.ytDlpProcess?.kill('SIGSTOP')
+          // Save the suspended process state again
+          this.suspended.set(taskId, {
+            proc: entry.proc,
+            controller: entry.controller,
+            eventHolder: entry.eventHolder,
+            cancel: entry.cancel
+          })
+        } catch (err) {
+          // Fallback to cancel if SIGSTOP fails
+          await entry.cancel(this.opts.killGraceMs)
+        }
+      }
+
+      return {
+        cancel: entry.cancel,
+        pause
+      }
+    }
+
     const stdoutTail = createTailBuffer(STDOUT_TAIL_BYTES)
     const stderrTail = createTailBuffer(STDERR_TAIL_BYTES)
     let postprocessSeen = false
@@ -179,6 +257,13 @@ export class YtDlpExecutor implements Executor {
     // chunks instead and keep the last value across the whole run.
     let formatIdSeen: string | undefined
 
+    const eventHolder = {
+      onSpawn: events.onSpawn,
+      onProgress: events.onProgress,
+      onStd: events.onStd,
+      onFinish: events.onFinish
+    }
+
     const finishOnce = (e: Parameters<ExecutorEvents['onFinish']>[0]) => {
       if (settled) return
       settled = true
@@ -186,7 +271,7 @@ export class YtDlpExecutor implements Executor {
         clearTimeout(killTimer)
         killTimer = null
       }
-      events.onFinish(e)
+      eventHolder.onFinish(e)
     }
 
     let args: string[]
@@ -266,7 +351,7 @@ export class YtDlpExecutor implements Executor {
     // Emit onSpawn as soon as we can read pid. yt-dlp-wrap-plus exposes
     // `ytDlpProcess` synchronously after exec().
     const pid = proc.ytDlpProcess?.pid ?? -1
-    events.onSpawn({
+    eventHolder.onSpawn({
       taskId: ctx.taskId,
       attemptId: ctx.attemptId,
       pid,
@@ -293,7 +378,7 @@ export class YtDlpExecutor implements Executor {
       if (!postprocessSeen && hasPostprocessSignal(text)) {
         postprocessSeen = true
       }
-      events.onStd({
+      eventHolder.onStd({
         taskId: ctx.taskId,
         attemptId: ctx.attemptId,
         stream: 'stderr',
@@ -303,7 +388,7 @@ export class YtDlpExecutor implements Executor {
 
     proc.ytDlpProcess?.stdout?.on('data', (chunk: Buffer) => {
       pumpStdoutPostprocess(chunk)
-      events.onStd({
+      eventHolder.onStd({
         taskId: ctx.taskId,
         attemptId: ctx.attemptId,
         stream: 'stdout',
@@ -315,7 +400,7 @@ export class YtDlpExecutor implements Executor {
 
     proc.on('progress', (payload: ProgressPayload) => {
       const progress = mapProgress(payload)
-      events.onProgress({
+      eventHolder.onProgress({
         taskId: ctx.taskId,
         attemptId: ctx.attemptId,
         progress,
@@ -417,6 +502,14 @@ export class YtDlpExecutor implements Executor {
       } catch {
         /* noop */
       }
+      if (process.platform !== 'win32' && this.suspended.has(taskId)) {
+        this.suspended.delete(taskId)
+        try {
+          proc?.ytDlpProcess?.kill('SIGCONT')
+        } catch {
+          /* noop */
+        }
+      }
       try {
         killProcessTree(proc?.ytDlpProcess?.pid, 'SIGTERM')
       } catch {
@@ -440,9 +533,28 @@ export class YtDlpExecutor implements Executor {
       }
     }
 
+    const pause = async (): Promise<void> => {
+      if (settled) return
+      if (process.platform !== 'win32') {
+        try {
+          proc?.ytDlpProcess?.kill('SIGSTOP')
+          this.suspended.set(taskId, {
+            proc: proc!,
+            controller,
+            eventHolder,
+            cancel
+          })
+        } catch (err) {
+          await cancel(this.opts.killGraceMs)
+        }
+      } else {
+        await cancel(this.opts.killGraceMs)
+      }
+    }
+
     return {
       cancel,
-      pause: () => cancel(this.opts.killGraceMs)
+      pause
     }
   }
 
@@ -661,3 +773,4 @@ function createTailBuffer(maxBytes: number): TailBuffer {
 
 // Re-export types adapters need to wire host-specific args building.
 export type { TaskInput, ExecutorContext, ExecutorEvents, ExecutorRun }
+// End of file
