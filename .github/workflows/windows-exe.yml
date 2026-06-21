@@ -6,7 +6,7 @@ on:
       ref:
         description: 'Branch or tag to build'
         required: true
-        default: 'v1.3.11'
+        default: 'v1.3.14'
       upload_to_release:
         description: 'Upload Windows assets to the matching GitHub Release'
         required: true
@@ -28,7 +28,7 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Install Python for native modules
         uses: actions/setup-python@v5
@@ -37,8 +37,6 @@ jobs:
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 8
 
       - name: Install dependencies
         env:
