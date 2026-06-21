@@ -41,12 +41,23 @@ export interface ErrorClassifiedEvent {
   at: number
 }
 
+/** A single stdout/stderr line from the running executor, for live log streaming. */
+export interface LogEvent {
+  type: 'log'
+  taskId: string
+  attemptId: string
+  stream: 'stdout' | 'stderr'
+  line: string
+  at: number
+}
+
 export type TaskQueueEvent =
   | TransitionEvent
   | ProgressEvent
   | SnapshotChangedEvent
   | OrphanKilledEvent
   | ErrorClassifiedEvent
+  | LogEvent
 
 export type TaskQueueEventType = TaskQueueEvent['type']
 

@@ -52,13 +52,13 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           registry-url: 'https://registry.npmjs.org'
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 8
+          version: 11.1.2
 
       - name: Install dependencies
         run: pnpm install --filter ./apps/cli... --frozen-lockfile

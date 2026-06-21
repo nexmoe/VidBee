@@ -390,6 +390,9 @@ export function DownloadDialog({
       return
     }
     if (isPlaylistLikeUrl(url.trim())) {
+      // GitHub issue #391: surface the Playlist tab as soon as a playlist URL
+      // is detected so the user is not left on the Single Video tab.
+      setActiveTab('playlist')
       await handleParsePlaylistUrl(url.trim())
       return
     }

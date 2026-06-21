@@ -3,10 +3,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "start": "tsx src/index.ts",
+    "dev": "node scripts/ensure-node-sqlite.mjs && tsx watch src/index.ts",
+    "start": "node scripts/ensure-node-sqlite.mjs && tsx src/index.ts",
     "migrate-history": "tsx scripts/migrate-history.ts",
-    "before-start": "tsx scripts/migrate-history.ts && tsx src/index.ts",
+    "before-start": "node scripts/ensure-node-sqlite.mjs && tsx scripts/migrate-history.ts && tsx src/index.ts",
     "typecheck": "tsc --noEmit",
     "check": "ultracite check && pnpm run typecheck"
   },

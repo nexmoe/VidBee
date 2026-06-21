@@ -1,0 +1,137 @@
+import fs from 'node:fs'
+import path from 'node:path'
+import { app } from 'electron'
+
+export const portableRoot =
+  process.env.PORTABLE_EXECUTABLE_DIR || process.env.VIDBEE_PORTABLE_DIR || ''
+
+export const isPortableMode = portableRoot.length > 0
+const portableRootMarkerPath = portableRoot ? path.join(portableRoot, 'Data', '.portable-root') : ''
+
+const readPortableRootMarker = (): string => {
+  if (!portableRootMarkerPath) {
+    return ''
+  }
+
+  try {
+    return fs.readFileSync(portableRootMarkerPath, 'utf8').trim()
+  } catch {
+    return ''
+  }
+}
+
+export const previousPortableRoot = readPortableRootMarker()
+
+export const rememberPortableRoot = (): void => {
+  if (!isPortableMode) {
+    return
+  }
+
+  try {
+    fs.writeFileSync(portableRootMarkerPath, portableRoot, 'utf8')
+  } catch {
+    // The app can still run; the next launch just will not know the old root.
+  }
+}
+
+const ensureDirectoryExists = (dir: string): void => {
+  fs.mkdirSync(dir, { recursive: true })
+}
+
+const setEnvPath = (key: string, value: string): void => {
+  process.env[key] = value
+}
+
+const setAppPath = (name: Parameters<typeof app.setPath>[0], value: string): void => {
+  try {
+    app.setPath(name, value)
+  } catch {
+    // Some Electron path names can be platform-specific.
+  }
+}
+
+export const getPortablePath = (...segments: string[]): string => {
+  return path.join(portableRoot, ...segments)
+}
+
+export const getPortableDownloadsPath = (): string => {
+  return getPortablePath('Downloads')
+}
+
+export const configurePortableMode = (): void => {
+  if (!isPortableMode) {
+    return
+  }
+
+  const roamingDir = getPortablePath('Data', 'Roaming')
+  const localDir = getPortablePath('Data', 'Local')
+  const userDataDir = getPortablePath('Data', 'UserData')
+  const sessionDataDir = getPortablePath('Data', 'SessionData')
+  const homeDir = getPortablePath('Data', 'Home')
+  const desktopDir = path.join(homeDir, 'Desktop')
+  const documentsDir = path.join(homeDir, 'Documents')
+  const homeDownloadsDir = path.join(homeDir, 'Downloads')
+  const musicDir = path.join(homeDir, 'Music')
+  const picturesDir = path.join(homeDir, 'Pictures')
+  const videosDir = path.join(homeDir, 'Videos')
+  const cacheDir = getPortablePath('Data', 'Cache')
+  const configDir = getPortablePath('Data', 'Config')
+  const localShareDir = getPortablePath('Data', 'LocalShare')
+  const denoDir = getPortablePath('Data', 'Deno')
+  const logsDir = getPortablePath('Data', 'Logs')
+  const crashDumpsDir = getPortablePath('Data', 'CrashDumps')
+  const downloadsDir = getPortableDownloadsPath()
+  const tempDir = getPortablePath('Temp')
+
+  for (const dir of [
+    roamingDir,
+    localDir,
+    userDataDir,
+    sessionDataDir,
+    homeDir,
+    desktopDir,
+    documentsDir,
+    homeDownloadsDir,
+    musicDir,
+    picturesDir,
+    videosDir,
+    cacheDir,
+    configDir,
+    localShareDir,
+    denoDir,
+    logsDir,
+    crashDumpsDir,
+    downloadsDir,
+    tempDir
+  ]) {
+    ensureDirectoryExists(dir)
+  }
+
+  setEnvPath('APPDATA', roamingDir)
+  setEnvPath('LOCALAPPDATA', localDir)
+  setEnvPath('USERPROFILE', homeDir)
+  setEnvPath('HOME', homeDir)
+  setEnvPath('XDG_CACHE_HOME', cacheDir)
+  setEnvPath('XDG_CONFIG_HOME', configDir)
+  setEnvPath('XDG_DATA_HOME', localShareDir)
+  setEnvPath('DENO_DIR', denoDir)
+  setEnvPath('TEMP', tempDir)
+  setEnvPath('TMP', tempDir)
+  setEnvPath('VIDBEE_PORTABLE', '1')
+
+  setAppPath('appData', roamingDir)
+  setAppPath('userData', userDataDir)
+  setAppPath('sessionData', sessionDataDir)
+  setAppPath('home', homeDir)
+  setAppPath('desktop', desktopDir)
+  setAppPath('documents', documentsDir)
+  setAppPath('temp', tempDir)
+  setAppPath('downloads', downloadsDir)
+  setAppPath('music', musicDir)
+  setAppPath('pictures', picturesDir)
+  setAppPath('videos', videosDir)
+  setAppPath('logs', logsDir)
+  setAppPath('crashDumps', crashDumpsDir)
+}
+
+configurePortableMode()

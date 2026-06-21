@@ -6,22 +6,90 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: ytdlp-auto-release
   cancel-in-progress: false
 
 jobs:
-  release:
+  prepare:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      update_available: ${{ steps.check.outputs.update_available }}
+      release_version: ${{ steps.prepare.outputs.release_version }}
+      latest_ytdlp_version: ${{ steps.prepare.outputs.latest_ytdlp_version }}
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check for yt-dlp updates
+        id: check
+        env:
+          YTDLP_RELEASE_TOKEN: ${{ github.token }}
+        run: node apps/desktop/scripts/ytdlp-auto-release.mjs check
+
+      - name: Prepare patch release
+        if: steps.check.outputs.update_available == 'true'
+        id: prepare
+        env:
+          YTDLP_RELEASE_TOKEN: ${{ github.token }}
+        run: node apps/desktop/scripts/ytdlp-auto-release.mjs prepare
+
+      - name: Install pnpm
+        if: steps.check.outputs.update_available == 'true'
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.1.2
+
+      - name: Install Dependencies
+        if: steps.check.outputs.update_available == 'true'
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Validate release changes
+        if: steps.check.outputs.update_available == 'true'
+        run: pnpm run check
+
+      - name: Upload release changes
+        if: steps.check.outputs.update_available == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ytdlp-release-changes
+          path: |
+            apps/desktop/package.json
+            apps/desktop/changelogs/CHANGELOG.md
+            apps/desktop/release-metadata.json
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Report up-to-date status
+        if: steps.check.outputs.update_available != 'true'
+        run: echo "yt-dlp is already up to date. No patch release is needed."
+
+  publish:
+    needs: prepare
+    if: needs.prepare.outputs.update_available == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
     env:
       DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-      GH_TOKEN: ${{ secrets.ACCESS_TOKEN }}
-      GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
-      YTDLP_RELEASE_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+      RELEASE_VERSION: ${{ needs.prepare.outputs.release_version }}
+      LATEST_YTDLP_VERSION: ${{ needs.prepare.outputs.latest_ytdlp_version }}
     steps:
       - name: Check release token
+        env:
+          GH_TOKEN: ${{ secrets.ACCESS_TOKEN }}
         run: |
           if [ -z "${GH_TOKEN}" ]; then
             echo "ACCESS_TOKEN secret is required to push the release commit and tag."
@@ -34,37 +102,20 @@ jobs:
           token: ${{ secrets.ACCESS_TOKEN }}
           ref: ${{ github.event.repository.default_branch }}
 
-      - name: Install Node.js
-        uses: actions/setup-node@v4
+      - name: Download release changes
+        uses: actions/download-artifact@v4
         with:
-          node-version: 20
+          name: ytdlp-release-changes
+          path: .ytdlp-release-changes
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 8
-
-      - name: Install Dependencies
-        run: pnpm install --filter ./apps/desktop...
-
-      - name: Check for yt-dlp updates
-        id: check
-        run: node apps/desktop/scripts/ytdlp-auto-release.mjs check
-
-      - name: Prepare patch release
-        if: steps.check.outputs.update_available == 'true'
-        id: prepare
-        run: node apps/desktop/scripts/ytdlp-auto-release.mjs prepare
-
-      - name: Validate release changes
-        if: steps.check.outputs.update_available == 'true'
-        run: pnpm run check
+      - name: Apply release changes
+        run: |
+          cp .ytdlp-release-changes/package.json apps/desktop/package.json
+          cp .ytdlp-release-changes/release-metadata.json apps/desktop/release-metadata.json
+          cp .ytdlp-release-changes/changelogs/CHANGELOG.md apps/desktop/changelogs/CHANGELOG.md
+          rm -rf .ytdlp-release-changes
 
       - name: Commit release changes
-        if: steps.check.outputs.update_available == 'true'
-        env:
-          RELEASE_VERSION: ${{ steps.prepare.outputs.release_version }}
-          LATEST_YTDLP_VERSION: ${{ steps.prepare.outputs.latest_ytdlp_version }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -73,13 +124,6 @@ jobs:
           git tag "v${RELEASE_VERSION}"
 
       - name: Push release commit and tag
-        if: steps.check.outputs.update_available == 'true'
-        env:
-          RELEASE_VERSION: ${{ steps.prepare.outputs.release_version }}
         run: |
           git push origin HEAD:${DEFAULT_BRANCH}
           git push origin "v${RELEASE_VERSION}"
-
-      - name: Report up-to-date status
-        if: steps.check.outputs.update_available != 'true'
-        run: echo "yt-dlp is already up to date. No patch release is needed."

@@ -60,6 +60,33 @@ apps/desktop/src/
 - Use `pnpm build:unpack` to generate unpacked directories under `apps/desktop/dist/` for manual inspection.
 - Bundle `yt-dlp` under `apps/desktop/resources/` and `ffmpeg/ffprobe` under `apps/desktop/resources/ffmpeg/` before packaging so merges and audio extraction work out of the box.
 
+## Releasing & Update Channels
+
+VidBee ships two auto-update channels. Auto-updates use the GitHub provider
+(`apps/desktop/electron-builder.yml`); electron-builder derives the channel from the
+version's prerelease label, so the tag is the single source of truth.
+
+| Channel | Lane | Command | Tag / version | electron-builder output | GitHub release |
+| --- | --- | --- | --- | --- | --- |
+| Stable | `latest` | `pnpm release` | `vX.Y.Z` | `latest*.yml` | normal release |
+| Preview | `preview` | `pnpm release:preview` | `vX.Y.Z-preview.N` | `preview*.yml` | prerelease |
+
+- Both commands run `pnpm run check` and then `bumpp`, which bumps `apps/desktop/package.json`,
+  commits, tags, and pushes. The tag push triggers `.github/workflows/release.yml`, which builds
+  every platform, publishes the GitHub release (marked **prerelease** for `-preview.` tags), and
+  notifies Cloudflare Pages for stable releases only.
+- Before building, CI runs `apps/desktop/scripts/stamp-release.mjs` (see `build.yml`): it stamps
+  the tag's version into `package.json` and, for `-preview.` tags, sets the electron-builder
+  publish channel so the build emits `preview*.yml` instead of `latest*.yml`. (The GitHub
+  provider does not derive the channel from the version on its own, so this is required.)
+- A manual `workflow_dispatch` run of the release workflow is a build-only smoke test: it
+  produces artifacts but does **not** publish a release (no tag).
+
+Users opt into preview builds with the **Preview channel** switch on the in-app About page
+(`betaProgram` setting). Turning it on moves the user to the `preview` channel and downloads the
+next prerelease; turning it off returns them to `latest` but keeps their current build until the
+next stable release catches up (no forced downgrade).
+
 ## Working on Changes
 - Keep each pull request focused on a single problem or feature.
 - Run `pnpm run check` before committing to ensure formatting and linting stay consistent.

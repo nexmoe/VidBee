@@ -11,7 +11,7 @@ class HistoryService extends IpcService {
   }
 
   @IpcMethod()
-  getHistoryById(_context: IpcContext, id: string): DownloadHistoryItem | undefined {
+  getHistoryById(_context: IpcContext, id: string): Promise<DownloadHistoryItem | undefined> {
     return historyManager.getHistoryById(id)
   }
 

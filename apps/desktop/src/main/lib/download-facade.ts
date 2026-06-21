@@ -8,11 +8,11 @@
  * stuffed into `task.input.options` (per `YtDlpTaskOptions`) and outputs
  * are mapped back through `projectTaskForRenderer`.
  *
- * `download:log` and `glitchTipEventId` are best-effort no-ops in this
- * iteration: the kernel only exposes spawn / progress / transition events
- * to subscribers, not raw stdout. Live yt-dlp log streaming and per-task
- * Sentry annotation can be added once the kernel exposes `onStd` to host
- * subscribers (TODO follow-up tracked in the NEX-131 wrap-up comment).
+ * Live yt-dlp log streaming is wired through the kernel's `log` event
+ * (emitted from the executor's `onStd`): we accumulate a capped per-task
+ * buffer and replay it via `download-log`. Saved logs for terminal items are
+ * read on demand from the persisted attempt tail (`queue.getTaskLog`).
+ * `glitchTipEventId` remains a best-effort no-op in this iteration.
  */
 import { EventEmitter } from 'node:events'
 import path from 'node:path'
@@ -32,6 +32,7 @@ import type {
 import { buildVideoInfoDownloadMetadata } from '../../shared/utils/video-info-metadata'
 import { settingsManager } from '../settings'
 import { scopedLoggers } from '../utils/logger'
+import { toSharedSettings } from './command-utils'
 import { projectProgressForRenderer, projectTaskForRenderer } from './projection'
 import { getDesktopTaskQueue, startDesktopTaskQueue } from './task-queue-host'
 import { fetchPlaylistInfo, fetchVideoInfo, fetchVideoInfoWithCommand } from './yt-dlp-info'
@@ -45,6 +46,9 @@ const NON_TERMINAL: ReadonlySet<Task['status']> = new Set([
   'paused',
   'retry-scheduled'
 ])
+
+/** Cap the per-task live log buffer so a long-running download cannot grow it without bound. */
+const MAX_LOG_BUFFER = 80_000
 
 const ensureDirectoryExists = (dir?: string): void => {
   if (!dir) {
@@ -111,6 +115,11 @@ const buildTaskInput = (id: string, options: DownloadOptions): TaskInput => {
       customDownloadPath: options.customDownloadPath || downloadPath,
       customFilenameTemplate: options.customFilenameTemplate,
       containerFormat: options.containerFormat,
+      // Snapshot the runtime download settings (cookies, proxy, embed flags) at
+      // enqueue time. Without these the task-queue executor falls back to empty
+      // defaults, so cookie-gated sites (e.g. Bilibili) fail with HTTP 412 and
+      // embed/proxy preferences are silently ignored.
+      settings: toSharedSettings(settings),
       // Renderer hint: stash original client id for diagnostics; not used
       // for correlation (the kernel id is canonical).
       clientId: id,
@@ -131,6 +140,8 @@ const buildTaskInput = (id: string, options: DownloadOptions): TaskInput => {
 
 class DownloadFacade extends EventEmitter {
   private subscribed = false
+  /** Accumulated live yt-dlp output per active task, replayed to the renderer via `download-log`. */
+  private readonly logBuffers = new Map<string, string>()
 
   private get queue(): TaskQueueAPI {
     return getDesktopTaskQueue()
@@ -162,14 +173,17 @@ class DownloadFacade extends EventEmitter {
           this.emit('download-started', event.taskId)
           break
         case 'completed':
+          this.logBuffers.delete(event.taskId)
           this.emit('download-completed', event.taskId)
           break
         case 'failed': {
+          this.logBuffers.delete(event.taskId)
           const message = task.lastError?.rawMessage ?? 'Download failed'
           this.emit('download-error', event.taskId, new Error(message))
           break
         }
         case 'cancelled':
+          this.logBuffers.delete(event.taskId)
           this.emit('download-cancelled', event.taskId)
           break
         default:
@@ -186,6 +200,14 @@ class DownloadFacade extends EventEmitter {
       if (progress) {
         this.emit('download-progress', event.taskId, progress as DownloadProgress)
       }
+    })
+    // Stream live yt-dlp output: append each line to a capped per-task buffer and
+    // replay the full buffer so the renderer's log panel mirrors the legacy contract.
+    queue.on('log', (event) => {
+      const next = `${this.logBuffers.get(event.taskId) ?? ''}${event.line}\n`
+      const buffer = next.length > MAX_LOG_BUFFER ? next.slice(next.length - MAX_LOG_BUFFER) : next
+      this.logBuffers.set(event.taskId, buffer)
+      this.emit('download-log', event.taskId, buffer)
     })
   }
 
@@ -294,6 +316,9 @@ class DownloadFacade extends EventEmitter {
               audioFormat: options.type === 'audio' ? options.format : undefined,
               customDownloadPath: resolvedDownloadPath,
               containerFormat: options.containerFormat,
+              // Same runtime settings (cookies, proxy, embed flags) as single
+              // downloads, otherwise playlist entries ignore them too.
+              settings: toSharedSettings(settings),
               title: entry.title,
               playlistTitle: playlist.title,
               playlistSize: selected.length,

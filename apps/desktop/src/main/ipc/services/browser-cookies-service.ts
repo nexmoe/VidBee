@@ -233,6 +233,12 @@ class BrowserCookiesService extends IpcService {
 
     const resolvedInput = resolvePathWithHome(normalizedInput)
     if (resolvedInput && this.isDirectory(resolvedInput)) {
+      // GitHub issue #331: a Firefox profile directory without cookies.sqlite
+      // makes yt-dlp fail with "could not find firefox cookies database", so
+      // flag it as invalid instead of reporting a misleading success.
+      if (browser === 'firefox' && !fs.existsSync(path.join(resolvedInput, 'cookies.sqlite'))) {
+        return this.buildValidationResult(false, 'cookiesFileNotFound')
+      }
       return this.buildValidationResult(true)
     }
 

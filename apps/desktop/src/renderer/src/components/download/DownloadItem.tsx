@@ -232,6 +232,8 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
   const [activeTab, setActiveTab] = useState<'details' | 'logs'>('details')
   const [pendingTab, setPendingTab] = useState<'details' | 'logs' | null>(null)
   const [logAutoScroll, setLogAutoScroll] = useState(true)
+  // Saved yt-dlp log fetched on demand for terminal items (live stream is gone).
+  const [savedLog, setSavedLog] = useState<string | null>(null)
   const logContainerRef = useRef<HTMLDivElement | null>(null)
   const lastSheetOpenRef = useRef(false)
   const [isContextMenuOpen, setIsContextMenuOpen] = useState(false)
@@ -550,6 +552,10 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
     download.status === 'processing' ||
     download.status === 'pending'
   const isCompletedStatus = download.status === 'completed'
+  const isTerminalStatus =
+    download.status === 'completed' ||
+    download.status === 'error' ||
+    download.status === 'cancelled'
   const canRetry = download.status === 'error'
   const showCopyAction = download.status === 'completed' && fileExists
   const showOpenFolderAction = Boolean(
@@ -804,11 +810,12 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
   }
 
   const hasMetadataDetails = metadataDetails.length > 0
-  const logContent = download.ytDlpLog ?? ''
+  const liveLog = download.ytDlpLog ?? ''
+  const logContent = liveLog.trim().length > 0 ? liveLog : (savedLog ?? '')
   const hasLogContent = logContent.trim().length > 0
   const ytDlpCommand = download.ytDlpCommand?.trim()
   const hasYtDlpCommand = Boolean(ytDlpCommand)
-  const canShowSheet = hasMetadataDetails || isInProgressStatus || hasLogContent
+  const canShowSheet = hasMetadataDetails || isInProgressStatus || hasLogContent || isTerminalStatus
 
   const isSelectedHistory = selectionEnabled && isSelected
 
@@ -833,6 +840,30 @@ export function DownloadItem({ download, isSelected = false, onToggleSelect }: D
       container.scrollTop = container.scrollHeight
     }
   }, [logAutoScroll, logContent, sheetOpen])
+
+  // Lazily load the persisted yt-dlp log when opening a terminal item that has
+  // no live log (e.g. a failed download reopened from history).
+  useEffect(() => {
+    if (!(sheetOpen && isTerminalStatus) || liveLog.trim().length > 0 || savedLog !== null) {
+      return
+    }
+    let cancelled = false
+    void (async () => {
+      try {
+        const item = await ipcServices.history.getHistoryById(download.id)
+        if (!cancelled) {
+          setSavedLog(item?.ytDlpLog ?? '')
+        }
+      } catch {
+        if (!cancelled) {
+          setSavedLog('')
+        }
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [sheetOpen, isTerminalStatus, liveLog, savedLog, download.id])
 
   const handleLogScroll = () => {
     const container = logContainerRef.current

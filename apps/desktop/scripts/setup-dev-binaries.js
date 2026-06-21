@@ -24,6 +24,7 @@ const DENO_BASE_URL = 'https://github.com/denoland/deno/releases/latest/download
 const MAC_FFMPEG_MODE = (process.env.VIDBEE_MAC_FFMPEG_MODE || 'native').trim().toLowerCase()
 const GITHUB_TOKEN =
   process.env.GITHUB_TOKEN || process.env.GH_TOKEN || process.env.GITHUB_API_TOKEN
+const YTDLP_VERSION_CHECK_TIMEOUT_MS = 30_000
 
 // Platform configuration
 const PLATFORM_CONFIG = {
@@ -411,6 +412,15 @@ function checkBinary(filePath, args, label, options = {}) {
   return { ok: true, message: firstLine ? firstLine.trim() : `${label} version check ok` }
 }
 
+/**
+ * Checks the yt-dlp version with enough time for macOS first-launch validation.
+ */
+function checkYtDlpBinary(filePath) {
+  return checkBinary(filePath, ['--version'], 'yt-dlp', {
+    timeoutMs: YTDLP_VERSION_CHECK_TIMEOUT_MS
+  })
+}
+
 function logBinaryVersion(label, validation) {
   if (!validation.ok) {
     return
@@ -532,7 +542,7 @@ async function downloadYtDlp(config) {
   const outputPath = path.join(RESOURCES_DIR, output)
 
   if (fileExists(outputPath)) {
-    const validation = checkBinary(outputPath, ['--version'], 'yt-dlp')
+    const validation = checkYtDlpBinary(outputPath)
     if (validation.ok) {
       logBinaryVersion('yt-dlp', validation)
     } else {
@@ -550,7 +560,7 @@ async function downloadYtDlp(config) {
     await downloadFileWithRetry(url, tempPath)
     fs.renameSync(tempPath, outputPath)
     setExecutable(outputPath)
-    const validation = checkBinary(outputPath, ['--version'], 'yt-dlp')
+    const validation = checkYtDlpBinary(outputPath)
     if (!validation.ok) {
       safeUnlink(outputPath)
       throw new Error(`Downloaded ${output} failed version check: ${validation.message}`)
@@ -1057,4 +1067,4 @@ if (isDirectExecution) {
   setup()
 }
 
-export { setup }
+export { checkYtDlpBinary, setup }

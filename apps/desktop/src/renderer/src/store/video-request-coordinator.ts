@@ -7,7 +7,7 @@ export interface VideoInfoRequestCoordinator {
 /**
  * Create a request coordinator that ignores stale video-info responses.
  *
- * Issue refs: #354.
+ * Issue refs: #354, #379.
  */
 export const createVideoInfoRequestCoordinator = (): VideoInfoRequestCoordinator => {
   let currentRequestId = 0

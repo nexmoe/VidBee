@@ -65,12 +65,22 @@ class HistoryFacade {
     return projectAll()
   }
 
-  getHistoryById(id: string): DownloadHistoryItem | undefined {
-    const task = getDesktopTaskQueue().get(id)
+  async getHistoryById(id: string): Promise<DownloadHistoryItem | undefined> {
+    const queue = getDesktopTaskQueue()
+    const task = queue.get(id)
     if (!(task && TERMINAL.has(task.status))) {
       return undefined
     }
-    return projectTaskForRendererHistory(task) ?? undefined
+    const item = projectTaskForRendererHistory(task) ?? undefined
+    if (item) {
+      // Surface the persisted yt-dlp output so the renderer's Logs tab works
+      // for terminal items, whose live stream is already gone.
+      const log = await queue.getTaskLog(id)
+      if (log) {
+        item.ytDlpLog = log
+      }
+    }
+    return item
   }
 
   /**

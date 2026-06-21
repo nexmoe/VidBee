@@ -2,10 +2,17 @@ import { Changelog } from '@renderer/components/changelog/Changelog'
 import { useAppInfo } from '@renderer/components/feedback/FeedbackLinks'
 import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@renderer/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from '@renderer/components/ui/card'
 import { Progress } from '@renderer/components/ui/progress'
+import { Switch } from '@renderer/components/ui/switch'
 import { FeedbackLinkButtons } from '@vidbee/ui/components/ui/feedback-link-buttons'
-import { useAtom, useSetAtom } from 'jotai'
+import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import type { LucideIcon } from 'lucide-react'
 import {
   Download,
@@ -21,6 +28,7 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { ipcEvents, ipcServices } from '../lib/ipc'
 import { withDesktopUtm } from '../lib/url'
+import { saveSettingAtom, settingsAtom } from '../store/settings'
 import { updateAvailableAtom, updateReadyAtom } from '../store/update'
 
 interface AboutResource {
@@ -43,6 +51,8 @@ export function About() {
   const [updateReady] = useAtom(updateReadyAtom)
   const [updateAvailableState] = useAtom(updateAvailableAtom)
   const setUpdateAvailable = useSetAtom(updateAvailableAtom)
+  const settings = useAtomValue(settingsAtom)
+  const saveSetting = useSetAtom(saveSettingAtom)
   const { appVersion, osVersion } = useAppInfo()
   const appVersionLabel = appVersion || '—'
   const [latestVersionState, setLatestVersionState] = useState<LatestVersionState>(null)
@@ -113,6 +123,10 @@ export function About() {
 
   const handleRestartToUpdate = () => {
     void ipcServices.update.quitAndInstall()
+  }
+
+  const handleToggleBetaProgram = (checked: boolean) => {
+    void saveSetting({ key: 'betaProgram', value: checked })
   }
 
   const handleCheckForUpdates = async () => {
@@ -310,6 +324,39 @@ export function About() {
                 </div>
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('about.preferencesTitle')}</CardTitle>
+            <CardDescription>{t('about.preferencesDescription')}</CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="flex flex-col divide-y">
+              <div className="flex items-center justify-between gap-4 px-6 py-4">
+                <div className="space-y-1">
+                  <p className="font-medium leading-none">{t('about.betaProgramTitle')}</p>
+                  <p className="text-muted-foreground text-sm">
+                    {t('about.betaProgramDescription')}
+                  </p>
+                </div>
+                <Switch
+                  aria-label={t('about.betaProgramTitle')}
+                  checked={settings.betaProgram}
+                  onCheckedChange={handleToggleBetaProgram}
+                />
+              </div>
+              <div className="flex items-center justify-between gap-4 px-6 py-4">
+                <div className="space-y-1">
+                  <p className="font-medium leading-none">{t('about.autoUpdateTitle')}</p>
+                  <p className="text-muted-foreground text-sm">
+                    {t('about.autoUpdateDescription')}
+                  </p>
+                </div>
+                <Switch aria-label={t('about.autoUpdateTitle')} checked disabled />
+              </div>
+            </div>
           </CardContent>
         </Card>
 

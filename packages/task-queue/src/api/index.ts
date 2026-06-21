@@ -288,6 +288,22 @@ export class TaskQueueAPI {
     return this.store.list(opts)
   }
 
+  /**
+   * Read the persisted stdout/stderr tail for a task's latest attempt. Returns
+   * the combined log text (stdout then stderr), or null when no attempt has
+   * been recorded. Hosts use this to surface saved logs for terminal items
+   * after the live stream is gone (e.g. reopening a failed download).
+   */
+  async getTaskLog(id: string): Promise<string | null> {
+    const attempt = await this.persist.loadLatestAttempt(id)
+    if (!attempt) return null
+    const parts: string[] = []
+    if (attempt.stdoutTail?.trim()) parts.push(attempt.stdoutTail)
+    if (attempt.stderrTail?.trim()) parts.push(attempt.stderrTail)
+    const combined = parts.join('\n').trim()
+    return combined.length > 0 ? combined : null
+  }
+
   async cancel(id: string, reason = 'user'): Promise<void> {
     const t = this.store.get(id)
     if (!t) return
@@ -474,8 +490,16 @@ export class TaskQueueAPI {
               this.watchdog.promoteToProcessing(id)
             }
           },
-          onStd: () => {
+          onStd: (e) => {
             this.watchdog.bump(id)
+            this.bus.emit({
+              type: 'log',
+              taskId: id,
+              attemptId,
+              stream: e.stream,
+              line: e.line,
+              at: this.clock()
+            })
           },
           onFinish: (e) => {
             void this.handleFinish(id, attemptId, e)

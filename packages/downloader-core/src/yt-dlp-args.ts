@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { parseBrowserCookiesSetting } from './browser-cookies-setting'
@@ -82,7 +83,24 @@ export const normalizeBrowserCookiesSettingForYtDlp = (value?: string | null): s
     return `${browser}:${profile}`
   }
 
-  const profileName = profile.includes('\\')
+  // GitHub issue #331: yt-dlp accepts either a profile name or an absolute
+  // path. Firefox profiles in non-default locations (portable/custom installs)
+  // cannot be resolved by name, so when the absolute path holds a
+  // cookies.sqlite we pass it verbatim; otherwise fall back to the basename,
+  // which keeps resolving for standard installs.
+  const isWindowsPath = profile.includes('\\')
+  const isAbsolutePath = isWindowsPath
+    ? path.win32.isAbsolute(profile)
+    : path.posix.isAbsolute(profile)
+  if (
+    browser === 'firefox' &&
+    isAbsolutePath &&
+    existsSync(path.join(profile, 'cookies.sqlite'))
+  ) {
+    return `${browser}:${profile}`
+  }
+
+  const profileName = isWindowsPath
     ? path.win32.basename(profile)
     : path.posix.basename(profile)
   return profileName ? `${browser}:${profileName}` : browser
@@ -92,6 +110,15 @@ const isBilibiliUrl = (url: string): boolean => {
   try {
     const host = new URL(url).hostname.toLowerCase()
     return host.includes('bilibili.com') || host.includes('b23.tv') || host.includes('bili.tv')
+  } catch {
+    return false
+  }
+}
+
+const isTwitchUrl = (url: string): boolean => {
+  try {
+    const host = new URL(url).hostname.toLowerCase()
+    return host.includes('twitch.tv')
   } catch {
     return false
   }
@@ -178,6 +205,16 @@ export const formatYtDlpCommand = (args: string[]): string => {
 export const resolveFfmpegLocationFromPath = (ffmpegPath: string): string =>
   path.dirname(ffmpegPath)
 
+const BEST_FORMAT_FALLBACK = 'bestvideo+bestaudio/best'
+
+/**
+ * Append a best-available fallback so a strict `video+audio` selection
+ * degrades instead of hard-failing with "Requested format is not available"
+ * (GitHub issue #294). Selectors that already carry a `/` fallback are kept.
+ */
+const withBestFallback = (selector: string): string =>
+  selector.includes('/') ? selector : `${selector}/${BEST_FORMAT_FALLBACK}`
+
 export const resolveVideoFormatSelector = (options: YtDlpDownloadOptions): string => {
   const format = options.format
   const audioFormat = options.audioFormat
@@ -203,7 +240,7 @@ export const resolveVideoFormatSelector = (options: YtDlpDownloadOptions): strin
     if (!audioFormat || audioFormat === 'best') {
       return 'bestvideo+bestaudio/best'
     }
-    return `bestvideo+${audioFormat}`
+    return withBestFallback(`bestvideo+${audioFormat}`)
   }
 
   if (audioFormat === 'none') {
@@ -214,7 +251,7 @@ export const resolveVideoFormatSelector = (options: YtDlpDownloadOptions): strin
     return `${format}+bestaudio/best`
   }
 
-  return `${format}+${audioFormat}`
+  return withBestFallback(`${format}+${audioFormat}`)
 }
 
 export const resolveAudioFormatSelector = (options: YtDlpDownloadOptions): string => {
@@ -279,7 +316,12 @@ export const buildDownloadArgs = (
   const cookiesPath = trim(settings.cookiesPath)
   const hasSubtitleAuth =
     (browserForCookies && browserForCookies !== 'none') || Boolean(cookiesPath)
-  const shouldAttemptSubtitles = !isBilibiliUrl(options.url) || hasSubtitleAuth
+  // GitHub issue #370: Twitch exposes the `rechat` chat-replay as a subtitle
+  // track that frequently 404s; forcing `--write-subs` then aborts the whole
+  // VOD. Like Bilibili, skip forced subtitles for Twitch unless the user has
+  // provided cookies that may unlock real subtitle tracks.
+  const shouldAttemptSubtitles =
+    (!isBilibiliUrl(options.url) && !isTwitchUrl(options.url)) || hasSubtitleAuth
 
   if (shouldAttemptSubtitles) {
     if (embedSubs) {
@@ -383,7 +425,9 @@ export const buildPlaylistInfoArgs = (
   settings: YtDlpDownloadSettings,
   jsRuntimeArgs: string[] = []
 ): string[] => {
-  const args = ['-J', '--flat-playlist', '--no-warnings', '--encoding', 'utf-8']
+  // GitHub issue #322: a single unavailable entry (e.g. an age-restricted
+  // video in a channel/playlist) must not abort listing the whole playlist.
+  const args = ['-J', '--flat-playlist', '--ignore-errors', '--no-warnings', '--encoding', 'utf-8']
 
   const proxy = trim(settings.proxy)
   if (proxy) {

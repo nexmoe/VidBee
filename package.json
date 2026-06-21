@@ -1,6 +1,7 @@
 {
   "name": "vidbee-workspace",
   "private": true,
+  "packageManager": "pnpm@11.1.2",
   "scripts": {
     "check": "pnpm --filter ./apps/desktop run check",
     "check:i18n": "pnpm --filter ./apps/desktop run check:i18n",
@@ -15,6 +16,7 @@
     "build:mac": "pnpm --filter ./apps/desktop run build:mac",
     "build:linux": "pnpm --filter ./apps/desktop run build:linux",
     "release": "pnpm --filter ./apps/desktop run release",
+    "release:preview": "pnpm --filter ./apps/desktop run release:preview",
     "db:generate": "pnpm --filter ./apps/desktop run db:generate",
     "db:migrate": "pnpm --filter ./apps/desktop run db:migrate",
     "fix": "pnpm --filter ./apps/desktop run fix",
@@ -56,7 +58,6 @@
       "undici": ">=7.24.0 <8",
       "vite": ">=7.3.2 <8",
       "rollup": ">=4.59.0 <5",
-      "next": ">=16.2.3",
       "react-router": ">=7.12.0 <8",
       "h3": ">=2.0.1-rc.18",
       "h3-v2": "npm:h3@>=2.0.1-rc.18",

@@ -1,6 +1,7 @@
 import { app } from 'electron'
 import { type IpcContext, IpcMethod, IpcService } from 'electron-ipc-decorator'
 import { autoUpdater } from 'electron-updater'
+import { isPortableMode } from '../../portable'
 
 const isNewerVersion = (latest: string, current: string): boolean => {
   const toSegments = (version: string) =>
@@ -36,6 +37,13 @@ class UpdateService extends IpcService {
   async checkForUpdates(
     _context: IpcContext
   ): Promise<{ available: boolean; version?: string; error?: string }> {
+    if (isPortableMode) {
+      return {
+        available: false,
+        version: app.getVersion()
+      }
+    }
+
     try {
       const currentVersion = app.getVersion()
       const result = await autoUpdater.checkForUpdates()
@@ -62,6 +70,13 @@ class UpdateService extends IpcService {
 
   @IpcMethod()
   async downloadUpdate(_context: IpcContext): Promise<{ success: boolean; error?: string }> {
+    if (isPortableMode) {
+      return {
+        success: false,
+        error: 'Auto-update is disabled in portable mode'
+      }
+    }
+
     try {
       await autoUpdater.downloadUpdate()
       return { success: true }
@@ -75,6 +90,10 @@ class UpdateService extends IpcService {
 
   @IpcMethod()
   quitAndInstall(_context: IpcContext): void {
+    if (isPortableMode) {
+      return
+    }
+
     autoUpdater.quitAndInstall()
   }
 
@@ -85,7 +104,7 @@ class UpdateService extends IpcService {
 
   @IpcMethod()
   isAutoUpdateEnabled(_context: IpcContext): boolean {
-    return true
+    return !isPortableMode
   }
 }
 

@@ -1,4 +1,3 @@
-import { execSync } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -32,6 +31,18 @@ class FfmpegManager {
   }
 
   /**
+   * Report whether ffmpeg is usable, attempting a lazy initialization if needed.
+   */
+  async isReady(): Promise<boolean> {
+    try {
+      await this.ensureInitialized()
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  /**
    * Ensures ffmpeg is initialized and preserves the original lookup failure.
    */
   async ensureInitialized(): Promise<string> {
@@ -62,115 +73,39 @@ class FfmpegManager {
   }
 
   /**
-   * Finds a usable ffmpeg binary and validates that ffprobe is colocated.
+   * Resolve the bundled ffmpeg binary, validating that ffprobe is colocated.
+   *
+   * The desktop app deliberately uses ONLY its shipped ffmpeg/ffprobe (under
+   * resources/ffmpeg/). FFMPEG_PATH and any system install are ignored so the
+   * runtime behaves identically everywhere and can't break on an incompatible
+   * system ffmpeg.
    */
   private async findFfmpegBinary(): Promise<string> {
     const platform = os.platform()
     const ffmpegFileName = platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg'
     const ffprobeFileName = platform === 'win32' ? 'ffprobe.exe' : 'ffprobe'
 
-    const resolveBundledFfmpeg = (dirPath: string, label: string): string | null => {
-      const ffmpegPath = path.join(dirPath, ffmpegFileName)
-      const ffprobePath = path.join(dirPath, ffprobeFileName)
-      if (!(fs.existsSync(ffmpegPath) && fs.existsSync(ffprobePath))) {
-        return null
-      }
-      if (platform !== 'win32') {
-        try {
-          fs.chmodSync(ffmpegPath, 0o755)
-          fs.chmodSync(ffprobePath, 0o755)
-        } catch (error) {
-          scopedLoggers.engine.warn(`Failed to set executable permission on ${label}:`, error)
-        }
-      }
-      scopedLoggers.engine.info(`Using ${label}:`, ffmpegPath)
-      return ffmpegPath
+    const bundledDir = path.join(this.getResourcesPath(), 'ffmpeg')
+    const ffmpegPath = path.join(bundledDir, ffmpegFileName)
+    const ffprobePath = path.join(bundledDir, ffprobeFileName)
+
+    if (!(fs.existsSync(ffmpegPath) && fs.existsSync(ffprobePath))) {
+      throw new Error(
+        `Bundled ffmpeg/ffprobe not found in ${bundledDir}. Ensure they are packaged under resources/ffmpeg/.`
+      )
     }
 
-    const envPath = process.env.FFMPEG_PATH
-    if (envPath) {
-      if (!fs.existsSync(envPath)) {
-        throw new Error(
-          'FFMPEG_PATH does not exist. Provide a directory containing ffmpeg and ffprobe.'
-        )
-      }
-
-      // Sentry issue VIDBEE-1IS showed some users point FFMPEG_PATH at the
-      // binary itself instead of its parent directory. Accept both forms.
-      const resolvedEnvDir = this.resolveEnvFfmpegDirectory(envPath, ffmpegFileName)
-      const resolved = resolveBundledFfmpeg(resolvedEnvDir, 'ffmpeg from FFMPEG_PATH')
-      if (resolved) {
-        return resolved
-      }
-      throw new Error('FFMPEG_PATH must contain both ffmpeg and ffprobe.')
-    }
-
-    const resourcesPath = this.getResourcesPath()
-    const bundledDir = path.join(resourcesPath, 'ffmpeg')
-    const bundledResolved = resolveBundledFfmpeg(bundledDir, 'bundled ffmpeg')
-    if (bundledResolved) {
-      return bundledResolved
-    }
-
-    if (platform === 'darwin') {
-      const commonDirs = ['/opt/homebrew/bin', '/usr/local/bin']
-      for (const candidate of commonDirs) {
-        const resolved = resolveBundledFfmpeg(candidate, 'system ffmpeg')
-        if (resolved) {
-          return resolved
-        }
-      }
-    }
-
-    if (platform === 'linux' || platform === 'freebsd') {
+    if (platform !== 'win32') {
       try {
-        const systemPath = execSync('which ffmpeg').toString().trim()
-        if (systemPath && fs.existsSync(systemPath)) {
-          const resolved = resolveBundledFfmpeg(path.dirname(systemPath), 'system ffmpeg')
-          if (resolved) {
-            return resolved
-          }
-        }
-      } catch (_error) {
-        // Ignore error and continue
+        fs.chmodSync(ffmpegPath, 0o755)
+        fs.chmodSync(ffprobePath, 0o755)
+      } catch (error) {
+        scopedLoggers.engine.warn('Failed to set executable permission on bundled ffmpeg:', error)
       }
     }
 
-    if (platform === 'win32') {
-      try {
-        const output = execSync('where ffmpeg').toString().split(/\r?\n/)[0]
-        if (output && fs.existsSync(output)) {
-          const resolved = resolveBundledFfmpeg(path.dirname(output), 'system ffmpeg')
-          if (resolved) {
-            return resolved
-          }
-        }
-      } catch (_error) {
-        // Ignore error and continue
-      }
-    }
-
-    throw new Error(
-      'ffmpeg/ffprobe not found. Bundle them under resources/ffmpeg/ in the build output or set FFMPEG_PATH to a directory containing both.'
-    )
-  }
-
-  /**
-   * Normalize FFMPEG_PATH to the directory that should contain both binaries.
-   */
-  private resolveEnvFfmpegDirectory(envPath: string, ffmpegFileName: string): string {
-    const stats = fs.statSync(envPath)
-    if (stats.isDirectory()) {
-      return envPath
-    }
-
-    if (path.basename(envPath) === ffmpegFileName) {
-      return path.dirname(envPath)
-    }
-
-    throw new Error(
-      'FFMPEG_PATH must be a directory containing ffmpeg and ffprobe or the ffmpeg binary path.'
-    )
+    scopedLoggers.engine.info('Using bundled ffmpeg:', ffmpegPath)
+    return ffmpegPath
   }
 }
 

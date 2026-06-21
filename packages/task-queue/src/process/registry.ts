@@ -11,6 +11,7 @@
  */
 import type { PersistAdapter } from '../persist'
 import type { ProcessJournalOp, ProcessKind } from '../types'
+import { killProcessTree } from './kill-process-tree'
 import { isPidAlive, readPidStartTime } from './pid-start-time'
 
 export interface ProcessHandle {
@@ -42,7 +43,7 @@ export class ProcessRegistry {
 
   constructor(private readonly deps: ProcessRegistryDeps) {
     this.clock = deps.clock ?? Date.now
-    this.kill = deps.kill ?? ((pid, sig) => process.kill(pid, sig))
+    this.kill = deps.kill ?? ((pid, sig) => killProcessTree(pid, sig))
     this.sleep =
       deps.sleep ?? ((ms) => new Promise((r) => setTimeout(r, ms)))
     this.killGracePeriodMs = deps.killGracePeriodMs ?? 10_000
