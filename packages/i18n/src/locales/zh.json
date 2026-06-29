@@ -219,7 +219,10 @@
       "subscription": "订阅"
     },
     "formatFallbackTitle": "所选格式不可用",
-    "formatFallbackHint": "所选格式拿不到流，已自动回退到 {{resolved}}。如需强制使用所选画质，请检查浏览器 cookies 或挑选非大会员档位。"
+    "formatFallbackHint": "所选格式拿不到流，已自动回退到 {{resolved}}。如需强制使用所选画质，请检查浏览器 cookies 或挑选非大会员档位。",
+    "pause": "Pause",
+    "resume": "Resume",
+    "paused": "Paused"
   },
   "error": {
     "title": "出了点问题",

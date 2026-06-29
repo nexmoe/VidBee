@@ -219,7 +219,10 @@
       "subscription": "Sottoscrizione"
     },
     "formatFallbackTitle": "Selected format unavailable",
-    "formatFallbackHint": "Your pick was not deliverable, so VidBee fell back to best available ({{resolved}})."
+    "formatFallbackHint": "Your pick was not deliverable, so VidBee fell back to best available ({{resolved}}).",
+    "pause": "Pause",
+    "resume": "Resume",
+    "paused": "Paused"
   },
   "error": {
     "title": "Qualcosa è andato storto",

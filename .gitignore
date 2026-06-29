@@ -20,3 +20,7 @@ labels/
 statuses/
 
 .env
+
+# Temp files
+commit.txt
+apps/desktop/resources/ffmpeg-temp.zip

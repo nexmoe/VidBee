@@ -117,9 +117,12 @@ export class TaskQueueAPI {
   private readonly filePresent: (p: string) => boolean
   private readonly rng: () => number
   private readonly active = new Map<string, ActiveRun>()
+  private readonly suspended = new Map<string, ActiveRun>()
   private readonly progressLastWrite = new Map<string, number>()
   private readonly progressDirty = new Map<string, TaskProgress>()
   private started = false
+  /** Tasks where pause() was invoked on Windows; onFinish should transition to paused, not cancelled. */
+  private readonly pendingPause = new Set<string>()
 
   constructor(opts: TaskQueueAPIOptions) {
     this.persist = opts.persist
@@ -218,6 +221,15 @@ export class TaskQueueAPI {
     for (const a of [...this.active.values()]) {
       try {
         await a.run.cancel(0)
+      } catch {
+        /* noop */
+      }
+    }
+    // Also cancel suspended runs
+    for (const a of [...this.suspended.values()]) {
+      try {
+        await a.run.cancel(0)
+        this.suspended.delete(a.taskId)
       } catch {
         /* noop */
       }
@@ -337,6 +349,16 @@ export class TaskQueueAPI {
         console.error('[task-queue] cancel run threw', err)
       }
     }
+    const suspended = this.suspended.get(id)
+    if (suspended) {
+      try {
+        await suspended.run.cancel()
+        this.suspended.delete(id)
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error('[task-queue] cancel suspended run threw', err)
+      }
+    }
     // The orchestrator transitions to `cancelled` from the onFinish callback
     // (executor reports `result.type === 'cancelled'`).
   }
@@ -357,11 +379,33 @@ export class TaskQueueAPI {
     if (t.status === 'running' || t.status === 'processing') {
       const active = this.active.get(id)
       if (active) {
-        try {
-          await active.run.pause()
-        } catch (err) {
-          // eslint-disable-next-line no-console
-          console.error('[task-queue] pause run threw', err)
+        if (process.platform === 'win32') {
+          // Windows: pause() internally cancels the process. Mark this as a
+          // pause-intent so handleFinish transitions to paused not cancelled.
+          this.pendingPause.add(id)
+          try {
+            await active.run.pause()
+          } catch (err) {
+            this.pendingPause.delete(id)
+            // eslint-disable-next-line no-console
+            console.error('[task-queue] pause run threw', err)
+          }
+          // handleFinish will clear pendingPause and apply paused transition.
+        } else {
+          // Unix: SIGSTOP suspends the process in-place; onFinish will NOT fire.
+          // We drive the FSM transition and release the scheduler slot ourselves.
+          try {
+            await active.run.pause()
+          } catch (err) {
+            // eslint-disable-next-line no-console
+            console.error('[task-queue] pause run threw', err)
+            return
+          }
+          this.watchdog.disarm(id)
+          this.active.delete(id)
+          this.suspended.set(id, active)
+          await this.applyTransition(id, 'paused', { trigger: 'pause', reason })
+          await this.scheduler.releaseSlot(id)
         }
       }
     }
@@ -524,17 +568,30 @@ export class TaskQueueAPI {
   private async demoteOne(id: string): Promise<void> {
     const a = this.active.get(id)
     if (a) {
-      try {
-        await a.run.pause()
-      } catch (err) {
-        // eslint-disable-next-line no-console
-        console.error('[task-queue] demote pause threw', err)
+      if (process.platform !== 'win32') {
+        try {
+          await a.run.pause()
+        } catch (err) {
+          // eslint-disable-next-line no-console
+          console.error('[task-queue] demote pause threw', err)
+          return
+        }
+        this.watchdog.disarm(id)
+        this.active.delete(id)
+        this.suspended.set(id, a)
+        await this.applyTransition(id, 'paused', { trigger: 'pause', reason: 'demote' })
+        await this.scheduler.releaseSlot(id)
+      } else {
+        this.pendingPause.add(id)
+        try {
+          await a.run.pause()
+        } catch (err) {
+          this.pendingPause.delete(id)
+          // eslint-disable-next-line no-console
+          console.error('[task-queue] demote pause threw', err)
+        }
       }
     }
-    // applyTransition(running -> paused) happens from the executor's
-    // onFinish callback when the child reports cancelled/paused. If it
-    // doesn't fire (executor is stuck), the watchdog will eventually
-    // surface it.
   }
 
   private async handleFinish(
@@ -593,9 +650,6 @@ export class TaskQueueAPI {
 
     if (e.result.type === 'cancelled') {
       // The cancel may have been user-driven, demote-driven, or pause-driven.
-      // We already disarmed; figure out the post-state from the most recent
-      // intent. Default → cancelled. The orchestrator's pause()/demote()
-      // path overrides this by transitioning to `paused` itself.
       await this.persist.closeAttempt({
         taskId: id,
         attemptId,
@@ -606,6 +660,22 @@ export class TaskQueueAPI {
         stderrTail: e.stderrTail
       })
       await this.processes.recordClose(id, attemptId, null, 'SIGTERM')
+
+      // Windows pause path: the executor terminates the process to simulate
+      // pause. Honour the original intent by transitioning to paused instead.
+      if (this.pendingPause.has(id)) {
+        this.pendingPause.delete(id)
+        const cur = this.store.get(id)
+        if (cur && (cur.status === 'running' || cur.status === 'processing')) {
+          await this.applyTransition(id, 'paused', {
+            trigger: 'pause',
+            reason: 'user'
+          })
+        }
+        await this.scheduler.releaseSlot(id)
+        return
+      }
+
       const t = this.store.get(id)
       if (t && (t.status === 'running' || t.status === 'processing')) {
         await this.applyTransition(id, 'cancelled', {

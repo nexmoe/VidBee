@@ -11,6 +11,7 @@ export type DownloadStatus =
   | 'completed'
   | 'error'
   | 'cancelled'
+  | 'paused'
 
 export interface DownloadProgress {
   percent: number
