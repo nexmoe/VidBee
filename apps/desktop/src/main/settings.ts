@@ -154,11 +154,13 @@ class SettingsManager {
       if (!currentPath || currentPath === OLD_DEFAULT_DOWNLOAD_PATH) {
         normalizedDownloadPath = DEFAULT_DOWNLOAD_PATH
       } else if (isPortableMode) {
+        // Only remap a path that lived inside the previous portable root (e.g. the
+        // portable folder was moved to a new drive). Any other explicitly chosen
+        // location is kept as-is: resetting external paths to the default here
+        // silently discarded the user's save location on every restart (#427).
         const remappedPath = remapFromPreviousPortableRoot(currentPath)
         if (remappedPath) {
           normalizedDownloadPath = remappedPath
-        } else if (!isPathInsideOrEqual(currentPath, portableRoot)) {
-          normalizedDownloadPath = DEFAULT_DOWNLOAD_PATH
         }
       }
 
