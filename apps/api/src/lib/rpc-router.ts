@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process'
+import { execFile } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { constants as fsConstants } from 'node:fs'
 import { access, mkdir, readdir, rm, stat, writeFile } from 'node:fs/promises'
@@ -19,6 +19,13 @@ const MAX_WEB_SETTINGS_FILE_BYTES = 1_000_000
 const MANAGED_SETTINGS_FILE_RETENTION_MS = 30 * 24 * 60 * 60 * 1000
 const SAFE_FILE_NAME_REGEX = /[^A-Za-z0-9._-]+/g
 type ManagedSettingsFileKind = 'cookies' | 'config'
+type SystemCommand =
+  | 'explorer.exe'
+  | 'open'
+  | 'osascript'
+  | 'powershell.exe'
+  | 'rundll32.exe'
+  | 'xdg-open'
 
 const TERMINAL_TASK_STATUSES = new Set<TaskStatus>(['completed', 'failed', 'cancelled'])
 const NON_TERMINAL_TASK_STATUSES = new Set<TaskStatus>([
@@ -36,14 +43,10 @@ const toErrorMessage = (error: unknown, fallbackMessage: string): string => {
   return fallbackMessage
 }
 
-const runProcess = (command: string, args: string[]): Promise<boolean> =>
+/** Execute an allowlisted system helper without invoking a shell. */
+const runProcess = (command: SystemCommand, args: string[]): Promise<boolean> =>
   new Promise((resolve) => {
-    const child = spawn(command, args, {
-      stdio: 'ignore',
-      windowsHide: true
-    })
-    child.on('error', () => resolve(false))
-    child.on('close', (code) => resolve(code === 0))
+    execFile(command, args, { shell: false, windowsHide: true }, (error) => resolve(error === null))
   })
 
 const pathExists = async (targetPath: string): Promise<boolean> => {
@@ -67,7 +70,7 @@ const openFileWithSystem = async (targetPath: string): Promise<boolean> => {
     return runProcess('open', [targetPath])
   }
   if (process.platform === 'win32') {
-    return runProcess('cmd', ['/c', 'start', '', targetPath])
+    return runProcess('rundll32.exe', ['url.dll,FileProtocolHandler', targetPath])
   }
   return runProcess('xdg-open', [targetPath])
 }
@@ -77,22 +80,30 @@ const openFileLocationWithSystem = async (targetPath: string): Promise<boolean> 
     return runProcess('open', ['-R', targetPath])
   }
   if (process.platform === 'win32') {
-    return runProcess('explorer', [`/select,${targetPath}`])
+    return runProcess('explorer.exe', [`/select,${targetPath}`])
   }
   return runProcess('xdg-open', [path.dirname(targetPath)])
 }
 
 const copyFileToClipboardWithSystem = async (targetPath: string): Promise<boolean> => {
   if (process.platform === 'darwin') {
-    const escapedPath = targetPath.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
-    return runProcess('osascript', ['-e', `set the clipboard to (POSIX file "${escapedPath}")`])
+    return runProcess('osascript', [
+      '-e',
+      'on run argv',
+      '-e',
+      'set the clipboard to (POSIX file (item 1 of argv))',
+      '-e',
+      'end run',
+      targetPath
+    ])
   }
   if (process.platform === 'win32') {
-    const escapedPath = targetPath.replace(/'/g, "''")
-    return runProcess('powershell', [
+    return runProcess('powershell.exe', [
       '-NoProfile',
+      '-NonInteractive',
       '-Command',
-      `Set-Clipboard -Path '${escapedPath}'`
+      'Set-Clipboard -LiteralPath $args[0]',
+      targetPath
     ])
   }
   return false

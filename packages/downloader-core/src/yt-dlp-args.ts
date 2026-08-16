@@ -70,6 +70,19 @@ const hasYouTubeHost = (host: string): boolean =>
 
 const trim = (value?: string | null): string => value?.trim() ?? ''
 
+/** Remove trailing Windows-invalid dots and spaces in linear time. */
+const trimWindowsFilenameSegmentEnd = (value: string): string => {
+  let end = value.length
+  while (end > 0) {
+    const characterCode = value.charCodeAt(end - 1)
+    if (characterCode !== 32 && characterCode !== 46) {
+      break
+    }
+    end -= 1
+  }
+  return value.slice(0, end)
+}
+
 /** Convert a seconds, MM:SS, or HH:MM:SS timecode to seconds. */
 export const parseDownloadTimecode = (value: string): number | null => {
   const normalized = value.trim()
@@ -217,7 +230,7 @@ export const sanitizeFilenameTemplate = (
     .split('/')
     .map((part) => part.trim())
     .filter((part) => part !== '' && part !== '.' && part !== '..')
-    .map((part) => part.replace(/[<>:"|?*]/g, '-').replace(/[. ]+$/g, ''))
+    .map((part) => trimWindowsFilenameSegmentEnd(part.replace(/[<>:"|?*]/g, '-')))
     .filter((part) => part !== '')
   return safeParts.length === 0 ? fallbackTemplate : safeParts.join('/')
 }
