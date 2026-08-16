@@ -70,7 +70,7 @@
     "@vidbee/db": "workspace:*",
     "@vidbee/downloader-core": "workspace:*",
     "@vidbee/task-queue": "workspace:*",
-    "esbuild": "^0.25.0",
+    "esbuild": "^0.28.1",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4"
   },
