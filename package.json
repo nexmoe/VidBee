@@ -39,7 +39,7 @@
   "devDependencies": {
     "@svgr/core": "^8.1.0",
     "@svgr/plugin-jsx": "^8.1.0",
-    "electron": "^38.3.0",
+    "electron": "^39.8.10",
     "husky": "^9.1.7"
   },
   "pnpm": {
