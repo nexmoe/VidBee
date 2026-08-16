@@ -13,5 +13,6 @@ export const readOrpcDownloadSettings = (): DownloadRuntimeSettings => {
 		embedThumbnail: settings.embedThumbnail,
 		embedMetadata: settings.embedMetadata,
 		embedChapters: settings.embedChapters,
+		shareWatermark: settings.shareWatermark,
 	};
 };

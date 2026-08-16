@@ -16,9 +16,10 @@ import path from 'node:path'
 import { TASK_QUEUE_DDL_V1 } from '@vidbee/db/task-queue'
 import { YtDlpExecutor } from '@vidbee/downloader-core'
 import { MemoryPersistAdapter, SqlitePersistAdapter, TaskQueueAPI } from '@vidbee/task-queue'
-import { app } from 'electron'
+import { app, powerSaveBlocker } from 'electron'
 import { settingsManager } from '../settings'
 import { scopedLoggers } from '../utils/logger'
+import { startDownloadPowerSaveGuard } from './download-power-save'
 import { ffmpegManager } from './ffmpeg-manager'
 import { ytdlpManager } from './ytdlp-manager'
 
@@ -55,6 +56,7 @@ let taskQueueInstance: TaskQueueAPI | null = null
 let started = false
 let dbPath: string | null = null
 let persistent = false
+let stopPowerSaveGuard: (() => void) | null = null
 
 const buildExecutor = (): YtDlpExecutor =>
   new YtDlpExecutor({
@@ -122,6 +124,7 @@ export const startDesktopTaskQueue = async (): Promise<void> => {
   }
   const queue = getDesktopTaskQueue()
   await queue.start()
+  stopPowerSaveGuard = startDownloadPowerSaveGuard(queue, powerSaveBlocker)
   started = true
 }
 
@@ -129,6 +132,8 @@ export const stopDesktopTaskQueue = async (): Promise<void> => {
   if (!started) {
     return
   }
+  stopPowerSaveGuard?.()
+  stopPowerSaveGuard = null
   await taskQueueInstance?.stop()
   started = false
 }

@@ -2,10 +2,10 @@ import { execSync } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { EventEmitter } from 'node:events'
 import fs from 'node:fs'
-import { createRequire } from 'node:module'
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import YTDlpWrap from 'yt-dlp-wrap-plus'
 import type {
   CreateDownloadInput,
   DownloadRuntimeSettings,
@@ -22,9 +22,6 @@ import {
   buildVideoInfoArgs,
   formatYtDlpCommand
 } from './yt-dlp-args'
-
-const require = createRequire(import.meta.url)
-const YTDlpWrapModule = require('yt-dlp-wrap-plus')
 
 interface YtDlpExecProcess {
   ytDlpProcess?: {
@@ -43,7 +40,7 @@ interface YtDlpWrapInstance {
 }
 
 type YtDlpWrapConstructor = new (binaryPath: string) => YtDlpWrapInstance
-const YTDlpWrapCtor = (YTDlpWrapModule.default ?? YTDlpWrapModule) as YtDlpWrapConstructor
+const YTDlpWrapCtor = YTDlpWrap as unknown as YtDlpWrapConstructor
 
 interface ActiveTask {
   controller: AbortController
@@ -182,7 +179,7 @@ const resolveBundledFfmpegLocation = (): string | undefined => {
     const candidateDir = path.join(resourcesDir, 'ffmpeg')
     const ffmpegPath = path.join(candidateDir, ffmpegBinaryName)
     const ffprobePath = path.join(candidateDir, ffprobeBinaryName)
-    if (!fs.existsSync(ffmpegPath) || !fs.existsSync(ffprobePath)) {
+    if (!(fs.existsSync(ffmpegPath) && fs.existsSync(ffprobePath))) {
       continue
     }
     ensureExecutable(ffmpegPath)
@@ -229,7 +226,7 @@ const resolveFfmpegLocation = (ytDlpPath?: string): string | undefined => {
   const resolveFromDirectory = (directory: string): string | undefined => {
     const ffmpegPath = path.join(directory, ffmpegBinaryName)
     const ffprobePath = path.join(directory, ffprobeBinaryName)
-    if (!fs.existsSync(ffmpegPath) || !fs.existsSync(ffprobePath)) {
+    if (!(fs.existsSync(ffmpegPath) && fs.existsSync(ffprobePath))) {
       return undefined
     }
     ensureExecutable(ffmpegPath)
@@ -649,14 +646,18 @@ export class DownloaderCore extends EventEmitter {
     }
 
     const raw = await this.runJsonCommand<RawPlaylistInfo>(
-      buildPlaylistInfoArgs(target, this.resolveRuntimeSettings(runtimeSettings), this.jsRuntimeArgs)
+      buildPlaylistInfoArgs(
+        target,
+        this.resolveRuntimeSettings(runtimeSettings),
+        this.jsRuntimeArgs
+      )
     )
 
     const rawEntries = Array.isArray(raw.entries) ? raw.entries : []
     const entries = rawEntries
       .map((entry, index) => {
         const resolvedUrl = resolvePlaylistEntryUrl(entry)
-        if (!resolvedUrl || !isHttpUrl(resolvedUrl)) {
+        if (!(resolvedUrl && isHttpUrl(resolvedUrl))) {
           return null
         }
 
@@ -989,7 +990,7 @@ export class DownloaderCore extends EventEmitter {
       return true
     }
 
-    const pendingIndex = this.pending.findIndex((value) => value === id)
+    const pendingIndex = this.pending.indexOf(id)
     if (pendingIndex >= 0) {
       this.pending.splice(pendingIndex, 1)
       this.updateTask(id, {

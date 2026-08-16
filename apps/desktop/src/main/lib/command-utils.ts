@@ -1,5 +1,6 @@
 import {
   appendYouTubeSafeExtractorArgs as appendSharedYouTubeSafeExtractorArgs,
+  buildPlaylistInfoArgs as buildSharedPlaylistInfoArgs,
   buildVideoInfoArgs as buildSharedVideoInfoArgs,
   formatYtDlpCommand,
   resolveFfmpegLocationFromPath,
@@ -19,7 +20,8 @@ export const toSharedSettings = (
   embedSubs: settings.embedSubs,
   embedThumbnail: settings.embedThumbnail,
   embedMetadata: settings.embedMetadata,
-  embedChapters: settings.embedChapters
+  embedChapters: settings.embedChapters,
+  shareWatermark: settings.shareWatermark
 })
 
 export { formatYtDlpCommand }
@@ -42,3 +44,10 @@ export const buildVideoInfoArgs = (
   settings: ReturnType<typeof settingsManager.getAll>
 ): string[] =>
   buildSharedVideoInfoArgs(url, toSharedSettings(settings), ytdlpManager.getJsRuntimeArgs())
+
+/** Build playlist metadata arguments with the same host settings and runtime. */
+export const buildPlaylistInfoArgs = (
+  url: string,
+  settings: ReturnType<typeof settingsManager.getAll>
+): string[] =>
+  buildSharedPlaylistInfoArgs(url, toSharedSettings(settings), ytdlpManager.getJsRuntimeArgs())

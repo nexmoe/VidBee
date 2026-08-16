@@ -1,44 +1,31 @@
 export type { BrowserCookiesSetting } from './browser-cookies-setting'
+// biome-ignore lint/performance/noBarrelFile: This file is the package's documented public entry point.
 export {
   buildBrowserCookiesSetting,
   parseBrowserCookiesSetting
 } from './browser-cookies-setting'
 export { downloaderContract } from './contract'
 export { DownloaderCore } from './downloader-core'
-export { YtDlpExecutor } from './yt-dlp-executor'
-export type { YtDlpExecutorOptions, YtDlpTaskOptions } from './yt-dlp-executor'
-export { WebAppSettingsSchema } from './schemas'
 export type {
   OneClickContainerOption,
   OneClickFormatSettings,
   OneClickQualityPreset
 } from './format-preferences'
 export {
-  ONE_CLICK_CONTAINER_OPTIONS,
   buildAudioFormatPreference,
-  buildVideoFormatPreference
+  buildVideoFormatPreference,
+  ONE_CLICK_CONTAINER_OPTIONS
 } from './format-preferences'
-export {
-  appendYouTubeSafeExtractorArgs,
-  buildDownloadArgs,
-  buildPlaylistInfoArgs,
-  buildVideoInfoArgs,
-  formatYtDlpCommand,
-  resolveAudioFormatSelector,
-  resolveFfmpegLocationFromPath,
-  resolvePathWithHome,
-  resolveVideoFormatSelector,
-  sanitizeFilenameTemplate
-} from './yt-dlp-args'
+export { WebAppSettingsSchema } from './schemas'
 export type {
   CreateDownloadInput,
-  DownloadRuntimeSettings,
+  DirectoryEntry,
+  DirectoryListInput,
   DownloadProgress,
+  DownloadRuntimeSettings,
   DownloadStatus,
   DownloadTask,
   DownloadType,
-  DirectoryEntry,
-  DirectoryListInput,
   FileExistsOutput,
   FileOperationOutput,
   FilePathInput,
@@ -47,12 +34,31 @@ export type {
   PlaylistDownloadInput,
   PlaylistDownloadResult,
   PlaylistEntry,
-  PlaylistInfoInput,
   PlaylistInfo,
+  PlaylistInfoInput,
   UploadSettingsFileInput,
   UploadSettingsFileKind,
   UploadSettingsFileOutput,
   VideoFormat,
-  VideoInfoInput,
-  VideoInfo
+  VideoInfo,
+  VideoInfoInput
 } from './types'
+export {
+  appendYouTubeSafeExtractorArgs,
+  assertDownloadSourceUrl,
+  buildDownloadArgs,
+  buildPlaylistInfoArgs,
+  buildVideoInfoArgs,
+  formatYtDlpCommand,
+  isDirectMediaSegmentUrl,
+  parseDownloadTimecode,
+  resolveAudioFormatSelector,
+  resolveFfmpegLocationFromPath,
+  resolvePathWithHome,
+  resolveVideoFormatSelector,
+  sanitizeFilenameTemplate,
+  VIDBEE_OUTPUT_PATH_PREFIX,
+  validateDownloadTimeRange
+} from './yt-dlp-args'
+export type { YtDlpExecutorOptions, YtDlpTaskOptions } from './yt-dlp-executor'
+export { YtDlpExecutor } from './yt-dlp-executor'

@@ -1,3 +1,4 @@
+import { normalizeLanguageCode } from "@vidbee/i18n/languages";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { i18n } from "../lib/i18n";
 import { orpcClient } from "../lib/orpc-client";
@@ -32,7 +33,10 @@ export const useWebSettings = () => {
 				if (disposed) {
 					return;
 				}
-				setSettings(result.settings);
+				setSettings({
+					...result.settings,
+					language: normalizeLanguageCode(result.settings.language),
+				});
 			} catch {
 				// Keep local settings as fallback when API is unavailable.
 			} finally {

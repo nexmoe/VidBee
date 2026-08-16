@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "vite dev --port 3000",
     "build": "vite build",
+    "start": "node server.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "format": "biome format",

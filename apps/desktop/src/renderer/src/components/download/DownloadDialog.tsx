@@ -111,6 +111,8 @@ export function DownloadDialog({
     selectedVideoFormat: '',
     selectedAudioFormat: '',
     customDownloadPath: '',
+    startTime: '',
+    endTime: '',
     selectedContainer: undefined,
     selectedCodec: undefined,
     selectedFps: undefined
@@ -235,6 +237,8 @@ export function DownloadDialog({
             ...prev,
             selectedVideoFormat: '',
             selectedAudioFormat: '',
+            startTime: '',
+            endTime: '',
             selectedContainer: undefined,
             selectedCodec: undefined,
             selectedFps: undefined
@@ -388,6 +392,8 @@ export function DownloadDialog({
       ...prev,
       selectedVideoFormat: '',
       selectedAudioFormat: '',
+      startTime: '',
+      endTime: '',
       selectedContainer: undefined,
       selectedCodec: undefined,
       selectedFps: undefined
@@ -405,6 +411,8 @@ export function DownloadDialog({
         ...prev,
         selectedVideoFormat: '',
         selectedAudioFormat: '',
+        startTime: '',
+        endTime: '',
         selectedContainer: undefined,
         selectedCodec: undefined,
         selectedFps: undefined
@@ -692,6 +700,8 @@ export function DownloadDialog({
       type,
       format: resolvedFormat || undefined,
       audioFormat: type === 'video' && isMuxedVideoFormat(selectedVideoFormat) ? '' : undefined,
+      startTime: singleVideoState.startTime.trim() || undefined,
+      endTime: singleVideoState.endTime.trim() || undefined,
       customDownloadPath: singleVideoState.customDownloadPath.trim() || undefined,
       // Pass renderer-fetched videoInfo through so the kernel's projection
       // round-trips it back instead of clobbering the optimistic row.
@@ -728,6 +738,8 @@ export function DownloadDialog({
         selectedVideoFormat: '',
         selectedAudioFormat: '',
         customDownloadPath: '',
+        startTime: '',
+        endTime: '',
         selectedContainer: undefined,
         selectedCodec: undefined,
         selectedFps: undefined

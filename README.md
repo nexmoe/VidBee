@@ -103,6 +103,8 @@ services:
     ports:
       - "3100:3100"
     volumes:
+      # Replace the named volume with /path/on/your/NAS:/data/downloads
+      # when downloaded files must be directly visible on the host.
       - vidbee-downloads:/data/downloads
       - vidbee-data:/data/vidbee
     restart: unless-stopped
@@ -131,7 +133,8 @@ Optional env vars (via `.env`):
 ```bash
 VIDBEE_API_PORT=3100
 VIDBEE_WEB_PORT=3000
-VITE_API_URL=http://localhost:3100
+# Optional host or NAS bind mount. The named volume remains the default.
+VIDBEE_DOWNLOAD_DIR_HOST=/path/on/your/NAS/downloads
 ```
 
 ## 🤝 Contributing

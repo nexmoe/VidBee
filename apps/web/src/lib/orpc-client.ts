@@ -9,7 +9,7 @@ const normalizedApiUrl = configuredApiUrl
 	: "";
 const defaultOrigin =
 	typeof window === "undefined"
-		? "http://localhost:3000"
+		? process.env.VIDBEE_API_URL_INTERNAL?.trim() || "http://api:3100"
 		: window.location.origin;
 export const apiUrl = normalizedApiUrl || defaultOrigin;
 

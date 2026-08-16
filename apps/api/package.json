@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build": "esbuild src/index.ts scripts/migrate-history.ts --bundle --platform=node --format=esm --target=node22 --outdir=dist --entry-names='[name]' --external:better-sqlite3 --banner:js=\"import { createRequire as __vidbeeCreateRequire } from 'node:module'; const require = __vidbeeCreateRequire(import.meta.url);\"",
     "dev": "node scripts/ensure-node-sqlite.mjs && tsx watch src/index.ts",
     "start": "node scripts/ensure-node-sqlite.mjs && tsx src/index.ts",
     "migrate-history": "tsx scripts/migrate-history.ts",
@@ -27,6 +28,7 @@
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^22.18.6",
     "drizzle-kit": "0.31.7",
+    "esbuild": "^0.28.1",
     "tsx": "^4.21.0",
     "typescript": "^5.9.2",
     "ultracite": "7.1.5"

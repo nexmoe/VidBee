@@ -14,6 +14,7 @@ export interface YtDlpDownloadSettings {
   embedThumbnail?: boolean
   embedMetadata?: boolean
   embedChapters?: boolean
+  shareWatermark?: boolean
 }
 
 export interface YtDlpDownloadOptions {
@@ -34,8 +35,12 @@ const YOUTUBE_HOST_SUFFIXES = ['youtube.com', 'youtu.be', 'youtube-nocookie.com'
 // token and frequently 403s) but keep `web_safari` and the other defaults so
 // extraction has more fallbacks before failing.
 const YOUTUBE_SAFE_PLAYER_CLIENTS = 'default,-web'
-const DEFAULT_FILENAME_TEMPLATE = '%(title)s via VidBee.%(ext)s'
+const DEFAULT_FILENAME_TEMPLATE = '%(title)s.%(ext)s'
+const SHARED_FILENAME_TEMPLATE = '%(title)s via VidBee.%(ext)s'
+const SUBTITLE_LANGUAGE_SELECTOR = 'all,-live_chat,-rechat'
+export const VIDBEE_OUTPUT_PATH_PREFIX = '__VIDBEE_OUTPUT_PATH__:'
 const WINDOWS_FILENAME_TRIM_LENGTH = '120'
+const DIRECT_MEDIA_SEGMENT_EXTENSION = /\.(?:cmfa|cmfv|m4s)(?:$|[?#])/i
 
 // GitHub issues #326, #355, #325: yt-dlp's default of 10 retries and no
 // socket timeout left users with `Giving up after N retries` and DNS hangs
@@ -53,10 +58,74 @@ const appendNetworkResilienceArgs = (args: string[]): void => {
   args.push('--socket-timeout', DEFAULT_SOCKET_TIMEOUT)
 }
 
+/** Add bounded retries to metadata probes without fragment-only flags. */
+const appendMetadataNetworkResilienceArgs = (args: string[]): void => {
+  args.push('--retries', DEFAULT_RETRIES)
+  args.push('--retry-sleep', DEFAULT_RETRY_SLEEP)
+  args.push('--socket-timeout', DEFAULT_SOCKET_TIMEOUT)
+}
+
 const hasYouTubeHost = (host: string): boolean =>
   YOUTUBE_HOST_SUFFIXES.some((suffix) => host === suffix || host.endsWith(`.${suffix}`))
 
 const trim = (value?: string | null): string => value?.trim() ?? ''
+
+/** Convert a seconds, MM:SS, or HH:MM:SS timecode to seconds. */
+export const parseDownloadTimecode = (value: string): number | null => {
+  const normalized = value.trim()
+  if (!normalized) {
+    return null
+  }
+
+  const parts = normalized.split(':')
+  if (parts.length > 3 || parts.some((part) => !/^\d+(?:\.\d+)?$/.test(part))) {
+    return null
+  }
+
+  const numericParts = parts.map(Number)
+  if (numericParts.some((part) => !Number.isFinite(part))) {
+    return null
+  }
+  if (parts.length > 1 && numericParts.slice(1).some((part) => part >= 60)) {
+    return null
+  }
+
+  return numericParts.reduce((total, part) => total * 60 + part, 0)
+}
+
+/** Validate optional time-range values before passing them to yt-dlp. */
+export const validateDownloadTimeRange = (startTime?: string, endTime?: string): void => {
+  const start = trim(startTime)
+  const end = trim(endTime)
+  const startSeconds = start ? parseDownloadTimecode(start) : 0
+  const endSeconds = end ? parseDownloadTimecode(end) : null
+
+  if (start && startSeconds === null) {
+    throw new Error('Invalid start time. Use seconds, MM:SS, or HH:MM:SS.')
+  }
+  if (end && endSeconds === null) {
+    throw new Error('Invalid end time. Use seconds, MM:SS, or HH:MM:SS.')
+  }
+  if (endSeconds !== null && startSeconds !== null && endSeconds <= startSeconds) {
+    throw new Error('End time must be later than start time.')
+  }
+}
+
+/**
+ * Return whether a URL points at a single DASH media segment instead of a
+ * page or manifest that yt-dlp can resolve into a complete download.
+ */
+export const isDirectMediaSegmentUrl = (value: string): boolean =>
+  DIRECT_MEDIA_SEGMENT_EXTENSION.test(value.trim())
+
+/** Reject bare media-segment URLs with guidance that is useful in every host. */
+export const assertDownloadSourceUrl = (value: string): void => {
+  if (isDirectMediaSegmentUrl(value)) {
+    throw new Error(
+      'This URL points to a single media segment. Paste the original video page URL instead.'
+    )
+  }
+}
 
 /**
  * Normalize browser cookies settings before passing them to yt-dlp.
@@ -92,17 +161,11 @@ export const normalizeBrowserCookiesSettingForYtDlp = (value?: string | null): s
   const isAbsolutePath = isWindowsPath
     ? path.win32.isAbsolute(profile)
     : path.posix.isAbsolute(profile)
-  if (
-    browser === 'firefox' &&
-    isAbsolutePath &&
-    existsSync(path.join(profile, 'cookies.sqlite'))
-  ) {
+  if (browser === 'firefox' && isAbsolutePath && existsSync(path.join(profile, 'cookies.sqlite'))) {
     return `${browser}:${profile}`
   }
 
-  const profileName = isWindowsPath
-    ? path.win32.basename(profile)
-    : path.posix.basename(profile)
+  const profileName = isWindowsPath ? path.win32.basename(profile) : path.posix.basename(profile)
   return profileName ? `${browser}:${profileName}` : browser
 }
 
@@ -141,10 +204,13 @@ export const resolvePathWithHome = (rawPath?: string | null): string | undefined
   return trimmed
 }
 
-export const sanitizeFilenameTemplate = (template: string): string => {
+export const sanitizeFilenameTemplate = (
+  template: string,
+  fallbackTemplate = DEFAULT_FILENAME_TEMPLATE
+): string => {
   const trimmed = template.trim()
   if (!trimmed) {
-    return DEFAULT_FILENAME_TEMPLATE
+    return fallbackTemplate
   }
   const normalized = trimmed.replace(/\\/g, '/')
   const safeParts = normalized
@@ -153,7 +219,7 @@ export const sanitizeFilenameTemplate = (template: string): string => {
     .filter((part) => part !== '' && part !== '.' && part !== '..')
     .map((part) => part.replace(/[<>:"|?*]/g, '-').replace(/[. ]+$/g, ''))
     .filter((part) => part !== '')
-  return safeParts.length === 0 ? DEFAULT_FILENAME_TEMPLATE : safeParts.join('/')
+  return safeParts.length === 0 ? fallbackTemplate : safeParts.join('/')
 }
 
 /**
@@ -274,6 +340,8 @@ export const buildDownloadArgs = (
   settings: YtDlpDownloadSettings,
   jsRuntimeArgs: string[] = []
 ): string[] => {
+  assertDownloadSourceUrl(options.url)
+  validateDownloadTimeRange(options.startTime, options.endTime)
   const args: string[] = ['--no-playlist', '--no-mtime', '--encoding', 'utf-8']
 
   if (options.type === 'video') {
@@ -302,9 +370,11 @@ export const buildDownloadArgs = (
     args.push('-f', resolveAudioFormatSelector(options))
   }
 
-  if (options.startTime || options.endTime) {
-    const start = options.startTime || '0'
-    const end = options.endTime || ''
+  const startTime = trim(options.startTime)
+  const endTime = trim(options.endTime)
+  if (startTime || endTime) {
+    const start = startTime || '0'
+    const end = endTime || ''
     args.push('--download-sections', `*${start}-${end}`)
   }
 
@@ -321,15 +391,18 @@ export const buildDownloadArgs = (
   // VOD. Like Bilibili, skip forced subtitles for Twitch unless the user has
   // provided cookies that may unlock real subtitle tracks.
   const shouldAttemptSubtitles =
-    (!isBilibiliUrl(options.url) && !isTwitchUrl(options.url)) || hasSubtitleAuth
+    !(isBilibiliUrl(options.url) || isTwitchUrl(options.url)) || hasSubtitleAuth
 
   if (shouldAttemptSubtitles) {
+    args.push('--sub-langs', SUBTITLE_LANGUAGE_SELECTOR)
     if (embedSubs) {
-      args.push('--sub-langs', 'all')
+      args.push('--embed-subs')
     } else {
       args.push('--write-subs')
     }
-    args.push(embedSubs ? '--embed-subs' : '--no-embed-subs')
+    if (!embedSubs) {
+      args.push('--no-embed-subs')
+    }
   } else {
     args.push('--no-embed-subs')
   }
@@ -340,13 +413,20 @@ export const buildDownloadArgs = (
 
   const baseDownloadPath =
     trim(options.customDownloadPath) || trim(settings.downloadPath) || fallbackDownloadPath
+  const defaultFilenameTemplate = settings.shareWatermark
+    ? SHARED_FILENAME_TEMPLATE
+    : DEFAULT_FILENAME_TEMPLATE
   const filenameTemplate = sanitizeFilenameTemplate(
-    options.customFilenameTemplate ?? DEFAULT_FILENAME_TEMPLATE
+    options.customFilenameTemplate ?? defaultFilenameTemplate,
+    defaultFilenameTemplate
   )
   const safeTemplate = filenameTemplate.replace(/^[\\/]+/, '')
   args.push('-o', path.join(baseDownloadPath, safeTemplate))
   args.push('--continue')
   args.push('--no-playlist-reverse')
+  // GitHub issue #447: emit the final post-processed path without suppressing
+  // progress output so the executor can stat the exact saved file.
+  args.push('--print', `after_move:${VIDBEE_OUTPUT_PATH_PREFIX}%(filepath)s`, '--no-quiet')
 
   appendPlatformFilenameSafetyArgs(args)
   appendNetworkResilienceArgs(args)
@@ -368,6 +448,7 @@ export const buildDownloadArgs = (
   if (configPath) {
     args.push('--config-location', configPath)
   } else {
+    args.push('--ignore-config')
     appendYouTubeSafeExtractorArgs(args, options.url)
   }
 
@@ -384,6 +465,7 @@ export const buildVideoInfoArgs = (
   settings: YtDlpDownloadSettings,
   jsRuntimeArgs: string[] = []
 ): string[] => {
+  assertDownloadSourceUrl(url)
   const args = ['-j', '--no-playlist', '--no-warnings', '--encoding', 'utf-8']
 
   const proxy = trim(settings.proxy)
@@ -391,9 +473,9 @@ export const buildVideoInfoArgs = (
     args.push('--proxy', proxy)
   }
 
-  // GitHub issues #355 / #325: cap info-fetch socket waits so a broken DNS
-  // or proxy fails fast with a clear error instead of hanging.
-  args.push('--socket-timeout', DEFAULT_SOCKET_TIMEOUT)
+  // GitHub issues #289, #355, and #325: metadata requests need the same
+  // bounded retry/backoff policy as downloads, not only a socket timeout.
+  appendMetadataNetworkResilienceArgs(args)
 
   const browserForCookies = normalizeBrowserCookiesSettingForYtDlp(settings.browserForCookies)
   if (browserForCookies && browserForCookies !== 'none') {
@@ -409,6 +491,9 @@ export const buildVideoInfoArgs = (
   if (configPath) {
     args.push('--config-location', configPath)
   } else {
+    // GitHub issue #294: an implicit user yt-dlp config can inject a strict
+    // format selector into `-j` and make metadata discovery fail.
+    args.push('--ignore-config')
     appendYouTubeSafeExtractorArgs(args, url)
   }
 
@@ -425,6 +510,7 @@ export const buildPlaylistInfoArgs = (
   settings: YtDlpDownloadSettings,
   jsRuntimeArgs: string[] = []
 ): string[] => {
+  assertDownloadSourceUrl(url)
   // GitHub issue #322: a single unavailable entry (e.g. an age-restricted
   // video in a channel/playlist) must not abort listing the whole playlist.
   const args = ['-J', '--flat-playlist', '--ignore-errors', '--no-warnings', '--encoding', 'utf-8']
@@ -434,9 +520,7 @@ export const buildPlaylistInfoArgs = (
     args.push('--proxy', proxy)
   }
 
-  // GitHub issues #355 / #325: cap info-fetch socket waits so a broken DNS
-  // or proxy fails fast with a clear error instead of hanging.
-  args.push('--socket-timeout', DEFAULT_SOCKET_TIMEOUT)
+  appendMetadataNetworkResilienceArgs(args)
 
   const browserForCookies = normalizeBrowserCookiesSettingForYtDlp(settings.browserForCookies)
   if (browserForCookies && browserForCookies !== 'none') {
@@ -452,6 +536,7 @@ export const buildPlaylistInfoArgs = (
   if (configPath) {
     args.push('--config-location', configPath)
   } else {
+    args.push('--ignore-config')
     appendYouTubeSafeExtractorArgs(args, url)
   }
 

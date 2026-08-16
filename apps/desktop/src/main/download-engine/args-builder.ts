@@ -30,7 +30,8 @@ const toSharedSettings = (settings: AppSettings): YtDlpDownloadSettings => ({
   embedSubs: settings.embedSubs,
   embedThumbnail: settings.embedThumbnail,
   embedMetadata: settings.embedMetadata,
-  embedChapters: settings.embedChapters
+  embedChapters: settings.embedChapters,
+  shareWatermark: settings.shareWatermark
 })
 
 export const sanitizeFilenameTemplate = (template: string): string =>

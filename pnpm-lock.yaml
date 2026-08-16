@@ -66,6 +66,9 @@ importers:
       drizzle-kit:
         specifier: 0.31.7
         version: 0.31.7
+      esbuild:
+        specifier: ^0.28.1
+        version: 0.28.1
       tsx:
         specifier: ^4.21.0
         version: 4.22.4

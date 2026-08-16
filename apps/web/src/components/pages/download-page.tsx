@@ -1,10 +1,10 @@
-import { Button } from "@vidbee/ui/components/ui/button";
-import { CardContent, CardHeader } from "@vidbee/ui/components/ui/card";
-import { Checkbox } from "@vidbee/ui/components/ui/checkbox";
 import {
 	buildFilePathCandidates,
 	normalizeSavedFileName,
 } from "@vidbee/downloader-core/download-file";
+import { Button } from "@vidbee/ui/components/ui/button";
+import { CardContent, CardHeader } from "@vidbee/ui/components/ui/card";
+import { Checkbox } from "@vidbee/ui/components/ui/checkbox";
 import {
 	Dialog,
 	DialogContent,
@@ -362,7 +362,8 @@ export const DownloadPage = () => {
 			if (confirmAction.type === "delete-selected") {
 				const selectedHistoryRecords = allRecords.filter(
 					(record) =>
-						confirmAction.ids.includes(record.id) && record.entryType === "history",
+						confirmAction.ids.includes(record.id) &&
+						record.entryType === "history",
 				);
 
 				if (alsoDeleteFiles) {

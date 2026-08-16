@@ -4,11 +4,8 @@
  * Each route is a 1:1 forward into the singleton `SubscriptionsApi`. The
  * server.ts wiring exposes this router under `/rpc/subscriptions/*`.
  */
-import { ORPCError, implement } from '@orpc/server'
-import {
-  SUBSCRIPTION_DUPLICATE_FEED_ERROR,
-  subscriptionContract
-} from '@vidbee/subscriptions-core'
+import { implement, ORPCError } from '@orpc/server'
+import { SUBSCRIPTION_DUPLICATE_FEED_ERROR, subscriptionContract } from '@vidbee/subscriptions-core'
 
 import { getApiSubscriptions, removeApiSubscription } from './subscriptions-host'
 

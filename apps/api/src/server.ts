@@ -163,7 +163,9 @@ export const createApiServer = async () => {
   })
   taskQueue.on('progress', (e) => {
     const t = taskQueue.get(e.taskId)
-    if (t) sseHub.publish('task-updated', { task: projectTaskForApi(t) })
+    if (t) {
+      sseHub.publish('task-updated', { task: projectTaskForApi(t) })
+    }
   })
   taskQueue.on('transition', (e) => {
     if (e.to === 'queued' || e.to === 'cancelled' || e.to === 'completed' || e.to === 'failed') {

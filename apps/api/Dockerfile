@@ -1,11 +1,12 @@
-FROM node:22-alpine
+FROM node:22-alpine AS builder
 
 ENV PNPM_HOME=/pnpm
 ENV PATH=${PNPM_HOME}:${PATH}
-ENV YTDLP_PATH=/usr/bin/yt-dlp
-ENV FFMPEG_PATH=/usr/bin/ffmpeg
 
-RUN apk add --no-cache yt-dlp ffmpeg python3 make g++
+RUN apk add --no-cache python3 make g++
+
+ENV ELECTRON_SKIP_BINARY_DOWNLOAD=1
+ENV HUSKY=0
 
 RUN corepack enable
 
@@ -21,26 +22,37 @@ COPY packages/subscriptions-core/package.json packages/subscriptions-core/packag
 RUN pnpm install --filter "{./apps/api}..." --frozen-lockfile
 
 COPY apps/api apps/api
-COPY apps/desktop/resources/drizzle apps/desktop/resources/drizzle
 COPY packages/db packages/db
 COPY packages/downloader-core packages/downloader-core
 COPY packages/task-queue packages/task-queue
 COPY packages/subscriptions-core packages/subscriptions-core
 
-EXPOSE 3100
+RUN pnpm --filter ./apps/api run build
+RUN pnpm --filter ./apps/api deploy --prod --legacy /prod/api
 
+FROM node:22-alpine AS runner
+
+ENV YTDLP_PATH=/usr/bin/yt-dlp
+ENV FFMPEG_PATH=/usr/bin/ffmpeg
 ENV VIDBEE_API_HOST=0.0.0.0
 ENV VIDBEE_API_PORT=3100
 ENV VIDBEE_DOWNLOAD_DIR=/data/downloads
-# Persistence is enabled by default so the `before-start` history migration
-# (legacy download_history → tasks) is actually visible at runtime, and so
-# crash-recovery works across container restarts. Mount /data/downloads as
-# a persistent volume in production (the Dockerfile already declares it).
-# To revert to the old stateless behavior set VIDBEE_PERSIST_QUEUE=0.
+ENV VIDBEE_MIGRATIONS_DIR=/app/resources/drizzle
 ENV VIDBEE_PERSIST_QUEUE=1
 
+RUN apk add --no-cache yt-dlp ffmpeg
+
+WORKDIR /app
+
+COPY --from=builder --chown=node:node /prod/api/node_modules ./node_modules
+COPY --from=builder --chown=node:node /app/apps/api/dist ./dist
+COPY --chown=node:node apps/desktop/resources/drizzle ./resources/drizzle
+
+RUN mkdir -p /data/downloads && chown -R node:node /data/downloads
+
+USER node
+
+EXPOSE 3100
 VOLUME ["/data/downloads"]
 
-# `before-start` runs migrate-history.ts (legacy download_history → tasks)
-# and then boots the API. The script is idempotent so re-runs are safe.
-CMD ["pnpm", "--filter", "./apps/api", "run", "before-start"]
+CMD ["sh", "-c", "node dist/migrate-history.js && exec node dist/index.js"]

@@ -10,14 +10,8 @@
 import type { PlaylistInfo, VideoInfo, VideoInfoCommandResult } from '../../shared/types'
 import { settingsManager } from '../settings'
 import { scopedLoggers } from '../utils/logger'
-import { resolvePathWithHome } from '../utils/path-helpers'
 import { createBoundedTextBuffer } from './bounded-output-buffer'
-import {
-  appendJsRuntimeArgs,
-  appendYouTubeSafeExtractorArgs,
-  buildVideoInfoArgs,
-  formatYtDlpCommand
-} from './command-utils'
+import { buildPlaylistInfoArgs, buildVideoInfoArgs, formatYtDlpCommand } from './command-utils'
 import { ytdlpManager } from './ytdlp-manager'
 
 const logger = scopedLoggers.download
@@ -149,33 +143,9 @@ const resolveEntryUrl = (entry: RawPlaylistEntry): string => {
   return entry.id ?? ''
 }
 
-const buildPlaylistArgs = (url: string): string[] => {
-  const settings = settingsManager.getAll()
-  const args: string[] = ['-J', '--flat-playlist', '--no-warnings', '--encoding', 'utf-8']
-  if (settings.proxy) {
-    args.push('--proxy', settings.proxy)
-  }
-  if (settings.browserForCookies && settings.browserForCookies !== 'none') {
-    args.push('--cookies-from-browser', settings.browserForCookies)
-  }
-  const cookiesPath = settings.cookiesPath?.trim()
-  if (cookiesPath) {
-    args.push('--cookies', cookiesPath)
-  }
-  const configPath = resolvePathWithHome(settings.configPath)
-  if (configPath) {
-    args.push('--config-location', configPath)
-  } else {
-    appendYouTubeSafeExtractorArgs(args, url)
-  }
-  appendJsRuntimeArgs(args)
-  args.push(url)
-  return args
-}
-
 export const fetchPlaylistInfo = async (url: string): Promise<PlaylistInfo> => {
   const ytdlp = ytdlpManager.getInstance()
-  const args = buildPlaylistArgs(url)
+  const args = buildPlaylistInfoArgs(url, settingsManager.getAll())
   return new Promise<PlaylistInfo>((resolve, reject) => {
     const proc = ytdlp.exec(args)
     const stdout = createBoundedTextBuffer()

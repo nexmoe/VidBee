@@ -5,17 +5,13 @@
  */
 import { execSync, spawn } from 'node:child_process'
 import fs from 'node:fs'
-
-import {
-  buildPlaylistInfoArgs,
-  buildVideoInfoArgs
-} from '@vidbee/downloader-core'
 import type {
   DownloadRuntimeSettings,
   PlaylistInfo,
   VideoFormat,
   VideoInfo
 } from '@vidbee/downloader-core'
+import { buildPlaylistInfoArgs, buildVideoInfoArgs } from '@vidbee/downloader-core'
 
 interface RawVideoInfo {
   id?: string
@@ -66,7 +62,9 @@ interface RawPlaylistInfo {
 
 const trim = (v?: string | null): string => v?.trim() ?? ''
 const optString = (v: unknown): string | undefined => {
-  if (typeof v !== 'string') return undefined
+  if (typeof v !== 'string') {
+    return undefined
+  }
   const t = v.trim()
   return t.length ? t : undefined
 }
@@ -74,7 +72,9 @@ const optNumber = (v: unknown): number | undefined =>
   typeof v === 'number' && !Number.isNaN(v) ? v : undefined
 
 const optStringArray = (v: unknown): string[] | undefined => {
-  if (!Array.isArray(v)) return undefined
+  if (!Array.isArray(v)) {
+    return undefined
+  }
   const list = v
     .filter((e): e is string => typeof e === 'string')
     .map((e) => e.trim())
@@ -83,7 +83,9 @@ const optStringArray = (v: unknown): string[] | undefined => {
 }
 
 const isHttpUrl = (v?: string | null): boolean => {
-  if (!v) return false
+  if (!v) {
+    return false
+  }
   try {
     const u = new URL(v)
     return u.protocol === 'http:' || u.protocol === 'https:'
@@ -93,21 +95,33 @@ const isHttpUrl = (v?: string | null): boolean => {
 }
 
 const resolveEntryUrl = (entry: RawPlaylistEntry): string | undefined => {
-  if (isHttpUrl(entry.url)) return optString(entry.url)
-  if (isHttpUrl(entry.webpage_url)) return optString(entry.webpage_url)
-  if (isHttpUrl(entry.original_url)) return optString(entry.original_url)
+  if (isHttpUrl(entry.url)) {
+    return optString(entry.url)
+  }
+  if (isHttpUrl(entry.webpage_url)) {
+    return optString(entry.webpage_url)
+  }
+  if (isHttpUrl(entry.original_url)) {
+    return optString(entry.original_url)
+  }
   if (entry.url) {
     const id = entry.url.trim()
     const ie = entry.ie_key?.toLowerCase() ?? ''
-    if (ie.includes('youtube')) return `https://www.youtube.com/watch?v=${id}`
-    if (ie.includes('youtubemusic')) return `https://music.youtube.com/watch?v=${id}`
+    if (ie.includes('youtube')) {
+      return `https://www.youtube.com/watch?v=${id}`
+    }
+    if (ie.includes('youtubemusic')) {
+      return `https://music.youtube.com/watch?v=${id}`
+    }
   }
   return undefined
 }
 
 let cachedYtDlpPath: string | null = null
 const resolveYtDlpPath = (): string => {
-  if (cachedYtDlpPath && fs.existsSync(cachedYtDlpPath)) return cachedYtDlpPath
+  if (cachedYtDlpPath && fs.existsSync(cachedYtDlpPath)) {
+    return cachedYtDlpPath
+  }
   const env = trim(process.env.YTDLP_PATH)
   if (env && fs.existsSync(env)) {
     cachedYtDlpPath = env
@@ -145,8 +159,11 @@ const runYtDlp = (args: string[]): Promise<string> =>
     })
     child.once('error', reject)
     child.once('close', (code) => {
-      if (code === 0 && stdout.trim()) resolve(stdout)
-      else reject(new Error(stderr.trim() || `yt-dlp exited with code ${code ?? -1}`))
+      if (code === 0 && stdout.trim()) {
+        resolve(stdout)
+      } else {
+        reject(new Error(stderr.trim() || `yt-dlp exited with code ${code ?? -1}`))
+      }
     })
   })
 
@@ -158,7 +175,9 @@ const parseVideoInfoPayload = (stdout: string): RawVideoInfo => {
       .split(/\r?\n/)
       .map((line) => line.trim())
       .find((line) => line.startsWith('{') || line.startsWith('['))
-    if (!firstLine) throw err
+    if (!firstLine) {
+      throw err
+    }
     return JSON.parse(firstLine) as RawVideoInfo
   }
 }
@@ -168,7 +187,9 @@ export async function fetchVideoInfo(
   settings: DownloadRuntimeSettings = {}
 ): Promise<VideoInfo> {
   const target = url.trim()
-  if (!target) throw new Error('URL is required.')
+  if (!target) {
+    throw new Error('URL is required.')
+  }
   const args = buildVideoInfoArgs(target, settings)
   const stdout = await runYtDlp(args)
   const raw = parseVideoInfoPayload(stdout)
@@ -210,7 +231,9 @@ export async function fetchPlaylistInfo(
   settings: DownloadRuntimeSettings = {}
 ): Promise<PlaylistInfo> {
   const target = url.trim()
-  if (!target) throw new Error('URL is required.')
+  if (!target) {
+    throw new Error('URL is required.')
+  }
   const args = buildPlaylistInfoArgs(target, settings)
   const stdout = await runYtDlp(args)
   const raw = JSON.parse(stdout) as RawPlaylistInfo
@@ -218,7 +241,9 @@ export async function fetchPlaylistInfo(
   const entries = rawEntries
     .map((entry, index) => {
       const resolvedUrl = resolveEntryUrl(entry)
-      if (!resolvedUrl) return null
+      if (!resolvedUrl) {
+        return null
+      }
       return {
         id: optString(entry.id) ?? `${index + 1}`,
         title: optString(entry.title) ?? `Entry ${index + 1}`,

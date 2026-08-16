@@ -11,8 +11,6 @@
  * Reference: NEX-131 issue body §A; design doc §5 / §10.
  */
 import { existsSync, statSync } from 'node:fs'
-import { createRequire } from 'node:module'
-
 import type {
   ClassifiedError,
   Executor,
@@ -23,15 +21,12 @@ import type {
   TaskOutput,
   TaskProgress
 } from '@vidbee/task-queue'
-import { killProcessTree } from '@vidbee/task-queue/process'
 import { virtualError } from '@vidbee/task-queue'
-
-import type { DownloadRuntimeSettings } from './types'
+import { killProcessTree } from '@vidbee/task-queue/process'
+import YTDlpWrap from 'yt-dlp-wrap-plus'
 import type { OneClickContainerOption } from './format-preferences'
-import { buildDownloadArgs, formatYtDlpCommand } from './yt-dlp-args'
-
-const require = createRequire(import.meta.url)
-const YTDlpWrapModule = require('yt-dlp-wrap-plus')
+import type { DownloadRuntimeSettings } from './types'
+import { buildDownloadArgs, formatYtDlpCommand, VIDBEE_OUTPUT_PATH_PREFIX } from './yt-dlp-args'
 
 interface YtDlpExecProcess {
   ytDlpProcess?: {
@@ -52,7 +47,7 @@ interface YtDlpWrapInstance {
 }
 
 type YtDlpWrapConstructor = new (binaryPath: string) => YtDlpWrapInstance
-const YTDlpWrapCtor = (YTDlpWrapModule.default ?? YTDlpWrapModule) as YtDlpWrapConstructor
+const YTDlpWrapCtor = YTDlpWrap as unknown as YtDlpWrapConstructor
 
 interface ProgressPayload {
   percent?: number
@@ -131,6 +126,7 @@ export interface YtDlpExecutorOptions {
 const DEFAULT_KILL_GRACE_MS = 10_000
 const STDOUT_TAIL_BYTES = 8 * 1024
 const STDERR_TAIL_BYTES = 8 * 1024
+const OUTPUT_PATH_SCAN_BYTES = 4 * 1024
 const PROCESSING_DETECT_PATTERNS = [
   /\bMerging formats?\b/i,
   /^\[Postprocess\]/m,
@@ -178,9 +174,22 @@ export class YtDlpExecutor implements Executor {
     // body so it can fall outside the 8KB stdout tail; we sniff streaming
     // chunks instead and keep the last value across the whole run.
     let formatIdSeen: string | undefined
+    let filePathSeen: string | undefined
+    let outputPathProbe = ''
+
+    /** Preserve complete path signals even after the persisted log tail rolls over. */
+    const captureOutputPath = (text: string): void => {
+      outputPathProbe = `${outputPathProbe}${text}`.slice(-OUTPUT_PATH_SCAN_BYTES)
+      const filePath = extractSavedFilePath(outputPathProbe)
+      if (filePath) {
+        filePathSeen = filePath
+      }
+    }
 
     const finishOnce = (e: Parameters<ExecutorEvents['onFinish']>[0]) => {
-      if (settled) return
+      if (settled) {
+        return
+      }
       settled = true
       if (killTimer) {
         clearTimeout(killTimer)
@@ -278,6 +287,7 @@ export class YtDlpExecutor implements Executor {
     const pumpStdoutPostprocess = (chunk: Buffer): void => {
       const text = chunk.toString()
       stdoutTail.append(text)
+      captureOutputPath(text)
       if (!postprocessSeen && hasPostprocessSignal(text)) {
         postprocessSeen = true
       }
@@ -290,6 +300,7 @@ export class YtDlpExecutor implements Executor {
     const pumpStderrPostprocess = (chunk: Buffer): void => {
       const text = chunk.toString()
       stderrTail.append(text)
+      captureOutputPath(text)
       if (!postprocessSeen && hasPostprocessSignal(text)) {
         postprocessSeen = true
       }
@@ -339,7 +350,7 @@ export class YtDlpExecutor implements Executor {
         return
       }
       if (code === 0) {
-        const filePath = extractSavedFilePath(stdout) || ''
+        const filePath = filePathSeen ?? extractSavedFilePath(`${stdout}\n${stderr}`) ?? ''
         // Stat the produced file so the kernel's processing→completed guard
         // (size > 0) sees real bytes and downstream projections (history UI,
         // SSE events, CLI envelope) report the correct file size. statSync
@@ -348,7 +359,9 @@ export class YtDlpExecutor implements Executor {
         let realSize = 0
         if (filePath) {
           try {
-            if (existsSync(filePath)) realSize = statSync(filePath).size
+            if (existsSync(filePath)) {
+              realSize = statSync(filePath).size
+            }
           } catch {
             // ignore — kernel guard will demote to failed('output-missing')
           }
@@ -409,7 +422,9 @@ export class YtDlpExecutor implements Executor {
     })
 
     const cancel = async (timeout?: number): Promise<void> => {
-      if (settled) return
+      if (settled) {
+        return
+      }
       cancelRequested = true
       const grace = timeout ?? this.opts.killGraceMs
       try {
@@ -422,7 +437,9 @@ export class YtDlpExecutor implements Executor {
       } catch {
         /* noop */
       }
-      if (killTimer) clearTimeout(killTimer)
+      if (killTimer) {
+        clearTimeout(killTimer)
+      }
       if (grace > 0) {
         killTimer = setTimeout(() => {
           try {
@@ -447,7 +464,9 @@ export class YtDlpExecutor implements Executor {
   }
 
   private buildArgsFor(input: TaskInput): string[] {
-    if (this.opts.buildArgs) return this.opts.buildArgs(input, this.opts.defaultDownloadDir)
+    if (this.opts.buildArgs) {
+      return this.opts.buildArgs(input, this.opts.defaultDownloadDir)
+    }
     if (input.rawArgs && input.rawArgs.length > 0) {
       return [...input.rawArgs]
     }
@@ -488,7 +507,9 @@ export class YtDlpExecutor implements Executor {
   }
 
   private getYtDlp(binaryPath: string): YtDlpWrapInstance {
-    if (this.cachedYtDlp && this.cachedYtDlpPath === binaryPath) return this.cachedYtDlp
+    if (this.cachedYtDlp && this.cachedYtDlpPath === binaryPath) {
+      return this.cachedYtDlp
+    }
     this.cachedYtDlp = new YTDlpWrapCtor(binaryPath)
     this.cachedYtDlpPath = binaryPath
     return this.cachedYtDlp
@@ -509,7 +530,9 @@ function makeNoopRun(): ExecutorRun {
 function insertFfmpegLocation(args: string[], ffmpegLocation: string): void {
   const urlArg = args.pop()
   args.push('--ffmpeg-location', ffmpegLocation)
-  if (urlArg !== undefined) args.push(urlArg)
+  if (urlArg !== undefined) {
+    args.push(urlArg)
+  }
 }
 
 function mapProgress(payload: ProgressPayload): TaskProgress {
@@ -528,11 +551,17 @@ function mapProgress(payload: ProgressPayload): TaskProgress {
 }
 
 function parseSize(value: string | undefined): number | null {
-  if (!value) return null
+  if (!value) {
+    return null
+  }
   const m = /([0-9]+(?:\.[0-9]+)?)\s*(B|KB|KiB|MB|MiB|GB|GiB|TB|TiB)/i.exec(value)
-  if (!m) return null
+  if (!m) {
+    return null
+  }
   const n = Number.parseFloat(m[1] ?? '')
-  if (!Number.isFinite(n)) return null
+  if (!Number.isFinite(n)) {
+    return null
+  }
   const unit = (m[2] ?? 'B').toLowerCase()
   const factor =
     unit === 'kb' || unit === 'kib'
@@ -548,19 +577,29 @@ function parseSize(value: string | undefined): number | null {
 }
 
 function parseSpeed(value: string | undefined): number | null {
-  if (!value) return null
+  if (!value) {
+    return null
+  }
   const cleaned = value.replace(/\/s$/i, '').trim()
   return parseSize(cleaned)
 }
 
 function parseEtaMs(value: string | undefined): number | null {
-  if (!value) return null
+  if (!value) {
+    return null
+  }
   const trimmed = value.trim()
-  if (!trimmed || trimmed === 'Unknown') return null
+  if (!trimmed || trimmed === 'Unknown') {
+    return null
+  }
   const parts = trimmed.split(':').map((p) => Number.parseInt(p, 10))
-  if (parts.some((n) => !Number.isFinite(n))) return null
+  if (parts.some((n) => !Number.isFinite(n))) {
+    return null
+  }
   let seconds = 0
-  for (const p of parts) seconds = seconds * 60 + p
+  for (const p of parts) {
+    seconds = seconds * 60 + p
+  }
   return seconds * 1000
 }
 
@@ -576,37 +615,58 @@ function hasPostprocessSignal(text: string): boolean {
  */
 function extractFormatId(rawLog: string): string | undefined {
   const log = rawLog.trim()
-  if (!log) return undefined
+  if (!log) {
+    return undefined
+  }
   // [info] BV...: Downloading 1 format(s): 30080+30280
   const re = /Downloading\s+\d+\s+format\(s\):\s+([^\r\n]+)/gi
   const matches = Array.from(log.matchAll(re))
   const last = matches.at(-1)
   const value = last?.[1]?.trim()
-  if (!value) return undefined
+  if (!value) {
+    return undefined
+  }
   return value
 }
 
 function extractSavedFilePath(rawLog: string): string | undefined {
   const log = rawLog.trim()
-  if (!log) return undefined
-  const patterns = [
+  if (!log) {
+    return undefined
+  }
+  const patterns: RegExp[] = [
+    new RegExp(`^${VIDBEE_OUTPUT_PATH_PREFIX}(.+)$`, 'gm'),
     /Merging formats into "([^"]+)"/g,
     /Destination:\s+"([^"]+)"/g,
     /Destination:\s+'([^']+)'/g,
-    /\[download\]\s+([^\r\n]+?)\s+has already been downloaded/g
+    /\[download\]\s+([^\r\n]+?)\s+has already been downloaded/g,
+    /\[MoveFiles\]\s+Moving file "[^"]+" to "([^"]+)"/g,
+    /\[(?:EmbedSubtitle|EmbedThumbnail|FixupM3u8|Metadata)\].*?"([^"]+)"/g,
+    /\[(?:ExtractAudio|VideoConvertor|VideoRemuxer)\].*?\bto "([^"]+)"/g
   ]
+  let latestMatchIndex = -1
+  let latestCandidate: string | undefined
   for (const re of patterns) {
-    const matches = Array.from(log.matchAll(re))
-    const last = matches.at(-1)
-    const candidate = last?.[1]?.trim()
-    if (candidate) return candidate
+    for (const match of log.matchAll(re)) {
+      const candidate = match[1]?.trim()
+      const matchIndex = match.index ?? -1
+      if (candidate && matchIndex >= latestMatchIndex) {
+        latestMatchIndex = matchIndex
+        latestCandidate = candidate
+      }
+    }
+  }
+  if (latestCandidate) {
+    return latestCandidate
   }
   const lines = log.split(/\r?\n/).reverse()
   for (const line of lines) {
     const idx = line.indexOf('Destination:')
     if (idx >= 0) {
       const candidate = line.slice(idx + 'Destination:'.length).trim()
-      if (candidate) return candidate
+      if (candidate) {
+        return candidate
+      }
     }
   }
   return undefined
@@ -619,22 +679,30 @@ function extractSavedFilePath(rawLog: string): string | undefined {
  */
 function classifyYtDlpExit(exitCode: number | null, stderr: string): ClassifiedError {
   const txt = stderr.toLowerCase()
-  if (/(http error 429|too many requests|rate.?limit)/.test(txt))
+  if (/(http error 429|too many requests|rate.?limit)/.test(txt)) {
     return virtualError('http-429', stderr || `yt-dlp exited ${exitCode}`)
-  if (/(login required|requires (?:cookies|authentication)|sign in to confirm)/.test(txt))
+  }
+  if (/(login required|requires (?:cookies|authentication)|sign in to confirm)/.test(txt)) {
     return virtualError('auth-required', stderr || `yt-dlp exited ${exitCode}`)
-  if (/(not available in your country|geo.?restricted|geographic)/.test(txt))
+  }
+  if (/(not available in your country|geo.?restricted|geographic)/.test(txt)) {
     return virtualError('geo-blocked', stderr || `yt-dlp exited ${exitCode}`)
-  if (/(video unavailable|not found|404)/.test(txt))
+  }
+  if (/(video unavailable|not found|404)/.test(txt)) {
     return virtualError('not-found', stderr || `yt-dlp exited ${exitCode}`)
-  if (/(no space left|disk full|enospc)/.test(txt))
+  }
+  if (/(no space left|disk full|enospc)/.test(txt)) {
     return virtualError('disk-full', stderr || `yt-dlp exited ${exitCode}`)
-  if (/(permission denied|eacces)/.test(txt))
+  }
+  if (/(permission denied|eacces)/.test(txt)) {
     return virtualError('permission-denied', stderr || `yt-dlp exited ${exitCode}`)
-  if (/(ffmpeg|ffprobe)/.test(txt))
+  }
+  if (/(ffmpeg|ffprobe)/.test(txt)) {
     return virtualError('ffmpeg', stderr || `yt-dlp exited ${exitCode}`)
-  if (/(network|timeout|econnreset|enotfound|ehostunreach)/.test(txt))
+  }
+  if (/(network|timeout|econnreset|enotfound|ehostunreach)/.test(txt)) {
     return virtualError('network-transient', stderr || `yt-dlp exited ${exitCode}`)
+  }
   return virtualError('unknown', stderr || `yt-dlp exited with code ${exitCode ?? -1}`)
 }
 
@@ -660,4 +728,4 @@ function createTailBuffer(maxBytes: number): TailBuffer {
 }
 
 // Re-export types adapters need to wire host-specific args building.
-export type { TaskInput, ExecutorContext, ExecutorEvents, ExecutorRun }
+export type { ExecutorContext, ExecutorEvents, ExecutorRun, TaskInput }

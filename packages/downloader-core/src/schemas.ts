@@ -98,24 +98,13 @@ export const DownloadRuntimeSettingsSchema = z.object({
   embedSubs: z.boolean().optional(),
   embedThumbnail: z.boolean().optional(),
   embedMetadata: z.boolean().optional(),
-  embedChapters: z.boolean().optional()
+  embedChapters: z.boolean().optional(),
+  shareWatermark: z.boolean().optional()
 })
 
-export const OneClickQualityPresetSchema = z.enum([
-  'best',
-  'good',
-  'normal',
-  'bad',
-  'worst'
-])
+export const OneClickQualityPresetSchema = z.enum(['best', 'good', 'normal', 'bad', 'worst'])
 
-export const OneClickContainerOptionSchema = z.enum([
-  'auto',
-  'mp4',
-  'mkv',
-  'webm',
-  'original'
-])
+export const OneClickContainerOptionSchema = z.enum(['auto', 'mp4', 'mkv', 'webm', 'original'])
 
 export const ThemeValueSchema = z.enum(['light', 'dark', 'system'])
 

@@ -19,6 +19,7 @@ import {
 	SelectValue,
 } from "@vidbee/ui/components/ui/select";
 import { Separator } from "@vidbee/ui/components/ui/separator";
+import { TimeRangeOptions } from "@vidbee/ui/components/ui/time-range-options";
 import { cn } from "@vidbee/ui/lib/cn";
 import { AlertCircle, ExternalLink, Loader2, Settings2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -31,6 +32,8 @@ export interface SingleVideoState {
 	activeTab: "video" | "audio";
 	selectedVideoFormat: string;
 	selectedAudioFormat: string;
+	startTime: string;
+	endTime: string;
 	selectedContainer?: string;
 	selectedCodec?: string;
 	selectedFps?: string;
@@ -478,8 +481,15 @@ export function SingleVideoDownload({
 	const { t } = useTranslation();
 	const [showAdvanced, setShowAdvanced] = useState(false);
 
-	const { title, activeTab, selectedContainer, selectedCodec, selectedFps } =
-		state;
+	const {
+		title,
+		activeTab,
+		selectedContainer,
+		selectedCodec,
+		selectedFps,
+		startTime,
+		endTime,
+	} = state;
 	const displayTitle =
 		title || videoInfo?.title || t("download.fetchingVideoInfo");
 
@@ -759,12 +769,14 @@ export function SingleVideoDownload({
 								</div>
 
 								<Button
+									aria-label={t("advancedOptions.title")}
 									className={cn(
 										"h-6 w-6 rounded-full p-0 font-normal text-muted-foreground transition-colors hover:bg-muted",
 										showAdvanced && "bg-muted text-foreground",
 									)}
 									onClick={() => setShowAdvanced(!showAdvanced)}
 									size="sm"
+									title={t("advancedOptions.title")}
 									variant="ghost"
 								>
 									<Settings2 className="h-4 w-4" />
@@ -873,6 +885,16 @@ export function SingleVideoDownload({
 											</Select>
 										</div>
 									)}
+									<TimeRangeOptions
+										endTime={endTime}
+										onEndTimeChange={(value) =>
+											onStateChange({ endTime: value })
+										}
+										onStartTimeChange={(value) =>
+											onStateChange({ startTime: value })
+										}
+										startTime={startTime}
+									/>
 								</div>
 							</div>
 						</div>

@@ -46,9 +46,7 @@ const trim = (v?: string | null): string | undefined => {
 
 const DEFAULT_DOWNLOAD_DIR = path.join(os.homedir(), 'Downloads', 'VidBee')
 const downloadDir =
-  trim(process.env.VIDBEE_DOWNLOAD_DIR) ??
-  trim(process.env.DOWNLOAD_DIR) ??
-  DEFAULT_DOWNLOAD_DIR
+  trim(process.env.VIDBEE_DOWNLOAD_DIR) ?? trim(process.env.DOWNLOAD_DIR) ?? DEFAULT_DOWNLOAD_DIR
 
 const legacyDbPath =
   trim(process.env.VIDBEE_HISTORY_STORE_PATH) ?? path.join(downloadDir, '.vidbee', 'vidbee.db')
@@ -95,7 +93,9 @@ const TERMINAL_LEGACY: Record<string, TaskStatus | undefined> = {
 
 function rowToTask(row: LegacyHistoryRow): Task | null {
   const status = TERMINAL_LEGACY[row.status]
-  if (!status) return null
+  if (!status) {
+    return null
+  }
 
   const filePath =
     row.download_path && row.saved_file_name
@@ -107,7 +107,7 @@ function rowToTask(row: LegacyHistoryRow): Task | null {
       ? {
           filePath,
           size: row.file_size ?? 0,
-          durationMs: row.duration != null ? row.duration * 1000 : null,
+          durationMs: row.duration == null ? null : row.duration * 1000,
           sha256: null
         }
       : null
@@ -182,7 +182,9 @@ function rowToTask(row: LegacyHistoryRow): Task | null {
 }
 
 function parseTags(value: string | null): string[] | undefined {
-  if (!value) return undefined
+  if (!value) {
+    return undefined
+  }
   const tags = value
     .split('\n')
     .map((s) => s.trim())
@@ -271,9 +273,7 @@ async function main(): Promise<void> {
   if (!tableCheck?.name) {
     // eslint-disable-next-line no-console
     console.log('[migrate-history] legacy download_history table not present; nothing to do.')
-    queueDb
-      .prepare("DELETE FROM schema_meta WHERE key = 'migration_in_progress'")
-      .run()
+    queueDb.prepare("DELETE FROM schema_meta WHERE key = 'migration_in_progress'").run()
     legacyDb.close()
     queueDb.close()
     return
@@ -297,7 +297,9 @@ async function main(): Promise<void> {
     let imported = 0
     for (const task of tasks) {
       const result = insertOrSkip.run(...bindTask(task))
-      if (result.changes > 0) imported += 1
+      if (result.changes > 0) {
+        imported += 1
+      }
     }
     return imported
   })
@@ -321,17 +323,13 @@ async function main(): Promise<void> {
   } catch (err) {
     // Roll back the migration marker; leave already-imported rows alone (the
     // unique-id INSERT is idempotent and re-running picks up where we stopped).
-    queueDb
-      .prepare("DELETE FROM schema_meta WHERE key = 'migration_in_progress'")
-      .run()
+    queueDb.prepare("DELETE FROM schema_meta WHERE key = 'migration_in_progress'").run()
     legacyDb.close()
     queueDb.close()
     throw err
   }
 
-  queueDb
-    .prepare("DELETE FROM schema_meta WHERE key = 'migration_in_progress'")
-    .run()
+  queueDb.prepare("DELETE FROM schema_meta WHERE key = 'migration_in_progress'").run()
 
   // Best-effort rename to mark the legacy DB as migrated. Container hosts
   // can pre-bind the mount as read-only; ignore EROFS.

@@ -3,6 +3,7 @@ import os from 'node:os'
 import path from 'node:path'
 import type { AppSettings } from '../shared/types'
 import { defaultSettings } from '../shared/types'
+import { resolveStartupDownloadPath } from './lib/download-path-policy'
 import {
   getPortableDownloadsPath,
   isPortableMode,
@@ -24,26 +25,6 @@ const ensureDirectoryExists = (dir: string) => {
   } catch (error) {
     scopedLoggers.system.error('Failed to ensure download directory:', error)
   }
-}
-
-const isPathInsideOrEqual = (candidate: string, root: string): boolean => {
-  if (!(candidate && root)) {
-    return false
-  }
-
-  const relativePath = path.relative(path.resolve(root), path.resolve(candidate))
-  return (
-    relativePath === '' ||
-    (!!relativePath && !relativePath.startsWith('..') && !path.isAbsolute(relativePath))
-  )
-}
-
-const remapFromPreviousPortableRoot = (candidate: string): string => {
-  if (!(previousPortableRoot && isPathInsideOrEqual(candidate, previousPortableRoot))) {
-    return ''
-  }
-
-  return path.join(portableRoot, path.relative(previousPortableRoot, candidate))
 }
 
 const resolveDefaultDownloadPath = () => {
@@ -149,20 +130,14 @@ class SettingsManager {
   private ensureDownloadDirectory(): void {
     try {
       const currentPath: string | undefined = this.store.get('downloadPath')
-      let normalizedDownloadPath = currentPath || DEFAULT_DOWNLOAD_PATH
-
-      if (!currentPath || currentPath === OLD_DEFAULT_DOWNLOAD_PATH) {
-        normalizedDownloadPath = DEFAULT_DOWNLOAD_PATH
-      } else if (isPortableMode) {
-        // Only remap a path that lived inside the previous portable root (e.g. the
-        // portable folder was moved to a new drive). Any other explicitly chosen
-        // location is kept as-is: resetting external paths to the default here
-        // silently discarded the user's save location on every restart (#427).
-        const remappedPath = remapFromPreviousPortableRoot(currentPath)
-        if (remappedPath) {
-          normalizedDownloadPath = remappedPath
-        }
-      }
+      const normalizedDownloadPath = resolveStartupDownloadPath({
+        currentPath,
+        defaultPath: DEFAULT_DOWNLOAD_PATH,
+        oldDefaultPath: OLD_DEFAULT_DOWNLOAD_PATH,
+        portableMode: isPortableMode,
+        portableRoot,
+        previousPortableRoot
+      })
 
       if (normalizedDownloadPath !== currentPath) {
         this.store.set('downloadPath', normalizedDownloadPath)

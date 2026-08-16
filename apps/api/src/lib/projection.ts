@@ -5,9 +5,10 @@
  * projection — Desktop carries some of the same fields but renders them
  * differently.
  */
-import { projectTaskToLegacy } from '@vidbee/task-queue'
-import type { Task } from '@vidbee/task-queue'
+
 import type { DownloadTask } from '@vidbee/downloader-core'
+import type { Task } from '@vidbee/task-queue'
+import { projectTaskToLegacy } from '@vidbee/task-queue'
 
 export function projectTaskForApi(task: Readonly<Task>): DownloadTask {
   const proj = projectTaskToLegacy(task)

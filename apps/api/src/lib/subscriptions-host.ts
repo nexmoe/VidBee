@@ -22,10 +22,10 @@ import path from 'node:path'
 
 import { SUBSCRIPTIONS_DDL_V1 } from '@vidbee/db/subscriptions'
 import {
-  RssParserFeedFetcher,
-  SubscriptionsApi,
   createSqliteMetaStore,
-  createSqliteSubscriptionsStore
+  createSqliteSubscriptionsStore,
+  RssParserFeedFetcher,
+  SubscriptionsApi
 } from '@vidbee/subscriptions-core'
 import { drizzle } from 'drizzle-orm/better-sqlite3'
 
@@ -40,7 +40,9 @@ const trimEnv = (name: string): string | undefined => {
 
 const resolveDbPath = (): string => {
   const override = trimEnv('VIDBEE_SUBSCRIPTIONS_DB')
-  if (override) return override
+  if (override) {
+    return override
+  }
   return path.join(apiDefaultDownloadDir, '.vidbee', 'subscriptions.db')
 }
 
@@ -55,7 +57,9 @@ let started = false
  * inside one process's transaction, not split across re-opened handles.
  */
 export const getApiSubscriptions = (): SubscriptionsApi => {
-  if (api) return api
+  if (api) {
+    return api
+  }
   const dbPath = resolveDbPath()
   fs.mkdirSync(path.dirname(dbPath), { recursive: true })
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -82,7 +86,7 @@ export const getApiSubscriptions = (): SubscriptionsApi => {
           url: item.url,
           kind: 'subscription-item',
           title: item.title,
-          ...(item.thumbnail !== undefined ? { thumbnail: item.thumbnail } : {}),
+          ...(item.thumbnail === undefined ? {} : { thumbnail: item.thumbnail }),
           subscriptionId: subscription.id,
           options: {
             origin: 'subscription',
@@ -106,22 +110,30 @@ export const getApiSubscriptions = (): SubscriptionsApi => {
       // The API uses fastify's logger via stdout; emit through console here
       // so the message lands in the same stream without binding to fastify.
       const line = meta === undefined ? msg : `${msg} ${JSON.stringify(meta)}`
-      if (level === 'error') console.error(`subscriptions: ${line}`)
-      else if (level === 'warn') console.warn(`subscriptions: ${line}`)
-      else console.info(`subscriptions: ${line}`)
+      if (level === 'error') {
+        console.error(`subscriptions: ${line}`)
+      } else if (level === 'warn') {
+        console.warn(`subscriptions: ${line}`)
+      } else {
+        console.info(`subscriptions: ${line}`)
+      }
     }
   })
   return api
 }
 
 export const startApiSubscriptions = async (): Promise<void> => {
-  if (started) return
+  if (started) {
+    return
+  }
   await getApiSubscriptions().start()
   started = true
 }
 
 export const stopApiSubscriptions = async (): Promise<void> => {
-  if (!started) return
+  if (!started) {
+    return
+  }
   await api?.stop()
   started = false
 }

@@ -101,6 +101,7 @@ export interface DownloadRuntimeSettings {
   embedThumbnail?: boolean
   embedMetadata?: boolean
   embedChapters?: boolean
+  shareWatermark?: boolean
 }
 
 export interface VideoInfoInput {

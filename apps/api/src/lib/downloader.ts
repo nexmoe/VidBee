@@ -8,6 +8,7 @@
  * stateless `fetchVideoInfo` / `fetchPlaylistInfo` helpers in
  * `./yt-dlp-info.ts`.
  */
+// biome-ignore lint/performance/noBarrelFile: This module is the backward-compatible API facade.
 export {
   apiDefaultDownloadDir as downloadDir,
   apiMaxConcurrent as maxConcurrent,

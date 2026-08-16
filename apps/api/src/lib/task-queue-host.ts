@@ -19,14 +19,9 @@ import fs from 'node:fs'
 import { createRequire } from 'node:module'
 import os from 'node:os'
 import path from 'node:path'
-
-import {
-  MemoryPersistAdapter,
-  SqlitePersistAdapter,
-  TaskQueueAPI
-} from '@vidbee/task-queue'
 import { TASK_QUEUE_DDL_V1 } from '@vidbee/db/task-queue'
 import { YtDlpExecutor } from '@vidbee/downloader-core'
+import { MemoryPersistAdapter, SqlitePersistAdapter, TaskQueueAPI } from '@vidbee/task-queue'
 
 const require = createRequire(import.meta.url)
 
@@ -53,7 +48,9 @@ fs.mkdirSync(apiDefaultDownloadDir, { recursive: true })
 
 let cachedYtDlpPath: string | null = null
 const resolveYtDlpPath = (): string => {
-  if (cachedYtDlpPath && fs.existsSync(cachedYtDlpPath)) return cachedYtDlpPath
+  if (cachedYtDlpPath && fs.existsSync(cachedYtDlpPath)) {
+    return cachedYtDlpPath
+  }
   const envPath = trimEnv('YTDLP_PATH')
   if (envPath && fs.existsSync(envPath)) {
     cachedYtDlpPath = envPath
@@ -81,7 +78,9 @@ const resolveYtDlpPath = (): string => {
 
 let cachedFfmpegLocation: string | null | undefined
 const resolveFfmpegLocation = (): string | undefined => {
-  if (cachedFfmpegLocation !== undefined) return cachedFfmpegLocation ?? undefined
+  if (cachedFfmpegLocation !== undefined) {
+    return cachedFfmpegLocation ?? undefined
+  }
   const envPath = trimEnv('FFMPEG_PATH')
   if (envPath) {
     try {
@@ -114,7 +113,9 @@ const executor = new YtDlpExecutor({
 })
 
 const buildPersistAdapter = () => {
-  if (!persistEnabled) return new MemoryPersistAdapter()
+  if (!persistEnabled) {
+    return new MemoryPersistAdapter()
+  }
   fs.mkdirSync(path.dirname(taskQueueDbPath), { recursive: true })
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const Database = require('better-sqlite3') as typeof import('better-sqlite3')
@@ -143,13 +144,17 @@ export const taskQueueExecutor = executor
 
 let started = false
 export const startTaskQueue = async (): Promise<void> => {
-  if (started) return
+  if (started) {
+    return
+  }
   await taskQueue.start()
   started = true
 }
 
 export const stopTaskQueue = async (): Promise<void> => {
-  if (!started) return
+  if (!started) {
+    return
+  }
   await taskQueue.stop()
   started = false
 }

@@ -11,7 +11,8 @@ services:
     ports:
       - "${VIDBEE_API_PORT:-3100}:${VIDBEE_API_PORT:-3100}"
     volumes:
-      - vidbee-downloads:/data/downloads
+      # Set VIDBEE_DOWNLOAD_DIR_HOST=/path/on/your/NAS to use a bind mount.
+      - ${VIDBEE_DOWNLOAD_DIR_HOST:-vidbee-downloads}:/data/downloads
       - vidbee-data:/data/vidbee
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:${VIDBEE_API_PORT:-3100}/health > /dev/null || exit 1"]
@@ -25,9 +26,10 @@ services:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
-      args:
-        VITE_API_URL: ${VITE_API_URL:-http://localhost:${VIDBEE_API_PORT:-3100}}
     environment:
+      VIDBEE_API_URL_INTERNAL: http://api:${VIDBEE_API_PORT:-3100}
+      VIDBEE_WEB_HOST: 0.0.0.0
+      VIDBEE_WEB_PORT: 3000
       # Self-hosting behind a reverse proxy? Allow your domain through Vite's
       # host check (GitHub issue #404): set "*" to allow any host, or a
       # comma-separated list like "vidbee.example.com".
