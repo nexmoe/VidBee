@@ -473,6 +473,22 @@ importers:
       vite:
         specifier: '>=8.2.1'
         version: 8.2.1(@types/node@22.19.21)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)(yaml@2.8.3)
+    optionalDependencies:
+      sherpa-onnx-darwin-arm64:
+        specifier: 1.13.6
+        version: 1.13.6
+      sherpa-onnx-darwin-x64:
+        specifier: 1.13.6
+        version: 1.13.6
+      sherpa-onnx-linux-arm64:
+        specifier: 1.13.6
+        version: 1.13.6
+      sherpa-onnx-linux-x64:
+        specifier: 1.13.6
+        version: 1.13.6
+      sherpa-onnx-win-x64:
+        specifier: 1.13.6
+        version: 1.13.6
 
   apps/extension:
     dependencies:

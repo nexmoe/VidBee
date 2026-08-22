@@ -1,6 +1,11 @@
 const { execFileSync } = require('node:child_process')
 const fs = require('node:fs')
 const path = require('node:path')
+const {
+  pruneSherpaNatives,
+  resolveUnpackedNodeModules,
+  sherpaNativePackageName
+} = require('../scripts/sherpa-natives.cjs')
 
 const BINARIES = [
   'yt-dlp_macos',
@@ -49,6 +54,15 @@ const resolveBinaryResourcesPath = (appBundle) => {
 
 exports.default = async function afterPack(context) {
   const { log } = await import('@vidbee/logger/script')
+
+  const keepSherpa = sherpaNativePackageName(context.electronPlatformName, context.arch)
+  const unpackedNodeModules = resolveUnpackedNodeModules(context)
+  if (!unpackedNodeModules) {
+    throw new Error(
+      `afterPack: could not locate unpacked node_modules in ${context.appOutDir}`
+    )
+  }
+  pruneSherpaNatives(unpackedNodeModules, keepSherpa, log)
 
   if (context.electronPlatformName !== 'darwin') {
     return

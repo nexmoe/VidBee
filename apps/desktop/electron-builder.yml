@@ -2,6 +2,7 @@ appId: com.vidbee
 productName: VidBee
 directories:
   buildResources: build
+beforeBuild: build/before-build.cjs
 afterPack: build/after-pack.cjs
 protocols:
   - name: VidBee
@@ -70,6 +71,8 @@ deb:
   afterInstall: build/after-install.sh
 appImage:
   artifactName: ${name}-${version}.${ext}
+asarUnpack:
+  - node_modules/sherpa-onnx-*/**
 npmRebuild: true
 publish:
   provider: github

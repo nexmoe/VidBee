@@ -1,38 +1,47 @@
 import { existsSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
+import { resolveWorkerExecPath } from './runtime'
+
+export { resolveWorkerExecPath }
 
 const require = createRequire(import.meta.url)
 
 /**
+ * sherpa-onnx-node publishes `sherpa-onnx-win-*` instead of `win32`.
+ */
+export const sherpaNativePackageName = (
+  platform = process.platform,
+  arch = process.arch
+): string => {
+  const osName = platform === 'win32' ? 'win' : platform
+  return `sherpa-onnx-${osName}-${arch}`
+}
+
+/**
  * Directory of the platform-specific sherpa-onnx shared libraries.
  * On macOS the worker must set DYLD_LIBRARY_PATH to this folder.
+ * Only the matching platform/arch package is accepted so a cross-built
+ * x64 app cannot pick up an arm64 leftover.
  */
 export function resolveSherpaLibraryDir(): string | null {
-  const id = `sherpa-onnx-${process.platform}-${process.arch}`
-  const names = [id, 'sherpa-onnx-darwin-arm64', 'sherpa-onnx-darwin-x64']
-  for (const name of names) {
-    try {
-      return dirname(require.resolve(`${name}/package.json`))
-    } catch {
-      /* try next */
-    }
+  const id = sherpaNativePackageName()
+  try {
+    return dirname(require.resolve(`${id}/package.json`))
+  } catch {
+    /* try sibling of sherpa-onnx-node */
   }
   try {
     const nodeDir = dirname(require.resolve('sherpa-onnx-node/package.json'))
-    for (const name of names) {
-      const sibling = join(nodeDir, '..', name)
-      if (existsSync(join(sibling, 'package.json'))) {
-        return sibling
-      }
+    const sibling = join(nodeDir, '..', id)
+    if (existsSync(join(sibling, 'package.json'))) {
+      return sibling
     }
   } catch {
     /* not installed */
   }
   return null
 }
-
-export { resolveWorkerExecPath } from './runtime'
 
 export function sherpaWorkerEnv(
   extra?: NodeJS.ProcessEnv,
