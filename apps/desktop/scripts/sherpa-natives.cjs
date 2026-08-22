@@ -2,7 +2,7 @@
 const { createWriteStream, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync } =
   require('node:fs')
 const { tmpdir } = require('node:os')
-const { dirname, join } = require('node:path')
+const { basename, dirname, join } = require('node:path')
 const { pipeline } = require('node:stream/promises')
 const { Readable } = require('node:stream')
 const { execFileSync } = require('node:child_process')
@@ -61,17 +61,30 @@ const desktopRoot = () => join(__dirname, '..')
 
 const packageInstallDirs = (packageName) => [
   join(sherpaNodeDir(), '..', packageName),
-  join(desktopRoot(), 'node_modules', packageName)
+  join(desktopRoot(), 'node_modules', packageName),
+  join(
+    desktopRoot(),
+    '..',
+    '..',
+    'node_modules',
+    '.pnpm',
+    `${packageName}@${sherpaNodeVersion()}`,
+    'node_modules',
+    packageName
+  )
 ]
 
 const isPackagePresent = (dir) => existsSync(join(dir, 'package.json'))
 
 const isPackageInstalled = (packageName) => {
+  if (packageInstallDirs(packageName).some(isPackagePresent)) {
+    return true
+  }
   try {
     requireFromDesktop.resolve(`${packageName}/package.json`)
     return true
   } catch {
-    return packageInstallDirs(packageName).some(isPackagePresent)
+    return false
   }
 }
 
@@ -91,20 +104,18 @@ const downloadTarball = async (packageName, version, dest) => {
   await pipeline(Readable.fromWeb(response.body), createWriteStream(dest))
 }
 
-const extractTarball = (tarball, dest) => {
-  const tmp = mkdtempSync(join(tmpdir(), 'vidbee-sherpa-'))
-  try {
-    execFileSync('tar', ['-xzf', tarball, '-C', tmp], { stdio: 'pipe' })
-    const extracted = join(tmp, 'package')
-    if (!existsSync(extracted)) {
-      throw new Error(`npm pack for ${dest} did not contain a package/ directory`)
-    }
-    mkdirSync(dirname(dest), { recursive: true })
-    rmSync(dest, { recursive: true, force: true })
-    cpSync(extracted, dest, { recursive: true })
-  } finally {
-    rmSync(tmp, { recursive: true, force: true })
+const extractTarball = (tarball) => {
+  // Relative paths: Windows tar treats `C:` in `-C C:\...` as a remote host.
+  execFileSync('tar', ['-xzf', basename(tarball)], {
+    cwd: dirname(tarball),
+    stdio: 'pipe',
+    windowsHide: true
+  })
+  const extracted = join(dirname(tarball), 'package')
+  if (!existsSync(extracted)) {
+    throw new Error('npm pack tarball did not contain a package/ directory')
   }
+  return extracted
 }
 
 /**
@@ -131,8 +142,11 @@ const ensureSherpaNative = async (electronPlatformName, arch, logger = console) 
   const tarball = join(tmp, `${packageName}.tgz`)
   try {
     await downloadTarball(packageName, version, tarball)
+    const extracted = extractTarball(tarball)
     for (const dest of packageInstallDirs(packageName)) {
-      extractTarball(tarball, dest)
+      mkdirSync(dirname(dest), { recursive: true })
+      rmSync(dest, { recursive: true, force: true })
+      cpSync(extracted, dest, { recursive: true })
     }
   } finally {
     rmSync(tmp, { recursive: true, force: true })
