@@ -7,6 +7,7 @@
 import { execFileSync, spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import {
+  copyFileSync,
   createWriteStream,
   existsSync,
   mkdirSync,
@@ -34,6 +35,18 @@ const platformKey = (platform = process.platform, arch = process.arch) => {
 }
 
 const outputName = (platform = process.platform) => (platform === 'win32' ? 'node.exe' : 'node')
+
+const moveFile = (source, dest) => {
+  try {
+    renameSync(source, dest)
+  } catch (error) {
+    if (error && typeof error === 'object' && 'code' in error && error.code !== 'EXDEV') {
+      throw error
+    }
+    copyFileSync(source, dest)
+    unlinkSync(source)
+  }
+}
 
 const sha256File = (filePath) => {
   const hash = createHash('sha256')
@@ -120,7 +133,7 @@ const fetchAsset = async (key, destBin) => {
       throw new Error(`node binary missing in archive: ${source}`)
     }
     mkdirSync(dirname(destBin), { recursive: true })
-    renameSync(source, destBin)
+    moveFile(source, destBin)
     if (process.platform !== 'win32') {
       execFileSync('chmod', ['755', destBin])
     }
