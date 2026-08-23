@@ -14,8 +14,8 @@ const WEBM_VIDEO_CODECS = new Set(['av1', 'vp8', 'vp9'])
 const WEBM_AUDIO_CODECS = new Set(['opus', 'vorbis'])
 const COPY_CONTAINERS = new Set(['.m4a', '.mp3', '.mp4', '.webm'])
 const IMAGE_VIDEO_CODECS = new Set(['bmp', 'gif', 'jpeg', 'jpg', 'mjpeg', 'png', 'webp'])
-const WINDOWS_UNSAFE_VIDEO_CODECS = new Set(['h265', 'hevc'])
-const PREVIEW_CACHE_VERSION = 'preview-v3'
+const WINDOWS_UNSAFE_VIDEO_CODECS = new Set(['av1', 'h265', 'hevc'])
+const PREVIEW_CACHE_VERSION = 'preview-v4'
 const STDERR_CAP_BYTES = 64 * 1024
 
 export interface MediaCodecProbe {
@@ -100,9 +100,9 @@ const outputFormat = (outputPath: string): string | null => {
  * True when this codec can sit in a Chromium MP4.
  *
  * Chromium only paints 8-bit 4:2:0 H.264. High 4:4:4 and 10-bit streams
- * must be transcoded even though ffprobe still reports `h264`. Windows HEVC
- * is also transcoded so playback does not depend on an optional OS codec or
- * unstable hardware decoder.
+ * must be transcoded even though ffprobe still reports `h264`. Windows AV1
+ * and HEVC are also transcoded so playback does not depend on optional OS codecs
+ * or unstable decoders.
  */
 const isMp4Video = (
   codec: string | null,
@@ -126,8 +126,15 @@ const isMp4Audio = (codec: string | null): boolean => codec === null || MP4_AUDI
 /**
  * True when this codec can sit in a Chromium WebM.
  */
-const isWebmVideo = (codec: string | null): boolean =>
-  codec === null || WEBM_VIDEO_CODECS.has(codec)
+const isWebmVideo = (
+  codec: string | null,
+  platform: NodeJS.Platform = process.platform
+): boolean => {
+  if (platform === 'win32' && codec && WINDOWS_UNSAFE_VIDEO_CODECS.has(codec)) {
+    return false
+  }
+  return codec === null || WEBM_VIDEO_CODECS.has(codec)
+}
 
 /**
  * True when this codec can sit in a Chromium WebM.
@@ -189,7 +196,7 @@ export const planPlayableMedia = (
   }
   const mp4Video = isMp4Video(probe.video, probe.videoPixFmt, platform)
   const mp4Audio = isMp4Audio(probe.audio)
-  const webmVideo = isWebmVideo(probe.video)
+  const webmVideo = isWebmVideo(probe.video, platform)
   const webmAudio = isWebmAudio(probe.audio)
   if (
     COPY_CONTAINERS.has(ext) &&
