@@ -307,6 +307,40 @@ class DownloadFacade extends EventEmitter {
   }
 
   /**
+   * Pause a queued or in-flight download without removing the row.
+   *
+   * @param id Download / task id.
+   * @returns false when the id is not in the queue.
+   */
+  pauseDownload(id: string): boolean {
+    this.subscribeOnce()
+    if (!this.queue.get(id)) {
+      return false
+    }
+    void this.queue.pause(id, 'user').catch((err) => {
+      logger.error('download-facade: pauseDownload failed', err)
+    })
+    return true
+  }
+
+  /**
+   * Resume a paused download by re-queuing it for a new executor run.
+   *
+   * @param id Download / task id.
+   * @returns false when the id is not in the queue.
+   */
+  resumeDownload(id: string): boolean {
+    this.subscribeOnce()
+    if (!this.queue.get(id)) {
+      return false
+    }
+    void this.queue.resume(id).catch((err) => {
+      logger.error('download-facade: resumeDownload failed', err)
+    })
+    return true
+  }
+
+  /**
    * Requeue a failed or cancelled task in place. Returns false when the id
    * is missing or not in a retryable terminal state.
    */

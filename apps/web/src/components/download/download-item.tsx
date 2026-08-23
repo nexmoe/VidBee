@@ -43,6 +43,8 @@ import {
 	File,
 	FolderOpen,
 	Loader2,
+	Pause,
+	Play,
 	RotateCw,
 	Trash2,
 	X,
@@ -66,6 +68,8 @@ interface DownloadItemProps {
 	isSelected?: boolean;
 	onToggleSelect?: (id: string) => void;
 	onCancel?: (id: string) => void;
+	onPause?: (id: string) => void;
+	onResume?: (id: string) => void;
 	onRetry?: (download: DownloadRecord) => void;
 	onRemove?: (id: string) => void;
 	onCopyUrl?: (url: string) => void;
@@ -169,11 +173,17 @@ const getCodecLabel = (download: DownloadRecord): string | undefined => {
 	return sanitizeCodec(format.vcodec) ?? sanitizeCodec(format.acodec);
 };
 
+const isPausedDownload = (download: DownloadRecord): boolean =>
+	download.subStatus === "paused" || download.internalStatus === "paused";
+
 const getStatusText = (
-	status: DownloadRecord["status"],
+	download: DownloadRecord,
 	t: (key: string) => string,
 ): string => {
-	switch (status) {
+	if (isPausedDownload(download)) {
+		return t("download.paused");
+	}
+	switch (download.status) {
 		case "completed":
 			return t("download.completed");
 		case "error":
@@ -191,8 +201,11 @@ const getStatusText = (
 	}
 };
 
-const getStatusIcon = (status: DownloadRecord["status"]) => {
-	switch (status) {
+const getStatusIcon = (download: DownloadRecord) => {
+	if (isPausedDownload(download)) {
+		return <Pause className="h-4 w-4 text-amber-500" />;
+	}
+	switch (download.status) {
 		case "completed":
 			return <CheckCircle2 className="h-4 w-4 text-green-500" />;
 		case "error":
@@ -231,6 +244,8 @@ export function DownloadItem({
 	isSelected = false,
 	onToggleSelect,
 	onCancel,
+	onPause,
+	onResume,
 	onRetry,
 	onRemove,
 	onCopyUrl,
@@ -240,8 +255,8 @@ export function DownloadItem({
 	const timestamp =
 		download.completedAt ?? download.startedAt ?? download.createdAt;
 	const qualityLabel = getQualityLabel(download);
-	const statusIcon = getStatusIcon(download.status);
-	const statusText = getStatusText(download.status, t);
+	const statusIcon = getStatusIcon(download);
+	const statusText = getStatusText(download, t);
 	const resolvedExtension = resolveDownloadExtension(download);
 
 	const [fileExists, setFileExists] = useState(false);
@@ -375,6 +390,20 @@ export function DownloadItem({
 		onCancel?.(download.id);
 	};
 
+	/**
+	 * Pause an in-flight download without dropping the queue row.
+	 */
+	const handlePause = () => {
+		onPause?.(download.id);
+	};
+
+	/**
+	 * Resume a paused download from the preserved partial file.
+	 */
+	const handleResume = () => {
+		onResume?.(download.id);
+	};
+
 	const handleRetryDownload = () => {
 		onRetry?.(download);
 	};
@@ -489,6 +518,11 @@ export function DownloadItem({
 		: undefined;
 
 	const isInProgressStatus = isActiveStatus(download.status);
+	const canPauseDownload =
+		!isHistory &&
+		!isPausedDownload(download) &&
+		(download.status === "downloading" || download.status === "processing");
+	const canResumeDownload = !isHistory && isPausedDownload(download);
 	const isCompletedStatus = download.status === "completed";
 	const canRetry =
 		download.status === "error" || download.status === "cancelled";
@@ -946,17 +980,62 @@ export function DownloadItem({
 										</Button>
 									)}
 									{isInProgressStatus && (
-										<Button
-											className="h-8 w-8 shrink-0 rounded-full"
-											onClick={(event) => {
-												event.stopPropagation();
-												handleCancel();
-											}}
-											size="icon"
-											variant="ghost"
-										>
-											<X className="h-4 w-4" />
-										</Button>
+										<>
+											{canPauseDownload && (
+												<Tooltip>
+													<TooltipTrigger asChild>
+														<Button
+															aria-label={t("download.pause")}
+															className="h-8 w-8 shrink-0 rounded-full"
+															onClick={(event) => {
+																event.stopPropagation();
+																handlePause();
+															}}
+															size="icon"
+															variant="ghost"
+														>
+															<Pause className="h-4 w-4" />
+														</Button>
+													</TooltipTrigger>
+													<TooltipContent>
+														<p>{t("download.pause")}</p>
+													</TooltipContent>
+												</Tooltip>
+											)}
+											{canResumeDownload && (
+												<Tooltip>
+													<TooltipTrigger asChild>
+														<Button
+															aria-label={t("download.resume")}
+															className="h-8 w-8 shrink-0 rounded-full"
+															onClick={(event) => {
+																event.stopPropagation();
+																handleResume();
+															}}
+															size="icon"
+															variant="ghost"
+														>
+															<Play className="h-4 w-4" />
+														</Button>
+													</TooltipTrigger>
+													<TooltipContent>
+														<p>{t("download.resume")}</p>
+													</TooltipContent>
+												</Tooltip>
+											)}
+											<Button
+												aria-label={t("download.cancel")}
+												className="h-8 w-8 shrink-0 rounded-full"
+												onClick={(event) => {
+													event.stopPropagation();
+													handleCancel();
+												}}
+												size="icon"
+												variant="ghost"
+											>
+												<X className="h-4 w-4" />
+											</Button>
+										</>
 									)}
 								</div>
 							</div>
@@ -1139,6 +1218,18 @@ export function DownloadItem({
 							</ContextMenuItem>
 						)}
 						<ContextMenuSeparator />
+						{canResumeDownload && (
+							<ContextMenuItem onClick={handleResume}>
+								<Play className="h-4 w-4" />
+								{t("download.resume")}
+							</ContextMenuItem>
+						)}
+						{canPauseDownload && (
+							<ContextMenuItem onClick={handlePause}>
+								<Pause className="h-4 w-4" />
+								{t("download.pause")}
+							</ContextMenuItem>
+						)}
 						<ContextMenuItem onClick={handleCancel}>
 							<X className="h-4 w-4" />
 							{t("download.cancel")}

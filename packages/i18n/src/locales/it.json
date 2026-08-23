@@ -252,7 +252,10 @@
     "cookiesSetupKeyring": "Questa build Linux non può leggere i cookie di Chrome. Usa Firefox o importa un file di cookie.",
     "cookiesSetupStale": "I cookie attuali sembrano scaduti o bloccati. Aggiorna l’accesso e riprova.",
     "cookiesSetupRetry": "Riprova il download",
-    "cookiesSetupDone": "Fatto"
+    "cookiesSetupDone": "Fatto",
+    "pause": "Pausa",
+    "paused": "In pausa",
+    "resume": "Riprendi"
   },
   "error": {
     "title": "Qualcosa è andato storto",

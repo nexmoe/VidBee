@@ -252,7 +252,10 @@
     "cookiesSetupKeyring": "이 Linux 빌드는 Chrome 쿠키를 읽을 수 없습니다. Firefox를 사용하거나 쿠키 파일을 가져오세요.",
     "cookiesSetupStale": "현재 쿠키가 만료되었거나 차단된 것 같습니다. 로그인을 새로 고친 뒤 다시 시도하세요.",
     "cookiesSetupRetry": "다운로드 다시 시도",
-    "cookiesSetupDone": "완료"
+    "cookiesSetupDone": "완료",
+    "pause": "일시정지",
+    "paused": "일시정지됨",
+    "resume": "재개"
   },
   "error": {
     "title": "문제가 발생했습니다",

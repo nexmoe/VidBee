@@ -252,7 +252,10 @@
     "cookiesSetupKeyring": "この Linux ビルドでは Chrome の Cookie を読めません。Firefox を使うか、Cookie ファイルを読み込んでください。",
     "cookiesSetupStale": "現在の Cookie は期限切れかブロックされています。ログインし直して再試行してください。",
     "cookiesSetupRetry": "ダウンロードを再試行",
-    "cookiesSetupDone": "完了"
+    "cookiesSetupDone": "完了",
+    "pause": "一時停止",
+    "paused": "一時停止中",
+    "resume": "再開"
   },
   "error": {
     "title": "問題が発生しました",

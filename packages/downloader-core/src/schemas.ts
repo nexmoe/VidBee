@@ -306,6 +306,18 @@ export const RetryDownloadOutputSchema = z.object({
   retried: z.boolean()
 })
 
+export const PauseDownloadInputSchema = CancelDownloadInputSchema
+
+export const PauseDownloadOutputSchema = z.object({
+  paused: z.boolean()
+})
+
+export const ResumeDownloadInputSchema = CancelDownloadInputSchema
+
+export const ResumeDownloadOutputSchema = z.object({
+  resumed: z.boolean()
+})
+
 export const ListHistoryOutputSchema = z.object({
   history: z.array(DownloadTaskSchema)
 })

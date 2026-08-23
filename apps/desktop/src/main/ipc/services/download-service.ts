@@ -41,6 +41,30 @@ class DownloadService extends IpcService {
     return downloadEngine.cancelDownload(id)
   }
 
+  /**
+   * Pause a queued or in-flight download.
+   *
+   * @param _context IPC call context.
+   * @param id Download id.
+   * @returns false when the download is not in the queue.
+   */
+  @IpcMethod()
+  pauseDownload(_context: IpcContext, id: string): boolean {
+    return downloadEngine.pauseDownload(id)
+  }
+
+  /**
+   * Resume a paused download from the last partial file.
+   *
+   * @param _context IPC call context.
+   * @param id Download id.
+   * @returns false when the download is not in the queue.
+   */
+  @IpcMethod()
+  resumeDownload(_context: IpcContext, id: string): boolean {
+    return downloadEngine.resumeDownload(id)
+  }
+
   @IpcMethod()
   async retryDownload(_context: IpcContext, id: string): Promise<boolean> {
     return downloadEngine.retryDownload(id)

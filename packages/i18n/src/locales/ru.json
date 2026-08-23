@@ -252,7 +252,10 @@
     "cookiesSetupKeyring": "Эта сборка Linux не может читать cookies Chrome. Используйте Firefox или импортируйте файл cookies.",
     "cookiesSetupStale": "Текущие cookies устарели или заблокированы. Обновите вход и повторите попытку.",
     "cookiesSetupRetry": "Повторить загрузку",
-    "cookiesSetupDone": "Готово"
+    "cookiesSetupDone": "Готово",
+    "pause": "Пауза",
+    "paused": "На паузе",
+    "resume": "Продолжить"
   },
   "error": {
     "title": "Что-то пошло не так",

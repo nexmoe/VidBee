@@ -531,6 +531,36 @@ export const DownloadPage = () => {
 		}
 	};
 
+	/**
+	 * Pause an in-flight download and refresh the queue snapshot.
+	 *
+	 * @param id Download id.
+	 */
+	const handlePauseDownload = async (id: string) => {
+		try {
+			await orpcClient.downloads.pause({ id });
+			await refreshData();
+		} catch (error) {
+			logger.error("Failed to pause download:", error);
+			toast.error(t("notifications.downloadFailed"));
+		}
+	};
+
+	/**
+	 * Resume a paused download and refresh the queue snapshot.
+	 *
+	 * @param id Download id.
+	 */
+	const handleResumeDownload = async (id: string) => {
+		try {
+			await orpcClient.downloads.resume({ id });
+			await refreshData();
+		} catch (error) {
+			logger.error("Failed to resume download:", error);
+			toast.error(t("notifications.downloadFailed"));
+		}
+	};
+
 	const handleRetryDownload = async (download: DownloadRecord) => {
 		if (!download.url) {
 			toast.error(t("errors.emptyUrl"));
@@ -612,7 +642,9 @@ export const DownloadPage = () => {
 												key={`${item.record.entryType}:${item.record.id}`}
 												onCancel={handleCancelDownload}
 												onCopyUrl={handleCopyUrl}
+												onPause={handlePauseDownload}
 												onRemove={handleRemoveHistoryRecord}
+												onResume={handleResumeDownload}
 												onRetry={handleRetryDownload}
 												onToggleSelect={handleToggleSelect}
 											/>
@@ -631,7 +663,9 @@ export const DownloadPage = () => {
 											onCancel={handleCancelDownload}
 											onCopyUrl={handleCopyUrl}
 											onDeletePlaylist={handleRequestDeletePlaylist}
+											onPause={handlePauseDownload}
 											onRemove={handleRemoveHistoryRecord}
+											onResume={handleResumeDownload}
 											onRetry={handleRetryDownload}
 											onToggleSelect={handleToggleSelect}
 											records={group.records}

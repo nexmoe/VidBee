@@ -252,7 +252,10 @@
     "cookiesSetupKeyring": "Dieser Linux-Build kann Chrome-Cookies nicht lesen. Nutzen Sie Firefox oder importieren Sie eine Cookie-Datei.",
     "cookiesSetupStale": "Die aktuellen Cookies sind abgelaufen oder blockiert. Melden Sie sich erneut an und versuchen Sie es nochmal.",
     "cookiesSetupRetry": "Download erneut versuchen",
-    "cookiesSetupDone": "Fertig"
+    "cookiesSetupDone": "Fertig",
+    "pause": "Pausieren",
+    "paused": "Pausiert",
+    "resume": "Fortsetzen"
   },
   "error": {
     "title": "Etwas ist schiefgelaufen",

@@ -252,7 +252,10 @@
     "cookiesSetupKeyring": "Build Linux ini tidak dapat membaca cookie Chrome. Gunakan Firefox atau impor file cookie.",
     "cookiesSetupStale": "Cookie saat ini tampak kedaluwarsa atau diblokir. Segarkan login, lalu coba lagi.",
     "cookiesSetupRetry": "Coba unduh lagi",
-    "cookiesSetupDone": "Selesai"
+    "cookiesSetupDone": "Selesai",
+    "pause": "Jeda",
+    "paused": "Dijeda",
+    "resume": "Lanjutkan"
   },
   "error": {
     "title": "Terjadi kesalahan",

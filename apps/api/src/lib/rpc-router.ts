@@ -457,6 +457,34 @@ export const rpcRouter = os.router({
         })
       }
     }),
+    pause: os.downloads.pause.handler(async ({ input }) => {
+      try {
+        const task = taskQueue.get(input.id)
+        if (!task) {
+          return { paused: false }
+        }
+        await taskQueue.pause(input.id)
+        return { paused: true }
+      } catch (error) {
+        throw new ORPCError('INTERNAL_SERVER_ERROR', {
+          message: toErrorMessage(error, 'Failed to pause download.')
+        })
+      }
+    }),
+    resume: os.downloads.resume.handler(async ({ input }) => {
+      try {
+        const task = taskQueue.get(input.id)
+        if (!task) {
+          return { resumed: false }
+        }
+        await taskQueue.resume(input.id)
+        return { resumed: true }
+      } catch (error) {
+        throw new ORPCError('INTERNAL_SERVER_ERROR', {
+          message: toErrorMessage(error, 'Failed to resume download.')
+        })
+      }
+    }),
     retry: os.downloads.retry.handler(async ({ input }) => {
       try {
         const task = taskQueue.get(input.id)

@@ -252,7 +252,10 @@
     "cookiesSetupKeyring": "此 Linux 版本無法讀取 Chrome Cookies。請改用 Firefox，或匯入 Cookies 檔。",
     "cookiesSetupStale": "目前 Cookies 可能已過期或被攔截。請重新登入後再試。",
     "cookiesSetupRetry": "重試下載",
-    "cookiesSetupDone": "完成"
+    "cookiesSetupDone": "完成",
+    "pause": "暫停",
+    "paused": "已暫停",
+    "resume": "繼續"
   },
   "error": {
     "title": "發生錯誤",

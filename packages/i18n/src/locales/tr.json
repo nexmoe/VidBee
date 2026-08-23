@@ -252,7 +252,10 @@
     "cookiesSetupKeyring": "Bu Linux sürümü Chrome çerezlerini okuyamaz. Firefox kullanın veya bir çerez dosyası içe aktarın.",
     "cookiesSetupStale": "Geçerli çerezler süresi dolmuş veya engellenmiş görünüyor. Girişi yenileyip yeniden deneyin.",
     "cookiesSetupRetry": "İndirmeyi yeniden dene",
-    "cookiesSetupDone": "Bitti"
+    "cookiesSetupDone": "Bitti",
+    "pause": "Duraklat",
+    "paused": "Duraklatıldı",
+    "resume": "Devam et"
   },
   "error": {
     "title": "Bir sorun oluştu",

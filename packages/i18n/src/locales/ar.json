@@ -252,7 +252,10 @@
     "cookiesSetupKeyring": "لا يستطيع هذا الإصدار من Linux قراءة ملفات تعريف ارتباط Chrome. استخدم Firefox أو استورد ملفًا.",
     "cookiesSetupStale": "يبدو أن ملفات تعريف الارتباط الحالية منتهية أو محظورة. حدّث تسجيل الدخول ثم أعد المحاولة.",
     "cookiesSetupRetry": "إعادة التنزيل",
-    "cookiesSetupDone": "تم"
+    "cookiesSetupDone": "تم",
+    "pause": "إيقاف مؤقت",
+    "paused": "متوقف مؤقتاً",
+    "resume": "استئناف"
   },
   "error": {
     "title": "حدث خطأ ما",

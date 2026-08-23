@@ -252,7 +252,10 @@
     "cookiesSetupKeyring": "Esta versión de Linux no puede leer las cookies de Chrome. Usa Firefox o importa un archivo de cookies.",
     "cookiesSetupStale": "Las cookies actuales parecen caducadas o bloqueadas. Actualiza el inicio de sesión y reintenta.",
     "cookiesSetupRetry": "Reintentar descarga",
-    "cookiesSetupDone": "Listo"
+    "cookiesSetupDone": "Listo",
+    "pause": "Pausar",
+    "paused": "En pausa",
+    "resume": "Reanudar"
   },
   "error": {
     "title": "Algo salió mal",

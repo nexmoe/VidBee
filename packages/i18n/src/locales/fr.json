@@ -252,7 +252,10 @@
     "cookiesSetupKeyring": "Cette version Linux ne peut pas lire les cookies Chrome. Utilisez Firefox ou importez un fichier de cookies.",
     "cookiesSetupStale": "Les cookies actuels semblent expirés ou bloqués. Rafraîchissez la connexion, puis réessayez.",
     "cookiesSetupRetry": "Réessayer le téléchargement",
-    "cookiesSetupDone": "Terminé"
+    "cookiesSetupDone": "Terminé",
+    "pause": "Pause",
+    "paused": "En pause",
+    "resume": "Reprendre"
   },
   "error": {
     "title": "Un problème est survenu",

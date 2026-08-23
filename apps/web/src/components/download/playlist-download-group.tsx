@@ -16,6 +16,8 @@ interface PlaylistDownloadGroupProps {
 	onToggleSelect?: (id: string) => void;
 	onDeletePlaylist?: (playlistId: string, title: string, ids: string[]) => void;
 	onCancel?: (id: string) => void;
+	onPause?: (id: string) => void;
+	onResume?: (id: string) => void;
 	onRetry?: (download: DownloadRecord) => void;
 	onRemove?: (id: string) => void;
 	onCopyUrl?: (url: string) => void;
@@ -54,6 +56,8 @@ export function PlaylistDownloadGroup({
 	onToggleSelect,
 	onDeletePlaylist,
 	onCancel,
+	onPause,
+	onResume,
 	onRetry,
 	onRemove,
 	onCopyUrl,
@@ -188,7 +192,9 @@ export function PlaylistDownloadGroup({
 								isSelected={selectedIds?.has(record.id) ?? false}
 								onCancel={onCancel}
 								onCopyUrl={onCopyUrl}
+								onPause={onPause}
 								onRemove={onRemove}
+								onResume={onResume}
 								onRetry={onRetry}
 								onToggleSelect={onToggleSelect}
 							/>

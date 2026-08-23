@@ -143,6 +143,10 @@ export class TaskQueueAPI {
   private readonly active = new Map<string, ActiveRun>()
   private readonly progressLastWrite = new Map<string, number>()
   private readonly progressDirty = new Map<string, TaskProgress>()
+  /** Running tasks whose current cancel was requested as pause, not user-cancel. */
+  private readonly pendingPause = new Map<string, string>()
+  /** Running tasks whose user-cancel should win over an in-flight pause. */
+  private readonly pendingCancel = new Set<string>()
   private started = false
   private reconcileBusy = false
   private idleKickTimer: unknown = null
@@ -487,10 +491,16 @@ export class TaskQueueAPI {
   async cancel(id: string, reason = 'user'): Promise<void> {
     const t = this.store.get(id)
     if (!t) return
-    if (TERMINAL_STATUSES.has(t.status)) return
+    this.pendingCancel.add(id)
+    this.pendingPause.delete(id)
+    if (TERMINAL_STATUSES.has(t.status)) {
+      this.pendingCancel.delete(id)
+      return
+    }
     if (t.status === 'queued' || t.status === 'paused') {
       await this.scheduler.dequeue(id)
       this.retry.remove(id)
+      this.pendingCancel.delete(id)
       await this.applyTransition(id, 'cancelled', {
         trigger: 'cancel',
         reason
@@ -499,6 +509,7 @@ export class TaskQueueAPI {
     }
     if (t.status === 'retry-scheduled') {
       this.retry.remove(id)
+      this.pendingCancel.delete(id)
       await this.applyTransition(id, 'cancelled', {
         trigger: 'cancel',
         reason
@@ -516,10 +527,25 @@ export class TaskQueueAPI {
         logCaughtError('task_queue_cancel_threw', err)
       }
     }
-    // The orchestrator transitions to `cancelled` from the onFinish callback
+    const latest = this.store.get(id)
+    if (latest?.status === 'paused') {
+      this.pendingCancel.delete(id)
+      await this.applyTransition(id, 'cancelled', {
+        trigger: 'cancel',
+        reason
+      })
+    }
+    // Otherwise the orchestrator transitions from the onFinish callback
     // (executor reports `result.type === 'cancelled'`).
   }
 
+  /**
+   * Pause a queued, retrying, or running task. Running work is stopped via
+   * the executor pause path (SIGTERM); resume re-queues and respawns.
+   *
+   * @param id Task id.
+   * @param reason Pause reason stored on the FSM transition.
+   */
   async pause(id: string, reason = 'user'): Promise<void> {
     const t = this.store.get(id)
     if (!t) return
@@ -536,9 +562,11 @@ export class TaskQueueAPI {
     if (t.status === 'running' || t.status === 'processing') {
       const active = this.active.get(id)
       if (active) {
+        this.pendingPause.set(id, reason)
         try {
           await active.run.pause()
         } catch (err) {
+          this.pendingPause.delete(id)
           logCaughtError('task_queue_pause_threw', err)
         }
       }
@@ -730,16 +758,14 @@ export class TaskQueueAPI {
   private async demoteOne(id: string): Promise<void> {
     const a = this.active.get(id)
     if (a) {
+      this.pendingPause.set(id, 'demote')
       try {
         await a.run.pause()
       } catch (err) {
+        this.pendingPause.delete(id)
         logCaughtError('task_queue_demote_pause_threw', err)
       }
     }
-    // applyTransition(running -> paused) happens from the executor's
-    // onFinish callback when the child reports cancelled/paused. If it
-    // doesn't fire (executor is stuck), the watchdog will eventually
-    // surface it.
   }
 
   private async handleFinish(
@@ -770,6 +796,8 @@ export class TaskQueueAPI {
     attemptId: string,
     e: import('../executor').ExecutorFinishEvent
   ): Promise<void> {
+    const pauseReason = this.pendingPause.get(id)
+    this.pendingPause.delete(id)
     if (e.result.type === 'success') {
       const out = e.result.output
       const current = this.store.get(id)
@@ -833,10 +861,19 @@ export class TaskQueueAPI {
       await this.processes.recordClose(id, attemptId, null, 'SIGTERM')
       const t = this.store.get(id)
       if (t && (t.status === 'running' || t.status === 'processing')) {
-        await this.applyTransition(id, 'cancelled', {
-          trigger: 'cancel',
-          reason: 'user'
-        })
+        const cancelRequested = this.pendingCancel.has(id)
+        this.pendingCancel.delete(id)
+        if (!cancelRequested && pauseReason !== undefined) {
+          await this.applyTransition(id, 'paused', {
+            trigger: 'pause',
+            reason: pauseReason
+          })
+        } else {
+          await this.applyTransition(id, 'cancelled', {
+            trigger: 'cancel',
+            reason: 'user'
+          })
+        }
       }
       return
     }
