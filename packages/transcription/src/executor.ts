@@ -1,5 +1,5 @@
 import { type ChildProcess, spawn } from 'node:child_process'
-import { mkdirSync, rmSync } from 'node:fs'
+import { mkdirSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type {
@@ -45,7 +45,8 @@ import {
   encodeMessage,
   parseMessage,
   type WorkerInbound,
-  type WorkerOutbound
+  type WorkerOutbound,
+  WORKER_RESULT_FILE
 } from './worker/protocol'
 
 export type TranscriptionBackend = 'sherpa' | 'fake'
@@ -553,7 +554,20 @@ export class TranscriptionExecutor implements Executor {
               line: message.line
             })
           } else if (message.type === 'result') {
-            settle(() => resolve({ result: message.result, durationMs: message.durationMs }))
+            settle(() => {
+              try {
+                const result = JSON.parse(
+                  readFileSync(join(input.workDir, WORKER_RESULT_FILE), 'utf8')
+                ) as PipelineResult
+                resolve({ result, durationMs: message.durationMs })
+              } catch (error) {
+                reject(
+                  new Error(
+                    `worker result unreadable: ${error instanceof Error ? error.message : String(error)}`
+                  )
+                )
+              }
+            })
           } else if (message.type === 'error') {
             settle(() => {
               if (message.message === 'cancelled' || input.abort.signal.aborted) {

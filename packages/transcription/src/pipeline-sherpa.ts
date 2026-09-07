@@ -349,8 +349,9 @@ export class SherpaTranscriptionPipeline implements TranscriptionPipeline {
     report(input, 'diarizing', 0.88)
     const turns = this.diarize(addon, wave, speech, durationMs, input)
     if (manifest && input.manifestPath) {
-      manifest.turns = turns
-      saveChunkManifest(input.manifestPath, manifest)
+      const latest = loadChunkManifest(input.manifestPath) ?? manifest
+      latest.turns = turns
+      saveChunkManifest(input.manifestPath, latest)
     }
     return turns
   }

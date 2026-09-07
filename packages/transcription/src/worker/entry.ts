@@ -3,9 +3,11 @@
  * cannot stall the Electron / API event loop.
  */
 import { writeSync } from 'node:fs'
+import { join } from 'node:path'
 import { readAsrResult } from '../asr-json'
 import { tryRecognizerConfig } from '../asr-recognizer'
 import { ASR_TIER_IDS } from '../asr-tiers'
+import { atomicWriteJson } from '../atomic-file'
 import { extractMonoWav } from '../audio'
 import { ensureChunkManifest, manifestPathFor } from '../chunk-manifest'
 import { ModelManager } from '../model-manager'
@@ -15,7 +17,13 @@ import { SherpaTranscriptionPipeline } from '../pipeline-sherpa'
 import { loadPipelineSeed, seedDurationMs } from '../speaker-assign'
 import { parseSpeakerCount } from '../speaker-count'
 import type { TranscriptionStage } from '../types'
-import { encodeMessage, parseMessage, type WorkerInbound, type WorkerOutbound } from './protocol'
+import {
+  encodeMessage,
+  parseMessage,
+  type WorkerInbound,
+  type WorkerOutbound,
+  WORKER_RESULT_FILE
+} from './protocol'
 
 const send = (message: WorkerOutbound): void => {
   // writeSync so Electron-as-Node pipe buffering cannot starve the watchdog.
@@ -181,7 +189,8 @@ const handleStart = async (
         })
       }
     })
-    send({ type: 'result', result, durationMs: extracted.durationMs })
+    atomicWriteJson(join(message.workDir, WORKER_RESULT_FILE), result)
+    send({ type: 'result', durationMs: extracted.durationMs })
   } catch (err) {
     const text = err instanceof Error ? err.message : String(err)
     if (signal.aborted || /cancelled/i.test(text)) {

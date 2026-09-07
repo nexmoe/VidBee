@@ -1,6 +1,8 @@
 import type { AsrTierId } from '../asr-tiers'
 import type { SpeakerCount } from '../speaker-count'
-import type { PipelineProgress, PipelineResult, TranscriptionStage, TranscriptWord } from '../types'
+import type { PipelineProgress, TranscriptionStage, TranscriptWord } from '../types'
+
+export const WORKER_RESULT_FILE = 'result.json'
 
 export interface WorkerStartMessage {
   type: 'start'
@@ -51,7 +53,6 @@ export interface WorkerPartialMessage {
 
 export interface WorkerResultMessage {
   type: 'result'
-  result: PipelineResult
   durationMs: number
 }
 
