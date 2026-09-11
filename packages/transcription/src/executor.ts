@@ -44,6 +44,7 @@ import type { PipelineResult, PipelineSegment, TranscriptionStage } from './type
 import {
   encodeMessage,
   parseMessage,
+  readWorkerResult,
   type WorkerInbound,
   type WorkerOutbound
 } from './worker/protocol'
@@ -488,7 +489,8 @@ export class TranscriptionExecutor implements Executor {
       child.stdin?.write(encodeMessage(start))
 
       // Native sherpa calls block the worker event loop, so in-worker
-      // heartbeats cannot keep the 60s running watchdog alive.
+      // heartbeats cannot keep the 60s running watchdog alive. Stop once
+      // committing starts — fake keepalives would hide a lost result forever.
       const alive = setInterval(() => {
         if (!child.killed) {
           input.events.onStd({
@@ -525,6 +527,9 @@ export class TranscriptionExecutor implements Executor {
             continue
           }
           if (message.type === 'progress') {
+            if (message.stage === 'committing') {
+              clearInterval(alive)
+            }
             input.emitProgress(message.stage, message.percent, Date.now())
           } else if (message.type === 'partial') {
             const next = transcriptionPartials.append(
@@ -553,7 +558,16 @@ export class TranscriptionExecutor implements Executor {
               line: message.line
             })
           } else if (message.type === 'result') {
-            settle(() => resolve({ result: message.result, durationMs: message.durationMs }))
+            settle(() => {
+              try {
+                resolve({
+                  result: readWorkerResult(message, input.workDir),
+                  durationMs: message.durationMs
+                })
+              } catch (error) {
+                reject(error instanceof Error ? error : new Error(String(error)))
+              }
+            })
           } else if (message.type === 'error') {
             settle(() => {
               if (message.message === 'cancelled' || input.abort.signal.aborted) {

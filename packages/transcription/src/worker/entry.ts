@@ -2,10 +2,11 @@
  * Isolated AI worker. Loaded only in a child process so sherpa-onnx-node
  * cannot stall the Electron / API event loop.
  */
-import { writeSync } from 'node:fs'
+import { join } from 'node:path'
 import { readAsrResult } from '../asr-json'
 import { tryRecognizerConfig } from '../asr-recognizer'
 import { ASR_TIER_IDS } from '../asr-tiers'
+import { atomicWriteJson } from '../atomic-file'
 import { extractMonoWav } from '../audio'
 import { ensureChunkManifest, manifestPathFor } from '../chunk-manifest'
 import { ModelManager } from '../model-manager'
@@ -15,11 +16,18 @@ import { SherpaTranscriptionPipeline } from '../pipeline-sherpa'
 import { loadPipelineSeed, seedDurationMs } from '../speaker-assign'
 import { parseSpeakerCount } from '../speaker-count'
 import type { TranscriptionStage } from '../types'
-import { encodeMessage, parseMessage, type WorkerInbound, type WorkerOutbound } from './protocol'
+import {
+  parseMessage,
+  WORKER_RESULT_FILE,
+  type WorkerInbound,
+  type WorkerOutbound,
+  writeMessageSync
+} from './protocol'
 
 const send = (message: WorkerOutbound): void => {
-  // writeSync so Electron-as-Node pipe buffering cannot starve the watchdog.
-  writeSync(1, encodeMessage(message))
+  // Blocking write so Electron-as-Node pipe buffering cannot starve the watchdog.
+  // Retries short writes: a multi-MB result can otherwise lose its trailing newline.
+  writeMessageSync(1, message)
 }
 
 /**
@@ -181,7 +189,9 @@ const handleStart = async (
         })
       }
     })
-    send({ type: 'result', result, durationMs: extracted.durationMs })
+    const resultPath = join(message.workDir, WORKER_RESULT_FILE)
+    atomicWriteJson(resultPath, result)
+    send({ type: 'result', resultPath: WORKER_RESULT_FILE, durationMs: extracted.durationMs })
   } catch (err) {
     const text = err instanceof Error ? err.message : String(err)
     if (signal.aborted || /cancelled/i.test(text)) {

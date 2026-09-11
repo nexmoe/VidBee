@@ -105,6 +105,34 @@ export const saveChunkManifest = (filePath: string, manifest: ChunkManifest): vo
   atomicWriteJson(filePath, manifest)
 }
 
+/**
+ * Merge fields into the on-disk manifest. In-memory snapshots must not rewrite
+ * `chunks` — that used to wipe ASR after diarization saved turns.
+ *
+ * @param filePath Destination `chunks.json` path.
+ * @param patch Speakers, turns, or duration to publish.
+ */
+export const patchChunkManifest = (
+  filePath: string,
+  patch: Partial<Pick<ChunkManifest, 'speakers' | 'turns' | 'durationMs'>>
+): ChunkManifest => {
+  const current = loadChunkManifest(filePath)
+  if (!current) {
+    throw new Error(`chunk manifest missing: ${filePath}`)
+  }
+  if (patch.speakers) {
+    current.speakers = patch.speakers
+  }
+  if (patch.turns) {
+    current.turns = patch.turns
+  }
+  if (typeof patch.durationMs === 'number') {
+    current.durationMs = patch.durationMs
+  }
+  saveChunkManifest(filePath, current)
+  return current
+}
+
 export const ensureChunkManifest = (input: {
   workDir: string
   taskId: string

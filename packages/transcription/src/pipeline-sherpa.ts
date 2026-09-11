@@ -13,7 +13,7 @@ import {
   chunkKey,
   completedChunkKeys,
   loadChunkManifest,
-  saveChunkManifest
+  patchChunkManifest
 } from './chunk-manifest'
 import { modelVersion } from './model-catalog'
 import type { ModelManager } from './model-manager'
@@ -349,8 +349,10 @@ export class SherpaTranscriptionPipeline implements TranscriptionPipeline {
     report(input, 'diarizing', 0.88)
     const turns = this.diarize(addon, wave, speech, durationMs, input)
     if (manifest && input.manifestPath) {
-      manifest.turns = turns
-      saveChunkManifest(input.manifestPath, manifest)
+      const latest = patchChunkManifest(input.manifestPath, { turns })
+      manifest.turns = latest.turns
+      manifest.chunks = latest.chunks
+      manifest.speakers = latest.speakers
     }
     return turns
   }
@@ -646,8 +648,9 @@ export class SherpaTranscriptionPipeline implements TranscriptionPipeline {
           displayName: key === 'unknown' ? 'Unknown speaker' : `Speaker ${index + 1}`
         }))
     if (manifest && input.manifestPath && manifest.speakers.length === 0) {
-      manifest.speakers = speakers
-      saveChunkManifest(input.manifestPath, manifest)
+      const latest = patchChunkManifest(input.manifestPath, { speakers })
+      manifest.speakers = latest.speakers
+      manifest.chunks = latest.chunks
     }
     const done = manifest ? completedChunkKeys(manifest) : new Set<string>()
     const segments: PipelineSegment[] = manifest
