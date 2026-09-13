@@ -12,6 +12,7 @@ COPY apps/web/package.json apps/web/package.json
 COPY packages/downloader-core/package.json packages/downloader-core/package.json
 COPY packages/i18n/package.json packages/i18n/package.json
 COPY packages/logger/package.json packages/logger/package.json
+COPY packages/subscriptions-core/package.json packages/subscriptions-core/package.json
 COPY packages/ui/package.json packages/ui/package.json
 
 RUN pnpm install --filter "{./apps/web}..." --frozen-lockfile --ignore-scripts
@@ -20,6 +21,7 @@ COPY apps/web apps/web
 COPY packages/downloader-core packages/downloader-core
 COPY packages/i18n packages/i18n
 COPY packages/logger packages/logger
+COPY packages/subscriptions-core packages/subscriptions-core
 COPY packages/ui packages/ui
 
 RUN pnpm --filter ./apps/web run build
