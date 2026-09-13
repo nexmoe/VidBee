@@ -62,9 +62,16 @@ const config = defineConfig(({ command }) => ({
 		viteReact(),
 	],
 	server: {
+		...(process.env.PORTLESS_URL
+			? { host: "127.0.0.1", port: Number(process.env.PORT), strictPort: true }
+			: {}),
 		allowedHosts: resolveAllowedHosts(),
 		proxy: {
 			"/events": {
+				target: apiProxyTarget,
+				changeOrigin: true,
+			},
+			"/files": {
 				target: apiProxyTarget,
 				changeOrigin: true,
 			},

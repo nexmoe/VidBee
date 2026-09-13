@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next'
  */
 export function TranscriptModelsBannerView({ status }: { status: TranscriptModelPrepStatus }) {
   const { t } = useTranslation()
-  if (status.ready) {
+  if (status.ready || !status.downloading) {
     return null
   }
 
@@ -35,7 +35,7 @@ export function TranscriptModelsBannerView({ status }: { status: TranscriptModel
 }
 
 /**
- * Show a slim boot-model download bar at the bottom until local transcription is ready.
+ * Show the boot-model progress bar only while files are actively downloading.
  */
 export function TranscriptModelsBanner() {
   const status = useTranscriptModelPrep()

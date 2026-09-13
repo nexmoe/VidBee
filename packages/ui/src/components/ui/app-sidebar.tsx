@@ -4,6 +4,7 @@ import { useProximityHover, useRegisterProximityItem } from '../../hooks/use-pro
 import { cn } from '../../lib/cn'
 import { Button } from './button'
 import { DragRegion, NoDrag } from './drag-region'
+import { ImageWithPlaceholder } from './image-with-placeholder'
 import { Tooltip, TooltipContent, TooltipTrigger } from './tooltip'
 import { TravelingHighlight } from './traveling-highlight'
 
@@ -16,6 +17,7 @@ interface AppSidebarItem {
   id: string
   label: string
   icon: AppSidebarIcon
+  avatar?: { src: string | null; name: string }
   active?: boolean
   disabled?: boolean
   indicator?: boolean
@@ -74,7 +76,18 @@ function SidebarNavItem({ item, index, hovered, registerItem }: SidebarNavItemPr
       size="icon"
       variant="ghost"
     >
-      <IconComponent className={cn('h-5! w-5!', isActive && 'text-primary')} />
+      {item.avatar ? (
+        <ImageWithPlaceholder
+          alt={item.avatar.name}
+          className="h-8 w-8 overflow-hidden rounded-full"
+          fallbackIcon={<IconComponent className="h-5! w-5!" />}
+          imgClassName="h-full w-full object-cover"
+          key={item.avatar.src}
+          src={item.avatar.src ?? undefined}
+        />
+      ) : (
+        <IconComponent className={cn('h-5! w-5!', isActive && 'text-primary')} />
+      )}
       {item.indicator ? (
         <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500" />
       ) : null}

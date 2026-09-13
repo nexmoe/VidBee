@@ -22,17 +22,18 @@ import { resolveFeedFromInput } from './feed-resolver'
 import { LeaderElection, type LeaderElectionOptions, type MetaStore } from './leader'
 import { FeedCheckScheduler, type FeedCheckSchedulerOptions } from './scheduler'
 import type { SubscriptionsStore } from './store'
-import type {
-  AutoDownloadDecision,
-  LeaderKind,
-  LeaderState,
-  NormalizedFeedItem,
-  ResolvedFeed,
-  SubscriptionCreateInput,
-  SubscriptionFeedItem,
-  SubscriptionRule,
-  SubscriptionUpdateInput,
-  SubscriptionWithItems
+import {
+  type AutoDownloadDecision,
+  type LeaderKind,
+  type LeaderState,
+  type NormalizedFeedItem,
+  type ResolvedFeed,
+  SUBSCRIPTION_DUPLICATE_FEED_ERROR,
+  type SubscriptionCreateInput,
+  type SubscriptionFeedItem,
+  type SubscriptionRule,
+  type SubscriptionUpdateInput,
+  type SubscriptionWithItems
 } from './types'
 
 export interface EnqueueItemContext {
@@ -69,7 +70,7 @@ export interface SubscriptionsApiOptions {
   now?: () => number
 }
 
-export const SUBSCRIPTION_DUPLICATE_FEED_ERROR = 'SUBSCRIPTION_DUPLICATE_FEED_URL'
+export { SUBSCRIPTION_DUPLICATE_FEED_ERROR }
 
 export type SubscriptionsApiEvent = 'changed'
 export type SubscriptionsApiListener = (kind: SubscriptionsApiEvent) => void

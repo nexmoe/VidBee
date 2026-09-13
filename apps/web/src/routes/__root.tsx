@@ -1,10 +1,12 @@
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+import { RemoteImageProvider } from "@vidbee/ui/components/ui/remote-image";
 import { ShapeProvider } from "@vidbee/ui/lib/shape-context";
 import { useEffect } from "react";
 import { Toaster } from "sonner";
 import { i18n } from "../lib/i18n";
+import { resolveImageProxyUrl } from "../lib/remote-image-proxy";
 import { applyThemeToDocument, readWebSettings } from "../lib/web-settings";
 
 import appCss from "../styles.css?url";
@@ -33,6 +35,9 @@ export const Route = createRootRoute({
 	shellComponent: RootDocument,
 });
 
+/**
+ * App shell: theme/i18n hydration, remote-image proxy, and the page tree.
+ */
 function RootDocument({ children }: { children: React.ReactNode }) {
 	return (
 		<html lang="en">
@@ -41,7 +46,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 			</head>
 			<body className="bg-background text-foreground" suppressHydrationWarning>
 				<RootHydrationEffects />
-				<ShapeProvider defaultShape="rounded">{children}</ShapeProvider>
+				<RemoteImageProvider cacheResolver={resolveImageProxyUrl}>
+					<ShapeProvider defaultShape="rounded">{children}</ShapeProvider>
+				</RemoteImageProvider>
 				<Toaster closeButton={true} richColors={true} />
 				<TanStackDevtools
 					config={{

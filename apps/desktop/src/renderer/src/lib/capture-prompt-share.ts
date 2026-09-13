@@ -1,5 +1,5 @@
-import { SHARE_CARD_WASH } from '@renderer/components/transcript/TranscriptShareCardChrome'
-import { snapdom } from '@zumer/snapdom'
+import { ipcServices } from '@renderer/lib/ipc'
+import type { ShareCardPayload } from '@shared/types/share-card'
 
 /**
  * Wait for the next two animation frames so layout and paint can settle.
@@ -12,123 +12,115 @@ const nextPaint = (): Promise<void> =>
   })
 
 /**
- * Wait until an image has finished loading or failed.
+ * Wait until an image has finished loading or failed, then decode painted frames.
  *
  * @param image Image node inside the share card.
  */
-const waitForImage = (image: HTMLImageElement): Promise<void> => {
-  if (image.complete) {
-    return Promise.resolve()
+const waitForImage = async (image: HTMLImageElement): Promise<void> => {
+  if (!image.complete) {
+    await new Promise<void>((resolve) => {
+      const done = (): void => resolve()
+      image.addEventListener('load', done, { once: true })
+      image.addEventListener('error', done, { once: true })
+    })
   }
-  return new Promise((resolve) => {
-    const done = (): void => resolve()
-    image.addEventListener('load', done, { once: true })
-    image.addEventListener('error', done, { once: true })
-    void image.decode().then(done).catch(done)
-  })
+  if (image.naturalWidth > 0) {
+    await image.decode().catch(() => undefined)
+  }
 }
 
 /**
- * Decode images inside the share card so snapdom can paint them.
+ * Wait until every image inside the share card has settled.
  *
- * @param element Root of the off-screen share card.
+ * @param element Root of the share card.
  */
 const waitForImages = async (element: HTMLElement): Promise<void> => {
   await Promise.all([...element.querySelectorAll('img')].map((image) => waitForImage(image)))
 }
 
-/**
- * Rasterize a decoded image to a PNG data URL.
- *
- * Custom-protocol covers often taint the canvas; callers must fall back to fetch.
- *
- * @param image Decoded image node.
- * @returns Data URL when the canvas is readable.
- */
-const decodedImageToDataUrl = (image: HTMLImageElement): string | null => {
-  if (!(image.complete && image.naturalWidth > 0 && image.naturalHeight > 0)) {
-    return null
-  }
-  const canvas = document.createElement('canvas')
-  canvas.width = image.naturalWidth
-  canvas.height = image.naturalHeight
-  const context = canvas.getContext('2d')
-  if (!context) {
-    return null
-  }
-  context.drawImage(image, 0, 0)
-  try {
-    return canvas.toDataURL('image/png')
-  } catch {
-    return null
-  }
-}
+const FILL_READY_TIMEOUT_MS = 4000
+const REMOTE_IMAGE_READY_TIMEOUT_MS = 15_000
+const REMOTE_IMAGE_PENDING = '[data-remote-image="pending"]'
 
 /**
- * Read a blob as a data URL.
+ * Wait until a predicate is false, or time out.
  *
- * @param blob Image bytes.
+ * @param element Root to observe.
+ * @param isPending True while the waiter should keep blocking.
+ * @param options MutationObserver filters and timeout.
  */
-const readBlobAsDataUrl = (blob: Blob): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(String(reader.result || ''))
-    reader.onerror = () => reject(reader.error ?? new Error('Failed to read image blob'))
-    reader.readAsDataURL(blob)
-  })
-
-/**
- * Fetch an image URL as a data URL for snapdom.
- *
- * @param src Image URL, including `vidbee://` cached covers.
- */
-const fetchImageAsDataUrl = async (src: string): Promise<string | null> => {
-  try {
-    const response = await fetch(src)
-    if (!response.ok) {
-      return null
+const waitUntilSettled = async (
+  element: HTMLElement,
+  isPending: () => boolean,
+  options: { attributeFilter: string[]; subtree?: boolean; timeoutMs: number }
+): Promise<void> => {
+  if (!isPending()) {
+    return
+  }
+  await new Promise<void>((resolve) => {
+    /**
+     * Stop watching once the predicate clears or the timeout fires.
+     */
+    const finish = (): void => {
+      observer.disconnect()
+      window.clearTimeout(timer)
+      resolve()
     }
-    const blob = await response.blob()
-    if (blob.size === 0) {
-      return null
-    }
-    return await readBlobAsDataUrl(blob)
-  } catch {
-    return null
-  }
-}
-
-/**
- * Rewrite card images to data URLs so snapdom does not re-fetch `vidbee://` covers.
- *
- * @param element Root of the off-screen share card.
- */
-const inlineShareCardImages = async (element: HTMLElement): Promise<void> => {
-  const images = [...element.querySelectorAll('img')]
-  await Promise.all(
-    images.map(async (image) => {
-      const src = image.currentSrc || image.src
-      if (!src || src.startsWith('data:')) {
-        return
+    const observer = new MutationObserver(() => {
+      if (!isPending()) {
+        finish()
       }
-      const dataUrl = decodedImageToDataUrl(image) ?? (await fetchImageAsDataUrl(src))
-      if (!dataUrl) {
-        return
-      }
-      image.src = dataUrl
-      await waitForImage(image)
     })
-  )
+    const timer = window.setTimeout(finish, options.timeoutMs)
+    observer.observe(element, {
+      attributeFilter: options.attributeFilter,
+      attributes: true,
+      childList: options.subtree === true,
+      subtree: options.subtree === true
+    })
+    if (!isPending()) {
+      finish()
+    }
+  })
 }
 
 /**
- * Wait until fonts, images, and layout are ready to capture.
+ * Wait until RemoteImage nodes have resolved and painted, or time out.
  *
- * @param element Root of the off-screen share card.
+ * Cover thumbs go through cache resolution before an `img` exists, so waiting
+ * only on current `img` tags snapshots the loading spinner.
+ *
+ * @param element Root of the share card.
+ */
+const waitForRemoteImages = async (element: HTMLElement): Promise<void> => {
+  await waitUntilSettled(element, () => Boolean(element.querySelector(REMOTE_IMAGE_PENDING)), {
+    attributeFilter: ['data-remote-image'],
+    subtree: true,
+    timeoutMs: REMOTE_IMAGE_READY_TIMEOUT_MS
+  })
+}
+
+/**
+ * Wait until a prompt card has finished sampling its cover fill, or time out.
+ *
+ * @param element Root of the share card.
+ */
+const waitForShareFill = async (element: HTMLElement): Promise<void> => {
+  await waitUntilSettled(element, () => element.getAttribute('data-share-fill') === 'pending', {
+    attributeFilter: ['data-share-fill'],
+    timeoutMs: FILL_READY_TIMEOUT_MS
+  })
+}
+
+/**
+ * Wait until fonts, images, cover fill, and layout are painted for a snapshot.
+ *
+ * @param element Root of the share card.
  */
 export const waitForShareCard = async (element: HTMLElement): Promise<void> => {
+  await waitForRemoteImages(element)
   await waitForImages(element)
-  await inlineShareCardImages(element)
+  await waitForShareFill(element)
   if (document.fonts?.ready) {
     await document.fonts.ready
   }
@@ -136,49 +128,52 @@ export const waitForShareCard = async (element: HTMLElement): Promise<void> => {
 }
 
 /**
- * Build a filesystem-safe PNG name from a media title.
+ * Build a filesystem-safe base name from a media title.
  *
- * @param title Source title shown on the share card.
+ * @param title Source title shown on the share card or export dialog.
  */
-export const shareImageFileName = (title?: string | null): string => {
+export const exportBaseFileName = (title?: string | null): string => {
   const cleaned = (title?.trim() || 'VidBee')
     .replace(/[<>:"/\\|?*]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
     .replace(/[. ]+$/g, '')
     .slice(0, 80)
-  return `${cleaned || 'VidBee'}.png`
+  return cleaned || 'VidBee'
 }
 
 /**
- * Rasterize the branded share card as a 2x PNG blob.
+ * Build a filesystem-safe PNG name from a media title.
  *
- * @param element Root of the share card.
+ * @param title Source title shown on the share card.
  */
-export const captureShareImageBlob = async (element: HTMLElement): Promise<Blob> => {
-  const blob = await snapdom.toBlob(element, {
-    backgroundColor: SHARE_CARD_WASH,
-    dpr: 2,
-    embedFonts: true,
-    type: 'png'
-  })
-  return blob.type === 'image/png' ? blob : new Blob([blob], { type: 'image/png' })
+export const shareImageFileName = (title?: string | null): string =>
+  `${exportBaseFileName(title)}.png`
+
+/**
+ * Build a filesystem-safe export name with the given extension.
+ *
+ * @param title Source title used as the default file name.
+ * @param extension File extension without a leading dot.
+ */
+export const exportFileName = (title: string | null | undefined, extension: string): string =>
+  `${exportBaseFileName(title)}.${extension.replace(/^\./, '')}`
+
+/**
+ * Render the share card in the hidden window and return a PNG blob.
+ *
+ * @param payload Serializable card props from the visible preview.
+ */
+export const captureShareImageBlob = async (payload: ShareCardPayload): Promise<Blob> => {
+  const png = await ipcServices.window.captureShareCard(payload)
+  return new Blob([png], { type: 'image/png' })
 }
 
 /**
- * Copy a PNG blob to the system clipboard.
+ * Copy a PNG blob to the system clipboard through the main process.
  *
  * @param png PNG bytes from `captureShareImageBlob`.
  */
 export const copyShareImageBlob = async (png: Blob): Promise<void> => {
-  await navigator.clipboard.write([new ClipboardItem({ 'image/png': png })])
-}
-
-/**
- * Capture the branded prompt card and copy a PNG to the clipboard.
- *
- * @param element Root of the share card.
- */
-export const copyPromptShareImage = async (element: HTMLElement): Promise<void> => {
-  await copyShareImageBlob(await captureShareImageBlob(element))
+  await ipcServices.window.writeShareImage(await png.arrayBuffer())
 }

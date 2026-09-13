@@ -14,6 +14,11 @@ interface TrackDailyClientVersionOptions {
   version: string
 }
 
+/** Send one privacy-safe desktop product event when analytics is enabled. */
+const trackDesktopEvent = (eventName: string, properties?: Record<string, unknown>): void => {
+  window.rybbit?.event(eventName, properties)
+}
+
 const padNumber = (value: number): string => {
   return value.toString().padStart(2, '0')
 }
@@ -111,4 +116,9 @@ const trackDailyClientVersion = ({
   writeDailyVersionSnapshot(userId, { dayKey })
 }
 
-export { getNextDayDelayMs, getOrCreateRybbitDeviceUserId, trackDailyClientVersion }
+export {
+  getNextDayDelayMs,
+  getOrCreateRybbitDeviceUserId,
+  trackDailyClientVersion,
+  trackDesktopEvent
+}

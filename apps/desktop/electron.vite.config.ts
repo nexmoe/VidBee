@@ -46,6 +46,7 @@ const nativeRuntimeExternals = ['electron', 'better-sqlite3', 'sherpa-onnx-node'
 const nativeRuntimeExternalMatchers: Array<string | RegExp> = [
   ...nativeRuntimeExternals,
   /^electron\//,
+  /^@earendil-works\/pi-coding-agent(?:\/|$)/,
   /^sherpa-onnx-/
 ]
 
@@ -80,6 +81,12 @@ const createTelemetryDefines = (mode: string): Record<string, string> => {
 
 export default defineConfig(({ mode }) => {
   const define = createTelemetryDefines(mode)
+  const portlessUrl = mode === 'development' ? process.env.PORTLESS_URL : undefined
+  if (portlessUrl) {
+    define['import.meta.env.VITE_VIDBEE_HOME_URL'] = JSON.stringify(
+      portlessUrl.replace('desktop.vidbee.', 'home.vidbee.')
+    )
+  }
   const rendererResolve = createRendererResolve(import.meta.dirname)
 
   return {
@@ -178,6 +185,9 @@ export default defineConfig(({ mode }) => {
       }
     },
     renderer: {
+      server: portlessUrl
+        ? { host: '127.0.0.1', port: Number(process.env.PORT), strictPort: true }
+        : undefined,
       base: './',
       define,
       build: {
@@ -210,7 +220,6 @@ export default defineConfig(({ mode }) => {
           '@streamdown/math',
           '@streamdown/cjk',
           '@shadcn/react/message-scroller',
-          '@zumer/snapdom',
           // CJS UMD; Vite 8 otherwise serves it as ESM without a default export.
           'beautiful-mermaid',
           'elkjs/lib/elk.bundled.js'
@@ -225,6 +234,18 @@ export default defineConfig(({ mode }) => {
         }
       },
       plugins: [
+        {
+          name: 'dev-csp-inline-scripts',
+          transformIndexHtml(html) {
+            if (mode !== 'development') {
+              return html
+            }
+            return html.replace(
+              "script-src 'self' 'unsafe-eval'",
+              "script-src 'self' 'unsafe-eval' 'unsafe-inline'"
+            )
+          }
+        },
         react(),
         Icons({
           compiler: 'jsx',

@@ -1,11 +1,12 @@
 import { Loader2 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { createContext, type ReactNode, useContext, useEffect, useMemo, useState } from 'react'
 import { ImageWithPlaceholder } from './image-with-placeholder'
 
 interface RemoteImageProps {
   src?: string | null
   alt: string
   className?: string
+  imgClassName?: string
   placeholderClassName?: string
   fallbackIcon?: React.ReactNode
   loadingIcon?: React.ReactNode
@@ -17,13 +18,43 @@ interface RemoteImageProps {
   cacheTimeoutMs?: number
 }
 
+interface RemoteImageDefaults {
+  cacheResolver?: RemoteImageProps['cacheResolver']
+  localUrlPrefixes?: string[]
+  cacheTimeoutMs?: number
+}
+
+interface RemoteImageProviderProps extends RemoteImageDefaults {
+  children: ReactNode
+}
+
 const DEFAULT_CACHE_TIMEOUT_MS = 30_000
 const DEFAULT_LOCAL_URL_PREFIXES = ['file://', 'data:']
+const RemoteImageContext = createContext<RemoteImageDefaults>({})
 
+/**
+ * Provide default cache resolution for RemoteImage and shared consumers such as
+ * DownloadPlatformIcon.
+ */
+export function RemoteImageProvider({
+  children,
+  cacheResolver,
+  localUrlPrefixes,
+  cacheTimeoutMs
+}: RemoteImageProviderProps) {
+  const value = useMemo(
+    () => ({ cacheResolver, localUrlPrefixes, cacheTimeoutMs }),
+    [cacheResolver, cacheTimeoutMs, localUrlPrefixes]
+  )
+  return <RemoteImageContext.Provider value={value}>{children}</RemoteImageContext.Provider>
+}
+
+/** True when the URL must be fetched from a remote HTTP(S) host. */
 const isHttpUrl = (value: string): boolean => {
   return value.startsWith('http://') || value.startsWith('https://')
 }
 
+/** True when the renderer can load this URL without a remote fetch. */
 const isLocalUrl = (value: string, prefixes: readonly string[]): boolean => {
   for (const prefix of prefixes) {
     if (value.startsWith(prefix)) {
@@ -34,10 +65,15 @@ const isLocalUrl = (value: string, prefixes: readonly string[]): boolean => {
   return false
 }
 
+/**
+ * Render an image, optionally resolving HTTP URLs through a cache so CSP-limited
+ * hosts (Electron) never load the original remote src.
+ */
 export function RemoteImage({
   src,
   alt,
   className,
+  imgClassName,
   placeholderClassName,
   fallbackIcon,
   loadingIcon,
@@ -45,9 +81,15 @@ export function RemoteImage({
   onLoadingChange,
   useCache = true,
   cacheResolver,
-  localUrlPrefixes = DEFAULT_LOCAL_URL_PREFIXES,
-  cacheTimeoutMs = DEFAULT_CACHE_TIMEOUT_MS
+  localUrlPrefixes,
+  cacheTimeoutMs
 }: RemoteImageProps) {
+  const defaults = useContext(RemoteImageContext)
+  const resolvedCacheResolver = cacheResolver ?? defaults.cacheResolver
+  const resolvedLocalUrlPrefixes =
+    localUrlPrefixes ?? defaults.localUrlPrefixes ?? DEFAULT_LOCAL_URL_PREFIXES
+  const resolvedCacheTimeoutMs =
+    cacheTimeoutMs ?? defaults.cacheTimeoutMs ?? DEFAULT_CACHE_TIMEOUT_MS
   const [resolvedSrc, setResolvedSrc] = useState<string | undefined>()
   const [isResolving, setIsResolving] = useState(false)
   const [isImageLoading, setIsImageLoading] = useState(true)
@@ -72,11 +114,11 @@ export function RemoteImage({
 
       const shouldResolveFromCache =
         useCache &&
-        Boolean(cacheResolver) &&
+        Boolean(resolvedCacheResolver) &&
         isHttpUrl(value) &&
-        !isLocalUrl(value, localUrlPrefixes)
+        !isLocalUrl(value, resolvedLocalUrlPrefixes)
 
-      if (!(shouldResolveFromCache && cacheResolver)) {
+      if (!(shouldResolveFromCache && resolvedCacheResolver)) {
         setResolvedSrc(value)
         setIsResolving(false)
         return
@@ -88,15 +130,21 @@ export function RemoteImage({
 
       try {
         const timeoutPromise = new Promise<undefined>((resolve) => {
-          timeoutId = window.setTimeout(() => resolve(undefined), cacheTimeoutMs)
+          timeoutId = window.setTimeout(() => resolve(undefined), resolvedCacheTimeoutMs)
         })
 
         const resolved = await Promise.race([
-          cacheResolver(value).then((output) => output ?? undefined),
+          resolvedCacheResolver(value).then((output) => output ?? undefined),
           timeoutPromise
         ])
 
         if (!isActive) {
+          return
+        }
+
+        if (!resolved) {
+          setResolvedSrc(undefined)
+          onError?.()
           return
         }
 
@@ -107,6 +155,7 @@ export function RemoteImage({
         }
 
         setResolvedSrc(undefined)
+        onError?.()
       } finally {
         if (timeoutId >= 0) {
           window.clearTimeout(timeoutId)
@@ -122,7 +171,14 @@ export function RemoteImage({
     return () => {
       isActive = false
     }
-  }, [cacheResolver, cacheTimeoutMs, localUrlPrefixes, src, useCache])
+  }, [
+    onError,
+    resolvedCacheResolver,
+    resolvedCacheTimeoutMs,
+    resolvedLocalUrlPrefixes,
+    src,
+    useCache
+  ])
 
   useEffect(() => {
     if (resolvedSrc) {
@@ -143,15 +199,18 @@ export function RemoteImage({
   const displayLoadingIcon = loadingIcon ?? defaultLoadingIcon
 
   return (
-    <ImageWithPlaceholder
-      alt={alt}
-      className={className}
-      fallbackIcon={isLoading ? displayLoadingIcon : fallbackIcon}
-      onError={onError}
-      onLoad={() => setIsImageLoading(false)}
-      placeholderClassName={placeholderClassName}
-      src={resolvedSrc}
-    />
+    <div data-remote-image={isLoading ? 'pending' : 'ready'} style={{ display: 'contents' }}>
+      <ImageWithPlaceholder
+        alt={alt}
+        className={className}
+        fallbackIcon={isLoading ? displayLoadingIcon : fallbackIcon}
+        imgClassName={imgClassName}
+        onError={onError}
+        onLoad={() => setIsImageLoading(false)}
+        placeholderClassName={placeholderClassName}
+        src={resolvedSrc}
+      />
+    </div>
   )
 }
 

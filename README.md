@@ -150,6 +150,7 @@ services:
       VIDBEE_API_HOST: 0.0.0.0
       VIDBEE_API_PORT: 3100
       VIDBEE_DOWNLOAD_DIR: /data/downloads
+      VIDBEE_DATA_DIR: /data/vidbee
       VIDBEE_HISTORY_STORE_PATH: /data/vidbee/vidbee.db
     ports:
       - "3100:3100"
@@ -187,6 +188,13 @@ VIDBEE_WEB_PORT=3000
 # Optional host or NAS bind mount. The named volume remains the default.
 VIDBEE_DOWNLOAD_DIR_HOST=/path/on/your/NAS/downloads
 ```
+
+Storage inside the API container:
+
+- `/data/downloads` — media files (`VIDBEE_DOWNLOAD_DIR`)
+- `/data/vidbee` — `vidbee.db` (queue, history, transcripts, subscriptions), settings, uploaded cookies, and transcription models (`VIDBEE_DATA_DIR`)
+
+The web API uses the same SQLite file layout as Desktop: one `vidbee.db` for the download queue, history, transcripts, and RSS subscriptions. The web UI talks to the server filesystem, not the browser. Use **Save to this computer** to pull a finished file down, and upload a Netscape `cookies.txt` for authenticated sites. If you already stored sqlite under `/data/downloads/.vidbee`, VidBee keeps using that directory until `/data/vidbee/vidbee.db` exists.
 
 ## 🤝 Contributing
 

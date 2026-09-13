@@ -10,6 +10,9 @@ protocols:
   - name: VidBee
     schemes:
       - vidbee
+  - name: VidBee Authentication
+    schemes:
+      - com.vidbee
 files:
   - '!**/.vscode/*'
   - '!**/.context/**'

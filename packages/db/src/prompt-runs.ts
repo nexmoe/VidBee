@@ -15,6 +15,7 @@ export const transcriptPromptRunsTable = sqliteTable(
     text: text('text').notNull(),
     thinking: text('thinking').notNull().default(''),
     thinkingMs: integer('thinking_ms', { mode: 'number' }).notNull().default(0),
+    cloudResultId: text('cloud_result_id'),
     error: text('error'),
     errorCode: text('error_code'),
     createdAt: integer('created_at', { mode: 'number' }).notNull(),
@@ -56,6 +57,10 @@ export const PROMPT_RUN_DDL_V3 = `
 ALTER TABLE transcript_prompt_runs ADD COLUMN thinking_ms INTEGER NOT NULL DEFAULT 0;
 `
 
+export const PROMPT_RUN_DDL_V4 = `
+ALTER TABLE transcript_prompt_runs ADD COLUMN cloud_result_id TEXT;
+`
+
 /**
  * Apply prompt-run tables onto an existing `vidbee.db`.
  *
@@ -72,5 +77,8 @@ export const applyPromptRunMigrations = (exec: (sql: string) => void, columns: s
   }
   if (!columns.includes('thinking_ms')) {
     exec(PROMPT_RUN_DDL_V3)
+  }
+  if (!columns.includes('cloud_result_id')) {
+    exec(PROMPT_RUN_DDL_V4)
   }
 }

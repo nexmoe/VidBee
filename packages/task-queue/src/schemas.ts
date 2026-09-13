@@ -20,11 +20,7 @@ export const TaskStatusSchema = z.enum([
   'cancelled'
 ])
 
-export const TaskPrioritySchema = z.union([
-  z.literal(0),
-  z.literal(10),
-  z.literal(20)
-])
+export const TaskPrioritySchema = z.union([z.literal(0), z.literal(10), z.literal(20)])
 
 export const ErrorCategorySchema = z.enum([
   'http-429',
@@ -59,12 +55,29 @@ export const TranscriptTaskResultSchema = z.object({
   transcriptId: z.string().min(1)
 })
 
+export const SubtitleDownloadStatusSchema = z.enum([
+  'downloaded',
+  'unavailable',
+  'skipped-auth',
+  'failed'
+])
+
 export const TaskOutputSchema = z.object({
   filePath: z.string(),
   size: z.number().int().nonnegative(),
   durationMs: z.number().int().nullable(),
   sha256: z.string().nullable(),
   formatId: z.string().nullable().optional(),
+  subtitleStatus: SubtitleDownloadStatusSchema.optional(),
+  subtitleLanguages: z.array(z.string()).optional(),
+  subtitleAcquisition: z
+    .object({
+      id: z.string(),
+      acquiredAt: z.number(),
+      credentialsUsed: z.boolean().optional(),
+      visibility: z.enum(['public', 'private', 'unlisted']).optional()
+    })
+    .optional(),
   transcript: TranscriptTaskResultSchema.optional()
 })
 

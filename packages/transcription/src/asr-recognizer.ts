@@ -1,4 +1,5 @@
 import { type AsrFamily, type AsrTierId, asrTierInfo } from './asr-tiers'
+import type { SherpaExecutionProvider } from './compute-provider'
 import type { ModelManager } from './model-manager'
 
 export interface AsrModelPaths {
@@ -150,10 +151,7 @@ export const familySupportsAsrLanguage = (family: AsrFamily): boolean =>
 /**
  * Always auto-detect. Chinese script is applied after recognition, not as an ASR language.
  */
-export const asrLanguageForFamily = (
-  _family?: AsrFamily,
-  _language?: string | null
-): string => ''
+export const asrLanguageForFamily = (_family?: AsrFamily, _language?: string | null): string => ''
 
 export interface AsrLanguageStream {
   setOption?: (key: string, value: string) => void
@@ -188,10 +186,12 @@ export const buildOfflineRecognizerConfig = (
   family: AsrFamily,
   paths: AsrModelPaths,
   numThreads = 2,
-  _language?: string
+  _language?: string,
+  provider: SherpaExecutionProvider = 'cpu',
+  debug = 0
 ): Record<string, unknown> => {
   const featConfig = { sampleRate: 16_000, featureDim: 80 }
-  const shared = { numThreads, provider: 'cpu', debug: 0 }
+  const shared = { numThreads, provider, debug }
   const asrLanguage = ''
   if (family === 'whisper') {
     if (!(paths.encoder && paths.decoder && paths.tokens)) {
@@ -275,13 +275,18 @@ export const buildOfflineRecognizerConfig = (
 export const tryRecognizerConfig = (
   models: ModelManager,
   tier: AsrTierId,
-  numThreads = 2
+  numThreads = 2,
+  provider: SherpaExecutionProvider = 'cpu',
+  debug = 0
 ): Record<string, unknown> | null => {
   try {
     return buildOfflineRecognizerConfig(
       asrTierInfo(tier).family,
       resolveAsrModelPaths(models, tier),
-      numThreads
+      numThreads,
+      undefined,
+      provider,
+      debug
     )
   } catch {
     return null

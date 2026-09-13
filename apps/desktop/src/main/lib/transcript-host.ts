@@ -1,4 +1,3 @@
-import { existsSync } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { type Task, TRANSCRIBABLE_TASK_KINDS } from '@vidbee/task-queue'
@@ -18,6 +17,7 @@ import {
   findActiveTranscription,
   findSidecarCaptionTracks,
   type GpuKind,
+  gpuKindFromHint,
   type InsertTranscriptSegmentInput,
   importCaptionsForDownload,
   importSidecarCaptionsIfPresent,
@@ -60,6 +60,7 @@ import { type ImportLocalMediaResult, importLocalMediaFiles } from './import-loc
 import { getDesktopTaskQueueRef } from './queue-ref'
 import { resolveTaskSourceFile } from './source-file'
 import { readElectronLocaleHints } from './system-locale'
+import { resolveWorkerBundle } from './transcription-worker-path'
 
 const logger = scopedLoggers.engine
 
@@ -241,13 +242,7 @@ export const getModelManager = (): ModelManager => {
  * Path to the isolated AI worker bundle emitted next to the main process.
  */
 export const resolveTranscriptionWorkerScript = (): string => {
-  const here = dirname(fileURLToPath(import.meta.url))
-  const candidates = [
-    join(here, 'transcription-worker.js'),
-    join(here, '../../../../../packages/transcription/src/worker/entry.ts')
-  ]
-  const found = candidates.find((path) => existsSync(path))
-  return found ?? candidates[0] ?? join(here, 'transcription-worker.js')
+  return resolveWorkerBundle(dirname(fileURLToPath(import.meta.url)))
 }
 
 export const resolveTranscriptionBackend = (): 'sherpa' | 'fake' =>
@@ -476,18 +471,20 @@ export const getTranscriptSnapshot = (downloadTaskId: string): TranscriptSnapsho
     tracks: sourceFilePath ? findSidecarCaptionTracks(sourceFilePath) : []
   })
   const selected = sources.find((item) => item.selected)
-  record = recordForTranscriptSource(selected, stored, record)
+  const latestRecord = record
+  record = recordForTranscriptSource(selected, stored, latestRecord)
+  const listedRecord = record ?? latestRecord
   return {
     downloadTaskId,
-    transcriptionTaskId: task?.id ?? record?.transcriptionTaskId ?? null,
+    transcriptionTaskId: task?.id ?? listedRecord?.transcriptionTaskId ?? null,
     transcriptId: record?.id ?? null,
-    listState: listStateOf(task, record),
+    listState: listStateOf(task, listedRecord),
     stage: transcriptionPartials.getByDownload(downloadTaskId)?.stage ?? stageFromTask(task),
     stageHistory: transcriptionPartials.getByDownload(downloadTaskId)?.stageHistory ?? [],
     error: task?.lastError?.rawMessage ?? null,
     sourceFilePath,
     title: titleFromDownload(download, sourceFilePath),
-    updatedAt: Math.max(task?.updatedAt ?? 0, record?.updatedAt ?? 0),
+    updatedAt: Math.max(task?.updatedAt ?? 0, listedRecord?.updatedAt ?? 0),
     record,
     asrTier: isAsrTierId(record?.asrTier)
       ? record.asrTier
@@ -501,6 +498,7 @@ export const getTranscriptSnapshot = (downloadTaskId: string): TranscriptSnapsho
 
 /**
  * Switch the visible transcript between caption languages and local ASR.
+ * Switching to ASR does not start transcription; the user starts it from the empty pane.
  * Viewing captions does not cancel an in-flight ASR run.
  *
  * @param downloadTaskId Parent download id.
@@ -522,16 +520,10 @@ export const selectTranscriptSource = async (
       .find((row) => row.sourceKind === 'asr' && row.resultKind === 'transcript')
     if (stored) {
       getTranscriptStore().activate(downloadTaskId, stored.id)
-      const next = getTranscriptSnapshot(downloadTaskId)
-      broadcastTranscript(next)
-      return next
     }
-    if (findActiveTranscription(getDesktopTaskQueueRef(), downloadTaskId)) {
-      const next = getTranscriptSnapshot(downloadTaskId)
-      broadcastTranscript(next)
-      return next
-    }
-    return startTranscriptionForDownload(downloadTaskId, true)
+    const next = getTranscriptSnapshot(downloadTaskId)
+    broadcastTranscript(next)
+    return next
   }
   const sourceFilePath = snapshot.sourceFilePath
   if (sourceFilePath) {
@@ -693,6 +685,9 @@ export const emptyTranscriptSnapshot = (downloadTaskId: string): TranscriptSnaps
  * @param downloadTaskId Parent download id.
  */
 export const deleteTranscriptsForDownload = (downloadTaskId: string): void => {
+  void import('./agent-chat-runner')
+    .then(({ deleteAgentVideo }) => deleteAgentVideo(downloadTaskId))
+    .catch((error) => logger.error('Failed to clean up video agent state', error))
   transcriptionPartials.clearByDownload(downloadTaskId)
   viewingKeys.delete(downloadTaskId)
   getTranscriptStore().deleteByDownload(downloadTaskId)
@@ -701,22 +696,31 @@ export const deleteTranscriptsForDownload = (downloadTaskId: string): void => {
   broadcastTranscript(emptyTranscriptSnapshot(downloadTaskId))
 }
 
-let gpuProbe: Promise<{ gpu: GpuKind; gpuName: string | null }> | null = null
+interface HostGpuProbe {
+  gpu: GpuKind
+  gpuKinds: GpuKind[]
+  gpuName: string | null
+}
+
+let gpuProbe: Promise<HostGpuProbe> | null = null
 
 /**
  * Read Chromium GPU info once and cache the vendor used for recommendations.
  */
-const probeHostGpu = async (): Promise<{ gpu: GpuKind; gpuName: string | null }> => {
+const probeHostGpu = async (): Promise<HostGpuProbe> => {
   if (!gpuProbe) {
     gpuProbe = (async () => {
       try {
         const info = await app.getGPUInfo('complete')
         const devices = collectGpuDevices(info)
         const machine = readMachineProfile({ devices })
-        return { gpu: machine.gpu, gpuName: machine.gpuName }
+        const gpuKinds = [
+          ...new Set(devices.map(gpuKindFromHint).filter((kind) => kind !== 'unknown'))
+        ]
+        return { gpu: machine.gpu, gpuKinds, gpuName: machine.gpuName }
       } catch (error) {
         logger.warn('transcription: gpu probe failed', error)
-        return { gpu: 'unknown', gpuName: null }
+        return { gpu: 'unknown', gpuKinds: [], gpuName: null }
       }
     })()
   }
@@ -729,6 +733,12 @@ const probeHostGpu = async (): Promise<{ gpu: GpuKind; gpuName: string | null }>
 export const startHostGpuProbe = (): void => {
   void probeHostGpu()
 }
+
+/**
+ * Return every detected GPU vendor so provider selection does not ignore inactive adapters.
+ */
+export const resolveTranscriptionGpuKinds = async (): Promise<readonly GpuKind[]> =>
+  (await probeHostGpu()).gpuKinds
 
 /**
  * Return on-disk model status plus a machine/language recommendation.

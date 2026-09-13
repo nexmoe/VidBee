@@ -4,13 +4,41 @@ import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { promisify } from 'node:util'
+import { embedArtifactImages } from '@shared/agent-markdown'
+import type { ShareCardPayload } from '@shared/types/share-card'
 import { BrowserWindow, clipboard, dialog, Notification, ShareMenu, shell } from 'electron'
 import { type IpcContext, IpcMethod, IpcService } from 'electron-ipc-decorator'
+import { getAgentChatStore } from '../../lib/agent-chat-store'
+import { readAgentArtifactImage } from '../../lib/agent-media'
 import { mediaFileDialogFilters } from '../../lib/import-local-media'
+import {
+  markdownToPrintableHtml,
+  printHtmlToPdf,
+  withVidBeeExportFooter
+} from '../../lib/markdown-pdf'
+import { captureShareCardPages } from '../../lib/share-capture-window'
+import { saveSplitShareImageFiles } from '../../lib/share-image-split'
 import { getPortableDownloadsPath, isPortableMode } from '../../portable'
 import { scopedLoggers } from '../../utils/logger'
 
 const execFileAsync = promisify(execFile)
+
+/**
+ * Inline cited screenshots as data URIs so exported Markdown/PDF files stay self-contained.
+ *
+ * @param markdown Reply body that may still use `artifact:` ids.
+ * @param threadId Conversation that owns those attachments.
+ */
+async function markdownWithEmbeddedImages(markdown: string, threadId?: string): Promise<string> {
+  if (!threadId) {
+    return markdown
+  }
+  const artifacts = getAgentChatStore().get(threadId)?.artifacts
+  if (!artifacts?.length) {
+    return markdown
+  }
+  return await embedArtifactImages(markdown, artifacts, readAgentArtifactImage)
+}
 
 class FileSystemService extends IpcService {
   static readonly groupName = 'fs'
@@ -100,7 +128,7 @@ class FileSystemService extends IpcService {
   @IpcMethod()
   async saveTextFile(
     _context: IpcContext,
-    options: { content: string; defaultFileName: string }
+    options: { content: string; defaultFileName: string; threadId?: string }
   ): Promise<{ path: string } | null> {
     const fileName = path.basename(options.defaultFileName || 'transcript.txt')
     const defaultPath = path.join(this.getDefaultDownloadPath(_context), fileName)
@@ -120,8 +148,63 @@ class FileSystemService extends IpcService {
     }
 
     const normalizedPath = path.normalize(this.sanitizePath(result.filePath))
-    await fs.writeFile(normalizedPath, options.content, 'utf8')
+    let content = await markdownWithEmbeddedImages(options.content, options.threadId)
+    if (options.threadId) {
+      content = withVidBeeExportFooter(content)
+    }
+    await fs.writeFile(normalizedPath, content, 'utf8')
     return { path: normalizedPath }
+  }
+
+  /**
+   * Ask the user where to save a PDF, render markdown in a hidden window, and write it.
+   *
+   * @param _context IPC call context.
+   * @param options Markdown body and the suggested download name.
+   */
+  @IpcMethod()
+  async saveMarkdownPdf(
+    _context: IpcContext,
+    options: { markdown: string; defaultFileName: string; title?: string; threadId?: string }
+  ): Promise<{ path: string } | null> {
+    let fileName = path.basename(options.defaultFileName || 'VidBee.pdf')
+    if (!fileName.toLowerCase().endsWith('.pdf')) {
+      fileName = `${fileName}.pdf`
+    }
+    const defaultPath = path.join(this.getDefaultDownloadPath(_context), fileName)
+    const saveOptions = {
+      defaultPath,
+      filters: [{ extensions: ['pdf'], name: 'PDF' }]
+    }
+    const window = BrowserWindow.getFocusedWindow()
+    const result = window
+      ? await dialog.showSaveDialog(window, saveOptions)
+      : await dialog.showSaveDialog(saveOptions)
+
+    if (result.canceled || !result.filePath) {
+      return null
+    }
+
+    const normalizedPath = path.normalize(this.sanitizePath(result.filePath))
+    const markdown = await markdownWithEmbeddedImages(options.markdown, options.threadId)
+    const html = markdownToPrintableHtml(markdown, options.title)
+    const tempPath = path.join(os.tmpdir(), `vidbee-export-${process.pid}-${Date.now()}.html`)
+    try {
+      await fs.writeFile(tempPath, html, 'utf8')
+      const pdf = await printHtmlToPdf(
+        tempPath,
+        () =>
+          new BrowserWindow({
+            backgroundColor: '#ffffff',
+            show: false,
+            webPreferences: { sandbox: true }
+          })
+      )
+      await fs.writeFile(normalizedPath, pdf)
+      return { path: normalizedPath }
+    } finally {
+      await fs.unlink(tempPath).catch(() => {})
+    }
   }
 
   /**
@@ -156,6 +239,23 @@ class FileSystemService extends IpcService {
     const normalizedPath = path.normalize(this.sanitizePath(result.filePath))
     await fs.writeFile(normalizedPath, Buffer.from(new Uint8Array(options.data)))
     return { path: normalizedPath }
+  }
+
+  /** Choose one destination and save all numbered share-image parts in a new folder. */
+  @IpcMethod()
+  async saveSplitShareImage(
+    _context: IpcContext,
+    options: { payload: ShareCardPayload; defaultFileName: string; imageCount?: number }
+  ): Promise<{ path: string; count: number } | null> {
+    const directory = await this.selectDirectory(_context)
+    if (!directory) {
+      return null
+    }
+    const images = await captureShareCardPages(options.payload, options.imageCount)
+    return await saveSplitShareImageFiles(directory, {
+      images,
+      defaultFileName: options.defaultFileName
+    })
   }
 
   /**

@@ -12,6 +12,23 @@ import {
   updateAutomationDescriptorToken
 } from './lib/automation-descriptor'
 import { downloadEngine } from './lib/download-facade'
+import {
+  clearExtensionCookies,
+  getExtensionCookieConnection,
+  handleExtensionCookies,
+  isExtensionCookiesPath
+} from './lib/extension-cookies'
+import { applyExtensionCors } from './lib/extension-origin'
+import {
+  clearExtensionOverviews,
+  handleExtensionOverview,
+  isExtensionOverviewPath
+} from './lib/extension-overview'
+import {
+  classifyLocalApiCaller,
+  LOCAL_API_PORT_END,
+  LOCAL_API_PORT_START
+} from './lib/local-api-guard'
 import { getDesktopSubscriptions, removeDesktopSubscription } from './lib/subscriptions-host'
 import {
   getDesktopTaskQueue,
@@ -20,8 +37,8 @@ import {
   stopDesktopTaskQueue
 } from './lib/task-queue-host'
 
-const PORT_RANGE_START = 27_100
-const PORT_RANGE_END = 27_120
+const PORT_RANGE_START = LOCAL_API_PORT_START
+const PORT_RANGE_END = LOCAL_API_PORT_END
 
 const EXTENSION_TOKEN_TTL_MS = 60_000
 const AUTOMATION_TOKEN_TTL_MS = 60 * 60 * 1000
@@ -55,20 +72,13 @@ const isLoopbackAddress = (address?: string | null): boolean => {
 
 const writeJson = (res: http.ServerResponse, status: number, body: unknown): void => {
   res.writeHead(status, {
-    'Content-Type': 'application/json; charset=utf-8',
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+    'Content-Type': 'application/json; charset=utf-8'
   })
   res.end(JSON.stringify(body))
 }
 
 const writeEmpty = (res: http.ServerResponse, status: number): void => {
-  res.writeHead(status, {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-  })
+  res.writeHead(status)
   res.end()
 }
 
@@ -264,8 +274,7 @@ const handleAutomationRequest = async (
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
       Connection: 'keep-alive',
-      'X-Accel-Buffering': 'no',
-      'Access-Control-Allow-Origin': '*'
+      'X-Accel-Buffering': 'no'
     })
     res.write('event: connected\ndata: {"ok":true}\n\n')
     automationSseClients.add(res)
@@ -446,6 +455,37 @@ const handleRequest = async (
       return
     }
 
+    const caller = classifyLocalApiCaller(req.headers)
+    if (caller.kind === 'rejected') {
+      writeJson(res, 403, {
+        error: caller.reason === 'host' ? 'Forbidden host' : 'Forbidden origin'
+      })
+      return
+    }
+    if (caller.kind === 'extension') {
+      applyExtensionCors(res, caller.origin)
+    }
+
+    if (req.url && isExtensionOverviewPath(new URL(req.url, 'http://127.0.0.1').pathname)) {
+      await handleExtensionOverview(
+        req,
+        res,
+        new URL(req.url, 'http://127.0.0.1').pathname,
+        consumeExtensionToken
+      )
+      return
+    }
+
+    if (req.url && isExtensionCookiesPath(new URL(req.url, 'http://127.0.0.1').pathname)) {
+      await handleExtensionCookies(
+        req,
+        res,
+        new URL(req.url, 'http://127.0.0.1').pathname,
+        consumeExtensionToken
+      )
+      return
+    }
+
     if (req.method === 'OPTIONS') {
       writeEmpty(res, 204)
       return
@@ -460,6 +500,10 @@ const handleRequest = async (
     const pathname = requestUrl.pathname
 
     if (pathname.startsWith(`${AUTOMATION_PREFIX}/`) || pathname === AUTOMATION_PREFIX) {
+      if (caller.kind !== 'cli') {
+        writeJson(res, 403, { error: 'Forbidden origin' })
+        return
+      }
       await handleAutomationRequest(req, res, pathname)
       return
     }
@@ -470,12 +514,20 @@ const handleRequest = async (
     }
 
     if (pathname === '/token') {
+      if (caller.kind !== 'extension') {
+        writeJson(res, 403, { error: 'Extension origin required' })
+        return
+      }
       const token = issueExtensionToken()
       writeJson(res, 200, { token, expiresInMs: EXTENSION_TOKEN_TTL_MS })
       return
     }
 
     if (pathname === '/video-info') {
+      if (caller.kind !== 'extension') {
+        writeJson(res, 403, { error: 'Extension origin required' })
+        return
+      }
       const token = requestUrl.searchParams.get('token')
       if (!consumeExtensionToken(token)) {
         writeJson(res, 401, { error: 'Invalid token' })
@@ -510,7 +562,11 @@ const handleRequest = async (
     }
 
     if (pathname === '/status') {
-      writeJson(res, 200, { ok: true })
+      writeJson(res, 200, {
+        ok: true,
+        capabilities: { extensionCookies: 1, extensionOverview: 1 },
+        extension: getExtensionCookieConnection()
+      })
       return
     }
 
@@ -601,6 +657,8 @@ export async function stopExtensionApiServer(): Promise<void> {
 
   server = null
   serverPort = null
+  clearExtensionOverviews()
+  clearExtensionCookies()
   extensionTokens.clear()
   automationToken = null
   automationTokenRecord = null

@@ -13,8 +13,6 @@
     "appName": "VidBee",
     "autoUpdateDescription": "Unduh dan instal rilis baru secara otomatis di latar belakang.",
     "autoUpdateTitle": "Pembaruan otomatis",
-    "betaProgramDescription": "Terima build awal dan fitur yang akan datang sebelum orang lain.",
-    "betaProgramTitle": "Saluran pratinjau",
     "description": "Unduh media dari 1000+ situs, buat transkrip yang dapat dicari di komputer Anda, lalu gunakan penyedia AI pilihan Anda untuk merangkum, menerjemahkan, atau mengajukan pertanyaan—semuanya dalam satu aplikasi desktop gratis dan sumber terbuka.",
     "downloadEngine": {
       "status": {
@@ -24,10 +22,15 @@
         "preparing": "Menyiapkan",
         "retry-scheduled": "Coba lagi dijadwalkan",
         "unavailable": "Tidak tersedia",
-        "up-to-date": "Terbaru"
+        "up-to-date": "Terbaru",
+        "update-available": "Update available"
       },
       "title": "Mesin unduhan",
-      "versions": "yt-dlp {{ytDlpVersion}} · Node {{nodeVersion}}"
+      "versions": "yt-dlp {{ytDlpVersion}} · Node {{nodeVersion}}",
+      "update": "Update yt-dlp",
+      "updated": "yt-dlp updated to {{version}}",
+      "updateFailed": "Could not update yt-dlp: {{error}}",
+      "webVersions": "yt-dlp {{ytDlpVersion}} · FFmpeg {{ffmpegVersion}} · Node {{nodeVersion}}"
     },
     "followAuthorActions": {
       "follow": "Ikuti @nexmoe"
@@ -35,6 +38,16 @@
     "followAuthorDescription": "Tetap update dengan berita dan pembaruan VidBee terbaru.",
     "followAuthorSupport": "Ikuti pengembang di X (Twitter) untuk mendapatkan pembaruan dan berita terbaru tentang VidBee.",
     "followAuthorTitle": "Ikuti Pengembang",
+    "otherProducts": {
+      "lmspeed": {
+        "name": "LMSpeed",
+        "description": "Bandingkan harga, kecepatan, dan keamanan API LLM sebelum memilih penyedia."
+      },
+      "clipii": {
+        "name": "Clipii",
+        "description": "Simpan tautan, file, dan video di pustaka cloud yang bisa dicari."
+      }
+    },
     "here": "di sini",
     "homepage": "Beranda",
     "notifications": {
@@ -155,7 +168,7 @@
     "downloadVideo": "Unduh Video",
     "downloading": "Mengunduh...",
     "enterUrl": "Masukkan URL Video",
-    "enterUrlDescription": "Tempel atau ketik URL video. ",
+    "enterUrlDescription": "Tempel satu atau beberapa tautan video. Letakkan setiap URL di baris terpisah.",
     "error": "Kesalahan",
     "fetch": "Ambil",
     "fetchingVideoInfo": "Mengambil info video...",
@@ -220,7 +233,7 @@
     "total": "Total",
     "unknownQuality": "Kualitas tidak diketahui",
     "unknownSize": "Ukuran tidak diketahui",
-    "urlPlaceholder": "https://www.youtube.com/watch?v=...",
+    "urlPlaceholder": "Tempel URL di sini, satu per baris",
     "video": "Video",
     "videoInfo": "Informasi Video",
     "videoInfoUpdated": "Informasi video diperbarui",
@@ -267,10 +280,7 @@
     "cookiesSetupKeyring": "Build Linux ini tidak dapat membaca cookie Chrome. Gunakan Firefox atau impor file cookie.",
     "cookiesSetupStale": "Cookie saat ini tampak kedaluwarsa atau diblokir. Segarkan login, lalu coba lagi.",
     "cookiesSetupRetry": "Coba unduh lagi",
-    "cookiesSetupDone": "Selesai",
-    "pause": "Jeda",
-    "paused": "Dijeda",
-    "resume": "Lanjutkan"
+    "cookiesSetupDone": "Selesai"
   },
   "error": {
     "title": "Terjadi kesalahan",
@@ -292,6 +302,7 @@
     "helpText": "Jika kesalahan ini terus terjadi, silakan salin laporan kesalahan di atas dan bagikan dengan tim dukungan. Informasi kontak dapat ditemukan di halaman Tentang."
   },
   "errors": {
+    "batchRequiresOneClick": "Aktifkan Unduh Sekali Klik untuk menambahkan beberapa tautan sekaligus",
     "clickToCopy": "Klik untuk menyalin detail",
     "clipboardEmpty": "Clipboard kosong",
     "downloadFailed": "Unduhan gagal",
@@ -349,6 +360,7 @@
     "select": "Pilih",
     "selectAll": "Pilih semua",
     "selectVisible": "Pilih yang terlihat",
+    "moreActions": "Tindakan lainnya",
     "selectItem": "Pilih item",
     "selectedCount": "{{count}} dipilih",
     "selectionSummary": "{{selected}} dari {{total}} terlihat dipilih",
@@ -449,6 +461,87 @@
     "fetchingInfo": "Mengambil informasi playlist..."
   },
   "settings": {
+    "account": {
+      "copyInviteLink": "Salin tautan undangan",
+      "giftHistoryCredits": "Kredit",
+      "giftHistoryDate": "Tanggal",
+      "giftHistoryExpired": "Kedaluwarsa {{date}}",
+      "giftHistoryExpires": "Kedaluwarsa",
+      "giftHistoryReason": "Alasan",
+      "giftHistoryTitle": "Riwayat bonus",
+      "giftReasons": {
+        "admin": "Kredit bonus",
+        "invite_invitee": "Bergabung dengan undangan {{name}}",
+        "invite_inviter": "{{name}} bergabung lewat undanganmu",
+        "welcome": "Kredit selamat datang"
+      },
+      "inviteCopied": "Disalin",
+      "inviteCreditsEarned": "Kredit diperoleh",
+      "inviteDescription": "Bagikan tautanmu. Saat pengguna baru bergabung, kalian berdua mendapat 20K kredit.",
+      "inviteLimitedBadge": "Terbatas",
+      "inviteTitle": "Undang teman",
+      "invitedColumnName": "Nama",
+      "invitedListTitle": "Pengguna yang diundang",
+      "invitedUsers": "Jumlah undangan",
+      "loadMore": "Muat lagi",
+      "creditsDescription": "Digunakan untuk transkripsi dan prompt AI di VidBee Cloud.",
+      "creditsError": "Kredit AI tidak dapat dimuat.",
+      "creditsLoading": "Memuat kredit AI…",
+      "creditsRemaining": "Tersisa {{remaining}}",
+      "creditsTitle": "Kredit AI",
+      "creditsTooltipExpiring": "{{credits}} kedaluwarsa dalam 1 bulan",
+      "creditsTooltipRemaining": "{{credits}} tersisa",
+      "creditsTooltipUsed": "{{used}} terpakai",
+      "creditsUsage": "{{used}} dari {{total}} digunakan",
+      "grantedCredits": "Kredit bonus",
+      "purchasedCredits": "Kredit yang dibeli",
+      "description": "Masuk dengan GitHub untuk menghubungkan akun VidBee.",
+      "error": "Autentikasi tidak dapat diselesaikan. Coba lagi.",
+      "loading": "Memeriksa akun…",
+      "signedOut": "Belum masuk",
+      "signIn": "Lanjutkan dengan GitHub",
+      "signingIn": "Membuka GitHub…",
+      "signOut": "Keluar",
+      "signingOut": "Sedang keluar…",
+      "tab": "Akun",
+      "creditsAvailableAmount": "{{credits}} tersedia",
+      "creditsReservedAmount": "{{credits}} dicadangkan",
+      "creditsReservedHelp": "Dicadangkan untuk tugas berjalan atau pemeriksaan penggunaan. Kredit yang tidak terpakai dilepas setelah perhitungan selesai.",
+      "creditsInterruptedAmount": "{{credits}} dibebankan untuk tugas terhenti",
+      "creditsInterruptedHelp": "Sudah termasuk dalam kredit terpakai, bukan potongan tambahan. Ini adalah biaya yang telah dihitung untuk prompt AI yang gagal, dibatalkan, atau kehabisan waktu.",
+      "creditsRefresh": "Perbarui saldo",
+      "creditsTopUp": "Isi ulang kredit",
+      "creditsTopUpError": "Halaman harga tidak dapat dibuka. Silakan coba lagi.",
+      "creditsStale": "Saldo tidak dapat diperbarui. Jumlah yang ditampilkan mungkin sudah tidak terkini.",
+      "creditsReviewAmount": "{{credits}} dari kredit yang dicadangkan sedang diperiksa",
+      "reservationTitle": "Tugas dengan cadangan",
+      "reservationHelp": "Reservasi kedaluwarsa diperiksa setiap menit. Setelah masa peninjauan lima menit berakhir, bagian yang belum terkonfirmasi dilepas pada pemeriksaan berikutnya.",
+      "reservationTask": "Prompt AI",
+      "reservationElapsed": "Dimulai {{minutes}} menit lalu",
+      "reservationActivity": "Kemajuan terakhir: {{time}}",
+      "reservationHeartbeat": "Koneksi terakhir: {{time}}",
+      "reservationDeadline": "Batas waktu tugas: {{time}}",
+      "reservationReviewDeadline": "Pemeriksaan berakhir paling lambat {{time}}",
+      "reservationReview": "Memeriksa penggunaan",
+      "reservationCancel": "Batalkan tugas",
+      "reservationCancelling": "Membatalkan…",
+      "reservationUnavailable": "Detail tugas tidak dapat diperbarui.",
+      "reservationCancelError": "Tugas ini tidak dapat dibatalkan. Perbarui dan coba lagi.",
+      "creditHistoryTitle": "Riwayat kredit",
+      "creditHistoryHelp": "Biaya dihitung dari penggunaan yang terkonfirmasi. Penggunaan yang belum terkonfirmasi tidak ditagih. Pengembalian kredit sudah termasuk dalam saldo tersedia.",
+      "creditHistoryError": "Riwayat tidak dapat diperbarui. Catatan yang ditampilkan mungkin sudah tidak terbaru.",
+      "creditHistoryEmpty": "Belum ada aktivitas kredit.",
+      "creditHistoryAmount": "{{credits}} kredit",
+      "creditHistoryTokens": "{{input}} token masukan · {{output}} token keluaran",
+      "creditHistoryRefunded": "{{credits}} kredit dikembalikan",
+      "creditHistoryUnverified": "Penggunaan tidak dapat dikonfirmasi, sehingga tidak ada kredit yang ditagih.",
+      "creditHistoryNoCharge": "Tanpa biaya",
+      "creditHistoryCache": "Hasil dari cache",
+      "creditHistoryVerified": "Penggunaan terkonfirmasi",
+      "creditHistoryRecorded": "Tagihan tercatat",
+      "creditHistoryInterrupted": "Terhenti",
+      "creditsUsedShare": "{{percent}} used"
+    },
     "aboutTab": "Tentang",
     "advanced": "Lanjutan",
     "cookiesTab": "Cookie",
@@ -593,7 +686,12 @@
     "title": "Pengaturan",
     "tray": {
       "quit": "Keluar",
-      "showHome": "Tampilkan Beranda"
+      "showHome": "Tampilkan Beranda",
+      "next": "Next",
+      "openDevTools": "Open DevTools",
+      "pause": "Pause",
+      "play": "Play",
+      "previous": "Previous"
     },
     "video": "Preferensi Video",
     "oneClickContainer": "Wadah",
@@ -719,6 +817,15 @@
     "promptsTab": "Prompt",
     "transcriptionTab": "Transkripsi",
     "ai": {
+      "ownProvider": "Gunakan penyedia Anda sendiri",
+      "ownProviderDescription": "Lanjutan: hubungkan model atau penagihan Anda sendiri.",
+      "recommended": "Direkomendasikan",
+      "signInForCloud": "Masuk",
+      "useVidbeeCloud": "Gunakan VidBee Cloud",
+      "vidbeeCloud": "VidBee Cloud",
+      "vidbeeCloudDescription": "Siap digunakan dengan 50K kredit AI. Tidak memerlukan kunci API atau konfigurasi penyedia.",
+      "vidbeeCloudPrivacy": "Isi transkrip hanya dikirim saat Anda menjalankan tindakan AI.",
+      "vidbeeCloudSection": "Layanan terkelola",
       "allServices": "Semua layanan",
       "configured": "Terkonfigurasi",
       "useProvider": "Gunakan",
@@ -766,9 +873,24 @@
         "ollama": "Ollama",
         "openai": "OpenAI",
         "openrouter": "OpenRouter",
-        "xai": "xAI"
+        "xai": "xAI",
+        "alibaba": "Alibaba Cloud",
+        "fireworks": "Fireworks",
+        "minimax": "MiniMax",
+        "mistral": "Mistral",
+        "moonshot": "Moonshot",
+        "novita": "Novita",
+        "ppio": "PPIO",
+        "siliconflow": "SiliconFlow",
+        "stepfun": "StepFun",
+        "together": "Together",
+        "volcengine": "Volcengine",
+        "zhipu": "Zhipu"
       },
       "presetPrompts": {
+        "overview": {
+          "title": "Ringkasan"
+        },
         "bullet-points": {
           "title": "Poin-poin"
         },
@@ -790,7 +912,11 @@
         "translate": {
           "title": "Terjemahkan"
         }
-      }
+      },
+      "createModel": "Create “{{query}}”",
+      "noModelFound": "No model found.",
+      "allModelsSelected": "Semua model dalam daftar sudah ditambahkan.",
+      "loadingModels": "Memuat model dari penyedia…"
     },
     "cookiesSetup": {
       "statusNotConfigured": "Belum diatur",
@@ -833,7 +959,25 @@
       "fileExportExtension": "Ekstensi Chrome / Edge",
       "checking": "Memeriksa cookie…",
       "applied": "Cookie diperbarui",
-      "profileMissingDb": "Profil Firefox ini tidak memiliki basis data cookie. Buka Firefox sekali, lalu coba lagi."
+      "profileMissingDb": "Profil Firefox ini tidak memiliki basis data cookie. Buka Firefox sekali, lalu coba lagi.",
+      "statusUsingExtension": "Using {{browser}} extension",
+      "healthOkExtension": "The VidBee extension will send live cookies from {{browser}} for each download",
+      "healthEmptyExtension": "The extension is connected, but no supported login cookies were found. Sign in to the site in that browser",
+      "statusHeading": "Cookie status",
+      "methodRecommended": "Recommended",
+      "methodExtensionWhy": "Best option. Desktop uses live cookies for each download, including Chrome and Edge on Windows.",
+      "extensionTitle": "Browser extension",
+      "extensionDescription": "Install the VidBee extension so Desktop can use your live signed-in cookies when downloading",
+      "extensionConnected": "Connected",
+      "extensionDisconnected": "Not connected",
+      "extensionConnectedHint": "{{browser}} is connected. New downloads will use cookies from this browser",
+      "extensionDisconnectedHint": "Keep VidBee Desktop open, install the extension, then sign in to the site in that browser",
+      "extensionInstallChrome": "Add to Chrome",
+      "extensionInstallEdge": "Add to Edge",
+      "extensionInstallFirefox": "Add to Firefox",
+      "extensionInstallStep1": "Install the VidBee extension in Chrome, Edge, or Firefox",
+      "extensionInstallStep2": "Keep VidBee Desktop running so the extension can connect",
+      "extensionInstallStep3": "Sign in to YouTube, Bilibili, or other sites in that browser, then open the VidBee toolbar icon once"
     }
   },
   "subscriptions": {
@@ -949,12 +1093,17 @@
     }
   },
   "kernelPreparation": {
+    "copied": "Disalin",
     "copying": "Menyalin mesin unduhan…",
+    "copyLog": "Salin log",
     "description": "VidBee sedang menyiapkan mesin unduhannya. Proses ini hanya memerlukan waktu sebentar.",
     "errorDescription": "VidBee tidak dapat menyiapkan mesin unduhan yang berfungsi. Periksa akses penyimpanan lokal, lalu coba lagi.",
+    "errorDetails": "Detail kesalahan",
     "errorTitle": "Mesin unduhan tidak tersedia",
     "finalizing": "Menyelesaikan penyiapan…",
+    "missingError": "Tidak ada error terperinci yang tercatat.",
     "progressLabel": "Progres penyiapan mesin unduhan",
+    "reportIssue": "Laporkan di GitHub",
     "retry": "Coba lagi",
     "retrying": "Mencoba lagi…",
     "title": "Menyiapkan VidBee",
@@ -1057,6 +1206,7 @@
     "sourceSwitch": "Sumber transkrip",
     "sourceCaptionNamed": "Teks {{language}}",
     "sourceCaptionAutoNamed": "Teks otomatis {{language}}",
+    "asrIdle": "Jika takarir saat ini kurang memuaskan, Anda bisa membuat transkrip lokal di komputer ini.",
     "noSpeech": "No speech",
     "noSpeechDetail": "No speech was detected in this file. You can still run a full transcript.",
     "error": "Transcript error",
@@ -1090,6 +1240,23 @@
     "followResume": "Jump to current line",
     "title": "Transcript",
     "ready": "Transcript ready",
+    "listLabel": {
+      "subtitles": "Takarir",
+      "transcribed": "Transkripsi",
+      "downloaded": "Unduhan"
+    },
+    "listHint": {
+      "queued": "Menunggu transkripsi. Akan mulai saat ada slot kosong.",
+      "retrySoon": "Transkripsi gagal dan akan dicoba lagi sebentar lagi.",
+      "ready": "Takarir transkripsi sudah siap. Klik baris ini untuk membukanya.",
+      "captions": "Dibuat dari trek takarir video. Klik baris ini untuk membukanya.",
+      "cancelled": "Transkripsi dibatalkan.",
+      "subtitlesDownloaded": "Berkas takarir disimpan ({{languages}}).",
+      "subtitlesDownloadedUnknown": "Berkas takarir disimpan.",
+      "subtitlesUnavailable": "Video ini tidak punya trek takarir untuk diunduh.",
+      "subtitlesAuth": "Masuk, lalu coba lagi, untuk mengunduh takarir.",
+      "subtitlesFailed": "Unduhan takarir gagal."
+    },
     "copy": "Salin transkrip",
     "copied": "Transkrip disalin",
     "copyFailed": "Tidak dapat menyalin transkrip.",
@@ -1102,6 +1269,9 @@
     "captionDelete": "Hapus",
     "captionDeleteSelected": "Hapus pilihan",
     "captionDeleted": "{{count}} teks dihapus",
+    "captionDeleteConfirmTitle": "Hapus teks yang dipilih?",
+    "captionDeleteConfirmDescription": "Ini akan menghapus {{count}} teks dari transkrip secara permanen.",
+    "captionDeleteConfirmCancel": "Batal",
     "captionSaveFailed": "Tidak dapat menyimpan teks.",
     "captionPlaceholder": "Ketik teks",
     "captionSpeaker": "Pembicara",
@@ -1173,7 +1343,12 @@
       "segments": "Segmen",
       "createdAt": "Ditranskripsi",
       "empty": "Belum ada detail.",
-      "openUrl": "Buka URL sumber"
+      "openUrl": "Buka URL sumber",
+      "group": {
+        "media": "Media",
+        "file": "Berkas",
+        "transcript": "Transkrip"
+      }
     },
     "speakingShare": "{{percent}}%",
     "seekSpeaker": "Lompat ke {{name}}",
@@ -1210,11 +1385,22 @@
       "volumePercent": "{{percent}}%",
       "fullscreen": "Layar penuh",
       "fullscreenExit": "Keluar dari layar penuh",
-      "resumed": "Dilanjutkan dari {{time}}",
-      "startOver": "Mulai dari awal",
       "nowPlaying": "Sedang diputar",
-      "closeBar": "Tutup pemutar",
-      "openTranscript": "Kembali ke transkrip"
+      "openTranscript": "Kembali ke transkrip",
+      "playlist": {
+        "title": "Daftar putar",
+        "open": "Buka daftar putar",
+        "count": "{{count}} item",
+        "empty": "Daftar putar Anda kosong",
+        "emptyHint": "Putar unduhan atau tambahkan dari menu klik kanannya.",
+        "add": "Tambahkan ke daftar putar",
+        "addedCount": "{{count}} ditambahkan ke daftar putar",
+        "remove": "Hapus dari daftar putar",
+        "moveUp": "Pindahkan ke atas",
+        "moveDown": "Pindahkan ke bawah",
+        "drag": "Seret untuk mengurutkan",
+        "more": "Tindakan item daftar putar"
+      }
     },
     "qualityHint": "Not happy with this transcript?",
     "qualityHintDetail": "Download a higher-quality model and transcribe again. The current transcript is kept as history.",
@@ -1234,6 +1420,8 @@
     "promptShare": "Bagikan gambar",
     "promptShareTitle": "Bagikan gambar",
     "promptShareDownload": "Unduh",
+    "promptShareDownloadFull": "Gambar lengkap",
+    "promptShareDownloadSplit": "Gambar terbagi (folder bernomor)",
     "promptShareNative": "Bagikan",
     "promptSharing": "Menyiapkan gambar…",
     "promptShared": "Gambar berbagi disalin",
@@ -1247,32 +1435,61 @@
     "promptOutput": "Hasil prompt",
     "promptScrollToEnd": "Gulir ke terbaru",
     "promptCopied": "Disalin",
+    "promptCloudGenerated": "Dibuat dengan VidBee Cloud",
     "promptNoProvider": "Siapkan penyedia AI di Pengaturan untuk menjalankan prompt ini.",
     "promptOpenSettings": "Buka pengaturan penyedia",
     "promptEmpty": "Hasil akan muncul di sini.",
+    "overviewChapters": "Bab",
+    "overviewQuotes": "Kutipan",
+    "promptRetrying": "Pembuatan terputus. Mencoba lagi {{attempt}}/{{maxAttempts}}…",
+    "promptWaiting": "Menunggu respons model · {{seconds}} dtk",
     "promptRunning": "Menulis…",
     "promptThinking": "Berpikir",
     "promptThinkingFor": "Sedang berpikir {{seconds}} dtk",
     "promptThoughtFor": "Berpikir selama {{seconds}} dtk",
     "promptAborted": "Dihentikan",
+    "promptTabCompleted": "Selesai",
+    "promptTabError": "Gagal",
     "promptNoTranscript": "Transkrip diperlukan sebelum prompt ini dapat dijalankan.",
+    "promptWaitForTranscript": "Prompt ini akan dijalankan setelah transkripsi selesai.",
+    "promptRunWhenReady": "Jalankan saat siap",
+    "promptWaitingToRun": "Menunggu transkrip…",
     "promptTryAgain": "Coba lagi",
     "promptLoading": "Memuat pengaturan AI…",
     "promptGuide": {
+      "interrupted": "Respons AI terhenti sebelum selesai.",
+      "creditsExhausted": "Akun ini tidak memiliki cukup kredit AI.",
+      "signInRequired": "Masuk ke VidBee Cloud untuk memakai Ask AI sekarang juga, gratis.",
       "noProvider": "Belum ada penyedia AI yang diaktifkan, jadi prompt ini tidak bisa dijalankan.",
       "missingApiKey": "Penyedia yang aktif belum punya kunci API.",
       "missingModel": "Penyedia yang aktif belum punya ID model.",
       "unknownPrompt": "Prompt ini sudah tidak tersedia.",
       "emptyTranscript": "Prompt ini memerlukan transkrip yang sudah selesai.",
       "auth": "Penyedia menolak permintaan. Kunci API atau akun kemungkinan tidak valid.",
+      "authCloud": "VidBee Cloud menolak permintaan. Sesi Anda mungkin sudah berakhir.",
       "network": "Tidak dapat menjangkau penyedia.",
+      "networkCloud": "VidBee Cloud tidak dapat dijangkau.",
       "emptyOutput": "Penyedia selesai tanpa mengembalikan teks.",
-      "unknown": "Prompt tidak dapat dijalankan."
+      "emptyOutputCloud": "VidBee Cloud selesai tanpa mengembalikan teks.",
+      "unknown": "Prompt tidak dapat dijalankan.",
+      "unknownCloud": "VidBee Cloud tidak dapat menyelesaikan prompt ini.",
+      "serviceErrorCloud": "VidBee Cloud's AI service rejected this request."
     },
     "promptErrorDetails": "Detail kesalahan",
     "promptWhatToDo": "Yang bisa dicoba",
     "promptUsingProvider": "Menggunakan {{name}}",
+    "promptCreditsByok": "Atau <byok>gunakan kunci API Anda sendiri</byok>.",
     "promptSolutions": {
+      "creditsExhausted": {
+        "s1": "Buka Akun untuk melihat sisa kredit.",
+        "s2": "Undang pengguna baru untuk memperoleh kredit.",
+        "s3": "Jalankan prompt lagi setelah kredit ditambahkan."
+      },
+      "signInRequired": {
+        "s1": "Buka Pengaturan → Providers.",
+        "s2": "Masuk dengan GitHub di VidBee Cloud.",
+        "s3": "Jalankan prompt lagi."
+      },
       "noProvider": {
         "s1": "Buka Pengaturan → Penyedia.",
         "s2": "Tambah layanan, simpan kunci API dan ID model, lalu klik Gunakan.",
@@ -1301,22 +1518,78 @@
         "s2": "Pastikan ada kredit dan izin untuk model ini.",
         "s3": "Jika endpoint kustom, pastikan menerima kunci ini."
       },
+      "authCloud": {
+        "s1": "Buka Akun dan pastikan Anda masih masuk.",
+        "s2": "Masuk lagi jika sesi sudah berakhir.",
+        "s3": "Jalankan prompt sekali lagi."
+      },
       "network": {
         "s1": "Periksa internet dan proxy.",
         "s2": "Untuk penyedia kustom, pastikan Base URL bisa diakses dan sertakan /v1 jika perlu.",
         "s3": "Jika host down, ganti penyedia."
+      },
+      "networkCloud": {
+        "s1": "Periksa koneksi internet Anda.",
+        "s2": "Buka Akun dan pastikan Anda masih masuk.",
+        "s3": "Coba lagi sebentar lagi. Jika terus gagal, VidBee Cloud mungkin sedang tidak tersedia."
       },
       "emptyOutput": {
         "s1": "Di Pengaturan → Penyedia, pastikan ID model benar untuk layanan ini.",
         "s2": "Jika endpoint kustom, periksa Base URL, kunci API, dan apakah model sudah di-deploy.",
         "s3": "Baca detail kesalahan di bawah, lalu coba lagi atau ganti penyedia."
       },
+      "emptyOutputCloud": {
+        "s1": "Coba lagi. Balasan mungkin terputus di tengah jalan.",
+        "s2": "Jika terus gagal, buka Akun dan pastikan Anda masih masuk serta punya kredit."
+      },
       "unknown": {
         "s1": "Baca dulu detail kesalahan di bawah.",
         "s2": "Di Pengaturan → Penyedia, periksa kunci API, ID model, dan Base URL.",
         "s3": "Coba lagi, atau ganti penyedia."
+      },
+      "unknownCloud": {
+        "s1": "Baca dulu detail kesalahan di bawah.",
+        "s2": "Coba lagi sebentar lagi. Jika koneksi putus, balasan Cloud bisa berhenti di tengah.",
+        "s3": "Jika terus gagal, buka Akun dan pastikan Anda masih masuk serta punya kredit."
       }
-    }
+    },
+    "promptDislike": "Tidak suka",
+    "promptFeedbackSaved": "Masukan disimpan",
+    "promptFeedbackFailed": "Tidak dapat menyimpan masukan. Silakan coba lagi.",
+    "promptHistory": "History",
+    "promptHistoryClose": "Close history",
+    "promptHistoryNew": "New chat",
+    "promptHistoryChat": "Chat",
+    "promptHistoryDescription": "Agent conversations from every video",
+    "promptHistoryEmpty": "No conversations yet",
+    "promptHistoryToday": "Today",
+    "promptHistoryYesterday": "Yesterday",
+    "promptHistoryMore": "Conversation actions",
+    "promptHistoryDelete": "Delete",
+    "promptHistoryDeleteTitle": "Delete this conversation?",
+    "promptHistoryDeleteDescription": "This removes the conversation. The video and transcript stay.",
+    "promptHistoryDeleteCancel": "Cancel",
+    "promptHistoryUntitled": "Untitled",
+    "promptTabClose": "Close tab",
+    "promptHistoryRename": "Rename",
+    "promptHistoryRenameTitle": "Rename conversation",
+    "promptHistoryRenameDescription": "Choose a short title for this chat tab.",
+    "promptHistoryRenameSave": "Save",
+    "promptHistoryRenamePlaceholder": "Conversation title",
+    "promptMore": "More actions",
+    "promptExportPdf": "Export as PDF",
+    "promptExportMarkdown": "Export as Markdown",
+    "promptExportSaved": "Exported",
+    "promptExportFailed": "Could not export.",
+    "promptExportEmpty": "Nothing to export.",
+    "promptShareSplitCount": "Number of images (optional)",
+    "promptShareSplitCountAuto": "Automatic",
+    "promptShareSplitCountHint": "Leave blank for automatic splitting. Fewer images may be saved to keep content intact.",
+    "thinkingSecond": "{{count}} second",
+    "thinkingSeconds": "{{count}} seconds",
+    "thinkingMinute": "{{count}} minute",
+    "thinkingMinutes": "{{count}} minutes",
+    "promptCloudServiceErrorDetail": "Your transcript is saved. This service issue needs to be resolved before you can generate the response."
   },
   "whatsNew": {
     "title": "Yang Baru",
@@ -1340,5 +1613,131 @@
         "description": "Letakkan audio atau video lokal ke Transkrip. Ekspor teks, subtitle, atau video dengan subtitle tertanam."
       }
     }
+  },
+  "cloudCache": {
+    "title": "Cache hasil Cloud",
+    "range": "Periode (UTC)",
+    "hits": "Ditemukan",
+    "misses": "Tidak ditemukan",
+    "bypasses": "Dilewati",
+    "hitRate": "Rasio ditemukan",
+    "today": "Hari ini",
+    "week": "7 hari terakhir",
+    "month": "30 hari terakhir",
+    "all": "Sepanjang waktu"
+  },
+  "agentChat": {
+    "eventStream": "Event Stream",
+    "eventStatus": {
+      "running": "Running",
+      "completed": "Completed",
+      "error": "Failed"
+    },
+    "placeholder": "Ask a follow-up about this video…",
+    "send": "Send message",
+    "attachImages": "Attach images",
+    "removeImage": "Remove {{name}}",
+    "imageSelectionFailed": "Could not add these images. Select up to 10 PNG, JPEG or WebP images, each no larger than 20 MB.",
+    "imageRemoveFailed": "Could not remove this image. Try again.",
+    "imagesNotSupported": "Choose a model that supports images, or remove the attachments to send this message.",
+    "interrupted": "This response was interrupted when the app closed. Retry to continue.",
+    "imported": "Imported from your previous summary",
+    "previousVersion": "Previous reply version",
+    "nextVersion": "Next reply version",
+    "toolCount": "Tool calls: {{count}}",
+    "saveAttachment": "Save attachment",
+    "attachmentUnavailable": "This attachment is unavailable. Try generating it again.",
+    "frame": "Frame at {{time}}",
+    "clip": "Clip at {{time}}",
+    "downloading": "Downloading video",
+    "contextWindow": "Context window (tokens)",
+    "contextWindowHint": "Enter the context window if the model is not in the catalog.",
+    "vision": "Image input",
+    "toolCalling": "Tool calling",
+    "reasoning": "Thinking",
+    "thinkingOnly": "Thinking only",
+    "allowDisableThinking": "Allow turning thinking off",
+    "thinkingCapabilitiesHint": "Antarmuka saat ini hanya menampilkan sakelar berpikir, bukan tingkat intensitas. Jika model mendukung tingkat, pilih yang tersedia di bawah.",
+    "defaultThinkingLevel": "Tingkat berpikir default",
+    "defaultThinkingAuto": "Otomatis (gunakan default lapisan permintaan)",
+    "supportedThinkingLevels": "Tingkat berpikir yang didukung",
+    "inputTokens": "Masukan",
+    "outputTokens": "Keluaran",
+    "providerDefault": "Gunakan default penyedia",
+    "automatic": "Use model defaults",
+    "enabled": "Supported",
+    "disabled": "Not supported",
+    "visionSelect": "Select…",
+    "catalogFilled": "You can change these catalog values.",
+    "catalogMissing": "This model is not in the catalog. Enter the context window and capabilities.",
+    "catalogLooking": "Looking up this model id in the catalog…",
+    "catalogMatched": "Matched {{name}}. Context window and capabilities were filled in.",
+    "catalogBadge": "Catalog",
+    "tools": {
+      "get_video_info": "Reading video information",
+      "read_transcript": "Reading transcript",
+      "search_transcript": "Searching transcript",
+      "capture_frames": "Capturing video frames",
+      "create_clip": "Creating video clip",
+      "read_history": "Reading conversation history",
+      "search_history": "Searching conversation history",
+      "read_notes": "Reading working notes",
+      "write_notes": "Saving working notes",
+      "read_artifact": "Reviewing saved image",
+      "rename_conversation": "Renaming conversation",
+      "write_article": "Writing article",
+      "review_article": "Reviewing article"
+    },
+    "modelCapabilities": "Model capabilities",
+    "runDurationRunning": "Working · {{duration}}",
+    "runDuration": "Elapsed: {{duration}}",
+    "durationSeconds": "{{seconds}}s",
+    "durationMinutes": "{{minutes}}m {{seconds}}s",
+    "contextStatus": {
+      "compacting": "Organizing conversation context",
+      "recovering": "Recovering conversation context",
+      "reviewing": "Checking source coverage",
+      "writing": "Writing and checking source sections"
+    },
+    "thinking": {
+      "label": "Thinking level",
+      "off": "Off",
+      "minimal": "Minimal",
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "xhigh": "Extra high",
+      "max": "Maximum"
+    },
+    "models": "Model",
+    "model": "Model",
+    "reasoningEffort": "Upaya penalaran",
+    "cloud": "Cloud",
+    "searchModels": "Cari model…",
+    "noModels": "Tidak ada model yang cocok.",
+    "effort": "Upaya {{level}}",
+    "faster": "Lebih cepat",
+    "smarter": "Lebih cerdas",
+    "retrying": "Connection interrupted. Retrying…",
+    "defaultThinkingLevel": "Default thinking level",
+    "defaultThinkingAuto": "Auto (use request default)",
+    "supportedThinkingLevels": "Supported thinking levels",
+    "inputTokens": "Input",
+    "outputTokens": "Output",
+    "providerDefault": "Use provider default"
+  },
+  "web": {
+    "saveToThisComputer": "Save to this computer",
+    "copyServerPath": "Copy server path",
+    "serverPathCopied": "Server path copied",
+    "downloadPathDescription": "Where the VidBee server saves files. In Docker this is usually /data/downloads.",
+    "autoTranscribeAfterDownloadDescription": "When a download finishes, start a transcript on the VidBee server. Already queued jobs keep running if you turn this off.",
+    "maxConcurrentTranscriptionsDescription": "How many transcripts can run at once on the server.",
+    "transcriptModelsDescription": "Speech models are stored on the VidBee server. The first transcript downloads them there.",
+    "cookiesFileOnly": "The server cannot read browsers on your computer. Export a Netscape cookies.txt and upload it.",
+    "storageTitle": "Server storage",
+    "storageDownloadDir": "Download directory",
+    "storageDataDir": "Data directory",
+    "storageDbFile": "SQLite database"
   }
 }

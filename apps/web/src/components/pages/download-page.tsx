@@ -1,3 +1,4 @@
+import { useNavigate } from "@tanstack/react-router";
 import {
 	buildFilePathCandidates,
 	normalizeSavedFileName,
@@ -40,6 +41,8 @@ import {
 } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { useWebSettings } from "../../hooks/use-web-settings";
+import { notifyDownloadCompleted } from "../../lib/download-notifications";
 import { logger } from "../../lib/logger";
 import { eventsUrl, orpcClient } from "../../lib/orpc-client";
 import { readWebSettings } from "../../lib/web-settings";
@@ -83,6 +86,8 @@ const resolveDownloadExtension = (record: DownloadRecord): string => {
 
 export const DownloadPage = () => {
 	const { t } = useTranslation();
+	const navigate = useNavigate();
+	const { settings } = useWebSettings();
 	const [allRecords, setAllRecords] = useState<DownloadRecord[]>([]);
 	const [platformFilter, setPlatformFilter] = useState(
 		ALL_DOWNLOAD_PLATFORM_FILTER,
@@ -134,7 +139,26 @@ export const DownloadPage = () => {
 				},
 			);
 
-			setAllRecords(merged);
+			setAllRecords((previous) => {
+				if (settings.enableDownloadNotifications && previous.length > 0) {
+					const previousStatus = new Map(
+						previous.map((record) => [record.id, record.status]),
+					);
+					for (const record of merged) {
+						if (
+							record.status === "completed" &&
+							previousStatus.get(record.id) !== "completed"
+						) {
+							notifyDownloadCompleted(
+								record.id,
+								record.title || record.url,
+								true,
+							);
+						}
+					}
+				}
+				return merged;
+			});
 			setIsApiReachable(true);
 			setApiConnectionMessage("");
 		} catch (error) {
@@ -143,7 +167,7 @@ export const DownloadPage = () => {
 				error instanceof Error ? error.message : t("errors.networkError");
 			setApiConnectionMessage(message);
 		}
-	}, [t]);
+	}, [settings.enableDownloadNotifications, t]);
 
 	useEffect(() => {
 		void refreshData();
@@ -181,6 +205,15 @@ export const DownloadPage = () => {
 			source.close();
 		};
 	}, [isApiReachable, refreshData]);
+
+	const hasCookieConfig = useMemo(() => {
+		const cookiesPath = settings.cookiesPath?.trim();
+		if (cookiesPath) {
+			return true;
+		}
+		const browserSetting = settings.browserForCookies?.trim();
+		return Boolean(browserSetting && browserSetting !== "none");
+	}, [settings.browserForCookies, settings.cookiesPath]);
 
 	const historyRecords = useMemo(
 		() => allRecords.filter((record) => record.entryType === "history"),
@@ -647,6 +680,38 @@ export const DownloadPage = () => {
 
 				<ScrollArea className="flex-1 overflow-y-auto">
 					<CardContent className="w-full space-y-3 overflow-x-hidden p-0">
+						{!hasCookieConfig ? (
+							<div className="mx-6 mt-4 rounded-xl bg-muted/40 px-6 py-5">
+								<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+									<div className="space-y-1">
+										<p className="font-bold text-[10px] text-muted-foreground/70 uppercase tracking-wider">
+											{t("history.cookiesTipTitle")}
+										</p>
+										<p className="max-w-[540px] text-foreground/85 text-sm leading-relaxed">
+											<Trans
+												components={{
+													strong: (
+														<strong className="font-semibold text-foreground" />
+													),
+												}}
+												i18nKey="history.cookiesTipDescription"
+											/>
+										</p>
+									</div>
+									<Button
+										className="h-8 rounded-lg px-4 font-medium text-xs"
+										onClick={() => {
+											void navigate({
+												to: "/settings",
+												search: { tab: "cookies" },
+											});
+										}}
+									>
+										{t("history.cookiesTipAction")}
+									</Button>
+								</div>
+							</div>
+						) : null}
 						{filteredRecords.length === 0 ? (
 							<DownloadEmptyState
 								className="mx-6 mb-4"

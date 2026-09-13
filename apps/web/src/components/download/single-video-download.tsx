@@ -1,4 +1,5 @@
 import type { VideoFormat, VideoInfo } from "@vidbee/downloader-core";
+import { pickPreferredAudioFormatId } from "@vidbee/downloader-core/audio-format-preferences";
 import { Button } from "@vidbee/ui/components/ui/button";
 import {
 	DOWNLOAD_FEEDBACK_ISSUE_TITLE,
@@ -25,7 +26,6 @@ import { AlertCircle, ExternalLink, Loader2, Settings2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { OneClickQualityPreset } from "../../lib/download-format-preferences";
-import { resolveImageProxyUrl } from "../../lib/remote-image-proxy";
 
 export interface SingleVideoState {
 	title: string;
@@ -45,6 +45,7 @@ interface SingleVideoDownloadProps {
 	videoInfo: VideoInfo | null;
 	state: SingleVideoState;
 	oneClickQuality: OneClickQualityPreset;
+	preferredAudioLanguage?: string;
 	feedbackSourceUrl?: string | null;
 	onStateChange: (state: Partial<SingleVideoState>) => void;
 }
@@ -117,6 +118,7 @@ interface FormatListProps {
 	selectedFormat: string;
 	onFormatChange: (formatId: string) => void;
 	oneClickQuality: OneClickQualityPreset;
+	preferredAudioLanguage?: string;
 }
 
 const FormatList = ({
@@ -126,6 +128,7 @@ const FormatList = ({
 	selectedFormat,
 	onFormatChange,
 	oneClickQuality,
+	preferredAudioLanguage,
 }: FormatListProps) => {
 	const { t } = useTranslation();
 	const [videoFormats, setVideoFormats] = useState<VideoFormat[]>([]);
@@ -283,8 +286,13 @@ const FormatList = ({
 				(format) => format.formatId === selectedFormat,
 			);
 			if (finalAudios.length > 0 && !(selectedFormat && hasSelectedAudio)) {
-				const best = finalAudios[0];
-				onFormatChange(best.formatId);
+				const preferredFormatId = pickPreferredAudioFormatId(
+					finalAudios,
+					preferredAudioLanguage,
+				);
+				if (preferredFormatId) {
+					onFormatChange(preferredFormatId);
+				}
 			}
 		}
 	}, [
@@ -295,6 +303,7 @@ const FormatList = ({
 		onFormatChange,
 		pickVideoFormatForPreset,
 		codec,
+		preferredAudioLanguage,
 		getFileSize,
 		sortVideoFormatsByQuality,
 		sortAudioFormatsByQuality,
@@ -441,6 +450,7 @@ export function SingleVideoDownload({
 	videoInfo,
 	state,
 	oneClickQuality,
+	preferredAudioLanguage,
 	feedbackSourceUrl,
 	onStateChange,
 }: SingleVideoDownloadProps) {
@@ -681,7 +691,6 @@ export function SingleVideoDownload({
 						<div className="relative aspect-video w-24 shrink-0 overflow-hidden rounded-md bg-muted">
 							<RemoteImage
 								alt={displayTitle}
-								cacheResolver={resolveImageProxyUrl}
 								className="aspect-video h-full w-full object-cover"
 								src={videoInfo.thumbnail}
 							/>
@@ -898,6 +907,7 @@ export function SingleVideoDownload({
 									)
 								}
 								oneClickQuality={oneClickQuality}
+								preferredAudioLanguage={preferredAudioLanguage}
 								selectedFormat={
 									activeTab === "video"
 										? state.selectedVideoFormat

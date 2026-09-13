@@ -7,15 +7,25 @@ import path from 'node:path'
 import { implement, ORPCError } from '@orpc/server'
 import type { DownloadTask } from '@vidbee/downloader-core'
 import { downloaderContract } from '@vidbee/downloader-core'
+import { resolveAutoVideoDownloadPath } from '@vidbee/downloader-core/output-path'
 import type { Task, TaskStatus } from '@vidbee/task-queue'
+import { apiDataDir, apiDefaultDownloadDir, apiSettingsFilesDir, isPathInside } from './api-paths'
+import { APP_VERSION } from './app-version'
+import { getDatabaseFilePath } from './database'
 import { taskQueue } from './downloader'
+import {
+  applyEngineDownloadSettings,
+  checkEngineUpdates,
+  getEngineStatus,
+  updateYtDlp
+} from './engines'
 import { projectTaskForApi } from './projection'
 import { applyApiTranscriptionConcurrency, setApiAutoTranscribe } from './task-queue-host'
 import { webSettingsStore } from './web-settings-store'
 import { fetchPlaylistInfo, fetchVideoInfo } from './yt-dlp-info'
 
 const os = implement(downloaderContract)
-const WEB_SETTINGS_FILES_DIR = path.resolve(process.cwd(), '.data', 'web-settings-files')
+const WEB_SETTINGS_FILES_DIR = apiSettingsFilesDir
 const MAX_WEB_SETTINGS_FILE_BYTES = 1_000_000
 const MANAGED_SETTINGS_FILE_RETENTION_MS = 30 * 24 * 60 * 60 * 1000
 const SAFE_FILE_NAME_REGEX = /[^A-Za-z0-9._-]+/g
@@ -59,12 +69,8 @@ const pathExists = async (targetPath: string): Promise<boolean> => {
   }
 }
 
-const isPathWithinBase = (basePath: string, targetPath: string): boolean => {
-  const normalizedBase = path.resolve(basePath)
-  const normalizedTarget = path.resolve(targetPath)
-  const relativePath = path.relative(normalizedBase, normalizedTarget)
-  return relativePath !== '' && !relativePath.startsWith('..') && !path.isAbsolute(relativePath)
-}
+const isPathWithinBase = (basePath: string, targetPath: string): boolean =>
+  isPathInside(basePath, targetPath) && path.resolve(basePath) !== path.resolve(targetPath)
 
 const openFileWithSystem = async (targetPath: string): Promise<boolean> => {
   if (process.platform === 'darwin') {
@@ -118,7 +124,8 @@ const listServerDirectories = async (
   directories: { name: string; path: string }[]
 }> => {
   const requestedPath = rawPath?.trim()
-  const candidatePath = requestedPath && requestedPath.length > 0 ? requestedPath : process.cwd()
+  const candidatePath =
+    requestedPath && requestedPath.length > 0 ? requestedPath : apiDefaultDownloadDir
   const currentPath = path.resolve(candidatePath)
 
   const pathInfo = await stat(currentPath)
@@ -269,9 +276,12 @@ export const rpcRouter = os.router({
     const stats = taskQueue.stats()
     return {
       ok: true,
-      version: '1.0.0',
+      version: APP_VERSION,
       active: stats.running,
-      pending: stats.queued
+      pending: stats.queued,
+      downloadDir: apiDefaultDownloadDir,
+      dataDir: apiDataDir,
+      dbPath: getDatabaseFilePath()
     }
   }),
 
@@ -397,6 +407,17 @@ export const rpcRouter = os.router({
   downloads: {
     create: os.downloads.create.handler(async ({ input }) => {
       try {
+        const storedSettings = await webSettingsStore.get()
+        const customDownloadPath =
+          input.customDownloadPath?.trim() ||
+          (input.playlistId
+            ? undefined
+            : resolveAutoVideoDownloadPath(
+                input.settings?.downloadPath?.trim() || storedSettings.downloadPath,
+                { title: input.title, uploader: input.uploader },
+                input.settings?.downloadWithoutChannelSubfolders ??
+                  storedSettings.downloadWithoutChannelSubfolders
+              ))
         const result = await taskQueue.add({
           input: {
             url: input.url,
@@ -412,7 +433,7 @@ export const rpcRouter = os.router({
               audioFormatIds: input.audioFormatIds,
               startTime: input.startTime,
               endTime: input.endTime,
-              customDownloadPath: input.customDownloadPath,
+              customDownloadPath,
               customFilenameTemplate: input.customFilenameTemplate,
               containerFormat: input.containerFormat,
               settings: input.settings,
@@ -615,14 +636,16 @@ export const rpcRouter = os.router({
     deleteFile: os.files.deleteFile.handler(async ({ input }) => {
       try {
         const settings = await webSettingsStore.get()
-        const managedDownloadPath = settings.downloadPath.trim()
-        if (!managedDownloadPath) {
+        const managedRoots = [apiDefaultDownloadDir, settings.downloadPath.trim()].filter(
+          (root, index, roots) => root.length > 0 && roots.indexOf(root) === index
+        )
+        if (managedRoots.length === 0) {
           throw new ORPCError('FORBIDDEN', {
             message: 'Deleting files is disabled until a download path is configured.'
           })
         }
         const resolvedPath = path.resolve(input.path)
-        if (!isPathWithinBase(managedDownloadPath, resolvedPath)) {
+        if (!managedRoots.some((root) => isPathWithinBase(root, resolvedPath))) {
           throw new ORPCError('FORBIDDEN', {
             message: 'Refusing to delete files outside the managed download directory.'
           })
@@ -668,6 +691,10 @@ export const rpcRouter = os.router({
         const settings = await webSettingsStore.set(input.settings)
         setApiAutoTranscribe(settings.autoTranscribeAfterDownload === true)
         applyApiTranscriptionConcurrency(settings.maxConcurrentTranscriptions)
+        applyEngineDownloadSettings({
+          downloadMirror: settings.downloadMirror,
+          language: settings.language
+        })
         return { settings }
       } catch (error) {
         throw new ORPCError('INTERNAL_SERVER_ERROR', {
@@ -675,5 +702,11 @@ export const rpcRouter = os.router({
         })
       }
     })
+  },
+
+  engines: {
+    status: os.engines.status.handler(async () => getEngineStatus()),
+    check: os.engines.check.handler(async () => checkEngineUpdates()),
+    update: os.engines.update.handler(async () => updateYtDlp())
   }
 })

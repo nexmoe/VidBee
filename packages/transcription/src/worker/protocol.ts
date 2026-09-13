@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, writeSync } from 'node:fs'
 import { isAbsolute, join } from 'node:path'
 import type { AsrTierId } from '../asr-tiers'
+import type { SherpaExecutionProvider } from '../compute-provider'
 import type { SpeakerCount } from '../speaker-count'
 import type { PipelineProgress, PipelineResult, TranscriptionStage, TranscriptWord } from '../types'
 
@@ -21,6 +22,7 @@ export interface WorkerStartMessage {
   fingerprint: string
   modelVersion: string
   asrTier: AsrTierId
+  provider: SherpaExecutionProvider
   language?: string
   speakerCount?: SpeakerCount
   /** Path to a previous ASR seed so the worker can skip recognition. */
@@ -30,6 +32,9 @@ export interface WorkerStartMessage {
 export interface WorkerProbeMessage {
   type: 'probe'
   modelsDir: string
+  asrTier?: AsrTierId
+  benchmark?: boolean
+  provider?: SherpaExecutionProvider
 }
 
 export interface WorkerCancelMessage {
@@ -76,6 +81,8 @@ export interface WorkerLogMessage {
 
 export interface WorkerProbeOkMessage {
   type: 'probe-ok'
+  durationMs?: number
+  provider?: SherpaExecutionProvider
 }
 
 export type WorkerOutbound =
@@ -95,9 +102,52 @@ export type SyncWrite = (
   length?: number
 ) => number
 
+const PIPE_DRAIN_WAIT = new Int32Array(new SharedArrayBuffer(4))
+const PIPE_DRAIN_MS = 1
+
 /**
- * Write one newline-delimited protocol message, retrying short pipe writes.
- * A single writeSync of a multi-MB result can return 64KB and drop the rest.
+ * True when a non-blocking pipe write would block.
+ *
+ * Node sets stdout to non-blocking when it is a pipe, so `writeSync` throws
+ * `EAGAIN` once the ~64KB buffer fills instead of waiting for the parent.
+ *
+ * @param error Caught filesystem error.
+ */
+const isUnavailableWrite = (error: unknown): boolean => {
+  if (!error || typeof error !== 'object' || !('code' in error)) {
+    return false
+  }
+  const code = (error as { code: unknown }).code
+  return code === 'EAGAIN' || code === 'EWOULDBLOCK'
+}
+
+/**
+ * Park briefly so the parent can drain stdout. A tight spin keeps the pipe
+ * full and burns CPU; the parent lives in another process and can read while
+ * we wait.
+ */
+const waitForWritablePipe = (): void => {
+  Atomics.wait(PIPE_DRAIN_WAIT, 0, 0, PIPE_DRAIN_MS)
+}
+
+interface StdoutHandle {
+  setBlocking?: (blocking: boolean) => void
+}
+
+/**
+ * Make stdout a blocking pipe. `writeSync` on a non-blocking pipe throws
+ * `EAGAIN: resource temporarily unavailable, write` when a long transcript
+ * streams partials faster than Electron can drain.
+ */
+export const setStdoutBlocking = (): void => {
+  const handle = (process.stdout as { _handle?: StdoutHandle })._handle
+  handle?.setBlocking?.(true)
+}
+
+/**
+ * Write one newline-delimited protocol message, retrying short and EAGAIN
+ * pipe writes. A single writeSync of a multi-MB result can return 64KB and
+ * drop the rest; a full pipe throws instead of blocking.
  *
  * @param fd Destination file descriptor (usually stdout).
  * @param message Protocol payload.
@@ -111,7 +161,16 @@ export const writeMessageSync = (
   const payload = Buffer.from(encodeMessage(message), 'utf8')
   let offset = 0
   while (offset < payload.length) {
-    const n = write(fd, payload, offset, payload.length - offset)
+    let n: number
+    try {
+      n = write(fd, payload, offset, payload.length - offset)
+    } catch (error) {
+      if (isUnavailableWrite(error)) {
+        waitForWritablePipe()
+        continue
+      }
+      throw error
+    }
     if (!Number.isFinite(n) || n <= 0) {
       throw new Error(`stdout write failed at ${offset}/${payload.length}`)
     }

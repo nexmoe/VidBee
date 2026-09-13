@@ -117,6 +117,10 @@ export function transition(
 
   switch (to) {
     case 'running':
+      next.input = {
+        ...task.input,
+        options: { ...task.input.options, startedAt: task.input.options?.startedAt ?? now }
+      }
       // attempt is incremented when we leave retry-scheduled (see retry-tick path);
       // here we only handle the initial dispatch from `queued`. The orchestrator
       // is responsible for stamping pid/pidStartedAt on the spawn callback.
@@ -125,6 +129,12 @@ export function transition(
       }
       break
     case 'queued':
+      if (TERMINAL_STATUSES.has(from)) {
+        next.input = {
+          ...task.input,
+          options: { ...task.input.options, completedAt: undefined }
+        }
+      }
       if (ctx.trigger === 'retry-tick') {
         next.attempt = task.attempt + 1
         next.nextRetryAt = null

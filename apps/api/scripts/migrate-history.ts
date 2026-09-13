@@ -240,7 +240,7 @@ async function main(): Promise<void> {
   if (!persistEnabled) {
     log.warn(
       'migrate-history',
-      'WARNING: VIDBEE_PERSIST_QUEUE is not enabled. The migrated rows will not be visible at runtime because the API will use an in-memory queue. Set VIDBEE_PERSIST_QUEUE=1 (default in the bundled Dockerfile) to read this database back.'
+      'WARNING: VIDBEE_PERSIST_QUEUE=0. The migrated rows will not be visible at runtime because the API will use an in-memory queue. Unset that flag (SQLite is the default) to read this database back.'
     )
   }
   fs.mkdirSync(path.dirname(taskQueueDbPath), { recursive: true })

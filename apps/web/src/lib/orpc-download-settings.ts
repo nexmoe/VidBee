@@ -20,5 +20,7 @@ export const readOrpcDownloadSettings = (): DownloadRuntimeSettings => {
 		filenameStyle: settings.filenameStyle,
 		filenameViaVidBee: settings.filenameViaVidBee,
 		shareWatermark: settings.shareWatermark,
+		downloadWithoutChannelSubfolders: settings.downloadWithoutChannelSubfolders,
+		downloadMirror: settings.downloadMirror,
 	};
 };

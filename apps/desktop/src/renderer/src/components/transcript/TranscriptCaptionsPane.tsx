@@ -1,5 +1,4 @@
 import { SpeakerAvatar } from '@renderer/components/transcript/SpeakerAvatar'
-import { TranscriptCaptionShareCard } from '@renderer/components/transcript/TranscriptCaptionShareCard'
 import { TranscriptProgressThinking } from '@renderer/components/transcript/TranscriptProgressThinking'
 import { TranscriptShareImageDialog } from '@renderer/components/transcript/TranscriptShareImageDialog'
 import { Button } from '@renderer/components/ui/button'
@@ -15,6 +14,14 @@ import {
   ContextMenuSubTrigger,
   ContextMenuTrigger
 } from '@renderer/components/ui/context-menu'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@renderer/components/ui/dialog'
 import { Input } from '@renderer/components/ui/input'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { useStreamingTranscript } from '@renderer/hooks/use-streaming-transcript'
@@ -42,7 +49,9 @@ import {
   followResumeDirection,
   followResumeDirectionFromDelta,
   followResumeDirectionFromRange,
+  followScrollBehavior,
   followScrollSuppressMs,
+  getCenteredScrollTop,
   isScrollbarPointerDown,
   isSeekJump,
   needsFollowScroll,
@@ -81,6 +90,7 @@ import {
   RotateCw,
   Search,
   Share2,
+  Sparkles,
   Square,
   Trash2,
   X
@@ -89,6 +99,7 @@ import {
   Fragment,
   memo,
   type PointerEvent,
+  type ReactNode,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -184,6 +195,8 @@ interface TranscriptCaptionsPaneProps {
   /** Retry a failed local ASR run. */
   onRetry?: () => void
   onSeek: (seconds: number) => void
+  /** Start local ASR from the idle empty state. */
+  onStart?: () => void
   ready: boolean
   resolveColorIndex: (speakerId: string | null) => number | null
   resolveSpeaker: (speakerId: string | null) => string
@@ -198,6 +211,8 @@ interface TranscriptCaptionsPaneProps {
   sourceCover?: string | null
   /** Media duration for the share-card progress bar. */
   sourceDurationMs?: number
+  /** Platform and channel printed under the share card title. */
+  sourceByline?: string | null
   /** Media title printed on the share card header. */
   sourceTitle?: string
   /** Speakers used in the speaker-change context menu. */
@@ -222,6 +237,7 @@ export function TranscriptCaptionsPane({
   onCancel,
   onRetry,
   onSeek,
+  onStart,
   ready,
   resolveColorIndex,
   resolveSpeaker,
@@ -232,6 +248,7 @@ export function TranscriptCaptionsPane({
   segments,
   sourceCover,
   sourceDurationMs = 0,
+  sourceByline,
   sourceTitle,
   speakers = EMPTY_SPEAKERS,
   streamLive = running
@@ -249,17 +266,21 @@ export function TranscriptCaptionsPane({
   const [activeMatch, setActiveMatch] = useState(0)
   const [focusedSegmentId, setFocusedSegmentId] = useState<string | null>(null)
   const [followPaused, setFollowPaused] = useState(false)
+  const followPausedRef = useRef(false)
   const [resumeDirection, setResumeDirection] = useState<FollowResumeDirection>('up')
   const [selection, setSelection] = useState<CaptionSelection | null>(null)
   const [marquee, setMarquee] = useState<CaptionMarquee | null>(null)
   const [shareDraft, setShareDraft] = useState<CaptionShareQuote | null>(null)
   const [shareOpen, setShareOpen] = useState(false)
+  const [pendingDeleteIds, setPendingDeleteIds] = useState<string[] | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const editingIdRef = useRef<string | null>(null)
   editingIdRef.current = editingId
   const lastScrollTopRef = useRef(0)
   const followSettledRef = useRef(false)
   const followWindowReadyRef = useRef(false)
+  const pendingCenterIdRef = useRef<string | null>(null)
+  const pendingCenterBehaviorRef = useRef<ScrollBehavior>('auto')
   const listWidthRef = useRef(CAPTION_LIST_ESTIMATE_WIDTH_PX)
   const suppressSeekRef = useRef(false)
   const selectPointerRef = useRef<{
@@ -295,6 +316,8 @@ export function TranscriptCaptionsPane({
   matchesRef.current = matches
   const showSearch = ready && !running
   const showLines = ready || running || displaySegments.length > 0
+  const showAsrIdle =
+    Boolean(onStart) && !ready && !running && !failed && !noSpeech && displaySegments.length === 0
   const indexById = useMemo(() => {
     const map = new Map<string, number>()
     for (const [index, segment] of visibleSegments.entries()) {
@@ -405,16 +428,24 @@ export function TranscriptCaptionsPane({
       if (!list) {
         return
       }
-      markProgrammaticScroll(list, suppressFollowPauseUntilRef, programmaticScrollRef, behavior)
       const node = querySegmentNode(list, segmentId)
       const index = indexById.get(segmentId)
+      const nextBehavior =
+        node && list.clientHeight > 0 && behavior === 'smooth' && !prefersReducedMotion()
+          ? 'smooth'
+          : 'auto'
+      markProgrammaticScroll(list, suppressFollowPauseUntilRef, programmaticScrollRef, nextBehavior)
       if (node && list.clientHeight > 0) {
-        scrollListToCenteredNode(list, node, behavior)
+        scrollListToCenteredNode(list, node, nextBehavior)
+        pendingCenterIdRef.current = null
         return
       }
       if (index === undefined) {
         return
       }
+      pendingCenterIdRef.current = segmentId
+      pendingCenterBehaviorRef.current =
+        behavior === 'smooth' && !prefersReducedMotion() ? 'smooth' : 'auto'
       jumpToUnmeasuredIndex(index)
     },
     [indexById, jumpToUnmeasuredIndex]
@@ -423,11 +454,11 @@ export function TranscriptCaptionsPane({
   /**
    * Keep the spoken token (or its segment) in view while follow is active.
    *
-   * The first layout jump is instant so estimated sizes cannot overshoot.
-   * After that, resume and follow jumps animate to the playing line.
+   * Estimated and long auto-follow jumps stay instant. Resume / search buttons
+   * still ease to a measured row so the click has a visible transition.
    */
   const scrollToFollowTarget = useCallback(
-    (segmentId: string, timeMs: number, force: boolean): void => {
+    (segmentId: string, timeMs: number, force: boolean, userInitiated = false): void => {
       const list = listRef.current
       if (!(list && Number.isFinite(timeMs))) {
         return
@@ -445,28 +476,31 @@ export function TranscriptCaptionsPane({
         }
         return
       }
-      const instant = !followSettledRef.current || prefersReducedMotion()
-      const behavior: ScrollBehavior = instant ? 'auto' : 'smooth'
+      const measured = Boolean(target && list.clientHeight > 0)
+      const distancePx =
+        measured && target ? Math.abs(getCenteredScrollTop(list, target) - list.scrollTop) : 0
+      const behavior = prefersReducedMotion()
+        ? 'auto'
+        : followScrollBehavior({
+            distancePx,
+            settled: followSettledRef.current,
+            targetMeasured: measured,
+            userInitiated,
+            viewportPx: list.clientHeight
+          })
       markProgrammaticScroll(list, suppressFollowPauseUntilRef, programmaticScrollRef, behavior)
-      if (target && list.clientHeight > 0) {
+      if (measured && target) {
         scrollListToCenteredNode(list, target, behavior)
         followSettledRef.current = true
+        pendingCenterIdRef.current = null
         return
       }
-      if (!instant && list.clientHeight > 0) {
-        scrollListToOffset(
-          list,
-          estimateCaptionListOffset(rowTextLengths, index, list.clientHeight, listWidthRef.current),
-          behavior
-        )
-        return
-      }
+      pendingCenterIdRef.current = segmentId
+      pendingCenterBehaviorRef.current =
+        userInitiated && !prefersReducedMotion() ? 'smooth' : 'auto'
       jumpToUnmeasuredIndex(index)
-      if (list.clientHeight > 0) {
-        followSettledRef.current = true
-      }
     },
-    [indexById, jumpToUnmeasuredIndex, rowTextLengths]
+    [indexById, jumpToUnmeasuredIndex]
   )
 
   useLayoutEffect(() => {
@@ -551,6 +585,8 @@ export function TranscriptCaptionsPane({
   }, [collapsed])
 
   useLayoutEffect(() => {
+    const wasPaused = followPausedRef.current
+    followPausedRef.current = followPaused
     if (hasQuery || !currentSegmentId || !(ready || running)) {
       lastFollowedTimeRef.current = currentTimeMs
       return
@@ -568,6 +604,10 @@ export function TranscriptCaptionsPane({
     if (followPaused) {
       return
     }
+    // Resume already animated to the playing line; do not snap over that motion.
+    if (wasPaused) {
+      return
+    }
     scrollToFollowTarget(currentSegmentId, currentTimeMs, false)
   }, [
     currentSegmentId,
@@ -578,6 +618,27 @@ export function TranscriptCaptionsPane({
     running,
     scrollToFollowTarget
   ])
+
+  /**
+   * After an estimated jump, center the row once it is actually mounted.
+   */
+  useLayoutEffect(() => {
+    const segmentId = pendingCenterIdRef.current
+    const list = listRef.current
+    if (!(segmentId && list) || list.clientHeight <= 0) {
+      return
+    }
+    const node = queryFollowTarget(list, segmentId) ?? querySegmentNode(list, segmentId)
+    if (!node) {
+      return
+    }
+    pendingCenterIdRef.current = null
+    const behavior = prefersReducedMotion() ? 'auto' : pendingCenterBehaviorRef.current
+    pendingCenterBehaviorRef.current = 'auto'
+    markProgrammaticScroll(list, suppressFollowPauseUntilRef, programmaticScrollRef, behavior)
+    scrollListToCenteredNode(list, node, behavior)
+    followSettledRef.current = true
+  })
 
   /**
    * Point the resume control the way the jump will scroll.
@@ -631,7 +692,7 @@ export function TranscriptCaptionsPane({
     setFollowPaused(false)
     lastFollowedSegmentRef.current = null
     if (currentSegmentId) {
-      scrollToFollowTarget(currentSegmentId, currentTimeMs, true)
+      scrollToFollowTarget(currentSegmentId, currentTimeMs, true, true)
     }
   }
 
@@ -948,8 +1009,30 @@ export function TranscriptCaptionsPane({
     setSelection(null)
     toast.success(t('transcript.captionDeleted', { count: segmentIds.length }))
   }
-  const deleteCaptionsRef = useRef(deleteCaptions)
-  deleteCaptionsRef.current = deleteCaptions
+
+  /**
+   * Ask before removing captions from the toolbar, menu, or Delete key.
+   *
+   * @param segmentIds Lines the user asked to drop.
+   */
+  const requestDeleteCaptions = (segmentIds: string[]): void => {
+    if (segmentIds.length === 0) {
+      return
+    }
+    setPendingDeleteIds(segmentIds)
+  }
+
+  /**
+   * Confirm the pending caption delete.
+   */
+  const confirmDeleteCaptions = (): void => {
+    if (!pendingDeleteIds) {
+      return
+    }
+    const ids = pendingDeleteIds
+    setPendingDeleteIds(null)
+    void deleteCaptions(ids)
+  }
 
   /**
    * Change the speaker on one caption.
@@ -1034,6 +1117,9 @@ export function TranscriptCaptionsPane({
       ) {
         return
       }
+      if (pendingDeleteIds) {
+        return
+      }
       if (event.key === 'Escape') {
         if (editingIdRef.current) {
           setEditingId(null)
@@ -1051,14 +1137,14 @@ export function TranscriptCaptionsPane({
         !editingIdRef.current
       ) {
         event.preventDefault()
-        void deleteCaptionsRef.current(selection.ids)
+        requestDeleteCaptions(selection.ids)
       }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => {
       window.removeEventListener('keydown', onKeyDown)
     }
-  }, [canEditCaptions, selection])
+  }, [canEditCaptions, pendingDeleteIds, requestDeleteCaptions, selection])
 
   /**
    * Start a potential Finder-style marquee on the caption list.
@@ -1169,103 +1255,107 @@ export function TranscriptCaptionsPane({
           : 'flex h-full min-h-0 flex-col border-border/60 border-t bg-background lg:border-t-0 lg:border-l'
       }
     >
-      <div className={embedded ? 'px-4' : 'border-border/60 border-b px-4'}>
-        {embedded ? null : (
-          <div className="flex items-end">
-            <p className="border-primary border-b-2 py-3 font-medium text-sm">
-              {t('transcript.title')}
-            </p>
-          </div>
-        )}
-        {running ? (
-          <div className="flex items-center gap-1.5 py-3">
-            <div
-              aria-live="polite"
-              className="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-md border bg-background px-3 text-sm"
-              data-testid="transcript-header-status"
-            >
-              <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-primary" />
-              <span className="truncate">{runningLabel}</span>
+      {showAsrIdle ? null : (
+        <div className={embedded ? 'px-4' : 'border-border/60 border-b px-4'}>
+          {embedded ? null : (
+            <div className="flex items-end">
+              <p className="border-primary border-b-2 py-3 font-medium text-sm">
+                {t('transcript.title')}
+              </p>
             </div>
-            {onCancel ? (
-              <Button
-                aria-label={t('transcript.stop')}
-                className="h-9 shrink-0"
-                data-testid="transcript-cancel"
-                onClick={onCancel}
-                size="sm"
-                type="button"
-                variant="outline"
+          )}
+          {running ? (
+            <div className="flex items-center gap-1.5 py-3">
+              <div
+                aria-live="polite"
+                className="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-md border bg-background px-3 text-sm"
+                data-testid="transcript-header-status"
               >
-                <Square />
-                {t('transcript.stop')}
-              </Button>
-            ) : null}
-          </div>
-        ) : showSearch ? (
-          <div className="flex items-center gap-1.5 py-3">
-            <div className="relative min-w-0 flex-1">
-              <Search className="pointer-events-none absolute top-2.5 left-2.5 h-3.5 w-3.5 text-muted-foreground" />
-              <Input
-                aria-label={t('transcript.searchPlaceholder')}
-                className="h-9 pl-8"
-                data-testid="transcript-search"
-                onChange={(event) => {
-                  setQuery(event.currentTarget.value)
-                  setActiveMatch(0)
-                  setFocusedSegmentId(null)
-                }}
-                placeholder={t('transcript.searchPlaceholder')}
-                value={query}
-              />
-            </div>
-            {canEditCaptions && !hasQuery ? (
-              <Button
-                aria-label={t('transcript.captionAdd')}
-                className="h-9 w-9 shrink-0"
-                data-testid="transcript-caption-add"
-                onClick={() => void insertCaption({ afterId: displaySegments.at(-1)?.id ?? null })}
-                size="icon"
-                type="button"
-                variant="outline"
-              >
-                <Plus />
-              </Button>
-            ) : null}
-            {hasQuery ? (
-              <>
-                <p className="shrink-0 text-muted-foreground text-xs">
-                  {matches.length === 0
-                    ? t('transcript.searchNoMatches')
-                    : t('transcript.searchMatches', { count: matches.length })}
-                </p>
+                <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-primary" />
+                <span className="truncate">{runningLabel}</span>
+              </div>
+              {onCancel ? (
                 <Button
-                  aria-label={t('transcript.searchPrevious')}
-                  className="h-8 w-8"
-                  disabled={matches.length === 0}
-                  onClick={() => jumpMatch(-1)}
+                  aria-label={t('transcript.stop')}
+                  className="h-9 shrink-0"
+                  data-testid="transcript-cancel"
+                  onClick={onCancel}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
+                  <Square />
+                  {t('transcript.stop')}
+                </Button>
+              ) : null}
+            </div>
+          ) : showSearch ? (
+            <div className="flex items-center gap-1.5 py-3">
+              <div className="relative min-w-0 flex-1">
+                <Search className="pointer-events-none absolute top-2.5 left-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  aria-label={t('transcript.searchPlaceholder')}
+                  className="h-9 pl-8"
+                  data-testid="transcript-search"
+                  onChange={(event) => {
+                    setQuery(event.currentTarget.value)
+                    setActiveMatch(0)
+                    setFocusedSegmentId(null)
+                  }}
+                  placeholder={t('transcript.searchPlaceholder')}
+                  value={query}
+                />
+              </div>
+              {canEditCaptions && !hasQuery ? (
+                <Button
+                  aria-label={t('transcript.captionAdd')}
+                  className="h-9 w-9 shrink-0"
+                  data-testid="transcript-caption-add"
+                  onClick={() =>
+                    void insertCaption({ afterId: displaySegments.at(-1)?.id ?? null })
+                  }
                   size="icon"
                   type="button"
-                  variant="ghost"
+                  variant="outline"
                 >
-                  <ChevronUp />
+                  <Plus />
                 </Button>
-                <Button
-                  aria-label={t('transcript.searchNext')}
-                  className="h-8 w-8"
-                  disabled={matches.length === 0}
-                  onClick={() => jumpMatch(1)}
-                  size="icon"
-                  type="button"
-                  variant="ghost"
-                >
-                  <ChevronDown />
-                </Button>
-              </>
-            ) : null}
-          </div>
-        ) : null}
-      </div>
+              ) : null}
+              {hasQuery ? (
+                <>
+                  <p className="shrink-0 text-muted-foreground text-xs">
+                    {matches.length === 0
+                      ? t('transcript.searchNoMatches')
+                      : t('transcript.searchMatches', { count: matches.length })}
+                  </p>
+                  <Button
+                    aria-label={t('transcript.searchPrevious')}
+                    className="h-8 w-8"
+                    disabled={matches.length === 0}
+                    onClick={() => jumpMatch(-1)}
+                    size="icon"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <ChevronUp />
+                  </Button>
+                  <Button
+                    aria-label={t('transcript.searchNext')}
+                    className="h-8 w-8"
+                    disabled={matches.length === 0}
+                    onClick={() => jumpMatch(1)}
+                    size="icon"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <ChevronDown />
+                  </Button>
+                </>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      )}
       <div className="relative min-h-0 flex-1">
         <div
           className="h-full select-none overflow-y-auto contain-strict"
@@ -1285,6 +1375,18 @@ export function TranscriptCaptionsPane({
               stage={stage}
               stageHistory={stageHistory}
             />
+          ) : null}
+          {showAsrIdle ? (
+            <div
+              className="flex h-full flex-col items-center justify-center gap-4 px-6 text-center"
+              data-testid="transcript-asr-idle"
+            >
+              <p className="max-w-sm text-muted-foreground text-sm">{t('transcript.asrIdle')}</p>
+              <Button data-testid="transcript-asr-start" onClick={onStart} size="sm" type="button">
+                <Sparkles />
+                {t('transcript.transcribe')}
+              </Button>
+            </div>
           ) : null}
           {noSpeech ? (
             <p className="px-4 pt-4 text-muted-foreground text-sm">{noSpeechDetail}</p>
@@ -1391,7 +1493,7 @@ export function TranscriptCaptionsPane({
                       }
                       onCommitEdit={(text) => void commitEditCaption(segment.id, text)}
                       onDelete={() =>
-                        void deleteCaptions(selected && selection ? selection.ids : [segment.id])
+                        requestDeleteCaptions(selected && selection ? selection.ids : [segment.id])
                       }
                       onEdit={() => beginEditCaption(segment.id)}
                       onInsertAfter={() => void insertCaption({ afterId: segment.id })}
@@ -1445,29 +1547,66 @@ export function TranscriptCaptionsPane({
             canDelete={canEditCaptions}
             onClear={clearSelection}
             onCopy={() => void handleCopySelection()}
-            onDelete={() => selection && void deleteCaptions(selection.ids)}
+            onDelete={() => selection && requestDeleteCaptions(selection.ids)}
             onShare={handleShareSelection}
             open={Boolean(selection)}
           />
         </div>
       </div>
+      <Dialog
+        onOpenChange={(open) => {
+          if (!open) {
+            setPendingDeleteIds(null)
+          }
+        }}
+        open={Boolean(pendingDeleteIds)}
+      >
+        <DialogContent data-testid="transcript-caption-delete-dialog" showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle>
+              {t('transcript.captionDeleteConfirmTitle', { count: pendingDeleteIds?.length ?? 0 })}
+            </DialogTitle>
+            <DialogDescription>
+              {t('transcript.captionDeleteConfirmDescription', {
+                count: pendingDeleteIds?.length ?? 0
+              })}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              data-testid="transcript-caption-delete-cancel"
+              onClick={() => setPendingDeleteIds(null)}
+              type="button"
+              variant="outline"
+            >
+              {t('transcript.captionDeleteConfirmCancel')}
+            </Button>
+            <Button
+              data-testid="transcript-caption-delete-confirm"
+              onClick={confirmDeleteCaptions}
+              type="button"
+              variant="destructive"
+            >
+              {t('transcript.captionDelete')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       {shareDraft ? (
         <TranscriptShareImageDialog
           fileName={shareImageFileName(sourceTitle)}
           onOpenChange={handleShareDialogOpenChange}
           open={shareOpen}
-        >
-          {(cardRef) => (
-            <TranscriptCaptionShareCard
-              cardRef={cardRef}
-              coverSrc={sourceCover}
-              durationMs={sourceDurationMs}
-              quote={shareDraft}
-              sourceTitle={sourceTitle}
-              tagline={t('transcript.promptShareTagline')}
-            />
-          )}
-        </TranscriptShareImageDialog>
+          payload={{
+            coverSrc: sourceCover,
+            durationMs: sourceDurationMs,
+            kind: 'caption',
+            quote: shareDraft,
+            sourceByline,
+            sourceTitle,
+            tagline: t('transcript.promptShareTagline')
+          }}
+        />
       ) : null}
     </div>
   )
@@ -1491,6 +1630,50 @@ function CaptionMarqueeBox({ marquee }: CaptionMarqueeBoxProps) {
       data-testid="transcript-caption-marquee"
       style={{ height: box.height, left: box.left, top: box.top, width: box.width }}
     />
+  )
+}
+
+interface CaptionSelectIconButtonProps {
+  children: ReactNode
+  className?: string
+  label: string
+  onClick: () => void
+  testId: string
+}
+
+/**
+ * Icon-only selection action with a hover label.
+ *
+ * @param props.children Button icon.
+ * @param props.className Extra button classes.
+ * @param props.label Accessible name and tooltip.
+ * @param props.onClick Action to run.
+ * @param props.testId Stable test id.
+ */
+function CaptionSelectIconButton({
+  children,
+  className,
+  label,
+  onClick,
+  testId
+}: CaptionSelectIconButtonProps) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          aria-label={label}
+          className={cn('h-8 w-8 rounded-full', className)}
+          data-testid={testId}
+          onClick={onClick}
+          size="icon"
+          type="button"
+          variant="ghost"
+        >
+          {children}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side="top">{label}</TooltipContent>
+    </Tooltip>
   )
 }
 
@@ -1542,17 +1725,6 @@ function CaptionSelectToolbar({
     >
       <Button
         className="rounded-full"
-        data-testid="transcript-caption-select-copy"
-        onClick={onCopy}
-        size="sm"
-        type="button"
-        variant="ghost"
-      >
-        <Copy />
-        {t('transcript.promptCopy')}
-      </Button>
-      <Button
-        className="rounded-full"
         data-testid="transcript-caption-select-share"
         onClick={onShare}
         size="sm"
@@ -1560,32 +1732,32 @@ function CaptionSelectToolbar({
         variant="ghost"
       >
         <Share2 />
-        {t('transcript.promptShare')}
+        {t('transcript.promptShareNative')}
       </Button>
+      <CaptionSelectIconButton
+        label={t('transcript.promptCopy')}
+        onClick={onCopy}
+        testId="transcript-caption-select-copy"
+      >
+        <Copy />
+      </CaptionSelectIconButton>
       {canDelete ? (
-        <Button
-          className="rounded-full text-destructive hover:text-destructive"
-          data-testid="transcript-caption-select-delete"
+        <CaptionSelectIconButton
+          className="text-destructive hover:text-destructive"
+          label={t('transcript.captionDeleteSelected')}
           onClick={onDelete}
-          size="sm"
-          type="button"
-          variant="ghost"
+          testId="transcript-caption-select-delete"
         >
           <Trash2 />
-          {t('transcript.captionDeleteSelected')}
-        </Button>
+        </CaptionSelectIconButton>
       ) : null}
-      <Button
-        aria-label={t('transcript.captionSelectClear')}
-        className="h-8 w-8 rounded-full"
-        data-testid="transcript-caption-select-clear"
+      <CaptionSelectIconButton
+        label={t('transcript.captionSelectClear')}
         onClick={onClear}
-        size="icon"
-        type="button"
-        variant="ghost"
+        testId="transcript-caption-select-clear"
       >
         <X />
-      </Button>
+      </CaptionSelectIconButton>
     </div>
   )
 }

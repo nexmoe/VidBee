@@ -1,19 +1,19 @@
 import { type IpcContext, IpcMethod, IpcService } from 'electron-ipc-decorator'
 import type { AppSettings } from '../../../shared/types'
+import { refreshAppIconMenus } from '../../lib/app-icon-menu'
 import {
   applyBatchSettingSideEffects,
   applySingleSettingSideEffects
 } from '../../lib/settings-effects'
 import { applyDesktopQueueConcurrency } from '../../lib/task-queue-host'
-import { applyUpdateChannel, refreshUpdateChannel } from '../../lib/update-channel'
+import { applyUpdateChannel } from '../../lib/update-channel'
 import { settingsManager } from '../../settings'
-import { updateTrayMenu } from '../../tray'
 import { applyAutoLaunchSetting } from '../../utils/auto-launch'
 import { applyDockVisibility } from '../../utils/dock'
 
 const settingSideEffectHandlers = {
   onLanguage: () => {
-    updateTrayMenu()
+    refreshAppIconMenus()
   },
   onHideDockIcon: (value: boolean) => {
     applyDockVisibility(value)
@@ -26,9 +26,6 @@ const settingSideEffectHandlers = {
   },
   onMaxConcurrentTranscriptions: () => {
     applyDesktopQueueConcurrency()
-  },
-  onBetaProgram: (value: boolean) => {
-    refreshUpdateChannel(value)
   }
 }
 
@@ -63,7 +60,7 @@ class SettingsService extends IpcService {
     applyDockVisibility(settingsManager.get('hideDockIcon'))
     applyAutoLaunchSetting(settingsManager.get('launchAtLogin'))
     applyDesktopQueueConcurrency()
-    applyUpdateChannel(settingsManager.get('betaProgram'))
+    applyUpdateChannel()
   }
 
   /**

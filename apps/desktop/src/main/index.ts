@@ -21,6 +21,16 @@ import {
 } from '../shared/utils/format-preferences'
 import { configureLogger } from './config/logger-config'
 import { services } from './ipc'
+import { registerAgentArtifactProtocol } from './lib/agent-artifacts'
+import { stopAllAgentRuns } from './lib/agent-chat-runner'
+import { stopAllPromptRuns } from './lib/ai-prompt-runner'
+import {
+  AUTH_PROTOCOL,
+  handleDesktopAuthCallback,
+  isDesktopAuthCallback,
+  registerDesktopAuthProtocol,
+  setupDesktopAuth
+} from './lib/auth-client'
 import { downloadEngine } from './lib/download-facade'
 import { ffmpegManager } from './lib/ffmpeg-manager'
 import {
@@ -31,7 +41,13 @@ import {
 } from './lib/glitchtip'
 import { localMediaKind } from './lib/import-local-media'
 import { stopPlayerHost } from './lib/player-host'
+import {
+  installPrivilegedSchemeCollector,
+  TRUSTWORTHY_CUSTOM_ORIGINS
+} from './lib/privileged-schemes'
 import { deferAppQuitIfNeeded } from './lib/quit-confirmation-host'
+import { createRendererConsoleLogGate } from './lib/renderer-console-log'
+import { destroyShareCaptureWindow, isAppWindow } from './lib/share-capture-window'
 import { initializeOptionalTool } from './lib/startup-dependencies'
 import {
   getDesktopSubscriptions,
@@ -105,23 +121,47 @@ if (!app.isPackaged && process.env.VIDBEE_E2E !== '1') {
   app.commandLine.appendSwitch('remote-debugging-port', '9229')
 }
 
+if (!app.isPackaged) {
+  app.commandLine.appendSwitch(
+    'unsafely-treat-insecure-origin-as-secure',
+    TRUSTWORTHY_CUSTOM_ORIGINS.join(',')
+  )
+}
+
 const RENDERER_DIST_PATH = join(import.meta.dirname, '../renderer')
+const CUSTOM_PROTOCOL_PRIVILEGES = {
+  corsEnabled: true,
+  secure: true,
+  standard: true,
+  stream: true,
+  supportFetchAPI: true
+} as const
+const flushPrivilegedSchemes = installPrivilegedSchemeCollector()
 
 protocol.registerSchemesAsPrivileged([
   {
+    scheme: 'agent-artifact',
+    privileges: { ...CUSTOM_PROTOCOL_PRIVILEGES }
+  },
+  {
     scheme: APP_PROTOCOL,
+    privileges: { ...CUSTOM_PROTOCOL_PRIVILEGES }
+  },
+  {
+    scheme: 'user-image',
     privileges: {
-      corsEnabled: true,
+      bypassCSP: true,
       secure: true,
-      standard: true,
-      stream: true,
-      supportFetchAPI: true
+      standard: false,
+      stream: true
     }
   }
 ])
 
 let mainWindow: BrowserWindow | null = null
 let isQuitting = false
+let promptRunsStoppingForQuit = false
+let promptRunsStoppedForQuit = false
 let isYtdlpReady = false
 let kernelBackgroundUpdatesStarted = false
 interface DeepLinkData {
@@ -131,6 +171,8 @@ interface DeepLinkData {
 const pendingDeepLinkUrls: DeepLinkData[] = []
 const pendingOneClickDownloads: DeepLinkData[] = []
 const pendingMediaPaths: string[] = []
+let pendingAuthContinue = false
+let pendingCreditRefresh = false
 let isTaskQueueReady = false
 let isRendererReady = false
 let isRendererUnresponsive = false
@@ -142,7 +184,9 @@ let rendererRecoveryPromise: Promise<void> | null = null
  * Return the renderer entry URL without preserving a crashed hash route.
  */
 const rendererEntryUrl = (): string =>
-  process.env.ELECTRON_RENDERER_URL || `${APP_PROTOCOL_SCHEME}renderer/index.html`
+  (process.env.ELECTRON_RENDERER_URL &&
+    (process.env.PORTLESS_URL || process.env.ELECTRON_RENDERER_URL)) ||
+  `${APP_PROTOCOL_SCHEME}renderer/index.html`
 
 /**
  * Load a fresh renderer at the home route.
@@ -194,6 +238,9 @@ const getActiveMainWindow = (): BrowserWindow | null => {
   return mainWindow
 }
 
+setupDesktopAuth(getActiveMainWindow)
+flushPrivilegedSchemes()
+
 const sendToRenderer = (channel: string, ...args: unknown[]): void => {
   const window = getActiveMainWindow()
   if (!window) {
@@ -222,6 +269,28 @@ const showMainWindowWhenReady = (): void => {
   }
 }
 
+/** Restore and focus the main window after an operating-system activation. */
+const activateMainWindow = (): void => {
+  const window = mainWindow
+  if (!window || window.isDestroyed() || window.webContents.isDestroyed()) {
+    return
+  }
+  if (window.isMinimized()) {
+    window.restore()
+  }
+  window.show()
+  if (process.platform === 'darwin') {
+    app.focus({ steal: true })
+  }
+  window.focus()
+  if (window.webContents.isCrashed()) {
+    recoverRendererToHome(window, 'operating-system activation')
+  } else if (isRendererUnresponsive) {
+    log.warn('Operating-system activation found an unresponsive renderer; forcing recovery')
+    window.webContents.forcefullyCrashRenderer()
+  }
+}
+
 ipcMain.on('app:renderer-ready', (event) => {
   const window = getActiveMainWindow()
   if (!window || event.sender !== window.webContents) {
@@ -231,8 +300,61 @@ ipcMain.on('app:renderer-ready', (event) => {
   isRendererReady = true
   showMainWindowWhenReady()
   flushPendingDeepLinks()
+  flushPendingAuthContinue()
+  flushPendingCreditRefresh()
   void flushPendingMediaImports()
 })
+
+/** Parse a post-signup open or continue action from a VidBee app URL. */
+const parseAppActionDeepLink = (rawUrl: string): 'continue' | 'open' | 'credits' | null => {
+  try {
+    const parsed = new URL(rawUrl)
+    if (parsed.protocol !== `${APP_PROTOCOL}:`) {
+      return null
+    }
+    const action = (parsed.hostname || parsed.pathname.replace(/^\/+/u, '')).toLowerCase()
+    if (action === 'credits') {
+      return 'credits'
+    }
+    if (action === 'signin' || action === 'continue') {
+      return 'continue'
+    }
+    if (!action || action === 'open') {
+      return 'open'
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
+/** Ask the renderer to finish browser sign-in once it can receive IPC. */
+const requestAuthContinue = (): void => {
+  activateMainWindow()
+  if (!(getActiveMainWindow() && isRendererReady)) {
+    pendingAuthContinue = true
+    return
+  }
+  sendToRenderer('auth:continue')
+}
+
+/** Deliver a queued post-signup sign-in request after the renderer is ready. */
+const flushPendingAuthContinue = (): void => {
+  if (!(pendingAuthContinue && getActiveMainWindow() && isRendererReady)) {
+    return
+  }
+  pendingAuthContinue = false
+  sendToRenderer('auth:continue')
+}
+
+/** Deliver a payment return after the renderer can refresh its account data. */
+const flushPendingCreditRefresh = (): void => {
+  if (!(pendingCreditRefresh && getActiveMainWindow() && isRendererReady)) {
+    return
+  }
+  pendingCreditRefresh = false
+  sendToRenderer('account:credits-updated')
+}
 
 const parseDownloadDeepLink = (rawUrl: string): DeepLinkData | null => {
   try {
@@ -298,6 +420,22 @@ const flushPendingDeepLinks = (): void => {
 }
 
 const handleDeepLinkUrl = (rawUrl: string): void => {
+  const appAction = parseAppActionDeepLink(rawUrl)
+  if (appAction === 'credits') {
+    pendingCreditRefresh = true
+    activateMainWindow()
+    flushPendingCreditRefresh()
+    return
+  }
+  if (appAction === 'continue') {
+    requestAuthContinue()
+    return
+  }
+  if (appAction === 'open') {
+    activateMainWindow()
+    return
+  }
+
   const data = parseDownloadDeepLink(rawUrl)
   if (!data) {
     log.warn('Ignored unsupported deep link:', rawUrl)
@@ -461,9 +599,15 @@ export function createWindow(): void {
     }
   })
 
+  const rendererConsoleLog = createRendererConsoleLogGate((line) => {
+    log.scope('renderer').warn(line)
+  })
+
   mainWindow.on('closed', () => {
+    rendererConsoleLog.flush()
     mainWindow = null
     isRendererReady = false
+    destroyShareCaptureWindow()
     applyDockVisibility(settingsManager.get('hideDockIcon'))
   })
 
@@ -486,10 +630,7 @@ export function createWindow(): void {
   })
 
   mainWindow.webContents.on('console-message', (event) => {
-    if (event.level !== 'warning' && event.level !== 'error') {
-      return
-    }
-    log.warn(`renderer console: ${event.message} (${event.sourceId}:${event.lineNumber})`)
+    rendererConsoleLog.handle(event)
   })
 
   // HMR for renderer base on electron-vite cli.
@@ -514,6 +655,7 @@ export function createWindow(): void {
       isRendererReady = true
       showMainWindowWhenReady()
       flushPendingDeepLinks()
+      flushPendingAuthContinue()
     }, 5000)
   })
 
@@ -772,6 +914,7 @@ const handleYtDlpKernelStatus = (status: YtDlpKernelStatus): void => {
     downloadEngine.restoreActiveDownloads()
     flushPendingOneClickDownloads()
     flushPendingDeepLinks()
+    flushPendingAuthContinue()
   }
   if (status.ready && app.isPackaged && !kernelBackgroundUpdatesStarted) {
     kernelBackgroundUpdatesStarted = true
@@ -885,6 +1028,7 @@ function resolveVidbeeFilePath(requestUrl: URL, userDataPath: string): string | 
 }
 
 function registerVidbeeProtocol(): void {
+  registerAgentArtifactProtocol()
   try {
     const userDataPath = app.getPath('userData')
     protocol.registerFileProtocol(APP_PROTOCOL, (request, callback) => {
@@ -957,8 +1101,7 @@ function initAutoUpdater(): void {
 
     log.info('Auto-updater initialized successfully')
     log.info('Automatic updates are required, checking for updates immediately...')
-    // Select stable/preview channel from the user's preview-program setting before checking.
-    applyUpdateChannel(settingsManager.get('betaProgram'))
+    applyUpdateChannel()
     // Use checkForUpdates instead of checkForUpdatesAndNotify
     // because we have our own notification system and want to ensure immediate download
     void autoUpdater.checkForUpdates()
@@ -972,26 +1115,21 @@ function initAutoUpdater(): void {
   }
 }
 
-const gotSingleInstanceLock = app.requestSingleInstanceLock()
+const allowMultipleInstances = process.env.VIDBEE_ALLOW_MULTIPLE_INSTANCES === '1'
+const gotSingleInstanceLock = allowMultipleInstances || app.requestSingleInstanceLock()
 
 if (gotSingleInstanceLock) {
   app.on('second-instance', (_event, argv) => {
-    handleDeepLinkArgv(argv)
-    handleMediaArgv(argv)
-    const window = mainWindow
-    if (window && !window.isDestroyed()) {
-      if (window.isMinimized()) {
-        window.restore()
-      }
-      window.show()
-      window.focus()
-      if (!window.webContents.isDestroyed() && window.webContents.isCrashed()) {
-        recoverRendererToHome(window, 'second-instance activation')
-      } else if (isRendererUnresponsive) {
-        log.warn('Second-instance activation found an unresponsive renderer; forcing recovery')
-        window.webContents.forcefullyCrashRenderer()
-      }
+    const authCallback = argv.find(isDesktopAuthCallback)
+    if (authCallback) {
+      void handleDesktopAuthCallback(authCallback).catch((error) => {
+        log.error('Failed to handle Better Auth callback:', error)
+      })
+    } else {
+      handleDeepLinkArgv(argv)
     }
+    handleMediaArgv(argv)
+    activateMainWindow()
   })
 } else {
   app.quit()
@@ -1037,7 +1175,14 @@ app.on('child-process-gone', (_event, details) => {
 
 app.on('open-url', (event, url) => {
   event.preventDefault()
-  handleDeepLinkUrl(url)
+  if (isDesktopAuthCallback(url)) {
+    activateMainWindow()
+    void handleDesktopAuthCallback(url).catch((error) => {
+      log.error('Failed to handle Better Auth callback:', error)
+    })
+  } else {
+    handleDeepLinkUrl(url)
+  }
 })
 
 app.on('open-file', (event, filePath) => {
@@ -1061,6 +1206,22 @@ app.whenReady().then(async () => {
     const registered = app.setAsDefaultProtocolClient(APP_PROTOCOL)
     if (!registered) {
       log.warn(`Failed to register ${APP_PROTOCOL} protocol handler`)
+    }
+
+    if (!allowMultipleInstances) {
+      const authRegistered = registerDesktopAuthProtocol()
+      if (!authRegistered) {
+        log.warn(`Failed to register ${AUTH_PROTOCOL} protocol handler`)
+      }
+    }
+  }
+
+  const initialAuthCallback = process.argv.find(isDesktopAuthCallback)
+  if (initialAuthCallback) {
+    try {
+      await handleDesktopAuthCallback(initialAuthCallback)
+    } catch (error) {
+      log.error('Failed to handle initial Better Auth callback:', error)
     }
   }
 
@@ -1153,7 +1314,7 @@ app.whenReady().then(async () => {
   void flushPendingMediaImports()
 
   app.on('activate', () => {
-    const existingWindow = BrowserWindow.getAllWindows().find((window) => !window.isDestroyed())
+    const existingWindow = BrowserWindow.getAllWindows().find(isAppWindow)
     if (existingWindow) {
       if (existingWindow.isMinimized()) {
         existingWindow.restore()
@@ -1183,6 +1344,19 @@ app.on('before-quit', (event) => {
     log.warn('Skipping quit confirmation because the renderer is unavailable')
   }
 
+  if (!promptRunsStoppedForQuit) {
+    event.preventDefault()
+    isQuitting = true
+    if (!promptRunsStoppingForQuit) {
+      promptRunsStoppingForQuit = true
+      void Promise.all([stopAllPromptRuns(), stopAllAgentRuns()]).finally(() => {
+        promptRunsStoppedForQuit = true
+        app.quit()
+      })
+    }
+    return
+  }
+
   isQuitting = true
   stopYtDlpKernelService()
   downloadEngine.flushDownloadSession()
@@ -1198,7 +1372,7 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     if (closeToTray) {
       // Hide to tray instead of quitting
-      const mainWindow = BrowserWindow.getAllWindows().find((window) => !window.isDestroyed())
+      const mainWindow = BrowserWindow.getAllWindows().find(isAppWindow)
       if (mainWindow) {
         mainWindow.hide()
       }
@@ -1210,6 +1384,7 @@ app.on('window-all-closed', () => {
 
 // Cleanup tray on quit
 app.on('will-quit', () => {
+  destroyShareCaptureWindow()
   destroyTray()
   void stopExtensionApiServer()
   void stopDesktopSubscriptions().catch((err) =>

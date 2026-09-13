@@ -29,6 +29,23 @@ export type OneClickContainerOption =
 
 export type ThemeValue = "light" | "dark" | "system";
 
+export type DownloadMirror = "auto" | "cn" | "global";
+
+export const ASR_TIERS = [
+	"minimal",
+	"whisper-base",
+	"balanced",
+	"whisper-medium",
+	"whisper-turbo",
+	"sense-voice",
+	"sense-voice-2025",
+	"parakeet-v2",
+	"parakeet-v3",
+	"quality",
+] as const;
+
+export type AsrTier = (typeof ASR_TIERS)[number];
+
 export interface WebAppSettings {
 	downloadPath: string;
 	maxConcurrentDownloads: number;
@@ -36,7 +53,6 @@ export interface WebAppSettings {
 	cookiesPath: string;
 	proxy: string;
 	configPath: string;
-	betaProgram: boolean;
 	language: LanguageCode;
 	theme: ThemeValue;
 	oneClickDownload: boolean;
@@ -57,6 +73,14 @@ export interface WebAppSettings {
 	filenameStyle: FilenameStyle;
 	filenameViaVidBee: boolean;
 	shareWatermark: boolean;
+	downloadWithoutChannelSubfolders: boolean;
+	downloadMirror: DownloadMirror;
+	enableDownloadNotifications: boolean;
+	rememberLastAudioLanguage: boolean;
+	preferredAudioLanguage: string;
+	autoTranscribeAfterDownload: boolean;
+	maxConcurrentTranscriptions: number;
+	asrTier: AsrTier;
 }
 
 export const WEB_SETTINGS_STORAGE_KEY = "vidbee.web.settings";
@@ -68,7 +92,6 @@ export const defaultWebSettings: WebAppSettings = {
 	cookiesPath: "",
 	proxy: "",
 	configPath: "",
-	betaProgram: false,
 	language: defaultLanguageCode,
 	theme: "system",
 	oneClickDownload: true,
@@ -89,6 +112,14 @@ export const defaultWebSettings: WebAppSettings = {
 	filenameStyle: "pretty",
 	filenameViaVidBee: true,
 	shareWatermark: false,
+	downloadWithoutChannelSubfolders: false,
+	downloadMirror: "auto",
+	enableDownloadNotifications: true,
+	rememberLastAudioLanguage: true,
+	preferredAudioLanguage: "",
+	autoTranscribeAfterDownload: true,
+	maxConcurrentTranscriptions: 1,
+	asrTier: "minimal",
 };
 
 const toThemeValue = (value: unknown): ThemeValue => {
@@ -126,6 +157,16 @@ const toOneClickContainer = (value: unknown): OneClickContainerOption => {
 
 const toFilenameStyle = (value: unknown): FilenameStyle =>
 	isFilenameStyle(value) ? value : defaultWebSettings.filenameStyle;
+
+const toDownloadMirror = (value: unknown): DownloadMirror =>
+	value === "auto" || value === "cn" || value === "global"
+		? value
+		: defaultWebSettings.downloadMirror;
+
+const toAsrTier = (value: unknown): AsrTier =>
+	typeof value === "string" && ASR_TIERS.includes(value as AsrTier)
+		? (value as AsrTier)
+		: defaultWebSettings.asrTier;
 
 const toDownloadType = (value: unknown): DownloadType => {
 	if (value === "audio" || value === "video") {
@@ -177,10 +218,6 @@ const parseSettings = (raw: string | null): WebAppSettings => {
 			cookiesPath: toStringValue(parsed.cookiesPath),
 			proxy: toStringValue(parsed.proxy),
 			configPath: toStringValue(parsed.configPath),
-			betaProgram: toBoolean(
-				parsed.betaProgram,
-				defaultWebSettings.betaProgram,
-			),
 			language: normalizeLanguageCode(parsed.language),
 			theme: toThemeValue(parsed.theme),
 			oneClickDownload: toBoolean(
@@ -234,6 +271,35 @@ const parseSettings = (raw: string | null): WebAppSettings => {
 				parsed.shareWatermark,
 				defaultWebSettings.shareWatermark,
 			),
+			downloadWithoutChannelSubfolders: toBoolean(
+				parsed.downloadWithoutChannelSubfolders,
+				defaultWebSettings.downloadWithoutChannelSubfolders,
+			),
+			downloadMirror: toDownloadMirror(parsed.downloadMirror),
+			enableDownloadNotifications: toBoolean(
+				parsed.enableDownloadNotifications,
+				defaultWebSettings.enableDownloadNotifications,
+			),
+			rememberLastAudioLanguage: toBoolean(
+				parsed.rememberLastAudioLanguage,
+				defaultWebSettings.rememberLastAudioLanguage,
+			),
+			preferredAudioLanguage: toStringValue(parsed.preferredAudioLanguage),
+			autoTranscribeAfterDownload: toBoolean(
+				parsed.autoTranscribeAfterDownload,
+				defaultWebSettings.autoTranscribeAfterDownload,
+			),
+			maxConcurrentTranscriptions: Math.min(
+				4,
+				Math.max(
+					1,
+					toNumber(
+						parsed.maxConcurrentTranscriptions,
+						defaultWebSettings.maxConcurrentTranscriptions,
+					),
+				),
+			),
+			asrTier: toAsrTier(parsed.asrTier),
 		};
 	} catch {
 		return defaultWebSettings;

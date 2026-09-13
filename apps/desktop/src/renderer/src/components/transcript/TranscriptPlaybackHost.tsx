@@ -1,8 +1,8 @@
 import { TranscriptVideoJsPlayer } from '@renderer/components/transcript/TranscriptVideoJsPlayer'
 import './transcript-player.css'
+import { useCachedThumbnail } from '@renderer/hooks/use-cached-thumbnail'
 import { useTranscriptMediaPlayer } from '@renderer/hooks/use-transcript-media-player'
 import { useTranscriptPlaybackPosition } from '@renderer/hooks/use-transcript-playback-position'
-import { formatClock } from '@renderer/lib/format-clock'
 import { toLocalFileSrc } from '@renderer/lib/local-file-src'
 import {
   attachPlaybackPlayer,
@@ -10,23 +10,40 @@ import {
   setPlaybackPlayerWrapEl
 } from '@renderer/lib/transcript-playback'
 import { planResumeSeek } from '@renderer/lib/transcript-playback-position'
-import { buildVttText } from '@renderer/lib/transcript-vtt'
 import {
+  buildTranscriptPlaybackInput,
+  findDownloadRecord,
+  resolveRestoredPlaybackInput
+} from '@renderer/lib/transcript-playback-source'
+import { buildVttText } from '@renderer/lib/transcript-vtt'
+import { downloadRecordsAtom } from '@renderer/store/downloads'
+import {
+  closePlaybackSessionAtom,
   consumePlaybackPlayWhenReadyAtom,
   markPlaybackStartedAtom,
+  playbackAspectRatioAtom,
   playbackClockAtom,
   playbackControlsAtom,
   playbackPresentationAtom,
+  playbackRateAtom,
   playbackSessionAtom,
   playbackSlotsAtom,
+  playbackVolumeAtom,
+  restorePlaybackSessionAtom,
   type TranscriptPlaybackClock,
-  type TranscriptPlayerControls
+  type TranscriptPlaybackVolume,
+  type TranscriptPlayerControls,
+  takePlaybackSessionAtom
 } from '@renderer/store/transcript-playback'
+import {
+  finishPlaybackPlaylistItemAtom,
+  playbackPlaylistAtom,
+  updatePlaylistPlaybackProgressAtom
+} from '@renderer/store/transcript-playlist'
 import { type TranscriptSegmentView, transcriptMapAtom } from '@renderer/store/transcripts'
 import { useAtomValue, useSetAtom } from 'jotai'
 import { type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { toast } from 'sonner'
 
 const EMPTY_SEGMENTS: TranscriptSegmentView[] = []
 
@@ -37,12 +54,26 @@ export function TranscriptPlaybackHost(): ReactNode {
   const session = useAtomValue(playbackSessionAtom)
   const presentation = useAtomValue(playbackPresentationAtom)
   const slots = useAtomValue(playbackSlotsAtom)
+  const records = useAtomValue(downloadRecordsAtom)
+  const playlistIds = useAtomValue(playbackPlaylistAtom)
   const transcriptMap = useAtomValue(transcriptMapAtom)
+  const volumeState = useAtomValue(playbackVolumeAtom)
+  const playbackRate = useAtomValue(playbackRateAtom)
   const setClock = useSetAtom(playbackClockAtom)
+  const setAspectRatio = useSetAtom(playbackAspectRatioAtom)
+  const setVolumeState = useSetAtom(playbackVolumeAtom)
+  const setPlaybackRate = useSetAtom(playbackRateAtom)
+  const closeSession = useSetAtom(closePlaybackSessionAtom)
+  const finishPlaylistItem = useSetAtom(finishPlaybackPlaylistItemAtom)
+  const takePlaybackSession = useSetAtom(takePlaybackSessionAtom)
+  const restorePlaybackSession = useSetAtom(restorePlaybackSessionAtom)
+  const updatePlaylistProgress = useSetAtom(updatePlaylistPlaybackProgressAtom)
   const setControls = useSetAtom(playbackControlsAtom)
   const markStarted = useSetAtom(markPlaybackStartedAtom)
   const consumePlayWhenReady = useSetAtom(consumePlaybackPlayWhenReadyAtom)
   const controls = useAtomValue(playbackControlsAtom)
+  const completedDownloadIdRef = useRef<string | null>(null)
+  const controlsDownloadIdRef = useRef<string | null>(null)
   const pendingSeekRef = useRef<number | null>(null)
   const seekToRef = useRef<number | null>(null)
   seekToRef.current = session?.seekTo ?? null
@@ -50,12 +81,15 @@ export function TranscriptPlaybackHost(): ReactNode {
   const parkingRef = useRef<HTMLDivElement>(null)
   const playerWrapRef = useRef<HTMLDivElement>(null)
   const seekRef = useRef<(seconds: number) => void>(() => undefined)
-  const transportRef = useRef<Pick<TranscriptPlayerControls, 'pause' | 'play' | 'toggle'>>({
+  const transportRef = useRef<Omit<TranscriptPlayerControls, 'seek'>>({
     pause: () => undefined,
     play: () => undefined,
-    toggle: () => undefined
+    setPlaybackRate: () => undefined,
+    setVolume: () => undefined,
+    toggle: () => undefined,
+    toggleMute: () => undefined
   })
-  const resumeStateRef = useRef({ attempts: 0, done: false, notified: false })
+  const resumeStateRef = useRef({ attempts: 0, done: false })
   const clockRef = useRef<TranscriptPlaybackClock>({
     currentTime: 0,
     duration: 0,
@@ -64,12 +98,38 @@ export function TranscriptPlaybackHost(): ReactNode {
 
   const downloadId = session?.downloadId ?? ''
   const filePath = session?.filePath ?? null
+  const nextDownloadId = playlistIds.find((id) => id !== downloadId) ?? null
+  const nextDownload = useMemo(
+    () => (nextDownloadId ? findDownloadRecord(records, nextDownloadId) : null),
+    [nextDownloadId, records]
+  )
+  const nextCachedThumbnail = useCachedThumbnail(nextDownload?.thumbnail)
+  const nextPlaybackInput = useMemo(
+    () =>
+      nextDownloadId
+        ? buildTranscriptPlaybackInput({
+            cachedThumbnail: nextCachedThumbnail,
+            download: nextDownload,
+            downloadId: nextDownloadId,
+            fallbackTitle: t('transcript.title'),
+            snapshot: transcriptMap[nextDownloadId] ?? null
+          })
+        : null,
+    [nextCachedThumbnail, nextDownload, nextDownloadId, t, transcriptMap]
+  )
+  const restoredPlaybackInput = useMemo(
+    () =>
+      resolveRestoredPlaybackInput({
+        downloadIds: playlistIds,
+        fallbackTitle: t('transcript.title'),
+        records,
+        snapshots: transcriptMap
+      }),
+    [playlistIds, records, t, transcriptMap]
+  )
   const player = useTranscriptMediaPlayer({ filePath })
   const { error: playerError, playablePath, retry: retryPrepare } = player
-  const { getStartAt, persistTime, restartPlayback } = useTranscriptPlaybackPosition(
-    downloadId,
-    playablePath
-  )
+  const { getStartAt, persistTime } = useTranscriptPlaybackPosition(downloadId, playablePath)
   const mediaSrc = playablePath ? toLocalFileSrc(playablePath) : null
   const segments = transcriptMap[downloadId]?.record?.segments ?? EMPTY_SEGMENTS
   const vttText = useMemo(() => buildVttText(segments), [segments])
@@ -93,7 +153,10 @@ export function TranscriptPlaybackHost(): ReactNode {
       pause: () => transportRef.current.pause(),
       play: () => transportRef.current.play(),
       seek: (seconds: number) => seekRef.current(seconds),
-      toggle: () => transportRef.current.toggle()
+      setPlaybackRate: (rate: number) => transportRef.current.setPlaybackRate(rate),
+      setVolume: (volume: number) => transportRef.current.setVolume(volume),
+      toggle: () => transportRef.current.toggle(),
+      toggleMute: () => transportRef.current.toggleMute()
     })
   }, [setControls])
 
@@ -106,26 +169,39 @@ export function TranscriptPlaybackHost(): ReactNode {
   )
 
   const handleControlsReady = useCallback(
-    (next: Pick<TranscriptPlayerControls, 'pause' | 'play' | 'toggle'>) => {
+    (next: Omit<TranscriptPlayerControls, 'seek'>) => {
       transportRef.current = next
+      controlsDownloadIdRef.current = downloadId
       publishControls()
     },
-    [publishControls]
+    [downloadId, publishControls]
   )
 
-  const handleResumed = useCallback(
-    (seconds: number) => {
-      toast.info(t('transcript.player.resumed', { time: formatClock(seconds) }), {
-        action: {
-          label: t('transcript.player.startOver'),
-          onClick: () => {
-            restartPlayback()
-            seekRef.current(0)
-          }
-        }
-      })
+  const handleVolume = useCallback(
+    (nextVolumeState: TranscriptPlaybackVolume) => {
+      setVolumeState(nextVolumeState)
     },
-    [restartPlayback, t]
+    [setVolumeState]
+  )
+
+  /**
+   * Keep the bar and in-page chrome on the same playback rate.
+   */
+  const handlePlaybackRate = useCallback(
+    (rate: number) => {
+      setPlaybackRate(rate)
+    },
+    [setPlaybackRate]
+  )
+
+  /**
+   * Keep the now-playing cover matched to the source width÷height.
+   */
+  const handleAspectRatio = useCallback(
+    (ratio: number) => {
+      setAspectRatio(ratio)
+    },
+    [setAspectRatio]
   )
 
   const tryRestore = useCallback(
@@ -145,10 +221,6 @@ export function TranscriptPlaybackHost(): ReactNode {
       }
       if (plan === 'done') {
         resumeStateRef.current.done = true
-        if (!resumeStateRef.current.notified && forcedStartAt == null) {
-          resumeStateRef.current.notified = true
-          handleResumed(startAt)
-        }
         return
       }
       resumeStateRef.current.attempts += 1
@@ -158,7 +230,7 @@ export function TranscriptPlaybackHost(): ReactNode {
       }
       seekRef.current(startAt)
     },
-    [getStartAt, handleResumed]
+    [getStartAt]
   )
 
   const handleTime = useCallback(
@@ -169,10 +241,11 @@ export function TranscriptPlaybackHost(): ReactNode {
         duration: nextDuration
       }
       setClock(clockRef.current)
+      updatePlaylistProgress({ currentTime: nextTime, downloadId, duration: nextDuration })
       persistTime(nextTime, nextDuration)
       tryRestore(nextTime, nextDuration)
     },
-    [persistTime, setClock, tryRestore]
+    [downloadId, persistTime, setClock, tryRestore, updatePlaylistProgress]
   )
 
   const handlePlaying = useCallback(
@@ -181,38 +254,74 @@ export function TranscriptPlaybackHost(): ReactNode {
       setClock(clockRef.current)
       if (playing) {
         markStarted()
+        consumePlayWhenReady()
       }
     },
-    [markStarted, setClock]
+    [consumePlayWhenReady, markStarted, setClock]
   )
 
+  /**
+   * Remove a completed item and immediately start the next queued item.
+   */
+  const handleEnded = useCallback((): void => {
+    if (!(downloadId && completedDownloadIdRef.current !== downloadId)) {
+      return
+    }
+    completedDownloadIdRef.current = downloadId
+    const nextId = finishPlaylistItem(downloadId)
+    if (nextPlaybackInput?.downloadId === nextId && nextPlaybackInput.filePath) {
+      takePlaybackSession(nextPlaybackInput)
+      return
+    }
+    closeSession()
+  }, [closeSession, downloadId, finishPlaylistItem, nextPlaybackInput, takePlaybackSession])
+
   useEffect(() => {
+    if (session?.started || !restoredPlaybackInput) {
+      return
+    }
+    restorePlaybackSession(restoredPlaybackInput)
+  }, [restorePlaybackSession, restoredPlaybackInput, session?.started])
+
+  useEffect(() => {
+    completedDownloadIdRef.current = null
+    controlsDownloadIdRef.current = null
     clockRef.current = { currentTime: 0, duration: 0, playing: false }
-    resumeStateRef.current = { attempts: 0, done: false, notified: false }
+    resumeStateRef.current = { attempts: 0, done: false }
     pendingSeekRef.current = seekToRef.current
     seekRef.current = () => undefined
     transportRef.current = {
       pause: () => undefined,
       play: () => undefined,
-      toggle: () => undefined
+      setPlaybackRate: () => undefined,
+      setVolume: () => undefined,
+      toggle: () => undefined,
+      toggleMute: () => undefined
     }
     setControls(null)
     setClock({ currentTime: 0, duration: 0, playing: false })
+    setAspectRatio(null)
     if (!(downloadId && filePath)) {
       return
     }
-  }, [downloadId, filePath, setClock, setControls])
+  }, [downloadId, filePath, setAspectRatio, setClock, setControls])
 
   useEffect(() => {
-    if (!(session?.playWhenReady && mediaSrc && controls)) {
+    if (
+      !(
+        session?.playWhenReady &&
+        mediaSrc &&
+        controls &&
+        controlsDownloadIdRef.current === downloadId
+      )
+    ) {
       return
     }
     if (session.seekTo != null) {
       controls.seek(session.seekTo)
     }
     controls.play()
-    consumePlayWhenReady()
-  }, [consumePlayWhenReady, controls, mediaSrc, session?.playWhenReady, session?.seekTo])
+  }, [controls, downloadId, mediaSrc, session?.playWhenReady, session?.seekTo])
 
   useEffect(() => {
     const id = window.setInterval(() => {
@@ -248,17 +357,23 @@ export function TranscriptPlaybackHost(): ReactNode {
             currentSpeakerName={presentation.currentSpeakerName}
             currentSpeakerSortIndex={presentation.currentSpeakerSortIndex}
             isAudio={session.isAudio}
+            onAspectRatio={handleAspectRatio}
             onControlsReady={handleControlsReady}
+            onEnded={handleEnded}
+            onPlaybackRate={handlePlaybackRate}
             onPlaying={handlePlaying}
             onRetryPrepare={retryPrepare}
             onSeekReady={handleSeekReady}
             onTime={handleTime}
+            onVolume={handleVolume}
+            playbackRate={playbackRate}
             prepareError={playerError}
             preparing={Boolean(filePath) && !playablePath && !playerError}
             src={mediaSrc}
             subtitle={session.subtitle}
             thumbnail={session.thumbnail}
             title={session.title}
+            volumeState={volumeState}
           />
         ) : null}
       </div>

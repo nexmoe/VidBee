@@ -17,4 +17,6 @@ export interface YtDlpKernelStatus {
   nodeVersion: string | null
   progress: number | null
   preparationStep: YtDlpKernelPreparationStep
+  /** User-copyable diagnostic when preparation ends in `unavailable`. */
+  error: string | null
 }

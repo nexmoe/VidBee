@@ -4,11 +4,13 @@ import { ipcEvents, ipcServices } from '../lib/ipc'
 import { logger } from '../lib/logger'
 
 export interface TranscriptModelPrepStatus {
+  downloading: boolean
   percent: number
   ready: boolean
 }
 
 export const initialTranscriptModelPrep: TranscriptModelPrepStatus = {
+  downloading: false,
   ready: true,
   percent: 100
 }
@@ -24,13 +26,14 @@ const parsePrepStatus = (raw: unknown): TranscriptModelPrepStatus | null => {
   if (!raw || typeof raw !== 'object') {
     return null
   }
-  const value = raw as { percent?: unknown; ready?: unknown }
+  const value = raw as { downloading?: unknown; percent?: unknown; ready?: unknown }
   if (typeof value.ready !== 'boolean') {
     return null
   }
   const percent =
     typeof value.percent === 'number' && Number.isFinite(value.percent) ? value.percent : 0
   return {
+    downloading: value.downloading === true,
     ready: value.ready,
     percent: Math.min(100, Math.max(0, Math.round(percent)))
   }

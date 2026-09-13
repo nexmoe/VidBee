@@ -57,6 +57,7 @@ import {
   PanelRight,
   ChevronsUpDown,
   Ellipsis,
+  EllipsisVertical,
   Calendar,
   Folder,
   SlidersHorizontal,
@@ -83,7 +84,7 @@ export type IconName =
   | "play" | "pause" | "pipette"
   | "home" | "message-circle" | "inbox"
   | "pencil" | "scaling" | "skip-forward" | "corner-down-right" | "corner-down-left"
-  | "panel-left" | "panel-right" | "chevrons-up-down" | "more-horizontal" | "calendar" | "folder"
+  | "panel-left" | "panel-right" | "chevrons-up-down" | "more-horizontal" | "more-vertical" | "calendar" | "folder"
   | "sliders-horizontal";
 
 export const defaultIcons: Record<IconName, IconComponent> = {
@@ -141,6 +142,7 @@ export const defaultIcons: Record<IconName, IconComponent> = {
   "panel-right": PanelRight,
   "chevrons-up-down": ChevronsUpDown,
   "more-horizontal": Ellipsis,
+  "more-vertical": EllipsisVertical,
   "calendar": Calendar,
   "folder": Folder,
   "sliders-horizontal": SlidersHorizontal,

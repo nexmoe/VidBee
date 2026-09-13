@@ -1,3 +1,4 @@
+import { setupRenderer } from '@better-auth/electron/preload'
 import { electronAPI } from '@electron-toolkit/preload'
 import { logger } from '@vidbee/logger/client'
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
@@ -6,6 +7,8 @@ import type { IpcServices } from '../main/ipc'
 
 // Create type-safe IPC proxy using electron-ipc-decorator
 const ipcServices = createIpcProxy<IpcServices>(ipcRenderer)
+
+setupRenderer({ channelPrefix: 'vidbee-auth' })
 
 // Custom APIs for renderer
 const api = {

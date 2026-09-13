@@ -1,6 +1,6 @@
 {
   "name": "web",
-  "version": "0.1.0",
+  "version": "2.1.0",
   "private": true,
   "type": "module",
   "imports": {
@@ -27,6 +27,7 @@
     "@tanstack/router-plugin": "^1.168.32",
     "@vidbee/downloader-core": "workspace:*",
     "@vidbee/i18n": "workspace:*",
+    "@vidbee/subscriptions-core": "workspace:*",
     "@vidbee/logger": "workspace:*",
     "@vidbee/ui": "workspace:*",
     "i18next": "^25.5.3",

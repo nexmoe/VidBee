@@ -21,24 +21,29 @@ import {
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { DesktopChromeContext } from './desktop-chrome'
+import { useAppIconPlaybackMenu } from './hooks/use-app-icon-playback-menu'
 import { useDownloadEvents } from './hooks/use-download-events'
+import { useHistorySync } from './hooks/use-history-sync'
 import { useImportLocalMedia } from './hooks/use-import-local-media'
 import { useRybbitDailyClientVersion } from './hooks/use-rybbit-daily-client-version'
 import { useRybbitScript } from './hooks/use-rybbit-script'
 import { addRendererBreadcrumb, setRendererTelemetryEnabled } from './lib/glitchtip'
 import { ipcEvents, ipcServices } from './lib/ipc'
 import { logger } from './lib/logger'
+import { continueDesktopSignIn, openSettingsTab } from './lib/settings-navigation'
 import { isInProgressTranscript } from './lib/transcript-library'
 import {
   isTranscriptDetailPathname,
-  PLAYBACK_BAR_HEIGHT_PX,
   PLAYBACK_BAR_HEIGHT_VAR,
+  playbackBarReservedHeightPx,
+  shouldCollapsePlaybackBar,
   shouldShowPlaybackBar
 } from './lib/transcript-playback'
 import { withDesktopUtm } from './lib/url'
 import { loadSettingsAtom, settingsAtom } from './store/settings'
 import { loadSubscriptionsAtom, setSubscriptionsAtom } from './store/subscriptions'
 import { playbackSessionAtom } from './store/transcript-playback'
+import { playbackPlaylistAtom } from './store/transcript-playlist'
 import {
   loadTranscriptMapAtom,
   type TranscriptSnapshotView,
@@ -116,10 +121,16 @@ export function AppLayout() {
   const navigate = useNavigate()
   const pathname = useRouterState({ select: (state) => state.location.pathname })
   const playbackSession = useAtomValue(playbackSessionAtom)
+  const playbackPlaylist = useAtomValue(playbackPlaylistAtom)
   const playbackBarVisible = shouldShowPlaybackBar({
     downloadId: playbackSession?.downloadId ?? null,
     pathname,
+    playlistCount: playbackPlaylist.length,
     started: Boolean(playbackSession?.started)
+  })
+  const playbackBarHeight = playbackBarReservedHeightPx({
+    collapsed: playbackBarVisible && shouldCollapsePlaybackBar(pathname),
+    visible: playbackBarVisible
   })
   const currentPage = pathToPage(pathname)
   const supportedSitesUrl = withDesktopUtm('https://vidbee.org/supported-sites/')
@@ -128,6 +139,8 @@ export function AppLayout() {
   const isRybbitReady = useRybbitScript(analyticsEnabled)
 
   useDownloadEvents()
+  useAppIconPlaybackMenu()
+  useHistorySync()
   const { applyImportResult } = useImportLocalMedia()
   useRybbitDailyClientVersion({
     appName: 'VidBee',
@@ -198,6 +211,28 @@ export function AppLayout() {
       ipcEvents.removeListener('download:deeplink', handleDeepLink)
     }
   }, [handlePageChange])
+
+  useEffect(() => {
+    /** Show the account balance when the browser returns from a credit purchase. */
+    const handleCreditReturn = (): void => {
+      openSettingsTab('account')
+    }
+    const subscription = ipcEvents.on('account:credits-updated', handleCreditReturn)
+    return () => {
+      ipcEvents.removeListener('account:credits-updated', subscription)
+    }
+  }, [])
+
+  useEffect(() => {
+    /** Finish a browser signup by opening Settings and signing in when needed. */
+    const handleAuthContinue = (): void => {
+      void continueDesktopSignIn()
+    }
+    ipcEvents.on('auth:continue', handleAuthContinue)
+    return () => {
+      ipcEvents.removeListener('auth:continue', handleAuthContinue)
+    }
+  }, [])
 
   useEffect(() => {
     const handleMediaImported = (...args: unknown[]) => {
@@ -335,7 +370,7 @@ export function AppLayout() {
         className="flex h-screen flex-row"
         style={
           {
-            [PLAYBACK_BAR_HEIGHT_VAR]: playbackBarVisible ? `${PLAYBACK_BAR_HEIGHT_PX}px` : '0px'
+            [PLAYBACK_BAR_HEIGHT_VAR]: `${playbackBarHeight}px`
           } as CSSProperties
         }
       >
@@ -368,7 +403,7 @@ export function AppLayout() {
 
         <TranscriptPlaybackHost />
         <Toaster
-          offset={playbackBarVisible ? PLAYBACK_BAR_HEIGHT_PX + 16 : undefined}
+          offset={playbackBarHeight > 0 ? playbackBarHeight + 16 : undefined}
           richColors={true}
         />
         <WhatsNewHost />

@@ -1,9 +1,12 @@
+import '@vitejs/plugin-react/preamble'
 import './assets/main.css'
 import './assets/global.css'
 
+import { isShareCaptureHash } from '@shared/types/share-card'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App'
+import { ShareCapturePage } from './pages/ShareCapture'
 import './i18n'
 import {
   addRendererBreadcrumb,
@@ -158,6 +161,6 @@ if (!rootElement) {
 }
 createRoot(rootElement).render(
   <StrictMode>
-    <App />
+    {isShareCaptureHash(window.location.hash) ? <ShareCapturePage /> : <App />}
   </StrictMode>
 )

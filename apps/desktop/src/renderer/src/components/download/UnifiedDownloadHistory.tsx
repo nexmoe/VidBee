@@ -33,9 +33,10 @@ import {
   buildFilePathCandidates,
   normalizeSavedFileName
 } from '../../../../shared/utils/download-file'
-import { useHistorySync } from '../../hooks/use-history-sync'
 import { ipcServices } from '../../lib/ipc'
 import { logger } from '../../lib/logger'
+import { buildTranscriptPlaybackInput } from '../../lib/transcript-playback-source'
+import { flyCoverToPlaylistButton } from '../../lib/transcript-playlist-fly'
 import type { DownloadRecord } from '../../store/downloads'
 import {
   downloadsArrayAtom,
@@ -43,6 +44,9 @@ import {
   removeHistoryRecordsByPlaylistAtom
 } from '../../store/downloads'
 import { settingsAtom } from '../../store/settings'
+import { takePlaybackSessionAtom } from '../../store/transcript-playback'
+import { addPlaybackPlaylistItemsAtom } from '../../store/transcript-playlist'
+import { transcriptMapAtom } from '../../store/transcripts'
 import { ScrollArea } from '../ui/scroll-area'
 import { DownloadDialog } from './DownloadDialog'
 import { DownloadItem } from './DownloadItem'
@@ -117,6 +121,9 @@ export function UnifiedDownloadHistory({
   const allRecords = useAtomValue(downloadsArrayAtom)
   const removeHistoryRecords = useSetAtom(removeHistoryRecordsAtom)
   const removeHistoryRecordsByPlaylist = useSetAtom(removeHistoryRecordsByPlaylistAtom)
+  const addPlaylistItems = useSetAtom(addPlaybackPlaylistItemsAtom)
+  const takePlaybackSession = useSetAtom(takePlaybackSessionAtom)
+  const transcriptMap = useAtomValue(transcriptMapAtom)
   const settings = useAtomValue(settingsAtom)
   const [platformFilter, setPlatformFilter] = useState(ALL_DOWNLOAD_PLATFORM_FILTER)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
@@ -142,8 +149,6 @@ export function UnifiedDownloadHistory({
   }, [settings.browserForCookies, settings.cookiesPath])
   const showCookiesTip = !hasCookieConfig
   const canOpenCookiesSettings = Boolean(onOpenCookiesSettings ?? onOpenSettings)
-
-  useHistorySync()
 
   const historyRecords = useMemo(
     () => allRecords.filter((record) => record.entryType === 'history'),
@@ -272,6 +277,50 @@ export function UnifiedDownloadHistory({
       return
     }
     setConfirmAction({ type: 'delete-selected', ids: Array.from(selectedIds) })
+  }
+
+  /**
+   * Queue the selected downloads and start the first playable item.
+   */
+  const handleAddSelectedToPlaylist = (): void => {
+    const selectedInOrder = selectableIds.filter((id) => selectedIds.has(id))
+    if (selectedInOrder.length === 0) {
+      return
+    }
+    addPlaylistItems(selectedInOrder)
+    const recordsById = new Map(historyRecords.map((record) => [record.id, record]))
+    const firstPlayable = selectedInOrder
+      .map((id) => recordsById.get(id) ?? null)
+      .find((record) => {
+        if (!record) {
+          return false
+        }
+        return Boolean(
+          buildTranscriptPlaybackInput({
+            download: record,
+            downloadId: record.id,
+            fallbackTitle: record.title,
+            snapshot: transcriptMap[record.id] ?? null
+          }).filePath
+        )
+      })
+    if (firstPlayable) {
+      const playbackInput = buildTranscriptPlaybackInput({
+        download: firstPlayable,
+        downloadId: firstPlayable.id,
+        fallbackTitle: firstPlayable.title,
+        snapshot: transcriptMap[firstPlayable.id] ?? null
+      })
+      takePlaybackSession(playbackInput)
+      const row = listRef.current?.querySelector(`[data-download-id="${firstPlayable.id}"]`)
+      const image = row?.querySelector('img')
+      flyCoverToPlaylistButton({
+        from: row?.querySelector('.aspect-video')?.getBoundingClientRect() ?? null,
+        src: image?.currentSrc || image?.src || firstPlayable.thumbnail || null
+      })
+    }
+    toast.success(t('transcript.player.playlist.addedCount', { count: selectedInOrder.length }))
+    setSelectedIds(new Set())
   }
 
   const handleRequestDeletePlaylist = (playlistId: string, title: string, ids: string[]) => {
@@ -541,6 +590,7 @@ export function UnifiedDownloadHistory({
           )}
           {filteredRecords.length === 0 ? (
             <DownloadEmptyState
+              className="mx-6 mb-4"
               hint={t('download.ingestEmptyHint')}
               message={t('download.noItems')}
             />
@@ -593,10 +643,12 @@ export function UnifiedDownloadHistory({
       {selectedCount > 0 && (
         <div className="fixed bottom-[calc(1rem+var(--playback-bar-height,0px))] left-1/2 z-40 -translate-x-1/2 sm:right-6 sm:left-auto sm:translate-x-0">
           <DownloadSelectionToolbar
+            addToPlaylistLabel={t('transcript.player.playlist.add')}
             allSelected={allSelected}
             clearLabel={t('history.clearSelection')}
             countLabel={selectionSummary}
             deleteLabel={t('history.deleteSelected')}
+            onAddToPlaylist={handleAddSelectedToPlaylist}
             onDelete={handleRequestDeleteSelected}
             onToggleSelectAll={handleToggleSelectAll}
             selectAllLabel={t('history.selectAll')}

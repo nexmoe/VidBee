@@ -1,6 +1,7 @@
 import type { ModelStatus } from './types'
 
 export interface ModelPrepStatus {
+  downloading: boolean
   percent: number
   ready: boolean
 }
@@ -35,6 +36,7 @@ export const modelFillPercent = (
 export const toModelPrepStatus = (
   status: Pick<ModelStatus, 'downloads' | 'files' | 'ready'>
 ): ModelPrepStatus => ({
+  downloading: status.downloads.length > 0,
   ready: status.ready,
   percent: modelFillPercent(status)
 })

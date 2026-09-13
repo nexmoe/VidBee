@@ -1,4 +1,8 @@
-import { shouldKeepPlaybackSession } from '@renderer/lib/transcript-playback'
+import { DEFAULT_PLAYBACK_RATE, shouldKeepPlaybackSession } from '@renderer/lib/transcript-playback'
+import {
+  activatePlaybackPlaylistItemAtom,
+  playlistPlaybackProgressAtom
+} from '@renderer/store/transcript-playlist'
 import { atom } from 'jotai'
 
 export type PlaybackSlotId = 'bar' | 'page'
@@ -26,11 +30,19 @@ export interface TranscriptPlaybackPresentation {
   currentSpeakerSortIndex: number | null
 }
 
+export interface TranscriptPlaybackVolume {
+  muted: boolean
+  volume: number
+}
+
 export interface TranscriptPlayerControls {
   pause: () => void
   play: () => void
   seek: (seconds: number) => void
+  setPlaybackRate: (rate: number) => void
+  setVolume: (volume: number) => void
   toggle: () => void
+  toggleMute: () => void
 }
 
 export interface EnsurePlaybackSessionInput {
@@ -57,6 +69,11 @@ export const EMPTY_PLAYBACK_PRESENTATION: TranscriptPlaybackPresentation = {
   currentSpeakerSortIndex: null
 }
 
+export const DEFAULT_PLAYBACK_VOLUME: TranscriptPlaybackVolume = {
+  muted: false,
+  volume: 1
+}
+
 export const playbackSessionAtom = atom<TranscriptPlaybackSession | null>(null)
 
 export const playbackClockAtom = atom<TranscriptPlaybackClock>(EMPTY_PLAYBACK_CLOCK)
@@ -69,6 +86,12 @@ export const playbackPlayingAtom = atom((get) => get(playbackClockAtom).playing)
 export const playbackPresentationAtom = atom<TranscriptPlaybackPresentation>(
   EMPTY_PLAYBACK_PRESENTATION
 )
+
+export const playbackVolumeAtom = atom<TranscriptPlaybackVolume>(DEFAULT_PLAYBACK_VOLUME)
+
+export const playbackRateAtom = atom(DEFAULT_PLAYBACK_RATE)
+
+export const playbackAspectRatioAtom = atom<number | null>(null)
 
 export const playbackControlsAtom = atom<TranscriptPlayerControls | null>(null)
 
@@ -109,6 +132,7 @@ export const ensurePlaybackSessionAtom = atom(
  * Replace the current session because the user started this transcript.
  */
 export const takePlaybackSessionAtom = atom(null, (get, set, input: TakePlaybackSessionInput) => {
+  set(activatePlaybackPlaylistItemAtom, input.downloadId)
   const current = get(playbackSessionAtom)
   const seekTo = input.seekTo ?? null
   if (current?.downloadId === input.downloadId) {
@@ -149,14 +173,42 @@ export const consumePlaybackPlayWhenReadyAtom = atom(null, (get, set) => {
 
 /**
  * Mark that the user has actually started playback so the bar may appear later.
+ *
+ * In-page Video.js play never goes through `takePlaybackSessionAtom`, so the
+ * current item must join the playlist here. An empty queue would otherwise
+ * close the session and unmount the player.
  */
 export const markPlaybackStartedAtom = atom(null, (get, set) => {
   const current = get(playbackSessionAtom)
   if (!current || current.started) {
     return
   }
+  set(activatePlaybackPlaylistItemAtom, current.downloadId)
   set(playbackSessionAtom, { ...current, started: true })
 })
+
+/**
+ * Recreate a started, paused session after relaunch so the bar can return.
+ */
+export const restorePlaybackSessionAtom = atom(
+  null,
+  (get, set, input: EnsurePlaybackSessionInput) => {
+    const current = get(playbackSessionAtom)
+    if (current?.started) {
+      return
+    }
+    set(activatePlaybackPlaylistItemAtom, input.downloadId)
+    const progress = get(playlistPlaybackProgressAtom)[input.downloadId]
+    set(playbackSessionAtom, { ...input, playWhenReady: false, seekTo: null, started: true })
+    set(playbackClockAtom, {
+      currentTime: progress?.currentTime ?? 0,
+      duration: progress?.duration ?? 0,
+      playing: false
+    })
+    set(playbackPresentationAtom, EMPTY_PLAYBACK_PRESENTATION)
+    set(playbackControlsAtom, null)
+  }
+)
 
 /**
  * Drop a session that never started when its transcript page unmounts.
@@ -179,6 +231,7 @@ export const closePlaybackSessionAtom = atom(null, (_get, set) => {
   set(playbackSessionAtom, null)
   set(playbackClockAtom, EMPTY_PLAYBACK_CLOCK)
   set(playbackPresentationAtom, EMPTY_PLAYBACK_PRESENTATION)
+  set(playbackAspectRatioAtom, null)
   set(playbackControlsAtom, null)
 })
 

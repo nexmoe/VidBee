@@ -1,0 +1,201 @@
+/* Compact Clipii chat-panel composer (apps/app/src/styles.css). */
+.clipii-quick-capture {
+  min-height: 44px;
+  overflow: hidden;
+  background: rgb(255 255 255 / 80%);
+  border: 0;
+  border-radius: 28px;
+  box-shadow: inset 0 0 0 0.5px rgb(60 59 65 / 10%);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+}
+
+.clipii-quick-capture:focus-within {
+  box-shadow: inset 0 0 0 0.5px rgb(60 59 65 / 20%);
+}
+
+.clipii-quick-capture[data-expanded="true"] {
+  border-radius: 20px;
+}
+
+.clipii-quick-capture[data-expanded="false"] .clipii-capture-editor-frame {
+  padding-block: 8px;
+}
+
+.clipii-quick-capture[data-expanded="false"] .clipii-capture-kind {
+  top: 8px;
+}
+
+.clipii-capture-actions {
+  gap: 8px;
+  max-width: calc(100% - 3.5rem);
+}
+
+.clipii-capture-kind-button,
+.clipii-capture-submit {
+  width: 28px;
+  height: 28px;
+}
+
+.clipii-capture-menu {
+  display: inline-flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 4px;
+  width: max-content;
+  min-width: 0;
+  max-width: 100%;
+  height: 28px;
+  padding: 0 8px 0 10px;
+  overflow: hidden;
+  color: rgb(0 0 0 / 55%);
+  font-size: 13px;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: 9999px;
+}
+
+.clipii-capture-menu:hover,
+.clipii-capture-menu[data-state="open"] {
+  color: rgb(0 0 0 / 80%);
+  background: rgb(0 0 0 / 6%);
+}
+
+.clipii-capture-menu:focus-visible {
+  outline: 2px solid var(--ring, rgb(107 151 255));
+  outline-offset: 1px;
+}
+
+.clipii-capture-menu svg {
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+}
+
+.clipii-capture-kind-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: rgb(0 0 0 / 80%);
+  background: rgb(0 0 0 / 6%);
+  border: 0;
+  border-radius: 9999px;
+}
+
+.clipii-capture-submit {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: #fff;
+  background: rgb(0 0 0 / 80%);
+  border: 0;
+  border-radius: 9999px;
+  box-shadow: none;
+  transition: transform 100ms ease-out;
+}
+
+.clipii-capture-submit:active {
+  transform: scale(0.95);
+}
+
+.clipii-capture-submit:disabled {
+  background: rgb(0 0 0 / 30%);
+  opacity: 1;
+}
+
+.clipii-capture-submit svg {
+  width: 16px;
+  height: 18px;
+}
+
+.clipii-capture-sizer,
+.clipii-capture-input {
+  padding: 4px 8px;
+  font-size: 0.875rem;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.clipii-capture-sizer {
+  top: 0;
+  left: 0;
+  z-index: -1;
+  min-height: 28px;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.clipii-capture-input {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 28px;
+  margin: 0;
+  overflow-y: auto;
+  appearance: none;
+  resize: none;
+  background: transparent;
+  border: 0;
+  outline: none;
+  box-shadow: none;
+}
+
+.clipii-quick-capture[data-expanded="false"] .clipii-capture-input {
+  padding-block: 4px;
+  line-height: 20px;
+}
+
+.dark .clipii-quick-capture {
+  background: rgb(40 42 48 / 80%);
+  box-shadow: inset 0 0 0 0.5px rgb(255 255 255 / 15%);
+}
+
+.dark .clipii-quick-capture:focus-within {
+  box-shadow: inset 0 0 0 0.5px rgb(255 255 255 / 25%);
+}
+
+.dark .clipii-capture-kind-button {
+  color: rgb(255 255 255 / 80%);
+  background: rgb(255 255 255 / 8%);
+}
+
+.dark .clipii-capture-menu {
+  color: rgb(255 255 255 / 70%);
+  background: transparent;
+}
+
+.dark .clipii-capture-menu:hover,
+.dark .clipii-capture-menu[data-state="open"] {
+  color: rgb(255 255 255 / 90%);
+  background: rgb(255 255 255 / 8%);
+}
+
+.dark .clipii-capture-submit {
+  color: #282a30;
+  background: rgb(255 255 255 / 85%);
+}
+
+.dark .clipii-capture-submit:disabled {
+  background: rgb(255 255 255 / 30%);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .clipii-quick-capture {
+    background: var(--card);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .clipii-quick-capture {
+    transition: none;
+  }
+}

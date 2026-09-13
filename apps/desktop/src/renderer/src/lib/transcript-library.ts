@@ -37,6 +37,22 @@ export const isListedTranscript = (listState: TranscriptListState): boolean =>
 export const isInProgressTranscript = (listState: TranscriptListState): boolean =>
   ACTIVE_STATES.has(listState)
 
+/**
+ * Show the retry empty state when ASR failed, or when the user stopped a first
+ * run before anything was committed. Cancelled-with-no-lines used to render a
+ * blank captions pane.
+ *
+ * @param listState Compact status from the transcript snapshot.
+ * @param hasRecord Whether a stored transcript still exists.
+ * @param segmentCount Visible committed or partial lines.
+ */
+export const needsTranscriptRetry = (
+  listState: TranscriptListState,
+  hasRecord = false,
+  segmentCount = 0
+): boolean =>
+  listState === 'failed' || (listState === 'cancelled' && !hasRecord && segmentCount === 0)
+
 /** Inputs used to pick on-screen transcript rows during ASR or speaker overlay. */
 export interface TranscriptWorkspaceViewInput {
   committed: TranscriptSegmentView[]
@@ -60,13 +76,17 @@ export interface TranscriptWorkspaceView {
  *
  * Speaker overlay reuses the stored text. It must not switch the AI transcript to an
  * empty live stream, or prompt results that depend on that text disappear with it.
+ * A captions-only speaker overlay must not look like an ASR run on the AI tab.
  *
  * @param input Stored rows, live partials, and the current source/task.
  */
 export const resolveTranscriptWorkspaceView = (
   input: TranscriptWorkspaceViewInput
 ): TranscriptWorkspaceView => {
-  const running = isInProgressTranscript(input.listState)
+  const pipelineRunning = isInProgressTranscript(input.listState)
+  const captionOverlayOnAsr =
+    pipelineRunning && input.rediarize === true && !input.viewingCaptions && !input.hasRecord
+  const running = pipelineRunning && !captionOverlayOnAsr
   const relabelingSpeakers = running && input.rediarize === true
   const streamLive = running && !input.viewingCaptions && !relabelingSpeakers
   const segments = !streamLive && input.committed.length > 0 ? input.committed : input.partials
@@ -86,6 +106,34 @@ export const shouldAutoStartAsr = (snapshot: {
   listState: TranscriptListState
   sourceFilePath?: string | null
 }): boolean => snapshot.listState === 'none' && Boolean(snapshot.sourceFilePath)
+
+/**
+ * True when local ASR is already queued or running, not a captions speaker overlay.
+ *
+ * @param snapshot Compact transcript status for the open download.
+ */
+export const isAsrTaskInFlight = (snapshot: {
+  listState?: TranscriptListState | null
+  rediarize?: boolean
+}): boolean => isInProgressTranscript(snapshot.listState ?? 'none') && snapshot.rediarize !== true
+
+/**
+ * Show the idle AI-transcript empty state until the user starts local ASR.
+ *
+ * @param input Visible source and workspace flags after switching to ASR.
+ */
+export const shouldOfferAsrStart = (input: {
+  failed: boolean
+  noSpeech: boolean
+  ready: boolean
+  running: boolean
+  selectedSourceKind: 'asr' | 'captions' | null
+}): boolean =>
+  input.selectedSourceKind === 'asr' &&
+  !input.failed &&
+  !input.noSpeech &&
+  !input.ready &&
+  !input.running
 
 /**
  * Build a one-line preview from transcript segments.
@@ -116,14 +164,12 @@ export const previewTranscriptText = (
  *
  * @param listState Compact status from the transcript snapshot.
  * @param stage Live transcription stage, if the task is active.
- * @param modelsReady Whether the boot transcript models are on disk.
  * @param hasTranscript Whether ASR text has already started streaming.
  * @returns A translation key under `transcript.*`.
  */
 export const transcriptProgressLabelKey = (
   listState?: TranscriptListState | null,
   stage?: string | null,
-  modelsReady = true,
   hasTranscript = false
 ): string => {
   if (listState === 'queued') {
@@ -135,7 +181,7 @@ export const transcriptProgressLabelKey = (
   if (stage === 'preparing-models' && hasTranscript) {
     return 'transcript.preparingSpeakerModels'
   }
-  if (!modelsReady || stage === 'preparing-models') {
+  if (stage === 'preparing-models') {
     return 'transcript.modelsPreparing'
   }
   if (!stage || stage === 'preparing-audio') {

@@ -8,7 +8,7 @@ import {
   resolveFilenameTemplate
 } from './filename-style'
 import type { OneClickContainerOption } from './format-preferences'
-import { resolveSubtitleLanguages } from './subtitle-languages'
+import { expandSubtitleLanguageAliases, resolveSubtitleLanguages } from './subtitle-languages'
 
 export interface YtDlpDownloadSettings {
   downloadPath?: string
@@ -43,6 +43,7 @@ export interface YtDlpDownloadOptions {
 }
 
 const YOUTUBE_HOST_SUFFIXES = ['youtube.com', 'youtu.be', 'youtube-nocookie.com'] as const
+const BILIBILI_AUTO_SUBTITLE_PREFIX = 'ai-'
 // GitHub issue #359: drop only the bare `web` client (which requires a PO
 // token and frequently 403s) but keep `web_safari` and the other defaults so
 // extraction has more fallbacks before failing.
@@ -60,6 +61,37 @@ const DEFAULT_FRAGMENT_RETRIES = '30'
 const DEFAULT_EXTRACTOR_RETRIES = '10'
 const DEFAULT_RETRY_SLEEP = '2'
 const DEFAULT_SOCKET_TIMEOUT = '30'
+
+/**
+ * Resolve canonical, regional, and Bilibili AI subtitle language tags.
+ *
+ * yt-dlp exposes Bilibili AI captions as regular subtitle tracks such as `ai-zh`,
+ * so `--write-auto-subs` alone cannot select them. Common extractor aliases are
+ * always included; Bilibili AI aliases are added only while automatic captions are on.
+ */
+const resolveDownloadSubtitleLanguages = (
+  languages: readonly string[],
+  isBilibili: boolean,
+  writeAutoSubs: boolean
+): string[] => {
+  const resolved = new Map(
+    expandSubtitleLanguageAliases(languages).map((language) => [language.toLowerCase(), language])
+  )
+  if (isBilibili && writeAutoSubs) {
+    for (const language of languages) {
+      if (language.toLowerCase().startsWith(BILIBILI_AUTO_SUBTITLE_PREFIX)) {
+        continue
+      }
+      const primaryLanguage = language.split('-')[0]?.toLowerCase()
+      if (primaryLanguage) {
+        const automaticLanguage = `${BILIBILI_AUTO_SUBTITLE_PREFIX}${primaryLanguage}`
+        resolved.set(automaticLanguage, automaticLanguage)
+      }
+    }
+  }
+
+  return [...resolved.values()]
+}
 
 const appendNetworkResilienceArgs = (args: string[]): void => {
   args.push('--retries', DEFAULT_RETRIES)
@@ -257,22 +289,68 @@ export const normalizeBrowserCookiesSettingForYtDlp = (value?: string | null): s
   return profileName ? `${browser}:${profileName}` : browser
 }
 
+/** Return whether a host is the domain itself or one of its subdomains. */
+const hostMatchesDomain = (host: string, domain: string): boolean =>
+  host === domain || host.endsWith(`.${domain}`)
+
+/** Return whether a URL uses a Bilibili-owned video domain. */
 const isBilibiliUrl = (url: string): boolean => {
   try {
     const host = new URL(url).hostname.toLowerCase()
-    return host.includes('bilibili.com') || host.includes('b23.tv') || host.includes('bili.tv')
+    return ['bilibili.com', 'b23.tv', 'bili.tv'].some((domain) => hostMatchesDomain(host, domain))
   } catch {
     return false
   }
 }
 
+/** Return whether a URL uses a Twitch domain. */
 const isTwitchUrl = (url: string): boolean => {
   try {
     const host = new URL(url).hostname.toLowerCase()
-    return host.includes('twitch.tv')
+    return hostMatchesDomain(host, 'twitch.tv')
   } catch {
     return false
   }
+}
+
+/** Return whether a URL uses a TikTok domain. */
+const isTikTokUrl = (url: string): boolean => {
+  try {
+    const host = new URL(url).hostname.toLowerCase()
+    return hostMatchesDomain(host, 'tiktok.com')
+  } catch {
+    return false
+  }
+}
+
+export type SubtitleDownloadSkipReason = 'auth-required' | 'automatic-captions-disabled'
+
+/**
+ * Explain why a requested video subtitle download must be skipped before yt-dlp starts.
+ *
+ * @param options Download source and media type.
+ * @param settings Effective runtime subtitle and authentication settings.
+ * @returns A stable skip reason, or null when subtitle arguments should be emitted.
+ */
+export const resolveSubtitleDownloadSkipReason = (
+  options: Pick<YtDlpDownloadOptions, 'type' | 'url'>,
+  settings: YtDlpDownloadSettings
+): SubtitleDownloadSkipReason | null => {
+  if (options.type !== 'video' || !(settings.downloadSubtitles ?? true)) {
+    return null
+  }
+  if (isTikTokUrl(options.url) && !(settings.writeAutoSubs ?? true)) {
+    return 'automatic-captions-disabled'
+  }
+
+  const browserForCookies = normalizeBrowserCookiesSettingForYtDlp(settings.browserForCookies)
+  const hasSubtitleAuth =
+    (browserForCookies && browserForCookies !== 'none') || Boolean(trim(settings.cookiesPath))
+  if ((isBilibiliUrl(options.url) || isTwitchUrl(options.url)) && !hasSubtitleAuth) {
+    return 'auth-required'
+  }
+
+  return null
 }
 
 export const resolvePathWithHome = (rawPath?: string | null): string | undefined => {
@@ -467,7 +545,7 @@ export const buildDownloadArgs = (
   }
 
   const downloadSubtitles = settings.downloadSubtitles ?? true
-  const subtitleLanguages = resolveSubtitleLanguages(
+  const selectedSubtitleLanguages = resolveSubtitleLanguages(
     settings.subtitleLanguages,
     settings.interfaceLanguage
   )
@@ -478,16 +556,19 @@ export const buildDownloadArgs = (
   const embedChapters = settings.embedChapters ?? true
   const browserForCookies = normalizeBrowserCookiesSettingForYtDlp(settings.browserForCookies)
   const cookiesPath = trim(settings.cookiesPath)
-  const hasSubtitleAuth =
-    (browserForCookies && browserForCookies !== 'none') || Boolean(cookiesPath)
   const isBilibili = isBilibiliUrl(options.url)
+  const subtitleLanguages = resolveDownloadSubtitleLanguages(
+    selectedSubtitleLanguages,
+    isBilibili,
+    writeAutoSubs
+  )
   // GitHub issue #370: Twitch `rechat` 404s abort the VOD. GitHub issue #196:
-  // Bilibili subtitle fetch without cookies can fail and abort the video.
-  // Skip forced subtitle downloads on those sites unless cookies are present.
+  // Bilibili subtitle fetch without cookies can fail and abort the video. TikTok
+  // exposes its generated captions as normal subtitles, so the automatic-captions
+  // switch must gate subtitle fetching there instead of relying on yt-dlp's flag.
+  const subtitleSkipReason = resolveSubtitleDownloadSkipReason(options, settings)
   const shouldAttemptSubtitles =
-    options.type === 'video' &&
-    downloadSubtitles &&
-    (!(isBilibili || isTwitchUrl(options.url)) || hasSubtitleAuth)
+    options.type === 'video' && downloadSubtitles && subtitleSkipReason === null
   // GitHub issues #129, #196, #199, #291, #347: Bilibili lists danmaku as a
   // subtitle track (`danmaku.xml`). ffmpeg cannot mux XML into MP4/MKV and
   // aborts with `Invalid data found when processing input` after the video
@@ -538,7 +619,15 @@ export const buildDownloadArgs = (
   args.push('--no-playlist-reverse')
   // GitHub issue #447: emit the final post-processed path without suppressing
   // progress output so the executor can stat the exact saved file.
-  args.push('--print', `after_move:${VIDBEE_OUTPUT_PATH_PREFIX}%(filepath)s`, '--no-quiet')
+  args.push(
+    '--print',
+    `after_move:${VIDBEE_OUTPUT_PATH_PREFIX}%(filepath)s`,
+    '--print',
+    'before_dl:VIDBEE_VISIBILITY:%(availability)s',
+    '--print',
+    'before_dl:VIDBEE_DURATION:%(duration)s',
+    '--no-quiet'
+  )
 
   appendPlatformFilenameSafetyArgs(args)
   appendNetworkResilienceArgs(args)

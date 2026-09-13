@@ -15,7 +15,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { TASK_QUEUE_DDL_V1 } from '@vidbee/db/task-queue'
 import { TRANSCRIPT_DDL_V1 } from '@vidbee/db/transcripts'
-import { YtDlpExecutor } from '@vidbee/downloader-core'
+import { YtDlpExecutor, type YtDlpTaskOptions } from '@vidbee/downloader-core'
 import {
   ExecutorRouter,
   MemoryPersistAdapter,
@@ -35,6 +35,7 @@ import { scopedLoggers } from '../utils/logger'
 import { resolveBundledResourcesPath } from './bundled-resources-path'
 import { getDatabaseConnection } from './database'
 import { startDownloadPowerSaveGuard } from './download-power-save'
+import { applyExtensionCookieSettings } from './extension-cookies'
 import { ffmpegManager } from './ffmpeg-manager'
 import { setDesktopTaskQueueRef } from './queue-ref'
 import {
@@ -44,6 +45,7 @@ import {
   getTranscriptSnapshot,
   getTranscriptStore,
   resolveTranscriptionBackend,
+  resolveTranscriptionGpuKinds,
   resolveTranscriptionWorkerScript,
   stopAutoTranscription
 } from './transcript-host'
@@ -89,7 +91,12 @@ const buildExecutor = (): YtDlpExecutor =>
     resolveYtDlpPath,
     resolveFfmpegLocation,
     defaultDownloadDir: resolveDownloadDir(),
-    extraArgs: () => ytdlpManager.getJsRuntimeArgs?.() ?? []
+    extraArgs: () => ytdlpManager.getJsRuntimeArgs?.() ?? [],
+    prepareSettings: (input) =>
+      applyExtensionCookieSettings(
+        input.url,
+        (input.options as YtDlpTaskOptions | undefined)?.settings
+      )
   })
 
 const buildPersistAdapter = (
@@ -146,6 +153,7 @@ const buildTranscriptionExecutor = (): TranscriptionExecutor => {
     execPath: process.execPath,
     bundledNodePath: resolveBundledNodePath([resourcesDir]),
     workDir: path.join(app.getPath('userData'), 'transcript-work'),
+    resolveGpuKinds: resolveTranscriptionGpuKinds,
     onPartial: ({ downloadTaskId, segments }) => {
       broadcastTranscriptPartials(downloadTaskId, segments)
     },

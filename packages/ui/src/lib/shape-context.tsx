@@ -14,6 +14,8 @@ import {
 type ShapeVariant = "pill" | "rounded";
 
 interface ShapeClasses {
+  /** The variant these classes belong to — handy for conditionals. */
+  variant: ShapeVariant;
   item: string;
   bg: string;
   focusRing: string;
@@ -30,6 +32,7 @@ interface ShapeClasses {
 
 const shapeMap: Record<ShapeVariant, ShapeClasses> = {
   pill: {
+    variant: "pill",
     item: "rounded-[20px]",
     bg: "rounded-[20px]",
     // +2px over `item` because the focus ring sits 2px outside the element
@@ -44,6 +47,7 @@ const shapeMap: Record<ShapeVariant, ShapeClasses> = {
     mergedRadius: 16,
   },
   rounded: {
+    variant: "rounded",
     item: "rounded-lg",
     bg: "rounded-lg",
     focusRing: "rounded-[10px]",
@@ -64,9 +68,13 @@ interface ShapeContextValue {
 
 const ShapeContext = createContext<ShapeContextValue | null>(null);
 
+// Rounded is the default on every path: the site demos render under
+// <ShapeProvider defaultShape="rounded">, the shipped :focus-visible fallback
+// ring assumes its 8px radius, and the preset generators only emit a provider
+// for pill. A consumer with no provider gets the corners the docs show.
 function useShape(): ShapeClasses {
   const ctx = useContext(ShapeContext);
-  if (!ctx) return shapeMap.pill;
+  if (!ctx) return shapeMap.rounded;
   return ctx.classes;
 }
 
@@ -78,7 +86,7 @@ function useShapeContext() {
 
 function ShapeProvider({
   children,
-  defaultShape = "pill",
+  defaultShape = "rounded",
 }: {
   children: ReactNode;
   defaultShape?: ShapeVariant;

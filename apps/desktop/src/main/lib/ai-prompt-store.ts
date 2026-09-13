@@ -34,6 +34,7 @@ interface SqliteDatabase {
 }
 
 interface PromptRunDbRow {
+  cloud_result_id: string | null
   download_id: string
   prompt_id: string
   status: string
@@ -93,6 +94,7 @@ const snapshotFromRow = (row: PromptRunDbRow): AiPromptRunSnapshot | null => {
     return null
   }
   return {
+    cloudResultId: row.cloud_result_id ?? undefined,
     downloadId: row.download_id,
     promptId: row.prompt_id,
     status,
@@ -145,7 +147,7 @@ export class AiPromptRunStore {
     }
     const row = this.db
       .prepare(
-        `SELECT download_id, prompt_id, status, text, thinking, thinking_ms, error, error_code, created_at, updated_at
+        `SELECT cloud_result_id, download_id, prompt_id, status, text, thinking, thinking_ms, error, error_code, created_at, updated_at
          FROM transcript_prompt_runs
          WHERE download_id = ? AND prompt_id = ?`
       )
@@ -191,6 +193,11 @@ export class AiPromptRunStore {
         snapshot.updatedAt,
         snapshot.updatedAt
       )
+    this.db
+      .prepare(
+        'UPDATE transcript_prompt_runs SET cloud_result_id = ? WHERE download_id = ? AND prompt_id = ?'
+      )
+      .run(snapshot.cloudResultId ?? null, snapshot.downloadId, snapshot.promptId)
   }
 
   /**

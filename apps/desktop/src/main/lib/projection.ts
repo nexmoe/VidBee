@@ -93,6 +93,12 @@ export const projectTaskForRenderer = (task: Readonly<Task>): DownloadItem => {
   if (proj.resolvedFormatId !== undefined) {
     item.resolvedFormatId = proj.resolvedFormatId
   }
+  if (proj.subtitleStatus !== undefined) {
+    item.subtitleStatus = proj.subtitleStatus
+  }
+  if (proj.subtitleLanguages !== undefined) {
+    item.subtitleLanguages = proj.subtitleLanguages
+  }
   if (proj.speed !== undefined) {
     item.speed = proj.speed
   }
@@ -182,6 +188,8 @@ export const projectTaskForRendererHistory = (task: Readonly<Task>): DownloadHis
     title: proj.title ?? proj.url,
     type: proj.type,
     status: proj.status,
+    createdAt: proj.createdAt,
+    startedAt: proj.startedAt,
     downloadedAt: proj.startedAt ?? proj.createdAt
   }
   if (proj.thumbnail !== undefined) {
@@ -204,6 +212,12 @@ export const projectTaskForRendererHistory = (task: Readonly<Task>): DownloadHis
   }
   if (proj.resolvedFormatId !== undefined) {
     item.resolvedFormatId = proj.resolvedFormatId
+  }
+  if (proj.subtitleStatus !== undefined) {
+    item.subtitleStatus = proj.subtitleStatus
+  }
+  if (proj.subtitleLanguages !== undefined) {
+    item.subtitleLanguages = proj.subtitleLanguages
   }
   if (proj.error !== undefined) {
     item.error = proj.error

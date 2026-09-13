@@ -7,21 +7,17 @@
  *
  * Operational env vars (preserved from the pre-NEX-131 surface):
  *   VIDBEE_DOWNLOAD_DIR          – default download dir for new tasks
+ *   VIDBEE_DATA_DIR              – settings/sqlite/models (default: $VIDBEE_DOWNLOAD_DIR/.vidbee)
  *   VIDBEE_MAX_CONCURRENT        – Scheduler.maxConcurrency
  *   VIDBEE_HISTORY_STORE_PATH    – legacy history sqlite path; only used by
  *                                  scripts/migrate-history.ts now
- *   VIDBEE_PERSIST_QUEUE=1       – switch from in-memory to SQLite-backed
- *                                  TaskQueue (matches Desktop crash recovery)
- *   VIDBEE_TASK_QUEUE_DB         – override task-queue sqlite path
+ *   VIDBEE_PERSIST_QUEUE=0       – keep the queue in memory (SQLite is the default)
+ *   VIDBEE_DB                    – override the unified vidbee.db path
  *   YTDLP_PATH / FFMPEG_PATH     – binary overrides (unchanged)
  */
 import fs from 'node:fs'
-import { createRequire } from 'node:module'
-import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { TASK_QUEUE_DDL_V1 } from '@vidbee/db/task-queue'
-import { TRANSCRIPT_DDL_V1 } from '@vidbee/db/transcripts'
 import { YtDlpExecutor } from '@vidbee/downloader-core'
 import {
   ExecutorRouter,
@@ -36,96 +32,27 @@ import {
   extractEmbeddedCaptionTracks,
   importCaptionsForDownload,
   ModelManager,
-  mergeLegacyTaskQueueDb,
   preferredCaptionLanguages,
   TranscriptionExecutor,
   TranscriptStore
 } from '@vidbee/transcription'
+import { apiDataDir, apiDefaultDownloadDir as resolvedDownloadDir, trimEnv } from './api-paths'
+import { getDatabaseConnection } from './database'
+import { resolveFfmpegLocation, resolveYtDlpPath } from './engines'
 
-const require = createRequire(import.meta.url)
-
-const DEFAULT_DOWNLOAD_DIR_FALLBACK = path.join(os.homedir(), 'Downloads', 'VidBee')
-
-const trimEnv = (name: string): string | undefined => {
-  const v = process.env[name]?.trim()
-  return v && v.length > 0 ? v : undefined
-}
-
-export const apiDefaultDownloadDir =
-  trimEnv('VIDBEE_DOWNLOAD_DIR') ?? trimEnv('DOWNLOAD_DIR') ?? DEFAULT_DOWNLOAD_DIR_FALLBACK
+export const apiDefaultDownloadDir = resolvedDownloadDir
 
 const parsedMaxConcurrent = Number(trimEnv('VIDBEE_MAX_CONCURRENT') ?? '')
 export const apiMaxConcurrent =
   Number.isFinite(parsedMaxConcurrent) && parsedMaxConcurrent > 0 ? parsedMaxConcurrent : 4
 
-const persistEnabled = trimEnv('VIDBEE_PERSIST_QUEUE') === '1'
+const {
+  persistent: persistEnabled,
+  path: taskQueueDbPath,
+  sqlite: sharedSqlite
+} = getDatabaseConnection()
 
-const unifiedDbDir = path.join(apiDefaultDownloadDir, '.vidbee')
-const legacyTaskQueueDbPath =
-  trimEnv('VIDBEE_TASK_QUEUE_DB') ?? path.join(unifiedDbDir, 'task-queue.db')
-const taskQueueDbPath = trimEnv('VIDBEE_DB') ?? path.join(unifiedDbDir, 'vidbee.db')
-
-fs.mkdirSync(apiDefaultDownloadDir, { recursive: true })
-
-let cachedYtDlpPath: string | null = null
-const resolveYtDlpPath = (): string => {
-  if (cachedYtDlpPath && fs.existsSync(cachedYtDlpPath)) {
-    return cachedYtDlpPath
-  }
-  const envPath = trimEnv('YTDLP_PATH')
-  if (envPath && fs.existsSync(envPath)) {
-    cachedYtDlpPath = envPath
-    return envPath
-  }
-  // Fall back to PATH lookup via execSync `which yt-dlp` / `where yt-dlp`.
-  try {
-    const out = require('node:child_process')
-      .execSync(process.platform === 'win32' ? 'where yt-dlp' : 'which yt-dlp', {
-        stdio: ['ignore', 'pipe', 'ignore']
-      })
-      .toString()
-      .split(/\r?\n/)
-      .map((s: string) => s.trim())
-      .find((s: string) => s.length > 0)
-    if (out && fs.existsSync(out)) {
-      cachedYtDlpPath = out
-      return out
-    }
-  } catch {
-    /* noop */
-  }
-  throw new Error('yt-dlp binary not found. Set YTDLP_PATH or install yt-dlp in PATH.')
-}
-
-let cachedFfmpegLocation: string | null | undefined
-const resolveFfmpegLocation = (): string | undefined => {
-  if (cachedFfmpegLocation !== undefined) {
-    return cachedFfmpegLocation ?? undefined
-  }
-  const envPath = trimEnv('FFMPEG_PATH')
-  if (envPath) {
-    try {
-      const stats = fs.statSync(envPath)
-      if (stats.isDirectory()) {
-        cachedFfmpegLocation = envPath
-        return envPath
-      }
-      const dir = path.dirname(envPath)
-      cachedFfmpegLocation = dir
-      return dir
-    } catch {
-      /* fall through */
-    }
-  }
-  for (const candidate of ['/opt/homebrew/bin', '/usr/local/bin', '/usr/bin']) {
-    if (fs.existsSync(path.join(candidate, 'ffmpeg'))) {
-      cachedFfmpegLocation = candidate
-      return candidate
-    }
-  }
-  cachedFfmpegLocation = null
-  return undefined
-}
+const unifiedDbDir = apiDataDir
 
 const downloadExecutor = new YtDlpExecutor({
   resolveYtDlpPath,
@@ -141,25 +68,6 @@ const apiWorkerCandidates = [
 ]
 const apiWorkerScript =
   apiWorkerCandidates.find((candidate) => fs.existsSync(candidate)) ?? apiWorkerCandidates[0]
-
-const Database = require('better-sqlite3') as typeof import('better-sqlite3')
-fs.mkdirSync(path.dirname(taskQueueDbPath), { recursive: true })
-const sharedSqlite = persistEnabled
-  ? new Database(taskQueueDbPath, { timeout: 5000 })
-  : new Database(':memory:')
-sharedSqlite.exec(TASK_QUEUE_DDL_V1)
-sharedSqlite.exec(TRANSCRIPT_DDL_V1)
-if (
-  persistEnabled &&
-  legacyTaskQueueDbPath !== taskQueueDbPath &&
-  fs.existsSync(legacyTaskQueueDbPath)
-) {
-  mergeLegacyTaskQueueDb({
-    target: sharedSqlite,
-    legacyPath: legacyTaskQueueDbPath,
-    openLegacy: (legacyPath) => new Database(legacyPath, { timeout: 5000, fileMustExist: true })
-  })
-}
 
 const persist = persistEnabled
   ? new SqlitePersistAdapter({

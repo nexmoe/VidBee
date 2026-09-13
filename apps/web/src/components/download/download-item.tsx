@@ -9,10 +9,10 @@ import {
 	ContextMenu,
 	ContextMenuContent,
 	ContextMenuItem,
-	ContextMenuSeparator,
 	ContextMenuTrigger,
 } from "@vidbee/ui/components/ui/context-menu";
 import { DownloadPlatformIcon } from "@vidbee/ui/components/ui/download-platform-icon";
+import { DownloadRecordContextMenuItems } from "@vidbee/ui/components/ui/download-record-context-menu";
 import {
 	DOWNLOAD_FEEDBACK_ISSUE_TITLE,
 	FeedbackLinkButtons,
@@ -44,21 +44,18 @@ import {
 import {
 	AlertCircle,
 	Copy,
-	File,
-	FolderOpen,
+	Download,
 	Info,
 	Loader2,
 	Pause,
 	Play,
 	RotateCw,
-	Trash2,
 	X,
 } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { orpcClient } from "../../lib/orpc-client";
-import { resolveImageProxyUrl } from "../../lib/remote-image-proxy";
+import { fileDownloadUrl, orpcClient } from "../../lib/orpc-client";
 import { readWebSettings } from "../../lib/web-settings";
 import type { DownloadRecord } from "./types";
 
@@ -409,36 +406,43 @@ export function DownloadItem({
 		onRetry?.(download);
 	};
 
-	const handleOpenFolder = async () => {
+	const handleSaveToThisComputer = async () => {
 		const result = await tryFileOperation(async (filePath) => {
-			const response = await orpcClient.files.openFileLocation({
-				path: filePath,
-			});
-			return response.success;
+			const response = await orpcClient.files.exists({ path: filePath });
+			return response.exists;
 		});
-
-		if (!result.success) {
-			toast.error(t("notifications.openFolderFailed"));
-			return;
-		}
-
-		setResolvedFilePath(result.filePath ?? null);
-		setFileExists(true);
-	};
-
-	const handleOpenFile = async () => {
-		const result = await tryFileOperation(async (filePath) => {
-			const response = await orpcClient.files.openFile({ path: filePath });
-			return response.success;
-		});
-
-		if (!result.success) {
+		if (!(result.success && result.filePath)) {
 			toast.error(t("notifications.openFileFailed"));
 			return;
 		}
 
-		setResolvedFilePath(result.filePath ?? null);
+		setResolvedFilePath(result.filePath);
 		setFileExists(true);
+		const link = document.createElement("a");
+		link.href = fileDownloadUrl(result.filePath);
+		link.rel = "noopener";
+		link.target = "_blank";
+		link.click();
+	};
+
+	const handleCopyServerPath = async () => {
+		const currentPath = resolvedFilePath ?? (await findExistingFilePath());
+		if (!currentPath) {
+			toast.error(t("notifications.copyFailed"));
+			return;
+		}
+		if (!navigator.clipboard?.writeText) {
+			toast.error(t("notifications.copyFailed"));
+			return;
+		}
+		try {
+			await navigator.clipboard.writeText(currentPath);
+			setResolvedFilePath(currentPath);
+			setFileExists(true);
+			toast.success(t("web.serverPathCopied"));
+		} catch {
+			toast.error(t("notifications.copyFailed"));
+		}
 	};
 
 	const handleCopyLink = async () => {
@@ -460,32 +464,6 @@ export function DownloadItem({
 		try {
 			await navigator.clipboard.writeText(download.url);
 			toast.success(t("notifications.urlCopied"));
-		} catch {
-			toast.error(t("notifications.copyFailed"));
-		}
-	};
-
-	const handleCopyToClipboard = async () => {
-		const currentPath = resolvedFilePath ?? (await findExistingFilePath());
-		if (!currentPath) {
-			toast.error(t("notifications.copyFailed"));
-			return;
-		}
-
-		try {
-			const response = await orpcClient.files.copyFileToClipboard({
-				path: currentPath,
-			});
-			if (!response.success) {
-				if (!navigator.clipboard?.writeText) {
-					toast.error(t("notifications.copyFailed"));
-					return;
-				}
-				await navigator.clipboard.writeText(currentPath);
-			}
-			setResolvedFilePath(currentPath);
-			setFileExists(true);
-			toast.success(t("notifications.videoCopied"));
 		} catch {
 			toast.error(t("notifications.copyFailed"));
 		}
@@ -899,7 +877,6 @@ export function DownloadItem({
 							)}
 							<RemoteImage
 								alt={download.title || download.id}
-								cacheResolver={resolveImageProxyUrl}
 								className="h-full w-full object-cover"
 								src={download.thumbnail}
 							/>
@@ -970,12 +947,13 @@ export function DownloadItem({
 											className="h-8 w-8 shrink-0 rounded-full"
 											onClick={(event) => {
 												event.stopPropagation();
-												void handleCopyToClipboard();
+												void handleSaveToThisComputer();
 											}}
 											size="icon"
+											title={t("web.saveToThisComputer")}
 											variant="ghost"
 										>
-											<Copy className="h-4 w-4" />
+											<Download className="h-4 w-4" />
 										</Button>
 									)}
 									{showOpenFolderAction && (
@@ -983,12 +961,13 @@ export function DownloadItem({
 											className="h-8 w-8 shrink-0 rounded-full"
 											onClick={(event) => {
 												event.stopPropagation();
-												void handleOpenFolder();
+												void handleCopyServerPath();
 											}}
 											size="icon"
+											title={t("web.copyServerPath")}
 											variant="ghost"
 										>
-											<FolderOpen className="h-4 w-4" />
+											<Copy className="h-4 w-4" />
 										</Button>
 									)}
 									{isInProgressStatus && (
@@ -1199,97 +1178,68 @@ export function DownloadItem({
 			</ContextMenuTrigger>
 
 			<ContextMenuContent>
-				<ContextMenuItem
-					disabled={!canOpenFile}
-					onClick={() => {
-						void handleOpenFile();
+				<DownloadRecordContextMenuItems
+					canCopyLink={canCopyLink}
+					canCopyToClipboard={false}
+					canDeleteFile={canDeleteFile}
+					canDeleteRecord={canDeleteRecord && !isInProgressStatus}
+					canOpenFile={false}
+					canPauseDownload={canPauseDownload}
+					canResumeDownload={canResumeDownload}
+					canRetry={canRetry}
+					canShowOpenFolder={false}
+					showCopyToClipboard={false}
+					showOpenFile={false}
+					showOpenFolder={false}
+					extraItems={
+						<>
+							<ContextMenuItem
+								disabled={!canOpenFile}
+								onClick={() => {
+									void handleSaveToThisComputer();
+								}}
+							>
+								<Download className="h-4 w-4" />
+								{t("web.saveToThisComputer")}
+							</ContextMenuItem>
+							<ContextMenuItem
+								disabled={!showOpenFolderAction}
+								onClick={() => {
+									void handleCopyServerPath();
+								}}
+							>
+								<Copy className="h-4 w-4" />
+								{t("web.copyServerPath")}
+							</ContextMenuItem>
+							<ContextMenuItem
+								disabled={!canShowSheet}
+								onClick={() => setSheetOpen(true)}
+							>
+								<Info className="h-4 w-4" />
+								{t("download.showDetails")}
+							</ContextMenuItem>
+						</>
+					}
+					isInProgressStatus={isInProgressStatus}
+					onCancel={handleCancel}
+					onCopyLink={() => void handleCopyLink()}
+					onCopyToClipboard={() => {
+						void handleCopyServerPath();
 					}}
-				>
-					<File className="h-4 w-4" />
-					{t("history.openFile")}
-				</ContextMenuItem>
-				<ContextMenuSeparator />
-				<ContextMenuItem
-					disabled={!showOpenFolderAction}
-					onClick={() => {
-						void handleOpenFolder();
-					}}
-				>
-					<FolderOpen className="h-4 w-4" />
-					{t("history.openFileLocation")}
-				</ContextMenuItem>
-				<ContextMenuItem
-					disabled={!showCopyAction}
-					onClick={() => {
-						void handleCopyToClipboard();
-					}}
-				>
-					<Copy className="h-4 w-4" />
-					{t("history.copyToClipboard")}
-				</ContextMenuItem>
-				<ContextMenuItem
-					disabled={!canCopyLink}
-					onClick={() => void handleCopyLink()}
-				>
-					<span aria-hidden className="h-4 w-4 shrink-0" />
-					{t("history.copyUrl")}
-				</ContextMenuItem>
-				<ContextMenuItem
-					disabled={!canShowSheet}
-					onClick={() => setSheetOpen(true)}
-				>
-					<Info className="h-4 w-4" />
-					{t("download.showDetails")}
-				</ContextMenuItem>
-				{canRetry ||
-				canResumeDownload ||
-				canPauseDownload ||
-				isInProgressStatus ? (
-					<>
-						<ContextMenuSeparator />
-						{canRetry ? (
-							<ContextMenuItem onClick={handleRetryDownload}>
-								<RotateCw className="h-4 w-4" />
-								{t("download.retry")}
-							</ContextMenuItem>
-						) : null}
-						{canResumeDownload ? (
-							<ContextMenuItem onClick={handleResume}>
-								<Play className="h-4 w-4" />
-								{t("download.resume")}
-							</ContextMenuItem>
-						) : null}
-						{canPauseDownload ? (
-							<ContextMenuItem onClick={handlePause}>
-								<Pause className="h-4 w-4" />
-								{t("download.pause")}
-							</ContextMenuItem>
-						) : null}
-						{isInProgressStatus ? (
-							<ContextMenuItem onClick={handleCancel}>
-								<X className="h-4 w-4" />
-								{t("download.cancel")}
-							</ContextMenuItem>
-						) : null}
-					</>
-				) : null}
-				<ContextMenuSeparator />
-				<ContextMenuItem
-					disabled={!canDeleteFile}
-					onClick={() => {
+					onDeleteFile={() => {
 						void handleDeleteFile();
 					}}
-				>
-					<Trash2 className="h-4 w-4" />
-					{t("history.deleteFile")}
-				</ContextMenuItem>
-				<ContextMenuItem
-					disabled={!canDeleteRecord || isInProgressStatus}
-					onClick={handleDeleteRecord}
-				>
-					<span aria-hidden className="h-4 w-4 shrink-0" />
-					{t("history.deleteRecord")}
-				</ContextMenuItem>
+					onDeleteRecord={handleDeleteRecord}
+					onOpenFile={() => {
+						void handleSaveToThisComputer();
+					}}
+					onOpenFolder={() => {
+						void handleCopyServerPath();
+					}}
+					onPause={handlePause}
+					onResume={handleResume}
+					onRetry={handleRetryDownload}
+				/>
 			</ContextMenuContent>
 		</ContextMenu>
 	);

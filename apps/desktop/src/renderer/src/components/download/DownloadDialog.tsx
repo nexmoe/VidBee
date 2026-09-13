@@ -3,7 +3,7 @@ import { Button } from '@renderer/components/ui/button'
 import { Checkbox } from '@renderer/components/ui/checkbox'
 import { DownloadDialogLayout } from '@renderer/components/ui/download-dialog-layout'
 import { Label } from '@renderer/components/ui/label'
-import type { PlaylistInfo, VideoFormat } from '@shared/types'
+import type { PlaylistInfo } from '@shared/types'
 import {
   buildAudioFormatPreference,
   buildVideoFormatPreference
@@ -13,6 +13,10 @@ import {
   ONE_CLICK_CONTAINER_OPTIONS,
   type OneClickContainerOption
 } from '@vidbee/downloader-core/format-preferences'
+import {
+  buildSingleVideoFormatSelector,
+  isMuxedVideoFormat
+} from '@vidbee/downloader-core/format-selector'
 import { DownloadContainerSelect } from '@vidbee/ui/components/ui/download-container-select'
 import { IngestDropOverlay } from '@vidbee/ui/components/ui/ingest-drop-overlay'
 import { isPlaylistLikeUrl } from '@vidbee/ui/lib/url-kind'
@@ -40,47 +44,6 @@ import {
 } from '../../store/video'
 import { PlaylistDownload } from './PlaylistDownload'
 import { SingleVideoDownload, type SingleVideoState } from './SingleVideoDownload'
-
-const isMuxedVideoFormat = (format: VideoFormat | undefined): boolean =>
-  Boolean(format?.vcodec && format.vcodec !== 'none' && format.acodec && format.acodec !== 'none')
-
-const resolvePreferredAudioExt = (videoExt: string | undefined): string | undefined => {
-  if (!videoExt) {
-    return undefined
-  }
-
-  const normalizedExt = videoExt.toLowerCase()
-  if (normalizedExt === 'mp4') {
-    return 'm4a'
-  }
-  if (normalizedExt === 'webm') {
-    return 'webm'
-  }
-  return undefined
-}
-
-// Final fallback so a single-format pick degrades to best-available instead of
-// hard-failing with "Requested format is not available". Bilibili lists premium
-// tiers (4K / 1080p高码率) when cookies are present even for accounts that
-// cannot actually fetch them; yt-dlp then errors at download time. The chain
-// below is the same one buildVideoFormatPreference uses for one-click.
-const SINGLE_FORMAT_FALLBACK = 'bestvideo+bestaudio/best'
-
-const buildSingleVideoFormatSelector = (
-  formatId: string,
-  format: VideoFormat | undefined
-): string => {
-  if (!format || isMuxedVideoFormat(format)) {
-    return `${formatId}/${SINGLE_FORMAT_FALLBACK}`
-  }
-
-  const preferredAudioExt = resolvePreferredAudioExt(format.ext)
-  if (!preferredAudioExt) {
-    return `${formatId}+bestaudio/${SINGLE_FORMAT_FALLBACK}`
-  }
-
-  return `${formatId}+bestaudio[ext=${preferredAudioExt}]/${formatId}+bestaudio/${SINGLE_FORMAT_FALLBACK}`
-}
 
 interface DownloadDialogProps {
   onOpenSupportedSites?: () => void
@@ -423,6 +386,7 @@ export function DownloadDialog({
   const {
     addUrlPopoverOpen,
     addUrlValue,
+    batchRequiresOneClick,
     canConfirmAddUrl,
     handleConfirmAddUrl,
     handleOpenAddUrlPopover,
@@ -815,8 +779,13 @@ export function DownloadDialog({
             cancelLabel={t('download.cancel')}
             confirmDisabled={!canConfirmAddUrl}
             confirmLabel={t('download.fetch')}
+            description={t('download.enterUrlDescription')}
             invalidMessage={
-              hasAddUrlValue && !canConfirmAddUrl ? t('errors.invalidUrl') : undefined
+              batchRequiresOneClick
+                ? t('errors.batchRequiresOneClick')
+                : hasAddUrlValue && !canConfirmAddUrl
+                  ? t('errors.invalidUrl')
+                  : undefined
             }
             moreActionsLabel={t('download.moreAddActions')}
             onAddLocalMedia={() => {

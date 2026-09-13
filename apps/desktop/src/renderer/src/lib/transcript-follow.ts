@@ -1,5 +1,6 @@
 export const WHEEL_PAUSE_THRESHOLD_PX = 10
 export const FOLLOW_VISIBILITY_PADDING_PX = 16
+export const FOLLOW_SMOOTH_MIN_MAX_PX = 480
 export const SEEK_JUMP_MS = 800
 
 export type FollowResumeDirection = 'up' | 'down'
@@ -99,6 +100,30 @@ export const followResumeDirectionFromDelta = (delta: number): FollowResumeDirec
  */
 export const followScrollSuppressMs = (behavior: ScrollBehavior): number =>
   behavior === 'smooth' ? 800 : 120
+
+/**
+ * Smooth follow only for a short, already-measured hop — unless the user
+ * asked (resume / search). Those keep a transition even across a long list.
+ *
+ * Auto-follow and enter/seek stay instant when the hop is long or estimated,
+ * so opening a transcript does not ease from 0:00 to the restored playhead.
+ */
+export const followScrollBehavior = (input: {
+  distancePx?: number
+  settled: boolean
+  targetMeasured: boolean
+  userInitiated?: boolean
+  viewportPx?: number
+}): ScrollBehavior => {
+  if (input.userInitiated && input.targetMeasured) {
+    return 'smooth'
+  }
+  const maxDistance = Math.max(FOLLOW_SMOOTH_MIN_MAX_PX, (input.viewportPx ?? 0) * 2)
+  if (!(input.settled && input.targetMeasured) || (input.distancePx ?? 0) > maxDistance) {
+    return 'auto'
+  }
+  return 'smooth'
+}
 
 /**
  * True when the playhead jumped, such as a progress-bar seek.

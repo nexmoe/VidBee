@@ -22,19 +22,23 @@ import { useCachedThumbnail } from '@renderer/hooks/use-cached-thumbnail'
 import { ipcEvents, ipcServices } from '@renderer/lib/ipc'
 import { segmentAtTime } from '@renderer/lib/transcript-index'
 import {
+  isAsrTaskInFlight,
   isInProgressTranscript,
   isListedTranscript,
+  needsTranscriptRetry,
   resolveTranscriptWorkspaceView,
   shouldAutoStartAsr,
+  shouldOfferAsrStart,
   transcriptProgressLabelKey
 } from '@renderer/lib/transcript-library'
+import { buildTranscriptPlaybackInput } from '@renderer/lib/transcript-playback-source'
 import { resolveMediaDurationMs } from '@renderer/lib/transcript-speakers'
 import {
   type PartialTranscriptRow,
   speakersFromSegments,
   toPartialSegmentViews
 } from '@renderer/lib/transcript-stream'
-import { useTranscriptModelPrep } from '@renderer/store/transcript-models'
+import { transcriptTabSearch } from '@renderer/lib/transcript-tab-search'
 import {
   ensurePlaybackSessionAtom,
   playbackClockAtom,
@@ -51,13 +55,13 @@ import {
   upsertTranscriptAtom
 } from '@renderer/store/transcripts'
 import { buildPromptTranscriptText } from '@shared/ai-prompt-text'
-import { useNavigate, useParams } from '@tanstack/react-router'
+import { shareCardSourceByline } from '@shared/types/share-card'
+import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
 import { DragRegion, NoDrag } from '@vidbee/ui/components/ui/drag-region'
 import {
   downloadPlatformDisplayLabel,
   resolveDownloadPlatform
 } from '@vidbee/ui/lib/download-platform'
-import { mediaKindFromName } from '@vidbee/ui/lib/ingest'
 import { useAtomValue, useSetAtom } from 'jotai'
 import {
   Captions,
@@ -121,7 +125,7 @@ const downloadFieldsForInfo = (
     completedAt: download.completedAt ?? null,
     description: download.description ?? null,
     downloadPath: download.downloadPath ?? null,
-    downloadedAt: download.completedAt ?? download.downloadedAt ?? download.createdAt ?? null,
+    downloadedAt: download.createdAt ?? download.downloadedAt ?? null,
     format: getFormatLabel(download) ?? null,
     formatNote: format?.format_note ?? null,
     fps: format?.fps ? String(format.fps) : null,
@@ -382,14 +386,34 @@ function TranscriptHeader({
 
 export function TranscriptPage() {
   const { downloadId } = useParams({ from: '/downloads/$downloadId/transcript' })
+  const { tab: routeTab, thread: routeThreadId } = useSearch({
+    from: '/downloads/$downloadId/transcript'
+  })
   const { t } = useTranslation()
-  const navigate = useNavigate()
+  const navigate = useNavigate({ from: '/downloads/$downloadId/transcript' })
+
+  /**
+   * Persist the visible conversation on the transcript route.
+   *
+   * @param tab Transcript tab, prompt id, or chat prompt id.
+   * @param threadId Chat thread when the tab is a conversation.
+   */
+  const onRouteTabChange = useCallback(
+    (tab: string, threadId: string | null): void => {
+      void navigate({
+        replace: true,
+        search: transcriptTabSearch(tab, threadId),
+        to: '/downloads/$downloadId/transcript'
+      })
+    },
+    [navigate]
+  )
   const chrome = useContext(DesktopChromeContext)
   const isWide = useWideTranscriptLayout()
   const records = useAtomValue(downloadRecordsAtom)
   const upsert = useSetAtom(upsertTranscriptAtom)
-  const modelPrep = useTranscriptModelPrep()
   const [snapshot, setSnapshot] = useState<TranscriptSnapshotView | null>(null)
+  const [holdingAsrIdle, setHoldingAsrIdle] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
   const [upgradeOpen, setUpgradeOpen] = useState(false)
   const [speakerCountOpen, setSpeakerCountOpen] = useState(false)
@@ -430,6 +454,20 @@ export function TranscriptPage() {
     return null
   }, [downloadId, records])
 
+  const sourceByline = useMemo(() => {
+    if (!download) {
+      return ''
+    }
+    const platform = resolveDownloadPlatform(download.url)
+    return shareCardSourceByline(
+      downloadPlatformDisplayLabel(platform, {
+        local: t('download.localSource'),
+        other: t('download.otherSource')
+      }),
+      download.uploader || download.channel
+    )
+  }, [download, t])
+
   const refresh = useCallback(async () => {
     let next = (await ipcServices.transcript.getForDownload(downloadId)) as TranscriptSnapshotView
     if (shouldAutoStartAsr(next)) {
@@ -448,6 +486,7 @@ export function TranscriptPage() {
 
   useEffect(() => {
     hadListedTranscript.current = false
+    setHoldingAsrIdle(false)
     void refresh()
     const offUpdated = ipcEvents.on('transcript:updated', (...args: unknown[]) => {
       const next = args[0] as TranscriptSnapshotView
@@ -488,13 +527,22 @@ export function TranscriptPage() {
     })
   }, [downloadId, snapshot?.listState])
 
-  const committedSegments = snapshot?.record?.segments ?? EMPTY_SEGMENTS
+  const committedSegments = holdingAsrIdle
+    ? EMPTY_SEGMENTS
+    : (snapshot?.record?.segments ?? EMPTY_SEGMENTS)
+  const sources = useMemo(() => {
+    const raw = snapshot?.sources ?? []
+    if (!holdingAsrIdle) {
+      return raw
+    }
+    return raw.map((source) => ({ ...source, selected: source.key === 'asr' }))
+  }, [holdingAsrIdle, snapshot?.sources])
   const selectedSourceKind =
-    snapshot?.sources?.find((source) => source.selected)?.kind ?? snapshot?.sourceKind ?? null
-  const viewingCaptions = selectedSourceKind === 'captions'
+    sources.find((source) => source.selected)?.kind ?? snapshot?.sourceKind ?? null
+  const viewingCaptions = holdingAsrIdle ? false : selectedSourceKind === 'captions'
   const workspace = resolveTranscriptWorkspaceView({
     committed: committedSegments,
-    hasRecord: Boolean(snapshot?.record),
+    hasRecord: holdingAsrIdle ? false : Boolean(snapshot?.record),
     listState: snapshot?.listState ?? 'none',
     partials,
     rediarize: snapshot?.rediarize,
@@ -535,16 +583,19 @@ export function TranscriptPage() {
     [speakers]
   )
 
-  const mediaPath = snapshot?.sourceFilePath
-    ? snapshot.sourceFilePath
-    : download?.savedFileName && download.downloadPath
-      ? `${download.downloadPath}/${download.savedFileName}`
-      : null
-  const isAudio =
-    download?.type === 'audio' ||
-    mediaKindFromName(mediaPath ?? '') === 'audio' ||
-    mediaKindFromName(download?.savedFileName ?? '') === 'audio'
   const cachedThumbnail = useCachedThumbnail(download?.thumbnail)
+  const playbackInput = useMemo(
+    () =>
+      buildTranscriptPlaybackInput({
+        cachedThumbnail,
+        download,
+        downloadId,
+        fallbackTitle: t('transcript.title'),
+        snapshot
+      }),
+    [cachedThumbnail, download, downloadId, snapshot, t]
+  )
+  const { filePath: mediaPath, isAudio, subtitle, thumbnail, title } = playbackInput
   const currentTime = session?.downloadId === downloadId ? clock.currentTime : 0
   const duration = session?.downloadId === downloadId ? clock.duration : 0
   const durationMs = useMemo(
@@ -556,10 +607,6 @@ export function TranscriptPage() {
     () => segmentAtTime(segments, currentTimeMs),
     [currentTimeMs, segments]
   )
-  const title = download?.title ?? t('transcript.title')
-  const subtitle = download?.channel ?? download?.uploader ?? null
-  // Renderer CSP blocks remote covers (xyzcdn, etc.); only cached/local URLs are safe.
-  const thumbnail = cachedThumbnail ?? null
   useEffect(() => {
     ensureSession({
       downloadId,
@@ -574,17 +621,7 @@ export function TranscriptPage() {
     }
   }, [downloadId, ensureSession, isAudio, mediaPath, releaseIdle, subtitle, thumbnail, title])
 
-  const sessionInput = useMemo(
-    () => ({
-      downloadId,
-      filePath: mediaPath,
-      isAudio,
-      subtitle,
-      thumbnail,
-      title
-    }),
-    [downloadId, isAudio, mediaPath, subtitle, thumbnail, title]
-  )
+  const sessionInput = playbackInput
   const ownsPlayer = session?.downloadId === downloadId
   const seek = useCallback(
     (seconds: number) => {
@@ -610,32 +647,69 @@ export function TranscriptPage() {
     }
   }, [downloadId, t])
 
+  /**
+   * Start local ASR from the idle empty state or the no-speech "transcribe anyway" action.
+   */
   const handleForce = useCallback(async () => {
+    setHoldingAsrIdle(false)
     try {
       const next = (await ipcServices.transcript.start({
         downloadId,
         force: true
       })) as TranscriptSnapshotView
       setSnapshot(next)
+      upsert(next)
     } catch (error) {
+      setHoldingAsrIdle(true)
       toast.error(error instanceof Error ? error.message : t('transcript.retryFailed'))
     }
-  }, [downloadId, t])
+  }, [downloadId, t, upsert])
 
+  /**
+   * Switch captions language, or hold the AI transcript idle empty state until the user starts ASR.
+   *
+   * Older hosts still start ASR on this IPC. Cancel that run unless ASR was already in flight.
+   */
   const handleSelectSource = useCallback(
     async (key: string) => {
+      const asrAlreadyInFlight = isAsrTaskInFlight(snapshot ?? {})
       try {
         const next = (await ipcServices.transcript.selectSource({
           downloadId,
           key
         })) as TranscriptSnapshotView
-        setSnapshot(next)
-        upsert(next)
+        if (key !== 'asr') {
+          setHoldingAsrIdle(false)
+          setSnapshot(next)
+          upsert(next)
+          return
+        }
+        const asrReady =
+          next.sourceKind === 'asr' &&
+          Boolean(next.record) &&
+          !isInProgressTranscript(next.listState)
+        if (asrReady || asrAlreadyInFlight) {
+          setHoldingAsrIdle(false)
+          setSnapshot(next)
+          upsert(next)
+          return
+        }
+        if (isAsrTaskInFlight(next)) {
+          const cancelled = (await ipcServices.transcript.cancel(
+            downloadId
+          )) as TranscriptSnapshotView
+          setSnapshot(cancelled)
+          upsert(cancelled)
+        } else {
+          setSnapshot(next)
+          upsert(next)
+        }
+        setHoldingAsrIdle(true)
       } catch (error) {
         toast.error(error instanceof Error ? error.message : t('transcript.retryFailed'))
       }
     },
-    [downloadId, t, upsert]
+    [downloadId, snapshot, t, upsert]
   )
 
   /**
@@ -659,11 +733,33 @@ export function TranscriptPage() {
     setExportOpen(true)
   }, [])
 
-  const noSpeech = snapshot?.listState === 'no-speech'
-  const failed = snapshot?.listState === 'failed'
+  const noSpeech = holdingAsrIdle ? false : snapshot?.listState === 'no-speech'
+  const failed = holdingAsrIdle
+    ? false
+    : needsTranscriptRetry(
+        snapshot?.listState ?? 'none',
+        Boolean(snapshot?.record),
+        segments.length
+      )
   const ready = workspace.ready
+  const selectedTranscriptSource = sources.find((source) => source.selected)
+  const transcriptLanguage =
+    selectedTranscriptSource?.languageCode ??
+    selectedTranscriptSource?.language ??
+    snapshot?.record?.language ??
+    null
+  const transcriptOrigin: 'ai' | 'human' =
+    snapshot?.sourceKind === 'asr' || selectedTranscriptSource?.auto ? 'ai' : 'human'
   const fromCaptions = viewingCaptions
-  const sources = snapshot?.sources ?? []
+  const canStartAsr =
+    holdingAsrIdle ||
+    shouldOfferAsrStart({
+      failed,
+      noSpeech,
+      ready,
+      running,
+      selectedSourceKind
+    })
   const sourceSwitch =
     sources.length > 1 ? (
       <TranscriptSourceSwitch onSelect={(key) => void handleSelectSource(key)} sources={sources} />
@@ -816,24 +912,35 @@ export function TranscriptPage() {
             noSpeech={noSpeech}
             noSpeechDetail={t('transcript.noSpeechDetail')}
             onCancel={running ? () => void handleCancel() : undefined}
+            onOpenDownload={(id, conversation) => {
+              void navigate({
+                params: { downloadId: id },
+                search: conversation
+                  ? transcriptTabSearch(conversation.promptId, conversation.threadId ?? null)
+                  : {},
+                to: '/downloads/$downloadId/transcript'
+              })
+            }}
             onRetry={failed ? () => void handleRetry() : undefined}
+            onRouteTabChange={onRouteTabChange}
             onSeek={seek}
+            onStart={canStartAsr ? () => void handleForce() : undefined}
+            promptsReady={Boolean(ready)}
             ready={Boolean(ready) || segments.length > 0}
             resolveColorIndex={speakerColorIndex}
             resolveSpeaker={speakerName}
+            routeTab={routeTab}
+            routeThreadId={routeThreadId}
             running={running}
             runningLabel={t(
-              transcriptProgressLabelKey(
-                snapshot?.listState,
-                snapshot?.stage,
-                modelPrep.ready,
-                segments.length > 0
-              )
+              transcriptProgressLabelKey(snapshot?.listState, snapshot?.stage, segments.length > 0)
             )}
             segments={segments}
+            sourceByline={sourceByline}
             sourceCover={thumbnail}
             sourceDurationMs={durationMs}
             sourceTitle={download?.title ?? title}
+            sourceUrl={download?.url ?? null}
             speakers={speakers}
             stage={
               snapshot?.listState === 'queued'
@@ -844,6 +951,8 @@ export function TranscriptPage() {
             }
             stageHistory={snapshot?.stageHistory ?? []}
             streamLive={streamLive}
+            transcriptLanguage={transcriptLanguage}
+            transcriptOrigin={transcriptOrigin}
             transcriptText={buildPromptTranscriptText(segments, speakerName)}
           />
         }

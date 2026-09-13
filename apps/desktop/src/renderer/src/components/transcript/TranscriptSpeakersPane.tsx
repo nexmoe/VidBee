@@ -1,3 +1,4 @@
+import { TabUnderline } from '@renderer/components/transcript/TabUnderline'
 import { Button } from '@renderer/components/ui/button'
 import { formatClock } from '@renderer/lib/format-clock'
 import {
@@ -84,7 +85,8 @@ export function TranscriptSpeakersPane({
       data-testid="transcript-speakers"
     >
       <div className="sticky top-0 z-10 border-border/60 border-b bg-background px-4">
-        <div className="flex items-center gap-4" role="tablist">
+        <div className="relative flex items-center gap-4" role="tablist">
+          <TabUnderline activeId={activeTab} />
           {showSpeakerTab ? (
             <TabButton
               active={activeTab === 'speakers'}
@@ -146,11 +148,10 @@ function TabButton({ active, label, onSelect, value }: TabButtonProps) {
     <button
       aria-selected={active}
       className={cn(
-        'cursor-pointer border-b-2 pt-3 pb-2 font-medium text-sm transition-colors',
-        active
-          ? 'border-primary text-foreground'
-          : 'border-transparent text-muted-foreground hover:text-foreground'
+        'cursor-pointer border-transparent border-b-2 pt-3 pb-2 font-medium text-sm transition-colors duration-200',
+        active ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
       )}
+      data-tab-id={value}
       data-testid={`transcript-tab-${value}`}
       onClick={onSelect}
       role="tab"

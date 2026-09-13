@@ -20,11 +20,10 @@ import {
 } from '@renderer/components/ui/context-menu'
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@renderer/components/ui/hover-card'
 import { RemoteImage } from '@renderer/components/ui/remote-image'
-import { ScrollArea, ScrollBar } from '@renderer/components/ui/scroll-area'
+import { ScrollArea } from '@renderer/components/ui/scroll-area'
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { ipcServices } from '@renderer/lib/ipc'
-import { getSubscriptionStatusMeta } from '@renderer/lib/subscription-status'
 import { withDesktopUtm } from '@renderer/lib/url'
 import { cn } from '@renderer/lib/utils'
 import { type DownloadRecord, downloadsArrayAtom } from '@renderer/store/downloads'
@@ -38,6 +37,10 @@ import {
 } from '@renderer/store/subscriptions'
 import type { DownloadStatus, SubscriptionFeedItem, SubscriptionRule } from '@shared/types'
 import { SUBSCRIPTION_DUPLICATE_FEED_ERROR } from '@shared/types'
+import {
+  getSubscriptionStatusMeta,
+  resolveSubscriptionItemStatus
+} from '@vidbee/subscriptions-core/status'
 import dayjs from 'dayjs'
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import { Download, Edit, ExternalLink, Plus, Power, RefreshCw, Trash2 } from 'lucide-react'
@@ -346,7 +349,7 @@ export function Subscriptions() {
     <div className="relative flex h-full w-full flex-col">
       {/* Channel Tabs Header */}
       <div className="flex flex-row pr-6 pb-6 pl-6">
-        <ScrollArea className="w-auto overflow-y-auto">
+        <ScrollArea className="min-w-0 flex-1" orientation="horizontal" viewportClassName="h-auto">
           <div className="flex h-auto w-auto justify-start">
             {sortedSubscriptions.map((subscription) => (
               <SubscriptionTab
@@ -360,7 +363,6 @@ export function Subscriptions() {
               />
             ))}
           </div>
-          <ScrollBar orientation="horizontal" />
         </ScrollArea>
 
         {/* Add RSS Button */}
@@ -523,21 +525,16 @@ function SubscriptionCard({ subscription }: { subscription: SubscriptionRule }) 
   }, [feedItems, downloadLookup, historyStatusMap])
 
   const resolveItemStatus = (item: SubscriptionFeedItem): SubscriptionItemStatus => {
-    if (!item.addedToQueue) {
-      return 'notQueued'
+    const combined = new Map<string, { status: string }>()
+    for (const [id, download] of downloadLookup) {
+      combined.set(id, { status: download.status })
     }
-    if (!item.downloadId) {
-      return 'queued'
-    }
-    const matchedDownload = downloadLookup.get(item.downloadId)
-    if (!matchedDownload) {
-      const cachedHistoryStatus = historyStatusMap[item.downloadId]
-      if (cachedHistoryStatus) {
-        return cachedHistoryStatus
+    for (const [id, status] of Object.entries(historyStatusMap)) {
+      if (status && !combined.has(id)) {
+        combined.set(id, { status })
       }
-      return 'queued'
     }
-    return matchedDownload.status
+    return resolveSubscriptionItemStatus(item, combined)
   }
 
   const handleOpenItem = async (url: string) => {

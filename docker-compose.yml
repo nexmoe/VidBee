@@ -7,6 +7,7 @@ services:
       VIDBEE_API_HOST: 0.0.0.0
       VIDBEE_API_PORT: ${VIDBEE_API_PORT:-3100}
       VIDBEE_DOWNLOAD_DIR: /data/downloads
+      VIDBEE_DATA_DIR: /data/vidbee
       VIDBEE_HISTORY_STORE_PATH: /data/vidbee/vidbee.db
     ports:
       - "${VIDBEE_API_PORT:-3100}:${VIDBEE_API_PORT:-3100}"

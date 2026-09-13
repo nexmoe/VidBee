@@ -1,16 +1,28 @@
+import { AgentResponseShareCard } from '@renderer/components/transcript/AgentResponseShareCard'
 import { SHARE_CARD_WIDTH } from '@renderer/components/transcript/TranscriptShareCardChrome'
 import { Button } from '@renderer/components/ui/button'
-import { Dialog, DialogContent, DialogTitle } from '@renderer/components/ui/dialog'
 import {
-  captureShareImageBlob,
-  copyShareImageBlob,
-  waitForShareCard
-} from '@renderer/lib/capture-prompt-share'
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@renderer/components/ui/dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@renderer/components/ui/dropdown-menu'
+import { Input } from '@renderer/components/ui/input'
+import { captureShareImageBlob, copyShareImageBlob } from '@renderer/lib/capture-prompt-share'
 import { ipcServices } from '@renderer/lib/ipc'
 import { logger } from '@renderer/lib/logger'
 import { cn } from '@renderer/lib/utils'
+import type { ShareCardPayload } from '@shared/types/share-card'
 import { Copy, Download, Loader2, Share2 } from 'lucide-react'
-import { type ReactNode, type Ref, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
@@ -22,32 +34,37 @@ const shareActionClassName =
   'h-10 w-full min-w-0 rounded-full border-border/70 bg-background/95 px-5 shadow-lg backdrop-blur-md'
 
 interface TranscriptShareImageDialogProps {
-  children: (cardRef: Ref<HTMLDivElement>) => ReactNode
   fileName: string
   onOpenChange: (open: boolean) => void
   open: boolean
+  payload: ShareCardPayload | null
 }
 
 /**
  * Preview a branded share card and copy, download, or share the PNG.
  *
  * Frameless overlay: the poster floats on the backdrop, with separate
- * action buttons centered underneath.
+ * action buttons centered underneath. Capture happens in a hidden window.
  *
- * @param props.children Render the capture target with the dialog's card ref.
  * @param props.fileName Suggested PNG name for download and the macOS share sheet.
  * @param props.onOpenChange Dialog open-state callback.
  * @param props.open Whether the preview is visible.
+ * @param props.payload Serializable card props sent to the hidden capture window.
  */
 export function TranscriptShareImageDialog({
-  children,
   fileName,
   onOpenChange,
-  open
+  open,
+  payload
 }: TranscriptShareImageDialogProps) {
   const { t } = useTranslation()
-  const cardRef = useRef<HTMLDivElement>(null)
   const blobRef = useRef<Blob | null>(null)
+  const downloadButtonRef = useRef<HTMLButtonElement>(null)
+  const [splitOptionsOpen, setSplitOptionsOpen] = useState(false)
+  const [splitCount, setSplitCount] = useState('')
+  const imageCount = splitCount === '' ? undefined : Number(splitCount)
+  const isSplitCountValid =
+    imageCount === undefined || (Number.isSafeInteger(imageCount) && imageCount >= 1)
   const [busy, setBusy] = useState<ShareAction | null>(null)
   const [platform, setPlatform] = useState(() =>
     MAC_SHARE_UA.test(navigator.userAgent) ? 'darwin' : ''
@@ -57,6 +74,8 @@ export function TranscriptShareImageDialog({
     if (!open) {
       blobRef.current = null
       setBusy(null)
+      setSplitCount('')
+      setSplitOptionsOpen(false)
     }
   }, [open])
 
@@ -83,18 +102,16 @@ export function TranscriptShareImageDialog({
   }, [open])
 
   /**
-   * Rasterize the visible card once and reuse the PNG for later actions.
+   * Rasterize the card once in the hidden window and reuse the PNG.
    */
   const getShareBlob = async (): Promise<Blob> => {
     if (blobRef.current) {
       return blobRef.current
     }
-    const node = cardRef.current
-    if (!node) {
+    if (!payload) {
       throw new Error('Share card is not mounted')
     }
-    await waitForShareCard(node)
-    const blob = await captureShareImageBlob(node)
+    const blob = await captureShareImageBlob(payload)
     blobRef.current = blob
     return blob
   }
@@ -137,15 +154,27 @@ export function TranscriptShareImageDialog({
   /**
    * Save the PNG through the native save dialog.
    */
-  const handleDownload = (): void => {
+  const handleDownload = (split = false): void => {
+    if (split && !isSplitCountValid) {
+      return
+    }
     void runAction('download', async () => {
       try {
-        const blob = await getShareBlob()
-        const saved = await ipcServices.fs.saveBinaryFile({
-          data: await blob.arrayBuffer(),
-          defaultFileName: fileName
-        })
+        if (!payload) {
+          throw new Error('Share card is not mounted')
+        }
+        const saved = split
+          ? await ipcServices.fs.saveSplitShareImage({
+              payload,
+              defaultFileName: fileName,
+              ...(imageCount === undefined ? {} : { imageCount })
+            })
+          : await ipcServices.fs.saveBinaryFile({
+              data: await (await getShareBlob()).arrayBuffer(),
+              defaultFileName: fileName
+            })
         if (saved) {
+          setSplitOptionsOpen(false)
           toast.success(t('transcript.promptShareSaved'))
         }
       } catch (error) {
@@ -194,7 +223,7 @@ export function TranscriptShareImageDialog({
           className="min-h-0 w-full overflow-auto rounded-md shadow-[0_24px_80px_rgba(0,0,0,0.45)]"
           data-testid="transcript-share-image-preview"
         >
-          {children(cardRef)}
+          {payload ? <AgentResponseShareCard payload={payload} /> : null}
         </div>
         <div
           className={cn(
@@ -214,17 +243,37 @@ export function TranscriptShareImageDialog({
             {busy === 'copy' ? <Loader2 className="animate-spin" /> : <Copy />}
             {t('transcript.promptCopy')}
           </Button>
-          <Button
-            className={shareActionClassName}
-            data-testid="transcript-share-image-download"
-            disabled={Boolean(busy)}
-            onClick={handleDownload}
-            type="button"
-            variant="outline"
-          >
-            {busy === 'download' ? <Loader2 className="animate-spin" /> : <Download />}
-            {t('transcript.promptShareDownload')}
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                className={shareActionClassName}
+                data-testid="transcript-share-image-download"
+                disabled={Boolean(busy)}
+                ref={downloadButtonRef}
+                type="button"
+                variant="outline"
+              >
+                {busy === 'download' ? <Loader2 className="animate-spin" /> : <Download />}
+                {t('transcript.promptShareDownload')}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="center"
+              onCloseAutoFocus={(event) => {
+                if (splitOptionsOpen) {
+                  event.preventDefault()
+                }
+              }}
+              side="top"
+            >
+              <DropdownMenuItem disabled={Boolean(busy)} onSelect={() => handleDownload()}>
+                {t('transcript.promptShareDownloadFull')}
+              </DropdownMenuItem>
+              <DropdownMenuItem disabled={Boolean(busy)} onSelect={() => setSplitOptionsOpen(true)}>
+                {t('transcript.promptShareDownloadSplit')}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           {canNativeShare ? (
             <Button
               className={shareActionClassName}
@@ -239,6 +288,71 @@ export function TranscriptShareImageDialog({
             </Button>
           ) : null}
         </div>
+        <Dialog
+          onOpenChange={(value) => {
+            if (!busy) {
+              setSplitOptionsOpen(value)
+            }
+          }}
+          open={splitOptionsOpen}
+        >
+          <DialogContent
+            className="gap-6 sm:max-w-sm"
+            data-testid="share-split-options"
+            onCloseAutoFocus={(event) => {
+              event.preventDefault()
+              downloadButtonRef.current?.focus()
+            }}
+            showCloseButton={!busy}
+          >
+            <DialogHeader>
+              <DialogTitle>{t('transcript.promptShareDownloadSplit')}</DialogTitle>
+              <DialogDescription>{t('transcript.promptShareSplitCountHint')}</DialogDescription>
+            </DialogHeader>
+            <form
+              className="space-y-6"
+              onSubmit={(event) => {
+                event.preventDefault()
+                handleDownload(true)
+              }}
+            >
+              <div className="space-y-2">
+                <label className="font-medium text-sm" htmlFor="share-image-count">
+                  {t('transcript.promptShareSplitCount')}
+                </label>
+                <Input
+                  aria-invalid={!isSplitCountValid}
+                  disabled={Boolean(busy)}
+                  id="share-image-count"
+                  min={1}
+                  onChange={(event) => setSplitCount(event.target.value)}
+                  placeholder={t('transcript.promptShareSplitCountAuto')}
+                  step={1}
+                  type="number"
+                  value={splitCount}
+                />
+              </div>
+              <DialogFooter>
+                <Button
+                  disabled={Boolean(busy)}
+                  onClick={() => setSplitOptionsOpen(false)}
+                  type="button"
+                  variant="outline"
+                >
+                  {t('download.cancel')}
+                </Button>
+                <Button
+                  data-testid="share-split-confirm"
+                  disabled={Boolean(busy) || !isSplitCountValid}
+                  type="submit"
+                >
+                  {busy === 'download' ? <Loader2 className="animate-spin" /> : <Download />}
+                  {t('transcript.promptShareDownload')}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </DialogContent>
     </Dialog>
   )

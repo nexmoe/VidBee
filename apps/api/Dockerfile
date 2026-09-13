@@ -43,6 +43,7 @@ ENV FFMPEG_PATH=/usr/bin/ffmpeg
 ENV VIDBEE_API_HOST=0.0.0.0
 ENV VIDBEE_API_PORT=3100
 ENV VIDBEE_DOWNLOAD_DIR=/data/downloads
+ENV VIDBEE_DATA_DIR=/data/vidbee
 ENV VIDBEE_MIGRATIONS_DIR=/app/resources/drizzle
 ENV VIDBEE_PERSIST_QUEUE=1
 
@@ -54,11 +55,11 @@ COPY --from=builder --chown=node:node /prod/api/node_modules ./node_modules
 COPY --from=builder --chown=node:node /app/apps/api/dist ./dist
 COPY --chown=node:node apps/desktop/resources/drizzle ./resources/drizzle
 
-RUN mkdir -p /data/downloads && chown -R node:node /data/downloads
+RUN mkdir -p /data/downloads /data/vidbee && chown -R node:node /data/downloads /data/vidbee
 
 USER node
 
 EXPOSE 3100
-VOLUME ["/data/downloads"]
+VOLUME ["/data/downloads", "/data/vidbee"]
 
 CMD ["sh", "-c", "node dist/migrate-history.js && exec node dist/index.js"]

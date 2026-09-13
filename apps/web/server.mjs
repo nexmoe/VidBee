@@ -10,7 +10,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 const DEFAULT_CLIENT_DIRECTORY = fileURLToPath(new URL('./dist/client/', import.meta.url))
 const DEFAULT_SERVER_ENTRY_URL = new URL('./dist/server/server.js', import.meta.url)
 const DEFAULT_API_URL = 'http://api:3100'
-const PROXY_PATH_PREFIXES = ['/events', '/images', '/rpc']
+const PROXY_PATH_PREFIXES = ['/events', '/files', '/images', '/rpc']
 const HOP_BY_HOP_HEADERS = new Set([
   'connection',
   'keep-alive',

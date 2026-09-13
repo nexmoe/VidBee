@@ -21,7 +21,8 @@ const bubbleVariants = cva(
     variants: {
       variant: {
         default:
-          '*:data-[slot=bubble-content]:bg-primary *:data-[slot=bubble-content]:text-primary-foreground',
+          // 24px stays pill-like on one line (~42px tall) without stadium-clipping wrapped text.
+          '*:data-[slot=bubble-content]:rounded-3xl *:data-[slot=bubble-content]:bg-[oklch(0.97_0.038_95)] *:data-[slot=bubble-content]:px-4 *:data-[slot=bubble-content]:py-2.5 *:data-[slot=bubble-content]:text-foreground dark:*:data-[slot=bubble-content]:bg-[oklch(0.32_0.04_95)]',
         secondary:
           '*:data-[slot=bubble-content]:bg-secondary *:data-[slot=bubble-content]:text-secondary-foreground',
         muted: '*:data-[slot=bubble-content]:bg-muted',

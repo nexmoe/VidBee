@@ -75,6 +75,8 @@
   .media-controls--root:not([data-visible])
   .media-controls--secondary {
   filter: none !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
   scale: 1 !important;
   translate: none !important;
 }
@@ -228,7 +230,7 @@ body:has(.transcript-player) .media-error {
 .transcript-player.transcript-player--mini video {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   pointer-events: none;
 }
 
@@ -246,15 +248,48 @@ body:has(.transcript-player) .media-error {
 
 .transcript-playback-bar-slot {
   position: relative;
-  z-index: 1;
+  z-index: 20;
   flex-shrink: 0;
-  height: 64px;
+  height: var(--playback-bar-full, 80px);
+  min-height: 0;
+  overflow: visible;
+  transition: height 240ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.transcript-playback-bar-slot[data-collapsed="true"] {
+  height: var(--playback-bar-peek, 2px);
+}
+
+.transcript-playback-bar-slot[data-collapsed="true"]::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 100%;
+  left: 0;
+  z-index: 1;
+  height: var(--playback-bar-hover-slop, 20px);
+  transition: bottom 240ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.transcript-playback-bar-slot[data-open="true"][data-collapsed="true"]:is(
+  :hover,
+  :focus-within,
+  :has([data-state="open"]),
+  :has(.transcript-playback-bar-seek:active)
+)::after {
+  bottom: calc(
+    100% +
+    var(--playback-bar-full, 80px) -
+    var(--playback-bar-peek, 2px)
+  );
 }
 
 .transcript-playback-bar-slot-clip {
-  height: 64px;
+  height: var(--playback-bar-full, 80px);
   transform: translateY(100%);
-  transition: transform 240ms cubic-bezier(0.32, 0.72, 0, 1);
+  transition:
+    transform 240ms cubic-bezier(0.32, 0.72, 0, 1),
+    box-shadow 150ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .transcript-playback-bar-slot[data-open="true"]
@@ -262,11 +297,40 @@ body:has(.transcript-player) .media-error {
   transform: translateY(0);
 }
 
+.transcript-playback-bar-slot[data-open="true"][data-collapsed="true"]:is(
+    :hover,
+    :focus-within,
+    :has([data-state="open"]),
+    :has(.transcript-playback-bar-seek:active)
+  )
+  .transcript-playback-bar-slot-clip {
+  transform: translateY(
+    calc(var(--playback-bar-peek, 2px) - var(--playback-bar-full, 80px))
+  );
+  box-shadow: 0 -12px 28px -10px
+    color-mix(in oklch, var(--foreground) 18%, transparent);
+}
+
 @starting-style {
   .transcript-playback-bar-slot[data-open="true"]
     .transcript-playback-bar-slot-clip {
     transform: translateY(100%);
   }
+}
+
+.transcript-playback-bar {
+  transition: box-shadow 150ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.transcript-playback-bar:has(
+  .transcript-playback-bar-seek:not(:disabled):is(
+      :hover,
+      :active,
+      :focus-visible
+    )
+) {
+  box-shadow: 0 -12px 28px -10px
+    color-mix(in oklch, var(--foreground) 18%, transparent);
 }
 
 .transcript-playback-bar-inset {
@@ -279,11 +343,19 @@ body:has(.transcript-player) .media-error {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .transcript-playback-bar,
+  .transcript-playback-bar-slot,
   .transcript-playback-bar-slot-clip,
+  .transcript-playback-bar-slot[data-collapsed="true"]::after,
   .transcript-playback-bar-inset,
   .transcript-playback-bar-seek-track,
-  .transcript-playback-bar-seek-thumb {
+  .transcript-playback-bar-seek-thumb,
+  .transcript-playback-bar-seek-time {
     transition: none;
+  }
+
+  .transcript-playback-bar-seek-time {
+    transform: translate(-50%, 0);
   }
 }
 
@@ -304,8 +376,9 @@ body:has(.transcript-player) .media-error {
   height: 2px;
   overflow: hidden;
   pointer-events: none;
-  background: color-mix(in oklch, var(--foreground) 12%, transparent);
-  transition: height 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  background: color-mix(in oklch, var(--foreground) 6%, transparent);
+  transform-origin: center;
+  transition: transform 150ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .transcript-playback-bar-seek-fill {
@@ -326,7 +399,9 @@ body:has(.transcript-player) .media-error {
     0 1px 2px color-mix(in oklch, black 28%, transparent);
   transition:
     width 150ms cubic-bezier(0.4, 0, 0.2, 1),
-    height 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    height 150ms cubic-bezier(0.4, 0, 0.2, 1),
+    background-color 150ms cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 150ms cubic-bezier(0.4, 0, 0.2, 1);
   transform: translate(-50%, -50%);
 }
 
@@ -338,7 +413,7 @@ body:has(.transcript-player) .media-error {
       )
   )
   .transcript-playback-bar-seek-track {
-  height: 4px;
+  transform: scaleY(3);
 }
 
 .transcript-playback-bar-seek-wrap:has(
@@ -349,8 +424,51 @@ body:has(.transcript-player) .media-error {
       )
   )
   .transcript-playback-bar-seek-thumb {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
+  background: #fff;
+  box-shadow:
+    0 1px 2px color-mix(in oklch, black 22%, transparent),
+    0 3px 8px color-mix(in oklch, black 28%, transparent);
+}
+
+.transcript-playback-bar-seek-time {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: clamp(2.75rem, var(--seek-preview, 0%), calc(100% - 2.75rem));
+  z-index: 11;
+  padding: 0.3rem 0.7rem;
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--card-foreground);
+  pointer-events: none;
+  white-space: nowrap;
+  background: var(--card);
+  border: 1px solid color-mix(in oklch, var(--foreground) 8%, transparent);
+  border-radius: 999px;
+  box-shadow:
+    0 1px 2px color-mix(in oklch, black 8%, transparent),
+    0 6px 16px color-mix(in oklch, black 12%, transparent);
+  opacity: 0;
+  transform: translate(-50%, 4px) scale(0.97);
+  transform-origin: center bottom;
+  transition:
+    opacity 125ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 125ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.transcript-playback-bar-seek-wrap:has(
+    .transcript-playback-bar-seek:not(:disabled):is(
+        :hover,
+        :active,
+        :focus-visible
+      )
+  )
+  .transcript-playback-bar-seek-time {
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
 }
 
 .transcript-playback-bar-seek {
@@ -380,4 +498,108 @@ body:has(.transcript-player) .media-error {
 
 .transcript-playback-bar-seek:disabled {
   cursor: default;
+}
+
+.transcript-playback-bar-volume {
+  width: 1rem;
+  height: 6rem;
+  margin: 0;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  direction: rtl;
+  writing-mode: vertical-lr;
+}
+
+.transcript-playback-bar-volume::-webkit-slider-runnable-track {
+  width: 12px;
+  height: 100%;
+  background: linear-gradient(
+    to top,
+    var(--primary) var(--volume-percent, 100%),
+    color-mix(in oklch, var(--foreground) 14%, transparent)
+      var(--volume-percent, 100%)
+  );
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 3px 100%;
+  border-radius: 999px;
+}
+
+.transcript-playback-bar-volume::-webkit-slider-thumb {
+  width: 12px;
+  height: 12px;
+  appearance: none;
+  -webkit-appearance: none;
+  background: white;
+  border: 0;
+  border-radius: 999px;
+  box-shadow: 0 1px 3px color-mix(in oklch, black 24%, transparent);
+}
+
+.transcript-playback-bar-volume:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.transcript-playback-bar-toggle-icons {
+  position: relative;
+  display: block;
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.transcript-playback-bar-toggle-icons svg {
+  position: absolute;
+  inset: 0;
+  transition:
+    opacity 160ms cubic-bezier(0.77, 0, 0.175, 1),
+    transform 160ms cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+.transcript-playback-bar-toggle-icons[data-playing="false"]
+  svg[data-icon="play"],
+.transcript-playback-bar-toggle-icons[data-playing="true"]
+  svg[data-icon="pause"] {
+  opacity: 1;
+  transform: rotate(0deg);
+}
+
+.transcript-playback-bar-toggle-icons[data-playing="true"]
+  svg[data-icon="play"] {
+  opacity: 0;
+  transform: rotate(90deg);
+}
+
+.transcript-playback-bar-toggle-icons[data-playing="false"]
+  svg[data-icon="pause"] {
+  opacity: 0;
+  transform: rotate(-90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .transcript-playback-bar-toggle-icons svg {
+    transition: opacity 160ms cubic-bezier(0.77, 0, 0.175, 1);
+    transform: none;
+  }
+}
+
+.transcript-playlist-fly {
+  position: fixed;
+  z-index: 80;
+  overflow: hidden;
+  pointer-events: none;
+  border-radius: 8px;
+  background: color-mix(in oklch, var(--muted) 88%, transparent);
+  box-shadow: 0 8px 20px color-mix(in oklch, var(--foreground) 16%, transparent);
+  transform-origin: center center;
+  will-change: transform, opacity;
+}
+
+.transcript-playlist-fly img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }

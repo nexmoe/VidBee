@@ -6,7 +6,7 @@ import { ffmpegManager } from '../../lib/ffmpeg-manager'
 import { getYtDlpKernelService } from '../../lib/ytdlp-kernel-host'
 import { ytdlpManager } from '../../lib/ytdlp-manager'
 import { scopedLoggers } from '../../utils/logger'
-import { buildSiteIconUrl } from './site-icon-url'
+import { buildSiteIconFallbackUrl, buildSiteIconUrl } from './site-icon-url'
 
 class AppService extends IpcService {
   static readonly groupName = 'app'
@@ -101,22 +101,29 @@ class AppService extends IpcService {
    * Fetches a site icon and returns it as a data URL.
    */
   async getSiteIcon(_context: IpcContext, domain: string): Promise<string | null> {
-    try {
-      const iconUrl = buildSiteIconUrl(domain)
-      const response = await fetch(iconUrl)
-      if (!response.ok) {
-        return null
-      }
+    const iconUrls = [buildSiteIconUrl(domain), buildSiteIconFallbackUrl(domain)]
+    for (const iconUrl of iconUrls) {
+      try {
+        const response = await fetch(iconUrl)
+        if (!response.ok) {
+          continue
+        }
 
-      const arrayBuffer = await response.arrayBuffer()
-      const buffer = Buffer.from(arrayBuffer)
-      const contentType = response.headers.get('content-type') || 'image/png'
-      const base64 = buffer.toString('base64')
-      return `data:${contentType};base64,${base64}`
-    } catch (error) {
-      scopedLoggers.system.error(`Failed to fetch site icon for ${domain}: ${String(error)}`)
-      return null
+        const contentType = response.headers.get('content-type') || 'image/png'
+        if (!(contentType.includes('image/') || contentType.includes('icon'))) {
+          continue
+        }
+
+        const arrayBuffer = await response.arrayBuffer()
+        const buffer = Buffer.from(arrayBuffer)
+        const base64 = buffer.toString('base64')
+        return `data:${contentType};base64,${base64}`
+      } catch (error) {
+        scopedLoggers.system.error(`Failed to fetch site icon for ${domain}: ${String(error)}`)
+      }
     }
+
+    return null
   }
 }
 

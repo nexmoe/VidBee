@@ -6,6 +6,8 @@
   "exports": {
     "./theme.css": "./src/theme.css",
     "./base.css": "./src/base.css",
+    "./components/agent-chat-composer": "./src/components/agent-chat-composer.tsx",
+    "./components/subscription/subscription-form-dialog": "./src/components/subscription/subscription-form-dialog.tsx",
     "./components/ui/*": "./src/components/ui/*.tsx",
     "./lib/cn": "./src/lib/cn.ts",
     "./lib/download-platform": "./src/lib/download-platform.ts",
@@ -41,6 +43,7 @@
     "@radix-ui/react-tabs": "^1.1.21",
     "@radix-ui/react-tooltip": "^1.2.16",
     "@shadcn/react": "^0.3.0",
+    "@vidbee/subscriptions-core": "workspace:*",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "^13.1.0",

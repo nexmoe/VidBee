@@ -24,6 +24,7 @@ import { spring } from "../../lib/springs";
 import { fontWeights } from "../../lib/font-weight";
 import { useShape } from "../../lib/shape-context";
 import { SizeProvider, useSize, type SizeVariant } from "../../lib/size-context";
+import { RemoteImage } from "./remote-image";
 type BadgeColor = "gray" | "blue" | "green" | "yellow" | "red" | "purple";
 
 function SourceBadge({
@@ -36,7 +37,7 @@ function SourceBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground",
+        "inline-flex items-center rounded-full border border-border bg-background px-1.5 py-0.5 text-[11px] text-muted-foreground",
         className
       )}
     >
@@ -62,6 +63,24 @@ const RAIL_GAP = "gap-2";
 
 /** Glyph size on the rail, one step down from the control icon size. */
 const railIconSize = (compact: boolean): number => (compact ? 12 : 14);
+
+/**
+ * Pair type size with line-height on one utility. A separate `leading-*`
+ * class loses to `text-[13px]` inside `cn()`.
+ */
+const railType = (compact: boolean): string =>
+  compact ? "text-[12px]/normal" : "text-[13px]/normal";
+
+/**
+ * Size a rail glyph to one line of adjacent text and center it in that box.
+ */
+function RailGlyph({ children }: { children: ReactNode }) {
+  return (
+    <span className={`${RAIL} flex h-lh shrink-0 items-center justify-center`}>
+      {children}
+    </span>
+  );
+}
 
 interface TriggerRowProps extends HTMLAttributes<HTMLButtonElement> {
   open: boolean;
@@ -92,28 +111,27 @@ const TriggerRow = forwardRef<HTMLButtonElement, TriggerRowProps>(
         onMouseLeave={() => setIsHovered(false)}
         className={cn(
           `flex w-fit items-center ${RAIL_GAP} bg-transparent p-0 text-left`,
+          railType(compact),
           "cursor-pointer outline-none select-none",
           "focus-visible:ring-1 focus-visible:ring-[color:var(--focus-ring,#6B97FF)] focus-visible:ring-offset-0",
           className
         )}
       >
-        {icon && (
-          <span
-            className={`${RAIL} shrink-0 inline-flex items-center justify-center`}
-          >
+        {icon ? (
+          <RailGlyph>
             <LeadingIcon
               size={railIconSize(compact)}
               strokeWidth={highlighted ? 2 : 1.5}
               className={cn(
-                "transition-[color,stroke-width] duration-80",
+                "block transition-[color,stroke-width] duration-80",
                 highlighted ? "text-foreground" : "text-muted-foreground"
               )}
             />
-          </span>
-        )}
+          </RailGlyph>
+        ) : null}
 
         {/* Label with dual-layer text (invisible bold layer reserves width) */}
-        <span className={cn("inline-grid text-left", sizeClasses.text)}>
+        <span className="inline-grid text-left">
           <span
             className="col-start-1 row-start-1 invisible"
             style={{ fontVariationSettings: fontWeights.semibold }}
@@ -138,7 +156,7 @@ const TriggerRow = forwardRef<HTMLButtonElement, TriggerRowProps>(
 
         {/* Chevron — right when collapsed, rotates 90° down when expanded */}
         <motion.span
-          className="shrink-0 inline-flex items-center justify-center"
+          className="flex h-lh shrink-0 items-center justify-center"
           animate={{ rotate: open ? 90 : 0 }}
           transition={spring.fast}
         >
@@ -146,7 +164,7 @@ const TriggerRow = forwardRef<HTMLButtonElement, TriggerRowProps>(
             size={sizeClasses.icon}
             strokeWidth={highlighted ? 2 : 1.5}
             className={cn(
-              "transition-[color,stroke-width] duration-80",
+              "block transition-[color,stroke-width] duration-80",
               highlighted ? "text-foreground" : "text-muted-foreground"
             )}
           />
@@ -426,7 +444,7 @@ type StepStatus = "complete" | "active" | "pending";
 interface ThinkingStepProps {
   icon?: IconName;
   showIcon?: boolean;
-  label: string;
+  label: ReactNode;
   description?: string;
   status?: StepStatus;
   delay?: number;
@@ -482,6 +500,8 @@ function ThinkingStep({
       /* Outer: animates height to create space smoothly */
       <motion.div
         className={cn("relative z-10 overflow-hidden", className)}
+        data-slot="thinking-step"
+        data-status={status}
         initial={{ height: 0 }}
         animate={{ height: stepHeight ?? 0 }}
         transition={spring.slow}
@@ -494,35 +514,53 @@ function ThinkingStep({
           animate={{ opacity: 1 }}
           transition={{ duration: 0.24, delay, ease: "easeOut" }}
         >
-          {/* Content row */}
-          <div className={`flex ${RAIL_GAP} py-1.5`}>
-            {/* Icon rail — glyph and connector line share one vertical centre */}
-            <div className={`flex flex-col items-center shrink-0 ${RAIL}`}>
-              <div
-                className={`${RAIL} inline-flex h-4 items-center justify-center`}
-              >
+          {/* Content row — shared type size + line-height so the rail glyph
+              is a 1lh box centred on the first line of text. Bottom padding
+              lives on the text column (not the row) so the rail stretches and
+              the connector can run from below the icon to the next node. */}
+          <div
+            className={cn(
+              `flex ${RAIL_GAP}`,
+              railType(sizeClasses.variant === "compact")
+            )}
+          >
+            {/* Icon rail — glyph and connector line share one vertical centre.
+                The connector is absolutely pinned below the icon (mid-line +
+                half a 14px glyph) so a single-line row still shows a stub. */}
+            <div className={`relative flex shrink-0 flex-col items-center self-stretch ${RAIL}`}>
+              <RailGlyph>
                 {showIcon ? (
                   <Icon
                     size={railIconSize(sizeClasses.variant === "compact")}
                     strokeWidth={1.5}
-                    className="text-muted-foreground"
+                    className="block text-muted-foreground"
                   />
                 ) : (
-                  <div className="w-2 h-2 rounded-full bg-muted-foreground/60" />
+                  <div className="h-2 w-2 rounded-full bg-muted-foreground/60" />
                 )}
-              </div>
-              {/* Line stretches from icon to bottom of this step */}
-              {!isLast && <div className="flex-1 w-px bg-border/60 my-0.5" />}
+              </RailGlyph>
+              {!isLast && (
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute bottom-0.5 left-1/2 top-[calc(0.5lh+8px)] w-px min-h-2 -translate-x-1/2 bg-border/60"
+                  data-slot="thinking-step-connector"
+                />
+              )}
             </div>
 
             {/* Text content */}
-            <div className="flex-1 flex flex-col gap-1 min-w-0 text-left">
+            <div
+              className={cn(
+                "flex min-w-0 flex-1 flex-col gap-1 text-left",
+                !isLast && "pb-3"
+              )}
+            >
               <span
                 className={cn(
-                  sizeClasses.text,
-                  "leading-tight text-foreground",
+                  "whitespace-pre-wrap break-words text-foreground",
                   isActive && "shimmer-text"
                 )}
+                data-slot="thinking-step-label"
                 style={{ fontVariationSettings: fontWeights.medium }}
               >
                 {label}
@@ -649,6 +687,9 @@ interface ThinkingStepImageProps {
   className?: string;
 }
 
+/**
+ * Illustration inside a thinking step. Remote hosts go through RemoteImage.
+ */
 function ThinkingStepImage({ src, alt = "", caption, delay = 0, className }: ThinkingStepImageProps) {
   const shape = useShape();
   // The caption role of the type scale — see /docs/sizes.
@@ -663,7 +704,7 @@ function ThinkingStepImage({ src, alt = "", caption, delay = 0, className }: Thi
         filter: { duration: 0.15, delay },
       }}
     >
-      <img
+      <RemoteImage
         src={src}
         alt={alt}
         className={cn(

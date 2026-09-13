@@ -4,10 +4,11 @@ import type { CaptionShareQuote } from '@renderer/lib/transcript-caption-selecti
 import type { Ref } from 'react'
 
 interface TranscriptCaptionShareCardProps {
-  cardRef: Ref<HTMLDivElement>
+  cardRef?: Ref<HTMLDivElement>
   coverSrc?: string | null
   durationMs?: number
   quote: CaptionShareQuote
+  sourceByline?: string | null
   sourceTitle?: string | null
   tagline: string
 }
@@ -15,10 +16,11 @@ interface TranscriptCaptionShareCardProps {
 /**
  * Poster share card for a selected transcript quote.
  *
- * @param props.cardRef Root node passed to snapdom.
+ * @param props.cardRef Root node measured after fonts and images settle.
  * @param props.coverSrc Cover URL; RemoteImage caches remote hosts for CSP.
  * @param props.durationMs Media duration for the progress bar.
  * @param props.quote Selected text plus neighboring context.
+ * @param props.sourceByline Platform and channel under the title.
  * @param props.sourceTitle Media title in the header.
  * @param props.tagline One-line VidBee intro in the footer.
  */
@@ -27,6 +29,7 @@ export function TranscriptCaptionShareCard({
   coverSrc,
   durationMs = 0,
   quote,
+  sourceByline,
   sourceTitle,
   tagline
 }: TranscriptCaptionShareCardProps) {
@@ -43,6 +46,7 @@ export function TranscriptCaptionShareCard({
       coverSrc={coverSrc}
       durationLabel={durationSeconds > 0 ? formatShareClock(durationSeconds) : undefined}
       progressRatio={progressRatio}
+      sourceByline={sourceByline}
       sourceTitle={sourceTitle}
       startLabel={formatShareClock(quote.startMs / 1000)}
       tagline={tagline}

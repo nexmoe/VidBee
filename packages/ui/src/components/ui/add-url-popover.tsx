@@ -18,6 +18,7 @@ interface AddUrlPopoverProps {
   value: string
   triggerLabel: string
   title: string
+  description?: string
   placeholder: string
   cancelLabel: string
   confirmLabel: string
@@ -47,6 +48,7 @@ export const AddUrlPopover = ({
   value,
   triggerLabel,
   title,
+  description,
   placeholder,
   cancelLabel,
   confirmLabel,
@@ -68,6 +70,7 @@ export const AddUrlPopover = ({
   onToggleOneClickDownload
 }: AddUrlPopoverProps) => {
   const textareaId = useId()
+  const descriptionId = useId()
   const showLocalMenu = Boolean(onAddLocalMedia && addLocalMediaLabel && moreActionsLabel)
 
   return (
@@ -86,30 +89,42 @@ export const AddUrlPopover = ({
           </Button>
         </PopoverTrigger>
         <PopoverContent align="end" className="w-96 p-5">
-          <div className="flex flex-col gap-5">
-            <div className="space-y-3">
-              <Label className="font-semibold text-base leading-snug" htmlFor={textareaId}>
+          <div className="flex flex-col">
+            <div>
+              <Label className="font-semibold text-sm leading-snug" htmlFor={textareaId}>
                 {title}
               </Label>
+              {description ? (
+                <p
+                  className="mt-1 text-muted-foreground text-xs leading-relaxed"
+                  id={descriptionId}
+                >
+                  {description}
+                </p>
+              ) : null}
               <Textarea
+                aria-describedby={description ? descriptionId : undefined}
+                aria-invalid={Boolean(invalidMessage)}
                 autoFocus
-                className="min-h-[4.5rem] resize-none"
+                className="-mx-[3px] mt-3 min-h-24 w-[calc(100%+6px)] resize-none rounded-lg border-transparent bg-muted/70 px-3.5 py-3 text-sm shadow-none focus-visible:border-ring focus-visible:bg-background dark:bg-muted/50"
                 id={textareaId}
                 onChange={(event) => {
-                  onValueChange(event.target.value.replace(/\r?\n/g, ''))
+                  onValueChange(event.target.value)
                 }}
                 placeholder={placeholder}
-                rows={3}
+                rows={4}
                 value={value}
               />
+              {invalidMessage ? (
+                <p className="mt-2 text-destructive text-xs">{invalidMessage}</p>
+              ) : null}
             </div>
-            {invalidMessage ? <p className="text-destructive text-xs">{invalidMessage}</p> : null}
             {onToggleOneClickDownload && oneClickDownloadLabel ? (
-              <div className="flex items-center justify-between gap-4 rounded-md bg-muted/50 px-3.5 py-3">
-                <div className="min-w-0 space-y-1.5">
-                  <p className="font-medium text-sm leading-snug">{oneClickDownloadLabel}</p>
+              <div className="mt-4 flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="text-sm leading-snug">{oneClickDownloadLabel}</p>
                   {oneClickDownloadDescription ? (
-                    <p className="text-muted-foreground text-xs leading-relaxed">
+                    <p className="mt-0.5 text-muted-foreground text-xs leading-relaxed">
                       {oneClickDownloadDescription}
                     </p>
                   ) : null}
@@ -125,13 +140,13 @@ export const AddUrlPopover = ({
                 />
               </div>
             ) : null}
-            <div className="flex items-center justify-end gap-2 border-border/60 border-t pt-3">
+            <div className="mt-4 flex items-center justify-end gap-2 border-border/60 border-t pt-3">
               {onOpenSupportedSites && supportedSitesLabel ? (
                 <Button
-                  className="mr-auto h-auto px-0 text-xs"
+                  className="mr-auto h-auto px-0 font-normal text-muted-foreground text-xs hover:bg-transparent hover:text-foreground"
                   onClick={onOpenSupportedSites}
                   type="button"
-                  variant="link"
+                  variant="ghost"
                 >
                   {supportedSitesLabel}
                 </Button>

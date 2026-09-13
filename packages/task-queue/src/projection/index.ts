@@ -26,6 +26,7 @@ import type {
   TaskProgress,
   TaskStatus
 } from '../types'
+import { TERMINAL_STATUSES } from '../types'
 
 /**
  * Legacy status kept for renderer / web client back-compat.
@@ -43,10 +44,7 @@ export type LegacyDownloadStatus =
  * the same legacy status. UIs that opt-in can show a richer label
  * ("Paused" / "Retrying in 23s") instead of a flat "pending".
  */
-export type LegacySubStatus =
-  | 'queued'
-  | 'paused'
-  | 'retry-scheduled'
+export type LegacySubStatus = 'queued' | 'paused' | 'retry-scheduled'
 
 export interface LegacyDownloadProgress {
   percent: number
@@ -89,6 +87,8 @@ export interface LegacyTaskProjection {
    * the user's pick to detect that the chain fell back to best-available.
    */
   resolvedFormatId?: string
+  subtitleStatus?: TaskOutput['subtitleStatus']
+  subtitleLanguages?: string[]
   description?: string
   channel?: string
   uploader?: string
@@ -133,6 +133,8 @@ export function legacyDownloadStatusOf(status: TaskStatus): LegacyDownloadStatus
       return 'error'
     case 'cancelled':
       return 'cancelled'
+    default:
+      return status
   }
 }
 
@@ -201,13 +203,15 @@ export function projectTaskToLegacy(task: Readonly<Task>): LegacyTaskProjection 
     playlistSize: opts.playlistSize,
     fileSize: opts.fileSize,
     startedAt: opts.startedAt,
-    completedAt: opts.completedAt,
+    completedAt: opts.completedAt ?? (TERMINAL_STATUSES.has(task.status) ? task.enteredStatusAt : undefined),
     downloadPath: opts.downloadPath,
     attempt: task.attempt,
     maxAttempts: task.maxAttempts
   }
 
-  if (subStatus) proj.subStatus = subStatus
+  if (subStatus) {
+    proj.subStatus = subStatus
+  }
 
   // Progress is meaningful for running/processing AND for paused/retry, where
   // we want the UI to remember "you were 47% in" rather than reset to 0.
@@ -223,15 +227,27 @@ export function projectTaskToLegacy(task: Readonly<Task>): LegacyTaskProjection 
     proj.fileSize = out.size
     proj.savedFileName = basenameOf(out.filePath)
     proj.downloadPath = dirnameOf(out.filePath)
-    if (out.durationMs != null) proj.duration = Math.round(out.durationMs / 1000)
-    if (out.formatId) proj.resolvedFormatId = out.formatId
+    if (out.durationMs != null) {
+      proj.duration = Math.round(out.durationMs / 1000)
+    }
+    if (out.formatId) {
+      proj.resolvedFormatId = out.formatId
+    }
+    if (out.subtitleStatus) {
+      proj.subtitleStatus = out.subtitleStatus
+    }
+    if (out.subtitleLanguages) {
+      proj.subtitleLanguages = [...out.subtitleLanguages]
+    }
   }
 
   if (task.lastError) {
     const err = task.lastError as ClassifiedError
     proj.errorCategory = err.category
     proj.uiMessageKey = err.uiMessageKey
-    if (status === 'error') proj.error = err.rawMessage
+    if (status === 'error') {
+      proj.error = err.rawMessage
+    }
   }
 
   if (task.status === 'retry-scheduled' && task.nextRetryAt != null) {
@@ -242,18 +258,20 @@ export function projectTaskToLegacy(task: Readonly<Task>): LegacyTaskProjection 
 }
 
 function projectProgress(p: Readonly<TaskProgress>): LegacyDownloadProgress {
-  const percent = p.percent != null ? Math.max(0, Math.min(100, p.percent * 100)) : 0
+  const percent = p.percent == null ? 0 : Math.max(0, Math.min(100, p.percent * 100))
   return {
     percent,
-    currentSpeed: p.speedBps != null ? formatSpeed(p.speedBps) : undefined,
-    eta: p.etaMs != null ? formatEta(p.etaMs) : undefined,
-    downloaded: p.bytesDownloaded != null ? formatBytes(p.bytesDownloaded) : undefined,
-    total: p.bytesTotal != null ? formatBytes(p.bytesTotal) : undefined
+    currentSpeed: p.speedBps == null ? undefined : formatSpeed(p.speedBps),
+    eta: p.etaMs == null ? undefined : formatEta(p.etaMs),
+    downloaded: p.bytesDownloaded == null ? undefined : formatBytes(p.bytesDownloaded),
+    total: p.bytesTotal == null ? undefined : formatBytes(p.bytesTotal)
   }
 }
 
 function formatBytes(n: number): string {
-  if (n < 1024) return `${n}B`
+  if (n < 1024) {
+    return `${n}B`
+  }
   const units = ['KB', 'MB', 'GB', 'TB']
   let value = n / 1024
   let i = 0

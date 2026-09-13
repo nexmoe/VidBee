@@ -2,12 +2,17 @@ import { TranscriptAudioStage } from '@renderer/components/transcript/Transcript
 import { TranscriptPlayerNotice } from '@renderer/components/transcript/TranscriptPlayerNotice'
 import { formatPlayerClock } from '@renderer/lib/format-clock'
 import { mediaMimeType } from '@renderer/lib/local-file-src'
+import { clampPlaybackRate, DEFAULT_PLAYBACK_RATE } from '@renderer/lib/transcript-playback'
 import {
   DEFAULT_VIDEO_ASPECT_RATIO,
   readVideoAspectRatio,
   transcriptPlayerAspectStyle
 } from '@renderer/lib/transcript-player-frame'
 import { cn } from '@renderer/lib/utils'
+import type {
+  TranscriptPlaybackVolume,
+  TranscriptPlayerControls
+} from '@renderer/store/transcript-playback'
 import { useMedia } from '@videojs/react'
 import { Audio, AudioPlayer, AudioSkin, usePlayer as useAudioPlayer } from '@videojs/react/audio'
 import { usePlayer as useVideoPlayer, Video, VideoPlayer, VideoSkin } from '@videojs/react/video'
@@ -18,6 +23,8 @@ import '@videojs/react/video/skin.css'
 import './transcript-player.css'
 
 const PLAYER_HOST_CLASS = 'transcript-player-host flex w-full justify-center'
+const DEFAULT_MEDIA_VOLUME: TranscriptPlaybackVolume = { muted: false, volume: 1 }
+type MediaControls = Omit<TranscriptPlayerControls, 'seek'>
 
 export type TranscriptPlayerChrome = 'full' | 'mini'
 
@@ -74,17 +81,23 @@ interface TranscriptVideoJsPlayerProps {
   currentSpeakerName?: string | null
   currentSpeakerSortIndex?: number | null
   isAudio: boolean
-  onControlsReady?: (controls: { pause: () => void; play: () => void; toggle: () => void }) => void
+  onAspectRatio?: (ratio: number) => void
+  onControlsReady?: (controls: MediaControls) => void
+  onEnded?: () => void
+  onPlaybackRate?: (rate: number) => void
   onPlaying?: (playing: boolean) => void
   onRetryPrepare?: () => void
   onSeekReady: (seek: (seconds: number) => void) => void
   onTime: (currentTime: number, duration: number) => void
+  onVolume?: (state: TranscriptPlaybackVolume) => void
+  playbackRate?: number
   prepareError?: string | null
   preparing?: boolean
   src: string | null
   subtitle?: string | null
   thumbnail?: string | null
   title: string
+  volumeState?: TranscriptPlaybackVolume
 }
 
 interface PlayerClockBridgeProps {
@@ -354,14 +367,9 @@ const bindMediaPlaying = (
  */
 const bindMediaControls = (
   media: unknown,
-  onControlsReady: (controls: { pause: () => void; play: () => void; toggle: () => void }) => void
+  onControlsReady: (controls: MediaControls) => void
 ): void => {
   if (!media || typeof media !== 'object' || !('play' in media) || !('pause' in media)) {
-    onControlsReady({
-      pause: () => undefined,
-      play: () => undefined,
-      toggle: () => undefined
-    })
     return
   }
   const node = media as HTMLMediaElement
@@ -374,14 +382,114 @@ const bindMediaControls = (
   onControlsReady({
     pause,
     play,
+    setPlaybackRate: (rate: number) => {
+      const next = clampPlaybackRate(rate)
+      node.defaultPlaybackRate = next
+      node.playbackRate = next
+    },
+    setVolume: (volume: number) => {
+      node.volume = Math.min(1, Math.max(0, volume))
+      if (volume > 0) {
+        node.muted = false
+      }
+    },
     toggle: () => {
       if (node.paused) {
         play()
         return
       }
       pause()
+    },
+    toggleMute: () => {
+      node.muted = !node.muted
     }
   })
+}
+
+/**
+ * Keep the shared volume state synchronized with the native media element.
+ */
+function MediaVolumeBridge({
+  onVolume,
+  volumeState = DEFAULT_MEDIA_VOLUME
+}: {
+  onVolume: (state: TranscriptPlaybackVolume) => void
+  volumeState: TranscriptPlaybackVolume
+}): ReactNode {
+  const media = useMedia()
+  useEffect(() => {
+    if (!media || typeof media !== 'object' || !('volume' in media) || !('muted' in media)) {
+      return
+    }
+    const node = media as HTMLMediaElement
+    node.volume = volumeState.volume
+    node.muted = volumeState.muted
+  }, [media, volumeState.muted, volumeState.volume])
+
+  useEffect(() => {
+    if (
+      !media ||
+      typeof media !== 'object' ||
+      !('addEventListener' in media) ||
+      !('volume' in media) ||
+      !('muted' in media)
+    ) {
+      return
+    }
+    const node = media as HTMLMediaElement
+    const report = (): void => {
+      onVolume({ muted: node.muted, volume: node.volume })
+    }
+    report()
+    node.addEventListener('volumechange', report)
+    return () => {
+      node.removeEventListener('volumechange', report)
+    }
+  }, [media, onVolume])
+  return null
+}
+
+/**
+ * Keep the shared playback rate synchronized with the native media element.
+ */
+function MediaPlaybackRateBridge({
+  onPlaybackRate,
+  playbackRate = DEFAULT_PLAYBACK_RATE
+}: {
+  onPlaybackRate: (rate: number) => void
+  playbackRate: number
+}): ReactNode {
+  const media = useMedia()
+  useEffect(() => {
+    if (!media || typeof media !== 'object' || !('playbackRate' in media)) {
+      return
+    }
+    const node = media as HTMLMediaElement
+    const next = clampPlaybackRate(playbackRate)
+    node.defaultPlaybackRate = next
+    node.playbackRate = next
+  }, [media, playbackRate])
+
+  useEffect(() => {
+    if (
+      !media ||
+      typeof media !== 'object' ||
+      !('addEventListener' in media) ||
+      !('playbackRate' in media)
+    ) {
+      return
+    }
+    const node = media as HTMLMediaElement
+    const report = (): void => {
+      onPlaybackRate(clampPlaybackRate(node.playbackRate))
+    }
+    report()
+    node.addEventListener('ratechange', report)
+    return () => {
+      node.removeEventListener('ratechange', report)
+    }
+  }, [media, onPlaybackRate])
+  return null
 }
 
 /**
@@ -403,12 +511,30 @@ function VideoPlayingBridge({ onPlaying }: { onPlaying: (playing: boolean) => vo
 }
 
 /**
+ * Notify the shared queue when the active native media reaches its end.
+ */
+function MediaEndedBridge({ onEnded }: { onEnded: () => void }): ReactNode {
+  const media = useMedia()
+  useEffect(() => {
+    if (!media || typeof media !== 'object' || !('addEventListener' in media)) {
+      return
+    }
+    const node = media as HTMLMediaElement
+    node.addEventListener('ended', onEnded)
+    return () => {
+      node.removeEventListener('ended', onEnded)
+    }
+  }, [media, onEnded])
+  return null
+}
+
+/**
  * Push play/pause onto the transcript host from the audio element.
  */
 function AudioControlsBridge({
   onControlsReady
 }: {
-  onControlsReady: (controls: { pause: () => void; play: () => void; toggle: () => void }) => void
+  onControlsReady: (controls: MediaControls) => void
 }): ReactNode {
   const media = useMedia()
   useEffect(() => {
@@ -423,7 +549,7 @@ function AudioControlsBridge({
 function VideoControlsBridge({
   onControlsReady
 }: {
-  onControlsReady: (controls: { pause: () => void; play: () => void; toggle: () => void }) => void
+  onControlsReady: (controls: MediaControls) => void
 }): ReactNode {
   const media = useMedia()
   useEffect(() => {
@@ -441,26 +567,36 @@ export function TranscriptVideoJsPlayer({
   currentSpeakerName = null,
   currentSpeakerSortIndex = null,
   isAudio,
+  onAspectRatio,
   onControlsReady,
+  onEnded,
+  onPlaybackRate,
   onPlaying,
   onRetryPrepare,
   onSeekReady,
   onTime,
+  onVolume,
+  playbackRate = DEFAULT_PLAYBACK_RATE,
   prepareError = null,
   preparing = false,
   src,
   subtitle = null,
   thumbnail = null,
-  title
+  title,
+  volumeState = DEFAULT_MEDIA_VOLUME
 }: TranscriptVideoJsPlayerProps): ReactNode {
   const { t } = useTranslation()
   const [playbackError, setPlaybackError] = useState<string | null>(null)
   const [playbackAttempt, setPlaybackAttempt] = useState(0)
   const [playing, setPlaying] = useState(false)
   const [videoAspect, setVideoAspect] = useState(DEFAULT_VIDEO_ASPECT_RATIO)
-  const handleAspectRatio = useCallback((ratio: number) => {
-    setVideoAspect(ratio)
-  }, [])
+  const handleAspectRatio = useCallback(
+    (ratio: number) => {
+      setVideoAspect(ratio)
+      onAspectRatio?.(ratio)
+    },
+    [onAspectRatio]
+  )
   const frameVariant = isAudio ? 'audio' : 'video'
   useEffect(() => {
     setPlaybackError(null)
@@ -522,7 +658,7 @@ export function TranscriptVideoJsPlayer({
   if (isAudio) {
     return (
       <TranscriptPlayerFrame chrome={chrome} relative variant="audio">
-        <AudioPlayer key={playbackAttempt}>
+        <AudioPlayer key={`${src}:${playbackAttempt}`}>
           <div className="flex h-full min-h-0 w-full flex-col">
             <TranscriptAudioStage
               currentSpeakerName={currentSpeakerName}
@@ -542,7 +678,12 @@ export function TranscriptVideoJsPlayer({
           <AudioClockBridge onSeekReady={onSeekReady} onTime={onTime} />
           <AudioErrorBridge onError={setPlaybackError} />
           <AudioPlayingBridge onPlaying={handlePlaying} />
+          {onEnded ? <MediaEndedBridge onEnded={onEnded} /> : null}
           {onControlsReady ? <AudioControlsBridge onControlsReady={onControlsReady} /> : null}
+          {onPlaybackRate ? (
+            <MediaPlaybackRateBridge onPlaybackRate={onPlaybackRate} playbackRate={playbackRate} />
+          ) : null}
+          {onVolume ? <MediaVolumeBridge onVolume={onVolume} volumeState={volumeState} /> : null}
         </AudioPlayer>
         {showFailure ? <div className="absolute inset-0 z-20">{failedNotice}</div> : null}
       </TranscriptPlayerFrame>
@@ -551,7 +692,7 @@ export function TranscriptVideoJsPlayer({
 
   return (
     <TranscriptPlayerFrame aspectRatio={videoAspect} chrome={chrome} relative>
-      <VideoPlayer key={playbackAttempt}>
+      <VideoPlayer key={`${src}:${playbackAttempt}`}>
         <VideoSkin className="h-full min-h-0 w-full">
           <Video aria-label={title} playsInline preload="metadata">
             {mediaSource}
@@ -562,7 +703,12 @@ export function TranscriptVideoJsPlayer({
         <VideoClockBridge onSeekReady={onSeekReady} onTime={onTime} />
         <VideoErrorBridge onError={setPlaybackError} />
         <VideoPlayingBridge onPlaying={handlePlaying} />
+        {onEnded ? <MediaEndedBridge onEnded={onEnded} /> : null}
         {onControlsReady ? <VideoControlsBridge onControlsReady={onControlsReady} /> : null}
+        {onPlaybackRate ? (
+          <MediaPlaybackRateBridge onPlaybackRate={onPlaybackRate} playbackRate={playbackRate} />
+        ) : null}
+        {onVolume ? <MediaVolumeBridge onVolume={onVolume} volumeState={volumeState} /> : null}
       </VideoPlayer>
       {showFailure ? <div className="absolute inset-0 z-20">{failedNotice}</div> : null}
     </TranscriptPlayerFrame>

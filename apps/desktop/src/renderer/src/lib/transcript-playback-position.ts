@@ -6,6 +6,7 @@ export const RESUME_STUCK_EPSILON_SECONDS = 1.25
 export const MAX_STORED_PLAYBACK_POSITIONS = 100
 
 export interface PlaybackPositionEntry {
+  duration?: number
   seconds: number
   updatedAt: number
 }
@@ -87,13 +88,19 @@ export const parsePlaybackPositions = (raw: string | null): PlaybackPositions =>
       if (!(id && value) || typeof value !== 'object' || Array.isArray(value)) {
         continue
       }
-      const row = value as { seconds?: unknown; updatedAt?: unknown }
+      const row = value as { duration?: unknown; seconds?: unknown; updatedAt?: unknown }
       if (typeof row.seconds !== 'number' || !Number.isFinite(row.seconds) || row.seconds < 0) {
         continue
       }
       const updatedAt =
         typeof row.updatedAt === 'number' && Number.isFinite(row.updatedAt) ? row.updatedAt : 0
-      next[id] = { seconds: row.seconds, updatedAt }
+      const duration =
+        typeof row.duration === 'number' && Number.isFinite(row.duration) && row.duration > 0
+          ? row.duration
+          : undefined
+      next[id] = duration
+        ? { duration, seconds: row.seconds, updatedAt }
+        : { seconds: row.seconds, updatedAt }
     }
     return next
   } catch {
@@ -159,14 +166,19 @@ export const readPlaybackPosition = (downloadId: string): number | null => {
 export const savePlaybackPosition = (
   downloadId: string,
   seconds: number,
-  now = Date.now()
+  now = Date.now(),
+  duration?: number
 ): void => {
   if (!(downloadId && Number.isFinite(seconds)) || seconds < 0) {
     return
   }
+  const entry: PlaybackPositionEntry =
+    Number.isFinite(duration) && (duration ?? 0) > 0
+      ? { duration, seconds, updatedAt: now }
+      : { seconds, updatedAt: now }
   const next = prunePlaybackPositions({
     ...loadPlaybackPositions(),
-    [downloadId]: { seconds, updatedAt: now }
+    [downloadId]: entry
   })
   savePlaybackPositions(next)
 }
@@ -203,7 +215,7 @@ export const applyPlaybackPositionWrite = (
     clearPlaybackPosition(downloadId)
     return
   }
-  savePlaybackPosition(downloadId, decision.seconds, now)
+  savePlaybackPosition(downloadId, decision.seconds, now, duration)
 }
 
 export type ResumeSeekPlan = 'done' | 'seek' | 'skip' | 'wait'

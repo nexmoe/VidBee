@@ -105,6 +105,8 @@ export interface DownloadItem {
    * the row uses this to render a "fell back" hint.
    */
   resolvedFormatId?: string
+  subtitleStatus?: 'downloaded' | 'unavailable' | 'skipped-auth' | 'failed'
+  subtitleLanguages?: string[]
   // Playlist context (optional)
   playlistId?: string
   playlistTitle?: string
@@ -144,9 +146,13 @@ export interface DownloadHistoryItem {
   downloadPath?: string
   savedFileName?: string
   resolvedFormatId?: string
+  subtitleStatus?: 'downloaded' | 'unavailable' | 'skipped-auth' | 'failed'
+  subtitleLanguages?: string[]
   fileSize?: number
   duration?: number
   downloadedAt: number
+  createdAt?: number
+  startedAt?: number
   completedAt?: number
   error?: string
   ytDlpCommand?: string
@@ -326,7 +332,6 @@ export interface AppSettings {
   cookiesPath: string
   proxy: string
   configPath: string
-  betaProgram: boolean
   language: LanguageCode
   theme: string
   oneClickDownload: boolean
@@ -370,7 +375,6 @@ export const defaultSettings: AppSettings = {
   cookiesPath: '',
   proxy: '',
   configPath: '',
-  betaProgram: false,
   language: defaultLanguageCode,
   theme: 'system',
   oneClickDownload: true,

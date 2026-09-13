@@ -101,6 +101,18 @@ export {
   manifestWorkKey,
   sourceFingerprint
 } from './chunk-manifest'
+export type {
+  SelectSherpaProviderInput,
+  SherpaExecutionProvider,
+  SherpaProviderProbeResult,
+  SherpaProviderSelection
+} from './compute-provider'
+export {
+  isSherpaProviderFallbackLog,
+  SHERPA_EXECUTION_PROVIDERS,
+  selectSherpaProvider,
+  sherpaProviderCandidates
+} from './compute-provider'
 export type { TranscriptionConcurrencyQueue } from './concurrency'
 export {
   applyTranscriptionConcurrency,
@@ -182,7 +194,11 @@ export {
   punctuateText,
   punctuateWords
 } from './punctuate'
-export type { WorkerRuntime, WorkerRuntimeLayer } from './runtime'
+export type {
+  ProbeWorkerProviderInput,
+  WorkerRuntime,
+  WorkerRuntimeLayer
+} from './runtime'
 export {
   createFileProbeCache,
   DEFAULT_MAX_WORKER_RESTARTS,
@@ -190,6 +206,7 @@ export {
   isElectronBinary,
   nodeBinaryName,
   probeCacheKey,
+  probeWorkerProvider,
   resolveBundledNodePath,
   resolveWorkerRuntime
 } from './runtime'
@@ -212,27 +229,27 @@ export {
   singleSpeakerTurns,
   writePipelineSeed
 } from './speaker-assign'
+export type { DiarizeWindow, SpeakerEmbed } from './speaker-chunks'
 export {
+  capExcessClusters,
   DIARIZE_CHUNK_MS,
   DIARIZE_OVERLAP_MS,
   diarizeChunkWindows,
-  capExcessClusters,
   foldShortClusters,
   MERGE_MIN_OVERLAP_MS,
   mergeChunkTurns,
   mergeChunkTurnsByEmbeddings,
   pickSpeakerEmbedTurns,
-  shiftTurns,
   SHORT_CLUSTER_FOLD_DISTANCE,
   SHORT_CLUSTER_MAX_MS,
   SHORT_CLUSTER_MS,
   SHORT_CLUSTER_SPEECH_FRACTION,
-  shortClusterFoldMs,
   SPEAKER_EMBED_MAX_MS,
   SPEAKER_EMBED_MIN_MS,
+  shiftTurns,
+  shortClusterFoldMs,
   stitchTurnsAtMidpoint
 } from './speaker-chunks'
-export type { DiarizeWindow, SpeakerEmbed } from './speaker-chunks'
 export type { SpeakerEmbedItem } from './speaker-cluster'
 export {
   agglomerativeLabels,
@@ -254,9 +271,9 @@ export {
 export {
   CAMPPLUS_FILE,
   CAMPPLUS_URL,
-  embeddingIdForLanguage,
   ERES2NET_FILE,
   ERES2NET_URL,
+  embeddingIdForLanguage,
   SPEAKER_EMBEDDING_CAMPPLUS_ID,
   SPEAKER_EMBEDDING_ERES2NET_ID,
   SPEAKER_EMBEDDING_TITANET_ID,
@@ -276,6 +293,7 @@ export {
   shouldTrustSpeechIntervals,
   turnsForAsr
 } from './speaker-refine'
+export type { InsertTranscriptSegmentInput, TranscriptSegmentPatch } from './transcript-edit'
 export {
   applyTranscriptSegmentPatch,
   DEFAULT_CAPTION_DURATION_MS,
@@ -285,7 +303,6 @@ export {
   resolveInsertSegmentPlacement,
   updateTranscriptSegmentList
 } from './transcript-edit'
-export type { InsertTranscriptSegmentInput, TranscriptSegmentPatch } from './transcript-edit'
 export { buildTranscriptSources, recordForTranscriptSource } from './transcript-sources'
 export type { TranscriptStoreOptions } from './transcript-store'
 export { TranscriptStore } from './transcript-store'
@@ -297,7 +314,6 @@ export type {
   PipelineResult,
   PipelineSegment,
   TranscriptionStage,
-  TranscriptStageTiming,
   TranscriptionTaskOptions,
   TranscriptionTrigger,
   TranscriptRecord,
@@ -305,6 +321,7 @@ export type {
   TranscriptSourceKind,
   TranscriptSourceOption,
   TranscriptSpeaker,
+  TranscriptStageTiming,
   TranscriptSummary,
   TranscriptWord
 } from './types'

@@ -19,12 +19,89 @@ interface AiPromptPresetSeed {
 const PRESET_FORMAT_RULES =
   'Keep each list marker on the same line as the item text. Do not wrap the whole reply in a code fence. Do not add a preamble, closing remarks, or a heading that restates the task. Use the same language as the transcript.'
 
+/** Previous official Overview seed, retained only to upgrade unedited saved presets. */
+const LEGACY_OVERVIEW_CONTENT = [
+  'Write a structural overview of this transcript with chapters and key quotes.',
+  '',
+  'Each transcript line starts with [m:ss] or [h:mm:ss]. Duration is given when known. Chapters must cover the whole timeline from start to finish. If Duration is given, the last chapter must start after 75% of that duration. Use only timestamps that appear in the transcript. Do not invent timestamps or use 0:00 unless that line exists.',
+  '',
+  "Include 3-5 key quotes that are surprising, contrarian, memorable, or statistically striking. Quotes must be the speaker's words. Clean filler and transcription errors, but keep their voice.",
+  '',
+  'Output format:',
+  '# {one-sentence takeaway}',
+  '## Chapters',
+  '- **{m:ss}** {title} — {what this section covers}',
+  '## Key quotes',
+  '- **{m:ss}** "{quote}"',
+  '',
+  'Use unordered lists only. Keep each bullet to one or two sentences. Skip empty sections.',
+  PRESET_FORMAT_RULES
+].join('\n')
+
+/** Built-in Overview prompt, pinned beside the transcript tab. */
+export const AI_OVERVIEW_PROMPT_ID = 'overview'
+
+/** Freeform Agent conversation started from New chat, not shown as a prompt tab. */
+export const AI_CHAT_PROMPT_ID = 'chat'
+
+/** Instruction used when the user starts an empty Agent conversation. */
+const AGENT_CHAT_CONTENT = [
+  'Answer the user about this video.',
+  'Use tools when you need transcript evidence, timestamps, screenshots, or clips.',
+  'Do not invent quotes or timestamps.',
+  'Once the topic is clear, call rename_conversation with a short title (a few words, in the user language). Do not mention renaming in your reply. Skip if the current title already fits.',
+  'Follow the user’s requested output language; otherwise reply in the language of their latest message. Use {{uiLanguage}} only when the user’s language cannot be determined.'
+].join('\n')
+
+/**
+ * Virtual prompt for a blank Agent chat. It is not stored in settings.
+ *
+ * @param now Timestamp written onto createdAt and updatedAt.
+ */
+export const agentChatPrompt = (now: number = Date.now()): AiPrompt => ({
+  id: AI_CHAT_PROMPT_ID,
+  title: 'Chat',
+  icon: 'message-circle-question',
+  content: AGENT_CHAT_CONTENT,
+  enabled: true,
+  isPreset: true,
+  sortOrder: -1,
+  createdAt: now,
+  updatedAt: now
+})
+
 /**
  * Default transcript prompts. Titles are English seeds; the UI translates via
  * i18n keys under `settings.ai.presetPrompts`. `{{uiLanguage}}` is replaced
  * with the current interface language name before a prompt is shown or sent.
  */
 export const AI_PROMPT_PRESETS: readonly AiPromptPresetSeed[] = [
+  {
+    id: AI_OVERVIEW_PROMPT_ID,
+    title: 'Overview',
+    icon: 'sparkles',
+    content: [
+      'Write a navigable, topic-by-topic overview of this transcript with chapters and key quotes.',
+      '',
+      'Each transcript line starts with [m:ss] or [h:mm:ss]. Read the whole transcript before selecting chapter boundaries. Cover the full timeline through the final substantive discussion, not just the opening or highlights. Use only timestamps present in the transcript, in chronological order without duplicates. Start each chapter at the first transcript line introducing its topic; do not invent timestamps or infer chapter end times.',
+      '',
+      'Choose chapters by meaningful topic changes: a new question, distinct argument, case study, story, technical mechanism, or trade-off that a viewer might want to revisit. Give each chapter one clear main topic and a specific title. Do not bundle several independently useful discussions under a broad label such as career, technology, or the future. If a theme returns later, keep that later discussion in its chronological position.',
+      '',
+      'For long, topic-rich interviews or lectures, use roughly 3-6 minutes per chapter as a guide. Review any chapter spanning more than 8 minutes for overlooked topic changes, including the final chapter. Split at real transitions when supported by the transcript. A genuinely continuous explanation may stay longer; do not divide into equal time intervals, split every short exchange, invent topics, or force a chapter count. Let chapter count grow with duration and topic density.',
+      '',
+      "Include 3-5 key quotes that are surprising, contrarian, memorable, or statistically striking. Quotes must be the speaker's words. Clean filler and transcription errors, but keep their voice.",
+      '',
+      'Output format:',
+      '# {one-sentence takeaway}',
+      '## Chapters',
+      '- **{m:ss}** {specific topic title} — {what this section covers}',
+      '## Key quotes',
+      '- **{m:ss}** "{quote}"',
+      '',
+      'Use unordered lists only. Keep each bullet to one or two sentences. Skip empty sections. Output only the final overview; do not include planning, timestamp verification, checklists, or self-evaluation.',
+      PRESET_FORMAT_RULES
+    ].join('\n')
+  },
   {
     id: 'bullet-points',
     title: 'Bullet Points',
@@ -160,6 +237,7 @@ const SUPERSEDED_FORMAT_RULES =
 
 /** Older official bodies that should be replaced with the current seed. */
 const SUPERSEDED_PRESET_CONTENT: Record<string, readonly string[]> = {
+  overview: [LEGACY_OVERVIEW_CONTENT],
   'bullet-points': [
     'Turn this transcript into a bullet point summary. Group related points. Keep each bullet short and easy to scan. Use the same language as the transcript.',
     [
@@ -346,6 +424,26 @@ const withCurrentPresetContent = (prompt: AiPrompt, now: number): AiPrompt => {
 }
 
 /**
+ * Split the Overview prompt from the remaining prompt tabs.
+ *
+ * @param prompts Enabled prompts shown in the transcript side panel.
+ */
+export const partitionTranscriptPromptTabs = (
+  prompts: readonly AiPrompt[]
+): { overview: AiPrompt | null; rest: AiPrompt[] } => {
+  let overview: AiPrompt | null = null
+  const rest: AiPrompt[] = []
+  for (const prompt of prompts) {
+    if (prompt.id === AI_OVERVIEW_PROMPT_ID && !overview) {
+      overview = prompt
+      continue
+    }
+    rest.push(prompt)
+  }
+  return { overview, rest }
+}
+
+/**
  * Re-insert any missing built-in prompts without overwriting user edits,
  * refresh unedited official prompt bodies to the current seed, and drop
  * retired built-in ids so they are not restored.
@@ -365,9 +463,13 @@ export const mergeDefaultAiPrompts = (
   if (missing.length === 0 && kept.length === existing.length && !contentChanged) {
     return existing
   }
+  const overviewMissing = missing.find((prompt) => prompt.id === AI_OVERVIEW_PROMPT_ID)
+  const otherMissing = missing.filter((prompt) => prompt.id !== AI_OVERVIEW_PROMPT_ID)
   const nextSort = refreshed.reduce((max, prompt) => Math.max(max, prompt.sortOrder), -1) + 1
+  const minSort = refreshed.reduce((min, prompt) => Math.min(min, prompt.sortOrder), 0)
   return [
+    ...(overviewMissing ? [{ ...overviewMissing, sortOrder: minSort - 1 }] : []),
     ...refreshed,
-    ...missing.map((prompt, index) => ({ ...prompt, sortOrder: nextSort + index }))
+    ...otherMissing.map((prompt, index) => ({ ...prompt, sortOrder: nextSort + index }))
   ]
 }

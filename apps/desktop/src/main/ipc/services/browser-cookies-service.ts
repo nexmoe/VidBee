@@ -17,7 +17,9 @@ import {
   unconfiguredCookieHealth
 } from '@vidbee/downloader-core/cookie-setup'
 import { type IpcContext, IpcMethod, IpcService } from 'electron-ipc-decorator'
+import type { ExtensionCookieConnection } from '../../../shared/extension-cookies'
 import { inspectBrowserCookieAccess } from '../../lib/browser-cookie-access'
+import { extensionCookieHealth, getExtensionCookieConnection } from '../../lib/extension-cookies'
 import { resolvePathWithHome } from '../../utils/path-helpers'
 
 class BrowserCookiesService extends IpcService {
@@ -120,6 +122,14 @@ class BrowserCookiesService extends IpcService {
   }
 
   /**
+   * Return whether a VidBee browser extension is connected for live cookies.
+   */
+  @IpcMethod()
+  getExtensionConnection(_context: IpcContext): ExtensionCookieConnection {
+    return getExtensionCookieConnection()
+  }
+
+  /**
    * Inspect the current cookie source and report whether it looks usable.
    *
    * @param _context IPC context.
@@ -130,6 +140,10 @@ class BrowserCookiesService extends IpcService {
     _context: IpcContext,
     input: { browser: string; profile: string; cookiesPath: string }
   ): Promise<CookieHealth> {
+    const extension = extensionCookieHealth()
+    if (extension) {
+      return extension
+    }
     const cookiesPath = input.cookiesPath?.trim()
     if (cookiesPath) {
       return await this.inspectCookiesFileHealth(cookiesPath)

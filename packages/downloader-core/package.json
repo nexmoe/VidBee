@@ -11,6 +11,9 @@
     "./download-file": "./src/download-file.ts",
     "./filename-style": "./src/filename-style.ts",
     "./format-preferences": "./src/format-preferences.ts",
+    "./format-selector": "./src/format-selector.ts",
+    "./output-path": "./src/output-path.ts",
+    "./audio-format-preferences": "./src/audio-format-preferences.ts",
     "./subtitle-languages": "./src/subtitle-languages.ts",
     "./yt-dlp-args": "./src/yt-dlp-args.ts",
     "./yt-dlp-wrap": "./src/yt-dlp-wrap.ts"

@@ -345,6 +345,7 @@ interface TaskDbRow {
   created_at: number
   updated_at: number
   input_json: string
+  first_started_at: number | null
   progress_json: string | null
   output_json: string | null
   last_error_json: string | null
@@ -363,12 +364,17 @@ interface AttemptDbRow {
   raw_args_hash: string
 }
 
+/** Restore lifecycle timestamps from recorded attempts for older task rows. */
 function rowToTask(r: TaskDbRow): Task {
+  const input = JSON.parse(r.input_json) as Task['input']
+  if (input.options?.startedAt == null && r.first_started_at != null) {
+    input.options = { ...input.options, startedAt: r.first_started_at }
+  }
   return {
     id: r.id,
     kind: r.kind as Task['kind'],
     parentId: r.parent_id,
-    input: JSON.parse(r.input_json),
+    input,
     priority: r.priority as Task['priority'],
     groupKey: r.group_key,
     status: r.status,
@@ -473,7 +479,11 @@ WHERE s.op = 'spawn'
 ORDER BY s.seq ASC
 `
 
-const SQL_LOAD_ALL_TASKS = `SELECT * FROM tasks`
+const SQL_LOAD_ALL_TASKS = `
+SELECT tasks.*, (
+  SELECT MIN(started_at) FROM attempts WHERE attempts.task_id = tasks.id
+) AS first_started_at
+FROM tasks`
 
 const SQL_LOAD_LATEST_ATTEMPT = `
 SELECT * FROM attempts

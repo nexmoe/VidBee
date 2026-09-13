@@ -19,6 +19,22 @@ export const readVideoAspectRatio = (media: unknown): number | null => {
 }
 
 /**
+ * Read an image element's intrinsic width÷height, or null before it has loaded.
+ */
+export const readImageAspectRatio = (image: unknown): number | null => {
+  if (!image || typeof image !== 'object') {
+    return null
+  }
+  const node = image as { naturalHeight?: unknown; naturalWidth?: unknown }
+  const width = typeof node.naturalWidth === 'number' ? node.naturalWidth : 0
+  const height = typeof node.naturalHeight === 'number' ? node.naturalHeight : 0
+  if (width <= 0 || height <= 0) {
+    return null
+  }
+  return width / height
+}
+
+/**
  * Apply a width÷height ratio to the transcript video window via CSS custom property.
  */
 export const transcriptPlayerAspectStyle = (ratio: number): CSSProperties => {

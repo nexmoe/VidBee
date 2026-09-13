@@ -13,8 +13,6 @@
     "appName": "VidBee",
     "autoUpdateDescription": "在背景自動下載並安裝新版本。",
     "autoUpdateTitle": "自動更新",
-    "betaProgramDescription": "搶先獲得預覽版和即將發布的新功能。",
-    "betaProgramTitle": "預覽通道",
     "description": "從 1000+ 個網站下載媒體，在本機建立可搜尋的文稿，再用你選擇的 AI 服務商進行摘要、翻譯或提問——全部集中在一個免費開源的桌面應用程式中。",
     "downloadEngine": {
       "status": {
@@ -24,10 +22,15 @@
         "preparing": "正在準備",
         "retry-scheduled": "已排定重試",
         "unavailable": "無法使用",
-        "up-to-date": "已是最新版本"
+        "up-to-date": "已是最新版本",
+        "update-available": "Update available"
       },
       "title": "下載引擎",
-      "versions": "yt-dlp {{ytDlpVersion}} · Node {{nodeVersion}}"
+      "versions": "yt-dlp {{ytDlpVersion}} · Node {{nodeVersion}}",
+      "update": "Update yt-dlp",
+      "updated": "yt-dlp updated to {{version}}",
+      "updateFailed": "Could not update yt-dlp: {{error}}",
+      "webVersions": "yt-dlp {{ytDlpVersion}} · FFmpeg {{ffmpegVersion}} · Node {{nodeVersion}}"
     },
     "followAuthorActions": {
       "follow": "關注 @nexmoe"
@@ -35,6 +38,16 @@
     "followAuthorDescription": "獲取 VidBee 的最新消息和更新。",
     "followAuthorSupport": "在 X (Twitter) 上關注開發者，獲取 VidBee 的最新更新和消息。",
     "followAuthorTitle": "關注開發者",
+    "otherProducts": {
+      "lmspeed": {
+        "name": "LMSpeed",
+        "description": "選定供應商之前，先比較 LLM API 的價格、速度與安全性。"
+      },
+      "clipii": {
+        "name": "Clipii",
+        "description": "把連結、檔案和影片存進一個可搜尋的雲端資料庫。"
+      }
+    },
     "here": "此處",
     "homepage": "首頁",
     "notifications": {
@@ -155,7 +168,7 @@
     "downloadVideo": "下載影片",
     "downloading": "正在下載...",
     "enterUrl": "輸入影片連結",
-    "enterUrlDescription": "貼上或輸入一個影片連結。",
+    "enterUrlDescription": "貼上一個或多個影片連結，每行一個連結。",
     "error": "錯誤",
     "fetch": "取得",
     "fetchingVideoInfo": "正在取得影片資訊...",
@@ -220,7 +233,7 @@
     "total": "總計",
     "unknownQuality": "未知品質",
     "unknownSize": "未知大小",
-    "urlPlaceholder": "https://www.youtube.com/watch?v=...",
+    "urlPlaceholder": "在此貼上連結，每行一個",
     "video": "影片",
     "videoInfo": "影片資訊",
     "videoInfoUpdated": "影片資訊已更新",
@@ -267,10 +280,7 @@
     "cookiesSetupKeyring": "此 Linux 版本無法讀取 Chrome Cookies。請改用 Firefox，或匯入 Cookies 檔。",
     "cookiesSetupStale": "目前 Cookies 可能已過期或被攔截。請重新登入後再試。",
     "cookiesSetupRetry": "重試下載",
-    "cookiesSetupDone": "完成",
-    "pause": "暫停",
-    "paused": "已暫停",
-    "resume": "繼續"
+    "cookiesSetupDone": "完成"
   },
   "error": {
     "title": "發生錯誤",
@@ -292,6 +302,7 @@
     "helpText": "若此錯誤持續，請複製上方的錯誤報告並與支援團隊分享。聯絡資訊可在「關於」頁面找到。"
   },
   "errors": {
+    "batchRequiresOneClick": "開啟一鍵下載，即可一次加入多個連結",
     "clickToCopy": "點擊複製詳情",
     "clipboardEmpty": "剪貼簿為空",
     "downloadFailed": "下載失敗",
@@ -349,6 +360,7 @@
     "select": "選取",
     "selectAll": "全選",
     "selectVisible": "選取可見項目",
+    "moreActions": "更多操作",
     "selectItem": "選取項目",
     "selectedCount": "已選取 {{count}} 項",
     "selectionSummary": "已選取可見項目 {{selected}} / {{total}}",
@@ -449,6 +461,87 @@
     "fetchingInfo": "正在取得播放清單資訊..."
   },
   "settings": {
+    "account": {
+      "copyInviteLink": "複製邀請連結",
+      "giftHistoryCredits": "點數",
+      "giftHistoryDate": "日期",
+      "giftHistoryExpired": "已於 {{date}} 過期",
+      "giftHistoryExpires": "過期",
+      "giftHistoryReason": "原因",
+      "giftHistoryTitle": "贈送點數記錄",
+      "giftReasons": {
+        "admin": "管理員贈送",
+        "invite_invitee": "透過 {{name}} 的邀請註冊",
+        "invite_inviter": "{{name}} 透過你的邀請註冊",
+        "welcome": "歡迎點數"
+      },
+      "inviteCopied": "已複製",
+      "inviteCreditsEarned": "獲得點數",
+      "inviteDescription": "分享邀請連結。新使用者註冊後，雙方各獲得 20K 點數。",
+      "inviteLimitedBadge": "限時活動",
+      "inviteTitle": "邀請好友",
+      "invitedColumnName": "使用者",
+      "invitedListTitle": "已邀請使用者",
+      "invitedUsers": "邀請人數",
+      "loadMore": "載入更多",
+      "creditsDescription": "用於 VidBee Cloud 的轉寫與提示詞。",
+      "creditsError": "無法載入 AI 點數。",
+      "creditsLoading": "正在載入 AI 點數…",
+      "creditsRemaining": "剩餘 {{remaining}}",
+      "creditsTitle": "AI 點數",
+      "creditsTooltipExpiring": "{{credits}} 將在 1 個月內過期",
+      "creditsTooltipRemaining": "剩餘 {{credits}}",
+      "creditsTooltipUsed": "已使用 {{used}}",
+      "creditsUsage": "已使用 {{used}} / {{total}}",
+      "grantedCredits": "贈送點數",
+      "purchasedCredits": "儲值點數",
+      "description": "使用 GitHub 登入以連結你的 VidBee 帳戶。",
+      "error": "無法完成身分驗證，請再試一次。",
+      "loading": "正在檢查帳戶…",
+      "signedOut": "尚未登入",
+      "signIn": "使用 GitHub 繼續",
+      "signingIn": "正在開啟 GitHub…",
+      "signOut": "登出",
+      "signingOut": "正在登出…",
+      "tab": "帳戶",
+      "creditsAvailableAmount": "可用 {{credits}}",
+      "creditsReservedAmount": "預占 {{credits}}",
+      "creditsReservedHelp": "為執行中的任務或用量核對暫時預占，結算後釋放未使用的積分。",
+      "creditsInterruptedAmount": "中斷任務已扣 {{credits}}",
+      "creditsInterruptedHelp": "已包含在已用積分中，並非額外扣費。這是失敗、取消或逾時的 AI 提示詞任務已結算的用量。",
+      "creditsRefresh": "重新整理餘額",
+      "creditsTopUp": "儲值點數",
+      "creditsTopUpError": "無法開啟價格頁面，請重試。",
+      "creditsStale": "餘額更新失敗，目前顯示的數值可能不是最新的。",
+      "creditsReviewAmount": "預占積分中有 {{credits}} 正在核對",
+      "reservationTitle": "預占任務",
+      "reservationHelp": "系統每分鐘檢查過期預占。5 分鐘核對期結束後，於下一次檢查時釋放無法確認的部分。",
+      "reservationTask": "AI 提示詞任務",
+      "reservationElapsed": "{{minutes}} 分鐘前開始",
+      "reservationActivity": "最近進展：{{time}}",
+      "reservationHeartbeat": "最近連線：{{time}}",
+      "reservationDeadline": "任務截止：{{time}}",
+      "reservationReviewDeadline": "核對截止：{{time}}",
+      "reservationReview": "正在核對用量",
+      "reservationCancel": "取消任務",
+      "reservationCancelling": "正在取消…",
+      "reservationUnavailable": "任務明細更新失敗。",
+      "reservationCancelError": "無法取消此任務，請重新整理後再試。",
+      "creditHistoryTitle": "積分明細",
+      "creditHistoryHelp": "依已確認的用量扣費，無法確認的用量不扣費。退款已計入可用餘額。",
+      "creditHistoryError": "積分明細重新整理失敗，已顯示的紀錄可能不是最新狀態。",
+      "creditHistoryEmpty": "尚無積分消費紀錄。",
+      "creditHistoryAmount": "{{credits}} 積分",
+      "creditHistoryTokens": "輸入 {{input}} · 輸出 {{output}} token",
+      "creditHistoryRefunded": "已退回 {{credits}} 積分",
+      "creditHistoryUnverified": "無法確認用量，本次未扣除積分。",
+      "creditHistoryNoCharge": "未扣費",
+      "creditHistoryCache": "快取結果",
+      "creditHistoryVerified": "已確認用量",
+      "creditHistoryRecorded": "已記帳",
+      "creditHistoryInterrupted": "已中斷",
+      "creditsUsedShare": "{{percent}} used"
+    },
     "aboutTab": "關於",
     "advanced": "進階",
     "cookiesTab": "Cookies",
@@ -593,7 +686,12 @@
     "title": "設定",
     "tray": {
       "quit": "結束",
-      "showHome": "顯示首頁"
+      "showHome": "顯示首頁",
+      "next": "Next",
+      "openDevTools": "Open DevTools",
+      "pause": "Pause",
+      "play": "Play",
+      "previous": "Previous"
     },
     "video": "影片偏好",
     "oneClickContainer": "容器格式",
@@ -719,6 +817,15 @@
     "promptsTab": "提示詞",
     "transcriptionTab": "轉寫",
     "ai": {
+      "ownProvider": "使用自己的供應商",
+      "ownProviderDescription": "進階：連接自己的模型或帳單。",
+      "recommended": "推薦",
+      "signInForCloud": "登入",
+      "useVidbeeCloud": "使用 VidBee Cloud",
+      "vidbeeCloud": "VidBee Cloud",
+      "vidbeeCloudDescription": "可立即使用，內含 50K AI 點數。無需 API 金鑰或供應商設定。",
+      "vidbeeCloudPrivacy": "只有在執行 AI 操作時才會傳送逐字稿內容。",
+      "vidbeeCloudSection": "託管服務",
       "allServices": "全部服務",
       "configured": "已設定",
       "useProvider": "使用",
@@ -766,9 +873,24 @@
         "ollama": "Ollama",
         "openai": "OpenAI",
         "openrouter": "OpenRouter",
-        "xai": "xAI"
+        "xai": "xAI",
+        "alibaba": "Alibaba Cloud",
+        "fireworks": "Fireworks",
+        "minimax": "MiniMax",
+        "mistral": "Mistral",
+        "moonshot": "Moonshot",
+        "novita": "Novita",
+        "ppio": "PPIO",
+        "siliconflow": "SiliconFlow",
+        "stepfun": "StepFun",
+        "together": "Together",
+        "volcengine": "Volcengine",
+        "zhipu": "Zhipu"
       },
       "presetPrompts": {
+        "overview": {
+          "title": "概覽"
+        },
         "bullet-points": {
           "title": "重點列表"
         },
@@ -790,7 +912,11 @@
         "translate": {
           "title": "翻譯"
         }
-      }
+      },
+      "createModel": "Create “{{query}}”",
+      "noModelFound": "No model found.",
+      "allModelsSelected": "列出的模型都已新增。",
+      "loadingModels": "正在從服務商載入模型…"
     },
     "cookiesSetup": {
       "statusNotConfigured": "尚未設定",
@@ -833,7 +959,25 @@
       "fileExportExtension": "Chrome / Edge 擴充功能",
       "checking": "正在檢查 Cookies…",
       "applied": "Cookies 已更新",
-      "profileMissingDb": "這個 Firefox 設定檔沒有 Cookies 資料庫。請先開啟一次 Firefox，然後再試。"
+      "profileMissingDb": "這個 Firefox 設定檔沒有 Cookies 資料庫。請先開啟一次 Firefox，然後再試。",
+      "statusUsingExtension": "Using {{browser}} extension",
+      "healthOkExtension": "The VidBee extension will send live cookies from {{browser}} for each download",
+      "healthEmptyExtension": "The extension is connected, but no supported login cookies were found. Sign in to the site in that browser",
+      "statusHeading": "Cookie status",
+      "methodRecommended": "Recommended",
+      "methodExtensionWhy": "Best option. Desktop uses live cookies for each download, including Chrome and Edge on Windows.",
+      "extensionTitle": "Browser extension",
+      "extensionDescription": "Install the VidBee extension so Desktop can use your live signed-in cookies when downloading",
+      "extensionConnected": "Connected",
+      "extensionDisconnected": "Not connected",
+      "extensionConnectedHint": "{{browser}} is connected. New downloads will use cookies from this browser",
+      "extensionDisconnectedHint": "Keep VidBee Desktop open, install the extension, then sign in to the site in that browser",
+      "extensionInstallChrome": "Add to Chrome",
+      "extensionInstallEdge": "Add to Edge",
+      "extensionInstallFirefox": "Add to Firefox",
+      "extensionInstallStep1": "Install the VidBee extension in Chrome, Edge, or Firefox",
+      "extensionInstallStep2": "Keep VidBee Desktop running so the extension can connect",
+      "extensionInstallStep3": "Sign in to YouTube, Bilibili, or other sites in that browser, then open the VidBee toolbar icon once"
     }
   },
   "subscriptions": {
@@ -949,12 +1093,17 @@
     }
   },
   "kernelPreparation": {
+    "copied": "已複製",
     "copying": "正在複製下載引擎…",
+    "copyLog": "複製日誌",
     "description": "VidBee 正在準備下載引擎，這只需要一點時間。",
     "errorDescription": "VidBee 無法準備可用的下載引擎。請檢查本機儲存空間的存取權限，然後再試一次。",
+    "errorDetails": "錯誤詳情",
     "errorTitle": "下載引擎無法使用",
     "finalizing": "正在完成設定…",
+    "missingError": "沒有記錄到詳細錯誤資訊。",
     "progressLabel": "下載引擎準備進度",
+    "reportIssue": "在 GitHub 上回報",
     "retry": "再試一次",
     "retrying": "正在重試…",
     "title": "正在準備 VidBee",
@@ -1057,6 +1206,7 @@
     "sourceSwitch": "文稿來源",
     "sourceCaptionNamed": "{{language}}字幕",
     "sourceCaptionAutoNamed": "{{language}}智慧字幕",
+    "asrIdle": "如果對目前字幕效果不太滿意，可以用本機轉寫重新產生一份文稿。",
     "noSpeech": "無語音",
     "noSpeechDetail": "未在此檔案中偵測到語音。你仍可以強制完整轉寫。",
     "error": "轉稿異常",
@@ -1090,6 +1240,23 @@
     "followResume": "回到正在播放的位置",
     "title": "文稿",
     "ready": "文稿已完成",
+    "listLabel": {
+      "subtitles": "字幕",
+      "transcribed": "轉寫",
+      "downloaded": "下載"
+    },
+    "listHint": {
+      "queued": "正在排隊轉寫，空出位置後就會開始。",
+      "retrySoon": "轉寫失敗了，稍後會自動重試。",
+      "ready": "轉寫字幕已就緒。點擊這一行即可打開。",
+      "captions": "來自影片自帶字幕。點擊這一行即可打開。",
+      "cancelled": "轉寫已取消。",
+      "subtitlesDownloaded": "已儲存字幕檔（{{languages}}）。",
+      "subtitlesDownloadedUnknown": "已儲存字幕檔。",
+      "subtitlesUnavailable": "這個影片沒有可下載的字幕軌。",
+      "subtitlesAuth": "登入後再重試，才能下載字幕。",
+      "subtitlesFailed": "字幕下載失敗。"
+    },
     "copy": "複製文稿",
     "copied": "文稿已複製",
     "copyFailed": "無法複製文稿。",
@@ -1102,6 +1269,9 @@
     "captionDelete": "刪除",
     "captionDeleteSelected": "刪除所選",
     "captionDeleted": "已刪除 {{count}} 條文稿",
+    "captionDeleteConfirmTitle": "刪除所選文稿？",
+    "captionDeleteConfirmDescription": "將從逐字稿中永久刪除 {{count}} 條文稿。",
+    "captionDeleteConfirmCancel": "取消",
     "captionSaveFailed": "無法儲存文稿。",
     "captionPlaceholder": "輸入文稿內容",
     "captionSpeaker": "說話人",
@@ -1173,7 +1343,12 @@
       "segments": "片段",
       "createdAt": "轉寫時間",
       "empty": "尚無詳細資訊。",
-      "openUrl": "開啟來源網址"
+      "openUrl": "開啟來源網址",
+      "group": {
+        "media": "媒體",
+        "file": "檔案",
+        "transcript": "文稿"
+      }
     },
     "speakingShare": "{{percent}}%",
     "seekSpeaker": "跳轉到 {{name}}",
@@ -1210,11 +1385,22 @@
       "volumePercent": "{{percent}}%",
       "fullscreen": "全螢幕播放",
       "fullscreenExit": "退出全螢幕",
-      "resumed": "已從 {{time}} 繼續播放",
-      "startOver": "從頭播放",
       "nowPlaying": "正在播放",
-      "closeBar": "關閉播放器",
-      "openTranscript": "返回逐字稿"
+      "openTranscript": "返回逐字稿",
+      "playlist": {
+        "title": "播放列表",
+        "open": "開啟播放列表",
+        "count": "{{count}} 個項目",
+        "empty": "播放列表是空的",
+        "emptyHint": "播放下載項目，或從右鍵選單加入。",
+        "add": "加入播放列表",
+        "addedCount": "已將 {{count}} 項加入播放列表",
+        "remove": "從播放列表移除",
+        "moveUp": "向上移動",
+        "moveDown": "向下移動",
+        "drag": "拖曳以重新排序",
+        "more": "播放列表項目操作"
+      }
     },
     "qualityHint": "效果不佳？",
     "qualityHintDetail": "將切換到該模型（如需會自動下載）並重新轉寫。可以離開此頁。當前文稿會保留為歷史。",
@@ -1234,6 +1420,8 @@
     "promptShare": "分享圖片",
     "promptShareTitle": "分享圖片",
     "promptShareDownload": "下載",
+    "promptShareDownloadFull": "完整長圖",
+    "promptShareDownloadSplit": "分段圖片（編號存入資料夾）",
     "promptShareNative": "分享",
     "promptSharing": "正在產生圖片…",
     "promptShared": "分享圖已複製",
@@ -1247,32 +1435,61 @@
     "promptOutput": "提示詞結果",
     "promptScrollToEnd": "跳到最新",
     "promptCopied": "已複製",
+    "promptCloudGenerated": "由 VidBee Cloud 產生",
     "promptNoProvider": "請先在設定中設定 AI 服務商，才能執行此提示詞。",
     "promptOpenSettings": "開啟服務商設定",
     "promptEmpty": "結果會顯示在這裡。",
+    "overviewChapters": "章節",
+    "overviewQuotes": "金句",
+    "promptRetrying": "生成中斷，正在重試 {{attempt}}/{{maxAttempts}}…",
+    "promptWaiting": "等待模型回應 · 已等待 {{seconds}} 秒",
     "promptRunning": "正在產生…",
     "promptThinking": "思考過程",
     "promptThinkingFor": "已思考 {{seconds}} 秒",
     "promptThoughtFor": "思考了 {{seconds}} 秒",
     "promptAborted": "已停止",
+    "promptTabCompleted": "已完成",
+    "promptTabError": "異常",
     "promptNoTranscript": "需要先有文稿才能執行此提示詞。",
+    "promptWaitForTranscript": "轉寫完成後即可執行此提示。",
+    "promptRunWhenReady": "完成後執行",
+    "promptWaitingToRun": "正在等待轉寫…",
     "promptTryAgain": "再試一次",
     "promptLoading": "正在載入 AI 設定…",
     "promptGuide": {
+      "interrupted": "AI 回覆在完成前中斷了。",
+      "creditsExhausted": "此帳戶的 AI 點數不足。",
+      "signInRequired": "登入 VidBee Cloud 即可立刻免費使用問 AI。",
       "noProvider": "尚未啟用 AI 服務商，因此無法執行這個提示詞。",
       "missingApiKey": "目前服務商尚未填寫 API 金鑰。",
       "missingModel": "目前服務商尚未填寫模型 ID。",
       "unknownPrompt": "這個提示詞已無法使用。",
       "emptyTranscript": "需要先有完整文稿才能執行這個提示詞。",
       "auth": "服務商拒絕了請求。API 金鑰或帳號很可能無效。",
+      "authCloud": "VidBee Cloud 拒絕了請求。登入狀態可能已過期。",
       "network": "無法連接到服務商。",
+      "networkCloud": "無法連線到 VidBee Cloud。",
       "emptyOutput": "服務商結束了請求，但沒有回傳任何文字。",
-      "unknown": "提示詞未能執行。"
+      "emptyOutputCloud": "VidBee Cloud 結束了請求，但沒有回傳任何文字。",
+      "unknown": "提示詞未能執行。",
+      "unknownCloud": "VidBee Cloud 未能完成這個提示。",
+      "serviceErrorCloud": "VidBee Cloud's AI service rejected this request."
     },
     "promptErrorDetails": "錯誤詳情",
     "promptWhatToDo": "可以這樣處理",
     "promptUsingProvider": "目前服務商：{{name}}",
+    "promptCreditsByok": "也可以<byok>使用自己的 API Key</byok>。",
     "promptSolutions": {
+      "creditsExhausted": {
+        "s1": "開啟「帳戶」查看剩餘點數。",
+        "s2": "邀請新使用者以獲得更多點數。",
+        "s3": "點數加入後再次執行提示。"
+      },
+      "signInRequired": {
+        "s1": "開啟「設定」→「Providers」。",
+        "s2": "在 VidBee Cloud 下使用 GitHub 登入。",
+        "s3": "再次執行提示。"
+      },
       "noProvider": {
         "s1": "打開設定 → 服務商。",
         "s2": "新增一個服務，儲存 API 金鑰和模型 ID，然後點「使用」。",
@@ -1301,22 +1518,78 @@
         "s2": "確認這個金鑰有額度，並且有權限呼叫該模型。",
         "s3": "如果是自訂接口，確認它接受這把金鑰。"
       },
+      "authCloud": {
+        "s1": "開啟「帳戶」，確認仍然處於登入狀態。",
+        "s2": "如果登入已過期，請重新登入。",
+        "s3": "然後再執行一次提示。"
+      },
       "network": {
         "s1": "檢查網路連線，以及是否設定了代理。",
         "s2": "自訂服務商請確認 Base URL 可存取，必要時包含 /v1。",
         "s3": "如果這個主機不可用，換一個服務商。"
+      },
+      "networkCloud": {
+        "s1": "檢查網路連線。",
+        "s2": "開啟「帳戶」，確認仍然處於登入狀態。",
+        "s3": "稍後再試。如果一直失敗，VidBee Cloud 可能暫時無法使用。"
       },
       "emptyOutput": {
         "s1": "打開設定 → 服務商，確認模型 ID 對該服務有效。",
         "s2": "如果是自訂接口，檢查 Base URL、API 金鑰，以及模型是否已部署。",
         "s3": "查看下面的錯誤詳情，然後重試或換服務商。"
       },
+      "emptyOutputCloud": {
+        "s1": "再試一次。回覆可能被中途切斷。",
+        "s2": "如果一直失敗，開啟「帳戶」，確認仍然登入並且還有點數。"
+      },
       "unknown": {
         "s1": "先看下面的錯誤詳情。",
         "s2": "打開設定 → 服務商，核對 API 金鑰、模型 ID 和 Base URL。",
         "s3": "再試一次，或換一個服務商。"
+      },
+      "unknownCloud": {
+        "s1": "先看下面的錯誤詳情。",
+        "s2": "稍後再試。連線中斷時，Cloud 回覆可能停在半路。",
+        "s3": "如果一直失敗，開啟「帳戶」，確認仍然登入並且還有點數。"
       }
-    }
+    },
+    "promptDislike": "踩",
+    "promptFeedbackSaved": "已儲存回饋",
+    "promptFeedbackFailed": "無法儲存回饋，請重試。",
+    "promptHistory": "History",
+    "promptHistoryClose": "Close history",
+    "promptHistoryNew": "New chat",
+    "promptHistoryChat": "Chat",
+    "promptHistoryDescription": "Agent conversations from every video",
+    "promptHistoryEmpty": "No conversations yet",
+    "promptHistoryToday": "Today",
+    "promptHistoryYesterday": "Yesterday",
+    "promptHistoryMore": "Conversation actions",
+    "promptHistoryDelete": "Delete",
+    "promptHistoryDeleteTitle": "Delete this conversation?",
+    "promptHistoryDeleteDescription": "This removes the conversation. The video and transcript stay.",
+    "promptHistoryDeleteCancel": "Cancel",
+    "promptHistoryUntitled": "Untitled",
+    "promptTabClose": "Close tab",
+    "promptHistoryRename": "Rename",
+    "promptHistoryRenameTitle": "Rename conversation",
+    "promptHistoryRenameDescription": "Choose a short title for this chat tab.",
+    "promptHistoryRenameSave": "Save",
+    "promptHistoryRenamePlaceholder": "Conversation title",
+    "promptMore": "More actions",
+    "promptExportPdf": "Export as PDF",
+    "promptExportMarkdown": "Export as Markdown",
+    "promptExportSaved": "Exported",
+    "promptExportFailed": "Could not export.",
+    "promptExportEmpty": "Nothing to export.",
+    "promptShareSplitCount": "Number of images (optional)",
+    "promptShareSplitCountAuto": "Automatic",
+    "promptShareSplitCountHint": "Leave blank for automatic splitting. Fewer images may be saved to keep content intact.",
+    "thinkingSecond": "{{count}} second",
+    "thinkingSeconds": "{{count}} seconds",
+    "thinkingMinute": "{{count}} minute",
+    "thinkingMinutes": "{{count}} minutes",
+    "promptCloudServiceErrorDetail": "Your transcript is saved. This service issue needs to be resolved before you can generate the response."
   },
   "whatsNew": {
     "title": "新功能",
@@ -1340,5 +1613,131 @@
         "description": "把本機音訊或影片拖進逐字稿。可匯出文字、字幕，或燒錄到影片。"
       }
     }
+  },
+  "cloudCache": {
+    "title": "Cloud 結果快取",
+    "range": "期間（UTC）",
+    "hits": "命中",
+    "misses": "未命中",
+    "bypasses": "繞過",
+    "hitRate": "命中率",
+    "today": "今天",
+    "week": "近 7 天",
+    "month": "近 30 天",
+    "all": "累計"
+  },
+  "agentChat": {
+    "eventStream": "Event Stream",
+    "eventStatus": {
+      "running": "Running",
+      "completed": "Completed",
+      "error": "Failed"
+    },
+    "placeholder": "Ask a follow-up about this video…",
+    "send": "Send message",
+    "attachImages": "Attach images",
+    "removeImage": "Remove {{name}}",
+    "imageSelectionFailed": "Could not add these images. Select up to 10 PNG, JPEG or WebP images, each no larger than 20 MB.",
+    "imageRemoveFailed": "Could not remove this image. Try again.",
+    "imagesNotSupported": "Choose a model that supports images, or remove the attachments to send this message.",
+    "interrupted": "This response was interrupted when the app closed. Retry to continue.",
+    "imported": "Imported from your previous summary",
+    "previousVersion": "Previous reply version",
+    "nextVersion": "Next reply version",
+    "toolCount": "Tool calls: {{count}}",
+    "saveAttachment": "Save attachment",
+    "attachmentUnavailable": "This attachment is unavailable. Try generating it again.",
+    "frame": "Frame at {{time}}",
+    "clip": "Clip at {{time}}",
+    "downloading": "Downloading video",
+    "contextWindow": "Context window (tokens)",
+    "contextWindowHint": "Enter the context window if the model is not in the catalog.",
+    "vision": "Image input",
+    "toolCalling": "Tool calling",
+    "reasoning": "Thinking",
+    "thinkingOnly": "Thinking only",
+    "allowDisableThinking": "Allow turning thinking off",
+    "thinkingCapabilitiesHint": "目前只會顯示思考開關，不會顯示強度選擇；如果此模型支援強度調節，請在下方選擇可用檔位。",
+    "defaultThinkingLevel": "預設思考強度",
+    "defaultThinkingAuto": "自動（使用請求層預設值）",
+    "supportedThinkingLevels": "支援的思考強度",
+    "inputTokens": "輸入",
+    "outputTokens": "輸出",
+    "providerDefault": "使用供應商預設值",
+    "automatic": "Use model defaults",
+    "enabled": "Supported",
+    "disabled": "Not supported",
+    "visionSelect": "Select…",
+    "catalogFilled": "You can change these catalog values.",
+    "catalogMissing": "This model is not in the catalog. Enter the context window and capabilities.",
+    "catalogLooking": "Looking up this model id in the catalog…",
+    "catalogMatched": "Matched {{name}}. Context window and capabilities were filled in.",
+    "catalogBadge": "Catalog",
+    "tools": {
+      "get_video_info": "Reading video information",
+      "read_transcript": "Reading transcript",
+      "search_transcript": "Searching transcript",
+      "capture_frames": "Capturing video frames",
+      "create_clip": "Creating video clip",
+      "read_history": "Reading conversation history",
+      "search_history": "Searching conversation history",
+      "read_notes": "Reading working notes",
+      "write_notes": "Saving working notes",
+      "read_artifact": "Reviewing saved image",
+      "rename_conversation": "Renaming conversation",
+      "write_article": "Writing article",
+      "review_article": "Reviewing article"
+    },
+    "modelCapabilities": "Model capabilities",
+    "runDurationRunning": "Working · {{duration}}",
+    "runDuration": "Elapsed: {{duration}}",
+    "durationSeconds": "{{seconds}}s",
+    "durationMinutes": "{{minutes}}m {{seconds}}s",
+    "contextStatus": {
+      "compacting": "Organizing conversation context",
+      "recovering": "Recovering conversation context",
+      "reviewing": "Checking source coverage",
+      "writing": "Writing and checking source sections"
+    },
+    "thinking": {
+      "label": "Thinking level",
+      "off": "Off",
+      "minimal": "Minimal",
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "xhigh": "Extra high",
+      "max": "Maximum"
+    },
+    "models": "模型",
+    "model": "模型",
+    "reasoningEffort": "思考強度",
+    "cloud": "Cloud",
+    "searchModels": "搜尋模型…",
+    "noModels": "沒有符合的模型。",
+    "effort": "思考強度 {{level}}",
+    "faster": "更快",
+    "smarter": "更強",
+    "retrying": "Connection interrupted. Retrying…",
+    "defaultThinkingLevel": "Default thinking level",
+    "defaultThinkingAuto": "Auto (use request default)",
+    "supportedThinkingLevels": "Supported thinking levels",
+    "inputTokens": "Input",
+    "outputTokens": "Output",
+    "providerDefault": "Use provider default"
+  },
+  "web": {
+    "saveToThisComputer": "Save to this computer",
+    "copyServerPath": "Copy server path",
+    "serverPathCopied": "Server path copied",
+    "downloadPathDescription": "Where the VidBee server saves files. In Docker this is usually /data/downloads.",
+    "autoTranscribeAfterDownloadDescription": "When a download finishes, start a transcript on the VidBee server. Already queued jobs keep running if you turn this off.",
+    "maxConcurrentTranscriptionsDescription": "How many transcripts can run at once on the server.",
+    "transcriptModelsDescription": "Speech models are stored on the VidBee server. The first transcript downloads them there.",
+    "cookiesFileOnly": "The server cannot read browsers on your computer. Export a Netscape cookies.txt and upload it.",
+    "storageTitle": "Server storage",
+    "storageDownloadDir": "Download directory",
+    "storageDataDir": "Data directory",
+    "storageDbFile": "SQLite database"
   }
 }

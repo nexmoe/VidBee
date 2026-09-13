@@ -1,3 +1,4 @@
+import { AccountPanel } from '@renderer/components/settings/AccountPanel'
 import { AiPromptsPanel } from '@renderer/components/settings/AiPromptsPanel'
 import { AiProvidersPanel } from '@renderer/components/settings/AiProvidersPanel'
 import { AsrModelPicker } from '@renderer/components/settings/AsrModelPicker'
@@ -189,7 +190,10 @@ export function Settings() {
   }
 
   const activeNavLabelKey =
-    SETTINGS_NAV_ITEMS.find((item) => item.value === activeTab)?.labelKey ?? 'settings.general'
+    activeTab === 'account'
+      ? 'settings.account.tab'
+      : (SETTINGS_NAV_ITEMS.find((item) => item.value === activeTab)?.labelKey ??
+        'settings.general')
 
   return (
     <div className="flex h-full min-h-0 bg-background">
@@ -213,6 +217,9 @@ export function Settings() {
               <h2 className="font-semibold text-2xl leading-tight">{t(activeNavLabelKey)}</h2>
             </div>
             <Tabs onValueChange={handleTabChange} value={activeTab}>
+              <TabPanel className="space-y-4" value="account">
+                <AccountPanel />
+              </TabPanel>
               <TabPanel className="space-y-4" value="general">
                 <ItemGroup>
                   <Item variant="muted">

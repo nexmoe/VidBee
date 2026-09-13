@@ -1,6 +1,10 @@
 import type { Api, Model } from '@earendil-works/pi-ai'
 import { aiProviderNeedsApiKey, aiProviderRequiresBaseUrl } from '../../shared/ai-presets'
-import { classifyAiPromptError } from '../../shared/ai-run'
+import {
+  classifyAiPromptError,
+  flattenErrorMessage,
+  formatAiPromptError
+} from '../../shared/ai-run'
 import type {
   AiPromptErrorCode,
   AiProviderTestResult,
@@ -85,7 +89,14 @@ export const testProviderConnection = async (
   const model = resolvePiModel({
     presetId: input.presetId,
     modelId,
-    baseUrl: input.baseUrl
+    baseUrl: input.baseUrl,
+    contextWindow: input.contextWindow,
+    vision: input.vision,
+    reasoning: input.reasoning,
+    thinkingOnly: input.thinkingOnly,
+    thinkingLevels: input.thinkingLevels,
+    allowDisableThinking: input.allowDisableThinking,
+    maxTokens: input.maxTokens
   })
   const agent = createAgent({ systemPrompt: TEST_SYSTEM_PROMPT, model, apiKey })
   log.info('ai provider test started', { presetId: input.presetId, modelId })
@@ -93,7 +104,7 @@ export const testProviderConnection = async (
   try {
     const result = await waitForTestReply(agent, timeoutMs)
     if (result.error || !result.text.trim()) {
-      const error = result.error || 'The model returned no text'
+      const error = formatAiPromptError(result.error || 'The model returned no text')
       const errorCode = classifyAiPromptError(result.error, !result.text.trim())
       log.warn('ai provider test failed', { presetId: input.presetId, modelId, error, errorCode })
       return { ok: false, text: result.text, error, errorCode }
@@ -101,15 +112,16 @@ export const testProviderConnection = async (
     log.info('ai provider test completed', { presetId: input.presetId, modelId })
     return { ok: true, text: result.text.trim(), error: null, errorCode: null }
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Prompt failed'
+    const message = flattenErrorMessage(error) || 'Prompt failed'
     const errorCode = classifyAiPromptError(message)
+    const errorText = formatAiPromptError(message)
     log.warn('ai provider test failed', {
       presetId: input.presetId,
       modelId,
-      error: message,
+      error: errorText,
       errorCode
     })
-    return fail(message, errorCode)
+    return fail(errorText, errorCode)
   }
 }
 

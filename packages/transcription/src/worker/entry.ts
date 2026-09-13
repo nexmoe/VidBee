@@ -18,16 +18,53 @@ import { parseSpeakerCount } from '../speaker-count'
 import type { TranscriptionStage } from '../types'
 import {
   parseMessage,
+  setStdoutBlocking,
   WORKER_RESULT_FILE,
   type WorkerInbound,
   type WorkerOutbound,
   writeMessageSync
 } from './protocol'
 
+setStdoutBlocking()
+
 const send = (message: WorkerOutbound): void => {
   // Blocking write so Electron-as-Node pipe buffering cannot starve the watchdog.
-  // Retries short writes: a multi-MB result can otherwise lose its trailing newline.
+  // Retries short writes and EAGAIN: a full pipe otherwise kills long transcripts.
   writeMessageSync(1, message)
+}
+
+interface ProbeRecognizer {
+  createStream: () => {
+    acceptWaveform: (input: { sampleRate: number; samples: Float32Array }) => void
+    inputFinished?: () => void
+  }
+  decode: (stream: unknown) => void
+  getResult: (stream: unknown) => { text?: string }
+}
+
+/**
+ * Generate deterministic audio that exercises the selected ONNX execution provider.
+ */
+const probeSamples = (durationSeconds: number): Float32Array => {
+  const samples = new Float32Array(Math.round(16_000 * durationSeconds))
+  for (let index = 0; index < samples.length; index += 1) {
+    samples[index] = Math.sin((2 * Math.PI * 440 * index) / 16_000) * 0.05
+  }
+  return samples
+}
+
+/**
+ * Decode one synthetic clip and return its inference duration.
+ */
+const decodeProbe = (recognizer: ProbeRecognizer, samples: Float32Array): number => {
+  const stream = recognizer.createStream()
+  stream.acceptWaveform({ sampleRate: 16_000, samples })
+  stream.inputFinished?.()
+  const startedAt = performance.now()
+  recognizer.decode(stream)
+  const durationMs = performance.now() - startedAt
+  readAsrResult(recognizer, stream)
+  return durationMs
 }
 
 /**
@@ -83,34 +120,31 @@ const handleProbe = async (message: Extract<WorkerInbound, { type: 'probe' }>): 
     // Native addon — resolved only inside the isolated worker.
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const addon = require('sherpa-onnx-node') as {
-      OfflineRecognizer: new (
-        config: Record<string, unknown>
-      ) => {
-        createStream: () => {
-          acceptWaveform: (input: { sampleRate: number; samples: Float32Array }) => void
-        }
-        decode: (stream: unknown) => void
-        getResult: (stream: unknown) => { text?: string }
-      }
+      OfflineRecognizer: new (config: Record<string, unknown>) => ProbeRecognizer
     }
     const models = new ModelManager({ modelsDir: message.modelsDir })
-    for (const tier of ASR_TIER_IDS) {
-      const config = tryRecognizerConfig(models, tier, 1)
+    const provider = message.provider ?? 'cpu'
+    const tiers = message.asrTier ? [message.asrTier] : ASR_TIER_IDS
+    let probed = false
+    let durationMs: number | undefined
+    for (const tier of tiers) {
+      const config = tryRecognizerConfig(models, tier, 1, provider, provider === 'cpu' ? 0 : 1)
       if (!config) {
         continue
       }
       const recognizer = new addon.OfflineRecognizer(config)
-      const samples = new Float32Array(4800)
-      for (let i = 0; i < samples.length; i += 1) {
-        samples[i] = Math.sin((2 * Math.PI * 440 * i) / 16_000) * 0.05
+      probed = true
+      if (message.benchmark) {
+        decodeProbe(recognizer, probeSamples(0.2))
       }
-      const stream = recognizer.createStream()
-      stream.acceptWaveform({ sampleRate: 16_000, samples })
-      recognizer.decode(stream)
-      readAsrResult(recognizer, stream)
+      durationMs = decodeProbe(recognizer, probeSamples(message.benchmark ? 1 : 0.3))
       break
     }
-    send({ type: 'probe-ok' })
+    if (!(probed || message.asrTier === undefined)) {
+      send({ type: 'error', message: `provider probe model unavailable: ${message.asrTier}` })
+      return
+    }
+    send({ type: 'probe-ok', provider, durationMs })
   } catch (err) {
     send({ type: 'error', message: err instanceof Error ? err.message : String(err) })
   }
@@ -125,6 +159,7 @@ const handleStart = async (
     send({ type: 'progress', stage, percent: null, message: 'heartbeat' })
   }, 10_000)
   try {
+    send({ type: 'log', stream: 'stdout', line: `compute.provider=${message.provider}` })
     send({ type: 'progress', stage: 'preparing-audio', percent: 0, message: 'extract' })
     ensureChunkManifest({
       workDir: message.workDir,
@@ -156,7 +191,7 @@ const handleStart = async (
     const pipeline: TranscriptionPipeline =
       message.backend === 'fake'
         ? new FakeTranscriptionPipeline()
-        : new SherpaTranscriptionPipeline({ models })
+        : new SherpaTranscriptionPipeline({ models, provider: message.provider })
     const result = await pipeline.run({
       sourceFilePath: message.sourceFilePath,
       wavPath: extracted.wavPath,

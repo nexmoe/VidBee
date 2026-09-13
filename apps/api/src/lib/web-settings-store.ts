@@ -1,19 +1,15 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import path from 'node:path'
 import { type DownloadRuntimeSettings, WebAppSettingsSchema } from '@vidbee/downloader-core'
 import { DEFAULT_SUBTITLE_LANGUAGES } from '@vidbee/downloader-core/subtitle-languages'
-
-const STORAGE_DIR = path.resolve(process.cwd(), '.data')
-const STORAGE_FILE = path.join(STORAGE_DIR, 'web-settings.json')
+import { apiDataDir, apiDefaultDownloadDir, apiSettingsFile } from './api-paths'
 
 const defaultWebSettings = WebAppSettingsSchema.parse({
-  downloadPath: '',
+  downloadPath: apiDefaultDownloadDir,
   maxConcurrentDownloads: 5,
   browserForCookies: 'none',
   cookiesPath: '',
   proxy: '',
   configPath: '',
-  betaProgram: false,
   language: 'en',
   theme: 'system',
   oneClickDownload: false,
@@ -53,11 +49,13 @@ class WebSettingsStore {
     this.initialized = true
 
     try {
-      const raw = await readFile(STORAGE_FILE, 'utf-8')
+      const raw = await readFile(apiSettingsFile, 'utf-8')
       const parsed = JSON.parse(raw)
       const result = WebAppSettingsSchema.safeParse(parsed)
       if (result.success) {
-        this.settings = result.data
+        this.settings = result.data.downloadPath.trim()
+          ? result.data
+          : { ...result.data, downloadPath: apiDefaultDownloadDir }
       }
     } catch {
       this.settings = defaultWebSettings
@@ -71,9 +69,12 @@ class WebSettingsStore {
 
   async set(nextSettings: WebAppSettings): Promise<WebAppSettings> {
     await this.ensureInitialized()
-    const validated = WebAppSettingsSchema.parse(nextSettings)
-    await mkdir(STORAGE_DIR, { recursive: true })
-    await writeFile(STORAGE_FILE, JSON.stringify(validated), 'utf-8')
+    const validated = WebAppSettingsSchema.parse({
+      ...nextSettings,
+      downloadPath: nextSettings.downloadPath.trim() || apiDefaultDownloadDir
+    })
+    await mkdir(apiDataDir, { recursive: true })
+    await writeFile(apiSettingsFile, JSON.stringify(validated), 'utf-8')
     this.settings = validated
     return this.settings
   }

@@ -22,6 +22,7 @@ import { ipcServices } from '@renderer/lib/ipc'
 import { logger } from '@renderer/lib/logger'
 import { withDesktopUtm } from '@renderer/lib/url'
 import { saveSettingAtom, settingsAtom } from '@renderer/store/settings'
+import type { ExtensionCookieConnection } from '@shared/extension-cookies'
 import {
   buildBrowserCookiesSetting,
   parseBrowserCookiesSetting
@@ -32,16 +33,13 @@ import {
   COOKIES_GUIDE_URL,
   type CookieBrowserId,
   type CookieHealth,
-  type CookieSetupRecommendation,
-  hasConfiguredCookieSettings,
-  type InstalledCookieBrowser,
   isWindowsBlockedCookieBrowser,
   listSelectableCookieBrowsers,
-  recommendCookieSetup,
-  unconfiguredCookieHealth
+  unconfiguredCookieHealth,
+  VIDBEE_EXTENSION_CHROME_URL
 } from '@vidbee/downloader-core/cookie-setup'
 import { useAtomValue, useSetAtom } from 'jotai'
-import { AlertTriangle, Cookie } from 'lucide-react'
+import { AlertTriangle, Cookie, Puzzle } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -97,6 +95,14 @@ const healthDescription = (health: CookieHealth, t: TranslateFn): string => {
   if (health.status === 'unconfigured') {
     return t('settings.cookiesSetup.statusNotConfiguredHint')
   }
+  if (health.source === 'extension') {
+    if (health.status === 'empty') {
+      return t('settings.cookiesSetup.healthEmptyExtension')
+    }
+    return t('settings.cookiesSetup.healthOkExtension', {
+      browser: browserLabel(health.browser ?? '', t)
+    })
+  }
   if (health.status === 'expired') {
     return t('settings.cookiesSetup.healthExpired')
   }
@@ -132,39 +138,6 @@ const healthDescription = (health: CookieHealth, t: TranslateFn): string => {
 }
 
 /**
- * Copy for the recommended setup path.
- *
- * @param recommendation Setup recommendation.
- * @param t i18n function.
- */
-const recommendationCopy = (
-  recommendation: CookieSetupRecommendation,
-  t: TranslateFn
-): { title: string; hint: string; action: string } => {
-  if (recommendation.method === 'browser' && recommendation.browser) {
-    const browser = browserLabel(recommendation.browser, t)
-    const hint =
-      recommendation.reason === 'windows-firefox'
-        ? t('settings.cookiesSetup.recommendedFirefoxHint')
-        : t('settings.cookiesSetup.recommendedUseBrowserHint', { browser })
-    return {
-      action: t('settings.cookiesSetup.useThisBrowser', { browser }),
-      hint,
-      title: t('settings.cookiesSetup.recommendedUseBrowser', { browser })
-    }
-  }
-  const hint =
-    recommendation.reason === 'windows-file'
-      ? t('settings.cookiesSetup.recommendedImportFileWindowsHint')
-      : t('settings.cookiesSetup.recommendedImportFileHint')
-  return {
-    action: t('settings.cookiesSetup.importFile'),
-    hint,
-    title: t('settings.cookiesSetup.recommendedImportFile')
-  }
-}
-
-/**
  * Guided cookies setup for Settings and the download-failure dialog.
  */
 export function CookiesSetupPanel({
@@ -175,38 +148,27 @@ export function CookiesSetupPanel({
   const settings = useAtomValue(settingsAtom)
   const saveSetting = useSetAtom(saveSettingAtom)
   const [platform, setPlatform] = useState(platformProp ?? '')
-  const [installedBrowsers, setInstalledBrowsers] = useState<InstalledCookieBrowser[]>([])
   const [health, setHealth] = useState<CookieHealth>(unconfiguredCookieHealth())
   const [healthLoading, setHealthLoading] = useState(false)
   const [profileValidation, setProfileValidation] = useState<{
     valid: boolean
     reason?: string
   }>({ valid: false })
+  const [connection, setConnection] = useState<ExtensionCookieConnection>({
+    connected: false,
+    sites: []
+  })
 
   const parsedBrowserCookies = parseBrowserCookiesSetting(settings.browserForCookies)
   const browserForCookiesValue = parsedBrowserCookies.browser
   const browserCookiesProfileValue = parsedBrowserCookies.profile
   const selectableBrowsers = useMemo(() => listSelectableCookieBrowsers(platform), [platform])
-  const hasCookieConfig = hasConfiguredCookieSettings(
-    settings.browserForCookies,
-    settings.cookiesPath
-  )
-  const recommendation = useMemo(
-    () => recommendCookieSetup({ installedBrowsers, platform }),
-    [installedBrowsers, platform]
-  )
-  const recommendedCopy = recommendationCopy(recommendation, t)
   const currentBrowserUnsupported =
     platform === 'win32' && isWindowsBlockedCookieBrowser(browserForCookiesValue)
-  const needsAttention =
-    !hasCookieConfig ||
-    currentBrowserUnsupported ||
-    health.status === 'invalid' ||
-    health.status === 'expired' ||
-    health.status === 'empty'
-  const showRecommended = needsAttention
   const cookiesPathValue = settings.cookiesPath ?? ''
   const hasBrowserProfileValue = browserCookiesProfileValue.trim().length > 0
+  const browserActive = health.source === 'browser'
+  const fileActive = health.source === 'file'
   const selectedBrowserValue = selectableBrowsers.includes(
     browserForCookiesValue as CookieBrowserId
   )
@@ -280,18 +242,33 @@ export function CookiesSetupPanel({
   }, [platformProp])
 
   useEffect(() => {
-    const loadInstalled = async () => {
-      try {
-        setInstalledBrowsers(await ipcServices.browserCookies.listInstalledBrowsers())
-      } catch (error) {
-        logger.error('[CookiesSetup] Failed to list installed browsers:', error)
-      }
-    }
-    void loadInstalled()
-  }, [])
+    void refreshHealth()
+  }, [refreshHealth])
 
   useEffect(() => {
-    void refreshHealth()
+    let active = true
+    let previousConnected: boolean | undefined
+    const tick = async (): Promise<void> => {
+      try {
+        const next = await ipcServices.browserCookies.getExtensionConnection()
+        if (!active) {
+          return
+        }
+        setConnection(next)
+        if (previousConnected !== undefined && previousConnected !== next.connected) {
+          void refreshHealth()
+        }
+        previousConnected = next.connected
+      } catch (error) {
+        logger.error('[CookiesSetup] Failed to read extension connection:', error)
+      }
+    }
+    void tick()
+    const timer = window.setInterval(() => void tick(), 2000)
+    return () => {
+      active = false
+      window.clearInterval(timer)
+    }
   }, [refreshHealth])
 
   useEffect(() => {
@@ -393,25 +370,6 @@ export function CookiesSetupPanel({
   }
 
   /**
-   * Run the primary recommended action.
-   */
-  const handleRecommendedAction = async (): Promise<void> => {
-    if (recommendation.method === 'browser' && recommendation.browser) {
-      await applyBrowser(recommendation.browser)
-      return
-    }
-    await handleSelectCookiesFile()
-  }
-
-  /**
-   * Clear both cookie sources.
-   */
-  const handleClear = async (): Promise<void> => {
-    await handleSettingChange('browserForCookies', 'none')
-    await handleSettingChange('cookiesPath', '')
-  }
-
-  /**
    * Open the cookies guide or a cookies-export extension page.
    *
    * @param url Destination URL.
@@ -462,25 +420,23 @@ export function CookiesSetupPanel({
     }
   }
 
-  const statusTitle =
-    health.source === 'browser' && health.browser
-      ? t('settings.cookiesSetup.statusUsingBrowser', {
-          browser: browserLabel(health.browser, t)
-        })
-      : health.source === 'file'
-        ? t('settings.cookiesSetup.statusUsingFile')
-        : t('settings.cookiesSetup.statusNotConfigured')
+  const healthBadge = healthLoading
+    ? t('settings.cookiesSetup.checking')
+    : healthBadgeLabel(health, t)
+  const extensionBadge = connection.connected
+    ? t('settings.cookiesSetup.extensionConnected')
+    : t('settings.cookiesSetup.extensionDisconnected')
 
   return (
     <div className="space-y-4">
       <ItemGroup>
-        <Item variant="muted">
+        <Item className="flex-col items-stretch" variant="muted">
           <ItemContent>
             <div className="flex flex-wrap items-center gap-2">
               <Cookie className="h-4 w-4 text-muted-foreground" />
-              <ItemTitle>{statusTitle}</ItemTitle>
+              <ItemTitle>{t('settings.cookiesSetup.statusHeading')}</ItemTitle>
               <Badge variant={health.status === 'ok' ? 'secondary' : 'outline'}>
-                {healthLoading ? t('settings.cookiesSetup.checking') : healthBadgeLabel(health, t)}
+                {healthBadge}
               </Badge>
             </div>
             <ItemDescription>{healthDescription(health, t)}</ItemDescription>
@@ -491,76 +447,67 @@ export function CookiesSetupPanel({
                 })}
               </ItemDescription>
             ) : null}
-          </ItemContent>
-          <ItemActions>
-            <div className="flex flex-wrap gap-2">
-              {health.reason === 'macos-files-permission' ? (
+            {health.reason === 'macos-files-permission' ? (
+              <div className="flex flex-wrap gap-2 pt-2">
                 <Button onClick={() => void handleOpenFilesSettings()} size="sm" variant="outline">
                   {t('download.cookiesSetupOpenFilesSettings')}
                 </Button>
-              ) : null}
-              {hasCookieConfig ? (
-                <Button onClick={() => void refreshHealth()} size="sm" variant="secondary">
-                  {t('settings.cookiesSetup.checkStatus')}
-                </Button>
-              ) : null}
-              {hasCookieConfig ? (
-                <Button onClick={() => void handleClear()} size="sm" variant="secondary">
-                  {t('settings.cookiesSetup.clearSetup')}
-                </Button>
-              ) : null}
+              </div>
+            ) : null}
+          </ItemContent>
+        </Item>
+        <ItemSeparator />
+        <Item className="flex-col items-stretch" variant="muted">
+          <ItemContent>
+            <p className="font-medium text-muted-foreground text-xs uppercase tracking-wider">
+              {t('settings.cookiesSetup.methodRecommended')}
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <Puzzle className="h-4 w-4 text-muted-foreground" />
+              <ItemTitle>{t('settings.cookiesSetup.extensionTitle')}</ItemTitle>
+              <Badge variant={connection.connected ? 'secondary' : 'outline'}>
+                {extensionBadge}
+              </Badge>
             </div>
-          </ItemActions>
+            <ItemDescription>
+              {connection.connected
+                ? t('settings.cookiesSetup.extensionConnectedHint', {
+                    browser: browserLabel(connection.browser ?? health.browser ?? '', t)
+                  })
+                : t('settings.cookiesSetup.methodExtensionWhy')}
+            </ItemDescription>
+            {connection.connected ? null : (
+              <div className="flex flex-wrap gap-2 pt-2">
+                <Button onClick={() => void handleOpenLink(VIDBEE_EXTENSION_CHROME_URL)} size="sm">
+                  {t('settings.cookiesSetup.extensionInstallChrome')}
+                </Button>
+              </div>
+            )}
+          </ItemContent>
         </Item>
       </ItemGroup>
 
-      {currentBrowserUnsupported ? (
-        <ItemGroup>
-          <Item variant="muted">
-            <ItemContent>
-              <ItemTitle className="text-destructive">
-                {t('settings.cookiesSetup.windowsUnsupportedCurrent', {
-                  browser: browserLabel(browserForCookiesValue, t)
-                })}
-              </ItemTitle>
-            </ItemContent>
-          </Item>
-        </ItemGroup>
-      ) : null}
-
-      {showRecommended ? (
-        <ItemGroup>
-          <Item variant="muted">
-            <ItemContent>
-              <p className="font-medium text-muted-foreground text-xs uppercase tracking-wider">
-                {t('settings.cookiesSetup.recommendedTitle')}
-              </p>
-              <ItemTitle>{recommendedCopy.title}</ItemTitle>
-              <ItemDescription>{recommendedCopy.hint}</ItemDescription>
-              {recommendation.method === 'file' ? (
-                <ul className="list-inside list-disc space-y-1 text-muted-foreground text-sm">
-                  <li>{t('settings.cookiesSetup.fileExportStep1')}</li>
-                  <li>{t('settings.cookiesSetup.fileExportStep2')}</li>
-                  <li>{t('settings.cookiesSetup.fileExportStep3')}</li>
-                </ul>
-              ) : null}
-            </ItemContent>
-            <ItemActions>
-              <Button onClick={() => void handleRecommendedAction()}>
-                {recommendedCopy.action}
-              </Button>
-            </ItemActions>
-          </Item>
-        </ItemGroup>
-      ) : null}
-
       <ItemGroup>
-        <Item variant="muted">
+        <Item className="flex-col items-stretch sm:flex-row sm:items-center" variant="muted">
           <ItemContent>
-            <ItemTitle>{t('settings.browserForCookies')}</ItemTitle>
+            <div className="flex flex-wrap items-center gap-2">
+              <ItemTitle>{t('settings.browserForCookies')}</ItemTitle>
+              {browserActive ? (
+                <Badge variant={health.status === 'ok' ? 'secondary' : 'outline'}>
+                  {healthBadge}
+                </Badge>
+              ) : null}
+            </div>
             <ItemDescription>{t('settings.browserForCookiesDescription')}</ItemDescription>
             {platform === 'win32' ? (
               <ItemDescription>{t('settings.browserForCookiesWindowsNote')}</ItemDescription>
+            ) : null}
+            {currentBrowserUnsupported ? (
+              <ItemDescription className="text-destructive">
+                {t('settings.cookiesSetup.windowsUnsupportedCurrent', {
+                  browser: browserLabel(browserForCookiesValue, t)
+                })}
+              </ItemDescription>
             ) : null}
           </ItemContent>
           <ItemActions>
@@ -632,9 +579,16 @@ export function CookiesSetupPanel({
       </ItemGroup>
 
       <ItemGroup>
-        <Item variant="muted">
+        <Item className="flex-col items-stretch" variant="muted">
           <ItemContent>
-            <ItemTitle>{t('settings.cookiesFile')}</ItemTitle>
+            <div className="flex flex-wrap items-center gap-2">
+              <ItemTitle>{t('settings.cookiesFile')}</ItemTitle>
+              {fileActive ? (
+                <Badge variant={health.status === 'ok' ? 'secondary' : 'outline'}>
+                  {healthBadge}
+                </Badge>
+              ) : null}
+            </div>
             <ItemDescription>
               {t('settings.cookiesSetup.recommendedImportFileHint')}
             </ItemDescription>
@@ -654,15 +608,21 @@ export function CookiesSetupPanel({
                 {t('settings.browserOptions.firefox')}
               </Button>
             </div>
-          </ItemContent>
-          <ItemActions>
-            <div className="flex w-full max-w-md gap-2">
+            <div className="flex w-full max-w-md gap-2 pt-2">
               <Input className="flex-1" readOnly value={cookiesPathValue} />
               <Button onClick={() => void handleSelectCookiesFile()}>
                 {t('settings.selectPath')}
               </Button>
+              {cookiesPathValue ? (
+                <Button
+                  onClick={() => void handleSettingChange('cookiesPath', '')}
+                  variant="secondary"
+                >
+                  {t('settings.clearCookiesFile')}
+                </Button>
+              ) : null}
             </div>
-          </ItemActions>
+          </ItemContent>
         </Item>
       </ItemGroup>
 

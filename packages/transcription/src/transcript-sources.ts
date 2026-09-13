@@ -80,9 +80,12 @@ export const buildTranscriptSources = (input: {
 /**
  * Pick the stored row that matches the source the user is viewing.
  *
+ * ASR without a finished transcript returns null so the idle empty state can
+ * show. Captions still fall back to the latest row when a language is missing.
+ *
  * @param selected Option marked selected in `buildTranscriptSources`.
  * @param stored History for this download, newest first.
- * @param fallback Latest row when the preferred source has no finished record.
+ * @param fallback Latest row when a captions source has no finished record.
  */
 export const recordForTranscriptSource = (
   selected: TranscriptSourceOption | undefined,
@@ -103,7 +106,5 @@ export const recordForTranscriptSource = (
       ) ?? fallback
     )
   }
-  return (
-    stored.find((row) => row.sourceKind === 'asr' && row.resultKind === 'transcript') ?? fallback
-  )
+  return stored.find((row) => row.sourceKind === 'asr' && row.resultKind === 'transcript') ?? null
 }

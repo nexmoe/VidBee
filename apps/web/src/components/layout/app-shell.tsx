@@ -7,7 +7,7 @@ import { appSidebarIcons } from "@vidbee/ui/components/ui/app-sidebar-icons";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
-type AppPage = "about" | "download" | "settings";
+type AppPage = "about" | "download" | "settings" | "subscriptions";
 
 interface AppShellProps {
 	children: ReactNode;
@@ -18,12 +18,8 @@ export const AppShell = ({ children, page }: AppShellProps) => {
 	const { t } = useTranslation();
 	const navigate = useNavigate();
 
-	const openSupportedSites = () => {
-		window.open(
-			"https://vidbee.org/supported-sites/",
-			"_blank",
-			"noopener,noreferrer",
-		);
+	const openExternal = (url: string) => {
+		window.open(url, "_blank", "noopener,noreferrer");
 	};
 
 	const items: AppSidebarItem[] = [
@@ -38,15 +34,20 @@ export const AppShell = ({ children, page }: AppShellProps) => {
 		},
 		{
 			id: "subscriptions",
-			disabled: true,
+			active: page === "subscriptions",
 			icon: appSidebarIcons.subscriptions,
 			label: t("menu.rss"),
+			onClick: () => {
+				void navigate({ to: "/subscriptions" });
+			},
 		},
 		{
-			id: "supported-sites",
-			icon: appSidebarIcons.supportedSites,
-			label: t("menu.supportedSites"),
-			onClick: openSupportedSites,
+			id: "tools",
+			icon: appSidebarIcons.tools,
+			label: t("menu.tools"),
+			onClick: () => {
+				openExternal("https://vidbee.org/tools/");
+			},
 		},
 	];
 

@@ -8,7 +8,10 @@ export const useWebDownloadSettings = () => {
 	const { settings: webSettings, updateSettings: updateWebSettings } =
 		useWebSettings();
 
-	const settings: WebDownloadSettings = {
+	const settings: WebDownloadSettings & {
+		preferredAudioLanguage: string;
+		rememberLastAudioLanguage: boolean;
+	} = {
 		oneClickDownload:
 			webSettings.oneClickDownload ??
 			DEFAULT_WEB_DOWNLOAD_SETTINGS.oneClickDownload,
@@ -21,9 +24,13 @@ export const useWebDownloadSettings = () => {
 		oneClickContainer:
 			webSettings.oneClickContainer ??
 			DEFAULT_WEB_DOWNLOAD_SETTINGS.oneClickContainer,
+		preferredAudioLanguage: webSettings.preferredAudioLanguage,
+		rememberLastAudioLanguage: webSettings.rememberLastAudioLanguage,
 	};
 
-	const updateSettings = (updates: Partial<WebDownloadSettings>) => {
+	const updateSettings = (
+		updates: Partial<WebDownloadSettings> & { preferredAudioLanguage?: string },
+	) => {
 		updateWebSettings(updates);
 	};
 

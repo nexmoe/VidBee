@@ -13,8 +13,6 @@
     "appName": "VidBee",
     "autoUpdateDescription": "バックグラウンドで新しいリリースを自動的にダウンロードしてインストールします。",
     "autoUpdateTitle": "自動アップデート",
-    "betaProgramDescription": "他の人より先に早期ビルドと今後の機能を受け取ります。",
-    "betaProgramTitle": "プレビューチャンネル",
     "description": "1000以上のサイトからメディアをダウンロードし、パソコン上で検索可能な文字起こしを作成。選んだAIプロバイダーで要約、翻訳、質問までできる、無料のオープンソース・デスクトップアプリです。",
     "downloadEngine": {
       "status": {
@@ -24,10 +22,15 @@
         "preparing": "準備中",
         "retry-scheduled": "再試行予定",
         "unavailable": "利用できません",
-        "up-to-date": "最新"
+        "up-to-date": "最新",
+        "update-available": "Update available"
       },
       "title": "ダウンロードエンジン",
-      "versions": "yt-dlp {{ytDlpVersion}} · Node {{nodeVersion}}"
+      "versions": "yt-dlp {{ytDlpVersion}} · Node {{nodeVersion}}",
+      "update": "Update yt-dlp",
+      "updated": "yt-dlp updated to {{version}}",
+      "updateFailed": "Could not update yt-dlp: {{error}}",
+      "webVersions": "yt-dlp {{ytDlpVersion}} · FFmpeg {{ffmpegVersion}} · Node {{nodeVersion}}"
     },
     "followAuthorActions": {
       "follow": "@nexmoeをフォロー"
@@ -35,6 +38,16 @@
     "followAuthorDescription": "VidBeeの最新ニュースとアップデートを入手してください。",
     "followAuthorSupport": "X (Twitter)で開発者をフォローして、VidBeeの最新アップデートとニュースを入手してください。",
     "followAuthorTitle": "開発者をフォロー",
+    "otherProducts": {
+      "lmspeed": {
+        "name": "LMSpeed",
+        "description": "プロバイダーを選ぶ前に、LLM API の料金・速度・安全性を比較できます。"
+      },
+      "clipii": {
+        "name": "Clipii",
+        "description": "リンク、ファイル、動画を、検索できるクラウドライブラリに保存します。"
+      }
+    },
     "here": "ここ",
     "homepage": "ホームページ",
     "notifications": {
@@ -155,7 +168,7 @@
     "downloadVideo": "ビデオをダウンロード",
     "downloading": "ダウンロード中...",
     "enterUrl": "ビデオURLを入力",
-    "enterUrlDescription": "ビデオURLを貼り付けまたは入力してください。 ",
+    "enterUrlDescription": "1つ以上の動画リンクを貼り付けてください。URLごとに改行してください。",
     "error": "エラー",
     "fetch": "取得",
     "fetchingVideoInfo": "ビデオ情報を取得中...",
@@ -220,7 +233,7 @@
     "total": "合計",
     "unknownQuality": "不明な品質",
     "unknownSize": "不明なサイズ",
-    "urlPlaceholder": "https://www.youtube.com/watch?v=...",
+    "urlPlaceholder": "URLを1行に1つずつ貼り付け",
     "video": "ビデオ",
     "videoInfo": "ビデオ情報",
     "videoInfoUpdated": "ビデオ情報が更新されました",
@@ -267,10 +280,7 @@
     "cookiesSetupKeyring": "この Linux ビルドでは Chrome の Cookie を読めません。Firefox を使うか、Cookie ファイルを読み込んでください。",
     "cookiesSetupStale": "現在の Cookie は期限切れかブロックされています。ログインし直して再試行してください。",
     "cookiesSetupRetry": "ダウンロードを再試行",
-    "cookiesSetupDone": "完了",
-    "pause": "一時停止",
-    "paused": "一時停止中",
-    "resume": "再開"
+    "cookiesSetupDone": "完了"
   },
   "error": {
     "title": "問題が発生しました",
@@ -292,6 +302,7 @@
     "helpText": "このエラーが続く場合は、上記のエラーレポートをコピーしてサポートチームに共有してください。連絡先は「概要」ページにあります。"
   },
   "errors": {
+    "batchRequiresOneClick": "複数のリンクをまとめて追加するには、ワンクリックダウンロードをオンにしてください",
     "clickToCopy": "詳細をコピーするにはクリック",
     "clipboardEmpty": "クリップボードが空です",
     "downloadFailed": "ダウンロードに失敗",
@@ -349,6 +360,7 @@
     "select": "選択",
     "selectAll": "すべて選択",
     "selectVisible": "表示中を選択",
+    "moreActions": "その他の操作",
     "selectItem": "項目を選択",
     "selectedCount": "{{count}} 件選択",
     "selectionSummary": "{{total}} 件中 {{selected}} 件を選択",
@@ -449,6 +461,87 @@
     "fetchingInfo": "プレイリスト情報を取得中..."
   },
   "settings": {
+    "account": {
+      "copyInviteLink": "招待リンクをコピー",
+      "giftHistoryCredits": "クレジット",
+      "giftHistoryDate": "日付",
+      "giftHistoryExpired": "{{date}} に失効済み",
+      "giftHistoryExpires": "有効期限",
+      "giftHistoryReason": "理由",
+      "giftHistoryTitle": "ボーナス履歴",
+      "giftReasons": {
+        "admin": "ボーナスクレジット",
+        "invite_invitee": "{{name}}さんの招待で登録",
+        "invite_inviter": "{{name}}さんが招待から登録",
+        "welcome": "ウェルカムクレジット"
+      },
+      "inviteCopied": "コピーしました",
+      "inviteCreditsEarned": "獲得クレジット",
+      "inviteDescription": "招待リンクを共有すると、新規ユーザーとあなたの双方に20Kクレジットが付与されます。",
+      "inviteLimitedBadge": "期間限定",
+      "inviteTitle": "友達を招待",
+      "invitedColumnName": "名前",
+      "invitedListTitle": "招待したユーザー",
+      "invitedUsers": "招待人数",
+      "loadMore": "さらに読み込む",
+      "creditsDescription": "VidBee Cloud の文字起こしと AI プロンプトに使用されます。",
+      "creditsError": "AI クレジットを読み込めませんでした。",
+      "creditsLoading": "AI クレジットを読み込み中…",
+      "creditsRemaining": "残り {{remaining}}",
+      "creditsTitle": "AI クレジット",
+      "creditsTooltipExpiring": "{{credits}} は1か月以内に失効します",
+      "creditsTooltipRemaining": "残り {{credits}}",
+      "creditsTooltipUsed": "{{used}} を使用済み",
+      "creditsUsage": "{{total}} 中 {{used}} を使用",
+      "grantedCredits": "付与クレジット",
+      "purchasedCredits": "購入クレジット",
+      "description": "GitHub でサインインして VidBee アカウントを接続します。",
+      "error": "認証を完了できませんでした。もう一度お試しください。",
+      "loading": "アカウントを確認しています…",
+      "signedOut": "サインインしていません",
+      "signIn": "GitHub で続ける",
+      "signingIn": "GitHub を開いています…",
+      "signOut": "サインアウト",
+      "signingOut": "サインアウトしています…",
+      "tab": "アカウント",
+      "creditsAvailableAmount": "利用可能：{{credits}}",
+      "creditsReservedAmount": "予約済み：{{credits}}",
+      "creditsReservedHelp": "実行中のタスクや使用量の確認用に確保されています。精算後、未使用分は解放されます。",
+      "creditsInterruptedAmount": "中断タスクの消費分：{{credits}}",
+      "creditsInterruptedHelp": "使用済み残高に含まれており、追加の請求ではありません。失敗、キャンセル、タイムアウトした AI プロンプトの精算済み使用量です。",
+      "creditsRefresh": "残高を更新",
+      "creditsTopUp": "クレジットをチャージ",
+      "creditsTopUpError": "料金ページを開けませんでした。もう一度お試しください。",
+      "creditsStale": "残高を更新できませんでした。表示されている数値は最新でない可能性があります。",
+      "creditsReviewAmount": "予約済みクレジットのうち {{credits}} を確認中",
+      "reservationTitle": "予約中のタスク",
+      "reservationHelp": "期限切れの確保分を毎分確認します。5 分間の照合期間が終了した後、次の確認時に未確認分を解放します。",
+      "reservationTask": "AI プロンプト",
+      "reservationElapsed": "{{minutes}} 分前に開始",
+      "reservationActivity": "最終進行：{{time}}",
+      "reservationHeartbeat": "最終接続：{{time}}",
+      "reservationDeadline": "実行期限：{{time}}",
+      "reservationReviewDeadline": "確認期限：{{time}}",
+      "reservationReview": "使用量を確認中",
+      "reservationCancel": "タスクをキャンセル",
+      "reservationCancelling": "キャンセル中…",
+      "reservationUnavailable": "タスクの詳細を更新できませんでした。",
+      "reservationCancelError": "このタスクをキャンセルできませんでした。更新して再試行してください。",
+      "creditHistoryTitle": "クレジット履歴",
+      "creditHistoryHelp": "確認済みの使用量に基づいて請求します。確認できない使用量は請求しません。返還分は利用可能残高に含まれます。",
+      "creditHistoryError": "履歴を更新できませんでした。表示中の記録は最新ではない可能性があります。",
+      "creditHistoryEmpty": "クレジットの利用履歴はありません。",
+      "creditHistoryAmount": "{{credits}} クレジット",
+      "creditHistoryTokens": "入力 {{input}} · 出力 {{output}} トークン",
+      "creditHistoryRefunded": "{{credits}} クレジット返還済み",
+      "creditHistoryUnverified": "使用量を確認できなかったため、クレジットは請求されませんでした。",
+      "creditHistoryNoCharge": "請求なし",
+      "creditHistoryCache": "キャッシュ結果",
+      "creditHistoryVerified": "確認済みの使用量",
+      "creditHistoryRecorded": "記帳済み",
+      "creditHistoryInterrupted": "中断",
+      "creditsUsedShare": "{{percent}} used"
+    },
     "aboutTab": "について",
     "advanced": "高度",
     "cookiesTab": "Cookies",
@@ -593,7 +686,12 @@
     "title": "設定",
     "tray": {
       "quit": "終了",
-      "showHome": "ホームを表示"
+      "showHome": "ホームを表示",
+      "next": "Next",
+      "openDevTools": "Open DevTools",
+      "pause": "Pause",
+      "play": "Play",
+      "previous": "Previous"
     },
     "video": "ビデオ設定",
     "oneClickContainer": "コンテナ形式",
@@ -719,6 +817,15 @@
     "promptsTab": "プロンプト",
     "transcriptionTab": "文字起こし",
     "ai": {
+      "ownProvider": "独自のプロバイダーを使用",
+      "ownProviderDescription": "上級者向け：独自のモデルまたは請求先を接続します。",
+      "recommended": "おすすめ",
+      "signInForCloud": "ログイン",
+      "useVidbeeCloud": "VidBee Cloudを使う",
+      "vidbeeCloud": "VidBee Cloud",
+      "vidbeeCloudDescription": "50K AIクレジット付きですぐに利用できます。APIキーやプロバイダー設定は不要です。",
+      "vidbeeCloudPrivacy": "文字起こし内容は、AI操作を実行したときだけ送信されます。",
+      "vidbeeCloudSection": "マネージドサービス",
       "allServices": "すべてのサービス",
       "configured": "設定済み",
       "useProvider": "使用する",
@@ -766,9 +873,24 @@
         "ollama": "Ollama",
         "openai": "OpenAI",
         "openrouter": "OpenRouter",
-        "xai": "xAI"
+        "xai": "xAI",
+        "alibaba": "Alibaba Cloud",
+        "fireworks": "Fireworks",
+        "minimax": "MiniMax",
+        "mistral": "Mistral",
+        "moonshot": "Moonshot",
+        "novita": "Novita",
+        "ppio": "PPIO",
+        "siliconflow": "SiliconFlow",
+        "stepfun": "StepFun",
+        "together": "Together",
+        "volcengine": "Volcengine",
+        "zhipu": "Zhipu"
       },
       "presetPrompts": {
+        "overview": {
+          "title": "概要"
+        },
         "bullet-points": {
           "title": "箇条書き"
         },
@@ -790,7 +912,11 @@
         "translate": {
           "title": "翻訳"
         }
-      }
+      },
+      "createModel": "Create “{{query}}”",
+      "noModelFound": "No model found.",
+      "allModelsSelected": "一覧のモデルはすべて追加済みです。",
+      "loadingModels": "プロバイダーからモデルを読み込んでいます…"
     },
     "cookiesSetup": {
       "statusNotConfigured": "未設定",
@@ -833,7 +959,25 @@
       "fileExportExtension": "Chrome / Edge 拡張機能",
       "checking": "Cookie を確認しています…",
       "applied": "Cookie を更新しました",
-      "profileMissingDb": "この Firefox プロファイルに Cookie データベースがありません。Firefox を一度開いてから再試行してください。"
+      "profileMissingDb": "この Firefox プロファイルに Cookie データベースがありません。Firefox を一度開いてから再試行してください。",
+      "statusUsingExtension": "Using {{browser}} extension",
+      "healthOkExtension": "The VidBee extension will send live cookies from {{browser}} for each download",
+      "healthEmptyExtension": "The extension is connected, but no supported login cookies were found. Sign in to the site in that browser",
+      "statusHeading": "Cookie status",
+      "methodRecommended": "Recommended",
+      "methodExtensionWhy": "Best option. Desktop uses live cookies for each download, including Chrome and Edge on Windows.",
+      "extensionTitle": "Browser extension",
+      "extensionDescription": "Install the VidBee extension so Desktop can use your live signed-in cookies when downloading",
+      "extensionConnected": "Connected",
+      "extensionDisconnected": "Not connected",
+      "extensionConnectedHint": "{{browser}} is connected. New downloads will use cookies from this browser",
+      "extensionDisconnectedHint": "Keep VidBee Desktop open, install the extension, then sign in to the site in that browser",
+      "extensionInstallChrome": "Add to Chrome",
+      "extensionInstallEdge": "Add to Edge",
+      "extensionInstallFirefox": "Add to Firefox",
+      "extensionInstallStep1": "Install the VidBee extension in Chrome, Edge, or Firefox",
+      "extensionInstallStep2": "Keep VidBee Desktop running so the extension can connect",
+      "extensionInstallStep3": "Sign in to YouTube, Bilibili, or other sites in that browser, then open the VidBee toolbar icon once"
     }
   },
   "subscriptions": {
@@ -949,12 +1093,17 @@
     }
   },
   "kernelPreparation": {
+    "copied": "コピーしました",
     "copying": "ダウンロードエンジンをコピーしています…",
+    "copyLog": "ログをコピー",
     "description": "VidBee のダウンロードエンジンを準備しています。しばらくお待ちください。",
     "errorDescription": "VidBee は使用可能なダウンロードエンジンを準備できませんでした。ローカルストレージへのアクセスを確認して、もう一度お試しください。",
+    "errorDetails": "エラーの詳細",
     "errorTitle": "ダウンロードエンジンを利用できません",
     "finalizing": "セットアップを完了しています…",
+    "missingError": "詳細なエラーは記録されていません。",
     "progressLabel": "ダウンロードエンジンの準備状況",
+    "reportIssue": "GitHub で報告",
     "retry": "もう一度試す",
     "retrying": "再試行しています…",
     "title": "VidBee を準備しています",
@@ -1057,6 +1206,7 @@
     "sourceSwitch": "文字起こしのソース",
     "sourceCaptionNamed": "{{language}}の字幕",
     "sourceCaptionAutoNamed": "{{language}}の自動字幕",
+    "asrIdle": "今の字幕に満足できないときは、このパソコンでローカル文字起こしを実行できます。",
     "noSpeech": "No speech",
     "noSpeechDetail": "No speech was detected in this file. You can still run a full transcript.",
     "error": "Transcript error",
@@ -1090,6 +1240,23 @@
     "followResume": "Jump to current line",
     "title": "Transcript",
     "ready": "Transcript ready",
+    "listLabel": {
+      "subtitles": "字幕",
+      "transcribed": "書き起こし",
+      "downloaded": "ダウンロード"
+    },
+    "listHint": {
+      "queued": "文字起こし待ちです。空きが出ると開始します。",
+      "retrySoon": "文字起こしに失敗したため、まもなく再試行します。",
+      "ready": "書き起こした字幕の準備ができました。行をクリックして開きます。",
+      "captions": "動画の字幕トラックから作成されています。行をクリックして開きます。",
+      "cancelled": "文字起こしはキャンセルされました。",
+      "subtitlesDownloaded": "字幕ファイルを保存しました（{{languages}}）。",
+      "subtitlesDownloadedUnknown": "字幕ファイルを保存しました。",
+      "subtitlesUnavailable": "この動画にはダウンロードできる字幕トラックがありません。",
+      "subtitlesAuth": "字幕をダウンロードするには、サインインしてから再試行してください。",
+      "subtitlesFailed": "字幕のダウンロードに失敗しました。"
+    },
     "copy": "文字起こしをコピー",
     "copied": "文字起こしをコピーしました",
     "copyFailed": "文字起こしをコピーできませんでした。",
@@ -1102,6 +1269,9 @@
     "captionDelete": "削除",
     "captionDeleteSelected": "選択を削除",
     "captionDeleted": "{{count}} 件の字幕を削除しました",
+    "captionDeleteConfirmTitle": "選択した字幕を削除しますか？",
+    "captionDeleteConfirmDescription": "この文字起こしから {{count}} 件の字幕を完全に削除します。",
+    "captionDeleteConfirmCancel": "キャンセル",
     "captionSaveFailed": "字幕を保存できませんでした。",
     "captionPlaceholder": "字幕を入力",
     "captionSpeaker": "話者",
@@ -1173,7 +1343,12 @@
       "segments": "セグメント",
       "createdAt": "文字起こし日時",
       "empty": "詳細はまだありません。",
-      "openUrl": "元のURLを開く"
+      "openUrl": "元のURLを開く",
+      "group": {
+        "media": "メディア",
+        "file": "ファイル",
+        "transcript": "文字起こし"
+      }
     },
     "speakingShare": "{{percent}}%",
     "seekSpeaker": "{{name}} へ移動",
@@ -1210,11 +1385,22 @@
       "volumePercent": "{{percent}}%",
       "fullscreen": "全画面表示",
       "fullscreenExit": "全画面を終了",
-      "resumed": "{{time}} から再開しました",
-      "startOver": "最初から再生",
       "nowPlaying": "再生中",
-      "closeBar": "プレーヤーを閉じる",
-      "openTranscript": "文字起こしに戻る"
+      "openTranscript": "文字起こしに戻る",
+      "playlist": {
+        "title": "プレイリスト",
+        "open": "プレイリストを開く",
+        "count": "{{count}}件",
+        "empty": "プレイリストは空です",
+        "emptyHint": "ダウンロードを再生するか、右クリックメニューから追加してください。",
+        "add": "プレイリストに追加",
+        "addedCount": "{{count}}件をプレイリストに追加しました",
+        "remove": "プレイリストから削除",
+        "moveUp": "上へ移動",
+        "moveDown": "下へ移動",
+        "drag": "ドラッグして並べ替え",
+        "more": "プレイリスト項目の操作"
+      }
     },
     "qualityHint": "Not happy with this transcript?",
     "qualityHintDetail": "Download a higher-quality model and transcribe again. The current transcript is kept as history.",
@@ -1234,6 +1420,8 @@
     "promptShare": "画像で共有",
     "promptShareTitle": "画像をシェア",
     "promptShareDownload": "ダウンロード",
+    "promptShareDownloadFull": "縦長画像をそのまま保存",
+    "promptShareDownloadSplit": "分割画像（連番付きでフォルダーに保存）",
     "promptShareNative": "共有",
     "promptSharing": "画像を準備中…",
     "promptShared": "共有画像をコピーしました",
@@ -1247,32 +1435,61 @@
     "promptOutput": "プロンプト結果",
     "promptScrollToEnd": "最新までスクロール",
     "promptCopied": "コピーしました",
+    "promptCloudGenerated": "VidBee Cloudで生成しました",
     "promptNoProvider": "このプロンプトを実行するには、設定でAIプロバイダーを追加してください。",
     "promptOpenSettings": "プロバイダー設定を開く",
     "promptEmpty": "結果がここに表示されます。",
+    "overviewChapters": "チャプター",
+    "overviewQuotes": "名言",
+    "promptRetrying": "生成が中断されました。再試行中 {{attempt}}/{{maxAttempts}}…",
+    "promptWaiting": "モデルの応答を待っています · {{seconds}}秒",
     "promptRunning": "生成中…",
     "promptThinking": "思考中",
     "promptThinkingFor": "{{seconds}} 秒間思考中",
     "promptThoughtFor": "{{seconds}} 秒間考えました",
     "promptAborted": "停止しました",
+    "promptTabCompleted": "完了",
+    "promptTabError": "失敗",
     "promptNoTranscript": "このプロンプトを実行するには文字起こしが必要です。",
+    "promptWaitForTranscript": "文字起こしが終わると、このプロンプトを実行できます。",
+    "promptRunWhenReady": "準備できたら実行",
+    "promptWaitingToRun": "文字起こしを待っています…",
     "promptTryAgain": "再試行",
     "promptLoading": "AI設定を読み込み中…",
     "promptGuide": {
+      "interrupted": "AI の応答が完了する前に中断されました。",
+      "creditsExhausted": "このアカウントのAIクレジットが不足しています。",
+      "signInRequired": "VidBee Cloud にログインすれば、すぐに無料で Ask AI を使えます。",
       "noProvider": "AIプロバイダーが有効ではないため、このプロンプトを実行できません。",
       "missingApiKey": "有効なプロバイダーにAPIキーがありません。",
       "missingModel": "有効なプロバイダーにモデルIDがありません。",
       "unknownPrompt": "このプロンプトは利用できません。",
       "emptyTranscript": "このプロンプトには完成した文字起こしが必要です。",
       "auth": "プロバイダーがリクエストを拒否しました。APIキーまたはアカウントが無効の可能性があります。",
+      "authCloud": "VidBee Cloud がリクエストを拒否しました。セッションの期限が切れている可能性があります。",
       "network": "プロバイダーに接続できませんでした。",
+      "networkCloud": "VidBee Cloud に接続できませんでした。",
       "emptyOutput": "プロバイダーは完了しましたが、テキストを返しませんでした。",
-      "unknown": "プロンプトを実行できませんでした。"
+      "emptyOutputCloud": "VidBee Cloud は完了しましたが、テキストを返しませんでした。",
+      "unknown": "プロンプトを実行できませんでした。",
+      "unknownCloud": "VidBee Cloud はこのプロンプトを完了できませんでした。",
+      "serviceErrorCloud": "VidBee Cloud's AI service rejected this request."
     },
     "promptErrorDetails": "エラー詳細",
     "promptWhatToDo": "次に試すこと",
     "promptUsingProvider": "使用中: {{name}}",
+    "promptCreditsByok": "<byok>自分の API キー</byok>を使うこともできます。",
     "promptSolutions": {
+      "creditsExhausted": {
+        "s1": "アカウントで残りのクレジットを確認します。",
+        "s2": "新しいユーザーを招待してクレジットを獲得します。",
+        "s3": "クレジット追加後にもう一度実行します。"
+      },
+      "signInRequired": {
+        "s1": "設定→Providersを開きます。",
+        "s2": "VidBee CloudでGitHubログインします。",
+        "s3": "もう一度プロンプトを実行します。"
+      },
       "noProvider": {
         "s1": "設定 → プロバイダーを開きます。",
         "s2": "サービスを追加し、APIキーとモデルIDを保存して「使用する」を押します。",
@@ -1301,22 +1518,78 @@
         "s2": "残高と、このモデルへの権限があるか確認します。",
         "s3": "カスタムエンドポイントなら、このキーを受け付けるか確認します。"
       },
+      "authCloud": {
+        "s1": "「アカウント」を開き、ログイン状態が続いているか確認します。",
+        "s2": "セッションの期限が切れている場合は、もう一度ログインします。",
+        "s3": "プロンプトを再実行します。"
+      },
       "network": {
         "s1": "ネット接続とプロキシを確認します。",
         "s2": "カスタムの場合、Base URL に到達できるか、必要なら /v1 を含めます。",
         "s3": "ホストが落ちている場合は別のプロバイダーを使います。"
+      },
+      "networkCloud": {
+        "s1": "ネット接続を確認します。",
+        "s2": "「アカウント」を開き、ログイン状態が続いているか確認します。",
+        "s3": "少し待って再試行します。続く場合は VidBee Cloud が一時的に使えない可能性があります。"
       },
       "emptyOutput": {
         "s1": "設定 → プロバイダーで、モデルIDが正しいか確認します。",
         "s2": "カスタムなら Base URL、APIキー、モデルのデプロイを確認します。",
         "s3": "下のエラー詳細を見て、再試行するかプロバイダーを切り替えます。"
       },
+      "emptyOutputCloud": {
+        "s1": "もう一度試します。返信が途中で切れた可能性があります。",
+        "s2": "続く場合は「アカウント」を開き、ログイン中でクレジットがあるか確認します。"
+      },
       "unknown": {
         "s1": "下のエラー詳細を確認します。",
         "s2": "設定 → プロバイダーで APIキー、モデルID、Base URL を確認します。",
         "s3": "再試行するか、別のプロバイダーに切り替えます。"
+      },
+      "unknownCloud": {
+        "s1": "下のエラー詳細を確認します。",
+        "s2": "少し待って再試行します。接続が途切れると、Cloud の返信が途中で止まることがあります。",
+        "s3": "続く場合は「アカウント」を開き、ログイン中でクレジットがあるか確認します。"
       }
-    }
+    },
+    "promptDislike": "低評価",
+    "promptFeedbackSaved": "フィードバックを保存しました",
+    "promptFeedbackFailed": "フィードバックを保存できませんでした。もう一度お試しください。",
+    "promptHistory": "History",
+    "promptHistoryClose": "Close history",
+    "promptHistoryNew": "New chat",
+    "promptHistoryChat": "Chat",
+    "promptHistoryDescription": "Agent conversations from every video",
+    "promptHistoryEmpty": "No conversations yet",
+    "promptHistoryToday": "Today",
+    "promptHistoryYesterday": "Yesterday",
+    "promptHistoryMore": "Conversation actions",
+    "promptHistoryDelete": "Delete",
+    "promptHistoryDeleteTitle": "Delete this conversation?",
+    "promptHistoryDeleteDescription": "This removes the conversation. The video and transcript stay.",
+    "promptHistoryDeleteCancel": "Cancel",
+    "promptHistoryUntitled": "Untitled",
+    "promptTabClose": "Close tab",
+    "promptHistoryRename": "Rename",
+    "promptHistoryRenameTitle": "Rename conversation",
+    "promptHistoryRenameDescription": "Choose a short title for this chat tab.",
+    "promptHistoryRenameSave": "Save",
+    "promptHistoryRenamePlaceholder": "Conversation title",
+    "promptMore": "More actions",
+    "promptExportPdf": "Export as PDF",
+    "promptExportMarkdown": "Export as Markdown",
+    "promptExportSaved": "Exported",
+    "promptExportFailed": "Could not export.",
+    "promptExportEmpty": "Nothing to export.",
+    "promptShareSplitCount": "Number of images (optional)",
+    "promptShareSplitCountAuto": "Automatic",
+    "promptShareSplitCountHint": "Leave blank for automatic splitting. Fewer images may be saved to keep content intact.",
+    "thinkingSecond": "{{count}} second",
+    "thinkingSeconds": "{{count}} seconds",
+    "thinkingMinute": "{{count}} minute",
+    "thinkingMinutes": "{{count}} minutes",
+    "promptCloudServiceErrorDetail": "Your transcript is saved. This service issue needs to be resolved before you can generate the response."
   },
   "whatsNew": {
     "title": "新機能",
@@ -1340,5 +1613,131 @@
         "description": "ローカルの音声や動画を文字起こしにドロップ。テキスト、字幕、焼き込み動画として書き出せます。"
       }
     }
+  },
+  "cloudCache": {
+    "title": "Cloud の結果キャッシュ",
+    "range": "期間（UTC）",
+    "hits": "ヒット",
+    "misses": "ミス",
+    "bypasses": "バイパス",
+    "hitRate": "ヒット率",
+    "today": "今日",
+    "week": "過去7日間",
+    "month": "過去30日間",
+    "all": "全期間"
+  },
+  "agentChat": {
+    "eventStream": "Event Stream",
+    "eventStatus": {
+      "running": "Running",
+      "completed": "Completed",
+      "error": "Failed"
+    },
+    "placeholder": "Ask a follow-up about this video…",
+    "send": "Send message",
+    "attachImages": "Attach images",
+    "removeImage": "Remove {{name}}",
+    "imageSelectionFailed": "Could not add these images. Select up to 10 PNG, JPEG or WebP images, each no larger than 20 MB.",
+    "imageRemoveFailed": "Could not remove this image. Try again.",
+    "imagesNotSupported": "Choose a model that supports images, or remove the attachments to send this message.",
+    "interrupted": "This response was interrupted when the app closed. Retry to continue.",
+    "imported": "Imported from your previous summary",
+    "previousVersion": "Previous reply version",
+    "nextVersion": "Next reply version",
+    "toolCount": "Tool calls: {{count}}",
+    "saveAttachment": "Save attachment",
+    "attachmentUnavailable": "This attachment is unavailable. Try generating it again.",
+    "frame": "Frame at {{time}}",
+    "clip": "Clip at {{time}}",
+    "downloading": "Downloading video",
+    "contextWindow": "Context window (tokens)",
+    "contextWindowHint": "Enter the context window if the model is not in the catalog.",
+    "vision": "Image input",
+    "toolCalling": "Tool calling",
+    "reasoning": "Thinking",
+    "thinkingOnly": "Thinking only",
+    "allowDisableThinking": "Allow turning thinking off",
+    "thinkingCapabilitiesHint": "現在は思考のオン/オフのみ表示し、強度は選択できません。このモデルが強度調整に対応している場合は、下で利用可能なレベルを選んでください。",
+    "defaultThinkingLevel": "デフォルトの思考レベル",
+    "defaultThinkingAuto": "自動（リクエスト層のデフォルトを使用）",
+    "supportedThinkingLevels": "対応する思考レベル",
+    "inputTokens": "入力",
+    "outputTokens": "出力",
+    "providerDefault": "プロバイダーのデフォルトを使用",
+    "automatic": "Use model defaults",
+    "enabled": "Supported",
+    "disabled": "Not supported",
+    "visionSelect": "Select…",
+    "catalogFilled": "You can change these catalog values.",
+    "catalogMissing": "This model is not in the catalog. Enter the context window and capabilities.",
+    "catalogLooking": "Looking up this model id in the catalog…",
+    "catalogMatched": "Matched {{name}}. Context window and capabilities were filled in.",
+    "catalogBadge": "Catalog",
+    "tools": {
+      "get_video_info": "Reading video information",
+      "read_transcript": "Reading transcript",
+      "search_transcript": "Searching transcript",
+      "capture_frames": "Capturing video frames",
+      "create_clip": "Creating video clip",
+      "read_history": "Reading conversation history",
+      "search_history": "Searching conversation history",
+      "read_notes": "Reading working notes",
+      "write_notes": "Saving working notes",
+      "read_artifact": "Reviewing saved image",
+      "rename_conversation": "Renaming conversation",
+      "write_article": "Writing article",
+      "review_article": "Reviewing article"
+    },
+    "modelCapabilities": "Model capabilities",
+    "runDurationRunning": "Working · {{duration}}",
+    "runDuration": "Elapsed: {{duration}}",
+    "durationSeconds": "{{seconds}}s",
+    "durationMinutes": "{{minutes}}m {{seconds}}s",
+    "contextStatus": {
+      "compacting": "Organizing conversation context",
+      "recovering": "Recovering conversation context",
+      "reviewing": "Checking source coverage",
+      "writing": "Writing and checking source sections"
+    },
+    "thinking": {
+      "label": "Thinking level",
+      "off": "Off",
+      "minimal": "Minimal",
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "xhigh": "Extra high",
+      "max": "Maximum"
+    },
+    "models": "モデル",
+    "model": "モデル",
+    "reasoningEffort": "推論の強さ",
+    "cloud": "Cloud",
+    "searchModels": "モデルを検索…",
+    "noModels": "一致するモデルがありません。",
+    "effort": "思考レベル {{level}}",
+    "faster": "高速",
+    "smarter": "高精度",
+    "retrying": "Connection interrupted. Retrying…",
+    "defaultThinkingLevel": "Default thinking level",
+    "defaultThinkingAuto": "Auto (use request default)",
+    "supportedThinkingLevels": "Supported thinking levels",
+    "inputTokens": "Input",
+    "outputTokens": "Output",
+    "providerDefault": "Use provider default"
+  },
+  "web": {
+    "saveToThisComputer": "Save to this computer",
+    "copyServerPath": "Copy server path",
+    "serverPathCopied": "Server path copied",
+    "downloadPathDescription": "Where the VidBee server saves files. In Docker this is usually /data/downloads.",
+    "autoTranscribeAfterDownloadDescription": "When a download finishes, start a transcript on the VidBee server. Already queued jobs keep running if you turn this off.",
+    "maxConcurrentTranscriptionsDescription": "How many transcripts can run at once on the server.",
+    "transcriptModelsDescription": "Speech models are stored on the VidBee server. The first transcript downloads them there.",
+    "cookiesFileOnly": "The server cannot read browsers on your computer. Export a Netscape cookies.txt and upload it.",
+    "storageTitle": "Server storage",
+    "storageDownloadDir": "Download directory",
+    "storageDataDir": "Data directory",
+    "storageDbFile": "SQLite database"
   }
 }

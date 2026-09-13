@@ -82,10 +82,9 @@ version's prerelease label, so the tag is the single source of truth.
 - A manual `workflow_dispatch` run of the release workflow is a build-only smoke test: it
   produces artifacts but does **not** publish a release (no tag).
 
-Users opt into preview builds with the **Preview channel** switch on the in-app About page
-(`betaProgram` setting). Turning it on moves the user to the `preview` channel and downloads the
-next prerelease; turning it off returns them to `latest` but keeps their current build until the
-next stable release catches up (no forced downgrade).
+Installed apps always follow the stable `latest` channel. The in-app Preview channel opt-in is
+retired. Preview tags still publish GitHub prereleases for maintainers; they are not offered as
+an auto-update channel.
 
 ## Working on Changes
 - Keep each pull request focused on a single problem or feature.

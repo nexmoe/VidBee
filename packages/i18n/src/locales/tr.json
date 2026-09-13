@@ -13,8 +13,6 @@
     "appName": "VidBee",
     "autoUpdateDescription": "Yeni sürümleri arka planda otomatik olarak indir ve yükleyin.",
     "autoUpdateTitle": "Otomatik güncellemeler",
-    "betaProgramDescription": "Herkesten önce erken sürümleri ve gelecek özellikleri alın.",
-    "betaProgramTitle": "Kanal önizlemesi",
     "description": "1000'den fazla siteden medya indirin, bilgisayarınızda aranabilir deşifreler oluşturun; seçtiğiniz yapay zekâ sağlayıcısıyla özetleyin, çevirin veya sorular sorun—hepsi ücretsiz ve açık kaynaklı tek bir masaüstü uygulamasında.",
     "downloadEngine": {
       "status": {
@@ -24,10 +22,15 @@
         "preparing": "Hazırlanıyor",
         "retry-scheduled": "Yeniden deneme planlandı",
         "unavailable": "Kullanılamıyor",
-        "up-to-date": "Güncel"
+        "up-to-date": "Güncel",
+        "update-available": "Update available"
       },
       "title": "İndirme motoru",
-      "versions": "yt-dlp {{ytDlpVersion}} · Node {{nodeVersion}}"
+      "versions": "yt-dlp {{ytDlpVersion}} · Node {{nodeVersion}}",
+      "update": "Update yt-dlp",
+      "updated": "yt-dlp updated to {{version}}",
+      "updateFailed": "Could not update yt-dlp: {{error}}",
+      "webVersions": "yt-dlp {{ytDlpVersion}} · FFmpeg {{ffmpegVersion}} · Node {{nodeVersion}}"
     },
     "followAuthorActions": {
       "follow": "@nexmoe'i takip edin"
@@ -35,6 +38,16 @@
     "followAuthorDescription": "VidBee ile ilgili en son haberleri ve güncellemeleri takip edin.",
     "followAuthorSupport": "VidBee ile ilgili en son güncellemeleri ve haberleri almak için geliştiriciyi X (Twitter) üzerinden takip edin.",
     "followAuthorTitle": "Geliştiriciyi takip edin",
+    "otherProducts": {
+      "lmspeed": {
+        "name": "LMSpeed",
+        "description": "Sağlayıcı seçmeden önce LLM API fiyatını, hızını ve güvenliğini karşılaştır."
+      },
+      "clipii": {
+        "name": "Clipii",
+        "description": "Bağlantıları, dosyaları ve videoları aranabilir bir bulut kitaplığında sakla."
+      }
+    },
     "here": "burada",
     "homepage": "Ana Sayfa",
     "notifications": {
@@ -155,7 +168,7 @@
     "downloadVideo": "Videoyu İndir",
     "downloading": "İndiriliyor...",
     "enterUrl": "Video URL'sini girin",
-    "enterUrlDescription": "Bir video URL'ini yapıştırın veya yazın. ",
+    "enterUrlDescription": "Bir veya daha fazla video bağlantısı yapıştırın. Her URL'yi ayrı bir satıra yazın.",
     "error": "Hata",
     "fetch": "Getir",
     "fetchingVideoInfo": "Video bilgileri alınıyor...",
@@ -220,7 +233,7 @@
     "total": "Toplam",
     "unknownQuality": "Bilinmeyen kalite",
     "unknownSize": "Bilinmeyen boyut",
-    "urlPlaceholder": "https://www.youtube.com/watch?v=...",
+    "urlPlaceholder": "URL'leri buraya, her satıra bir tane yapıştırın",
     "video": "Video",
     "videoInfo": "Video Bilgisi",
     "videoInfoUpdated": "Video bilgisi güncellendi",
@@ -267,10 +280,7 @@
     "cookiesSetupKeyring": "Bu Linux sürümü Chrome çerezlerini okuyamaz. Firefox kullanın veya bir çerez dosyası içe aktarın.",
     "cookiesSetupStale": "Geçerli çerezler süresi dolmuş veya engellenmiş görünüyor. Girişi yenileyip yeniden deneyin.",
     "cookiesSetupRetry": "İndirmeyi yeniden dene",
-    "cookiesSetupDone": "Bitti",
-    "pause": "Duraklat",
-    "paused": "Duraklatıldı",
-    "resume": "Devam et"
+    "cookiesSetupDone": "Bitti"
   },
   "error": {
     "title": "Bir sorun oluştu",
@@ -292,6 +302,7 @@
     "helpText": "Bu hata devam ederse, lütfen yukarıdaki hata raporunu kopyalayıp destek ekibiyle paylaşın. İletişim bilgilerini Hakkında sayfasında bulabilirsiniz."
   },
   "errors": {
+    "batchRequiresOneClick": "Birden fazla bağlantıyı aynı anda eklemek için Tek Tıkla İndirme'yi açın",
     "clickToCopy": "Ayrıntıları kopyalamak için tıklayın",
     "clipboardEmpty": "Pano boş",
     "downloadFailed": "İndirme başarısız",
@@ -349,6 +360,7 @@
     "select": "Seç",
     "selectAll": "Tümünü Seç",
     "selectVisible": "Görünür olanı seç",
+    "moreActions": "Diğer işlemler",
     "selectItem": "Öğe seç",
     "selectedCount": "{{count}} adet seçildi",
     "selectionSummary": "{{total}} taneden {{selected}} tanesi görünür",
@@ -449,6 +461,87 @@
     "fetchingInfo": "Oynatma listesi bilgileri alınıyor..."
   },
   "settings": {
+    "account": {
+      "copyInviteLink": "Davet bağlantısını kopyala",
+      "giftHistoryCredits": "Kredi",
+      "giftHistoryDate": "Tarih",
+      "giftHistoryExpired": "{{date}} tarihinde doldu",
+      "giftHistoryExpires": "Bitiş",
+      "giftHistoryReason": "Neden",
+      "giftHistoryTitle": "Bonus geçmişi",
+      "giftReasons": {
+        "admin": "Bonus krediler",
+        "invite_invitee": "{{name}} davetiyle katıldı",
+        "invite_inviter": "{{name}} davetinle katıldı",
+        "welcome": "Hoş geldin kredileri"
+      },
+      "inviteCopied": "Kopyalandı",
+      "inviteCreditsEarned": "Kazanılan kredi",
+      "inviteDescription": "Bağlantını paylaş. Yeni bir kullanıcı katıldığında ikiniz de 20K kredi kazanırsınız.",
+      "inviteLimitedBadge": "Süreli",
+      "inviteTitle": "Arkadaşlarını davet et",
+      "invitedColumnName": "Ad",
+      "invitedListTitle": "Davet ettiğin kişiler",
+      "invitedUsers": "Davet edilen kişi",
+      "loadMore": "Daha fazla yükle",
+      "creditsDescription": "VidBee Cloud üzerindeki transkripsiyon ve yapay zekâ komutları için kullanılır.",
+      "creditsError": "Yapay zekâ kredileri yüklenemedi.",
+      "creditsLoading": "Yapay zekâ kredileri yükleniyor…",
+      "creditsRemaining": "{{remaining}} kaldı",
+      "creditsTitle": "Yapay zekâ kredileri",
+      "creditsTooltipExpiring": "{{credits}} 1 ay içinde sona erer",
+      "creditsTooltipRemaining": "{{credits}} kaldı",
+      "creditsTooltipUsed": "{{used}} kullanıldı",
+      "creditsUsage": "{{total}} kredinin {{used}} kadarı kullanıldı",
+      "grantedCredits": "Hediye krediler",
+      "purchasedCredits": "Satın alınan krediler",
+      "description": "VidBee hesabını bağlamak için GitHub ile giriş yap.",
+      "error": "Kimlik doğrulama tamamlanamadı. Lütfen tekrar dene.",
+      "loading": "Hesabın kontrol ediliyor…",
+      "signedOut": "Giriş yapılmadı",
+      "signIn": "GitHub ile devam et",
+      "signingIn": "GitHub açılıyor…",
+      "signOut": "Çıkış yap",
+      "signingOut": "Çıkış yapılıyor…",
+      "tab": "Hesap",
+      "creditsAvailableAmount": "{{credits}} kullanılabilir",
+      "creditsReservedAmount": "{{credits}} rezerve edildi",
+      "creditsReservedHelp": "Devam eden görevler veya kullanım incelemesi için ayrılmıştır. Kullanılmayan krediler hesaplaşmadan sonra serbest bırakılır.",
+      "creditsInterruptedAmount": "Kesintiye uğrayan görevler için {{credits}} harcandı",
+      "creditsInterruptedHelp": "Kullanılan kredilere dahildir, ek bir kesinti değildir. Başarısız, iptal edilmiş veya zaman aşımına uğramış yapay zekâ istemleri için hesaplanan kullanımdır.",
+      "creditsRefresh": "Bakiyeyi yenile",
+      "creditsTopUp": "Kredi yükle",
+      "creditsTopUpError": "Fiyatlandırma sayfası açılamadı. Lütfen tekrar deneyin.",
+      "creditsStale": "Bakiye yenilenemedi. Gösterilen tutarlar güncel olmayabilir.",
+      "creditsReviewAmount": "Ayrılmış kredilerin {{credits}} tutarındaki kısmı inceleniyor",
+      "reservationTitle": "Kredi ayrılan görevler",
+      "reservationHelp": "Süresi dolan rezervasyonlar her dakika kontrol edilir. Beş dakikalık inceleme süresinden sonraki ilk kontrolde doğrulanamayan tutar serbest bırakılır.",
+      "reservationTask": "Yapay zekâ istemi",
+      "reservationElapsed": "{{minutes}} dk önce başladı",
+      "reservationActivity": "Son ilerleme: {{time}}",
+      "reservationHeartbeat": "Son bağlantı: {{time}}",
+      "reservationDeadline": "Görev son süresi: {{time}}",
+      "reservationReviewDeadline": "İnceleme en geç {{time}} tarihinde biter",
+      "reservationReview": "Kullanım inceleniyor",
+      "reservationCancel": "Görevi iptal et",
+      "reservationCancelling": "İptal ediliyor…",
+      "reservationUnavailable": "Görev ayrıntıları yenilenemedi.",
+      "reservationCancelError": "Bu görev iptal edilemedi. Lütfen yenileyip tekrar deneyin.",
+      "creditHistoryTitle": "Kredi geçmişi",
+      "creditHistoryHelp": "Ücretler doğrulanmış kullanıma göre alınır. Doğrulanamayan kullanım ücretlendirilmez. İadeler kullanılabilir bakiyeye dahildir.",
+      "creditHistoryError": "Geçmiş yenilenemedi. Görüntülenen kayıtlar güncel olmayabilir.",
+      "creditHistoryEmpty": "Henüz kredi hareketi yok.",
+      "creditHistoryAmount": "{{credits}} kredi",
+      "creditHistoryTokens": "{{input}} giriş · {{output}} çıkış tokenı",
+      "creditHistoryRefunded": "{{credits}} kredi iade edildi",
+      "creditHistoryUnverified": "Kullanım doğrulanamadığından kredi düşülmedi.",
+      "creditHistoryNoCharge": "Ücret alınmadı",
+      "creditHistoryCache": "Önbellekteki sonuç",
+      "creditHistoryVerified": "Doğrulanmış kullanım",
+      "creditHistoryRecorded": "Kaydedilen ücret",
+      "creditHistoryInterrupted": "Kesintiye uğradı",
+      "creditsUsedShare": "{{percent}} used"
+    },
     "aboutTab": "Hakkında",
     "advanced": "Gelişmiş",
     "cookiesTab": "Çerezler",
@@ -593,7 +686,12 @@
     "title": "Ayarlar",
     "tray": {
       "quit": "Çık",
-      "showHome": "Ana Sayfa'yı göster"
+      "showHome": "Ana Sayfa'yı göster",
+      "next": "Next",
+      "openDevTools": "Open DevTools",
+      "pause": "Pause",
+      "play": "Play",
+      "previous": "Previous"
     },
     "video": "Video Tercihleri",
     "oneClickContainer": "Kapsayıcı",
@@ -719,6 +817,15 @@
     "promptsTab": "Komutlar",
     "transcriptionTab": "Transkripsiyon",
     "ai": {
+      "ownProvider": "Kendi sağlayıcınızı kullanın",
+      "ownProviderDescription": "Gelişmiş: kendi modelinizi veya faturalandırmanızı bağlayın.",
+      "recommended": "Önerilen",
+      "signInForCloud": "Oturum aç",
+      "useVidbeeCloud": "VidBee Cloud kullan",
+      "vidbeeCloud": "VidBee Cloud",
+      "vidbeeCloudDescription": "50K AI kredisiyle kullanıma hazır. API anahtarı veya sağlayıcı kurulumu gerekmez.",
+      "vidbeeCloudPrivacy": "Transkript içeriği yalnızca bir AI işlemi çalıştırdığınızda gönderilir.",
+      "vidbeeCloudSection": "Yönetilen hizmet",
       "allServices": "Tüm hizmetler",
       "configured": "Yapılandırılmış",
       "useProvider": "Kullan",
@@ -766,9 +873,24 @@
         "ollama": "Ollama",
         "openai": "OpenAI",
         "openrouter": "OpenRouter",
-        "xai": "xAI"
+        "xai": "xAI",
+        "alibaba": "Alibaba Cloud",
+        "fireworks": "Fireworks",
+        "minimax": "MiniMax",
+        "mistral": "Mistral",
+        "moonshot": "Moonshot",
+        "novita": "Novita",
+        "ppio": "PPIO",
+        "siliconflow": "SiliconFlow",
+        "stepfun": "StepFun",
+        "together": "Together",
+        "volcengine": "Volcengine",
+        "zhipu": "Zhipu"
       },
       "presetPrompts": {
+        "overview": {
+          "title": "Genel bakış"
+        },
         "bullet-points": {
           "title": "Madde işaretleri"
         },
@@ -790,7 +912,11 @@
         "translate": {
           "title": "Çevir"
         }
-      }
+      },
+      "createModel": "Create “{{query}}”",
+      "noModelFound": "No model found.",
+      "allModelsSelected": "Listedeki modellerin tümü zaten eklendi.",
+      "loadingModels": "Sağlayıcıdan modeller yükleniyor…"
     },
     "cookiesSetup": {
       "statusNotConfigured": "Ayarlanmadı",
@@ -833,7 +959,25 @@
       "fileExportExtension": "Chrome / Edge uzantısı",
       "checking": "Çerezler kontrol ediliyor…",
       "applied": "Çerezler güncellendi",
-      "profileMissingDb": "Bu Firefox profilinde çerez veritabanı yok. Firefox’u bir kez açın, sonra yeniden deneyin."
+      "profileMissingDb": "Bu Firefox profilinde çerez veritabanı yok. Firefox’u bir kez açın, sonra yeniden deneyin.",
+      "statusUsingExtension": "Using {{browser}} extension",
+      "healthOkExtension": "The VidBee extension will send live cookies from {{browser}} for each download",
+      "healthEmptyExtension": "The extension is connected, but no supported login cookies were found. Sign in to the site in that browser",
+      "statusHeading": "Cookie status",
+      "methodRecommended": "Recommended",
+      "methodExtensionWhy": "Best option. Desktop uses live cookies for each download, including Chrome and Edge on Windows.",
+      "extensionTitle": "Browser extension",
+      "extensionDescription": "Install the VidBee extension so Desktop can use your live signed-in cookies when downloading",
+      "extensionConnected": "Connected",
+      "extensionDisconnected": "Not connected",
+      "extensionConnectedHint": "{{browser}} is connected. New downloads will use cookies from this browser",
+      "extensionDisconnectedHint": "Keep VidBee Desktop open, install the extension, then sign in to the site in that browser",
+      "extensionInstallChrome": "Add to Chrome",
+      "extensionInstallEdge": "Add to Edge",
+      "extensionInstallFirefox": "Add to Firefox",
+      "extensionInstallStep1": "Install the VidBee extension in Chrome, Edge, or Firefox",
+      "extensionInstallStep2": "Keep VidBee Desktop running so the extension can connect",
+      "extensionInstallStep3": "Sign in to YouTube, Bilibili, or other sites in that browser, then open the VidBee toolbar icon once"
     }
   },
   "subscriptions": {
@@ -949,12 +1093,17 @@
     }
   },
   "kernelPreparation": {
+    "copied": "Kopyalandı",
     "copying": "İndirme motoru kopyalanıyor…",
+    "copyLog": "Günlüğü kopyala",
     "description": "VidBee indirme motorunu hazırlıyor. Bu işlem yalnızca kısa bir süre alır.",
     "errorDescription": "VidBee çalışan bir indirme motoru hazırlayamadı. Yerel depolama erişimini kontrol edip yeniden deneyin.",
+    "errorDetails": "Hata ayrıntıları",
     "errorTitle": "İndirme motoru kullanılamıyor",
     "finalizing": "Kurulum tamamlanıyor…",
+    "missingError": "Ayrıntılı bir hata kaydedilmedi.",
     "progressLabel": "İndirme motoru hazırlama ilerlemesi",
+    "reportIssue": "GitHub’da bildir",
     "retry": "Yeniden dene",
     "retrying": "Yeniden deneniyor…",
     "title": "VidBee hazırlanıyor",
@@ -1057,6 +1206,7 @@
     "sourceSwitch": "Döküm kaynağı",
     "sourceCaptionNamed": "{{language}} altyazıları",
     "sourceCaptionAutoNamed": "{{language}} otomatik altyazıları",
+    "asrIdle": "Mevcut altyazılardan memnun değilseniz, bu bilgisayarda yerel bir döküm oluşturabilirsiniz.",
     "noSpeech": "No speech",
     "noSpeechDetail": "No speech was detected in this file. You can still run a full transcript.",
     "error": "Transcript error",
@@ -1090,6 +1240,23 @@
     "followResume": "Jump to current line",
     "title": "Transcript",
     "ready": "Transcript ready",
+    "listLabel": {
+      "subtitles": "Altyazılar",
+      "transcribed": "Yazıya döküldü",
+      "downloaded": "İndirildi"
+    },
+    "listHint": {
+      "queued": "Transkript bekleniyor. Yer açılınca başlar.",
+      "retrySoon": "Transkript başarısız oldu ve kısa süre sonra yeniden denenecek.",
+      "ready": "Yazıya dökülmüş altyazılar hazır. Açmak için satıra tıklayın.",
+      "captions": "Videonun altyazı izinden oluşturuldu. Açmak için satıra tıklayın.",
+      "cancelled": "Transkript iptal edildi.",
+      "subtitlesDownloaded": "Altyazı dosyası kaydedildi ({{languages}}).",
+      "subtitlesDownloadedUnknown": "Altyazı dosyası kaydedildi.",
+      "subtitlesUnavailable": "Bu videoda indirilecek bir altyazı izi yok.",
+      "subtitlesAuth": "Altyazıları indirmek için oturum açıp yeniden deneyin.",
+      "subtitlesFailed": "Altyazı indirme başarısız oldu."
+    },
     "copy": "Transkripti kopyala",
     "copied": "Transkript kopyalandı",
     "copyFailed": "Transkript kopyalanamadı.",
@@ -1102,6 +1269,9 @@
     "captionDelete": "Sil",
     "captionDeleteSelected": "Seçilenleri sil",
     "captionDeleted": "{{count}} altyazı silindi",
+    "captionDeleteConfirmTitle": "Seçilen altyazılar silinsin mi?",
+    "captionDeleteConfirmDescription": "Bu işlem, transkriptten {{count}} altyazıyı kalıcı olarak kaldırır.",
+    "captionDeleteConfirmCancel": "İptal",
     "captionSaveFailed": "Altyazı kaydedilemedi.",
     "captionPlaceholder": "Altyazıyı yazın",
     "captionSpeaker": "Konuşmacı",
@@ -1173,7 +1343,12 @@
       "segments": "Bölümler",
       "createdAt": "Yazıya döküldü",
       "empty": "Henüz ayrıntı yok.",
-      "openUrl": "Kaynak URL'yi aç"
+      "openUrl": "Kaynak URL'yi aç",
+      "group": {
+        "media": "Medya",
+        "file": "Dosya",
+        "transcript": "Transkript"
+      }
     },
     "speakingShare": "%{{percent}}",
     "seekSpeaker": "{{name}} konumuna git",
@@ -1210,11 +1385,22 @@
       "volumePercent": "%{{percent}}",
       "fullscreen": "Tam ekran",
       "fullscreenExit": "Tam ekrandan çık",
-      "resumed": "{{time}} konumundan devam edildi",
-      "startOver": "Baştan başla",
       "nowPlaying": "Çalıyor",
-      "closeBar": "Oynatıcıyı kapat",
-      "openTranscript": "Transkripte dön"
+      "openTranscript": "Transkripte dön",
+      "playlist": {
+        "title": "Oynatma listesi",
+        "open": "Oynatma listesini aç",
+        "count": "{{count}} öğe",
+        "empty": "Oynatma listeniz boş",
+        "emptyHint": "Bir indirmeyi oynatın veya sağ tıklama menüsünden ekleyin.",
+        "add": "Oynatma listesine ekle",
+        "addedCount": "{{count}} öğe oynatma listesine eklendi",
+        "remove": "Oynatma listesinden kaldır",
+        "moveUp": "Yukarı taşı",
+        "moveDown": "Aşağı taşı",
+        "drag": "Sıralamak için sürükleyin",
+        "more": "Oynatma listesi öğesi işlemleri"
+      }
     },
     "qualityHint": "Not happy with this transcript?",
     "qualityHintDetail": "Download a higher-quality model and transcribe again. The current transcript is kept as history.",
@@ -1234,6 +1420,8 @@
     "promptShare": "Görseli paylaş",
     "promptShareTitle": "Görseli paylaş",
     "promptShareDownload": "İndir",
+    "promptShareDownloadFull": "Tam uzunlukta görsel",
+    "promptShareDownloadSplit": "Bölünmüş görseller (numaralı klasör)",
     "promptShareNative": "Paylaş",
     "promptSharing": "Görsel hazırlanıyor…",
     "promptShared": "Paylaşım görseli kopyalandı",
@@ -1247,32 +1435,61 @@
     "promptOutput": "İstem sonucu",
     "promptScrollToEnd": "En sona git",
     "promptCopied": "Kopyalandı",
+    "promptCloudGenerated": "VidBee Cloud ile oluşturuldu",
     "promptNoProvider": "Bu komutu çalıştırmak için Ayarlar’da bir yapay zeka sağlayıcısı kurun.",
     "promptOpenSettings": "Sağlayıcı ayarlarını aç",
     "promptEmpty": "Sonuç burada görünecek.",
+    "overviewChapters": "Bölümler",
+    "overviewQuotes": "Alıntılar",
+    "promptRetrying": "Oluşturma kesintiye uğradı. Yeniden deneniyor {{attempt}}/{{maxAttempts}}…",
+    "promptWaiting": "Model yanıtı bekleniyor · {{seconds}} sn",
     "promptRunning": "Yazılıyor…",
     "promptThinking": "Düşünüyor",
     "promptThinkingFor": "{{seconds}} sn düşünüyor",
     "promptThoughtFor": "{{seconds}} sn düşündü",
     "promptAborted": "Durduruldu",
+    "promptTabCompleted": "Tamamlandı",
+    "promptTabError": "Başarısız",
     "promptNoTranscript": "Bu komutu çalıştırmadan önce bir transkript gerekir.",
+    "promptWaitForTranscript": "Bu komut, transkripsiyon bitince çalışacak.",
+    "promptRunWhenReady": "Hazır olunca çalıştır",
+    "promptWaitingToRun": "Transkript bekleniyor…",
     "promptTryAgain": "Yeniden dene",
     "promptLoading": "Yapay zeka ayarları yükleniyor…",
     "promptGuide": {
+      "interrupted": "Yapay zekâ yanıtı tamamlanmadan kesildi.",
+      "creditsExhausted": "Bu hesapta yeterli AI kredisi yok.",
+      "signInRequired": "VidBee Cloud’da oturum açın, Ask AI’yi hemen ücretsiz kullanın.",
       "noProvider": "Etkin bir yapay zeka sağlayıcısı yok, bu komut çalıştırılamaz.",
       "missingApiKey": "Etkin sağlayıcıda API anahtarı yok.",
       "missingModel": "Etkin sağlayıcıda model kimliği yok.",
       "unknownPrompt": "Bu komut artık yok.",
       "emptyTranscript": "Bu komut bitmiş bir transkript ister.",
       "auth": "Sağlayıcı isteği reddetti. API anahtarı veya hesap geçersiz olabilir.",
+      "authCloud": "VidBee Cloud isteği reddetti. Oturumunuzun süresi dolmuş olabilir.",
       "network": "Sağlayıcıya ulaşılamadı.",
+      "networkCloud": "VidBee Cloud’a ulaşılamadı.",
       "emptyOutput": "Sağlayıcı bitti ama metin döndürmedi.",
-      "unknown": "Komut çalıştırılamadı."
+      "emptyOutputCloud": "VidBee Cloud bitti ama metin döndürmedi.",
+      "unknown": "Komut çalıştırılamadı.",
+      "unknownCloud": "VidBee Cloud bu komutu tamamlayamadı.",
+      "serviceErrorCloud": "VidBee Cloud's AI service rejected this request."
     },
     "promptErrorDetails": "Hata ayrıntıları",
     "promptWhatToDo": "Denenecekler",
     "promptUsingProvider": "Kullanılan: {{name}}",
+    "promptCreditsByok": "Veya <byok>kendi API anahtarınızı kullanın</byok>.",
     "promptSolutions": {
+      "creditsExhausted": {
+        "s1": "Kalan kredileri görmek için Hesap'ı aç.",
+        "s2": "Yeni bir kullanıcı davet ederek kredi kazan.",
+        "s3": "Krediler eklendikten sonra istemi yeniden çalıştır."
+      },
+      "signInRequired": {
+        "s1": "Ayarlar → Providers bölümünü aç.",
+        "s2": "VidBee Cloud altında GitHub ile oturum aç.",
+        "s3": "İstemi yeniden çalıştır."
+      },
       "noProvider": {
         "s1": "Ayarlar → Sağlayıcılar’ı açın.",
         "s2": "Bir hizmet ekleyin, API anahtarı ve model kimliğini kaydedin, sonra Kullan’a tıklayın.",
@@ -1301,22 +1518,78 @@
         "s2": "Krediyi ve bu model için yetkiyi kontrol edin.",
         "s3": "Özel uç noktaysa bu anahtarı kabul ettiğini doğrulayın."
       },
+      "authCloud": {
+        "s1": "Hesap’ı açın ve hâlâ oturum açık olduğunu doğrulayın.",
+        "s2": "Oturumun süresi dolduysa yeniden giriş yapın.",
+        "s3": "Komutu yeniden çalıştırın."
+      },
       "network": {
         "s1": "İnterneti ve vekil sunucuyu kontrol edin.",
         "s2": "Özel sağlayıcıda Base URL’ye ulaşılabildiğini, gerekirse /v1 içerdiğini kontrol edin.",
         "s3": "Ana makine düştüyse başka sağlayıcıya geçin."
+      },
+      "networkCloud": {
+        "s1": "İnternet bağlantınızı kontrol edin.",
+        "s2": "Hesap’ı açın ve hâlâ oturum açık olduğunu doğrulayın.",
+        "s3": "Bir süre sonra yeniden deneyin. Sürerse VidBee Cloud geçici olarak kullanılamıyor olabilir."
       },
       "emptyOutput": {
         "s1": "Ayarlar → Sağlayıcılar’da model kimliğinin bu hizmet için doğru olduğunu kontrol edin.",
         "s2": "Özel uç noktaysa Base URL, API anahtarı ve modelin yayında olduğunu kontrol edin.",
         "s3": "Aşağıdaki hata ayrıntısına bakın, sonra yeniden deneyin veya sağlayıcıyı değiştirin."
       },
+      "emptyOutputCloud": {
+        "s1": "Yeniden deneyin. Yanıt yarıda kesilmiş olabilir.",
+        "s2": "Sürerse Hesap’ı açın, oturumun açık ve kredinizin olduğunu doğrulayın."
+      },
       "unknown": {
         "s1": "Önce aşağıdaki hata ayrıntısını okuyun.",
         "s2": "Ayarlar → Sağlayıcılar’da API anahtarı, model kimliği ve Base URL’yi kontrol edin.",
         "s3": "Yeniden deneyin veya başka sağlayıcıya geçin."
+      },
+      "unknownCloud": {
+        "s1": "Önce aşağıdaki hata ayrıntısını okuyun.",
+        "s2": "Bir süre sonra yeniden deneyin. Bağlantı koparsa Cloud yanıtı yarıda durabilir.",
+        "s3": "Sürerse Hesap’ı açın, oturumun açık ve kredinizin olduğunu doğrulayın."
       }
-    }
+    },
+    "promptDislike": "Beğenmedim",
+    "promptFeedbackSaved": "Geri bildirim kaydedildi",
+    "promptFeedbackFailed": "Geri bildirim kaydedilemedi. Lütfen tekrar deneyin.",
+    "promptHistory": "History",
+    "promptHistoryClose": "Close history",
+    "promptHistoryNew": "New chat",
+    "promptHistoryChat": "Chat",
+    "promptHistoryDescription": "Agent conversations from every video",
+    "promptHistoryEmpty": "No conversations yet",
+    "promptHistoryToday": "Today",
+    "promptHistoryYesterday": "Yesterday",
+    "promptHistoryMore": "Conversation actions",
+    "promptHistoryDelete": "Delete",
+    "promptHistoryDeleteTitle": "Delete this conversation?",
+    "promptHistoryDeleteDescription": "This removes the conversation. The video and transcript stay.",
+    "promptHistoryDeleteCancel": "Cancel",
+    "promptHistoryUntitled": "Untitled",
+    "promptTabClose": "Close tab",
+    "promptHistoryRename": "Rename",
+    "promptHistoryRenameTitle": "Rename conversation",
+    "promptHistoryRenameDescription": "Choose a short title for this chat tab.",
+    "promptHistoryRenameSave": "Save",
+    "promptHistoryRenamePlaceholder": "Conversation title",
+    "promptMore": "More actions",
+    "promptExportPdf": "Export as PDF",
+    "promptExportMarkdown": "Export as Markdown",
+    "promptExportSaved": "Exported",
+    "promptExportFailed": "Could not export.",
+    "promptExportEmpty": "Nothing to export.",
+    "promptShareSplitCount": "Number of images (optional)",
+    "promptShareSplitCountAuto": "Automatic",
+    "promptShareSplitCountHint": "Leave blank for automatic splitting. Fewer images may be saved to keep content intact.",
+    "thinkingSecond": "{{count}} second",
+    "thinkingSeconds": "{{count}} seconds",
+    "thinkingMinute": "{{count}} minute",
+    "thinkingMinutes": "{{count}} minutes",
+    "promptCloudServiceErrorDetail": "Your transcript is saved. This service issue needs to be resolved before you can generate the response."
   },
   "whatsNew": {
     "title": "Yenilikler",
@@ -1340,5 +1613,131 @@
         "description": "Yerel ses veya videoyu Transkriptler’e bırakın. Metin, altyazı veya gömülü altyazılı video dışa aktarın."
       }
     }
+  },
+  "cloudCache": {
+    "title": "Cloud sonuç önbelleği",
+    "range": "Dönem (UTC)",
+    "hits": "İsabetler",
+    "misses": "Kaçırmalar",
+    "bypasses": "Atlamalar",
+    "hitRate": "İsabet oranı",
+    "today": "Bugün",
+    "week": "Son 7 gün",
+    "month": "Son 30 gün",
+    "all": "Tüm zamanlar"
+  },
+  "agentChat": {
+    "eventStream": "Event Stream",
+    "eventStatus": {
+      "running": "Running",
+      "completed": "Completed",
+      "error": "Failed"
+    },
+    "placeholder": "Ask a follow-up about this video…",
+    "send": "Send message",
+    "attachImages": "Attach images",
+    "removeImage": "Remove {{name}}",
+    "imageSelectionFailed": "Could not add these images. Select up to 10 PNG, JPEG or WebP images, each no larger than 20 MB.",
+    "imageRemoveFailed": "Could not remove this image. Try again.",
+    "imagesNotSupported": "Choose a model that supports images, or remove the attachments to send this message.",
+    "interrupted": "This response was interrupted when the app closed. Retry to continue.",
+    "imported": "Imported from your previous summary",
+    "previousVersion": "Previous reply version",
+    "nextVersion": "Next reply version",
+    "toolCount": "Tool calls: {{count}}",
+    "saveAttachment": "Save attachment",
+    "attachmentUnavailable": "This attachment is unavailable. Try generating it again.",
+    "frame": "Frame at {{time}}",
+    "clip": "Clip at {{time}}",
+    "downloading": "Downloading video",
+    "contextWindow": "Context window (tokens)",
+    "contextWindowHint": "Enter the context window if the model is not in the catalog.",
+    "vision": "Image input",
+    "toolCalling": "Tool calling",
+    "reasoning": "Thinking",
+    "thinkingOnly": "Thinking only",
+    "allowDisableThinking": "Allow turning thinking off",
+    "thinkingCapabilitiesHint": "Arayüz şu anda düşünme anahtarını gösterir, yoğunluk düzeylerini değil. Model düzey destekliyorsa aşağıdaki kullanılabilir düzeyleri seçin.",
+    "defaultThinkingLevel": "Varsayılan düşünme düzeyi",
+    "defaultThinkingAuto": "Otomatik (istek katmanı varsayılanını kullan)",
+    "supportedThinkingLevels": "Desteklenen düşünme düzeyleri",
+    "inputTokens": "Girdi",
+    "outputTokens": "Çıktı",
+    "providerDefault": "Sağlayıcı varsayılanını kullan",
+    "automatic": "Use model defaults",
+    "enabled": "Supported",
+    "disabled": "Not supported",
+    "visionSelect": "Select…",
+    "catalogFilled": "You can change these catalog values.",
+    "catalogMissing": "This model is not in the catalog. Enter the context window and capabilities.",
+    "catalogLooking": "Looking up this model id in the catalog…",
+    "catalogMatched": "Matched {{name}}. Context window and capabilities were filled in.",
+    "catalogBadge": "Catalog",
+    "tools": {
+      "get_video_info": "Reading video information",
+      "read_transcript": "Reading transcript",
+      "search_transcript": "Searching transcript",
+      "capture_frames": "Capturing video frames",
+      "create_clip": "Creating video clip",
+      "read_history": "Reading conversation history",
+      "search_history": "Searching conversation history",
+      "read_notes": "Reading working notes",
+      "write_notes": "Saving working notes",
+      "read_artifact": "Reviewing saved image",
+      "rename_conversation": "Renaming conversation",
+      "write_article": "Writing article",
+      "review_article": "Reviewing article"
+    },
+    "modelCapabilities": "Model capabilities",
+    "runDurationRunning": "Working · {{duration}}",
+    "runDuration": "Elapsed: {{duration}}",
+    "durationSeconds": "{{seconds}}s",
+    "durationMinutes": "{{minutes}}m {{seconds}}s",
+    "contextStatus": {
+      "compacting": "Organizing conversation context",
+      "recovering": "Recovering conversation context",
+      "reviewing": "Checking source coverage",
+      "writing": "Writing and checking source sections"
+    },
+    "thinking": {
+      "label": "Thinking level",
+      "off": "Off",
+      "minimal": "Minimal",
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "xhigh": "Extra high",
+      "max": "Maximum"
+    },
+    "models": "Modeller",
+    "model": "Model",
+    "reasoningEffort": "Akıl yürütme eforu",
+    "cloud": "Cloud",
+    "searchModels": "Modelleri ara…",
+    "noModels": "Model bulunamadı.",
+    "effort": "Efor {{level}}",
+    "faster": "Daha hızlı",
+    "smarter": "Daha zeki",
+    "retrying": "Connection interrupted. Retrying…",
+    "defaultThinkingLevel": "Default thinking level",
+    "defaultThinkingAuto": "Auto (use request default)",
+    "supportedThinkingLevels": "Supported thinking levels",
+    "inputTokens": "Input",
+    "outputTokens": "Output",
+    "providerDefault": "Use provider default"
+  },
+  "web": {
+    "saveToThisComputer": "Save to this computer",
+    "copyServerPath": "Copy server path",
+    "serverPathCopied": "Server path copied",
+    "downloadPathDescription": "Where the VidBee server saves files. In Docker this is usually /data/downloads.",
+    "autoTranscribeAfterDownloadDescription": "When a download finishes, start a transcript on the VidBee server. Already queued jobs keep running if you turn this off.",
+    "maxConcurrentTranscriptionsDescription": "How many transcripts can run at once on the server.",
+    "transcriptModelsDescription": "Speech models are stored on the VidBee server. The first transcript downloads them there.",
+    "cookiesFileOnly": "The server cannot read browsers on your computer. Export a Netscape cookies.txt and upload it.",
+    "storageTitle": "Server storage",
+    "storageDownloadDir": "Download directory",
+    "storageDataDir": "Data directory",
+    "storageDbFile": "SQLite database"
   }
 }

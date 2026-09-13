@@ -8,6 +8,8 @@
     "./contract": "./src/contract.ts",
     "./types": "./src/types.ts",
     "./schemas": "./src/schemas.ts",
+    "./form": "./src/form.ts",
+    "./status": "./src/status.ts",
     "./feed-resolver": "./src/feed-resolver.ts",
     "./feed-parser": "./src/feed-parser.ts",
     "./feed-items": "./src/feed-items.ts",

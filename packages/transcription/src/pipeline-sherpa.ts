@@ -15,6 +15,7 @@ import {
   loadChunkManifest,
   patchChunkManifest
 } from './chunk-manifest'
+import type { SherpaExecutionProvider } from './compute-provider'
 import { modelVersion } from './model-catalog'
 import type { ModelManager } from './model-manager'
 import { type PipelineRunInput, report, type TranscriptionPipeline } from './pipeline'
@@ -58,6 +59,7 @@ export const DIARIZE_NUM_THREADS = 2
 export interface SherpaPipelineOptions {
   models: ModelManager
   createAddon?: () => SherpaAddon
+  provider?: SherpaExecutionProvider
 }
 
 export interface SherpaWave {
@@ -166,7 +168,11 @@ const collectTurns = (
 }
 
 export class SherpaTranscriptionPipeline implements TranscriptionPipeline {
-  constructor(private readonly opts: SherpaPipelineOptions) {}
+  private readonly opts: SherpaPipelineOptions
+
+  constructor(opts: SherpaPipelineOptions) {
+    this.opts = opts
+  }
 
   async run(input: PipelineRunInput): Promise<PipelineResult> {
     if (input.signal?.aborted) {
@@ -379,7 +385,8 @@ export class SherpaTranscriptionPipeline implements TranscriptionPipeline {
           maxSpeechDuration: 20
         },
         sampleRate: wave.sampleRate,
-        numThreads: 1
+        numThreads: 1,
+        provider: 'cpu'
       },
       bufferSec
     )
@@ -514,9 +521,9 @@ export class SherpaTranscriptionPipeline implements TranscriptionPipeline {
       segmentation: {
         pyannote: { model: seg, windowShiftRatio: 0.1 },
         numThreads: DIARIZE_NUM_THREADS,
-        provider: 'cpu'
+        provider: this.provider()
       },
-      embedding: { model: emb, numThreads: DIARIZE_NUM_THREADS, provider: 'cpu' },
+      embedding: { model: emb, numThreads: DIARIZE_NUM_THREADS, provider: this.provider() },
       clustering: { numClusters, threshold: CLUSTERING_THRESHOLD },
       minDurationOn: MIN_DURATION_ON_SEC,
       minDurationOff: MIN_DURATION_OFF_SEC
@@ -527,7 +534,7 @@ export class SherpaTranscriptionPipeline implements TranscriptionPipeline {
       ? new Extractor({
           model: emb,
           numThreads: DIARIZE_NUM_THREADS,
-          provider: 'cpu'
+          provider: this.provider()
         })
       : null
     const bridge = extractor ? 'global-recluster' : 'sherpa'
@@ -585,12 +592,7 @@ export class SherpaTranscriptionPipeline implements TranscriptionPipeline {
       }
       chunkEmbeds.push(embeds)
       const windowNote = `window ${i + 1}/${windows.length}`
-      report(
-        input,
-        'diarizing',
-        0.88 + (0.1 * (i + 1)) / Math.max(1, windows.length),
-        windowNote
-      )
+      report(input, 'diarizing', 0.88 + (0.1 * (i + 1)) / Math.max(1, windows.length), windowNote)
     }
     const embedCount = chunkEmbeds.reduce((sum, embeds) => sum + embeds.length, 0)
     if (embedCount > 0) {
@@ -786,8 +788,17 @@ export class SherpaTranscriptionPipeline implements TranscriptionPipeline {
       buildOfflineRecognizerConfig(
         asrTierInfo(asrTier).family,
         resolveAsrModelPaths(this.opts.models, asrTier),
-        2
+        2,
+        undefined,
+        this.provider()
       )
     )
+  }
+
+  /**
+   * Resolve the verified provider selected by the parent worker host.
+   */
+  private provider(): SherpaExecutionProvider {
+    return this.opts.provider ?? 'cpu'
   }
 }

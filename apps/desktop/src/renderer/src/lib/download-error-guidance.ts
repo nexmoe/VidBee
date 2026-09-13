@@ -117,6 +117,11 @@ const DOWNLOAD_ERROR_GUIDANCE_RULES: DownloadErrorGuidanceRule[] = [
     message:
       'This source is DRM protected, so VidBee cannot download it with the current yt-dlp workflow.',
     patterns: ['this video is drm protected', 'requested site is known to use drm protection']
+  },
+  {
+    message:
+      'VidBee could not find downloadable media at this link. Check that it points to a public audio or video page, then try again.',
+    patterns: ['unable to extract video info', 'unsupported url']
   }
 ]
 

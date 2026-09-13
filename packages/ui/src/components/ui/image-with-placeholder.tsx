@@ -1,11 +1,12 @@
-import { cn } from '../../lib/cn'
 import { ImageIcon } from 'lucide-react'
-import { useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
+import { cn } from '../../lib/cn'
 
 interface ImageWithPlaceholderProps {
   src?: string
   alt: string
   className?: string
+  imgClassName?: string
   placeholderClassName?: string
   fallbackIcon?: React.ReactNode
   onError?: () => void
@@ -16,24 +17,45 @@ export function ImageWithPlaceholder({
   src,
   alt,
   className,
+  imgClassName,
   placeholderClassName,
   fallbackIcon,
   onError,
   onLoad
 }: ImageWithPlaceholderProps) {
+  const imageRef = useRef<HTMLImageElement>(null)
+  const onLoadRef = useRef(onLoad)
+  const onErrorRef = useRef(onError)
   const [hasError, setHasError] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  onLoadRef.current = onLoad
+  onErrorRef.current = onError
 
   const handleError = () => {
     setHasError(true)
     setIsLoading(false)
-    onError?.()
+    onErrorRef.current?.()
   }
 
   const handleLoad = () => {
     setIsLoading(false)
-    onLoad?.()
+    onLoadRef.current?.()
   }
+
+  useLayoutEffect(() => {
+    setHasError(false)
+    if (!src) {
+      setIsLoading(false)
+      return
+    }
+    const node = imageRef.current
+    if (node?.complete && node.naturalWidth > 0) {
+      setIsLoading(false)
+      onLoadRef.current?.()
+      return
+    }
+    setIsLoading(true)
+  }, [src])
 
   // Show placeholder if no src, error occurred, or still loading
   if (!src || hasError) {
@@ -47,7 +69,7 @@ export function ImageWithPlaceholder({
   }
 
   return (
-    <div className={cn('relative h-full w-full', className)}>
+    <div className={cn('relative h-full w-full overflow-hidden', className)}>
       {isLoading && (
         <div
           className={cn(
@@ -60,9 +82,10 @@ export function ImageWithPlaceholder({
       )}
       <img
         alt={alt}
-        className={cn('h-full w-full object-cover', isLoading && 'opacity-0')}
+        className={cn('h-full w-full object-cover', imgClassName, isLoading && 'opacity-0')}
         onError={handleError}
         onLoad={handleLoad}
+        ref={imageRef}
         src={src}
       />
     </div>

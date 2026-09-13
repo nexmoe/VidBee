@@ -47,7 +47,13 @@
 /* Keep prose readable while allowing tables, diagrams, and code to use the full output width. */
 .transcript-prompt-markdown {
   font-size: 0.9375rem;
+  font-synthesis: none;
+  font-weight: 400;
   line-height: 1.75;
+}
+
+.transcript-prompt-markdown :is([data-streamdown="strong"], strong) {
+  font-weight: 700;
 }
 
 .transcript-prompt-markdown
@@ -67,7 +73,6 @@
     [data-streamdown="unordered-list"],
     [data-streamdown="blockquote"]
   ) {
-  margin-inline: auto;
   max-width: 72ch;
   width: 100%;
 }
@@ -128,27 +133,131 @@
 
 .transcript-prompt-markdown
   :is([data-streamdown="ordered-list"], [data-streamdown="unordered-list"]) {
-  margin-block: 0.75rem 1rem;
+  margin-block: 0 1rem;
+  margin-inline-start: 0;
+  padding-inline-start: 0;
+  list-style: none;
+}
+
+.transcript-prompt-markdown [data-streamdown="ordered-list"] {
+  counter-reset: transcript-list;
 }
 
 .transcript-prompt-markdown [data-streamdown="list-item"] {
-  padding-block: 0.375rem;
-}
-
-/* Treat a standalone bold line as a visual section label without changing its Markdown. */
-.transcript-prompt-markdown > p:has(> [data-streamdown="strong"]:only-child),
-.transcript-prompt-markdown
-  > div[dir]
-  > p:has(> [data-streamdown="strong"]:only-child) {
-  font-size: 1rem;
-  font-weight: 600;
-  line-height: 1.5rem;
-  margin-block: 1.75rem 0.5rem;
-  text-wrap: balance;
+  position: relative;
+  padding-block: 0.15em;
 }
 
 .transcript-prompt-markdown
-  > div:first-child
-  > p:has(> [data-streamdown="strong"]:only-child) {
-  margin-block-start: 0;
+  [data-streamdown="unordered-list"]
+  > [data-streamdown="list-item"] {
+  padding-inline-start: 1em;
+}
+
+.transcript-prompt-markdown
+  [data-streamdown="ordered-list"]
+  > [data-streamdown="list-item"] {
+  padding-inline-start: 1.6em;
+  counter-increment: transcript-list;
+}
+
+.transcript-prompt-markdown
+  [data-streamdown="unordered-list"]
+  > [data-streamdown="list-item"]::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0;
+  top: calc(0.15em + 0.5lh - 0.175em);
+  width: 0.35em;
+  height: 0.35em;
+  border-radius: 50%;
+  background-color: currentColor;
+}
+
+.transcript-prompt-markdown
+  [data-streamdown="ordered-list"]
+  > [data-streamdown="list-item"]::before {
+  content: counter(transcript-list) ".";
+  position: absolute;
+  inset-inline-start: 0;
+  top: 0.15em;
+  line-height: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+.transcript-prompt-markdown
+  [data-streamdown="list-item"]
+  :is([data-streamdown="ordered-list"], [data-streamdown="unordered-list"]) {
+  margin-block: 0.35em;
+}
+
+.transcript-prompt-markdown .prompt-clock {
+  background: none;
+  border: 0;
+  font: inherit;
+  padding: 0;
+}
+
+/* Streamdown nests a bordered table inside a padded card. Keep one surface
+   with a tool row above the table, like a spreadsheet chrome bar. */
+div[data-streamdown="table-wrapper"] {
+  gap: 0;
+  padding: 0;
+  background-color: var(--background);
+}
+
+div[data-streamdown="table-wrapper"] > :first-child:not(:has(> table)) {
+  padding-block: 0.25rem;
+  padding-inline: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+div[data-streamdown="table-wrapper"] > :has(> table) {
+  border-width: 0;
+  border-start-start-radius: 0;
+  border-start-end-radius: 0;
+  border-end-start-radius: inherit;
+  border-end-end-radius: inherit;
+  background-color: transparent;
+}
+
+/* Scale the in-app markdown as a whole so code, tables, and headings stay in proportion. */
+.transcript-prompt-share-scale {
+  width: 100%;
+  zoom: 1.5;
+}
+
+/* Share posters are a static fill. Drop Streamdown's nested table card and wrap cells. */
+.transcript-prompt-share-scale [data-streamdown="table-wrapper"] {
+  margin-block: 0.75rem 0;
+  border-width: 0;
+  border-radius: 0;
+  background-color: transparent;
+}
+
+.transcript-prompt-share-scale
+  [data-streamdown="table-wrapper"]
+  > :first-child:not(:has(> table)) {
+  display: none;
+}
+
+.transcript-prompt-share-scale [data-streamdown="table-header"] {
+  background-color: rgb(0 0 0 / 0.18);
+}
+
+.transcript-prompt-share-scale
+  :is([data-streamdown="table-header-cell"], [data-streamdown="table-cell"]) {
+  white-space: normal;
+}
+
+/* A saved poster cannot scroll horizontally; wrap long code without hiding its ending. */
+.transcript-prompt-share-scale pre,
+.transcript-prompt-share-scale pre code {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Offscreen posters must lay out code before measuring pagination boundaries. */
+.transcript-prompt-share-scale [data-streamdown="code-block"] {
+  content-visibility: visible !important;
 }

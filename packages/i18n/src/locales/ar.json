@@ -13,8 +13,6 @@
     "appName": "VidBee",
     "autoUpdateDescription": "تنزيل وتثبيت الإصدارات الجديدة تلقائياً في الخلفية.",
     "autoUpdateTitle": "التحديثات التلقائية",
-    "betaProgramDescription": "تلقي البناءات المبكرة والميزات القادمة قبل أي شخص آخر.",
-    "betaProgramTitle": "قناة المعاينة",
     "description": "نزّل الوسائط من أكثر من 1000 موقع، وأنشئ نصوصًا قابلة للبحث على جهازك، ثم لخّصها أو ترجمها أو اطرح أسئلة باستخدام مزوّد الذكاء الاصطناعي الذي تختاره—كل ذلك في تطبيق سطح مكتب مجاني ومفتوح المصدر.",
     "downloadEngine": {
       "status": {
@@ -24,10 +22,15 @@
         "preparing": "جارٍ التحضير",
         "retry-scheduled": "تمت جدولة إعادة المحاولة",
         "unavailable": "غير متاح",
-        "up-to-date": "محدّث"
+        "up-to-date": "محدّث",
+        "update-available": "Update available"
       },
       "title": "محرك التنزيل",
-      "versions": "yt-dlp {{ytDlpVersion}} · Node {{nodeVersion}}"
+      "versions": "yt-dlp {{ytDlpVersion}} · Node {{nodeVersion}}",
+      "update": "Update yt-dlp",
+      "updated": "yt-dlp updated to {{version}}",
+      "updateFailed": "Could not update yt-dlp: {{error}}",
+      "webVersions": "yt-dlp {{ytDlpVersion}} · FFmpeg {{ffmpegVersion}} · Node {{nodeVersion}}"
     },
     "followAuthorActions": {
       "follow": "متابعة @nexmoe"
@@ -35,6 +38,16 @@
     "followAuthorDescription": "ابق على اطلاع بآخر أخبار وتحديثات VidBee.",
     "followAuthorSupport": "تابع المطور على X (Twitter) للحصول على آخر التحديثات والأخبار حول VidBee.",
     "followAuthorTitle": "متابعة المطور",
+    "otherProducts": {
+      "lmspeed": {
+        "name": "LMSpeed",
+        "description": "قارن أسعار واجهات LLM وسرعتها وأمانها قبل اختيار مزوّد."
+      },
+      "clipii": {
+        "name": "Clipii",
+        "description": "احفظ الروابط والملفات والفيديو في مكتبة سحابية قابلة للبحث."
+      }
+    },
     "here": "هنا",
     "homepage": "الصفحة الرئيسية",
     "notifications": {
@@ -136,7 +149,7 @@
     "cancel": "إلغاء",
     "cancelled": "ملغي",
     "pause": "إيقاف مؤقت",
-    "paused": "متوقف مؤقتًا",
+    "paused": "متوقف مؤقتاً",
     "resume": "استئناف",
     "clearCompleted": "مسح المكتملة",
     "clearDownloads": "مسح التحميلات",
@@ -155,7 +168,7 @@
     "downloadVideo": "تحميل الفيديو",
     "downloading": "جاري التحميل...",
     "enterUrl": "أدخل رابط الفيديو",
-    "enterUrlDescription": "الصق أو اكتب رابط فيديو. ",
+    "enterUrlDescription": "الصق رابط فيديو واحدًا أو أكثر، وضع كل رابط في سطر منفصل.",
     "error": "خطأ",
     "fetch": "جلب",
     "fetchingVideoInfo": "جلب معلومات الفيديو...",
@@ -220,7 +233,7 @@
     "total": "الإجمالي",
     "unknownQuality": "جودة غير معروفة",
     "unknownSize": "حجم غير معروف",
-    "urlPlaceholder": "https://www.youtube.com/watch?v=...",
+    "urlPlaceholder": "الصق الروابط هنا، رابط واحد في كل سطر",
     "video": "فيديو",
     "videoInfo": "معلومات الفيديو",
     "videoInfoUpdated": "تم تحديث معلومات الفيديو",
@@ -267,10 +280,7 @@
     "cookiesSetupKeyring": "لا يستطيع هذا الإصدار من Linux قراءة ملفات تعريف ارتباط Chrome. استخدم Firefox أو استورد ملفًا.",
     "cookiesSetupStale": "يبدو أن ملفات تعريف الارتباط الحالية منتهية أو محظورة. حدّث تسجيل الدخول ثم أعد المحاولة.",
     "cookiesSetupRetry": "إعادة التنزيل",
-    "cookiesSetupDone": "تم",
-    "pause": "إيقاف مؤقت",
-    "paused": "متوقف مؤقتاً",
-    "resume": "استئناف"
+    "cookiesSetupDone": "تم"
   },
   "error": {
     "title": "حدث خطأ ما",
@@ -292,6 +302,7 @@
     "helpText": "إذا استمر هذا الخطأ، يرجى نسخ تقرير الخطأ أعلاه ومشاركته مع فريق الدعم. يمكنك العثور على معلومات الاتصال في صفحة \"حول\"."
   },
   "errors": {
+    "batchRequiresOneClick": "فعّل التنزيل بنقرة واحدة لإضافة عدة روابط دفعة واحدة",
     "clickToCopy": "انقر لنسخ التفاصيل",
     "clipboardEmpty": "الحافظة فارغة",
     "downloadFailed": "فشل التحميل",
@@ -349,6 +360,7 @@
     "select": "تحديد",
     "selectAll": "تحديد الكل",
     "selectVisible": "تحديد المرئي",
+    "moreActions": "المزيد من الإجراءات",
     "selectItem": "تحديد العنصر",
     "selectedCount": "تم تحديد {{count}}",
     "selectionSummary": "تم تحديد {{selected}} من {{total}} المرئية",
@@ -449,6 +461,87 @@
     "fetchingInfo": "جارٍ جلب معلومات قائمة التشغيل..."
   },
   "settings": {
+    "account": {
+      "copyInviteLink": "نسخ رابط الدعوة",
+      "giftHistoryCredits": "الرصيد",
+      "giftHistoryDate": "التاريخ",
+      "giftHistoryExpired": "انتهت في {{date}}",
+      "giftHistoryExpires": "الانتهاء",
+      "giftHistoryReason": "السبب",
+      "giftHistoryTitle": "سجل المكافآت",
+      "giftReasons": {
+        "admin": "رصيد مكافأة",
+        "invite_invitee": "انضممت بدعوة {{name}}",
+        "invite_inviter": "انضم {{name}} عبر دعوتك",
+        "welcome": "رصيد الترحيب"
+      },
+      "inviteCopied": "تم النسخ",
+      "inviteCreditsEarned": "الرصيد المكتسب",
+      "inviteDescription": "شارك رابطك. عند انضمام مستخدم جديد، يحصل كل منكما على 20K رصيد.",
+      "inviteLimitedBadge": "محدود المدة",
+      "inviteTitle": "دعوة الأصدقاء",
+      "invitedColumnName": "الاسم",
+      "invitedListTitle": "الأشخاص الذين دعوتهم",
+      "invitedUsers": "عدد المدعوين",
+      "loadMore": "تحميل المزيد",
+      "creditsDescription": "يُستخدم للتفريغ والأوامر على VidBee Cloud.",
+      "creditsError": "تعذر تحميل رصيد الذكاء الاصطناعي.",
+      "creditsLoading": "جارٍ تحميل رصيد الذكاء الاصطناعي…",
+      "creditsRemaining": "متبقٍ {{remaining}}",
+      "creditsTitle": "رصيد الذكاء الاصطناعي",
+      "creditsTooltipExpiring": "{{credits}} تنتهي خلال شهر واحد",
+      "creditsTooltipRemaining": "{{credits}} متبقية",
+      "creditsTooltipUsed": "تم استخدام {{used}}",
+      "creditsUsage": "تم استخدام {{used}} من {{total}}",
+      "grantedCredits": "رصيد مجاني",
+      "purchasedCredits": "رصيد تم شراؤه",
+      "description": "سجّل الدخول باستخدام GitHub لربط حساب VidBee.",
+      "error": "تعذر إكمال المصادقة. حاول مرة أخرى.",
+      "loading": "جارٍ التحقق من حسابك…",
+      "signedOut": "لم يتم تسجيل الدخول",
+      "signIn": "المتابعة باستخدام GitHub",
+      "signingIn": "جارٍ فتح GitHub…",
+      "signOut": "تسجيل الخروج",
+      "signingOut": "جارٍ تسجيل الخروج…",
+      "tab": "الحساب",
+      "creditsAvailableAmount": "{{credits}} متاحة",
+      "creditsReservedAmount": "{{credits}} محجوزة",
+      "creditsReservedHelp": "محجوزة للمهام الجارية أو مراجعة الاستخدام. يُحرر الرصيد غير المستخدم بعد التسوية.",
+      "creditsInterruptedAmount": "{{credits}} خُصمت للمهام المتوقفة",
+      "creditsInterruptedHelp": "مشمولة في الرصيد المستخدم وليست خصمًا إضافيًا. هذه رسوم تمت تسويتها لطلبات الذكاء الاصطناعي الفاشلة أو الملغاة أو التي انتهت مهلتها.",
+      "creditsRefresh": "تحديث الرصيد",
+      "creditsTopUp": "شحن الرصيد",
+      "creditsTopUpError": "تعذر فتح صفحة الأسعار. حاول مرة أخرى.",
+      "creditsStale": "تعذر تحديث الرصيد. قد تكون القيم المعروضة غير محدثة.",
+      "creditsReviewAmount": "تجري مراجعة {{credits}} من الرصيد المحجوز",
+      "reservationTitle": "المهام ذات الرصيد المحجوز",
+      "reservationHelp": "تُفحص الحجوزات المنتهية كل دقيقة. بعد انتهاء فترة المراجعة البالغة خمس دقائق، يُحرر المبلغ غير المؤكد في الفحص التالي.",
+      "reservationTask": "طلب ذكاء اصطناعي",
+      "reservationElapsed": "بدأت قبل {{minutes}} دقيقة",
+      "reservationActivity": "آخر تقدم: {{time}}",
+      "reservationHeartbeat": "آخر اتصال: {{time}}",
+      "reservationDeadline": "الموعد النهائي للمهمة: {{time}}",
+      "reservationReviewDeadline": "تنتهي المراجعة بحلول {{time}}",
+      "reservationReview": "جارٍ التحقق من الاستخدام",
+      "reservationCancel": "إلغاء المهمة",
+      "reservationCancelling": "جارٍ الإلغاء…",
+      "reservationUnavailable": "تعذر تحديث تفاصيل المهام.",
+      "reservationCancelError": "تعذر إلغاء هذه المهمة. يرجى التحديث والمحاولة مجددًا.",
+      "creditHistoryTitle": "سجل الرصيد",
+      "creditHistoryHelp": "يُخصم الرصيد وفق الاستخدام المؤكد. لا تُفرض رسوم على الاستخدام غير المؤكد. المبالغ المستردة مشمولة في الرصيد المتاح.",
+      "creditHistoryError": "تعذر تحديث السجل. قد لا تكون السجلات المعروضة محدثة.",
+      "creditHistoryEmpty": "لا توجد حركات رصيد بعد.",
+      "creditHistoryAmount": "{{credits}} وحدة رصيد",
+      "creditHistoryTokens": "{{input}} رمز إدخال · {{output}} رمز إخراج",
+      "creditHistoryRefunded": "تمت إعادة {{credits}} وحدة رصيد",
+      "creditHistoryUnverified": "تعذر تأكيد الاستخدام، لذلك لم يُخصم أي رصيد.",
+      "creditHistoryNoCharge": "دون خصم",
+      "creditHistoryCache": "نتيجة مخزنة مؤقتًا",
+      "creditHistoryVerified": "استخدام مؤكد",
+      "creditHistoryRecorded": "خصم مسجل",
+      "creditHistoryInterrupted": "متوقف",
+      "creditsUsedShare": "{{percent}} used"
+    },
     "aboutTab": "حول",
     "advanced": "متقدم",
     "cookiesTab": "Cookies",
@@ -593,7 +686,12 @@
     "title": "الإعدادات",
     "tray": {
       "quit": "إنهاء",
-      "showHome": "إظهار الصفحة الرئيسية"
+      "showHome": "إظهار الصفحة الرئيسية",
+      "next": "Next",
+      "openDevTools": "Open DevTools",
+      "pause": "Pause",
+      "play": "Play",
+      "previous": "Previous"
     },
     "video": "تفضيلات الفيديو",
     "oneClickContainer": "تنسيق الحاوية",
@@ -719,6 +817,15 @@
     "promptsTab": "الأوامر",
     "transcriptionTab": "التفريغ",
     "ai": {
+      "ownProvider": "استخدام موفّر الخدمة الخاص بك",
+      "ownProviderDescription": "متقدم: اربط نموذجك أو نظام الفوترة الخاص بك.",
+      "recommended": "موصى به",
+      "signInForCloud": "تسجيل الدخول",
+      "useVidbeeCloud": "استخدام VidBee Cloud",
+      "vidbeeCloud": "VidBee Cloud",
+      "vidbeeCloudDescription": "جاهز للاستخدام ويتضمن 50 ألف رصيد للذكاء الاصطناعي. لا يلزم مفتاح API أو إعداد موفّر.",
+      "vidbeeCloudPrivacy": "لا يُرسل محتوى النص إلا عند تشغيل إجراء ذكاء اصطناعي.",
+      "vidbeeCloudSection": "الخدمة المُدارة",
       "allServices": "كل الخدمات",
       "configured": "المُعدّة",
       "useProvider": "استخدام",
@@ -766,9 +873,24 @@
         "ollama": "Ollama",
         "openai": "OpenAI",
         "openrouter": "OpenRouter",
-        "xai": "xAI"
+        "xai": "xAI",
+        "alibaba": "Alibaba Cloud",
+        "fireworks": "Fireworks",
+        "minimax": "MiniMax",
+        "mistral": "Mistral",
+        "moonshot": "Moonshot",
+        "novita": "Novita",
+        "ppio": "PPIO",
+        "siliconflow": "SiliconFlow",
+        "stepfun": "StepFun",
+        "together": "Together",
+        "volcengine": "Volcengine",
+        "zhipu": "Zhipu"
       },
       "presetPrompts": {
+        "overview": {
+          "title": "نظرة عامة"
+        },
         "bullet-points": {
           "title": "نقاط"
         },
@@ -790,7 +912,11 @@
         "translate": {
           "title": "ترجمة"
         }
-      }
+      },
+      "createModel": "Create “{{query}}”",
+      "noModelFound": "No model found.",
+      "allModelsSelected": "كل النماذج المدرجة مضافة بالفعل.",
+      "loadingModels": "جارٍ تحميل النماذج من المزوّد…"
     },
     "cookiesSetup": {
       "statusNotConfigured": "غير معدّ",
@@ -833,7 +959,25 @@
       "fileExportExtension": "إضافة Chrome / Edge",
       "checking": "جارٍ التحقق من ملفات تعريف الارتباط…",
       "applied": "تم تحديث ملفات تعريف الارتباط",
-      "profileMissingDb": "لا يحتوي ملف تعريف Firefox هذا على قاعدة ملفات تعريف الارتباط. افتح Firefox مرة ثم أعد المحاولة."
+      "profileMissingDb": "لا يحتوي ملف تعريف Firefox هذا على قاعدة ملفات تعريف الارتباط. افتح Firefox مرة ثم أعد المحاولة.",
+      "statusUsingExtension": "Using {{browser}} extension",
+      "healthOkExtension": "The VidBee extension will send live cookies from {{browser}} for each download",
+      "healthEmptyExtension": "The extension is connected, but no supported login cookies were found. Sign in to the site in that browser",
+      "statusHeading": "Cookie status",
+      "methodRecommended": "Recommended",
+      "methodExtensionWhy": "Best option. Desktop uses live cookies for each download, including Chrome and Edge on Windows.",
+      "extensionTitle": "Browser extension",
+      "extensionDescription": "Install the VidBee extension so Desktop can use your live signed-in cookies when downloading",
+      "extensionConnected": "Connected",
+      "extensionDisconnected": "Not connected",
+      "extensionConnectedHint": "{{browser}} is connected. New downloads will use cookies from this browser",
+      "extensionDisconnectedHint": "Keep VidBee Desktop open, install the extension, then sign in to the site in that browser",
+      "extensionInstallChrome": "Add to Chrome",
+      "extensionInstallEdge": "Add to Edge",
+      "extensionInstallFirefox": "Add to Firefox",
+      "extensionInstallStep1": "Install the VidBee extension in Chrome, Edge, or Firefox",
+      "extensionInstallStep2": "Keep VidBee Desktop running so the extension can connect",
+      "extensionInstallStep3": "Sign in to YouTube, Bilibili, or other sites in that browser, then open the VidBee toolbar icon once"
     }
   },
   "subscriptions": {
@@ -949,12 +1093,17 @@
     }
   },
   "kernelPreparation": {
+    "copied": "تم النسخ",
     "copying": "جارٍ نسخ محرك التنزيل…",
+    "copyLog": "نسخ السجل",
     "description": "يقوم VidBee بإعداد محرك التنزيل. لن يستغرق ذلك سوى لحظات.",
     "errorDescription": "تعذّر على VidBee إعداد محرك تنزيل يعمل. تحقق من إمكانية الوصول إلى التخزين المحلي، ثم حاول مجددًا.",
+    "errorDetails": "تفاصيل الخطأ",
     "errorTitle": "محرك التنزيل غير متاح",
     "finalizing": "جارٍ إنهاء الإعداد…",
+    "missingError": "لم يُسجَّل خطأ تفصيلي.",
     "progressLabel": "تقدّم إعداد محرك التنزيل",
+    "reportIssue": "الإبلاغ على GitHub",
     "retry": "حاول مجددًا",
     "retrying": "جارٍ المحاولة مجددًا…",
     "title": "جارٍ إعداد VidBee",
@@ -1057,6 +1206,7 @@
     "sourceSwitch": "مصدر النص",
     "sourceCaptionNamed": "ترجمات {{language}}",
     "sourceCaptionAutoNamed": "ترجمات تلقائية {{language}}",
+    "asrIdle": "إذا لم تكن الترجمات الحالية مرضية، يمكنك إنشاء تفريغ محلي على هذا الجهاز.",
     "noSpeech": "No speech",
     "noSpeechDetail": "No speech was detected in this file. You can still run a full transcript.",
     "error": "Transcript error",
@@ -1090,6 +1240,23 @@
     "followResume": "Jump to current line",
     "title": "Transcript",
     "ready": "Transcript ready",
+    "listLabel": {
+      "subtitles": "الترجمة",
+      "transcribed": "مكتوب",
+      "downloaded": "مُنزَّل"
+    },
+    "listHint": {
+      "queued": "بانتظار التفريغ. سيبدأ عند توفر مكان.",
+      "retrySoon": "فشل التفريغ وسيُعاد المحاولة قريبًا.",
+      "ready": "الترجمة المفرَّغة جاهزة. انقر الصف لفتحها.",
+      "captions": "مبني من مسار ترجمة الفيديو. انقر الصف لفتحه.",
+      "cancelled": "تم إلغاء التفريغ.",
+      "subtitlesDownloaded": "تم حفظ ملف الترجمة ({{languages}}).",
+      "subtitlesDownloadedUnknown": "تم حفظ ملف الترجمة.",
+      "subtitlesUnavailable": "لا يوجد مسار ترجمة يمكن تنزيله لهذا الفيديو.",
+      "subtitlesAuth": "سجّل الدخول ثم أعد المحاولة لتنزيل الترجمة.",
+      "subtitlesFailed": "فشل تنزيل الترجمة."
+    },
     "copy": "نسخ النص",
     "copied": "تم نسخ النص",
     "copyFailed": "تعذر نسخ النص.",
@@ -1102,6 +1269,9 @@
     "captionDelete": "حذف",
     "captionDeleteSelected": "حذف المحدد",
     "captionDeleted": "تم حذف {{count}} من التسميات",
+    "captionDeleteConfirmTitle": "حذف التسميات المحددة؟",
+    "captionDeleteConfirmDescription": "سيؤدي هذا إلى إزالة {{count}} من التسميات نهائيًا من النص.",
+    "captionDeleteConfirmCancel": "إلغاء",
     "captionSaveFailed": "تعذر حفظ التسمية.",
     "captionPlaceholder": "اكتب التسمية",
     "captionSpeaker": "المتحدث",
@@ -1173,7 +1343,12 @@
       "segments": "المقاطع",
       "createdAt": "تاريخ التحويل",
       "empty": "لا توجد تفاصيل بعد.",
-      "openUrl": "فتح رابط المصدر"
+      "openUrl": "فتح رابط المصدر",
+      "group": {
+        "media": "الوسائط",
+        "file": "الملف",
+        "transcript": "النص"
+      }
     },
     "speakingShare": "{{percent}}%",
     "seekSpeaker": "الانتقال إلى {{name}}",
@@ -1210,11 +1385,22 @@
       "volumePercent": "{{percent}}%",
       "fullscreen": "ملء الشاشة",
       "fullscreenExit": "الخروج من ملء الشاشة",
-      "resumed": "استُؤنف من {{time}}",
-      "startOver": "البدء من جديد",
       "nowPlaying": "قيد التشغيل",
-      "closeBar": "إغلاق المشغّل",
-      "openTranscript": "العودة إلى النص"
+      "openTranscript": "العودة إلى النص",
+      "playlist": {
+        "title": "قائمة التشغيل",
+        "open": "فتح قائمة التشغيل",
+        "count": "{{count}} عنصرًا",
+        "empty": "قائمة التشغيل فارغة",
+        "emptyHint": "شغّل ملفًا منزّلًا أو أضفه من قائمة النقر بزر الماوس الأيمن.",
+        "add": "إضافة إلى قائمة التشغيل",
+        "addedCount": "تمت إضافة {{count}} إلى قائمة التشغيل",
+        "remove": "إزالة من قائمة التشغيل",
+        "moveUp": "نقل لأعلى",
+        "moveDown": "نقل لأسفل",
+        "drag": "اسحب لإعادة الترتيب",
+        "more": "إجراءات عنصر قائمة التشغيل"
+      }
     },
     "qualityHint": "Not happy with this transcript?",
     "qualityHintDetail": "Download a higher-quality model and transcribe again. The current transcript is kept as history.",
@@ -1234,6 +1420,8 @@
     "promptShare": "مشاركة صورة",
     "promptShareTitle": "مشاركة صورة",
     "promptShareDownload": "تنزيل",
+    "promptShareDownloadFull": "الصورة كاملة",
+    "promptShareDownloadSplit": "صور مقسّمة (مجلد مرقّم)",
     "promptShareNative": "مشاركة",
     "promptSharing": "جارٍ تجهيز الصورة…",
     "promptShared": "تم نسخ صورة المشاركة",
@@ -1247,32 +1435,61 @@
     "promptOutput": "نتيجة المطالبة",
     "promptScrollToEnd": "الانتقال إلى الأحدث",
     "promptCopied": "تم النسخ",
+    "promptCloudGenerated": "تم الإنشاء باستخدام VidBee Cloud",
     "promptNoProvider": "اضبط مزوّد ذكاء اصطناعي في الإعدادات لتشغيل هذا الأمر.",
     "promptOpenSettings": "فتح إعدادات المزوّد",
     "promptEmpty": "سيظهر الناتج هنا.",
+    "overviewChapters": "الفصول",
+    "overviewQuotes": "اقتباسات",
+    "promptRetrying": "توقف التوليد. جارٍ إعادة المحاولة {{attempt}}/{{maxAttempts}}…",
+    "promptWaiting": "بانتظار استجابة النموذج · {{seconds}} ثانية",
     "promptRunning": "جارٍ الكتابة…",
     "promptThinking": "التفكير",
     "promptThinkingFor": "يفكّر منذ {{seconds}} ثانية",
     "promptThoughtFor": "فكّر لمدة {{seconds}} ثانية",
     "promptAborted": "تم الإيقاف",
+    "promptTabCompleted": "مكتمل",
+    "promptTabError": "فشل",
     "promptNoTranscript": "يلزم وجود نص مفرَّغ قبل تشغيل هذا الأمر.",
+    "promptWaitForTranscript": "سيُشغَّل هذا الأمر بعد انتهاء التفريغ.",
+    "promptRunWhenReady": "تشغيل عند الجاهزية",
+    "promptWaitingToRun": "بانتظار النص المفرَّغ…",
     "promptTryAgain": "حاول مرة أخرى",
     "promptLoading": "جارٍ تحميل إعدادات الذكاء الاصطناعي…",
     "promptGuide": {
+      "interrupted": "توقفت استجابة الذكاء الاصطناعي قبل اكتمالها.",
+      "creditsExhausted": "لا يملك هذا الحساب رصيد ذكاء اصطناعي كافيًا.",
+      "signInRequired": "سجّل الدخول إلى VidBee Cloud لاستخدام Ask AI فورًا مجانًا.",
       "noProvider": "لا يوجد مزوّد ذكاء اصطناعي مفعّل، لذلك لا يمكن تشغيل هذا الأمر.",
       "missingApiKey": "المزوّد المفعّل بلا مفتاح API.",
       "missingModel": "المزوّد المفعّل بلا معرّف نموذج.",
       "unknownPrompt": "هذا الأمر لم يعد متاحًا.",
       "emptyTranscript": "يحتاج هذا الأمر إلى نص مفرَّغ جاهز.",
       "auth": "رفض المزوّد الطلب. مفتاح API أو الحساب غير صالح على الأرجح.",
+      "authCloud": "رفض VidBee Cloud الطلب. ربما انتهت صلاحية جلستك.",
       "network": "تعذر الوصول إلى المزوّد.",
+      "networkCloud": "تعذّر الوصول إلى VidBee Cloud.",
       "emptyOutput": "أنهى المزوّد الطلب دون إرجاع أي نص.",
-      "unknown": "تعذر تشغيل الأمر."
+      "emptyOutputCloud": "أنهى VidBee Cloud الطلب دون إرجاع أي نص.",
+      "unknown": "تعذر تشغيل الأمر.",
+      "unknownCloud": "تعذر على VidBee Cloud إكمال هذا الأمر.",
+      "serviceErrorCloud": "VidBee Cloud's AI service rejected this request."
     },
     "promptErrorDetails": "تفاصيل الخطأ",
     "promptWhatToDo": "ما يمكن تجربته",
     "promptUsingProvider": "المزوّد الحالي: {{name}}",
+    "promptCreditsByok": "أو <byok>استخدم مفتاح API الخاص بك</byok>.",
     "promptSolutions": {
+      "creditsExhausted": {
+        "s1": "افتح الحساب لمراجعة الرصيد المتبقي.",
+        "s2": "ادعُ مستخدمًا جديدًا لكسب المزيد من الرصيد.",
+        "s3": "أعد تشغيل المطالبة بعد إضافة الرصيد."
+      },
+      "signInRequired": {
+        "s1": "افتح الإعدادات ← Providers.",
+        "s2": "سجّل الدخول باستخدام GitHub ضمن VidBee Cloud.",
+        "s3": "أعد تشغيل المطالبة."
+      },
       "noProvider": {
         "s1": "افتح الإعدادات ← المزوّدون.",
         "s2": "أضف خدمة واحفظ مفتاح API ومعرّف النموذج ثم اضغط استخدام.",
@@ -1301,22 +1518,78 @@
         "s2": "تأكد من الرصيد وصلاحية استدعاء هذا النموذج.",
         "s3": "إن كان عنوانًا مخصصًا، تأكد أنه يقبل هذا المفتاح."
       },
+      "authCloud": {
+        "s1": "افتح الحساب وتأكد أنك ما زلت مسجّل الدخول.",
+        "s2": "سجّل الدخول مجددًا إذا انتهت الجلسة.",
+        "s3": "شغّل الأمر مرة أخرى."
+      },
       "network": {
         "s1": "تحقق من الإنترنت والوكيل.",
         "s2": "للمزوّد المخصص، تأكد أن Base URL يصل ويتضمن /v1 عند الحاجة.",
         "s3": "إن كان المضيف متوقفًا، بدّل المزوّد."
+      },
+      "networkCloud": {
+        "s1": "تحقق من اتصال الإنترنت.",
+        "s2": "افتح الحساب وتأكد أنك ما زلت مسجّل الدخول.",
+        "s3": "حاول مرة أخرى بعد قليل. إن استمر الأمر فقد يكون VidBee Cloud غير متاح مؤقتًا."
       },
       "emptyOutput": {
         "s1": "في الإعدادات ← المزوّدون، تأكد أن معرّف النموذج صحيح لهذه الخدمة.",
         "s2": "للعنوان المخصص، تحقق من Base URL ومفتاح API وأن النموذج منشور.",
         "s3": "اقرأ تفاصيل الخطأ أدناه ثم أعد المحاولة أو بدّل المزوّد."
       },
+      "emptyOutputCloud": {
+        "s1": "حاول مرة أخرى. ربما انقطع الرد في منتصف الطريق.",
+        "s2": "إن استمر الأمر فافتح الحساب وتأكد أنك مسجّل الدخول وأن لديك أرصدة."
+      },
       "unknown": {
         "s1": "اقرأ تفاصيل الخطأ أدناه أولًا.",
         "s2": "في الإعدادات ← المزوّدون، راجع المفتاح ومعرّف النموذج وBase URL.",
         "s3": "أعد المحاولة أو بدّل المزوّد."
+      },
+      "unknownCloud": {
+        "s1": "اقرأ تفاصيل الخطأ أدناه أولًا.",
+        "s2": "حاول مرة أخرى بعد قليل. إن انقطع الاتصال فقد يتوقف رد Cloud في المنتصف.",
+        "s3": "إن استمر الأمر فافتح الحساب وتأكد أنك مسجّل الدخول وأن لديك أرصدة."
       }
-    }
+    },
+    "promptDislike": "لم يعجبني",
+    "promptFeedbackSaved": "تم حفظ ملاحظاتك",
+    "promptFeedbackFailed": "تعذر حفظ ملاحظاتك. حاول مرة أخرى.",
+    "promptHistory": "History",
+    "promptHistoryClose": "Close history",
+    "promptHistoryNew": "New chat",
+    "promptHistoryChat": "Chat",
+    "promptHistoryDescription": "Agent conversations from every video",
+    "promptHistoryEmpty": "No conversations yet",
+    "promptHistoryToday": "Today",
+    "promptHistoryYesterday": "Yesterday",
+    "promptHistoryMore": "Conversation actions",
+    "promptHistoryDelete": "Delete",
+    "promptHistoryDeleteTitle": "Delete this conversation?",
+    "promptHistoryDeleteDescription": "This removes the conversation. The video and transcript stay.",
+    "promptHistoryDeleteCancel": "Cancel",
+    "promptHistoryUntitled": "Untitled",
+    "promptTabClose": "Close tab",
+    "promptHistoryRename": "Rename",
+    "promptHistoryRenameTitle": "Rename conversation",
+    "promptHistoryRenameDescription": "Choose a short title for this chat tab.",
+    "promptHistoryRenameSave": "Save",
+    "promptHistoryRenamePlaceholder": "Conversation title",
+    "promptMore": "More actions",
+    "promptExportPdf": "Export as PDF",
+    "promptExportMarkdown": "Export as Markdown",
+    "promptExportSaved": "Exported",
+    "promptExportFailed": "Could not export.",
+    "promptExportEmpty": "Nothing to export.",
+    "promptShareSplitCount": "Number of images (optional)",
+    "promptShareSplitCountAuto": "Automatic",
+    "promptShareSplitCountHint": "Leave blank for automatic splitting. Fewer images may be saved to keep content intact.",
+    "thinkingSecond": "{{count}} second",
+    "thinkingSeconds": "{{count}} seconds",
+    "thinkingMinute": "{{count}} minute",
+    "thinkingMinutes": "{{count}} minutes",
+    "promptCloudServiceErrorDetail": "Your transcript is saved. This service issue needs to be resolved before you can generate the response."
   },
   "whatsNew": {
     "title": "ما الجديد",
@@ -1340,5 +1613,131 @@
         "description": "أسقط ملف صوت أو فيديو محلي في النصوص. صدّر نصًا أو ترجمات أو فيديو بعناوين محفورة."
       }
     }
+  },
+  "cloudCache": {
+    "title": "ذاكرة نتائج السحابة",
+    "range": "الفترة (UTC)",
+    "hits": "نتائج مخزنة",
+    "misses": "نتائج غير مخزنة",
+    "bypasses": "تجاوزات",
+    "hitRate": "نسبة النتائج المخزنة",
+    "today": "اليوم",
+    "week": "آخر 7 أيام",
+    "month": "آخر 30 يومًا",
+    "all": "كل الوقت"
+  },
+  "agentChat": {
+    "eventStream": "Event Stream",
+    "eventStatus": {
+      "running": "Running",
+      "completed": "Completed",
+      "error": "Failed"
+    },
+    "placeholder": "Ask a follow-up about this video…",
+    "send": "Send message",
+    "attachImages": "Attach images",
+    "removeImage": "Remove {{name}}",
+    "imageSelectionFailed": "Could not add these images. Select up to 10 PNG, JPEG or WebP images, each no larger than 20 MB.",
+    "imageRemoveFailed": "Could not remove this image. Try again.",
+    "imagesNotSupported": "Choose a model that supports images, or remove the attachments to send this message.",
+    "interrupted": "This response was interrupted when the app closed. Retry to continue.",
+    "imported": "Imported from your previous summary",
+    "previousVersion": "Previous reply version",
+    "nextVersion": "Next reply version",
+    "toolCount": "Tool calls: {{count}}",
+    "saveAttachment": "Save attachment",
+    "attachmentUnavailable": "This attachment is unavailable. Try generating it again.",
+    "frame": "Frame at {{time}}",
+    "clip": "Clip at {{time}}",
+    "downloading": "Downloading video",
+    "contextWindow": "Context window (tokens)",
+    "contextWindowHint": "Enter the context window if the model is not in the catalog.",
+    "vision": "Image input",
+    "toolCalling": "Tool calling",
+    "reasoning": "Thinking",
+    "thinkingOnly": "Thinking only",
+    "allowDisableThinking": "Allow turning thinking off",
+    "thinkingCapabilitiesHint": "تعرض الواجهة حاليًا مفتاح التفكير فقط دون مستويات الشدة. إذا كان النموذج يدعم المستويات، فحدد المستويات المتاحة أدناه.",
+    "defaultThinkingLevel": "مستوى التفكير الافتراضي",
+    "defaultThinkingAuto": "تلقائي (استخدام القيمة الافتراضية لطبقة الطلب)",
+    "supportedThinkingLevels": "مستويات التفكير المدعومة",
+    "inputTokens": "الإدخال",
+    "outputTokens": "الإخراج",
+    "providerDefault": "استخدام القيمة الافتراضية للمزوّد",
+    "automatic": "Use model defaults",
+    "enabled": "Supported",
+    "disabled": "Not supported",
+    "visionSelect": "Select…",
+    "catalogFilled": "You can change these catalog values.",
+    "catalogMissing": "This model is not in the catalog. Enter the context window and capabilities.",
+    "catalogLooking": "Looking up this model id in the catalog…",
+    "catalogMatched": "Matched {{name}}. Context window and capabilities were filled in.",
+    "catalogBadge": "Catalog",
+    "tools": {
+      "get_video_info": "Reading video information",
+      "read_transcript": "Reading transcript",
+      "search_transcript": "Searching transcript",
+      "capture_frames": "Capturing video frames",
+      "create_clip": "Creating video clip",
+      "read_history": "Reading conversation history",
+      "search_history": "Searching conversation history",
+      "read_notes": "Reading working notes",
+      "write_notes": "Saving working notes",
+      "read_artifact": "Reviewing saved image",
+      "rename_conversation": "Renaming conversation",
+      "write_article": "Writing article",
+      "review_article": "Reviewing article"
+    },
+    "modelCapabilities": "Model capabilities",
+    "runDurationRunning": "Working · {{duration}}",
+    "runDuration": "Elapsed: {{duration}}",
+    "durationSeconds": "{{seconds}}s",
+    "durationMinutes": "{{minutes}}m {{seconds}}s",
+    "contextStatus": {
+      "compacting": "Organizing conversation context",
+      "recovering": "Recovering conversation context",
+      "reviewing": "Checking source coverage",
+      "writing": "Writing and checking source sections"
+    },
+    "thinking": {
+      "label": "Thinking level",
+      "off": "Off",
+      "minimal": "Minimal",
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "xhigh": "Extra high",
+      "max": "Maximum"
+    },
+    "models": "النماذج",
+    "model": "النموذج",
+    "reasoningEffort": "جهد الاستدلال",
+    "cloud": "Cloud",
+    "searchModels": "البحث عن النماذج…",
+    "noModels": "لم يتم العثور على نماذج.",
+    "effort": "الجهد {{level}}",
+    "faster": "أسرع",
+    "smarter": "أذكى",
+    "retrying": "Connection interrupted. Retrying…",
+    "defaultThinkingLevel": "Default thinking level",
+    "defaultThinkingAuto": "Auto (use request default)",
+    "supportedThinkingLevels": "Supported thinking levels",
+    "inputTokens": "Input",
+    "outputTokens": "Output",
+    "providerDefault": "Use provider default"
+  },
+  "web": {
+    "saveToThisComputer": "Save to this computer",
+    "copyServerPath": "Copy server path",
+    "serverPathCopied": "Server path copied",
+    "downloadPathDescription": "Where the VidBee server saves files. In Docker this is usually /data/downloads.",
+    "autoTranscribeAfterDownloadDescription": "When a download finishes, start a transcript on the VidBee server. Already queued jobs keep running if you turn this off.",
+    "maxConcurrentTranscriptionsDescription": "How many transcripts can run at once on the server.",
+    "transcriptModelsDescription": "Speech models are stored on the VidBee server. The first transcript downloads them there.",
+    "cookiesFileOnly": "The server cannot read browsers on your computer. Export a Netscape cookies.txt and upload it.",
+    "storageTitle": "Server storage",
+    "storageDownloadDir": "Download directory",
+    "storageDataDir": "Data directory",
+    "storageDbFile": "SQLite database"
   }
 }

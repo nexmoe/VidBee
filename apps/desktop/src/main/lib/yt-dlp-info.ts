@@ -14,6 +14,7 @@ import { scopedLoggers } from '../utils/logger'
 import { createBoundedTextBuffer } from './bounded-output-buffer'
 import { probeConfiguredBrowserCookieAccess } from './browser-cookie-access'
 import { buildPlaylistInfoArgs, buildVideoInfoArgs, formatYtDlpCommand } from './command-utils'
+import { applyExtensionCookieSettings } from './extension-cookies'
 import { ytdlpManager } from './ytdlp-manager'
 
 /**
@@ -83,21 +84,41 @@ const execVideoInfo = (url: string, args: string[]): Promise<VideoInfo> =>
     proc.on('error', reject)
   })
 
+/**
+ * Merge live extension cookies into the current app settings when available.
+ *
+ * @param url Download or metadata URL.
+ */
+const settingsForUrl = async (url: string) => {
+  const settings = settingsManager.getAll()
+  const overlay = await applyExtensionCookieSettings(url, {
+    browserForCookies: settings.browserForCookies,
+    cookiesPath: settings.cookiesPath
+  })
+  return overlay ? { ...settings, ...overlay } : settings
+}
+
 export const fetchVideoInfo = async (url: string): Promise<VideoInfo> => {
-  const blocked = cookieAccessError()
-  if (blocked) {
-    throw new Error(blocked)
+  const settings = await settingsForUrl(url)
+  if (settings.browserForCookies && settings.browserForCookies !== 'none') {
+    const blocked = cookieAccessError()
+    if (blocked) {
+      throw new Error(blocked)
+    }
   }
-  const args = buildVideoInfoArgs(url, settingsManager.getAll())
+  const args = buildVideoInfoArgs(url, settings)
   return retryTransientYtDlpNetworkError(() => execVideoInfo(url, args))
 }
 
 export const fetchVideoInfoWithCommand = async (url: string): Promise<VideoInfoCommandResult> => {
-  const args = buildVideoInfoArgs(url, settingsManager.getAll())
+  const settings = await settingsForUrl(url)
+  const args = buildVideoInfoArgs(url, settings)
   const ytDlpCommand = formatYtDlpCommand(args)
-  const blocked = cookieAccessError()
-  if (blocked) {
-    return { error: blocked, ytDlpCommand }
+  if (settings.browserForCookies && settings.browserForCookies !== 'none') {
+    const blocked = cookieAccessError()
+    if (blocked) {
+      return { error: blocked, ytDlpCommand }
+    }
   }
   try {
     const info = await retryTransientYtDlpNetworkError(() => execVideoInfo(url, args))
@@ -190,10 +211,13 @@ const execPlaylistInfo = (url: string, args: string[]): Promise<PlaylistInfo> =>
   })
 
 export const fetchPlaylistInfo = async (url: string): Promise<PlaylistInfo> => {
-  const blocked = cookieAccessError()
-  if (blocked) {
-    throw new Error(blocked)
+  const settings = await settingsForUrl(url)
+  if (settings.browserForCookies && settings.browserForCookies !== 'none') {
+    const blocked = cookieAccessError()
+    if (blocked) {
+      throw new Error(blocked)
+    }
   }
-  const args = buildPlaylistInfoArgs(url, settingsManager.getAll())
+  const args = buildPlaylistInfoArgs(url, settings)
   return retryTransientYtDlpNetworkError(() => execPlaylistInfo(url, args))
 }

@@ -3,9 +3,11 @@ import { DownloadEngineRow } from '@renderer/components/kernel/DownloadEngineRow
 import { Badge } from '@renderer/components/ui/badge'
 import { Button } from '@renderer/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@renderer/components/ui/card'
+import { ItemSeparator } from '@renderer/components/ui/item'
 import { Progress } from '@renderer/components/ui/progress'
 import { Switch } from '@renderer/components/ui/switch'
 import { FeedbackLinkButtons } from '@vidbee/ui/components/ui/feedback-link-buttons'
+import { OTHER_PRODUCTS, OtherProductCard } from '@vidbee/ui/components/ui/other-product-card'
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import type { LucideIcon } from 'lucide-react'
 import {
@@ -18,13 +20,12 @@ import {
   RefreshCw,
   Twitter
 } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { ipcEvents, ipcServices } from '../lib/ipc'
 import { logger } from '../lib/logger'
-import { buildLocalizedVidBeeUrl, withDesktopUtm } from '../lib/url'
-import { saveSettingAtom, settingsAtom } from '../store/settings'
+import { buildLocalizedVidBeeUrl, withDesktopCampaignUtm, withDesktopUtm } from '../lib/url'
 import { updateAvailableAtom, updateReadyAtom } from '../store/update'
 import { ytdlpKernelStatusAtom } from '../store/ytdlp-kernel'
 
@@ -51,9 +52,7 @@ export function About() {
   const [updateReady] = useAtom(updateReadyAtom)
   const [updateAvailableState] = useAtom(updateAvailableAtom)
   const setUpdateAvailable = useSetAtom(updateAvailableAtom)
-  const settings = useAtomValue(settingsAtom)
   const kernelStatus = useAtomValue(ytdlpKernelStatusAtom)
-  const saveSetting = useSetAtom(saveSettingAtom)
   const { appVersion, osVersion } = useAppInfo()
   const appVersionLabel = appVersion || '—'
   const [latestVersionState, setLatestVersionState] = useState<LatestVersionState>(null)
@@ -127,10 +126,6 @@ export function About() {
 
   const handleRestartToUpdate = () => {
     void ipcServices.update.quitAndInstall()
-  }
-
-  const handleToggleBetaProgram = (checked: boolean) => {
-    void saveSetting({ key: 'betaProgram', value: checked })
   }
 
   const handleCheckForUpdates = async () => {
@@ -252,8 +247,8 @@ export function About() {
     <div className="h-full bg-background">
       <div className="container mx-auto max-w-5xl space-y-6 p-6">
         <Card>
-          <CardContent className="pt-6">
-            <div className="flex flex-col gap-4">
+          <CardContent className="p-0">
+            <div className="space-y-4 px-6 pt-6 pb-4">
               <div className="flex items-center gap-4">
                 <img alt="VidBee" className="h-18 w-18 rounded-2xl" src="./app-icon.png" />
                 <div className="flex-1 space-y-2">
@@ -320,9 +315,7 @@ export function About() {
                   <p className="text-muted-foreground text-sm">{t('about.description')}</p>
                 </div>
               </div>
-            </div>
-            {updateDownloadProgress !== null && (
-              <div className="flex flex-col gap-3 pt-4">
+              {updateDownloadProgress !== null && (
                 <div className="w-full space-y-2">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-muted-foreground text-sm">
@@ -334,60 +327,49 @@ export function About() {
                   </div>
                   <Progress className="h-2" value={updateDownloadProgress} />
                 </div>
+              )}
+            </div>
+            <ItemSeparator />
+            <div className="flex items-center justify-between gap-4 px-6 py-3">
+              <div className="min-w-0 space-y-1">
+                <p className="font-medium leading-none">{t('about.autoUpdateTitle')}</p>
+                <p className="text-muted-foreground text-sm">{t('about.autoUpdateDescription')}</p>
               </div>
-            )}
+              <Switch
+                aria-label={t('about.autoUpdateTitle')}
+                checked
+                disabled
+                label=""
+                onToggle={() => undefined}
+                size="compact"
+              />
+            </div>
+            <ItemSeparator />
+            <DownloadEngineRow
+              actions={
+                <Button asChild size="sm" variant="outline">
+                  <a href={withDesktopUtm(changelogUrl)} rel="noreferrer" target="_blank">
+                    {t('about.resources.changelog')}
+                  </a>
+                </Button>
+              }
+              status={kernelStatus}
+            />
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-0">
-            <div className="flex flex-col divide-y">
-              <div className="flex items-center justify-between gap-4 px-6 py-4">
-                <div className="space-y-1">
-                  <p className="font-medium leading-none">{t('about.betaProgramTitle')}</p>
-                  <p className="text-muted-foreground text-sm">
-                    {t('about.betaProgramDescription')}
-                  </p>
-                </div>
-                <Switch
-                  aria-label={t('about.betaProgramTitle')}
-                  checked={settings.betaProgram}
-                  label=""
-                  onToggle={() => handleToggleBetaProgram(!settings.betaProgram)}
-                />
-              </div>
-              <div className="flex items-center justify-between gap-4 px-6 py-4">
-                <div className="space-y-1">
-                  <p className="font-medium leading-none">{t('about.autoUpdateTitle')}</p>
-                  <p className="text-muted-foreground text-sm">
-                    {t('about.autoUpdateDescription')}
-                  </p>
-                </div>
-                <Switch
-                  aria-label={t('about.autoUpdateTitle')}
-                  checked
-                  disabled
-                  label=""
-                  onToggle={() => undefined}
-                />
-              </div>
-              <DownloadEngineRow status={kernelStatus} />
-              <div className="flex items-center justify-between gap-4 px-6 py-4">
-                <div className="space-y-1">
-                  <p className="font-medium leading-none">{t('about.resources.changelog')}</p>
-                  <p className="text-muted-foreground text-sm">
-                    {t('about.resources.changelogDescription')}
-                  </p>
-                </div>
-                <Button asChild size="sm" variant="outline">
-                  <a href={withDesktopUtm(changelogUrl)} rel="noreferrer" target="_blank">
-                    {t('about.actions.view')}
-                  </a>
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {OTHER_PRODUCTS.map((product) => (
+            <OtherProductCard
+              description={t(`about.otherProducts.${product.id}.description`)}
+              domain={product.domain}
+              href={withDesktopCampaignUtm(product.url)}
+              key={product.id}
+              name={t(`about.otherProducts.${product.id}.name`)}
+              visitLabel={t('about.actions.visit')}
+            />
+          ))}
+        </div>
 
         <Card>
           <CardHeader>
@@ -437,7 +419,7 @@ export function About() {
 
         <Card>
           <CardContent className="p-0">
-            <div className="flex flex-col divide-y">
+            <div className="flex flex-col">
               {/* Feedback section - merged into one row */}
               <div className="flex items-center justify-between gap-4 px-6 py-4">
                 <div className="flex items-center gap-4">
@@ -460,41 +442,40 @@ export function About() {
                   />
                 </div>
               </div>
-              {/* Other resources */}
               {aboutResources.map((resource) => {
                 const Icon = resource.icon
                 return (
-                  <div
-                    className="flex items-center justify-between gap-4 px-6 py-4"
-                    key={resource.label}
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted/60">
-                        <Icon className="h-5 w-5 text-muted-foreground" />
+                  <Fragment key={resource.label}>
+                    <ItemSeparator />
+                    <div className="flex items-center justify-between gap-4 px-6 py-4">
+                      <div className="flex items-center gap-4">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted/60">
+                          <Icon className="h-5 w-5 text-muted-foreground" />
+                        </div>
+                        <div className="space-y-1">
+                          <p className="font-medium leading-none">{resource.label}</p>
+                          {resource.description ? (
+                            <p className="text-muted-foreground text-sm">{resource.description}</p>
+                          ) : null}
+                        </div>
                       </div>
-                      <div className="space-y-1">
-                        <p className="font-medium leading-none">{resource.label}</p>
-                        {resource.description ? (
-                          <p className="text-muted-foreground text-sm">{resource.description}</p>
-                        ) : null}
-                      </div>
-                    </div>
-                    {resource.href ? (
-                      <Button asChild size="sm" variant="outline">
-                        <a
-                          href={resource.href}
-                          rel={resource.external ? 'noreferrer' : undefined}
-                          target={resource.external ? '_blank' : undefined}
-                        >
+                      {resource.href ? (
+                        <Button asChild size="sm" variant="outline">
+                          <a
+                            href={resource.href}
+                            rel={resource.external ? 'noreferrer' : undefined}
+                            target={resource.external ? '_blank' : undefined}
+                          >
+                            {resource.actionLabel}
+                          </a>
+                        </Button>
+                      ) : (
+                        <Button onClick={resource.onClick} size="sm" variant="outline">
                           {resource.actionLabel}
-                        </a>
-                      </Button>
-                    ) : (
-                      <Button onClick={resource.onClick} size="sm" variant="outline">
-                        {resource.actionLabel}
-                      </Button>
-                    )}
-                  </div>
+                        </Button>
+                      )}
+                    </div>
+                  </Fragment>
                 )
               })}
             </div>

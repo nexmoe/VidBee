@@ -13,8 +13,6 @@
     "appName": "VidBee",
     "autoUpdateDescription": "Автоматически загружать и устанавливать новые версии в фоновом режиме.",
     "autoUpdateTitle": "Автообновления",
-    "betaProgramDescription": "Получайте ранние сборки и предстоящие функции раньше всех.",
-    "betaProgramTitle": "Канал предпросмотра",
     "description": "Скачивайте медиа с 1000+ сайтов, создавайте на компьютере расшифровки с поиском, а затем делайте резюме, переводите или задавайте вопросы через выбранного ИИ-провайдера — всё в одном бесплатном настольном приложении с открытым исходным кодом.",
     "downloadEngine": {
       "status": {
@@ -24,10 +22,15 @@
         "preparing": "Подготовка",
         "retry-scheduled": "Повтор запланирован",
         "unavailable": "Недоступно",
-        "up-to-date": "Актуально"
+        "up-to-date": "Актуально",
+        "update-available": "Update available"
       },
       "title": "Модуль загрузки",
-      "versions": "yt-dlp {{ytDlpVersion}} · Node {{nodeVersion}}"
+      "versions": "yt-dlp {{ytDlpVersion}} · Node {{nodeVersion}}",
+      "update": "Update yt-dlp",
+      "updated": "yt-dlp updated to {{version}}",
+      "updateFailed": "Could not update yt-dlp: {{error}}",
+      "webVersions": "yt-dlp {{ytDlpVersion}} · FFmpeg {{ffmpegVersion}} · Node {{nodeVersion}}"
     },
     "followAuthorActions": {
       "follow": "Подписаться на @nexmoe"
@@ -35,6 +38,16 @@
     "followAuthorDescription": "Будьте в курсе последних новостей и обновлений VidBee.",
     "followAuthorSupport": "Подпишитесь на разработчика в X (Twitter), чтобы получать последние обновления и новости о VidBee.",
     "followAuthorTitle": "Подписаться на разработчика",
+    "otherProducts": {
+      "lmspeed": {
+        "name": "LMSpeed",
+        "description": "Сравнивайте цены, скорость и безопасность LLM API, прежде чем выбрать провайдера."
+      },
+      "clipii": {
+        "name": "Clipii",
+        "description": "Сохраняйте ссылки, файлы и видео в одной облачной библиотеке с поиском."
+      }
+    },
     "here": "здесь",
     "homepage": "Главная страница",
     "notifications": {
@@ -155,7 +168,7 @@
     "downloadVideo": "Загрузить видео",
     "downloading": "Загрузка...",
     "enterUrl": "Введите URL видео",
-    "enterUrlDescription": "Вставьте или введите URL видео. ",
+    "enterUrlDescription": "Вставьте одну или несколько ссылок на видео. Каждая ссылка должна быть на отдельной строке.",
     "error": "Ошибка",
     "fetch": "Получить",
     "fetchingVideoInfo": "Получение информации о видео...",
@@ -220,7 +233,7 @@
     "total": "Всего",
     "unknownQuality": "Неизвестное качество",
     "unknownSize": "Неизвестный размер",
-    "urlPlaceholder": "https://www.youtube.com/watch?v=...",
+    "urlPlaceholder": "Вставьте URL, по одному в строке",
     "video": "Видео",
     "videoInfo": "Информация о видео",
     "videoInfoUpdated": "Информация о видео обновлена",
@@ -267,10 +280,7 @@
     "cookiesSetupKeyring": "Эта сборка Linux не может читать cookies Chrome. Используйте Firefox или импортируйте файл cookies.",
     "cookiesSetupStale": "Текущие cookies устарели или заблокированы. Обновите вход и повторите попытку.",
     "cookiesSetupRetry": "Повторить загрузку",
-    "cookiesSetupDone": "Готово",
-    "pause": "Пауза",
-    "paused": "На паузе",
-    "resume": "Продолжить"
+    "cookiesSetupDone": "Готово"
   },
   "error": {
     "title": "Что-то пошло не так",
@@ -292,6 +302,7 @@
     "helpText": "Если эта ошибка повторяется, скопируйте отчет выше и поделитесь им с командой поддержки. Контактные данные можно найти на странице «О программе»."
   },
   "errors": {
+    "batchRequiresOneClick": "Включите загрузку в один клик, чтобы добавить несколько ссылок сразу",
     "clickToCopy": "Нажмите, чтобы скопировать детали",
     "clipboardEmpty": "Буфер обмена пуст",
     "downloadFailed": "Загрузка не удалась",
@@ -349,6 +360,7 @@
     "select": "Выбрать",
     "selectAll": "Выбрать все",
     "selectVisible": "Выбрать видимые",
+    "moreActions": "Другие действия",
     "selectItem": "Выбрать элемент",
     "selectedCount": "Выбрано: {{count}}",
     "selectionSummary": "{{selected}} из {{total}} видимых выбрано",
@@ -449,6 +461,87 @@
     "fetchingInfo": "Получение информации о плейлисте..."
   },
   "settings": {
+    "account": {
+      "copyInviteLink": "Копировать ссылку",
+      "giftHistoryCredits": "Кредиты",
+      "giftHistoryDate": "Дата",
+      "giftHistoryExpired": "Истекли {{date}}",
+      "giftHistoryExpires": "Срок",
+      "giftHistoryReason": "Причина",
+      "giftHistoryTitle": "История бонусов",
+      "giftReasons": {
+        "admin": "Бонусные кредиты",
+        "invite_invitee": "Регистрация по приглашению {{name}}",
+        "invite_inviter": "{{name}} принял(а) ваше приглашение",
+        "welcome": "Приветственные кредиты"
+      },
+      "inviteCopied": "Скопировано",
+      "inviteCreditsEarned": "Получено кредитов",
+      "inviteDescription": "Поделитесь ссылкой. После регистрации нового пользователя каждый получит 20K кредитов.",
+      "inviteLimitedBadge": "Акция",
+      "inviteTitle": "Пригласить друзей",
+      "invitedColumnName": "Имя",
+      "invitedListTitle": "Приглашённые пользователи",
+      "invitedUsers": "Приглашено",
+      "loadMore": "Загрузить ещё",
+      "creditsDescription": "Используются для транскрипции и ИИ-промптов в VidBee Cloud.",
+      "creditsError": "Не удалось загрузить ИИ-кредиты.",
+      "creditsLoading": "Загрузка ИИ-кредитов…",
+      "creditsRemaining": "Осталось {{remaining}}",
+      "creditsTitle": "ИИ-кредиты",
+      "creditsTooltipExpiring": "{{credits}} сгорят в течение 1 месяца",
+      "creditsTooltipRemaining": "осталось {{credits}}",
+      "creditsTooltipUsed": "использовано {{used}}",
+      "creditsUsage": "Использовано {{used}} из {{total}}",
+      "grantedCredits": "Бонусные кредиты",
+      "purchasedCredits": "Купленные кредиты",
+      "description": "Войдите через GitHub, чтобы подключить аккаунт VidBee.",
+      "error": "Не удалось завершить аутентификацию. Повторите попытку.",
+      "loading": "Проверяем аккаунт…",
+      "signedOut": "Вход не выполнен",
+      "signIn": "Продолжить с GitHub",
+      "signingIn": "Открываем GitHub…",
+      "signOut": "Выйти",
+      "signingOut": "Выходим…",
+      "tab": "Аккаунт",
+      "creditsAvailableAmount": "Доступно: {{credits}}",
+      "creditsReservedAmount": "Зарезервировано: {{credits}}",
+      "creditsReservedHelp": "Зарезервированы для текущих задач или проверки расхода. Неиспользованные кредиты освобождаются после расчёта.",
+      "creditsInterruptedAmount": "Списано за прерванные задачи: {{credits}}",
+      "creditsInterruptedHelp": "Уже включено в использованные кредиты, это не дополнительное списание. Учтён расход на запросы ИИ, завершившиеся ошибкой, отменой или по тайм-ауту.",
+      "creditsRefresh": "Обновить баланс",
+      "creditsTopUp": "Пополнить кредиты",
+      "creditsTopUpError": "Не удалось открыть страницу тарифов. Попробуйте ещё раз.",
+      "creditsStale": "Не удалось обновить баланс. Отображаемые значения могут быть устаревшими.",
+      "creditsReviewAmount": "Проверяется {{credits}} из зарезервированных кредитов",
+      "reservationTitle": "Задачи с резервом",
+      "reservationHelp": "Просроченные резервы проверяются каждую минуту. После пятиминутного периода сверки неподтверждённая сумма освобождается при следующей проверке.",
+      "reservationTask": "Запрос ИИ",
+      "reservationElapsed": "Начато {{minutes}} мин назад",
+      "reservationActivity": "Последний прогресс: {{time}}",
+      "reservationHeartbeat": "Последнее соединение: {{time}}",
+      "reservationDeadline": "Срок выполнения: {{time}}",
+      "reservationReviewDeadline": "Проверка завершится до {{time}}",
+      "reservationReview": "Проверка расхода",
+      "reservationCancel": "Отменить задачу",
+      "reservationCancelling": "Отмена…",
+      "reservationUnavailable": "Не удалось обновить сведения о задачах.",
+      "reservationCancelError": "Не удалось отменить эту задачу. Обновите данные и повторите попытку.",
+      "creditHistoryTitle": "История кредитов",
+      "creditHistoryHelp": "Списание выполняется по подтверждённому использованию. Неподтверждённое использование не оплачивается. Возвраты включены в доступный баланс.",
+      "creditHistoryError": "Не удалось обновить историю. Показанные записи могут быть устаревшими.",
+      "creditHistoryEmpty": "Операций с кредитами пока нет.",
+      "creditHistoryAmount": "{{credits}} кредитов",
+      "creditHistoryTokens": "Вход: {{input}} · выход: {{output}} токенов",
+      "creditHistoryRefunded": "Возвращено {{credits}} кредитов",
+      "creditHistoryUnverified": "Использование не удалось подтвердить, поэтому кредиты не списаны.",
+      "creditHistoryNoCharge": "Без списания",
+      "creditHistoryCache": "Результат из кэша",
+      "creditHistoryVerified": "Использование подтверждено",
+      "creditHistoryRecorded": "Списание записано",
+      "creditHistoryInterrupted": "Прервано",
+      "creditsUsedShare": "{{percent}} used"
+    },
     "aboutTab": "О программе",
     "advanced": "Дополнительно",
     "cookiesTab": "Cookie",
@@ -593,7 +686,12 @@
     "title": "Настройки",
     "tray": {
       "quit": "Выход",
-      "showHome": "Показать главную"
+      "showHome": "Показать главную",
+      "next": "Next",
+      "openDevTools": "Open DevTools",
+      "pause": "Pause",
+      "play": "Play",
+      "previous": "Previous"
     },
     "video": "Настройки видео",
     "oneClickContainer": "Контейнер",
@@ -719,6 +817,15 @@
     "promptsTab": "Промпты",
     "transcriptionTab": "Транскрипция",
     "ai": {
+      "ownProvider": "Использовать своего провайдера",
+      "ownProviderDescription": "Для опытных: подключите собственную модель или оплату.",
+      "recommended": "Рекомендуется",
+      "signInForCloud": "Войти",
+      "useVidbeeCloud": "Использовать VidBee Cloud",
+      "vidbeeCloud": "VidBee Cloud",
+      "vidbeeCloudDescription": "Готово к работе: включено 50K ИИ-кредитов. Ключ API и настройка провайдера не требуются.",
+      "vidbeeCloudPrivacy": "Текст расшифровки отправляется только при запуске ИИ-действия.",
+      "vidbeeCloudSection": "Управляемый сервис",
       "allServices": "Все сервисы",
       "configured": "Настроенные",
       "useProvider": "Использовать",
@@ -766,9 +873,24 @@
         "ollama": "Ollama",
         "openai": "OpenAI",
         "openrouter": "OpenRouter",
-        "xai": "xAI"
+        "xai": "xAI",
+        "alibaba": "Alibaba Cloud",
+        "fireworks": "Fireworks",
+        "minimax": "MiniMax",
+        "mistral": "Mistral",
+        "moonshot": "Moonshot",
+        "novita": "Novita",
+        "ppio": "PPIO",
+        "siliconflow": "SiliconFlow",
+        "stepfun": "StepFun",
+        "together": "Together",
+        "volcengine": "Volcengine",
+        "zhipu": "Zhipu"
       },
       "presetPrompts": {
+        "overview": {
+          "title": "Обзор"
+        },
         "bullet-points": {
           "title": "Маркированный список"
         },
@@ -790,7 +912,11 @@
         "translate": {
           "title": "Перевести"
         }
-      }
+      },
+      "createModel": "Create “{{query}}”",
+      "noModelFound": "No model found.",
+      "allModelsSelected": "Все перечисленные модели уже добавлены.",
+      "loadingModels": "Загрузка моделей у провайдера…"
     },
     "cookiesSetup": {
       "statusNotConfigured": "Не настроено",
@@ -833,7 +959,25 @@
       "fileExportExtension": "Расширение Chrome / Edge",
       "checking": "Проверка cookies…",
       "applied": "Cookies обновлены",
-      "profileMissingDb": "У этого профиля Firefox нет базы cookies. Откройте Firefox один раз и повторите попытку."
+      "profileMissingDb": "У этого профиля Firefox нет базы cookies. Откройте Firefox один раз и повторите попытку.",
+      "statusUsingExtension": "Using {{browser}} extension",
+      "healthOkExtension": "The VidBee extension will send live cookies from {{browser}} for each download",
+      "healthEmptyExtension": "The extension is connected, but no supported login cookies were found. Sign in to the site in that browser",
+      "statusHeading": "Cookie status",
+      "methodRecommended": "Recommended",
+      "methodExtensionWhy": "Best option. Desktop uses live cookies for each download, including Chrome and Edge on Windows.",
+      "extensionTitle": "Browser extension",
+      "extensionDescription": "Install the VidBee extension so Desktop can use your live signed-in cookies when downloading",
+      "extensionConnected": "Connected",
+      "extensionDisconnected": "Not connected",
+      "extensionConnectedHint": "{{browser}} is connected. New downloads will use cookies from this browser",
+      "extensionDisconnectedHint": "Keep VidBee Desktop open, install the extension, then sign in to the site in that browser",
+      "extensionInstallChrome": "Add to Chrome",
+      "extensionInstallEdge": "Add to Edge",
+      "extensionInstallFirefox": "Add to Firefox",
+      "extensionInstallStep1": "Install the VidBee extension in Chrome, Edge, or Firefox",
+      "extensionInstallStep2": "Keep VidBee Desktop running so the extension can connect",
+      "extensionInstallStep3": "Sign in to YouTube, Bilibili, or other sites in that browser, then open the VidBee toolbar icon once"
     }
   },
   "subscriptions": {
@@ -949,12 +1093,17 @@
     }
   },
   "kernelPreparation": {
+    "copied": "Скопировано",
     "copying": "Копирование модуля загрузки…",
+    "copyLog": "Копировать журнал",
     "description": "VidBee подготавливает модуль загрузки. Это займёт всего несколько секунд.",
     "errorDescription": "VidBee не удалось подготовить рабочий модуль загрузки. Проверьте доступ к локальному хранилищу и повторите попытку.",
+    "errorDetails": "Сведения об ошибке",
     "errorTitle": "Модуль загрузки недоступен",
     "finalizing": "Завершение настройки…",
+    "missingError": "Подробная ошибка не была записана.",
     "progressLabel": "Ход подготовки модуля загрузки",
+    "reportIssue": "Сообщить на GitHub",
     "retry": "Повторить",
     "retrying": "Повторная попытка…",
     "title": "Подготовка VidBee",
@@ -1057,6 +1206,7 @@
     "sourceSwitch": "Источник расшифровки",
     "sourceCaptionNamed": "Субтитры ({{language}})",
     "sourceCaptionAutoNamed": "Автосубтитры ({{language}})",
+    "asrIdle": "Если текущие субтитры вас не устраивают, можно сделать локальную расшифровку на этом компьютере.",
     "noSpeech": "No speech",
     "noSpeechDetail": "No speech was detected in this file. You can still run a full transcript.",
     "error": "Transcript error",
@@ -1090,6 +1240,23 @@
     "followResume": "Jump to current line",
     "title": "Transcript",
     "ready": "Transcript ready",
+    "listLabel": {
+      "subtitles": "Субтитры",
+      "transcribed": "Расшифровка",
+      "downloaded": "Скачано"
+    },
+    "listHint": {
+      "queued": "Ожидает расшифровки. Начнётся, когда освободится слот.",
+      "retrySoon": "Расшифровка не удалась и скоро будет повторена.",
+      "ready": "Расшифрованные субтитры готовы. Нажмите строку, чтобы открыть их.",
+      "captions": "Собрана из дорожки субтитров видео. Нажмите строку, чтобы открыть её.",
+      "cancelled": "Расшифровка отменена.",
+      "subtitlesDownloaded": "Файл субтитров сохранён ({{languages}}).",
+      "subtitlesDownloadedUnknown": "Файл субтитров сохранён.",
+      "subtitlesUnavailable": "У этого видео нет дорожки субтитров для скачивания.",
+      "subtitlesAuth": "Войдите в аккаунт и повторите попытку, чтобы скачать субтитры.",
+      "subtitlesFailed": "Не удалось скачать субтитры."
+    },
     "copy": "Копировать расшифровку",
     "copied": "Расшифровка скопирована",
     "copyFailed": "Не удалось скопировать расшифровку.",
@@ -1102,6 +1269,9 @@
     "captionDelete": "Удалить",
     "captionDeleteSelected": "Удалить выбранное",
     "captionDeleted": "Удалено субтитров: {{count}}",
+    "captionDeleteConfirmTitle": "Удалить выбранные субтитры?",
+    "captionDeleteConfirmDescription": "Это навсегда удалит {{count}} субтитров из расшифровки.",
+    "captionDeleteConfirmCancel": "Отмена",
     "captionSaveFailed": "Не удалось сохранить субтитр.",
     "captionPlaceholder": "Введите субтитр",
     "captionSpeaker": "Спикер",
@@ -1173,7 +1343,12 @@
       "segments": "Сегменты",
       "createdAt": "Расшифровано",
       "empty": "Пока нет сведений.",
-      "openUrl": "Открыть исходный URL"
+      "openUrl": "Открыть исходный URL",
+      "group": {
+        "media": "Медиа",
+        "file": "Файл",
+        "transcript": "Транскрипт"
+      }
     },
     "speakingShare": "{{percent}}%",
     "seekSpeaker": "Перейти к {{name}}",
@@ -1210,11 +1385,22 @@
       "volumePercent": "{{percent}}%",
       "fullscreen": "Полный экран",
       "fullscreenExit": "Выйти из полного экрана",
-      "resumed": "Продолжено с {{time}}",
-      "startOver": "С начала",
       "nowPlaying": "Сейчас играет",
-      "closeBar": "Закрыть плеер",
-      "openTranscript": "Назад к расшифровке"
+      "openTranscript": "Назад к расшифровке",
+      "playlist": {
+        "title": "Плейлист",
+        "open": "Открыть плейлист",
+        "count": "Элементов: {{count}}",
+        "empty": "Ваш плейлист пуст",
+        "emptyHint": "Запустите загрузку или добавьте её через контекстное меню.",
+        "add": "Добавить в плейлист",
+        "addedCount": "{{count}} добавлено в плейлист",
+        "remove": "Удалить из плейлиста",
+        "moveUp": "Переместить выше",
+        "moveDown": "Переместить ниже",
+        "drag": "Перетащите для сортировки",
+        "more": "Действия с элементом"
+      }
     },
     "qualityHint": "Not happy with this transcript?",
     "qualityHintDetail": "Download a higher-quality model and transcribe again. The current transcript is kept as history.",
@@ -1234,6 +1420,8 @@
     "promptShare": "Поделиться изображением",
     "promptShareTitle": "Поделиться изображением",
     "promptShareDownload": "Скачать",
+    "promptShareDownloadFull": "Полное изображение",
+    "promptShareDownloadSplit": "Части изображения (папка с нумерацией)",
     "promptShareNative": "Поделиться",
     "promptSharing": "Подготовка изображения…",
     "promptShared": "Изображение скопировано",
@@ -1247,32 +1435,61 @@
     "promptOutput": "Результат промпта",
     "promptScrollToEnd": "К последнему",
     "promptCopied": "Скопировано",
+    "promptCloudGenerated": "Создано с помощью VidBee Cloud",
     "promptNoProvider": "Чтобы запустить этот промпт, настройте ИИ-провайдера в параметрах.",
     "promptOpenSettings": "Открыть настройки провайдера",
     "promptEmpty": "Результат появится здесь.",
+    "overviewChapters": "Главы",
+    "overviewQuotes": "Цитаты",
+    "promptRetrying": "Генерация прервана. Повторная попытка {{attempt}}/{{maxAttempts}}…",
+    "promptWaiting": "Ожидание ответа модели · {{seconds}} с",
     "promptRunning": "Пишет…",
     "promptThinking": "Размышление",
     "promptThinkingFor": "Думает {{seconds}} с",
     "promptThoughtFor": "Думал {{seconds}} с",
     "promptAborted": "Остановлено",
+    "promptTabCompleted": "Готово",
+    "promptTabError": "Ошибка",
     "promptNoTranscript": "Сначала нужна расшифровка, чтобы запустить этот промпт.",
+    "promptWaitForTranscript": "Этот промпт запустится, когда расшифровка закончится.",
+    "promptRunWhenReady": "Запустить, когда будет готово",
+    "promptWaitingToRun": "Ожидание расшифровки…",
     "promptTryAgain": "Повторить",
     "promptLoading": "Загрузка настроек ИИ…",
     "promptGuide": {
+      "interrupted": "Ответ ИИ прервался до завершения.",
+      "creditsExhausted": "На этом аккаунте недостаточно ИИ-кредитов.",
+      "signInRequired": "Войдите в VidBee Cloud, чтобы сразу бесплатно пользоваться Ask AI.",
       "noProvider": "ИИ-провайдер не включён, поэтому этот промпт нельзя запустить.",
       "missingApiKey": "У активного провайдера нет API-ключа.",
       "missingModel": "У активного провайдера нет ID модели.",
       "unknownPrompt": "Этот промпт больше недоступен.",
       "emptyTranscript": "Для этого промпта нужна готовая расшифровка.",
       "auth": "Провайдер отклонил запрос. Скорее всего, неверный API-ключ или аккаунт.",
+      "authCloud": "VidBee Cloud отклонил запрос. Возможно, сессия истекла.",
       "network": "Не удалось связаться с провайдером.",
+      "networkCloud": "Не удалось подключиться к VidBee Cloud.",
       "emptyOutput": "Провайдер завершил запрос, но не вернул текст.",
-      "unknown": "Промпт не удалось выполнить."
+      "emptyOutputCloud": "VidBee Cloud завершил запрос, но не вернул текст.",
+      "unknown": "Промпт не удалось выполнить.",
+      "unknownCloud": "VidBee Cloud не смог завершить этот промпт.",
+      "serviceErrorCloud": "VidBee Cloud's AI service rejected this request."
     },
     "promptErrorDetails": "Подробности ошибки",
     "promptWhatToDo": "Что сделать",
     "promptUsingProvider": "Провайдер: {{name}}",
+    "promptCreditsByok": "Или <byok>используйте свой API-ключ</byok>.",
     "promptSolutions": {
+      "creditsExhausted": {
+        "s1": "Откройте Аккаунт и проверьте остаток кредитов.",
+        "s2": "Пригласите нового пользователя и получите кредиты.",
+        "s3": "Повторите запрос после начисления кредитов."
+      },
+      "signInRequired": {
+        "s1": "Откройте Настройки → Providers.",
+        "s2": "Войдите через GitHub в разделе VidBee Cloud.",
+        "s3": "Повторите запрос."
+      },
       "noProvider": {
         "s1": "Откройте Параметры → Провайдеры.",
         "s2": "Добавьте сервис, сохраните API-ключ и ID модели, затем нажмите Использовать.",
@@ -1301,22 +1518,78 @@
         "s2": "Проверьте баланс и право вызывать эту модель.",
         "s3": "Для своего endpoint убедитесь, что он принимает этот ключ."
       },
+      "authCloud": {
+        "s1": "Откройте «Аккаунт» и убедитесь, что вы всё ещё вошли.",
+        "s2": "Войдите снова, если сессия истекла.",
+        "s3": "Запустите промпт ещё раз."
+      },
       "network": {
         "s1": "Проверьте интернет и прокси.",
         "s2": "Для своего провайдера проверьте доступность base URL и при необходимости /v1.",
         "s3": "Если хост недоступен, смените провайдера."
+      },
+      "networkCloud": {
+        "s1": "Проверьте подключение к интернету.",
+        "s2": "Откройте «Аккаунт» и убедитесь, что вы всё ещё вошли.",
+        "s3": "Попробуйте позже. Если ошибка повторяется, VidBee Cloud может быть временно недоступен."
       },
       "emptyOutput": {
         "s1": "В Параметры → Провайдеры проверьте, что ID модели подходит этому сервису.",
         "s2": "Для своего endpoint проверьте URL, ключ и что модель развёрнута.",
         "s3": "Смотрите подробности ниже, затем повторите попытку или смените провайдера."
       },
+      "emptyOutputCloud": {
+        "s1": "Попробуйте ещё раз. Ответ мог оборваться.",
+        "s2": "Если ошибка повторяется, откройте «Аккаунт» и проверьте вход и кредиты."
+      },
       "unknown": {
         "s1": "Сначала прочитайте подробности ошибки ниже.",
         "s2": "В Параметры → Провайдеры проверьте ключ, ID модели и URL.",
         "s3": "Повторите попытку или смените провайдера."
+      },
+      "unknownCloud": {
+        "s1": "Сначала прочитайте подробности ошибки ниже.",
+        "s2": "Попробуйте позже. Если соединение рвётся, ответ Cloud может остановиться на середине.",
+        "s3": "Если ошибка повторяется, откройте «Аккаунт» и проверьте вход и кредиты."
       }
-    }
+    },
+    "promptDislike": "Не нравится",
+    "promptFeedbackSaved": "Отзыв сохранён",
+    "promptFeedbackFailed": "Не удалось сохранить отзыв. Попробуйте ещё раз.",
+    "promptHistory": "History",
+    "promptHistoryClose": "Close history",
+    "promptHistoryNew": "New chat",
+    "promptHistoryChat": "Chat",
+    "promptHistoryDescription": "Agent conversations from every video",
+    "promptHistoryEmpty": "No conversations yet",
+    "promptHistoryToday": "Today",
+    "promptHistoryYesterday": "Yesterday",
+    "promptHistoryMore": "Conversation actions",
+    "promptHistoryDelete": "Delete",
+    "promptHistoryDeleteTitle": "Delete this conversation?",
+    "promptHistoryDeleteDescription": "This removes the conversation. The video and transcript stay.",
+    "promptHistoryDeleteCancel": "Cancel",
+    "promptHistoryUntitled": "Untitled",
+    "promptTabClose": "Close tab",
+    "promptHistoryRename": "Rename",
+    "promptHistoryRenameTitle": "Rename conversation",
+    "promptHistoryRenameDescription": "Choose a short title for this chat tab.",
+    "promptHistoryRenameSave": "Save",
+    "promptHistoryRenamePlaceholder": "Conversation title",
+    "promptMore": "More actions",
+    "promptExportPdf": "Export as PDF",
+    "promptExportMarkdown": "Export as Markdown",
+    "promptExportSaved": "Exported",
+    "promptExportFailed": "Could not export.",
+    "promptExportEmpty": "Nothing to export.",
+    "promptShareSplitCount": "Number of images (optional)",
+    "promptShareSplitCountAuto": "Automatic",
+    "promptShareSplitCountHint": "Leave blank for automatic splitting. Fewer images may be saved to keep content intact.",
+    "thinkingSecond": "{{count}} second",
+    "thinkingSeconds": "{{count}} seconds",
+    "thinkingMinute": "{{count}} minute",
+    "thinkingMinutes": "{{count}} minutes",
+    "promptCloudServiceErrorDetail": "Your transcript is saved. This service issue needs to be resolved before you can generate the response."
   },
   "whatsNew": {
     "title": "Что нового",
@@ -1340,5 +1613,131 @@
         "description": "Перетащите локальное аудио или видео в Расшифровки. Экспортируйте текст, субтитры или видео с вшитыми титрами."
       }
     }
+  },
+  "cloudCache": {
+    "title": "Кэш результатов Cloud",
+    "range": "Период (UTC)",
+    "hits": "Попадания",
+    "misses": "Промахи",
+    "bypasses": "Обходы",
+    "hitRate": "Доля попаданий",
+    "today": "Сегодня",
+    "week": "Последние 7 дней",
+    "month": "Последние 30 дней",
+    "all": "За всё время"
+  },
+  "agentChat": {
+    "eventStream": "Event Stream",
+    "eventStatus": {
+      "running": "Running",
+      "completed": "Completed",
+      "error": "Failed"
+    },
+    "placeholder": "Ask a follow-up about this video…",
+    "send": "Send message",
+    "attachImages": "Attach images",
+    "removeImage": "Remove {{name}}",
+    "imageSelectionFailed": "Could not add these images. Select up to 10 PNG, JPEG or WebP images, each no larger than 20 MB.",
+    "imageRemoveFailed": "Could not remove this image. Try again.",
+    "imagesNotSupported": "Choose a model that supports images, or remove the attachments to send this message.",
+    "interrupted": "This response was interrupted when the app closed. Retry to continue.",
+    "imported": "Imported from your previous summary",
+    "previousVersion": "Previous reply version",
+    "nextVersion": "Next reply version",
+    "toolCount": "Tool calls: {{count}}",
+    "saveAttachment": "Save attachment",
+    "attachmentUnavailable": "This attachment is unavailable. Try generating it again.",
+    "frame": "Frame at {{time}}",
+    "clip": "Clip at {{time}}",
+    "downloading": "Downloading video",
+    "contextWindow": "Context window (tokens)",
+    "contextWindowHint": "Enter the context window if the model is not in the catalog.",
+    "vision": "Image input",
+    "toolCalling": "Tool calling",
+    "reasoning": "Thinking",
+    "thinkingOnly": "Thinking only",
+    "allowDisableThinking": "Allow turning thinking off",
+    "thinkingCapabilitiesHint": "Сейчас показывается только переключатель размышления, без уровней интенсивности. Если модель поддерживает уровни, выберите их ниже.",
+    "defaultThinkingLevel": "Уровень размышления по умолчанию",
+    "defaultThinkingAuto": "Авто (значение по умолчанию слоя запроса)",
+    "supportedThinkingLevels": "Поддерживаемые уровни размышления",
+    "inputTokens": "Ввод",
+    "outputTokens": "Вывод",
+    "providerDefault": "Использовать значение провайдера",
+    "automatic": "Use model defaults",
+    "enabled": "Supported",
+    "disabled": "Not supported",
+    "visionSelect": "Select…",
+    "catalogFilled": "You can change these catalog values.",
+    "catalogMissing": "This model is not in the catalog. Enter the context window and capabilities.",
+    "catalogLooking": "Looking up this model id in the catalog…",
+    "catalogMatched": "Matched {{name}}. Context window and capabilities were filled in.",
+    "catalogBadge": "Catalog",
+    "tools": {
+      "get_video_info": "Reading video information",
+      "read_transcript": "Reading transcript",
+      "search_transcript": "Searching transcript",
+      "capture_frames": "Capturing video frames",
+      "create_clip": "Creating video clip",
+      "read_history": "Reading conversation history",
+      "search_history": "Searching conversation history",
+      "read_notes": "Reading working notes",
+      "write_notes": "Saving working notes",
+      "read_artifact": "Reviewing saved image",
+      "rename_conversation": "Renaming conversation",
+      "write_article": "Writing article",
+      "review_article": "Reviewing article"
+    },
+    "modelCapabilities": "Model capabilities",
+    "runDurationRunning": "Working · {{duration}}",
+    "runDuration": "Elapsed: {{duration}}",
+    "durationSeconds": "{{seconds}}s",
+    "durationMinutes": "{{minutes}}m {{seconds}}s",
+    "contextStatus": {
+      "compacting": "Organizing conversation context",
+      "recovering": "Recovering conversation context",
+      "reviewing": "Checking source coverage",
+      "writing": "Writing and checking source sections"
+    },
+    "thinking": {
+      "label": "Thinking level",
+      "off": "Off",
+      "minimal": "Minimal",
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "xhigh": "Extra high",
+      "max": "Maximum"
+    },
+    "models": "Модели",
+    "model": "Модель",
+    "reasoningEffort": "Усилие рассуждения",
+    "cloud": "Cloud",
+    "searchModels": "Поиск моделей…",
+    "noModels": "Модели не найдены.",
+    "effort": "Усилие {{level}}",
+    "faster": "Быстрее",
+    "smarter": "Умнее",
+    "retrying": "Connection interrupted. Retrying…",
+    "defaultThinkingLevel": "Default thinking level",
+    "defaultThinkingAuto": "Auto (use request default)",
+    "supportedThinkingLevels": "Supported thinking levels",
+    "inputTokens": "Input",
+    "outputTokens": "Output",
+    "providerDefault": "Use provider default"
+  },
+  "web": {
+    "saveToThisComputer": "Save to this computer",
+    "copyServerPath": "Copy server path",
+    "serverPathCopied": "Server path copied",
+    "downloadPathDescription": "Where the VidBee server saves files. In Docker this is usually /data/downloads.",
+    "autoTranscribeAfterDownloadDescription": "When a download finishes, start a transcript on the VidBee server. Already queued jobs keep running if you turn this off.",
+    "maxConcurrentTranscriptionsDescription": "How many transcripts can run at once on the server.",
+    "transcriptModelsDescription": "Speech models are stored on the VidBee server. The first transcript downloads them there.",
+    "cookiesFileOnly": "The server cannot read browsers on your computer. Export a Netscape cookies.txt and upload it.",
+    "storageTitle": "Server storage",
+    "storageDownloadDir": "Download directory",
+    "storageDataDir": "Data directory",
+    "storageDbFile": "SQLite database"
   }
 }

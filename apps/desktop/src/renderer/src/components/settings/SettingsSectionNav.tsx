@@ -12,13 +12,17 @@ import {
   KeyRound,
   MessageSquareText,
   Settings2,
-  SlidersHorizontal
+  SlidersHorizontal,
+  UserRound
 } from 'lucide-react'
 import { type KeyboardEvent, type RefObject, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 
 /** Settings sections shown in the left-hand settings menu. */
 export const SETTINGS_NAV_ITEMS = [
+  ...(import.meta.env.DEV
+    ? [{ icon: UserRound, labelKey: 'settings.account.tab', value: 'account' } as const]
+    : []),
   { icon: Settings2, labelKey: 'settings.general', value: 'general' },
   { icon: FileText, labelKey: 'settings.metadataTab', value: 'metadata' },
   { icon: Cookie, labelKey: 'settings.cookiesTab', value: 'cookies' },
@@ -33,7 +37,7 @@ export type SettingsNavTab = (typeof SETTINGS_NAV_ITEMS)[number]['value']
 type SettingsNavItem = (typeof SETTINGS_NAV_ITEMS)[number]
 
 const SETTINGS_NAV_GROUPS = [
-  { id: 'app', labelKey: 'settings.navGroup.app', values: ['general'] },
+  { id: 'app', labelKey: 'settings.navGroup.app', values: ['account', 'general'] },
   { id: 'download', labelKey: 'settings.navGroup.download', values: ['metadata', 'cookies'] },
   { id: 'ai', labelKey: 'settings.navGroup.ai', values: ['providers', 'prompts', 'transcribe'] },
   { id: 'system', labelKey: 'settings.navGroup.system', values: ['advanced'] }

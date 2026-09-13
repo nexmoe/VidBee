@@ -8,6 +8,7 @@ import {
 import { useContext } from 'react'
 import { AppLayout } from './app-layout'
 import { DesktopChromeContext } from './desktop-chrome'
+import { validateTranscriptTabSearch } from './lib/transcript-tab-search'
 import { transcriptRouteTransitionTypes } from './lib/transcript-view-transition'
 import { About } from './pages/About'
 import { Home } from './pages/Home'
@@ -16,6 +17,7 @@ import { Subscriptions } from './pages/Subscriptions'
 import { TranscriptPage } from './pages/Transcript'
 
 export type SettingsTab =
+  | 'account'
   | 'advanced'
   | 'cookies'
   | 'general'
@@ -37,6 +39,7 @@ export interface DesktopRouterContext {
 const validateSettingsSearch = (search: Record<string, unknown>): { tab?: SettingsTab } => {
   const tab = search.tab
   if (
+    tab === 'account' ||
     tab === 'advanced' ||
     tab === 'cookies' ||
     tab === 'general' ||
@@ -109,6 +112,7 @@ const transcriptsRoute = createRoute({
 const transcriptRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/downloads/$downloadId/transcript',
+  validateSearch: validateTranscriptTabSearch,
   component: TranscriptPage
 })
 

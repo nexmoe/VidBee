@@ -1,5 +1,6 @@
 import { initVidbeeLogger } from '@vidbee/logger'
 import log from 'electron-log/main'
+import { formatDesktopConsoleLog } from '../lib/desktop-console-format'
 
 /**
  * Configure electron-log
@@ -13,6 +14,7 @@ export function configureLogger() {
   // Production: show info level and above only
   const isDev = process.env.NODE_ENV === 'development'
   log.transports.console.level = isDev ? 'silly' : 'info'
+  log.transports.console.format = formatDesktopConsoleLog
   log.transports.file.level = isDev ? 'silly' : 'info'
 
   // Enable IPC transport in development environment to show renderer process logs in main process console

@@ -98,10 +98,43 @@ const silentLogger: KernelLogger = {
 }
 
 /**
+ * Convert an unknown kernel failure into a user-copyable string.
+ */
+function formatKernelError(error: unknown): string {
+  if (error instanceof Error) {
+    return error.stack?.trim() || error.message
+  }
+  return String(error)
+}
+
+/**
+ * Build the renderer-visible diagnostic for a fatal kernel failure.
+ */
+function buildUnavailableError(
+  options: YtDlpKernelServiceOptions,
+  bundledError: string,
+  managedError: string | null
+): string {
+  const lines = [
+    `Platform: ${options.platform}`,
+    `Kernel root: ${options.kernelRoot}`,
+    `Bundled yt-dlp: ${options.bundledYtDlpPath}`,
+    `Bundled Node: ${options.bundledNodePath}`,
+    ''
+  ]
+  if (managedError) {
+    lines.push('Managed preparation failed:', managedError, '')
+  }
+  lines.push('Bundled engine fallback failed:', bundledError)
+  return lines.join('\n')
+}
+
+/**
  * Return the initial renderer-visible kernel status.
  */
 function createInitialStatus(): YtDlpKernelStatus {
   return {
+    error: null,
     nodeVersion: null,
     preparationStep: 'copying',
     progress: 0,
@@ -252,7 +285,10 @@ export class YtDlpKernelService extends EventEmitter {
    */
   startBackgroundUpdates(): void {
     this.stopped = false
-    const nextCheckAt = this.persistentState?.nextCheckAt ?? this.now()
+    if (!this.persistentState) {
+      return
+    }
+    const nextCheckAt = this.persistentState.nextCheckAt ?? this.now()
     this.scheduleAt(nextCheckAt)
   }
 
@@ -295,8 +331,9 @@ export class YtDlpKernelService extends EventEmitter {
       }
       return await this.prepareManagedBundle()
     } catch (error) {
-      this.options.logger?.warn(`Managed kernel preparation failed: ${String(error)}`)
-      return this.activateBundledFallback()
+      const managedError = formatKernelError(error)
+      this.options.logger?.warn(`Managed kernel preparation failed: ${managedError}`)
+      return this.activateBundledFallback(managedError)
     }
   }
 
@@ -470,6 +507,7 @@ export class YtDlpKernelService extends EventEmitter {
     this.options.activate(paths)
     this.activePaths = paths
     this.setStatus({
+      error: null,
       nodeVersion,
       preparationStep: null,
       progress: null,
@@ -785,7 +823,7 @@ export class YtDlpKernelService extends EventEmitter {
   /**
    * Validate and activate packaged resources without writable persistence.
    */
-  private async activateBundledFallback(): Promise<boolean> {
+  private async activateBundledFallback(managedError: string | null = null): Promise<boolean> {
     try {
       await this.assertExecutable(this.options.bundledYtDlpPath)
       await this.assertExecutable(this.options.bundledNodePath)
@@ -802,6 +840,7 @@ export class YtDlpKernelService extends EventEmitter {
         ytDlpPath: this.options.bundledYtDlpPath
       }
       this.setStatus({
+        error: null,
         nodeVersion,
         preparationStep: null,
         progress: null,
@@ -812,8 +851,10 @@ export class YtDlpKernelService extends EventEmitter {
       })
       return true
     } catch (error) {
-      this.options.logger?.error(`Bundled kernel validation failed: ${String(error)}`)
+      const bundledError = formatKernelError(error)
+      this.options.logger?.error(`Bundled kernel validation failed: ${bundledError}`)
       this.setStatus({
+        error: buildUnavailableError(this.options, bundledError, managedError),
         nodeVersion: null,
         preparationStep: null,
         progress: null,

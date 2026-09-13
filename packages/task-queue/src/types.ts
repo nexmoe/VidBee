@@ -90,7 +90,17 @@ export interface TranscriptTaskResult {
   transcriptId: string
 }
 
+export type SubtitleDownloadStatus = 'downloaded' | 'unavailable' | 'skipped-auth' | 'failed'
+
 export interface TaskOutput {
+  /** Immutable acquisition facts captured by the downloader process. */
+  subtitleAcquisition?: {
+    id: string
+    acquiredAt: number
+    credentialsUsed?: boolean
+    visibility?: 'public' | 'private' | 'unlisted'
+  }
+
   filePath: string
   size: number
   durationMs: number | null
@@ -103,6 +113,10 @@ export interface TaskOutput {
    * one (e.g. fake fixtures, raw `yt-dlp -j` info-fetch).
    */
   formatId?: string | null
+  /** Outcome of an optional subtitle request; absent when subtitles were not requested. */
+  subtitleStatus?: SubtitleDownloadStatus
+  /** Actual yt-dlp subtitle language tags selected for download. */
+  subtitleLanguages?: string[]
   /**
    * Set by the transcription executor after the transcript or explicit
    * no-speech result has been committed to SQLite. Download tasks leave

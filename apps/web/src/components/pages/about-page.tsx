@@ -6,8 +6,14 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@vidbee/ui/components/ui/card";
+import { DownloadEngineRow } from "@vidbee/ui/components/ui/download-engine-row";
+import { FeedbackLinkButtons } from "@vidbee/ui/components/ui/feedback-link-buttons";
+import { ItemSeparator } from "@vidbee/ui/components/ui/item";
+import {
+	OTHER_PRODUCTS,
+	OtherProductCard,
+} from "@vidbee/ui/components/ui/other-product-card";
 import { Progress } from "@vidbee/ui/components/ui/progress";
-import { Switch } from "@vidbee/ui/components/ui/switch";
 import type { LucideIcon } from "lucide-react";
 import {
 	Download,
@@ -22,6 +28,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { orpcClient } from "../../lib/orpc-client";
 import { AppShell } from "../layout/app-shell";
 
@@ -42,45 +49,51 @@ type LatestVersionState =
 	| { status: "error"; error?: string }
 	| null;
 
-const AUTO_UPDATE_KEY = "vidbee.web.auto-update";
-const PREVIEW_CHANNEL_KEY = "vidbee.web.preview-channel";
 const SHARE_TARGET_URL = "https://vidbee.org";
 const APP_VERSION = __APP_VERSION__;
+const GITHUB_RELEASES_API =
+	"https://api.github.com/repos/nexmoe/VidBee/releases/latest";
 
-const readStoredBoolean = (key: string, fallbackValue: boolean): boolean => {
-	if (typeof window === "undefined") {
-		return fallbackValue;
-	}
-
-	const value = window.localStorage.getItem(key);
-	if (value === "true") {
-		return true;
-	}
-	if (value === "false") {
-		return false;
-	}
-
-	return fallbackValue;
+type EngineStatus = {
+	error: string | null;
+	ffmpegVersion: string | null;
+	latestYtDlpVersion: string | null;
+	nodeVersion: string;
+	state: string;
+	ytDlpPath: string | null;
+	ytDlpVersion: string | null;
 };
 
-const writeStoredBoolean = (key: string, value: boolean): void => {
-	if (typeof window === "undefined") {
-		return;
+const compareAppVersions = (left: string, right: string): number => {
+	const parse = (value: string): number[] =>
+		value
+			.replace(/^v/i, "")
+			.split(".")
+			.map((part) => {
+				const n = Number.parseInt(part, 10);
+				return Number.isFinite(n) ? n : 0;
+			});
+	const leftParts = parse(left);
+	const rightParts = parse(right);
+	const length = Math.max(leftParts.length, rightParts.length);
+	for (let index = 0; index < length; index += 1) {
+		const diff = (leftParts[index] ?? 0) - (rightParts[index] ?? 0);
+		if (diff !== 0) {
+			return diff;
+		}
 	}
-
-	window.localStorage.setItem(key, value ? "true" : "false");
+	return 0;
 };
 
 export const AboutPage = () => {
 	const { t } = useTranslation();
-	const [appVersion] = useState(APP_VERSION);
+	const [appVersion, setAppVersion] = useState(APP_VERSION);
 	const [osVersion, setOsVersion] = useState("-");
-	const [autoUpdate, setAutoUpdate] = useState(() =>
-		readStoredBoolean(AUTO_UPDATE_KEY, true),
-	);
-	const [previewChannel, setPreviewChannel] = useState(() =>
-		readStoredBoolean(PREVIEW_CHANNEL_KEY, false),
-	);
+	const [serverDownloadDir, setServerDownloadDir] = useState("");
+	const [serverDataDir, setServerDataDir] = useState("");
+	const [serverDbPath, setServerDbPath] = useState("");
+	const [engineStatus, setEngineStatus] = useState<EngineStatus | null>(null);
+	const [engineBusy, setEngineBusy] = useState(false);
 	const [latestVersionState, setLatestVersionState] =
 		useState<LatestVersionState>(null);
 	const [updateDownloadProgress] = useState<number | null>(null);
@@ -88,25 +101,24 @@ export const AboutPage = () => {
 	useEffect(() => {
 		const loadStatus = async () => {
 			try {
-				await orpcClient.status();
+				const status = await orpcClient.status();
+				setAppVersion(status.version || APP_VERSION);
 				setOsVersion(window.navigator.userAgent || "-");
+				setServerDownloadDir(status.downloadDir ?? "");
+				setServerDataDir(status.dataDir ?? "");
+				setServerDbPath(status.dbPath ?? "");
 			} catch {
 				setOsVersion("-");
+			}
+			try {
+				setEngineStatus(await orpcClient.engines.status());
+			} catch {
+				setEngineStatus(null);
 			}
 		};
 
 		void loadStatus();
 	}, []);
-
-	const setAutoUpdateValue = (value: boolean) => {
-		setAutoUpdate(value);
-		writeStoredBoolean(AUTO_UPDATE_KEY, value);
-	};
-
-	const setPreviewChannelValue = (value: boolean) => {
-		setPreviewChannel(value);
-		writeStoredBoolean(PREVIEW_CHANNEL_KEY, value);
-	};
 
 	const openShareUrl = useCallback((url: string) => {
 		if (typeof window === "undefined") {
@@ -122,16 +134,80 @@ export const AboutPage = () => {
 
 	const handleCheckForUpdates = async () => {
 		try {
-			const result = await orpcClient.status();
+			toast.info(t("about.notifications.checkingUpdates"));
+			const [status, engines] = await Promise.all([
+				orpcClient.status(),
+				orpcClient.engines.check().catch(() => null),
+			]);
+			const currentVersion = status.version || appVersion;
+			setAppVersion(currentVersion);
+			if (engines) {
+				setEngineStatus(engines);
+			}
+
+			let latestTag: string | null = null;
+			try {
+				const response = await fetch(GITHUB_RELEASES_API, {
+					headers: { Accept: "application/vnd.github+json" },
+				});
+				if (response.ok) {
+					const payload = (await response.json()) as { tag_name?: string };
+					latestTag = payload.tag_name?.trim() || null;
+				}
+			} catch {
+				latestTag = null;
+			}
+
+			if (latestTag && compareAppVersions(currentVersion, latestTag) < 0) {
+				toast.success(
+					t("about.notifications.updateAvailable", { version: latestTag }),
+				);
+				setLatestVersionState({
+					status: "available",
+					version: latestTag.replace(/^v/i, ""),
+				});
+				return;
+			}
+
+			toast.success(t("about.notifications.noUpdatesAvailable"));
 			setLatestVersionState({
 				status: "uptodate",
-				version: result.version || appVersion,
+				version: latestTag?.replace(/^v/i, "") || currentVersion,
 			});
 		} catch (error) {
+			const message = error instanceof Error ? error.message : "Unknown error";
+			toast.error(t("about.notifications.updateError", { error: message }));
 			setLatestVersionState({
 				status: "error",
-				error: error instanceof Error ? error.message : "Unknown error",
+				error: message,
 			});
+		}
+	};
+
+	const handleUpdateEngine = async () => {
+		setEngineBusy(true);
+		try {
+			const next = await orpcClient.engines.update();
+			setEngineStatus(next);
+			if (next.state === "up-to-date" && next.ytDlpVersion) {
+				toast.success(
+					t("about.downloadEngine.updated", { version: next.ytDlpVersion }),
+				);
+				return;
+			}
+			if (next.error) {
+				toast.error(
+					t("about.downloadEngine.updateFailed", { error: next.error }),
+				);
+			}
+		} catch (error) {
+			toast.error(
+				t("about.downloadEngine.updateFailed", {
+					error: error instanceof Error ? error.message : "Unknown error",
+				}),
+			);
+		} finally {
+			setEngineBusy(false);
 		}
 	};
 
@@ -218,8 +294,8 @@ export const AboutPage = () => {
 			<div className="h-full bg-background">
 				<div className="container mx-auto max-w-5xl space-y-6 p-6">
 					<Card>
-						<CardContent className="pt-6">
-							<div className="flex flex-col gap-4">
+						<CardContent className="p-0">
+							<div className="space-y-4 px-6 pt-6 pb-4">
 								<div className="flex items-center gap-4">
 									<img
 										alt="VidBee"
@@ -291,9 +367,7 @@ export const AboutPage = () => {
 										</p>
 									</div>
 								</div>
-							</div>
-							{updateDownloadProgress !== null ? (
-								<div className="flex flex-col gap-3 pt-4">
+								{updateDownloadProgress !== null ? (
 									<div className="w-full space-y-2">
 										<div className="flex items-center justify-between gap-2">
 											<span className="text-muted-foreground text-sm">
@@ -305,41 +379,78 @@ export const AboutPage = () => {
 										</div>
 										<Progress className="h-2" value={updateDownloadProgress} />
 									</div>
-								</div>
+								) : null}
+							</div>
+							<ItemSeparator />
+							{engineStatus ? (
+								<DownloadEngineRow
+									actions={
+										engineStatus.state === "update-available" || engineBusy ? (
+											<Button
+												className="gap-2"
+												disabled={engineBusy}
+												onClick={() => void handleUpdateEngine()}
+												size="sm"
+											>
+												<RefreshCw className="h-3.5 w-3.5" />
+												{t("about.downloadEngine.update")}
+											</Button>
+										) : (
+											<Button asChild size="sm" variant="outline">
+												<a
+													href="https://github.com/yt-dlp/yt-dlp/releases"
+													rel="noreferrer"
+													target="_blank"
+												>
+													{t("about.resources.changelog")}
+												</a>
+											</Button>
+										)
+									}
+									status={engineStatus}
+									versionsKey="about.downloadEngine.webVersions"
+								/>
 							) : null}
-							<div className="flex items-center justify-between gap-4 pt-6">
-								<div className="space-y-1">
-									<p className="font-medium leading-none">
-										{t("about.autoUpdateTitle")}
-									</p>
-									<p className="text-muted-foreground text-sm">
-										{t("about.autoUpdateDescription")}
-									</p>
-								</div>
-								<Switch
-									checked={autoUpdate}
-									label=""
-									onToggle={() => setAutoUpdateValue(!autoUpdate)}
-								/>
-							</div>
-							<div className="flex items-center justify-between gap-4 pt-6">
-								<div className="space-y-1">
-									<p className="font-medium leading-none">
-										{t("about.betaProgramTitle")}
-									</p>
-									<p className="text-muted-foreground text-sm">
-										{t("about.betaProgramDescription")}
-									</p>
-								</div>
-								<Switch
-									checked={previewChannel}
-									label=""
-									onToggle={() => setPreviewChannelValue(!previewChannel)}
-								/>
-							</div>
-							<p className="text-muted-foreground text-xs">{osVersion}</p>
+							{(serverDownloadDir || serverDataDir || serverDbPath) && (
+								<>
+									<ItemSeparator />
+									<div className="space-y-1 px-6 py-3">
+										<p className="font-medium leading-none">
+											{t("web.storageTitle")}
+										</p>
+										{serverDownloadDir ? (
+											<p className="text-muted-foreground text-sm">
+												{t("web.storageDownloadDir")}: {serverDownloadDir}
+											</p>
+										) : null}
+										{serverDataDir ? (
+											<p className="text-muted-foreground text-sm">
+												{t("web.storageDataDir")}: {serverDataDir}
+											</p>
+										) : null}
+										{serverDbPath ? (
+											<p className="text-muted-foreground text-sm">
+												{t("web.storageDbFile")}: {serverDbPath}
+											</p>
+										) : null}
+									</div>
+								</>
+							)}
 						</CardContent>
 					</Card>
+
+					<div className="grid gap-4 sm:grid-cols-2">
+						{OTHER_PRODUCTS.map((product) => (
+							<OtherProductCard
+								description={t(`about.otherProducts.${product.id}.description`)}
+								domain={product.domain}
+								href={product.url}
+								key={product.id}
+								name={t(`about.otherProducts.${product.id}.name`)}
+								visitLabel={t("about.actions.visit")}
+							/>
+						))}
+					</div>
 
 					<Card>
 						<CardHeader>
@@ -417,21 +528,12 @@ export const AboutPage = () => {
 										</div>
 									</div>
 									<div className="flex flex-wrap gap-2">
-										<Button
-											asChild
-											className="gap-2"
-											size="sm"
-											variant="outline"
-										>
-											<a
-												href="https://github.com/nexmoe/VidBee/issues/new/choose"
-												rel="noreferrer"
-												target="_blank"
-											>
-												<Github className="h-4 w-4" />
-												{t("about.resources.githubIssues")}
-											</a>
-										</Button>
+										<FeedbackLinkButtons
+											appInfo={{ appVersion, osVersion }}
+											buttonClassName="gap-2"
+											iconClassName="h-4 w-4"
+											useSimpleGithubUrl={true}
+										/>
 									</div>
 								</div>
 

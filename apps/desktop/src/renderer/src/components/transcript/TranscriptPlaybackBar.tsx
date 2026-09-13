@@ -1,21 +1,33 @@
 import { TranscriptPlaybackBarView } from '@renderer/components/transcript/TranscriptPlaybackBarView'
+import { TranscriptPlaylistPopover } from '@renderer/components/transcript/TranscriptPlaylistPopover'
 import { prefersReducedMotion } from '@renderer/lib/transcript-follow'
 import { segmentAtTime } from '@renderer/lib/transcript-index'
 import {
-  isTranscriptDetailPathname,
+  clampPlaybackRate,
+  PLAYBACK_BAR_FULL_VAR,
+  PLAYBACK_BAR_HEIGHT_PX,
+  PLAYBACK_BAR_HOVER_SLOP_PX,
+  PLAYBACK_BAR_HOVER_SLOP_VAR,
+  PLAYBACK_BAR_PEEK_PX,
+  PLAYBACK_BAR_PEEK_VAR,
   PLAYBACK_BAR_TOGGLE_MS,
+  shouldCollapsePlaybackBar,
   shouldShowPlaybackBar
 } from '@renderer/lib/transcript-playback'
 import {
   closePlaybackSessionAtom,
+  playbackAspectRatioAtom,
   playbackClockAtom,
   playbackControlsAtom,
-  playbackSessionAtom
+  playbackRateAtom,
+  playbackSessionAtom,
+  playbackVolumeAtom
 } from '@renderer/store/transcript-playback'
+import { playbackPlaylistAtom } from '@renderer/store/transcript-playlist'
 import { transcriptMapAtom } from '@renderer/store/transcripts'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
 import { useAtomValue, useSetAtom } from 'jotai'
-import { type ReactNode, useEffect, useMemo, useState } from 'react'
+import { type CSSProperties, type ReactNode, useEffect, useMemo, useState } from 'react'
 
 /**
  * Run `fn` after the current View Transition, so CSS transforms are not
@@ -40,28 +52,33 @@ const afterViewTransition = (fn: () => void): (() => void) => {
 }
 
 /**
- * Shell now-playing bar: visible after playback starts and the user leaves that page.
+ * Shell now-playing bar: visible after playback starts.
+ *
+ * Transcript detail pages collapse it to the seek strip. Hover, focus, or an
+ * open popover expands the full chrome with the same slide used to show the bar.
  */
 export function TranscriptPlaybackBar(): ReactNode {
   const session = useAtomValue(playbackSessionAtom)
   const clock = useAtomValue(playbackClockAtom)
+  const videoRatio = useAtomValue(playbackAspectRatioAtom)
+  const volumeState = useAtomValue(playbackVolumeAtom)
+  const playbackRate = useAtomValue(playbackRateAtom)
+  const setPlaybackRate = useSetAtom(playbackRateAtom)
   const controls = useAtomValue(playbackControlsAtom)
+  const playlistIds = useAtomValue(playbackPlaylistAtom)
   const transcriptMap = useAtomValue(transcriptMapAtom)
   const closeSession = useSetAtom(closePlaybackSessionAtom)
   const navigate = useNavigate()
   const pathname = useRouterState({ select: (state) => state.location.pathname })
-  const [closing, setClosing] = useState(false)
   const [open, setOpen] = useState(false)
   const [held, setHeld] = useState(false)
-  const wantOpen =
-    !closing &&
-    shouldShowPlaybackBar({
-      downloadId: session?.downloadId ?? null,
-      pathname,
-      started: Boolean(session?.started)
-    })
-  const downloadId = session?.downloadId
-  const compact = isTranscriptDetailPathname(pathname)
+  const wantOpen = shouldShowPlaybackBar({
+    downloadId: session?.downloadId ?? null,
+    pathname,
+    playlistCount: playlistIds.length,
+    started: Boolean(session?.started)
+  })
+  const compact = shouldCollapsePlaybackBar(pathname)
   const currentLine = useMemo(() => {
     if (!session) {
       return null
@@ -69,12 +86,6 @@ export function TranscriptPlaybackBar(): ReactNode {
     const segments = transcriptMap[session.downloadId]?.record?.segments ?? []
     return segmentAtTime(segments, Math.round(clock.currentTime * 1000))?.text ?? null
   }, [clock.currentTime, session, transcriptMap])
-
-  useEffect(() => {
-    if (downloadId) {
-      setClosing(false)
-    }
-  }, [downloadId])
 
   useEffect(() => {
     let hideTimer: number | undefined
@@ -97,24 +108,36 @@ export function TranscriptPlaybackBar(): ReactNode {
   }, [wantOpen])
 
   useEffect(() => {
-    if (!closing) {
+    if (!(session?.started && playlistIds.length === 0)) {
       return
     }
     const delay = prefersReducedMotion() ? 0 : PLAYBACK_BAR_TOGGLE_MS
     const id = window.setTimeout(() => {
       controls?.pause()
       closeSession()
-      setClosing(false)
     }, delay)
     return () => window.clearTimeout(id)
-  }, [closeSession, closing, controls])
+  }, [closeSession, controls, playlistIds.length, session?.started])
 
   if (!(session?.started && (open || held))) {
     return null
   }
 
   return (
-    <div className="transcript-playback-bar-slot" data-open={open ? 'true' : 'false'} inert={!open}>
+    <div
+      className="transcript-playback-bar-slot"
+      data-collapsed={compact ? 'true' : 'false'}
+      data-open={open ? 'true' : 'false'}
+      data-testid="transcript-playback-bar-slot"
+      inert={!open}
+      style={
+        {
+          [PLAYBACK_BAR_FULL_VAR]: `${PLAYBACK_BAR_HEIGHT_PX}px`,
+          [PLAYBACK_BAR_HOVER_SLOP_VAR]: `${PLAYBACK_BAR_HOVER_SLOP_PX}px`,
+          [PLAYBACK_BAR_PEEK_VAR]: `${PLAYBACK_BAR_PEEK_PX}px`
+        } as CSSProperties
+      }
+    >
       <div className="transcript-playback-bar-slot-clip">
         <TranscriptPlaybackBarView
           compact={compact}
@@ -122,12 +145,17 @@ export function TranscriptPlaybackBar(): ReactNode {
           currentTime={clock.currentTime}
           duration={clock.duration}
           isAudio={session.isAudio}
-          onClose={() => setClosing(true)}
+          muted={volumeState.muted}
           onOpen={() => {
             void navigate({
               params: { downloadId: session.downloadId },
               to: '/downloads/$downloadId/transcript'
             })
+          }}
+          onPlaybackRateChange={(rate) => {
+            const next = clampPlaybackRate(rate)
+            setPlaybackRate(next)
+            controls?.setPlaybackRate(next)
           }}
           onSeek={(seconds) => {
             controls?.seek(seconds)
@@ -135,9 +163,19 @@ export function TranscriptPlaybackBar(): ReactNode {
           onToggle={() => {
             controls?.toggle()
           }}
+          onToggleMute={() => {
+            controls?.toggleMute()
+          }}
+          onVolumeChange={(volume) => {
+            controls?.setVolume(volume)
+          }}
+          playbackRate={playbackRate}
           playing={clock.playing}
+          playlistControl={<TranscriptPlaylistPopover />}
           thumbnail={session.thumbnail}
           title={session.title}
+          videoRatio={videoRatio}
+          volume={volumeState.volume}
         />
       </div>
     </div>

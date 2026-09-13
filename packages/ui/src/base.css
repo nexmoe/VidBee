@@ -1,4 +1,5 @@
-@source "./components/ui/**/*.tsx";
+@import "./components/agent-chat-composer.css";
+@source "./components/**/*.tsx";
 @source "./lib/**/*.{ts,tsx}";
 @source "./hooks/**/*.{ts,tsx}";
 @source inline("bg-hover bg-surface-{1..8} shadow-surface-{1..8}");
@@ -152,4 +153,235 @@
 
 [data-sonner-toast] [data-close-button] {
 	border: none !important;
+}
+
+/* Fluid Functionalism scroll-fade + overlay scrollbar (fluidfunctionalism.com/docs/scrollbars). */
+@property --sf-start {
+	syntax: "<number>";
+	inherits: false;
+	initial-value: 1;
+}
+
+@property --sf-end {
+	syntax: "<number>";
+	inherits: false;
+	initial-value: 1;
+}
+
+@keyframes sf-reveal-start {
+	from {
+		--sf-start: 1;
+	}
+	to {
+		--sf-start: 0;
+	}
+}
+
+@keyframes sf-reveal-end {
+	from {
+		--sf-end: 0;
+	}
+	to {
+		--sf-end: 1;
+	}
+}
+
+@keyframes sf-divider-start {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes sf-divider-end {
+	from {
+		opacity: 1;
+	}
+	to {
+		opacity: 0;
+	}
+}
+
+.scroll-fade,
+.scroll-fade-x {
+	--scroll-fade-size: 48px;
+}
+
+.scroll-fade {
+	-webkit-mask-image: linear-gradient(
+		to bottom,
+		transparent 0,
+		#000 var(--scroll-fade-size),
+		#000 calc(100% - var(--scroll-fade-size)),
+		transparent 100%
+	);
+	mask-image: linear-gradient(
+		to bottom,
+		transparent 0,
+		#000 var(--scroll-fade-size),
+		#000 calc(100% - var(--scroll-fade-size)),
+		transparent 100%
+	);
+}
+
+.scroll-fade-x {
+	-webkit-mask-image: linear-gradient(
+		to right,
+		transparent 0,
+		#000 var(--scroll-fade-size),
+		#000 calc(100% - var(--scroll-fade-size)),
+		transparent 100%
+	);
+	mask-image: linear-gradient(
+		to right,
+		transparent 0,
+		#000 var(--scroll-fade-size),
+		#000 calc(100% - var(--scroll-fade-size)),
+		transparent 100%
+	);
+}
+
+@supports (timeline-scope: --sf) {
+	.scroll-divider {
+		position: relative;
+		timeline-scope: --sf-scroller;
+		--scroll-divider-size: 48px;
+	}
+
+	.scroll-divider .scroll-fade {
+		scroll-timeline-name: --sf-scroller;
+	}
+
+	.scroll-divider::before,
+	.scroll-divider::after {
+		content: "";
+		position: absolute;
+		left: var(--scroll-divider-inset, 0px);
+		right: var(--scroll-divider-inset, 0px);
+		height: 1px;
+		background-color: var(--border);
+		pointer-events: none;
+		z-index: 1;
+		opacity: 0;
+	}
+
+	.scroll-divider::before {
+		top: 0;
+		animation: sf-divider-start both linear;
+		animation-timeline: --sf-scroller;
+		animation-range: 0 var(--scroll-divider-size);
+	}
+
+	.scroll-divider:first-child::before {
+		content: none;
+	}
+
+	.scroll-divider::after {
+		bottom: 0;
+		animation: sf-divider-end both linear;
+		animation-timeline: --sf-scroller;
+		animation-range: calc(100% - var(--scroll-divider-size)) 100%;
+	}
+}
+
+@supports (animation-timeline: scroll()) {
+	.scroll-fade {
+		mask-image: linear-gradient(
+			to bottom,
+			rgba(0, 0, 0, var(--sf-start)) 0,
+			#000 var(--scroll-fade-size),
+			#000 calc(100% - var(--scroll-fade-size)),
+			rgba(0, 0, 0, var(--sf-end)) 100%
+		);
+		-webkit-mask-image: linear-gradient(
+			to bottom,
+			rgba(0, 0, 0, var(--sf-start)) 0,
+			#000 var(--scroll-fade-size),
+			#000 calc(100% - var(--scroll-fade-size)),
+			rgba(0, 0, 0, var(--sf-end)) 100%
+		);
+		animation: sf-reveal-start both linear, sf-reveal-end both linear;
+		animation-timeline: scroll(self), scroll(self);
+		animation-range-start: 0, calc(100% - var(--scroll-fade-size));
+		animation-range-end: var(--scroll-fade-size), 100%;
+	}
+
+	.scroll-fade-x {
+		mask-image: linear-gradient(
+			to right,
+			rgba(0, 0, 0, var(--sf-start)) 0,
+			#000 var(--scroll-fade-size),
+			#000 calc(100% - var(--scroll-fade-size)),
+			rgba(0, 0, 0, var(--sf-end)) 100%
+		);
+		-webkit-mask-image: linear-gradient(
+			to right,
+			rgba(0, 0, 0, var(--sf-start)) 0,
+			#000 var(--scroll-fade-size),
+			#000 calc(100% - var(--scroll-fade-size)),
+			rgba(0, 0, 0, var(--sf-end)) 100%
+		);
+		animation: sf-reveal-start both linear, sf-reveal-end both linear;
+		animation-timeline: scroll(self inline), scroll(self inline);
+		animation-range-start: 0, calc(100% - var(--scroll-fade-size));
+		animation-range-end: var(--scroll-fade-size), 100%;
+	}
+}
+
+@media (pointer: fine) {
+	* {
+		scrollbar-width: thin;
+		scrollbar-color: rgb(var(--overlay) / 0.08) transparent;
+	}
+
+	::-webkit-scrollbar {
+		width: 10px;
+		height: 10px;
+	}
+
+	::-webkit-scrollbar-track,
+	::-webkit-scrollbar-corner {
+		background: transparent;
+	}
+
+	::-webkit-scrollbar-thumb {
+		background-color: rgb(var(--overlay) / 0.08);
+		border: 3px solid transparent;
+		background-clip: content-box;
+		border-radius: 9999px;
+	}
+
+	::-webkit-scrollbar-thumb:vertical {
+		border-left-width: 1px;
+		border-right-width: 5px;
+	}
+
+	::-webkit-scrollbar-thumb:horizontal {
+		border-top-width: 1px;
+		border-bottom-width: 5px;
+	}
+
+	::-webkit-scrollbar-thumb:hover {
+		background-color: rgb(var(--overlay) / 0.12);
+	}
+
+	::-webkit-scrollbar-thumb:active {
+		background-color: rgb(var(--overlay) / 0.16);
+	}
+}
+
+[data-slot="scroll-area"] [data-slot="scroll-area-viewport"] {
+	scrollbar-width: none;
+}
+
+[data-slot="scroll-area"] [data-slot="scroll-area-viewport"]::-webkit-scrollbar {
+	display: none;
+	width: 0;
+	height: 0;
+}
+
+[data-slot="scroll-area"][data-orientation="horizontal"] [data-slot="scroll-area-viewport"] {
+	overflow-y: hidden !important;
 }

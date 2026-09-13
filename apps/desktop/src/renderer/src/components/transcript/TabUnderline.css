@@ -1,0 +1,24 @@
+@property --tab-clip-left {
+  syntax: "<length-percentage>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+@property --tab-clip-right {
+  syntax: "<length-percentage>";
+  inherits: false;
+  initial-value: 100%;
+}
+
+.tab-underline {
+  clip-path: inset(0 var(--tab-clip-right) 0 var(--tab-clip-left));
+  transition:
+    --tab-clip-left 200ms cubic-bezier(0.77, 0, 0.175, 1),
+    --tab-clip-right 200ms cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tab-underline {
+    transition: none;
+  }
+}

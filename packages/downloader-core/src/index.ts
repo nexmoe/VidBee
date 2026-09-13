@@ -22,13 +22,16 @@ export type {
   CookieSetupReason,
   CookieSetupRecommendation,
   CookieSiteMatch,
-  InstalledCookieBrowser
+  InstalledCookieBrowser,
+  NetscapeCookieInput
 } from './cookie-setup'
 export {
   COOKIE_BROWSER_IDS,
+  COOKIE_SITE_SPECS,
   COOKIES_CHROME_EXTENSION_URL,
   COOKIES_FIREFOX_EXTENSION_URL,
   COOKIES_GUIDE_URL,
+  cookieDomainsForUrl,
   getCookieSetupFailureKind,
   getMaxCookiesFileBytes,
   hasConfiguredCookieSettings,
@@ -39,8 +42,11 @@ export {
   listSelectableCookieBrowsers,
   looksLikeNetscapeCookies,
   MACOS_BROWSER_COOKIE_PERMISSION_MESSAGE,
+  matchCookieSites,
   recommendCookieSetup,
-  unconfiguredCookieHealth
+  serializeNetscapeCookies,
+  unconfiguredCookieHealth,
+  VIDBEE_EXTENSION_CHROME_URL
 } from './cookie-setup'
 export { DownloaderCore } from './downloader-core'
 export type { FilenameStyle } from './filename-style'
@@ -66,7 +72,23 @@ export {
   buildVideoFormatPreference,
   ONE_CLICK_CONTAINER_OPTIONS
 } from './format-preferences'
+export type { FormatSelectorInput } from './format-selector'
+export {
+  buildSingleVideoFormatSelector,
+  isMuxedVideoFormat,
+  resolvePreferredAudioExt,
+  SINGLE_FORMAT_FALLBACK
+} from './format-selector'
 export { WebAppSettingsSchema } from './schemas'
+export {
+  DEFAULT_SUBTITLE_LANGUAGES,
+  expandSubtitleLanguageAliases,
+  FOLLOW_INTERFACE_SUBTITLE_LANGUAGE,
+  interfaceSubtitleLanguage,
+  MAX_SUBTITLE_LANGUAGES,
+  normalizeSubtitleLanguages,
+  resolveSubtitleLanguages
+} from './subtitle-languages'
 export type {
   CreateDownloadInput,
   DirectoryEntry,
@@ -93,6 +115,7 @@ export type {
   VideoInfo,
   VideoInfoInput
 } from './types'
+export type { SubtitleDownloadSkipReason } from './yt-dlp-args'
 export {
   appendYouTubeSafeExtractorArgs,
   assertDownloadSourceUrl,
@@ -107,19 +130,12 @@ export {
   resolveAudioFormatSelector,
   resolveFfmpegLocationFromPath,
   resolvePathWithHome,
+  resolveSubtitleDownloadSkipReason,
   resolveVideoFormatSelector,
   retryTransientYtDlpNetworkError,
   sanitizeFilenameTemplate,
   VIDBEE_OUTPUT_PATH_PREFIX,
   validateDownloadTimeRange
 } from './yt-dlp-args'
-export {
-  DEFAULT_SUBTITLE_LANGUAGES,
-  FOLLOW_INTERFACE_SUBTITLE_LANGUAGE,
-  interfaceSubtitleLanguage,
-  MAX_SUBTITLE_LANGUAGES,
-  normalizeSubtitleLanguages,
-  resolveSubtitleLanguages
-} from './subtitle-languages'
 export type { YtDlpExecutorOptions, YtDlpTaskOptions } from './yt-dlp-executor'
 export { YtDlpExecutor } from './yt-dlp-executor'

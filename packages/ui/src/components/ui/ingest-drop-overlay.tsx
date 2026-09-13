@@ -1,4 +1,7 @@
+'use client'
+
 import { FileAudio, Link } from 'lucide-react'
+import { createPortal } from 'react-dom'
 import { cn } from '../../lib/cn'
 import type { HomeIngestDropKind } from '../../lib/use-home-ingest'
 
@@ -13,6 +16,8 @@ interface IngestDropOverlayProps {
 
 /**
  * Full-window drop hint shown while dragging URLs or media onto VidBee.
+ * Portaled to document.body so ancestor backdrop-filter/transform cannot
+ * shrink `position: fixed` to the home filter bar.
  */
 export const IngestDropOverlay = ({
   visible,
@@ -22,16 +27,17 @@ export const IngestDropOverlay = ({
   mixedTitle,
   description
 }: IngestDropOverlayProps) => {
-  if (!visible) {
+  if (!visible || typeof document === 'undefined') {
     return null
   }
 
   const title = kind === 'url' ? urlTitle : kind === 'mixed' ? mixedTitle : mediaTitle
   const Icon = kind === 'url' ? Link : FileAudio
-  return (
+  return createPortal(
     <div
       aria-live="polite"
-      className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
+      className="pointer-events-none fixed inset-0 z-[200] flex items-center justify-center bg-background/55 backdrop-blur-xl backdrop-saturate-150"
+      data-testid="ingest-drop-overlay"
     >
       <div
         className={cn(
@@ -42,6 +48,7 @@ export const IngestDropOverlay = ({
         <p className="font-medium text-foreground text-lg">{title}</p>
         <p className="text-muted-foreground text-sm">{description}</p>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

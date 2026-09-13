@@ -13,8 +13,6 @@
     "appName": "VidBee",
     "autoUpdateDescription": "Neue Versionen automatisch im Hintergrund herunterladen und installieren.",
     "autoUpdateTitle": "Automatische Updates",
-    "betaProgramDescription": "Erhalten Sie frühe Builds und kommende Funktionen vor allen anderen.",
-    "betaProgramTitle": "Vorschau-Kanal",
     "description": "Laden Sie Medien von mehr als 1000 Websites herunter, erstellen Sie auf Ihrem Computer durchsuchbare Transkripte und nutzen Sie den KI-Anbieter Ihrer Wahl, um sie zusammenzufassen, zu übersetzen oder Fragen dazu zu stellen – alles in einer kostenlosen Open-Source-Desktop-App.",
     "downloadEngine": {
       "status": {
@@ -24,10 +22,15 @@
         "preparing": "Wird vorbereitet",
         "retry-scheduled": "Wiederholung geplant",
         "unavailable": "Nicht verfügbar",
-        "up-to-date": "Aktuell"
+        "up-to-date": "Aktuell",
+        "update-available": "Update available"
       },
       "title": "Download-Engine",
-      "versions": "yt-dlp {{ytDlpVersion}} · Node {{nodeVersion}}"
+      "versions": "yt-dlp {{ytDlpVersion}} · Node {{nodeVersion}}",
+      "update": "Update yt-dlp",
+      "updated": "yt-dlp updated to {{version}}",
+      "updateFailed": "Could not update yt-dlp: {{error}}",
+      "webVersions": "yt-dlp {{ytDlpVersion}} · FFmpeg {{ffmpegVersion}} · Node {{nodeVersion}}"
     },
     "followAuthorActions": {
       "follow": "Folgen Sie @nexmoe"
@@ -35,6 +38,16 @@
     "followAuthorDescription": "Bleiben Sie auf dem Laufenden mit den neuesten VidBee-Nachrichten und Updates.",
     "followAuthorSupport": "Folgen Sie dem Entwickler auf X (Twitter), um die neuesten Updates und Nachrichten über VidBee zu erhalten.",
     "followAuthorTitle": "Dem Entwickler folgen",
+    "otherProducts": {
+      "lmspeed": {
+        "name": "LMSpeed",
+        "description": "Vergleiche LLM-API-Preise, Geschwindigkeit und Sicherheit, bevor du einen Anbieter wählst."
+      },
+      "clipii": {
+        "name": "Clipii",
+        "description": "Speichere Links, Dateien und Videos in einer durchsuchbaren Cloud-Bibliothek."
+      }
+    },
     "here": "hier",
     "homepage": "Startseite",
     "notifications": {
@@ -135,7 +148,7 @@
     "back": "Zurück",
     "cancel": "Abbrechen",
     "cancelled": "Abgebrochen",
-    "pause": "Pause",
+    "pause": "Pausieren",
     "paused": "Pausiert",
     "resume": "Fortsetzen",
     "clearCompleted": "Abgeschlossene löschen",
@@ -155,7 +168,7 @@
     "downloadVideo": "Video herunterladen",
     "downloading": "Wird heruntergeladen...",
     "enterUrl": "Video-URL eingeben",
-    "enterUrlDescription": "Fügen Sie eine Video-URL ein oder geben Sie sie ein. ",
+    "enterUrlDescription": "Fügen Sie einen oder mehrere Videolinks ein. Verwenden Sie für jede URL eine eigene Zeile.",
     "error": "Fehler",
     "fetch": "Abrufen",
     "fetchingVideoInfo": "Video-Informationen werden abgerufen...",
@@ -220,7 +233,7 @@
     "total": "Gesamt",
     "unknownQuality": "Unbekannte Qualität",
     "unknownSize": "Unbekannte Größe",
-    "urlPlaceholder": "https://www.youtube.com/watch?v=...",
+    "urlPlaceholder": "URLs hier einfügen, eine pro Zeile",
     "video": "Video",
     "videoInfo": "Video-Informationen",
     "videoInfoUpdated": "Video-Informationen aktualisiert",
@@ -267,10 +280,7 @@
     "cookiesSetupKeyring": "Dieser Linux-Build kann Chrome-Cookies nicht lesen. Nutzen Sie Firefox oder importieren Sie eine Cookie-Datei.",
     "cookiesSetupStale": "Die aktuellen Cookies sind abgelaufen oder blockiert. Melden Sie sich erneut an und versuchen Sie es nochmal.",
     "cookiesSetupRetry": "Download erneut versuchen",
-    "cookiesSetupDone": "Fertig",
-    "pause": "Pausieren",
-    "paused": "Pausiert",
-    "resume": "Fortsetzen"
+    "cookiesSetupDone": "Fertig"
   },
   "error": {
     "title": "Etwas ist schiefgelaufen",
@@ -292,6 +302,7 @@
     "helpText": "Wenn dieser Fehler weiterhin auftritt, kopiere bitte den obigen Fehlerbericht und teile ihn mit dem Support-Team. Kontaktinformationen findest du auf der Seite \"Über\"."
   },
   "errors": {
+    "batchRequiresOneClick": "Aktiviere den Ein-Klick-Download, um mehrere Links gleichzeitig hinzuzufügen",
     "clickToCopy": "Klicken, um Details zu kopieren",
     "clipboardEmpty": "Zwischenablage ist leer",
     "downloadFailed": "Download fehlgeschlagen",
@@ -349,6 +360,7 @@
     "select": "Auswählen",
     "selectAll": "Alle auswählen",
     "selectVisible": "Sichtbare auswählen",
+    "moreActions": "Weitere Aktionen",
     "selectItem": "Element auswählen",
     "selectedCount": "{{count}} ausgewählt",
     "selectionSummary": "{{selected}} von {{total}} sichtbaren ausgewählt",
@@ -449,6 +461,87 @@
     "fetchingInfo": "Playlist-Informationen werden abgerufen..."
   },
   "settings": {
+    "account": {
+      "copyInviteLink": "Einladungslink kopieren",
+      "giftHistoryCredits": "Credits",
+      "giftHistoryDate": "Datum",
+      "giftHistoryExpired": "Abgelaufen am {{date}}",
+      "giftHistoryExpires": "Ablauf",
+      "giftHistoryReason": "Grund",
+      "giftHistoryTitle": "Bonusverlauf",
+      "giftReasons": {
+        "admin": "Bonus-Credits",
+        "invite_invitee": "Mit der Einladung von {{name}} registriert",
+        "invite_inviter": "{{name}} hat deine Einladung angenommen",
+        "welcome": "Willkommens-Credits"
+      },
+      "inviteCopied": "Kopiert",
+      "inviteCreditsEarned": "Verdiente Credits",
+      "inviteDescription": "Teile deinen Link. Meldet sich ein neuer Nutzer an, erhaltet ihr beide 20K Credits.",
+      "inviteLimitedBadge": "Zeitlich begrenzt",
+      "inviteTitle": "Freunde einladen",
+      "invitedColumnName": "Name",
+      "invitedListTitle": "Eingeladene Personen",
+      "invitedUsers": "Eingeladene Personen",
+      "loadMore": "Mehr laden",
+      "creditsDescription": "Wird für Transkription und KI-Prompts in VidBee Cloud verwendet.",
+      "creditsError": "Das KI-Guthaben konnte nicht geladen werden.",
+      "creditsLoading": "KI-Guthaben wird geladen…",
+      "creditsRemaining": "{{remaining}} verbleibend",
+      "creditsTitle": "KI-Guthaben",
+      "creditsTooltipExpiring": "{{credits}} verfallen innerhalb von 1 Monat",
+      "creditsTooltipRemaining": "{{credits}} übrig",
+      "creditsTooltipUsed": "{{used}} verwendet",
+      "creditsUsage": "{{used}} von {{total}} verwendet",
+      "grantedCredits": "Bonusguthaben",
+      "purchasedCredits": "Gekauftes Guthaben",
+      "description": "Melde dich mit GitHub an, um dein VidBee-Konto zu verbinden.",
+      "error": "Die Authentifizierung konnte nicht abgeschlossen werden. Bitte erneut versuchen.",
+      "loading": "Konto wird geprüft…",
+      "signedOut": "Nicht angemeldet",
+      "signIn": "Mit GitHub fortfahren",
+      "signingIn": "GitHub wird geöffnet…",
+      "signOut": "Abmelden",
+      "signingOut": "Abmeldung läuft…",
+      "tab": "Konto",
+      "creditsAvailableAmount": "{{credits}} verfügbar",
+      "creditsReservedAmount": "{{credits}} reserviert",
+      "creditsReservedHelp": "Für laufende Aufgaben oder die Verbrauchsprüfung reserviert. Nicht genutzte Credits werden nach der Abrechnung freigegeben.",
+      "creditsInterruptedAmount": "{{credits}} für unterbrochene Aufgaben berechnet",
+      "creditsInterruptedHelp": "Bereits im Verbrauch enthalten, kein zusätzlicher Abzug. Dies sind abgerechnete Credits für fehlgeschlagene, abgebrochene oder abgelaufene KI-Prompts.",
+      "creditsRefresh": "Guthaben aktualisieren",
+      "creditsTopUp": "Guthaben aufladen",
+      "creditsTopUpError": "Die Preisseite konnte nicht geöffnet werden. Bitte versuche es erneut.",
+      "creditsStale": "Das Guthaben konnte nicht aktualisiert werden. Die angezeigten Werte sind möglicherweise veraltet.",
+      "creditsReviewAmount": "{{credits}} der reservierten Credits werden geprüft",
+      "reservationTitle": "Aufgaben mit Reservierung",
+      "reservationHelp": "Abgelaufene Reservierungen werden jede Minute geprüft. Nach der fünfminütigen Prüfphase wird der unbestätigte Betrag bei der nächsten Prüfung freigegeben.",
+      "reservationTask": "KI-Prompt",
+      "reservationElapsed": "Vor {{minutes}} Min. gestartet",
+      "reservationActivity": "Letzter Fortschritt: {{time}}",
+      "reservationHeartbeat": "Letzte Verbindung: {{time}}",
+      "reservationDeadline": "Laufzeit endet: {{time}}",
+      "reservationReviewDeadline": "Prüfung endet bis {{time}}",
+      "reservationReview": "Verbrauch wird geprüft",
+      "reservationCancel": "Aufgabe abbrechen",
+      "reservationCancelling": "Wird abgebrochen…",
+      "reservationUnavailable": "Aufgabendetails konnten nicht aktualisiert werden.",
+      "reservationCancelError": "Diese Aufgabe konnte nicht abgebrochen werden. Bitte aktualisieren und erneut versuchen.",
+      "creditHistoryTitle": "Guthabenverlauf",
+      "creditHistoryHelp": "Abgerechnet wird bestätigter Verbrauch. Unbestätigter Verbrauch wird nicht berechnet. Erstattungen sind im verfügbaren Guthaben enthalten.",
+      "creditHistoryError": "Der Verlauf konnte nicht aktualisiert werden. Angezeigte Einträge sind möglicherweise nicht aktuell.",
+      "creditHistoryEmpty": "Noch keine Guthabenaktivität.",
+      "creditHistoryAmount": "{{credits}} Credits",
+      "creditHistoryTokens": "{{input}} Eingabe- · {{output}} Ausgabetokens",
+      "creditHistoryRefunded": "{{credits}} Credits erstattet",
+      "creditHistoryUnverified": "Der Verbrauch konnte nicht bestätigt werden. Es wurden keine Credits berechnet.",
+      "creditHistoryNoCharge": "Keine Berechnung",
+      "creditHistoryCache": "Ergebnis aus dem Cache",
+      "creditHistoryVerified": "Bestätigter Verbrauch",
+      "creditHistoryRecorded": "Erfasste Abbuchung",
+      "creditHistoryInterrupted": "Unterbrochen",
+      "creditsUsedShare": "{{percent}} used"
+    },
     "aboutTab": "Über",
     "advanced": "Erweitert",
     "cookiesTab": "Cookies",
@@ -593,7 +686,12 @@
     "title": "Einstellungen",
     "tray": {
       "quit": "Beenden",
-      "showHome": "Startseite anzeigen"
+      "showHome": "Startseite anzeigen",
+      "next": "Next",
+      "openDevTools": "Open DevTools",
+      "pause": "Pause",
+      "play": "Play",
+      "previous": "Previous"
     },
     "video": "Video-Einstellungen",
     "oneClickContainer": "Container",
@@ -719,6 +817,15 @@
     "promptsTab": "Prompts",
     "transcriptionTab": "Transkription",
     "ai": {
+      "ownProvider": "Eigenen Anbieter verwenden",
+      "ownProviderDescription": "Erweitert: Verbinde dein eigenes Modell oder Abrechnungskonto.",
+      "recommended": "Empfohlen",
+      "signInForCloud": "Anmelden",
+      "useVidbeeCloud": "VidBee Cloud verwenden",
+      "vidbeeCloud": "VidBee Cloud",
+      "vidbeeCloudDescription": "Sofort einsatzbereit mit 50K KI-Credits. Kein API-Schlüssel und keine Anbietereinrichtung erforderlich.",
+      "vidbeeCloudPrivacy": "Transkriptinhalte werden nur gesendet, wenn du eine KI-Aktion ausführst.",
+      "vidbeeCloudSection": "Verwalteter Dienst",
       "allServices": "Alle Dienste",
       "configured": "Konfiguriert",
       "useProvider": "Verwenden",
@@ -766,9 +873,24 @@
         "ollama": "Ollama",
         "openai": "OpenAI",
         "openrouter": "OpenRouter",
-        "xai": "xAI"
+        "xai": "xAI",
+        "alibaba": "Alibaba Cloud",
+        "fireworks": "Fireworks",
+        "minimax": "MiniMax",
+        "mistral": "Mistral",
+        "moonshot": "Moonshot",
+        "novita": "Novita",
+        "ppio": "PPIO",
+        "siliconflow": "SiliconFlow",
+        "stepfun": "StepFun",
+        "together": "Together",
+        "volcengine": "Volcengine",
+        "zhipu": "Zhipu"
       },
       "presetPrompts": {
+        "overview": {
+          "title": "Überblick"
+        },
         "bullet-points": {
           "title": "Stichpunkte"
         },
@@ -790,7 +912,11 @@
         "translate": {
           "title": "Übersetzen"
         }
-      }
+      },
+      "createModel": "Create “{{query}}”",
+      "noModelFound": "No model found.",
+      "allModelsSelected": "Alle aufgelisteten Modelle sind bereits hinzugefügt.",
+      "loadingModels": "Modelle werden vom Anbieter geladen…"
     },
     "cookiesSetup": {
       "statusNotConfigured": "Nicht eingerichtet",
@@ -833,7 +959,25 @@
       "fileExportExtension": "Chrome-/Edge-Erweiterung",
       "checking": "Cookies werden geprüft…",
       "applied": "Cookies aktualisiert",
-      "profileMissingDb": "Dieses Firefox-Profil hat keine Cookie-Datenbank. Öffnen Sie Firefox einmal und versuchen Sie es erneut."
+      "profileMissingDb": "Dieses Firefox-Profil hat keine Cookie-Datenbank. Öffnen Sie Firefox einmal und versuchen Sie es erneut.",
+      "statusUsingExtension": "Using {{browser}} extension",
+      "healthOkExtension": "The VidBee extension will send live cookies from {{browser}} for each download",
+      "healthEmptyExtension": "The extension is connected, but no supported login cookies were found. Sign in to the site in that browser",
+      "statusHeading": "Cookie status",
+      "methodRecommended": "Recommended",
+      "methodExtensionWhy": "Best option. Desktop uses live cookies for each download, including Chrome and Edge on Windows.",
+      "extensionTitle": "Browser extension",
+      "extensionDescription": "Install the VidBee extension so Desktop can use your live signed-in cookies when downloading",
+      "extensionConnected": "Connected",
+      "extensionDisconnected": "Not connected",
+      "extensionConnectedHint": "{{browser}} is connected. New downloads will use cookies from this browser",
+      "extensionDisconnectedHint": "Keep VidBee Desktop open, install the extension, then sign in to the site in that browser",
+      "extensionInstallChrome": "Add to Chrome",
+      "extensionInstallEdge": "Add to Edge",
+      "extensionInstallFirefox": "Add to Firefox",
+      "extensionInstallStep1": "Install the VidBee extension in Chrome, Edge, or Firefox",
+      "extensionInstallStep2": "Keep VidBee Desktop running so the extension can connect",
+      "extensionInstallStep3": "Sign in to YouTube, Bilibili, or other sites in that browser, then open the VidBee toolbar icon once"
     }
   },
   "subscriptions": {
@@ -949,12 +1093,17 @@
     }
   },
   "kernelPreparation": {
+    "copied": "Kopiert",
     "copying": "Download-Engine wird kopiert…",
+    "copyLog": "Protokoll kopieren",
     "description": "VidBee bereitet seine Download-Engine vor. Dies dauert nur einen Moment.",
     "errorDescription": "VidBee konnte keine funktionsfähige Download-Engine vorbereiten. Prüfen Sie den Zugriff auf den lokalen Speicher und versuchen Sie es erneut.",
+    "errorDetails": "Fehlerdetails",
     "errorTitle": "Download-Engine nicht verfügbar",
     "finalizing": "Einrichtung wird abgeschlossen…",
+    "missingError": "Es wurde kein detaillierter Fehler aufgezeichnet.",
     "progressLabel": "Fortschritt bei der Vorbereitung der Download-Engine",
+    "reportIssue": "Auf GitHub melden",
     "retry": "Erneut versuchen",
     "retrying": "Neuer Versuch…",
     "title": "VidBee wird vorbereitet",
@@ -1057,6 +1206,7 @@
     "sourceSwitch": "Transkriptquelle",
     "sourceCaptionNamed": "{{language}}-Untertitel",
     "sourceCaptionAutoNamed": "{{language}}-Autountertitel",
+    "asrIdle": "Wenn dir die Untertitel nicht gut genug sind, kannst du hier eine lokale Abschrift erstellen.",
     "noSpeech": "No speech",
     "noSpeechDetail": "No speech was detected in this file. You can still run a full transcript.",
     "error": "Transcript error",
@@ -1090,6 +1240,23 @@
     "followResume": "Jump to current line",
     "title": "Transcript",
     "ready": "Transcript ready",
+    "listLabel": {
+      "subtitles": "Untertitel",
+      "transcribed": "Transkribiert",
+      "downloaded": "Heruntergeladen"
+    },
+    "listHint": {
+      "queued": "Wartet auf die Transkription. Sie startet, sobald ein Platz frei ist.",
+      "retrySoon": "Die Transkription ist fehlgeschlagen und wird in Kürze wiederholt.",
+      "ready": "Transkribierte Untertitel sind fertig. Klicke die Zeile an, um sie zu öffnen.",
+      "captions": "Aus der Untertitelspur des Videos erstellt. Klicke die Zeile an, um sie zu öffnen.",
+      "cancelled": "Die Transkription wurde abgebrochen.",
+      "subtitlesDownloaded": "Untertiteldatei gespeichert ({{languages}}).",
+      "subtitlesDownloadedUnknown": "Untertiteldatei gespeichert.",
+      "subtitlesUnavailable": "Für dieses Video gibt es keine herunterladbare Untertitelspur.",
+      "subtitlesAuth": "Melde dich an und versuche es erneut, um Untertitel herunterzuladen.",
+      "subtitlesFailed": "Der Untertitel-Download ist fehlgeschlagen."
+    },
     "copy": "Transkript kopieren",
     "copied": "Transkript kopiert",
     "copyFailed": "Transkript konnte nicht kopiert werden.",
@@ -1102,6 +1269,9 @@
     "captionDelete": "Löschen",
     "captionDeleteSelected": "Auswahl löschen",
     "captionDeleted": "{{count}} Untertitel gelöscht",
+    "captionDeleteConfirmTitle": "Ausgewählte Untertitel löschen?",
+    "captionDeleteConfirmDescription": "Dadurch werden {{count}} Untertitel dauerhaft aus dem Transkript entfernt.",
+    "captionDeleteConfirmCancel": "Abbrechen",
     "captionSaveFailed": "Untertitel konnte nicht gespeichert werden.",
     "captionPlaceholder": "Untertitel eingeben",
     "captionSpeaker": "Sprecher",
@@ -1173,7 +1343,12 @@
       "segments": "Segmente",
       "createdAt": "Transkribiert",
       "empty": "Noch keine Details vorhanden.",
-      "openUrl": "Quell-URL öffnen"
+      "openUrl": "Quell-URL öffnen",
+      "group": {
+        "media": "Medium",
+        "file": "Datei",
+        "transcript": "Transkript"
+      }
     },
     "speakingShare": "{{percent}} %",
     "seekSpeaker": "Zu {{name}} springen",
@@ -1210,11 +1385,22 @@
       "volumePercent": "{{percent}} %",
       "fullscreen": "Vollbild",
       "fullscreenExit": "Vollbild beenden",
-      "resumed": "Fortgesetzt ab {{time}}",
-      "startOver": "Von vorn",
       "nowPlaying": "Wird abgespielt",
-      "closeBar": "Player schließen",
-      "openTranscript": "Zurück zum Transkript"
+      "openTranscript": "Zurück zum Transkript",
+      "playlist": {
+        "title": "Wiedergabeliste",
+        "open": "Wiedergabeliste öffnen",
+        "count": "{{count}} Einträge",
+        "empty": "Deine Wiedergabeliste ist leer",
+        "emptyHint": "Spiele einen Download ab oder füge ihn über das Kontextmenü hinzu.",
+        "add": "Zur Wiedergabeliste hinzufügen",
+        "addedCount": "{{count}} zur Wiedergabeliste hinzugefügt",
+        "remove": "Aus Wiedergabeliste entfernen",
+        "moveUp": "Nach oben verschieben",
+        "moveDown": "Nach unten verschieben",
+        "drag": "Zum Sortieren ziehen",
+        "more": "Aktionen für Wiedergabelisteneintrag"
+      }
     },
     "qualityHint": "Not happy with this transcript?",
     "qualityHintDetail": "Download a higher-quality model and transcribe again. The current transcript is kept as history.",
@@ -1234,6 +1420,8 @@
     "promptShare": "Bild teilen",
     "promptShareTitle": "Bild teilen",
     "promptShareDownload": "Herunterladen",
+    "promptShareDownloadFull": "Bild in voller Länge",
+    "promptShareDownloadSplit": "Geteilte Bilder (nummeriert im Ordner)",
     "promptShareNative": "Teilen",
     "promptSharing": "Bild wird vorbereitet…",
     "promptShared": "Teilen-Bild kopiert",
@@ -1247,32 +1435,61 @@
     "promptOutput": "Promptergebnis",
     "promptScrollToEnd": "Zum Neuesten scrollen",
     "promptCopied": "Kopiert",
+    "promptCloudGenerated": "Mit VidBee Cloud erstellt",
     "promptNoProvider": "Richten Sie in den Einstellungen einen KI-Anbieter ein, um diesen Prompt auszuführen.",
     "promptOpenSettings": "Anbietereinstellungen öffnen",
     "promptEmpty": "Das Ergebnis erscheint hier.",
+    "overviewChapters": "Kapitel",
+    "overviewQuotes": "Zitate",
+    "promptRetrying": "Generierung unterbrochen. Neuer Versuch {{attempt}}/{{maxAttempts}}…",
+    "promptWaiting": "Warte auf Modellantwort · {{seconds}} s",
     "promptRunning": "Wird geschrieben…",
     "promptThinking": "Denken",
     "promptThinkingFor": "Denkt seit {{seconds}} s",
     "promptThoughtFor": "{{seconds}} s nachgedacht",
     "promptAborted": "Gestoppt",
+    "promptTabCompleted": "Abgeschlossen",
+    "promptTabError": "Fehlgeschlagen",
     "promptNoTranscript": "Für diesen Prompt wird ein Transkript benötigt.",
+    "promptWaitForTranscript": "Dieser Prompt wird ausgeführt, sobald die Transkription fertig ist.",
+    "promptRunWhenReady": "Ausführen, sobald bereit",
+    "promptWaitingToRun": "Warte auf Transkript…",
     "promptTryAgain": "Erneut versuchen",
     "promptLoading": "KI-Einstellungen werden geladen…",
     "promptGuide": {
+      "interrupted": "Die KI-Antwort wurde vor dem Abschluss unterbrochen.",
+      "creditsExhausted": "Dieses Konto hat nicht genügend KI-Credits.",
+      "signInRequired": "Melde dich bei VidBee Cloud an, um Ask AI sofort kostenlos zu nutzen.",
       "noProvider": "Es ist kein KI-Anbieter aktiv, daher kann dieser Prompt nicht laufen.",
       "missingApiKey": "Beim aktiven Anbieter fehlt ein API-Schlüssel.",
       "missingModel": "Beim aktiven Anbieter fehlt eine Modell-ID.",
       "unknownPrompt": "Dieser Prompt ist nicht mehr verfügbar.",
       "emptyTranscript": "Dieser Prompt braucht ein fertiges Transkript.",
       "auth": "Der Anbieter hat die Anfrage abgelehnt. API-Schlüssel oder Konto sind vermutlich ungültig.",
+      "authCloud": "VidBee Cloud hat die Anfrage abgelehnt. Ihre Sitzung ist möglicherweise abgelaufen.",
       "network": "Der Anbieter war nicht erreichbar.",
+      "networkCloud": "VidBee Cloud war nicht erreichbar.",
       "emptyOutput": "Der Anbieter hat beendet, ohne Text zu liefern.",
-      "unknown": "Der Prompt konnte nicht ausgeführt werden."
+      "emptyOutputCloud": "VidBee Cloud hat beendet, ohne Text zu liefern.",
+      "unknown": "Der Prompt konnte nicht ausgeführt werden.",
+      "unknownCloud": "VidBee Cloud konnte diesen Prompt nicht abschließen.",
+      "serviceErrorCloud": "VidBee Cloud's AI service rejected this request."
     },
     "promptErrorDetails": "Fehlerdetails",
     "promptWhatToDo": "Nächste Schritte",
     "promptUsingProvider": "Verwendet {{name}}",
+    "promptCreditsByok": "Oder <byok>eigenen API-Schlüssel verwenden</byok>.",
     "promptSolutions": {
+      "creditsExhausted": {
+        "s1": "Öffne Konto und prüfe die verbleibenden Credits.",
+        "s2": "Lade einen neuen Nutzer ein, um Credits zu verdienen.",
+        "s3": "Führe den Prompt nach der Gutschrift erneut aus."
+      },
+      "signInRequired": {
+        "s1": "Öffne Einstellungen → Providers.",
+        "s2": "Melde dich unter VidBee Cloud mit GitHub an.",
+        "s3": "Führe den Prompt erneut aus."
+      },
       "noProvider": {
         "s1": "Öffnen Sie Einstellungen → Anbieter.",
         "s2": "Fügen Sie einen Dienst hinzu, speichern Sie API-Schlüssel und Modell-ID und klicken Sie auf Verwenden.",
@@ -1301,22 +1518,78 @@
         "s2": "Prüfen Sie Guthaben und Berechtigung für dieses Modell.",
         "s3": "Bei einem eigenen Endpunkt: prüft, ob dieser Schlüssel akzeptiert wird."
       },
+      "authCloud": {
+        "s1": "Öffnen Sie Konto und prüfen Sie, ob Sie noch angemeldet sind.",
+        "s2": "Melden Sie sich erneut an, wenn die Sitzung abgelaufen ist.",
+        "s3": "Führen Sie den Prompt erneut aus."
+      },
       "network": {
         "s1": "Prüfen Sie Internet und Proxy.",
         "s2": "Bei einem eigenen Anbieter: Base URL erreichbar, ggf. mit /v1.",
         "s3": "Ist der Host down, wechseln Sie den Anbieter."
+      },
+      "networkCloud": {
+        "s1": "Prüfen Sie Ihre Internetverbindung.",
+        "s2": "Öffnen Sie Konto und prüfen Sie, ob Sie noch angemeldet sind.",
+        "s3": "Versuchen Sie es später erneut. Wenn das anhält, ist VidBee Cloud möglicherweise vorübergehend nicht verfügbar."
       },
       "emptyOutput": {
         "s1": "Prüfen Sie in Einstellungen → Anbieter, ob die Modell-ID für diesen Dienst stimmt.",
         "s2": "Bei einem eigenen Endpunkt: Base URL, API-Schlüssel und ob das Modell deployed ist.",
         "s3": "Lesen Sie die Fehlerdetails unten, dann erneut versuchen oder den Anbieter wechseln."
       },
+      "emptyOutputCloud": {
+        "s1": "Versuchen Sie es erneut. Die Antwort wurde möglicherweise unterbrochen.",
+        "s2": "Wenn das anhält, öffnen Sie Konto und prüfen Sie Anmeldung und Guthaben."
+      },
       "unknown": {
         "s1": "Lesen Sie zuerst die Fehlerdetails unten.",
         "s2": "Prüfen Sie in Einstellungen → Anbieter API-Schlüssel, Modell-ID und Base URL.",
         "s3": "Versuchen Sie es erneut oder wechseln Sie den Anbieter."
+      },
+      "unknownCloud": {
+        "s1": "Lesen Sie zuerst die Fehlerdetails unten.",
+        "s2": "Versuchen Sie es gleich noch einmal. Bricht die Verbindung ab, kann eine Cloud-Antwort mittendrin stoppen.",
+        "s3": "Wenn das anhält, öffnen Sie Konto und prüfen Sie Anmeldung und Guthaben."
       }
-    }
+    },
+    "promptDislike": "Gefällt mir nicht",
+    "promptFeedbackSaved": "Feedback gespeichert",
+    "promptFeedbackFailed": "Feedback konnte nicht gespeichert werden. Bitte erneut versuchen.",
+    "promptHistory": "History",
+    "promptHistoryClose": "Close history",
+    "promptHistoryNew": "New chat",
+    "promptHistoryChat": "Chat",
+    "promptHistoryDescription": "Agent conversations from every video",
+    "promptHistoryEmpty": "No conversations yet",
+    "promptHistoryToday": "Today",
+    "promptHistoryYesterday": "Yesterday",
+    "promptHistoryMore": "Conversation actions",
+    "promptHistoryDelete": "Delete",
+    "promptHistoryDeleteTitle": "Delete this conversation?",
+    "promptHistoryDeleteDescription": "This removes the conversation. The video and transcript stay.",
+    "promptHistoryDeleteCancel": "Cancel",
+    "promptHistoryUntitled": "Untitled",
+    "promptTabClose": "Close tab",
+    "promptHistoryRename": "Rename",
+    "promptHistoryRenameTitle": "Rename conversation",
+    "promptHistoryRenameDescription": "Choose a short title for this chat tab.",
+    "promptHistoryRenameSave": "Save",
+    "promptHistoryRenamePlaceholder": "Conversation title",
+    "promptMore": "More actions",
+    "promptExportPdf": "Export as PDF",
+    "promptExportMarkdown": "Export as Markdown",
+    "promptExportSaved": "Exported",
+    "promptExportFailed": "Could not export.",
+    "promptExportEmpty": "Nothing to export.",
+    "promptShareSplitCount": "Number of images (optional)",
+    "promptShareSplitCountAuto": "Automatic",
+    "promptShareSplitCountHint": "Leave blank for automatic splitting. Fewer images may be saved to keep content intact.",
+    "thinkingSecond": "{{count}} second",
+    "thinkingSeconds": "{{count}} seconds",
+    "thinkingMinute": "{{count}} minute",
+    "thinkingMinutes": "{{count}} minutes",
+    "promptCloudServiceErrorDetail": "Your transcript is saved. This service issue needs to be resolved before you can generate the response."
   },
   "whatsNew": {
     "title": "Neuigkeiten",
@@ -1340,5 +1613,131 @@
         "description": "Ziehen Sie lokale Audio- oder Videodateien in Transkripte. Exportieren Sie Text, Untertitel oder ein Video mit eingebrannten Captions."
       }
     }
+  },
+  "cloudCache": {
+    "title": "Cloud-Ergebniscache",
+    "range": "Zeitraum (UTC)",
+    "hits": "Treffer",
+    "misses": "Fehltreffer",
+    "bypasses": "Umgehungen",
+    "hitRate": "Trefferquote",
+    "today": "Heute",
+    "week": "Letzte 7 Tage",
+    "month": "Letzte 30 Tage",
+    "all": "Gesamt"
+  },
+  "agentChat": {
+    "eventStream": "Event Stream",
+    "eventStatus": {
+      "running": "Running",
+      "completed": "Completed",
+      "error": "Failed"
+    },
+    "placeholder": "Ask a follow-up about this video…",
+    "send": "Send message",
+    "attachImages": "Attach images",
+    "removeImage": "Remove {{name}}",
+    "imageSelectionFailed": "Could not add these images. Select up to 10 PNG, JPEG or WebP images, each no larger than 20 MB.",
+    "imageRemoveFailed": "Could not remove this image. Try again.",
+    "imagesNotSupported": "Choose a model that supports images, or remove the attachments to send this message.",
+    "interrupted": "This response was interrupted when the app closed. Retry to continue.",
+    "imported": "Imported from your previous summary",
+    "previousVersion": "Previous reply version",
+    "nextVersion": "Next reply version",
+    "toolCount": "Tool calls: {{count}}",
+    "saveAttachment": "Save attachment",
+    "attachmentUnavailable": "This attachment is unavailable. Try generating it again.",
+    "frame": "Frame at {{time}}",
+    "clip": "Clip at {{time}}",
+    "downloading": "Downloading video",
+    "contextWindow": "Context window (tokens)",
+    "contextWindowHint": "Enter the context window if the model is not in the catalog.",
+    "vision": "Image input",
+    "toolCalling": "Tool calling",
+    "reasoning": "Thinking",
+    "thinkingOnly": "Thinking only",
+    "allowDisableThinking": "Allow turning thinking off",
+    "thinkingCapabilitiesHint": "Die Oberfläche zeigt derzeit nur einen Denk-Schalter, keine Stärkestufen. Wenn das Modell Stärkestufen unterstützt, wählen Sie unten die verfügbaren Stufen.",
+    "defaultThinkingLevel": "Standard-Denkstufe",
+    "defaultThinkingAuto": "Automatisch (Request-Standard verwenden)",
+    "supportedThinkingLevels": "Unterstützte Denkstufen",
+    "inputTokens": "Eingabe",
+    "outputTokens": "Ausgabe",
+    "providerDefault": "Anbieterstandard verwenden",
+    "automatic": "Use model defaults",
+    "enabled": "Supported",
+    "disabled": "Not supported",
+    "visionSelect": "Select…",
+    "catalogFilled": "You can change these catalog values.",
+    "catalogMissing": "This model is not in the catalog. Enter the context window and capabilities.",
+    "catalogLooking": "Looking up this model id in the catalog…",
+    "catalogMatched": "Matched {{name}}. Context window and capabilities were filled in.",
+    "catalogBadge": "Catalog",
+    "tools": {
+      "get_video_info": "Reading video information",
+      "read_transcript": "Reading transcript",
+      "search_transcript": "Searching transcript",
+      "capture_frames": "Capturing video frames",
+      "create_clip": "Creating video clip",
+      "read_history": "Reading conversation history",
+      "search_history": "Searching conversation history",
+      "read_notes": "Reading working notes",
+      "write_notes": "Saving working notes",
+      "read_artifact": "Reviewing saved image",
+      "rename_conversation": "Renaming conversation",
+      "write_article": "Writing article",
+      "review_article": "Reviewing article"
+    },
+    "modelCapabilities": "Model capabilities",
+    "runDurationRunning": "Working · {{duration}}",
+    "runDuration": "Elapsed: {{duration}}",
+    "durationSeconds": "{{seconds}}s",
+    "durationMinutes": "{{minutes}}m {{seconds}}s",
+    "contextStatus": {
+      "compacting": "Organizing conversation context",
+      "recovering": "Recovering conversation context",
+      "reviewing": "Checking source coverage",
+      "writing": "Writing and checking source sections"
+    },
+    "thinking": {
+      "label": "Thinking level",
+      "off": "Off",
+      "minimal": "Minimal",
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "xhigh": "Extra high",
+      "max": "Maximum"
+    },
+    "models": "Modelle",
+    "model": "Modell",
+    "reasoningEffort": "Denkaufwand",
+    "cloud": "Cloud",
+    "searchModels": "Modelle suchen…",
+    "noModels": "Keine Modelle gefunden.",
+    "effort": "Aufwand {{level}}",
+    "faster": "Schneller",
+    "smarter": "Klüger",
+    "retrying": "Connection interrupted. Retrying…",
+    "defaultThinkingLevel": "Default thinking level",
+    "defaultThinkingAuto": "Auto (use request default)",
+    "supportedThinkingLevels": "Supported thinking levels",
+    "inputTokens": "Input",
+    "outputTokens": "Output",
+    "providerDefault": "Use provider default"
+  },
+  "web": {
+    "saveToThisComputer": "Save to this computer",
+    "copyServerPath": "Copy server path",
+    "serverPathCopied": "Server path copied",
+    "downloadPathDescription": "Where the VidBee server saves files. In Docker this is usually /data/downloads.",
+    "autoTranscribeAfterDownloadDescription": "When a download finishes, start a transcript on the VidBee server. Already queued jobs keep running if you turn this off.",
+    "maxConcurrentTranscriptionsDescription": "How many transcripts can run at once on the server.",
+    "transcriptModelsDescription": "Speech models are stored on the VidBee server. The first transcript downloads them there.",
+    "cookiesFileOnly": "The server cannot read browsers on your computer. Export a Netscape cookies.txt and upload it.",
+    "storageTitle": "Server storage",
+    "storageDownloadDir": "Download directory",
+    "storageDataDir": "Data directory",
+    "storageDbFile": "SQLite database"
   }
 }

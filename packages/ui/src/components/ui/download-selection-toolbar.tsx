@@ -1,7 +1,7 @@
 'use client'
 
 import * as CheckboxPrimitive from '@radix-ui/react-checkbox'
-import { Check, Minus, Trash2 } from 'lucide-react'
+import { Check, ListPlus, Minus, Trash2 } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { cn } from '../../lib/cn'
 import { Button } from './button'
@@ -15,8 +15,10 @@ interface DownloadSelectionToolbarProps {
   countLabel: string
   selectAllLabel: string
   clearLabel: string
+  addToPlaylistLabel?: string
   deleteLabel: string
   onToggleSelectAll: () => void
+  onAddToPlaylist?: () => void
   onDelete: () => void
   className?: string
 }
@@ -104,8 +106,10 @@ export function DownloadSelectionToolbar({
   countLabel,
   selectAllLabel,
   clearLabel,
+  addToPlaylistLabel,
   deleteLabel,
   onToggleSelectAll,
+  onAddToPlaylist,
   onDelete,
   className
 }: DownloadSelectionToolbarProps) {
@@ -126,6 +130,15 @@ export function DownloadSelectionToolbar({
         selectAllLabel={selectAllLabel}
       />
       <span className="whitespace-nowrap px-2 font-medium text-sm tabular-nums">{countLabel}</span>
+      {addToPlaylistLabel && onAddToPlaylist ? (
+        <SelectionIconCard
+          label={addToPlaylistLabel}
+          onClick={onAddToPlaylist}
+          testId="download-selection-add-playlist"
+        >
+          <ListPlus />
+        </SelectionIconCard>
+      ) : null}
       <SelectionIconCard
         className="text-destructive hover:bg-destructive/10 hover:text-destructive"
         label={deleteLabel}
