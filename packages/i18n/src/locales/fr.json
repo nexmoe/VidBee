@@ -748,6 +748,11 @@
         "tag": "Rapide pour CJK + anglais, y compris le cantonais",
         "size": "~230 MB"
       },
+      "orukeet": {
+        "title": "Orukeet",
+        "tag": "Version de Parakeet affinée pour 25 langues européennes",
+        "size": "~670 Mo"
+      },
       "quality": {
         "title": "Qwen3-ASR",
         "tag": "Meilleure précision chinoise. Nécessite un PC puissant",
@@ -795,7 +800,7 @@
       "whisper": "Whisper — multilingue",
       "sense-voice": "SenseVoice — chinois, japonais, coréen, anglais",
       "qwen3": "Qwen3-ASR — meilleure précision chinoise",
-      "parakeet": "Parakeet — anglais"
+      "parakeet": "Parakeet"
     },
     "asrLanguages": {
       "multi": "multilingue"

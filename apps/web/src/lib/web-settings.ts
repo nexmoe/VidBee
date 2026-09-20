@@ -41,6 +41,7 @@ export const ASR_TIERS = [
 	"sense-voice-2025",
 	"parakeet-v2",
 	"parakeet-v3",
+	"orukeet",
 	"quality",
 ] as const;
 

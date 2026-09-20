@@ -8,21 +8,20 @@ export const ASR_TIER_IDS = [
   'sense-voice-2025',
   'parakeet-v2',
   'parakeet-v3',
+  'orukeet',
   'quality'
 ] as const
 
 export type AsrTierId = (typeof ASR_TIER_IDS)[number]
 
-export type {
-  SpeakerCount
-} from './speaker-count'
+export type { SpeakerCount } from './speaker-count'
 export {
   DEFAULT_SPEAKER_COUNT,
   isSpeakerCount,
   MAX_SPEAKER_COUNT,
   parseSpeakerCount,
-  sherpaNumClusters,
-  SPEAKER_COUNT_CHOICES
+  SPEAKER_COUNT_CHOICES,
+  sherpaNumClusters
 } from './speaker-count'
 
 export type AsrFamily = 'whisper' | 'qwen3' | 'sense-voice' | 'parakeet'
@@ -35,7 +34,7 @@ export interface AsrTierInfo {
   id: AsrTierId
   family: AsrFamily
   modelId: string
-  /** Official sherpa-onnx release archive or directory name. */
+  /** Model archive or directory name. */
   archiveName: string
   bytesHint: number
   minRamGB: number
@@ -78,6 +77,7 @@ export const PARAKEET_V2_DIR = 'sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8'
 export const PARAKEET_V3_ARCHIVE =
   'https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8.tar.bz2'
 export const PARAKEET_V3_DIR = 'sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8'
+export const ORUKEET_DIR = 'sherpa-onnx-orukeet-v0.1.0-int8'
 export const QWEN3_ASR_ARCHIVE =
   'https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25.tar.bz2'
 export const QWEN3_ASR_DIR = 'sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25'
@@ -216,6 +216,21 @@ export const ASR_TIERS: readonly AsrTierInfo[] = [
       machine: 'mainstream',
       speed: 'fast',
       quality: 'best-en'
+    }
+  },
+  {
+    id: 'orukeet',
+    family: 'parakeet',
+    modelId: 'orukeet-r3-int8',
+    archiveName: ORUKEET_DIR,
+    bytesHint: 671_504_259,
+    minRamGB: 10,
+    qualityRank: 41,
+    languages: ['en', 'multi'],
+    performance: {
+      machine: 'mainstream',
+      speed: 'fast',
+      quality: 'good'
     }
   },
   {

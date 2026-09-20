@@ -748,6 +748,11 @@
         "tag": "سريعة للصينية واليابانية والكورية والإنجليزية بما فيها الكانتونية",
         "size": "~230 MB"
       },
+      "orukeet": {
+        "title": "Orukeet",
+        "tag": "نسخة محسّنة من Parakeet تدعم 25 لغة أوروبية",
+        "size": "~670 ميغابايت"
+      },
       "quality": {
         "title": "Qwen3-ASR",
         "tag": "أفضل دقة للصينية. يحتاج حاسوبًا قويًا",
@@ -795,7 +800,7 @@
       "whisper": "Whisper — متعدد اللغات",
       "sense-voice": "SenseVoice — الصينية واليابانية والكورية والإنجليزية",
       "qwen3": "Qwen3-ASR — أعلى دقة للصينية",
-      "parakeet": "Parakeet — الإنجليزية"
+      "parakeet": "Parakeet"
     },
     "asrLanguages": {
       "multi": "متعدد اللغات"

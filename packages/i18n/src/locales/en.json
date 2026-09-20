@@ -920,7 +920,7 @@
     },
     "asrFamily": {
       "whisper": "Whisper — multilingual",
-      "parakeet": "Parakeet — English",
+      "parakeet": "Parakeet",
       "sense-voice": "SenseVoice — Chinese, Japanese, Korean, English",
       "qwen3": "Qwen3-ASR — highest Chinese accuracy"
     },
@@ -972,6 +972,11 @@
         "title": "Parakeet TDT v3",
         "tag": "Newer English Parakeet. Best English pick",
         "size": "~650 MB"
+      },
+      "orukeet": {
+        "title": "Orukeet",
+        "tag": "Parakeet fine-tune for 25 European languages",
+        "size": "~670 MB"
       },
       "quality": {
         "title": "Qwen3-ASR",

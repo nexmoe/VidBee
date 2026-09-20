@@ -1,5 +1,6 @@
 import {
   type AsrTierId,
+  ORUKEET_DIR,
   PARAKEET_V2_ARCHIVE,
   PARAKEET_V2_DIR,
   PARAKEET_V3_ARCHIVE,
@@ -40,9 +41,12 @@ const PYANNOTE_DIR = 'sherpa-onnx-pyannote-segmentation-3-0'
 const PUNCT_CT_ARCHIVE =
   'https://github.com/k2-fsa/sherpa-onnx/releases/download/punctuation-models/sherpa-onnx-punct-ct-transformer-zh-en-vocab272727-2024-04-12-int8.tar.bz2'
 const PUNCT_CT_DIR = 'sherpa-onnx-punct-ct-transformer-zh-en-vocab272727-2024-04-12-int8'
+const ORUKEET_BASE_URL =
+  'https://huggingface.co/oruk/orukeet/resolve/debfb0d5423d4b0446361e0ea024e6891e23a249/onnx/sherpa-v0.1.0-int8'
+const ORUKEET_MANIFEST = `${ORUKEET_DIR}/manifest.json`
 
 /**
- * Official k2-fsa/sherpa-onnx release assets. Whisper packages use int8
+ * Publisher-provided sherpa-onnx assets. Whisper packages use int8
  * encoder/decoder files; SenseVoice uses a single int8 model.
  * Qwen3 stays at its existing directory so already-downloaded files are reused.
  */
@@ -328,6 +332,76 @@ export const MODEL_CATALOG: readonly ModelFileSpec[] = [
     tier: 'parakeet-v3',
     fileName: `${PARAKEET_V3_DIR}/tokens.txt`,
     url: PARAKEET_V3_ARCHIVE,
+    required: true
+  },
+  {
+    id: 'orukeet-manifest',
+    role: 'asr-extra',
+    group: 'asr',
+    tier: 'orukeet',
+    fileName: ORUKEET_MANIFEST,
+    url: `${ORUKEET_BASE_URL}/manifest.json`,
+    sha256: '7e80f93f0e9b923c392424b0f85d28a717feee0a4d2a6aa9bfa723693868e727',
+    required: true
+  },
+  {
+    id: 'orukeet-encoder',
+    role: 'asr-encoder',
+    group: 'asr',
+    tier: 'orukeet',
+    fileName: `${ORUKEET_DIR}/encoder.int8.onnx`,
+    url: `${ORUKEET_BASE_URL}/encoder.int8.onnx`,
+    checksumManifest: ORUKEET_MANIFEST,
+    required: true
+  },
+  {
+    id: 'orukeet-decoder',
+    role: 'asr-decoder',
+    group: 'asr',
+    tier: 'orukeet',
+    fileName: `${ORUKEET_DIR}/decoder.int8.onnx`,
+    url: `${ORUKEET_BASE_URL}/decoder.int8.onnx`,
+    checksumManifest: ORUKEET_MANIFEST,
+    required: true
+  },
+  {
+    id: 'orukeet-joiner',
+    role: 'asr-joiner',
+    group: 'asr',
+    tier: 'orukeet',
+    fileName: `${ORUKEET_DIR}/joiner.int8.onnx`,
+    url: `${ORUKEET_BASE_URL}/joiner.int8.onnx`,
+    checksumManifest: ORUKEET_MANIFEST,
+    required: true
+  },
+  {
+    id: 'orukeet-tokens',
+    role: 'asr-tokens',
+    group: 'asr',
+    tier: 'orukeet',
+    fileName: `${ORUKEET_DIR}/tokens.txt`,
+    url: `${ORUKEET_BASE_URL}/tokens.txt`,
+    checksumManifest: ORUKEET_MANIFEST,
+    required: true
+  },
+  {
+    id: 'orukeet-license',
+    role: 'asr-extra',
+    group: 'asr',
+    tier: 'orukeet',
+    fileName: `${ORUKEET_DIR}/LICENSE-WEIGHTS`,
+    url: `${ORUKEET_BASE_URL}/LICENSE-WEIGHTS`,
+    checksumManifest: ORUKEET_MANIFEST,
+    required: true
+  },
+  {
+    id: 'orukeet-notice',
+    role: 'asr-extra',
+    group: 'asr',
+    tier: 'orukeet',
+    fileName: `${ORUKEET_DIR}/NOTICE.md`,
+    url: `${ORUKEET_BASE_URL}/NOTICE.md`,
+    checksumManifest: ORUKEET_MANIFEST,
     required: true
   },
   {

@@ -815,7 +815,7 @@
     },
     "asrFamily": {
       "whisper": "Whisper — 多语种",
-      "parakeet": "Parakeet — 英语",
+      "parakeet": "Parakeet",
       "sense-voice": "SenseVoice — 中日韩英",
       "qwen3": "Qwen3-ASR — 中文精度最高"
     },
@@ -867,6 +867,11 @@
         "title": "Parakeet TDT v3",
         "tag": "更新的英语 Parakeet，英语首选",
         "size": "约 650 MB"
+      },
+      "orukeet": {
+        "title": "Orukeet",
+        "tag": "针对 25 种欧洲语言微调的 Parakeet",
+        "size": "约 670 MB"
       },
       "quality": {
         "title": "Qwen3-ASR",
