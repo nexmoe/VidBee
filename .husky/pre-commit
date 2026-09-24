@@ -20,9 +20,10 @@ PARTIALLY_STAGED=$(git diff --name-only)
 git stash push --quiet --keep-index --message "pre-commit-stash" || true
 STASHED=$?
 
-# Run formatter on the staged files
-pnpm --filter ./apps/desktop run fix
-FORMAT_EXIT_CODE=$?
+# Run formatter on the staged files. Capture the exit code instead of letting
+# `set -e` abort, otherwise the stash above is never restored.
+FORMAT_EXIT_CODE=0
+pnpm --filter ./apps/desktop run fix || FORMAT_EXIT_CODE=$?
 
 # Restore working directory state
 if [ $STASHED -eq 0 ]; then
