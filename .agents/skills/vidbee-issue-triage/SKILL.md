@@ -1,6 +1,6 @@
 ---
 name: vidbee-issue-triage
-description: "Triage GitHub issues for nexmoe/VidBee: consult official docs, identify duplicates, configuration questions, yt-dlp upstream failures, and site limitations; provide English guidance, consolidate duplicates, improve titles, and maintain dashboard #247. Use for issue triage, backlog cleanup, and user support, not implementing code fixes."
+description: "Triage GitHub issues for nexmoe/VidBee: short English comments, docs-backed guidance, duplicates, invalid non-media URLs, yt-dlp upstream vs VidBee bugs; retitle/label; maintain dashboard #247. Not for implementing code fixes."
 ---
 
 # VidBee Issue Triage
@@ -11,7 +11,7 @@ Perform lightweight triage so users receive actionable documentation guidance, d
 
 - Requests to screen, analyze, suggest actions, or work read-only authorize reading and drafting without GitHub changes. Requests to process, clean up, execute, or explicitly use this skill to handle issues authorize comments, label and title updates, consolidation of confirmed duplicates, and synchronization of actual results to #247 within the requested scope. Follow narrower user constraints and do not ask again for authorization already given.
 - When no issue range is specified, review open issues and search both open and closed history for comparison. Treat historical closed issues as read-only by default; do not reopen or rewrite them in bulk.
-- Write new GitHub titles, comments, label descriptions, and maintained repository triage records in English. Report to the current user in the conversation's language. Preserve reporters' original text.
+- Write new GitHub titles, comments, label descriptions, and maintained repository triage records in English. Keep public issue comments short (see Comment style). Report to the current user in the conversation's language. Preserve reporters' original text.
 - Prefer `gh` and specify the repository explicitly with `--repo` in every repository command. Use local command help to check supported flags.
 - Creating or editing this skill does not initiate live issue processing. This workflow covers screening and routing; it does not automatically commit code, open PRs, create upstream issues, or publish website documentation.
 
@@ -60,7 +60,7 @@ A duplicate relationship can coexist with a root-cause classification. Record a 
 | Unsupported site or content | An explicit upstream limitation, or reproduction and supporting evidence confirming the URL type is unsupported | Explain the exact scope and source; link an existing support request if available, without promising a timeline |
 | Invalid or non-media URL | The reported Source URL is clearly not downloadable media — for example VidBee's own docs or marketing pages (`vidbee.org/docs/...`), a plain website with no extractor intent, or an obvious paste error — and yt-dlp/`Unsupported URL` (or equivalent) matches that fact | Comment with the specific reason and the correct next step (paste a video/playlist/channel URL). Remove a mistaken `bug` label when appropriate, then close as not planned. Do not keep these open as bugs or questions waiting on the reporter |
 | VidBee bug | Abnormal UI, queue, argument construction, paths, packaging, or other VidBee behavior | Keep open and organize symptoms and reproduction evidence for development |
-| Feature request or documentation gap | No existing feature or effective guide covers the need | Search related requests, then retain or consolidate; comment with an accurate restatement of the need, note that no documented control covers it only if docs were checked, and ask only the minimum clarifying questions that change routing (which product surface, OS/version, and where the gap appears) without assuming a subsystem |
+| Feature request or documentation gap | No existing feature or effective guide covers the need | Search related requests, then retain or consolidate. Comment briefly: restate the need, note missing docs only if checked, ask only clarifiers that change routing — no assumed subsystem |
 | Insufficient information | Missing key errors, versions, or reproduction details, or conflicting evidence | Request the minimum necessary information together and keep open |
 
 Reuse existing labels such as `duplicate`, `question`, `bug`, `enhancement`, `yt-dlp-upstream`, and `unsupported-site`. Create missing labels only when label maintenance is in scope; otherwise retain the classification in the report. Do not hide uncertainty behind a bug or upstream label, or remove unrelated labels.
@@ -103,11 +103,25 @@ Replace uninformative, default-template, or overly broad titles with an English 
 
 Describe supported symptoms rather than a guessed root cause. Keep clear existing titles and useful repository title conventions. Do not rewrite the reporter's body.
 
-Comments should contain a report-specific assessment, short steps or a next action, and direct evidence links. Distinguish confirmed findings from uncertainty. Do not reply only with "read the docs" or "yt-dlp issue", or paste every guide. A documentation reply should explain why the guide applies, give 1–3 relevant steps, link the specific guide, and request only the missing details if the problem persists.
+### Comment style (keep short)
 
-Restate the reporter's need in their own terms. Do not substitute a different product story. Anti-pattern to avoid: nexmoe/VidBee#465 asked for multi-GPU selection (Intel display + NVIDIA compute) and NVIDIA not being detected; an inappropriate reply framed it as transcription model selection and linked the Transcripts guide. For GPU or hardware requests, ask which VidBee surface is involved (download or encode, local transcription, or another feature) instead of assuming transcription.
+Write the shortest useful English reply. Prefer 2–5 short sentences or a tiny list. No preamble, no restating the whole bug report, no filler thanks paragraphs, no essay.
 
-For feature requests with no covering guide: acknowledge the request accurately, state that no documented control was found only when docs were checked, keep the issue open with the existing `enhancement` label when appropriate, and ask only clarifiers that change classification or routing. Do not invent current settings, auto-detection behavior, or unrelated documentation links.
+Typical shape:
+1. One sentence: classification or confirmed fact (bug / duplicate / invalid URL / need more info).
+2. Optional: 1–3 concrete steps or the canonical/docs link — only if it directly helps.
+3. Optional: one line of missing info, only if it changes the next action.
+4. Stop.
+
+Mark uncertainty explicitly. Use "likely", "possible", or "unconfirmed" for guesses (cookies changing YouTube clients, thumbnail CDN quirks, and similar). Do not state hypotheses as facts. Do not use a docs page as the causal explanation of a bug unless that page documents the exact failure path (example to avoid: citing RSS "no duplicate if already in Downloads" for a stale **Queued** flag after manual remove — #479).
+
+Restate the reporter's need in their own terms when it is a feature request; do not substitute a different product story. Anti-pattern: #465 (multi-GPU framed as transcription + Transcripts link). For GPU or hardware reports, ask which surface (download/encode, local transcription, or other) instead of assuming.
+
+Documentation replies: one sentence why the guide applies, then 1–3 steps and the specific link. Do not paste every guide. Do not reply only with "read the docs" or "yt-dlp issue".
+
+Feature requests with no covering guide: brief acknowledgment, note undocumented only if docs were checked, keep `enhancement` when appropriate, ask only routing clarifiers. No invented settings or unrelated links.
+
+On canonical issues, duplicate follow-ups add only new reproduction facts — do not restate the whole diagnosis.
 
 Prepare exact UTF-8 comment text in a temporary file and post with `gh issue comment <number> --repo nexmoe/VidBee --body-file <comment-file>`. Preserve literal newlines and backticks; never interpolate issue content into shell code. Apply labels and titles with `gh issue edit`, without rewriting the reporter's body or overwriting unrelated labels.
 
