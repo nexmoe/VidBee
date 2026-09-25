@@ -1,6 +1,6 @@
 ---
 name: vidbee-issue-triage
-description: "Triage GitHub issues for nexmoe/VidBee: short English comments, docs-backed guidance, duplicates, invalid non-media URLs, yt-dlp upstream vs VidBee bugs; retitle/label; maintain dashboard #247. Not for implementing code fixes."
+description: "Triage GitHub issues for nexmoe/VidBee: short English comments, docs-backed guidance, duplicates, invalid non-media URLs, close fixed yt-dlp upstream issues with an update prompt; retitle/label; maintain dashboard #247. Not for implementing code fixes."
 ---
 
 # VidBee Issue Triage
@@ -56,7 +56,8 @@ A duplicate relationship can coexist with a root-cause classification. Record a 
 | --- | --- | --- |
 | Duplicate report | Same trigger and failure mechanism as the canonical issue, or the same feature request | Consolidate under section 3 |
 | Documentation or configuration question | A guide covers the scenario, with no contrary evidence that the documented steps were followed and failed | Comment with 1–3 specific steps and a guide link; ask for the outcome |
-| yt-dlp upstream issue | A matching upstream report or fix, or independent yt-dlp reproduction under equivalent conditions | Cite upstream evidence, affected versions, workarounds, or remaining uncertainty; retain tracking |
+| yt-dlp upstream issue (still open / unfixed) | Matching upstream report still open, or independent yt-dlp reproduction under equivalent conditions with no released fix | Cite upstream evidence, affected versions, workarounds, or remaining uncertainty; keep open for tracking; label `yt-dlp-upstream` when that label exists |
+| yt-dlp upstream issue (fixed upstream) | A matching upstream issue or PR is **fixed in a released yt-dlp version** (not merely closed as duplicate, declined, or unreproducible), and VidBee's failure is that same extractor/path | Short comment: link the upstream fix/release, tell the reporter to update to the **latest VidBee** (and refresh the in-app yt-dlp engine if the product exposes that). Then close as completed. Do not keep fixed-upstream extractors open as active bugs |
 | Unsupported site or content | An explicit upstream limitation, or reproduction and supporting evidence confirming the URL type is unsupported | Explain the exact scope and source; link an existing support request if available, without promising a timeline |
 | Invalid or non-media URL | The reported Source URL is clearly not downloadable media — for example VidBee's own docs or marketing pages (`vidbee.org/docs/...`), a plain website with no extractor intent, or an obvious paste error — and yt-dlp/`Unsupported URL` (or equivalent) matches that fact | Comment with the specific reason and the correct next step (paste a video/playlist/channel URL). Remove a mistaken `bug` label when appropriate, then close as not planned. Do not keep these open as bugs or questions waiting on the reporter |
 | VidBee bug | Abnormal UI, queue, argument construction, paths, packaging, or other VidBee behavior | Keep open and organize symptoms and reproduction evidence for development |
@@ -65,7 +66,7 @@ A duplicate relationship can coexist with a root-cause classification. Record a 
 
 Reuse existing labels such as `duplicate`, `question`, `bug`, `enhancement`, `yt-dlp-upstream`, and `unsupported-site`. Create missing labels only when label maintenance is in scope; otherwise retain the classification in the report. Do not hide uncertainty behind a bug or upstream label, or remove unrelated labels.
 
-Providing a guide or upstream link does not establish resolution. By default, close confirmed duplicates and clear **invalid or non-media URL** reports after the explanatory comment succeeds. Do not automatically close ordinary documentation or configuration questions, incomplete reports that still need evidence, yt-dlp upstream tracking issues, or broad unsupported-site cases that may still need maintainer judgment. If the user specifies another closure policy, apply it within scope and explain the reason. Distinguish resolved issues from support that is not planned.
+Providing a guide or upstream link does not establish resolution. By default, close confirmed duplicates, clear **invalid or non-media URL** reports, and **yt-dlp upstream issues whose matching fix is already in a released yt-dlp** — after the explanatory comment succeeds (for fixed-upstream cases, tell the user to update to the latest VidBee / refresh yt-dlp, then close as completed). Do not automatically close ordinary documentation or configuration questions, incomplete reports that still need evidence, **still-open / unfixed** yt-dlp upstream trackers, or broad unsupported-site cases that may still need maintainer judgment. If the user specifies another closure policy, apply it within scope and explain the reason. Distinguish resolved issues from support that is not planned.
 
 Example of a clear close: nexmoe/VidBee#478 reported `https://vidbee.org/docs/faq/` as the Source URL with `Unsupported URL`. That is VidBee's own FAQ page, not media — comment, then close; do not leave it open as a bug awaiting a real video URL.
 
@@ -85,7 +86,11 @@ Consolidation means tracking the problem on a canonical issue, linking duplicate
 For extractor failures, `Unable to extract`, `Unsupported URL`, SABR/EJS, DPAPI/cookies, or download-format selection errors, search open and closed issues in `yt-dlp/yt-dlp` in addition to consulting VidBee documentation. Keep purely UI, installer, and application workflow problems with VidBee first.
 
 - Search by site, error signature, URL type, and failure stage. Read matching reports and maintainer comments, following related PRs and releases when needed. An upstream issue may be closed as a duplicate, declined, or unreproducible; closure does not establish a fix.
-- Check the actual reported yt-dlp version and the binary or dependency version used by the relevant VidBee release. The latest upstream release does not prove that the user's VidBee includes a fix, and a separately installed yt-dlp may differ from the application's binary.
+- Check the actual reported yt-dlp version and the binary or dependency version used by the relevant VidBee release. A separately installed CLI yt-dlp may differ from the application's binary.
+- When the matching upstream issue or PR is fixed **in a released yt-dlp**, treat the VidBee report as resolved for triage: comment with the upstream link and release/tag if known, tell the reporter to update to the **latest VidBee** (and use any in-app yt-dlp/engine refresh if documented), then **close as completed**. Do not leave fixed-upstream extractors open waiting for more discussion.
+- Closing as "fixed upstream" requires a real fix (merged fix landed in a yt-dlp release, or maintainer confirmation of a fixed release). Upstream closed as duplicate, not planned, or unreproducible is **not** a fix — keep tracking or reclassify.
+- If upstream is fixed only on git master and **not** in any release yet, keep the VidBee issue open, note that, and do not close as completed yet.
+- Example shape (keep short): `Fixed upstream in yt-dlp <version> (<upstream URL>). Please update to the latest VidBee and retry. Closing.`
 - When uncertain, compare independent yt-dlp behavior with the same URL, account and network conditions, and relevant arguments. State when this has not been tested. Do not require every ordinary user to install a CLI before receiving help.
 - An error emitted by yt-dlp may still come from VidBee's format selection, cookie arguments, bundled JS runtime or FFmpeg, or version integration. Distinguish a core failure from incorrect invocation.
 - Check [yt-dlp supported sites](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md), the relevant [FAQ](https://github.com/yt-dlp/yt-dlp/wiki/FAQ), and upstream conclusions. Unlisted sites may work through the generic extractor; listed sites are not guaranteed to work for every page or current version.
