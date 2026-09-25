@@ -755,6 +755,11 @@
         "tag": "CJK + İngilizce için hızlı, Kantonca dahil",
         "size": "~230 MB"
       },
+      "orukeet": {
+        "title": "Orukeet",
+        "tag": "25 Avrupa dili için ince ayarlanmış Parakeet",
+        "size": "~670 MB"
+      },
       "quality": {
         "title": "Qwen3-ASR",
         "tag": "En iyi Çince doğruluk. Güçlü bir PC ister",
@@ -802,7 +807,7 @@
       "whisper": "Whisper — çok dilli",
       "sense-voice": "SenseVoice — Çince, Japonca, Korece, İngilizce",
       "qwen3": "Qwen3-ASR — en yüksek Çince doğruluk",
-      "parakeet": "Parakeet — İngilizce"
+      "parakeet": "Parakeet"
     },
     "asrLanguages": {
       "multi": "çok dilli"

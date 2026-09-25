@@ -755,6 +755,11 @@
         "tag": "한중일영이 빠르며 광둥어도 지원합니다",
         "size": "약 230 MB"
       },
+      "orukeet": {
+        "title": "Orukeet",
+        "tag": "유럽 25개 언어에 맞게 미세 조정한 Parakeet",
+        "size": "약 670 MB"
+      },
       "quality": {
         "title": "Qwen3-ASR",
         "tag": "중국어 정확도가 가장 높습니다. 고성능 PC가 필요합니다",
@@ -802,7 +807,7 @@
       "whisper": "Whisper — 다국어",
       "sense-voice": "SenseVoice — 중국어, 일본어, 한국어, 영어",
       "qwen3": "Qwen3-ASR — 중국어 정확도 최고",
-      "parakeet": "Parakeet — 영어"
+      "parakeet": "Parakeet"
     },
     "asrLanguages": {
       "multi": "다국어"

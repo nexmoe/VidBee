@@ -750,7 +750,7 @@
       "whisper": "Whisper — 多語系",
       "sense-voice": "SenseVoice — 中日韓英",
       "qwen3": "Qwen3-ASR — 中文精度最高",
-      "parakeet": "Parakeet — 英語"
+      "parakeet": "Parakeet"
     },
     "asrLanguages": {
       "multi": "多語系"
@@ -775,6 +775,11 @@
         "title": "SenseVoice",
         "tag": "中日韓英快且準，含粵語",
         "size": "約 230 MB"
+      },
+      "orukeet": {
+        "title": "Orukeet",
+        "tag": "針對 25 種歐洲語言微調的 Parakeet",
+        "size": "約 670 MB"
       },
       "quality": {
         "title": "Qwen3-ASR",

@@ -473,6 +473,7 @@ export class ModelManager {
   private async installSpec(spec: ModelFileSpec, signal?: AbortSignal): Promise<void> {
     throwIfAborted(signal, spec.tier)
     const dest = this.pathFor(spec)
+    const sha256 = await this.checksumFor(spec)
     const candidates = this.urlsFor(spec)
     let lastError: unknown = new Error(`no download URLs for ${spec.id}`)
     for (const url of candidates) {
@@ -484,7 +485,7 @@ export class ModelManager {
         if (isArchiveUrl(url)) {
           await this.installArchive({ ...spec, url }, signal)
         } else {
-          await this.downloadUrl(url, dest, spec.sha256, spec.tier, signal)
+          await this.downloadUrl(url, dest, sha256, spec.tier, signal)
         }
         if (presentBytes(dest).present) {
           return
@@ -502,6 +503,31 @@ export class ModelManager {
       return
     }
     throw lastError instanceof Error ? lastError : new Error(String(lastError))
+  }
+
+  /** Read a file's checksum from its pinned publisher manifest before downloading it. */
+  private async checksumFor(spec: ModelFileSpec): Promise<string | undefined> {
+    if (!spec.checksumManifest) {
+      return spec.sha256
+    }
+    const manifestSpec = this.catalog.find((item) => item.fileName === spec.checksumManifest)
+    if (!manifestSpec?.sha256) {
+      throw new Error(`missing pinned checksum manifest for ${spec.id}`)
+    }
+    const contents = await readFile(this.pathFor(manifestSpec))
+    if (createHash('sha256').update(contents).digest('hex') !== manifestSpec.sha256) {
+      throw new Error(`model checksum mismatch for ${manifestSpec.url}`)
+    }
+    const manifest = JSON.parse(contents.toString('utf8')) as {
+      files?: { path?: unknown; sha256?: unknown }[]
+    } | null
+    const entry = Array.isArray(manifest?.files)
+      ? manifest.files.find((file) => file?.path === basename(spec.fileName))
+      : undefined
+    if (typeof entry?.sha256 !== 'string' || !/^[a-f0-9]{64}$/.test(entry.sha256)) {
+      throw new Error(`missing SHA256 in ${manifestSpec.fileName} for ${spec.id}`)
+    }
+    return entry.sha256
   }
 
   /**
@@ -667,9 +693,11 @@ export class ModelManager {
     this.downloadProgressByKey.set(dest, { url: usedUrl, received: 0, total: knownTotal, tier })
     this.emitProgress(true)
     let received = 0
+    const hash = sha256 ? createHash('sha256') : undefined
     const counter = new Transform({
       transform: (chunk: Buffer, _encoding, callback) => {
         received += chunk.length
+        hash?.update(chunk)
         this.downloadProgressByKey.set(dest, { url: usedUrl, received, total: knownTotal, tier })
         this.emitProgress()
         callback(null, chunk)
@@ -699,13 +727,9 @@ export class ModelManager {
       }
       return
     }
-    if (sha256) {
-      const buf = await readFile(tmp)
-      const digest = createHash('sha256').update(buf).digest('hex')
-      if (digest !== sha256) {
-        rmSync(tmp, { force: true })
-        throw new Error(`model checksum mismatch for ${url}`)
-      }
+    if (hash && hash.digest('hex') !== sha256) {
+      rmSync(tmp, { force: true })
+      throw new Error(`model checksum mismatch for ${url}`)
     }
     finalizeModelFile(tmp, dest)
   }
