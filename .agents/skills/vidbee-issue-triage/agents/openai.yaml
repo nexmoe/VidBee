@@ -1,0 +1,4 @@
+interface:
+  display_name: "VidBee Issue Triage"
+  short_description: "Triage VidBee issues and maintain dashboard #247"
+  default_prompt: "Use $vidbee-issue-triage to process open issues in nexmoe/VidBee: consult official docs, identify duplicates and yt-dlp upstream issues, post evidence-based guidance, improve titles, close confirmed duplicates, and synchronize dashboard #247."
