@@ -50,6 +50,7 @@ import {
 import { type LanguageCode, languageList, normalizeLanguageCode } from '@vidbee/i18n/languages'
 import { DragRegion } from '@vidbee/ui/components/ui/drag-region'
 import { SubtitleLanguagePicker } from '@vidbee/ui/components/ui/subtitle-language-picker'
+import { WebmThumbnailNotice } from '@vidbee/ui/components/ui/webm-thumbnail-notice'
 import { useAtom, useSetAtom } from 'jotai'
 import { Film, Music } from 'lucide-react'
 import { useTheme } from 'next-themes'
@@ -386,6 +387,7 @@ export function Settings() {
                           <ItemDescription>
                             {t('settings.oneClickContainerDescription')}
                           </ItemDescription>
+                          <WebmThumbnailNotice container={settings.oneClickContainer} />
                         </ItemContent>
                         <ItemActions>
                           <Select
@@ -620,6 +622,7 @@ export function Settings() {
                     <ItemContent>
                       <ItemTitle>{t('settings.embedThumbnail')}</ItemTitle>
                       <ItemDescription>{t('settings.embedThumbnailDescription')}</ItemDescription>
+                      <WebmThumbnailNotice container={settings.oneClickContainer} />
                     </ItemContent>
                     <ItemActions>
                       <Switch

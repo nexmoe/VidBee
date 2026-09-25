@@ -28,7 +28,9 @@ import type { DownloadRuntimeSettings } from './types'
 import {
   buildDownloadArgs,
   formatYtDlpCommand,
+  isUnsupportedThumbnailEmbedOnlyFailure,
   resolveSubtitleDownloadSkipReason,
+  THUMBNAIL_EMBED_UNSUPPORTED_LOG,
   VIDBEE_OUTPUT_PATH_PREFIX
 } from './yt-dlp-args'
 import { DownloadProgressAggregator, type YtDlpProgressPayload } from './yt-dlp-progress'
@@ -538,6 +540,18 @@ export class YtDlpExecutor implements Executor {
             finishSuccessfulProcess(closedAt)
             return
           }
+          const savedPath = filePathSeen ?? extractSavedFilePath(`${stdout}\n${stderr}`)
+          // GitHub issue #467: cover embedding can fail after a valid WebM
+          // (or other unsupported container) is already on disk. Keep that
+          // media file instead of reporting the download as failed.
+          if (
+            hasNonEmptyFile(savedPath) &&
+            isUnsupportedThumbnailEmbedOnlyFailure(processStderr || stderr)
+          ) {
+            stderrTail.append(`\n${THUMBNAIL_EMBED_UNSUPPORTED_LOG}\n`)
+            finishSuccessfulProcess(closedAt)
+            return
+          }
           if (
             !subtitleFallbackAttempted &&
             canRetryWithoutSubtitles &&
@@ -833,6 +847,18 @@ function insertFfmpegLocation(args: string[], ffmpegLocation: string): void {
 
 function hasPostprocessSignal(text: string): boolean {
   return PROCESSING_DETECT_PATTERNS.some((re) => re.test(text))
+}
+
+/** Return whether a produced media file is present and non-empty. */
+function hasNonEmptyFile(filePath: string | undefined): boolean {
+  if (!filePath) {
+    return false
+  }
+  try {
+    return existsSync(filePath) && statSync(filePath).size > 0
+  } catch {
+    return false
+  }
 }
 
 /**

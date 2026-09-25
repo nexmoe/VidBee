@@ -631,6 +631,7 @@
     "writeAutoSubsDescription": "Gunakan subtitle otomatis saat subtitle dari kreator tidak tersedia dalam bahasa yang dipilih",
     "embedThumbnail": "Sematkan thumbnail",
     "embedThumbnailDescription": "Tambahkan thumbnail sebagai sampul",
+    "embedThumbnailWebmUnsupported": "WebM tidak dapat menyematkan thumbnail sebagai sampul. Jika sampul diaktifkan, VidBee menyimpan thumbnail sebagai file terpisah. Pilih MP4 atau MKV untuk menyematkannya.",
     "filenameStyle": "Gaya nama file",
     "filenameStyleDescription": "Pilih cara VidBee menamai file video dan audio yang disimpan",
     "filenameStyleNote": "Digunakan untuk file yang disimpan VidBee. Template kustom dari langganan atau playlist tetap diutamakan",

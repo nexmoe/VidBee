@@ -631,6 +631,7 @@
     "writeAutoSubsDescription": "選択した言語の投稿者字幕がない場合に自動字幕を使用します",
     "embedThumbnail": "サムネイルを埋め込む",
     "embedThumbnailDescription": "サムネイルをカバーアートとして追加",
+    "embedThumbnailWebmUnsupported": "WebM はサムネイルをカバーアートとして埋め込めません。カバーアートが有効な場合、VidBee はサムネイルを別ファイルとして保存します。埋め込むには MP4 または MKV を選んでください。",
     "filenameStyle": "ファイル名スタイル",
     "filenameStyleDescription": "保存する動画・音声ファイルの名前の付け方を選びます",
     "filenameStyleNote": "VidBee が保存するファイルに使われます。登録フィードや再生リストのカスタムテンプレートが優先されます",
