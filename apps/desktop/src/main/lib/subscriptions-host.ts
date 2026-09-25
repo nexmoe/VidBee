@@ -83,6 +83,7 @@ const ensureDirectoryExists = (dir?: string): void => {
 
 let api: SubscriptionsApi | null = null
 let started = false
+let removeTaskListener: (() => void) | null = null
 
 export const getDesktopSubscriptions = (): SubscriptionsApi => {
   if (api) {
@@ -100,6 +101,7 @@ export const getDesktopSubscriptions = (): SubscriptionsApi => {
     metaStore,
     fetcher: new RssParserFeedFetcher(),
     isHistoryDup: (url) => historyManager.hasHistoryForUrl(url),
+    taskExists: (taskId) => getDesktopTaskQueue().get(taskId) !== undefined,
     enqueueItem: async ({ subscription, item, trigger, creation }) => {
       const settings = settingsManager.getAll()
       const downloadDirectory = subscription.downloadDirectory?.trim() || settings.downloadPath
@@ -159,7 +161,11 @@ export const startDesktopSubscriptions = async (): Promise<void> => {
   if (started) {
     return
   }
-  await getDesktopSubscriptions().start()
+  const subscriptions = getDesktopSubscriptions()
+  await subscriptions.start()
+  removeTaskListener = getDesktopTaskQueue().on('task-removed', (event) => {
+    subscriptions.noteTaskRemoved(event.taskId)
+  })
   started = true
 }
 
@@ -167,6 +173,8 @@ export const stopDesktopSubscriptions = async (): Promise<void> => {
   if (!started) {
     return
   }
+  removeTaskListener?.()
+  removeTaskListener = null
   await api?.stop()
   started = false
 }

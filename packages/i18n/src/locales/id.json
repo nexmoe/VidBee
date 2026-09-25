@@ -1062,7 +1062,8 @@
       },
       "actions": {
         "open": "Buka di browser",
-        "queue": "Tambahkan ke antrian unduhan"
+        "queue": "Tambahkan ke antrian unduhan",
+        "copyUrl": "Salin URL"
       }
     },
     "labels": {

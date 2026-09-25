@@ -43,7 +43,7 @@ export {
   createSqliteSubscriptionsStore,
   InMemoryMetaStore
 } from './store'
-export type { CreateSqliteStoresOptions, SubscriptionsStore } from './store'
+export type { CreateSqliteStoresOptions, QueueLinkSelector, SubscriptionsStore } from './store'
 
 export { SubscriptionsApi } from './api'
 export type { EnqueueItem, EnqueueItemContext, SubscriptionsApiOptions } from './api'

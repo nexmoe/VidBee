@@ -1062,7 +1062,8 @@
       },
       "actions": {
         "open": "Ouvrir dans le navigateur",
-        "queue": "Ajouter à la file d'attente de téléchargement"
+        "queue": "Ajouter à la file d'attente de téléchargement",
+        "copyUrl": "Copier l'URL"
       }
     },
     "labels": {

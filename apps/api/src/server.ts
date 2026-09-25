@@ -15,7 +15,11 @@ import { resolveReadableMediaFile } from './lib/managed-files'
 import { projectTaskForApi } from './lib/projection'
 import { rpcRouter } from './lib/rpc-router'
 import { SseHub } from './lib/sse'
-import { startApiSubscriptions, stopApiSubscriptions } from './lib/subscriptions-host'
+import {
+  getApiSubscriptions,
+  startApiSubscriptions,
+  stopApiSubscriptions
+} from './lib/subscriptions-host'
 import { subscriptionsRouter } from './lib/subscriptions-router'
 
 const MAX_PROXY_IMAGE_BYTES = 10 * 1024 * 1024
@@ -176,6 +180,9 @@ export const createApiServer = async () => {
     if (e.to === 'queued' || e.to === 'cancelled' || e.to === 'completed' || e.to === 'failed') {
       publishQueueUpdated()
     }
+  })
+  const unsubscribeSubscriptions = getApiSubscriptions().on('changed', () => {
+    sseHub.publish('subscriptions-updated', { at: Date.now() })
   })
 
   fastify.get('/health', async () => {
@@ -373,6 +380,7 @@ export const createApiServer = async () => {
   })
 
   fastify.addHook('onClose', async () => {
+    unsubscribeSubscriptions()
     sseHub.closeAll()
     stopEngines()
     await stopApiSubscriptions()

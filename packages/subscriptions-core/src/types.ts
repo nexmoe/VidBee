@@ -57,9 +57,13 @@ export interface SubscriptionFeedItem {
   title: string
   publishedAt: number
   thumbnail?: string
-  /** True once the item is in the task queue or already downloaded. */
+  /**
+   * True while this item is linked to a task that still exists.
+   * The row itself is the already-seen history: clearing this flag allows a
+   * manual re-add and does not make the next feed check download it again.
+   */
   addedToQueue: boolean
-  /** Task id in the shared task-queue once the item is queued. */
+  /** Task id while the item is queued. Cleared when that task is removed. */
   taskId?: string
 }
 

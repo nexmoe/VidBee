@@ -84,12 +84,10 @@ export const resolveSubscriptionItemStatus = (
     return 'notQueued'
   }
   const id = item.taskId ?? item.downloadId
-  if (!id) {
-    return 'queued'
-  }
-  const matched = downloadById.get(id)
+  const matched = id ? downloadById.get(id) : undefined
+  // No live task means the stored queue link is stale.
   if (!matched) {
-    return 'queued'
+    return 'notQueued'
   }
   switch (matched.status) {
     case 'pending':

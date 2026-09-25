@@ -43,7 +43,7 @@ import {
 } from '@vidbee/subscriptions-core/status'
 import dayjs from 'dayjs'
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
-import { Download, Edit, ExternalLink, Plus, Power, RefreshCw, Trash2 } from 'lucide-react'
+import { Copy, Download, Edit, ExternalLink, Plus, Power, RefreshCw, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -546,6 +546,20 @@ function SubscriptionCard({ subscription }: { subscription: SubscriptionRule }) 
     }
   }
 
+  const handleCopyItemUrl = async (url: string) => {
+    if (!(url && navigator.clipboard?.writeText)) {
+      toast.error(t('notifications.copyFailed'))
+      return
+    }
+    try {
+      await navigator.clipboard.writeText(url)
+      toast.success(t('notifications.urlCopied'))
+    } catch (error) {
+      logger.error('Failed to copy subscription item link:', error)
+      toast.error(t('notifications.copyFailed'))
+    }
+  }
+
   const handleQueueItem = useCallback(
     async (item: SubscriptionFeedItem) => {
       if (item.addedToQueue) {
@@ -679,6 +693,13 @@ function SubscriptionCard({ subscription }: { subscription: SubscriptionRule }) 
               <ContextMenuItem onClick={() => void handleOpenItem(item.url)}>
                 <ExternalLink className="h-4 w-4" />
                 {t('subscriptions.items.actions.open')}
+              </ContextMenuItem>
+              <ContextMenuItem
+                disabled={!item.url}
+                onClick={() => void handleCopyItemUrl(item.url)}
+              >
+                <Copy className="h-4 w-4" />
+                {t('subscriptions.items.actions.copyUrl')}
               </ContextMenuItem>
             </ContextMenuContent>
           </ContextMenu>

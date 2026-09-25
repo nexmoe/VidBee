@@ -1062,7 +1062,8 @@
       },
       "actions": {
         "open": "Abrir no navegador",
-        "queue": "Adicionar à fila de download"
+        "queue": "Adicionar à fila de download",
+        "copyUrl": "Copiar URL"
       }
     },
     "labels": {

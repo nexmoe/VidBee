@@ -1062,7 +1062,8 @@
       },
       "actions": {
         "open": "Im Browser öffnen",
-        "queue": "Zur Download-Warteschlange hinzufügen"
+        "queue": "Zur Download-Warteschlange hinzufügen",
+        "copyUrl": "URL kopieren"
       }
     },
     "labels": {
