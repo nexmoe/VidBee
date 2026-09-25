@@ -153,6 +153,8 @@ export interface ModelFileSpec {
   fileName: string
   url: string
   sha256?: string
+  /** Earlier catalog file with a pinned SHA256 and files: [{ path, sha256 }]. */
+  checksumManifest?: string
   required: boolean
 }
 

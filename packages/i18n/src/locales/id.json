@@ -755,6 +755,11 @@
         "tag": "Cepat untuk CJK + Inggris, termasuk Kanton",
         "size": "~230 MB"
       },
+      "orukeet": {
+        "title": "Orukeet",
+        "tag": "Model Parakeet yang disesuaikan untuk 25 bahasa Eropa",
+        "size": "~670 MB"
+      },
       "quality": {
         "title": "Qwen3-ASR",
         "tag": "Akurasi Tionghoa terbaik. Butuh PC bertenaga",
@@ -802,7 +807,7 @@
       "whisper": "Whisper — multibahasa",
       "sense-voice": "SenseVoice — Tionghoa, Jepang, Korea, Inggris",
       "qwen3": "Qwen3-ASR — akurasi Tionghoa tertinggi",
-      "parakeet": "Parakeet — Inggris"
+      "parakeet": "Parakeet"
     },
     "asrLanguages": {
       "multi": "multibahasa"
