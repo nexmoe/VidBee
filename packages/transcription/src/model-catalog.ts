@@ -22,6 +22,7 @@ import {
   WHISPER_TURBO_ARCHIVE,
   WHISPER_TURBO_DIR
 } from './asr-tiers'
+import { QWEN3_ASR_TOKENIZER_FILES } from './qwen3-tokenizer'
 import {
   CAMPPLUS_FILE,
   CAMPPLUS_URL,
@@ -438,6 +439,7 @@ export const MODEL_CATALOG: readonly ModelFileSpec[] = [
     tier: 'quality',
     fileName: `${QWEN3_ASR_DIR}/tokenizer`,
     url: QWEN3_ASR_ARCHIVE,
+    directoryMembers: QWEN3_ASR_TOKENIZER_FILES,
     required: true
   },
   {

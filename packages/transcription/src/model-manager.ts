@@ -18,6 +18,7 @@ import { promisify } from 'node:util'
 import { ASR_TIER_IDS, type AsrTierId, asrTierInfo } from './asr-tiers'
 import { fetchFirstOk, modelDownloadUrls, preferChinaMirrors } from './download-mirrors'
 import { catalogFor, MODEL_CATALOG, modelVersion } from './model-catalog'
+import { assessDirectoryMembers, INCOMPLETE_MODEL_ERROR } from './qwen3-tokenizer'
 import type {
   AsrTierStatus,
   ModelDownloadProgress,
@@ -55,6 +56,13 @@ const presentBytes = (path: string): { present: boolean; bytes: number } => {
     return { present: children.length > 0, bytes: children.length }
   }
   return { present: stats.size > 0, bytes: stats.size }
+}
+
+interface InstalledFileState {
+  present: boolean
+  bytes: number
+  /** Set when a partial tree exists and must not count as installed. */
+  issue: string | null
 }
 
 /**
@@ -183,7 +191,7 @@ export class ModelManager {
     const wanted = occupancy ? this.catalog : this.wantedSpecs(groups, tiers)
     const files = wanted.map((spec) => {
       const path = this.pathFor(spec)
-      const info = presentBytes(path)
+      const info = this.locationState(spec)
       return {
         id: spec.id,
         present: info.present,
@@ -193,7 +201,7 @@ export class ModelManager {
     })
     const readySet = occupancy ? this.wantedSpecs(['vad', 'speaker', 'asr'], ['minimal']) : wanted
     const ready = readySet.every((spec) => {
-      const info = presentBytes(this.pathFor(spec))
+      const info = this.locationState(spec)
       return info.present && info.bytes > 0
     })
     const downloads = [...this.downloadProgressByKey.values()]
@@ -212,6 +220,26 @@ export class ModelManager {
     return join(this.modelsDir, spec.fileName)
   }
 
+  /**
+   * Why a tier's on-disk tree must not be opened, or null when it is missing
+   * or valid. A nonempty partial extract is an incomplete model.
+   */
+  incompleteModelIssue(tier?: AsrTierId): string | null {
+    for (const spec of this.catalog) {
+      if (spec.tier && tier && spec.tier !== tier) {
+        continue
+      }
+      if (!spec.directoryMembers?.length) {
+        continue
+      }
+      const issue = this.locationState(spec).issue
+      if (issue) {
+        return issue
+      }
+    }
+    return null
+  }
+
   pathByRole(role: ModelFileSpec['role'], tier?: AsrTierId): string | null {
     const wantedTier = tier ?? this.activeTiers[0]
     const spec = this.catalog.find((item) => {
@@ -227,7 +255,7 @@ export class ModelManager {
       return null
     }
     const path = this.pathFor(spec)
-    return presentBytes(path).present ? path : null
+    return this.locationState(spec).present ? path : null
   }
 
   /**
@@ -241,7 +269,7 @@ export class ModelManager {
       return null
     }
     const path = this.pathFor(spec)
-    return presentBytes(path).present ? path : null
+    return this.locationState(spec).present ? path : null
   }
 
   async ensureReady(opts?: EnsureReadyOptions): Promise<ModelStatus> {
@@ -288,7 +316,10 @@ export class ModelManager {
     this.emitProgress(true)
     if (!next.ready) {
       throwIfAborted(controller.signal, opts?.tiers?.[0])
-      throw new Error('model not ready after download')
+      const issue = (opts?.tiers ?? [])
+        .map((tier) => this.incompleteModelIssue(tier))
+        .find((item): item is string => Boolean(item))
+      throw new Error(issue ?? 'model not ready after download')
     }
     return next
   }
@@ -441,8 +472,8 @@ export class ModelManager {
 
   private tierStatuses(): AsrTierStatus[] {
     return ASR_TIER_IDS.map((id) => {
-      const specs = catalogFor({ groups: ['asr'], tiers: [id] })
-      const files = specs.map((spec) => presentBytes(this.pathFor(spec)))
+      const specs = this.wantedSpecs(['asr'], [id])
+      const files = specs.map((spec) => this.locationState(spec))
       const info = asrTierInfo(id)
       return {
         id,
@@ -462,8 +493,7 @@ export class ModelManager {
     mkdirSync(this.modelsDir, { recursive: true })
     for (const spec of this.wantedSpecs(groups, tiers)) {
       throwIfAborted(signal, spec.tier ?? tiers?.[0])
-      const dest = this.pathFor(spec)
-      if (presentBytes(dest).present) {
+      if (this.locationState(spec).present) {
         continue
       }
       await this.installSpec(spec, spec.tier ? signal : undefined)
@@ -478,7 +508,7 @@ export class ModelManager {
     let lastError: unknown = new Error(`no download URLs for ${spec.id}`)
     for (const url of candidates) {
       throwIfAborted(signal, spec.tier)
-      if (presentBytes(dest).present) {
+      if (this.locationState(spec).present) {
         return
       }
       try {
@@ -487,20 +517,33 @@ export class ModelManager {
         } else {
           await this.downloadUrl(url, dest, sha256, spec.tier, signal)
         }
-        if (presentBytes(dest).present) {
+        const state = this.locationState(spec)
+        if (state.present) {
           return
         }
-        lastError = new Error(`download of ${url} did not produce ${spec.fileName}`)
+        lastError = new Error(state.issue ?? `download of ${url} did not produce ${spec.fileName}`)
       } catch (error) {
-        if (presentBytes(dest).present) {
+        throwIfAborted(signal, spec.tier)
+        if (isModelDownloadCancelled(error)) {
+          throw error
+        }
+        // A valid file published by another caller is success. A nonempty
+        // partial extract is not, even when this attempt threw.
+        if (this.locationState(spec).present) {
           return
         }
-        throwIfAborted(signal, spec.tier)
         lastError = error
       }
     }
-    if (presentBytes(dest).present) {
+    const state = this.locationState(spec)
+    if (state.present) {
       return
+    }
+    if (lastError instanceof Error && lastError.message.startsWith(INCOMPLETE_MODEL_ERROR)) {
+      throw lastError
+    }
+    if (state.issue) {
+      throw new Error(state.issue)
     }
     throw lastError instanceof Error ? lastError : new Error(String(lastError))
   }
@@ -572,41 +615,187 @@ export class ModelManager {
     spec: ModelFileSpec,
     signal?: AbortSignal
   ): Promise<void> {
-    const url = spec.url
-    const cacheDir = join(this.modelsDir, '.downloads')
-    mkdirSync(cacheDir, { recursive: true })
-    const archivePath = join(cacheDir, basename(new URL(url).pathname))
-    const marker = `${archivePath}.extracted`
-    const expected = await this.remoteContentLength(url, signal)
-    const local = existsSync(archivePath) ? statSync(archivePath).size : 0
-    const complete = local > 0 && (expected == null || local >= expected)
-    if (!complete) {
-      if (existsSync(marker)) {
-        rmSync(marker, { force: true })
-      }
-      await this.downloadUrl(url, archivePath, undefined, spec.tier, signal)
-    }
     throwIfAborted(signal, spec.tier)
-    if (existsSync(marker)) {
+    const url = spec.url
+    const { archivePath, marker, staging } = this.archiveLocations(url)
+    mkdirSync(dirname(archivePath), { recursive: true })
+    if (this.archiveOutputReady(url)) {
+      writeFileSync(marker, 'ok')
       return
     }
-    await execFileAsync(
-      'tar',
-      ['-xjf', archivePath, '-C', this.modelsDir],
-      signal ? { signal } : {}
-    )
-    throwIfAborted(signal, spec.tier)
-    this.pruneWhisperFp32(url)
-    writeFileSync(marker, 'ok')
+    // A stale marker must not skip validation. Partial files stay until a
+    // staged tree validates and replaces them.
+    this.invalidateExtract(archivePath, marker, staging, false)
+    const expected = await this.remoteContentLength(url, signal)
+    if (this.reusableArchive(archivePath, expected)) {
+      try {
+        await this.extractPublishedArchive(url, archivePath, staging, marker, spec.tier, signal)
+        return
+      } catch (error) {
+        this.rethrowArchiveAbort(error, signal, spec.tier)
+        this.invalidateExtract(archivePath, marker, staging, true)
+      }
+    } else {
+      this.invalidateExtract(archivePath, marker, staging, true)
+    }
+    await this.downloadUrl(url, archivePath, undefined, spec.tier, signal)
+    try {
+      await this.extractPublishedArchive(url, archivePath, staging, marker, spec.tier, signal)
+    } catch (error) {
+      this.rethrowArchiveAbort(error, signal, spec.tier)
+      this.invalidateExtract(archivePath, marker, staging, true)
+      const message = error instanceof Error ? error.message : String(error)
+      if (message.startsWith(INCOMPLETE_MODEL_ERROR)) {
+        throw error instanceof Error ? error : new Error(message)
+      }
+      throw new Error(`${INCOMPLETE_MODEL_ERROR}: extraction failed for ${archiveFileName(url)}`)
+    }
   }
 
-  private pruneWhisperFp32(url: string): void {
-    const name = basename(new URL(url).pathname)
+  /**
+   * Same validation used for status, recognizer paths, and download skipping.
+   * Directory specs must match their pinned members; other files must be nonempty.
+   */
+  private locationState(
+    spec: Pick<ModelFileSpec, 'directoryMembers' | 'fileName' | 'role'>,
+    absolutePath = this.pathFor(spec)
+  ): InstalledFileState {
+    if (spec.directoryMembers && spec.directoryMembers.length > 0) {
+      return assessDirectoryMembers(
+        absolutePath,
+        spec.directoryMembers,
+        spec.role === 'asr-tokenizer'
+      )
+    }
+    const info = presentBytes(absolutePath)
+    return { present: info.present, bytes: info.bytes, issue: null }
+  }
+
+  private archiveLocations(url: string): { archivePath: string; marker: string; staging: string } {
+    const archivePath = join(this.modelsDir, '.downloads', archiveFileName(url))
+    return {
+      archivePath,
+      marker: `${archivePath}.extracted`,
+      staging: `${archivePath}.staging`
+    }
+  }
+
+  /** Catalog files that come out of this tar, including mirror URLs with the same name. */
+  private specsSharingArchive(url: string): readonly ModelFileSpec[] {
+    const name = archiveFileName(url)
+    return this.catalog.filter(
+      (spec) => isArchiveUrl(spec.url) && archiveFileName(spec.url) === name
+    )
+  }
+
+  private archiveOutputReady(url: string): boolean {
+    const specs = this.specsSharingArchive(url)
+    return specs.length > 0 && specs.every((spec) => this.locationState(spec).present)
+  }
+
+  private reusableArchive(archivePath: string, expected: number | null): boolean {
+    if (!existsSync(archivePath)) {
+      return false
+    }
+    const size = statSync(archivePath).size
+    return size > 0 && (expected == null || size >= expected)
+  }
+
+  /**
+   * Drop a stale marker and staging dir. Delete the archive only after it
+   * failed to produce a valid tree, so the next attempt does not reuse it.
+   * Partial published files are replaced by `publishStagedArchive`.
+   */
+  private invalidateExtract(
+    archivePath: string,
+    marker: string,
+    staging: string,
+    deleteArchive: boolean
+  ): void {
+    rmSync(marker, { force: true })
+    rmSync(staging, { recursive: true, force: true })
+    if (!deleteArchive) {
+      return
+    }
+    rmSync(archivePath, { force: true })
+    removeModelPartFiles(archivePath)
+  }
+
+  private async extractPublishedArchive(
+    url: string,
+    archivePath: string,
+    staging: string,
+    marker: string,
+    tier: AsrTierId | undefined,
+    signal?: AbortSignal
+  ): Promise<void> {
+    rmSync(staging, { recursive: true, force: true })
+    mkdirSync(staging, { recursive: true })
+    try {
+      await execFileAsync('tar', ['-xjf', archivePath, '-C', staging], signal ? { signal } : {})
+      throwIfAborted(signal, tier)
+      this.pruneWhisperFp32(url, staging)
+      const issue = this.stagedArchiveIssue(url, staging)
+      if (issue) {
+        throw new Error(issue)
+      }
+      this.publishStagedArchive(url, staging)
+      writeFileSync(marker, 'ok')
+    } finally {
+      rmSync(staging, { recursive: true, force: true })
+    }
+  }
+
+  private stagedArchiveIssue(url: string, staging: string): string | null {
+    for (const spec of this.specsSharingArchive(url)) {
+      const staged = join(staging, spec.fileName)
+      const state = this.locationState(spec, staged)
+      if (state.issue) {
+        return state.issue
+      }
+      if (!state.present) {
+        return `${INCOMPLETE_MODEL_ERROR}: missing ${spec.fileName}`
+      }
+    }
+    return null
+  }
+
+  /** Move validated top-level archive directories into the models directory. */
+  private publishStagedArchive(url: string, staging: string): void {
+    const roots = new Set<string>()
+    for (const spec of this.specsSharingArchive(url)) {
+      const parts = spec.fileName.split(/[/\\]/).filter(Boolean)
+      roots.add(parts[0] ?? spec.fileName)
+    }
+    for (const root of roots) {
+      const from = join(staging, root)
+      const to = join(this.modelsDir, root)
+      if (!existsSync(from)) {
+        throw new Error(`${INCOMPLETE_MODEL_ERROR}: archive did not contain ${root}`)
+      }
+      rmSync(to, { recursive: true, force: true })
+      renameSync(from, to)
+    }
+  }
+
+  private rethrowArchiveAbort(
+    error: unknown,
+    signal: AbortSignal | undefined,
+    tier?: AsrTierId
+  ): void {
+    throwIfAborted(signal, tier)
+    if (isModelDownloadCancelled(error)) {
+      throw error instanceof Error ? error : new Error(String(error))
+    }
+  }
+
+  private pruneWhisperFp32(url: string, root = this.modelsDir): void {
+    const name = archiveFileName(url)
     if (!name.includes('whisper')) {
       return
     }
     const dirName = name.replace(/\.tar\.bz2$/i, '')
-    const dir = join(this.modelsDir, dirName)
+    const dir = join(root, dirName)
     if (!existsSync(dir)) {
       return
     }

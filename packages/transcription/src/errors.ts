@@ -51,7 +51,7 @@ export function classifyTranscriptionFailure(err: unknown): ClassifiedError {
   if (/econnreset|etimedout|enotfound|socket hang up|http error 5|network/i.test(lower)) {
     return transcriptionError('network-transient', message)
   }
-  if (/sherpa-onnx|model missing|model not ready|native addon/i.test(lower)) {
+  if (/sherpa-onnx|model missing|model not ready|incomplete model|native addon/i.test(lower)) {
     return transcriptionError('binary-missing', message)
   }
   return transcriptionError('unknown', message)
