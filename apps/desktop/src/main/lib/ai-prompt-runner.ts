@@ -28,6 +28,7 @@ import { scopedLoggers } from '../utils/logger'
 import { createVidbeeCloudModel, resolvePiModel } from './ai-model'
 import { loadPersistedPromptRun, savePersistedPromptRun } from './ai-prompt-store'
 import { aiStore } from './ai-store'
+import { loadCloudModels } from './cloud-models'
 
 const log = scopedLoggers.ai
 const PROMPT_RUN_CHANNEL = 'ai:prompt-run'
@@ -70,11 +71,13 @@ export interface PromptAgentLike {
 }
 
 export interface PromptRunDeps {
+  getCloudModelId?: () => Promise<string | undefined>
   createAgent: (input: PromptAgentCreateInput) => PromptAgentLike
   getActiveProvider: () => ReturnType<typeof aiStore.getActiveProviderSecret>
   getPrompt: (id: string) => ReturnType<typeof aiStore.getPrompt>
   managedCancel?: (input: { requestId: string; signal: AbortSignal }) => Promise<void>
   managedRequest?: (input: {
+    modelId?: string
     downloadId?: string
     forceRegenerate?: boolean
     instruction: string
@@ -361,6 +364,9 @@ export const createPiPromptAgent = (input: PromptAgentCreateInput): PromptAgentL
 }
 
 const defaultDeps: PromptRunDeps = {
+  /** Resolve the default once so retries cannot switch models after a deployment. */
+  getCloudModelId: async () =>
+    aiStore.getCloudModelId() ?? (await loadCloudModels()).defaultModelId,
   createAgent: createPiPromptAgent,
   getActiveProvider: () => aiStore.getActiveProviderSecret(),
   getPrompt: (id) => aiStore.getPrompt(id),
@@ -387,6 +393,7 @@ const defaultDeps: PromptRunDeps = {
       const { buildCloudSubtitleEvidence } = await import('./cloud-subtitle-evidence')
       const body: Record<string, unknown> = {
         forceRegenerate: input.forceRegenerate === true,
+        modelId: input.modelId,
         instruction: input.instruction,
         messages: input.messages,
         generation: input.generation,
@@ -868,6 +875,8 @@ const startManagedPromptRun = (
     abortController.abort()
   }
 
+  const selectedModelId = aiStore.getCloudModelId() ?? undefined
+  let modelSelection: Promise<string | undefined> | undefined
   const managedRequest = deps.managedRequest ?? defaultDeps.managedRequest
   if (!managedRequest) {
     return failRun(input, 'VidBee Cloud is unavailable', 'network', deps.now(), deps.broadcast)
@@ -907,7 +916,11 @@ const startManagedPromptRun = (
   const fetchManaged: FetchFunction = async (_url, init) => {
     try {
       const openai = readJsonBody(init?.body)
+      modelSelection ??= deps.getCloudModelId
+        ? deps.getCloudModelId()
+        : Promise.resolve(selectedModelId)
       const response = await managedRequest({
+        modelId: await modelSelection,
         downloadId: input.downloadId,
         forceRegenerate: input.forceRegenerate,
         instruction,

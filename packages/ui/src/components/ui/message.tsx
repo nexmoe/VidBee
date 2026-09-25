@@ -85,12 +85,15 @@ function MessageHeader({ className, ...props }: React.ComponentProps<'div'>) {
 
 /**
  * Actions or timestamps below the bubble.
+ *
+ * Flush with ThinkingSteps and ghost answers. A default bubble can opt back
+ * into `px-3` at the call site if its content is padded.
  */
 function MessageFooter({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
       className={cn(
-        'flex min-w-0 max-w-full items-center px-3 font-medium text-muted-foreground text-xs group-has-data-[variant=ghost]/message:px-0 group-data-[align=end]/message:justify-end',
+        'flex min-w-0 max-w-full items-center font-medium text-muted-foreground text-xs group-data-[align=end]/message:justify-end',
         className
       )}
       data-slot="message-footer"

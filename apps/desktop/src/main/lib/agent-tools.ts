@@ -2,8 +2,10 @@ import type { AgentMessage, AgentTool, AgentToolResult } from '@earendil-works/p
 import { type Static, type TSchema, Type } from 'typebox'
 import type { AgentArtifact } from '../../shared/agent-chat'
 import { sanitizeAgentConversationTitle } from '../../shared/agent-history'
+import { OVERHEAD } from './agent-budget'
 import { documentPageBudget, MIN_DOCUMENT_RESULT_BYTES, readAgentDocument } from './agent-document'
 import type { AgentEvidence } from './agent-evidence'
+import { createAgentManagementTools } from './agent-management-tools'
 import {
   AGENT_NOTES_BYTES,
   AGENT_TOOL_BYTES,
@@ -12,6 +14,12 @@ import {
   agentTextPage,
   pageContentBudget
 } from './agent-memory'
+import type { AgentTranscriptSource } from './agent-run-context'
+import {
+  APPROVAL_DENIED_RESULT,
+  requiredApproval,
+  requiresInteractivePathApproval
+} from './agent-tool-approval'
 
 export interface AgentTranscriptLine {
   start: number
@@ -31,11 +39,14 @@ export interface AgentTranscriptPageLine extends AgentTranscriptLine {
 export interface AgentToolContext {
   downloadId: string
   threadId: string
+  promptId?: string
   runId: string
   title: string
   duration: number
   lines: AgentTranscriptLine[]
   timingLines?: AgentTranscriptLine[]
+  listTranscripts?: () => AgentTranscriptSource[]
+  selectTranscript?: (key: string) => AgentTranscriptSource
   artifacts?: AgentArtifact[]
   history?: () => AgentMessage[]
   evidence?: AgentEvidence
@@ -49,10 +60,18 @@ export interface AgentToolContext {
   writeArticle?: () => void
   vision: boolean
   mediaEnabled?: boolean
+  managementEnabled?: boolean
   mediaKind?: 'audio' | 'video'
   signal: AbortSignal
   onArtifact: (artifact: AgentArtifact) => void
   onProgress: (toolCallId: string, text: string) => void
+  requestApproval?: (
+    toolCallId: string,
+    request: import('../../shared/agent-chat').AgentApprovalRequest,
+    options?: { path?: boolean }
+  ) => Promise<{ approved: boolean; approvedPath: boolean }>
+  downloadPath?: string
+  pathApproved?: (toolCallId: string) => boolean
 }
 
 /** Prefer the interior of a precise subtitle cue without guessing inside merged paragraphs. */
@@ -124,7 +143,7 @@ function transcriptTable(lines: AgentTranscriptPageLine[]): Record<string, unkno
 }
 
 /** Define the schema and execution boundary together so tools cannot bypass run cancellation. */
-function defineAgentTool<T extends TSchema>(
+export function defineAgentTool<T extends TSchema>(
   context: AgentToolContext,
   name: string,
   description: string,
@@ -144,6 +163,19 @@ function defineAgentTool<T extends TSchema>(
     execute: async (id, params, signal) => {
       context.signal.throwIfAborted()
       signal?.throwIfAborted()
+      const gate = requiredApproval(name, params)
+      const pathGate = requiresInteractivePathApproval(name, params, context.downloadPath ?? '')
+      if ((gate || pathGate) && context.requestApproval) {
+        const request = gate ?? {
+          action: 'subscription.update' as const,
+          summary: 'Use a download folder outside the library',
+          risk: 'config' as const
+        }
+        const decision = await context.requestApproval(id, request, { path: pathGate })
+        if (!decision.approved) {
+          return APPROVAL_DENIED_RESULT
+        }
+      }
       const result = await execute(params, id)
       context.signal.throwIfAborted()
       const fullText = result.content
@@ -154,7 +186,7 @@ function defineAgentTool<T extends TSchema>(
       if (Buffer.byteLength(fullText) <= budget) {
         return result
       }
-      const page = agentTextPage(fullText, 0, budget, 512)
+      const page = agentTextPage(fullText, 0, budget, OVERHEAD.toolPage)
       return {
         content: [
           {
@@ -210,7 +242,25 @@ export function createAgentTools(context: AgentToolContext): AgentTool[] {
     context.onArtifact(artifact)
     return artifact
   }
-  const tools = [
+  const tools: AgentTool[] = [
+    ...(context.listTranscripts && context.selectTranscript
+      ? [
+          defineAgentTool(
+            context,
+            'list_transcripts',
+            'List ready subtitle languages for this video. The selected source is a UI default, not a required language.',
+            Type.Object({}, { additionalProperties: false }),
+            async () => textResult({ sources: context.listTranscripts?.() })
+          ),
+          defineAgentTool(
+            context,
+            'select_transcript',
+            'Choose a ready subtitle source by its exact listed key for this run. Read, search, frame timing and section writing then use it. Does not change the user interface. Previous reads belong to the previous source; read the new source as needed.',
+            Type.Object({ key: Type.String({ minLength: 1 }) }, { additionalProperties: false }),
+            async ({ key }) => textResult({ source: context.selectTranscript?.(key) })
+          )
+        ]
+      : []),
     defineAgentTool(
       context,
       'read_history',
@@ -749,19 +799,25 @@ export function createAgentTools(context: AgentToolContext): AgentTool[] {
     )
   ]
   if (context.mediaEnabled === false) {
-    return tools.filter((tool) =>
-      [
-        'get_video_info',
-        'read_transcript',
-        'search_transcript',
-        'read_history',
-        'search_history',
-        'read_notes',
-        'write_notes',
-        'rename_conversation'
-      ].includes(tool.name)
-    )
+    return [
+      ...(context.managementEnabled ? createAgentManagementTools(context) : []),
+      ...tools.filter((tool) =>
+        [
+          'list_transcripts',
+          'select_transcript',
+          'get_video_info',
+          'read_transcript',
+          'search_transcript',
+          'read_history',
+          'search_history',
+          'read_notes',
+          'write_notes',
+          'rename_conversation'
+        ].includes(tool.name)
+      )
+    ]
   }
+  tools.push(...(context.managementEnabled ? createAgentManagementTools(context) : []))
   return context.mediaKind === 'audio'
     ? tools.filter(
         (tool) => !['capture_frames', 'create_clip', 'read_artifact'].includes(tool.name)

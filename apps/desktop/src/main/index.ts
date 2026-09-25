@@ -830,6 +830,9 @@ function setupRendererErrorHandling(window: BrowserWindow): void {
 }
 
 function setupDownloadEvents(): void {
+  downloadEngine.on('download-removed', (id: string) => {
+    sendToRenderer('download:removed', id)
+  })
   downloadEngine.on('download-queued', (item: unknown) => {
     addMainBreadcrumb('download', 'Download queued')
     sendToRenderer('download:queued', item)

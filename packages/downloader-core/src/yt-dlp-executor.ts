@@ -20,7 +20,7 @@ import type {
   TaskInput,
   TaskOutput
 } from '@vidbee/task-queue'
-import { virtualError } from '@vidbee/task-queue'
+import { classify, virtualError } from '@vidbee/task-queue'
 import { killProcessTree } from '@vidbee/task-queue/process'
 import YTDlpWrap from 'yt-dlp-wrap-plus'
 import type { OneClickContainerOption } from './format-preferences'
@@ -465,7 +465,7 @@ export class YtDlpExecutor implements Executor {
           })
           return
         }
-        const error = virtualError('unknown', err.message)
+        const error = classifyYtDlpExit(null, `${stderrTail.read()}\n${err.message}`)
         finishOnce({
           taskId: ctx.taskId,
           attemptId: ctx.attemptId,
@@ -900,38 +900,9 @@ function extractSavedFilePath(rawLog: string): string | undefined {
   return undefined
 }
 
-/**
- * Map a yt-dlp non-zero exit + stderr to a ClassifiedError. The kernel's
- * own classifier handles structured retry decisions; we only need to seed
- * with a sensible category.
- */
+/** Use the queue's canonical classifier for both process errors and non-zero exits. */
 function classifyYtDlpExit(exitCode: number | null, stderr: string): ClassifiedError {
-  const txt = stderr.toLowerCase()
-  if (/(http error 429|too many requests|rate.?limit)/.test(txt)) {
-    return virtualError('http-429', stderr || `yt-dlp exited ${exitCode}`)
-  }
-  if (/(login required|requires (?:cookies|authentication)|sign in to confirm)/.test(txt)) {
-    return virtualError('auth-required', stderr || `yt-dlp exited ${exitCode}`)
-  }
-  if (/(not available in your country|geo.?restricted|geographic)/.test(txt)) {
-    return virtualError('geo-blocked', stderr || `yt-dlp exited ${exitCode}`)
-  }
-  if (/(video unavailable|not found|404)/.test(txt)) {
-    return virtualError('not-found', stderr || `yt-dlp exited ${exitCode}`)
-  }
-  if (/(no space left|disk full|enospc)/.test(txt)) {
-    return virtualError('disk-full', stderr || `yt-dlp exited ${exitCode}`)
-  }
-  if (/(permission denied|eacces)/.test(txt)) {
-    return virtualError('permission-denied', stderr || `yt-dlp exited ${exitCode}`)
-  }
-  if (/(ffmpeg|ffprobe)/.test(txt)) {
-    return virtualError('ffmpeg', stderr || `yt-dlp exited ${exitCode}`)
-  }
-  if (/(network|timeout|econnreset|enotfound|ehostunreach)/.test(txt)) {
-    return virtualError('network-transient', stderr || `yt-dlp exited ${exitCode}`)
-  }
-  return virtualError('unknown', stderr || `yt-dlp exited with code ${exitCode ?? -1}`)
+  return classify({ exitCode, stderr: stderr || `yt-dlp exited with code ${exitCode ?? -1}` })
 }
 
 interface TailBuffer {

@@ -280,7 +280,14 @@
       "subscription": "订阅"
     },
     "formatFallbackTitle": "所选格式不可用",
-    "formatFallbackHint": "所选格式拿不到流，已自动回退到 {{resolved}}。如需强制使用所选画质，请检查浏览器 cookies 或挑选非大会员档位。"
+    "formatFallbackHint": "所选格式拿不到流，已自动回退到 {{resolved}}。如需强制使用所选画质，请检查浏览器 cookies 或挑选非大会员档位。",
+    "creationSource": "创建来源",
+    "allSources": "全部来源",
+    "createdManually": "手动创建",
+    "createdByAgent": "AI 创建",
+    "createdBySubscription": "订阅",
+    "openSourceConversation": "打开来源对话",
+    "sourceFile": "源文件"
   },
   "error": {
     "title": "出了点问题",
@@ -382,7 +389,7 @@
     "home": "首页",
     "download": "下载",
     "playlist": "下载播放列表",
-    "rss": "RSS",
+    "rss": "订阅",
     "transcripts": "文稿",
     "subscriptions": "订阅",
     "preferences": "偏好设置",
@@ -978,12 +985,21 @@
       "noModelFound": "No model found.",
       "allModelsSelected": "列出的模型都已添加。",
       "loadingModels": "正在从服务商加载模型…"
-    }
+    },
+    "agentManagementTools": "智能体管理工具",
+    "agentManagementToolsDescription": "智能体能否改任务和订阅，以及是否必须先询问你",
+    "agentManagementToolsOptions": {
+      "off": "关闭",
+      "ask": "先询问",
+      "auto": "自动允许"
+    },
+    "agentMaxConcurrentRuns": "本地智能体并发数",
+    "agentMaxConcurrentRunsDescription": "使用本地模型时，最多可同时运行几段智能体对话"
   },
   "subscriptions": {
     "title": "订阅",
     "subtitle": "{{count}} 订阅{{count，复数，一个 {} 其它 {s}}}",
-    "description": "自动监控 RSS 源并对新下载进行排队，无需手动操作。",
+    "description": "自动关注订阅源并将新内容加入下载队列，无需手动操作。",
     "defaults": {
       "title": "自动化默认值",
       "description": "控制订阅下载的存储位置以及 VidBee 检查新视频的频率。",
@@ -993,8 +1009,8 @@
       "onlyLatestDescription": "启用后，VidBee 会跳过较旧的积压项目，仅获取最新上传的项目。"
     },
     "add": {
-      "title": "添加RSS",
-      "description": "粘贴 RSS 源链接。 \nVidBee 将自动检测提要。"
+      "title": "添加订阅",
+      "description": "粘贴频道或订阅链接。VidBee 会自动识别。"
     },
     "fields": {
       "url": "提要网址",
@@ -1061,8 +1077,8 @@
       "itemAlreadyQueued": "该视频已排队",
       "queueError": "无法添加到下载队列。",
       "openLinkError": "无法打开视频链接。",
-      "resolveError": "无法解析 RSS 源 URL。",
-      "duplicateUrl": "该 RSS 订阅已存在。"
+      "resolveError": "无法解析订阅链接。",
+      "duplicateUrl": "该订阅已存在。"
     },
     "detectedFeed": "检测到 {{platform}} feed -> {{feed}}",
     "detecting": "检测饲料...",
@@ -1089,7 +1105,7 @@
       "description": "将 VidBee 与 RSSHub 结合起来，可以从各种平台实现自动订阅和下载。\n设置完成后，VidBee 将在后台运行并自动下载最新的视频和内容。",
       "learnMore": "了解有关 RSSHub 的更多信息",
       "openDocs": "打开 RSSHub 文档",
-      "hint": "没有 RSS 源 URL？\n使用 RSSHub 为 YouTube、Twitter 和数千个其他平台生成 RSS 源。"
+      "hint": "没有订阅链接？使用 RSSHub 为 YouTube、Twitter 和数千个其他平台生成订阅源。"
     }
   },
   "kernelPreparation": {
@@ -1631,7 +1647,9 @@
     "eventStatus": {
       "running": "Running",
       "completed": "Completed",
-      "error": "Failed"
+      "error": "Failed",
+      "pendingApproval": "等待批准",
+      "denied": "已拒绝"
     },
     "placeholder": "Ask a follow-up about this video…",
     "send": "Send message",
@@ -1658,12 +1676,12 @@
     "thinkingOnly": "Thinking only",
     "allowDisableThinking": "Allow turning thinking off",
     "thinkingCapabilitiesHint": "当前只会展示思考开关，不会展示强度选择；如果该模型支持强度调节，请在下方选择可用档位。",
-    "defaultThinkingLevel": "默认思考强度",
-    "defaultThinkingAuto": "自动（使用请求层默认值）",
-    "supportedThinkingLevels": "支持的思考强度",
-    "inputTokens": "输入",
-    "outputTokens": "输出",
-    "providerDefault": "使用提供商默认值",
+    "defaultThinkingLevel": "Default thinking level",
+    "defaultThinkingAuto": "Auto (use request default)",
+    "supportedThinkingLevels": "Supported thinking levels",
+    "inputTokens": "Input",
+    "outputTokens": "Output",
+    "providerDefault": "Use provider default",
     "automatic": "Use model defaults",
     "enabled": "Supported",
     "disabled": "Not supported",
@@ -1674,6 +1692,9 @@
     "catalogMatched": "Matched {{name}}. Context window and capabilities were filled in.",
     "catalogBadge": "Catalog",
     "tools": {
+      "list_transcripts": "正在查看可用字幕",
+      "select_transcript": "正在选择字幕来源",
+      "load_tools": "正在查找可用功能",
       "get_video_info": "Reading video information",
       "read_transcript": "Reading transcript",
       "search_transcript": "Searching transcript",
@@ -1719,12 +1740,12 @@
     "faster": "更快",
     "smarter": "更强",
     "retrying": "Connection interrupted. Retrying…",
-    "defaultThinkingLevel": "Default thinking level",
-    "defaultThinkingAuto": "Auto (use request default)",
-    "supportedThinkingLevels": "Supported thinking levels",
-    "inputTokens": "Input",
-    "outputTokens": "Output",
-    "providerDefault": "Use provider default"
+    "approval": {
+      "allow": "允许",
+      "allowAndRemember": "允许并记住",
+      "deny": "拒绝",
+      "pending": "{{summary}}"
+    }
   },
   "web": {
     "saveToThisComputer": "Save to this computer",

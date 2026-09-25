@@ -48,7 +48,7 @@ function MessageAction({
       <TooltipTrigger asChild>
         <Button
           aria-label={label}
-          className="h-6 w-6 rounded-md text-muted-foreground [&_svg]:size-3.5"
+          className="h-6 w-6 justify-start rounded-md p-0 text-muted-foreground [&_svg]:size-3.5"
           data-testid={testId}
           disabled={disabled}
           onClick={onClick}
@@ -75,6 +75,7 @@ export function AgentChatMessageView({
   sourceTitle,
   onSeek,
   onRetry,
+  onDecideTool,
   onShare,
   onBranch
 }: {
@@ -88,6 +89,7 @@ export function AgentChatMessageView({
   sourceTitle?: string | null
   onSeek?: (seconds: number) => void
   onRetry: (id: string) => void
+  onDecideTool?: (input: { toolCallId: string; approved: boolean; remember: boolean }) => void
   onShare: (id: string) => void
   onBranch: (id: string) => void
 }) {
@@ -193,6 +195,7 @@ export function AgentChatMessageView({
           <AgentEventStream
             artifacts={artifacts}
             message={message}
+            onDecideTool={onDecideTool}
             onRetry={() => onRetry(message.id)}
             onSeek={seekSource}
             run={run}
@@ -254,7 +257,7 @@ export function AgentChatMessageView({
           </Bubble>
         ) : null}
         {message.role === 'assistant' && !running ? (
-          <MessageFooter className="-ml-0.5 gap-0">
+          <MessageFooter className="gap-0 px-0">
             <MessageAction
               disabled={!showAnswer || running || !message.text.trim()}
               label={t('transcript.promptShare')}
@@ -284,7 +287,7 @@ export function AgentChatMessageView({
                   <DropdownMenuTrigger asChild>
                     <Button
                       aria-label={t('transcript.promptMore')}
-                      className="h-6 w-6 rounded-md text-muted-foreground [&_svg]:size-3.5"
+                      className="h-6 w-6 justify-start rounded-md p-0 text-muted-foreground [&_svg]:size-3.5"
                       data-testid="transcript-prompt-more"
                       size="icon"
                       type="button"

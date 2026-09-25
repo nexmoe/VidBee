@@ -9,6 +9,7 @@ import { WhatsNewHost } from '@renderer/components/whats-new/WhatsNewDialog'
 import type { SubscriptionRule } from '@shared/types'
 import { Outlet, useNavigate, useRouteContext, useRouterState } from '@tanstack/react-router'
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
+import { useTheme } from 'next-themes'
 import {
   type CSSProperties,
   type ReactNode,
@@ -106,6 +107,7 @@ export function AppLayout() {
   const setSubscriptions = useSetAtom(setSubscriptionsAtom)
   const [settings] = useAtom(settingsAtom)
   const loadSettings = useSetAtom(loadSettingsAtom)
+  const { setTheme } = useTheme()
   const loadTranscripts = useSetAtom(loadTranscriptMapAtom)
   const upsertTranscript = useSetAtom(upsertTranscriptAtom)
   const transcriptMap = useAtomValue(transcriptMapAtom)
@@ -181,7 +183,15 @@ export function AppLayout() {
   }, [analyticsEnabled])
 
   useEffect(() => {
+    setTheme(settings.theme)
+  }, [settings.theme, setTheme])
+
+  useEffect(() => {
     loadSettings()
+    const listener = window.api.on('settings:changed', () => {
+      void loadSettings()
+    })
+    return () => window.api.removeListener('settings:changed', listener)
   }, [loadSettings])
 
   useEffect(() => {

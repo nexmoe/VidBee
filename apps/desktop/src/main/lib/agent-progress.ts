@@ -1,5 +1,7 @@
 import { createHash } from 'node:crypto'
 import type { AgentMessage } from '@earendil-works/pi-agent-core'
+import type { AgentErrorCode } from '../../shared/agent-errors'
+import { encodeAgentError, parseAgentError } from '../../shared/agent-errors'
 
 /**
  * Structural view of one assistant turn.
@@ -17,6 +19,13 @@ export interface AgentTurnLike {
 /** Structured content parts, skipping the plain-string form custom messages use. */
 const turnParts = (message: AgentTurnLike): { type: string; text?: string }[] =>
   Array.isArray(message.content) ? message.content : []
+
+const INCOMPLETE_CODES = new Set<AgentErrorCode>([
+  'TRANSPORT_LOST',
+  'STREAM_INTERRUPTED',
+  'OUTPUT_TRUNCATED',
+  'RESUME_FAILED'
+])
 
 /** A finished assistant turn with article text should settle instead of starting another writing phase. */
 export function assistantDeliveredArticle(message: AgentTurnLike): boolean {
@@ -44,17 +53,16 @@ export function assistantTurnIncomplete(message: AgentTurnLike): boolean {
   if (message.stopReason === 'length' || message.stopReason === 'pending') {
     return true
   }
-  return (
-    (message.stopReason === 'error' || message.stopReason === 'aborted') &&
-    /terminated|connection stopped|before the response finished|output limit/i.test(
-      message.errorMessage ?? ''
-    )
-  )
+  if (message.stopReason !== 'error' && message.stopReason !== 'aborted') {
+    return false
+  }
+  return INCOMPLETE_CODES.has(parseAgentError(message.errorMessage).code)
 }
 
-/** Latest unfinished assistant turn, including a half-written reply before a retry. */
+/** Recover only the latest assistant turn; later results supersede archived retry failures. */
 export function lastIncompleteAssistant<T extends AgentTurnLike>(messages: T[]): T | undefined {
-  return messages.findLast((item) => assistantTurnIncomplete(item))
+  const latest = messages.findLast((item) => item.role === 'assistant')
+  return latest && assistantTurnIncomplete(latest) ? latest : undefined
 }
 
 /**
@@ -76,10 +84,17 @@ export function truncatedAgentRecovery(input: {
 
 /** Prefer the provider stop over the generic incomplete-run fallback. */
 export function agentIncompleteRunError(last?: AgentTurnLike): string | undefined {
-  if (last?.role === 'assistant' && last.stopReason === 'length') {
-    return 'The AI response reached its output limit before completion.'
+  if (last?.role !== 'assistant') {
+    return undefined
   }
-  return last?.role === 'assistant' ? last.errorMessage : undefined
+  if (last.stopReason === 'length') {
+    return encodeAgentError({
+      code: 'OUTPUT_TRUNCATED',
+      message: 'The AI response reached its output limit before completion.',
+      retryable: true
+    })
+  }
+  return last.errorMessage ? encodeAgentError(parseAgentError(last.errorMessage)) : undefined
 }
 
 /** Ask a truncated turn to spend the next completion on the answer, not more reasoning. */
@@ -150,4 +165,17 @@ export class AgentProgressGuard {
     this.stalled = progressed ? 0 : this.stalled + 1
     return this.stalled >= 6
   }
+}
+
+/** Resume a failed article retry in bounded sections, never a cancelled or permanently rejected run. */
+export function retryArticleInSections(input: {
+  previous?: { status: string; error: string | null; errorCode?: AgentErrorCode }
+  sourceReady: boolean
+  isChat: boolean
+}): boolean {
+  if (input.isChat || !input.sourceReady || input.previous?.status !== 'error') {
+    return false
+  }
+  const code = input.previous.errorCode ?? parseAgentError(input.previous.error ?? '').code
+  return INCOMPLETE_CODES.has(code)
 }

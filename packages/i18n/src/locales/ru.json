@@ -280,7 +280,14 @@
     "cookiesSetupKeyring": "Эта сборка Linux не может читать cookies Chrome. Используйте Firefox или импортируйте файл cookies.",
     "cookiesSetupStale": "Текущие cookies устарели или заблокированы. Обновите вход и повторите попытку.",
     "cookiesSetupRetry": "Повторить загрузку",
-    "cookiesSetupDone": "Готово"
+    "cookiesSetupDone": "Готово",
+    "creationSource": "Источник создания",
+    "allSources": "Все источники",
+    "createdManually": "Создано вручную",
+    "createdByAgent": "Создано ИИ",
+    "createdBySubscription": "Подписка",
+    "openSourceConversation": "Открыть исходный чат",
+    "sourceFile": "Исходный файл"
   },
   "error": {
     "title": "Что-то пошло не так",
@@ -382,7 +389,7 @@
     "home": "Главная",
     "download": "Загрузить",
     "playlist": "Загрузить плейлист",
-    "rss": "RSS",
+    "rss": "Подписки",
     "transcripts": "Расшифровки",
     "subscriptions": "Подписки",
     "preferences": "Настройки",
@@ -978,12 +985,21 @@
       "extensionInstallStep1": "Install the VidBee extension in Chrome, Edge, or Firefox",
       "extensionInstallStep2": "Keep VidBee Desktop running so the extension can connect",
       "extensionInstallStep3": "Sign in to YouTube, Bilibili, or other sites in that browser, then open the VidBee toolbar icon once"
-    }
+    },
+    "agentManagementTools": "Инструменты управления агентом",
+    "agentManagementToolsDescription": "Может ли агент менять задачи и подписки и должен ли сначала спросить",
+    "agentManagementToolsOptions": {
+      "off": "Выкл.",
+      "ask": "Сначала спросить",
+      "auto": "Разрешать автоматически"
+    },
+    "agentMaxConcurrentRuns": "Параллельные локальные запуски",
+    "agentMaxConcurrentRunsDescription": "Сколько диалогов агента с локальной моделью могут идти одновременно"
   },
   "subscriptions": {
     "title": "Подписки",
     "subtitle": "{{count}} подписка{{count, plural, one {} other {}}}",
-    "description": "Автоматически отслеживайте RSS-каналы и добавляйте новые загрузки в очередь без ручной работы.",
+    "description": "Автоматически отслеживайте каналы и добавляйте новые загрузки в очередь без ручной работы.",
     "defaults": {
       "title": "Настройки автоматизации по умолчанию",
       "description": "Управляйте, где хранятся загрузки подписок и как часто VidBee проверяет новые видео.",
@@ -993,8 +1009,8 @@
       "onlyLatestDescription": "При включении VidBee пропускает старые элементы из очереди и загружает только последнюю загрузку."
     },
     "add": {
-      "title": "Добавить RSS",
-      "description": "Вставьте ссылку на RSS-канал. VidBee автоматически определит канал."
+      "title": "Добавить подписку",
+      "description": "Вставьте ссылку на канал или ленту. VidBee определит её автоматически."
     },
     "fields": {
       "url": "URL канала",
@@ -1061,8 +1077,8 @@
       "itemAlreadyQueued": "Это видео уже в очереди",
       "queueError": "Не удалось добавить в очередь загрузки.",
       "openLinkError": "Не удалось открыть ссылку на видео.",
-      "resolveError": "Не удалось разрешить URL RSS-канала.",
-      "duplicateUrl": "Этот RSS-канал уже добавлен."
+      "resolveError": "Не удалось определить URL подписки.",
+      "duplicateUrl": "Эта подписка уже добавлена."
     },
     "detectedFeed": "Обнаружен канал {{platform}} -> {{feed}}",
     "detecting": "Определение канала...",
@@ -1089,7 +1105,7 @@
       "description": "Объедините VidBee с RSSHub для включения автоматических подписок и загрузок с различных платформ. После настройки VidBee работает в фоновом режиме и автоматически загружает последние видео и контент.",
       "learnMore": "Узнать больше о RSSHub",
       "openDocs": "Открыть документацию RSSHub",
-      "hint": "Нет URL RSS-канала? Используйте RSSHub для создания RSS-каналов для YouTube, Twitter и тысяч других платформ."
+      "hint": "Нет URL ленты? Используйте RSSHub, чтобы создать ленты для YouTube, Twitter и тысяч других платформ."
     }
   },
   "kernelPreparation": {
@@ -1631,7 +1647,9 @@
     "eventStatus": {
       "running": "Running",
       "completed": "Completed",
-      "error": "Failed"
+      "error": "Failed",
+      "pendingApproval": "Ожидает подтверждения",
+      "denied": "Отклонено"
     },
     "placeholder": "Ask a follow-up about this video…",
     "send": "Send message",
@@ -1658,12 +1676,12 @@
     "thinkingOnly": "Thinking only",
     "allowDisableThinking": "Allow turning thinking off",
     "thinkingCapabilitiesHint": "Сейчас показывается только переключатель размышления, без уровней интенсивности. Если модель поддерживает уровни, выберите их ниже.",
-    "defaultThinkingLevel": "Уровень размышления по умолчанию",
-    "defaultThinkingAuto": "Авто (значение по умолчанию слоя запроса)",
-    "supportedThinkingLevels": "Поддерживаемые уровни размышления",
-    "inputTokens": "Ввод",
-    "outputTokens": "Вывод",
-    "providerDefault": "Использовать значение провайдера",
+    "defaultThinkingLevel": "Default thinking level",
+    "defaultThinkingAuto": "Auto (use request default)",
+    "supportedThinkingLevels": "Supported thinking levels",
+    "inputTokens": "Input",
+    "outputTokens": "Output",
+    "providerDefault": "Use provider default",
     "automatic": "Use model defaults",
     "enabled": "Supported",
     "disabled": "Not supported",
@@ -1674,6 +1692,9 @@
     "catalogMatched": "Matched {{name}}. Context window and capabilities were filled in.",
     "catalogBadge": "Catalog",
     "tools": {
+      "list_transcripts": "Проверка доступных субтитров",
+      "select_transcript": "Выбор источника субтитров",
+      "load_tools": "Поиск доступных возможностей",
       "get_video_info": "Reading video information",
       "read_transcript": "Reading transcript",
       "search_transcript": "Searching transcript",
@@ -1719,12 +1740,12 @@
     "faster": "Быстрее",
     "smarter": "Умнее",
     "retrying": "Connection interrupted. Retrying…",
-    "defaultThinkingLevel": "Default thinking level",
-    "defaultThinkingAuto": "Auto (use request default)",
-    "supportedThinkingLevels": "Supported thinking levels",
-    "inputTokens": "Input",
-    "outputTokens": "Output",
-    "providerDefault": "Use provider default"
+    "approval": {
+      "allow": "Разрешить",
+      "allowAndRemember": "Разрешить и запомнить",
+      "deny": "Отклонить",
+      "pending": "{{summary}}"
+    }
   },
   "web": {
     "saveToThisComputer": "Save to this computer",

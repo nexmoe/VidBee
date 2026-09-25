@@ -119,6 +119,7 @@ export type { SubtitleDownloadSkipReason } from './yt-dlp-args'
 export {
   appendYouTubeSafeExtractorArgs,
   assertDownloadSourceUrl,
+  buildCaptionExtractArgs,
   buildDownloadArgs,
   buildPlaylistInfoArgs,
   buildVideoInfoArgs,

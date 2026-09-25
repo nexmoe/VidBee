@@ -6,7 +6,9 @@ export const TaskKindSchema = z.enum([
   'playlist',
   'subscription-item',
   'yt-dlp-forward',
-  'transcription'
+  'transcription',
+  'conversion',
+  'model-download'
 ])
 
 export const TaskStatusSchema = z.enum([
@@ -138,6 +140,8 @@ export const AddOutputSchema = z.object({ id: z.string() })
 export const TaskIdInputSchema = z.object({ id: z.string() })
 
 export const ListInputSchema = z.object({
+  query: z.string().max(200).optional(),
+  kind: TaskKindSchema.optional(),
   status: TaskStatusSchema.optional(),
   groupKey: z.string().optional(),
   parentId: z.string().optional(),

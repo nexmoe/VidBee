@@ -1,4 +1,4 @@
-import type { TaskInput } from '@vidbee/task-queue'
+import type { TaskCreationMetadata, TaskInput } from '@vidbee/task-queue'
 import { DEFAULT_ASR_TIER, parseAsrTier } from './asr-tiers'
 import { DEFAULT_SPEAKER_COUNT, parseSpeakerCount } from './speaker-count'
 import type { TranscriptionTaskOptions, TranscriptionTrigger } from './types'
@@ -20,19 +20,16 @@ const readOptionalLanguage = (value: unknown): string | undefined => {
 export const isTranscriptionTrigger = (value: unknown): value is TranscriptionTrigger =>
   value === 'manual' || value === 'auto' || value === 'force'
 
-export function readTranscriptionOptions(
-  input: TaskInput
-): TranscriptionTaskOptions | null {
+export function readTranscriptionOptions(input: TaskInput): TranscriptionTaskOptions | null {
   const raw = (input.options ?? {}) as Record<string, unknown>
-  const downloadTaskId =
-    typeof raw.downloadTaskId === 'string' ? raw.downloadTaskId : null
+  const downloadTaskId = typeof raw.downloadTaskId === 'string' ? raw.downloadTaskId : null
   const sourceFilePath =
     typeof raw.sourceFilePath === 'string'
       ? raw.sourceFilePath
       : input.url.startsWith('file:')
         ? input.url.slice('file://'.length)
         : input.url
-  if (!downloadTaskId || !sourceFilePath) {
+  if (!(downloadTaskId && sourceFilePath)) {
     return null
   }
   return {
@@ -47,14 +44,17 @@ export function readTranscriptionOptions(
   }
 }
 
+/** Build executor options and preserve the trusted caller's task provenance. */
 export function buildTranscriptionInput(
-  opts: TranscriptionTaskOptions & { title?: string }
+  opts: TranscriptionTaskOptions & { title?: string; creation?: TaskCreationMetadata }
 ): TaskInput {
   return {
     url: `vidbee://download/${opts.downloadTaskId}`,
     kind: 'transcription',
     title: opts.title,
     options: {
+      origin: 'manual',
+      ...opts.creation,
       downloadTaskId: opts.downloadTaskId,
       sourceFilePath: opts.sourceFilePath,
       trigger: opts.trigger,

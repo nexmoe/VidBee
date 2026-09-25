@@ -18,7 +18,7 @@ import { EventEmitter } from 'node:events'
 import path from 'node:path'
 
 import {
-  isDownloadTaskKind,
+  isMediaTaskKind,
   PRIORITY_USER,
   type Task,
   type TaskInput,
@@ -147,6 +147,17 @@ const buildTaskInput = (id: string, options: DownloadOptions): TaskInput => {
   }
 }
 
+/** Share metadata, directory and settings preparation with callers that await queue admission. */
+export const prepareDownloadTaskInput = async (
+  id: string,
+  options: DownloadOptions
+): Promise<TaskInput> => {
+  const hydrated = await hydrateDownloadMetadata(options)
+  const resolved = applyAutoVideoDownloadPath(hydrated, settingsManager.getAll())
+  ensureDirectoryExists(resolved.customDownloadPath)
+  return buildTaskInput(id, resolved)
+}
+
 class DownloadFacade extends EventEmitter {
   private subscribed = false
   /** Accumulated live yt-dlp output per active task, replayed to the renderer via `download-log`. */
@@ -164,8 +175,12 @@ class DownloadFacade extends EventEmitter {
     }
     this.subscribed = true
     const queue = this.queue
+    queue.on('task-removed', (event) => {
+      this.logBuffers.delete(event.taskId)
+      this.emit('download-removed', event.taskId)
+    })
     queue.on('snapshot-changed', (event) => {
-      if (!isDownloadTaskKind(event.task.kind)) {
+      if (!isMediaTaskKind(event.task.kind)) {
         return
       }
       const item = projectTaskForRenderer(event.task)
@@ -173,7 +188,7 @@ class DownloadFacade extends EventEmitter {
     })
     queue.on('transition', (event) => {
       const task = queue.get(event.taskId)
-      if (!(task && isDownloadTaskKind(task.kind))) {
+      if (!(task && isMediaTaskKind(task.kind))) {
         return
       }
       const item = projectTaskForRenderer(task)
@@ -255,20 +270,15 @@ class DownloadFacade extends EventEmitter {
         if (pending.cancelled) {
           return
         }
-        const hydratedOptions = await hydrateDownloadMetadata(options)
+        const input = await prepareDownloadTaskInput(id, options)
         if (pending.cancelled) {
           return
         }
-        const pathResolvedOptions = applyAutoVideoDownloadPath(
-          hydratedOptions,
-          settingsManager.getAll()
-        )
-        ensureDirectoryExists(pathResolvedOptions.customDownloadPath)
         // Pass the renderer-generated id through so optimistic-UI rows merge
         // with the real task instead of showing as two separate entries.
         await this.queue.add({
           id,
-          input: buildTaskInput(id, pathResolvedOptions),
+          input,
           priority: PRIORITY_USER
         })
         if (pending.cancelled) {
@@ -468,7 +478,7 @@ class DownloadFacade extends EventEmitter {
     do {
       const page = this.queue.list({ limit: 200, cursor })
       for (const t of page.tasks) {
-        if (NON_TERMINAL.has(t.status) && isDownloadTaskKind(t.kind)) {
+        if (NON_TERMINAL.has(t.status) && isMediaTaskKind(t.kind)) {
           active.push(projectTaskForRenderer(t))
         }
       }

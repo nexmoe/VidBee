@@ -119,6 +119,18 @@ export class SqlitePersistAdapter implements PersistAdapter {
     tx.immediate(input.task, input.progress)
   }
 
+  /** Commit all source references together so retries never see a partially moved file. */
+  async upsertTasks(inputs: PersistTransitionInput[]): Promise<void> {
+    this.ensureStmts()
+    const tx = this.db.transaction(() => {
+      for (const { task, progress } of inputs) {
+        this.stmts.upsertTask.run(...this.bindTask(task))
+        this.stmts.upsertProgress.run(JSON.stringify(progress), task.id)
+      }
+    })
+    tx.immediate()
+  }
+
   async upsertProgress(taskId: string, progress: TaskProgress): Promise<void> {
     this.ensureStmts()
     this.stmts.upsertProgress.run(JSON.stringify(progress), taskId)
@@ -215,7 +227,9 @@ export class SqlitePersistAdapter implements PersistAdapter {
   async loadLatestAttempt(taskId: string): Promise<AttemptRow | null> {
     this.ensureStmts()
     const row = this.stmts.loadLatestAttempt.get(taskId) as AttemptDbRow | undefined
-    if (!row) return null
+    if (!row) {
+      return null
+    }
     return {
       id: row.id,
       taskId: row.task_id,
@@ -263,7 +277,9 @@ export class SqlitePersistAdapter implements PersistAdapter {
   }
 
   private ensureStmts(): void {
-    if (this.stmts) return
+    if (this.stmts) {
+      return
+    }
     this.stmts = {
       insertTask: this.db.prepare(SQL_INSERT_TASK),
       upsertTask: this.db.prepare(SQL_UPSERT_TASK),

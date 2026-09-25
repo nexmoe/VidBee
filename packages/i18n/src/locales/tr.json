@@ -280,7 +280,14 @@
     "cookiesSetupKeyring": "Bu Linux sürümü Chrome çerezlerini okuyamaz. Firefox kullanın veya bir çerez dosyası içe aktarın.",
     "cookiesSetupStale": "Geçerli çerezler süresi dolmuş veya engellenmiş görünüyor. Girişi yenileyip yeniden deneyin.",
     "cookiesSetupRetry": "İndirmeyi yeniden dene",
-    "cookiesSetupDone": "Bitti"
+    "cookiesSetupDone": "Bitti",
+    "creationSource": "Oluşturma kaynağı",
+    "allSources": "Tüm kaynaklar",
+    "createdManually": "Elle oluşturuldu",
+    "createdByAgent": "YZ oluşturdu",
+    "createdBySubscription": "Abonelik",
+    "openSourceConversation": "Kaynak konuşmayı aç",
+    "sourceFile": "Kaynak dosya"
   },
   "error": {
     "title": "Bir sorun oluştu",
@@ -382,7 +389,7 @@
     "home": "Ana sayfa",
     "download": "İndir",
     "playlist": "Oynatma listesini indir",
-    "rss": "RSS",
+    "rss": "Abone",
     "transcripts": "Deşifreler",
     "subscriptions": "Abonelikler",
     "preferences": "Tercihler",
@@ -978,12 +985,21 @@
       "extensionInstallStep1": "Install the VidBee extension in Chrome, Edge, or Firefox",
       "extensionInstallStep2": "Keep VidBee Desktop running so the extension can connect",
       "extensionInstallStep3": "Sign in to YouTube, Bilibili, or other sites in that browser, then open the VidBee toolbar icon once"
-    }
+    },
+    "agentManagementTools": "Ajan yönetim araçları",
+    "agentManagementToolsDescription": "Ajanın görevleri ve abonelikleri değiştirip değiştiremeyeceği ve önce sorup sormayacağı",
+    "agentManagementToolsOptions": {
+      "off": "Kapalı",
+      "ask": "Önce sor",
+      "auto": "Otomatik izin ver"
+    },
+    "agentMaxConcurrentRuns": "Eşzamanlı yerel ajan çalıştırmaları",
+    "agentMaxConcurrentRunsDescription": "Yerel model kullanırken aynı anda kaç ajan konuşmasının çalışabileceği"
   },
   "subscriptions": {
     "title": "Abonelikler",
     "subtitle": "{{count}} subscription{{count, plural, one {} other {s}}}",
-    "description": "RSS beslemelerini otomatik olarak izleyin ve manuel işlem yapmadan yeni indirmeleri sıraya alın.",
+    "description": "Kanalları otomatik izleyin ve yeni indirmeleri elle iş yapmadan sıraya alın.",
     "defaults": {
       "title": "Otomasyon varsayılanları",
       "description": "Abonelik indirmelerinin nerede depolanacağını ve VidBee'nin yeni videoları ne sıklıkla kontrol edeceğini kontrol edin.",
@@ -993,8 +1009,8 @@
       "onlyLatestDescription": "Etkinleştirildiğinde, VidBee eski bekleyen öğeleri atlar ve yalnızca en yeni yüklemeleri alır."
     },
     "add": {
-      "title": "RSS Ekle",
-      "description": "Bir RSS besleme bağlantısını yapıştırın. VidBee beslemeyi otomatik olarak algılayacaktır."
+      "title": "Abonelik ekle",
+      "description": "Bir kanal veya besleme bağlantısı yapıştırın. VidBee otomatik olarak algılar."
     },
     "fields": {
       "url": "Besleme URL'i",
@@ -1054,7 +1070,7 @@
       "missingUrl": "Lütfen önce bir kanal bağlantısı yapıştırın.",
       "created": "Abonelik eklendi",
       "createError": "Abonelik eklenemedi.",
-      "duplicateUrl": "Bu RSS beslemesine zaten abone olundu.",
+      "duplicateUrl": "Bu abonelik zaten ekli.",
       "refreshStarted": "Yenileme başladı",
       "removed": "Abonelik kaldırıldı",
       "updated": "Abonelik güncellendi",
@@ -1062,7 +1078,7 @@
       "itemAlreadyQueued": "Bu video zaten sıraya alınmış",
       "queueError": "İndirme kuyruğuna eklenemedi.",
       "openLinkError": "Video bağlantısı açılamadı.",
-      "resolveError": "RSS besleme URL'i çözülemedi."
+      "resolveError": "Abonelik URL’si çözülemedi."
     },
     "detectedFeed": "Algılanan {{platform}} beslemesi -> {{feed}}",
     "detecting": "Besleme algılanıyor...",
@@ -1089,7 +1105,7 @@
       "description": "VidBee'yi RSSHub ile birleştirerek çeşitli platformlardan otomatik abonelik ve indirme özelliğini etkinleştirin. Kurulum tamamlandıktan sonra VidBee arka planda çalışır ve en son videoları ve içerikleri otomatik olarak indirir.",
       "learnMore": "RSSHub hakkında daha fazla bilgi edinin",
       "openDocs": "RSSHub Dökümantasyonunu Aç",
-      "hint": "RSS besleme URL'iniz yok mu? RSSHub'ı kullanarak YouTube, Twitter ve binlerce diğer platform için RSS beslemeleri oluşturun."
+      "hint": "Besleme URL’niz yok mu? RSSHub ile YouTube, Twitter ve binlerce başka platform için besleme oluşturun."
     }
   },
   "kernelPreparation": {
@@ -1631,7 +1647,9 @@
     "eventStatus": {
       "running": "Running",
       "completed": "Completed",
-      "error": "Failed"
+      "error": "Failed",
+      "pendingApproval": "Onay bekleniyor",
+      "denied": "Reddedildi"
     },
     "placeholder": "Ask a follow-up about this video…",
     "send": "Send message",
@@ -1658,12 +1676,12 @@
     "thinkingOnly": "Thinking only",
     "allowDisableThinking": "Allow turning thinking off",
     "thinkingCapabilitiesHint": "Arayüz şu anda düşünme anahtarını gösterir, yoğunluk düzeylerini değil. Model düzey destekliyorsa aşağıdaki kullanılabilir düzeyleri seçin.",
-    "defaultThinkingLevel": "Varsayılan düşünme düzeyi",
-    "defaultThinkingAuto": "Otomatik (istek katmanı varsayılanını kullan)",
-    "supportedThinkingLevels": "Desteklenen düşünme düzeyleri",
-    "inputTokens": "Girdi",
-    "outputTokens": "Çıktı",
-    "providerDefault": "Sağlayıcı varsayılanını kullan",
+    "defaultThinkingLevel": "Default thinking level",
+    "defaultThinkingAuto": "Auto (use request default)",
+    "supportedThinkingLevels": "Supported thinking levels",
+    "inputTokens": "Input",
+    "outputTokens": "Output",
+    "providerDefault": "Use provider default",
     "automatic": "Use model defaults",
     "enabled": "Supported",
     "disabled": "Not supported",
@@ -1674,6 +1692,9 @@
     "catalogMatched": "Matched {{name}}. Context window and capabilities were filled in.",
     "catalogBadge": "Catalog",
     "tools": {
+      "list_transcripts": "Kullanılabilir altyazılar kontrol ediliyor",
+      "select_transcript": "Altyazı kaynağı seçiliyor",
+      "load_tools": "Kullanılabilir özellikler aranıyor",
       "get_video_info": "Reading video information",
       "read_transcript": "Reading transcript",
       "search_transcript": "Searching transcript",
@@ -1719,12 +1740,12 @@
     "faster": "Daha hızlı",
     "smarter": "Daha zeki",
     "retrying": "Connection interrupted. Retrying…",
-    "defaultThinkingLevel": "Default thinking level",
-    "defaultThinkingAuto": "Auto (use request default)",
-    "supportedThinkingLevels": "Supported thinking levels",
-    "inputTokens": "Input",
-    "outputTokens": "Output",
-    "providerDefault": "Use provider default"
+    "approval": {
+      "allow": "İzin ver",
+      "allowAndRemember": "İzin ver ve hatırla",
+      "deny": "Reddet",
+      "pending": "{{summary}}"
+    }
   },
   "web": {
     "saveToThisComputer": "Save to this computer",

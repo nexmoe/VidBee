@@ -1,3 +1,6 @@
+import type { AgentMessage } from '@earendil-works/pi-agent-core'
+import type { AgentErrorCode } from './agent-errors'
+
 export const AGENT_THINKING_LEVELS = [
   'off',
   'minimal',
@@ -37,6 +40,21 @@ export interface AgentImageAttachment {
 
 /** Durable product types shared by the renderer and desktop runtime. */
 export type AgentRunStatus = 'running' | 'completed' | 'aborted' | 'error' | 'interrupted'
+export type AgentToolCallStatus = 'running' | 'completed' | 'error' | 'pending-approval' | 'denied'
+export type AgentApprovalAction =
+  | 'task.create'
+  | 'task.cancel'
+  | 'task.remove'
+  | 'task.rename'
+  | 'task.rename_file'
+  | 'subscription.add'
+  | 'subscription.update'
+  | 'subscription.remove'
+export interface AgentApprovalRequest {
+  action: AgentApprovalAction
+  summary: string
+  risk: 'destructive' | 'config' | 'network'
+}
 export interface AgentArtifact {
   id: string
   threadId: string
@@ -84,15 +102,19 @@ export interface AgentChatRun {
   messageId: string
   status: AgentRunStatus
   error: string | null
+  errorCode?: AgentErrorCode
   model: string
   instruction: string
   createdAt: number
   updatedAt: number
-  rawMessages: unknown[]
+  /** In-memory only for the duration of a run; the store strips this on write. */
+  rawMessages: AgentMessage[]
   sessionEntries?: unknown[]
   evidenceCoverage?: Record<string, [number, number][]>
   evidenceSource?: string
   fullSourceReview?: boolean
+  /** Lines of source the application supplied before the first turn, shown as a read in the activity. */
+  preloadedSourceLines?: number
   articleSections?: unknown[]
   articleReview?: {
     status?: 'passed' | 'issues' | 'unavailable'
@@ -106,7 +128,13 @@ export interface AgentChatRun {
     messageCount: number
     status: 'retrying' | 'compacting' | 'recovering'
   }[]
-  tools: { id: string; name: string; status: 'running' | 'completed' | 'error'; detail?: string }[]
+  tools: {
+    id: string
+    name: string
+    status: AgentToolCallStatus
+    detail?: string
+    approval?: AgentApprovalRequest
+  }[]
   usage?: {
     input: number
     output: number
@@ -134,6 +162,8 @@ export interface AgentThread {
   runs: AgentChatRun[]
   artifacts: AgentArtifact[]
   images?: AgentImageAttachment[]
+  /** ApprovalAction names the user asked this thread to remember. */
+  toolGrants?: string[]
 }
 /** Compact conversation row for the transcript history drawer. */
 export interface AgentThreadSummary {
@@ -159,7 +189,8 @@ export interface AgentChatInput {
   promptId: string
   /** When set, send to this conversation instead of the prompt's get-or-create thread. */
   threadId?: string
-  transcriptText: string
+  /** Optional; omitted when Desktop already has a stored transcript record. */
+  transcriptText?: string
   text?: string
   imageIds?: string[]
   retryMessageId?: string

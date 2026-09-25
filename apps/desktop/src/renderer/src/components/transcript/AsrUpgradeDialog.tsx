@@ -54,6 +54,7 @@ export function AsrUpgradeDialog({
           prev ?? {
             bytes: 0,
             downloads: [],
+            pendingTiers: [],
             ready: false,
             recommended: [],
             tiers: []

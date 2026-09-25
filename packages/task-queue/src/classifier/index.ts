@@ -99,7 +99,7 @@ export const CLASSIFIER_RULES: readonly Rule[] = [
     regex: /ffmpeg|Postprocessing|Conversion failed/i,
     exitCodeHint: null,
     defaultMaxAttempts: 1,
-    defaultBackoffMs: 5_000,
+    defaultBackoffMs: 5000,
     uiActionHints: ['report-bug'],
     uiMessageKey: 'task.error.ffmpeg'
   },
@@ -119,7 +119,7 @@ export const CLASSIFIER_RULES: readonly Rule[] = [
     regex: null,
     exitCodeHint: null,
     defaultMaxAttempts: 3,
-    defaultBackoffMs: 5_000,
+    defaultBackoffMs: 5000,
     uiActionHints: ['retry'],
     uiMessageKey: 'task.error.stalled'
   },
@@ -160,7 +160,9 @@ const RULE_BY_CATEGORY: ReadonlyMap<ErrorCategory, Rule> = new Map(
 
 export function getRuleForCategory(c: ErrorCategory): Rule {
   const r = RULE_BY_CATEGORY.get(c)
-  if (!r) throw new Error(`no rule for category ${c}`)
+  if (!r) {
+    throw new Error(`no rule for category ${c}`)
+  }
   return r
 }
 
@@ -169,10 +171,8 @@ const SECRET_PATTERNS: readonly RegExp[] = [
   // Authorization / cookie / api key headers
   /(authorization|cookie|x-api-key|x-auth-token):\s*([^\r\n]+)/gi,
   // Inline cookies/tokens that yt-dlp may print as flags
-  /(--cookies-from-browser\s+\S+\s+--cookies\s+\S+)/gi,
-  /token=([A-Za-z0-9_\-.]+)/gi,
-  /secret=([A-Za-z0-9_\-.]+)/gi,
-  /password=([^\s&]+)/gi
+  /(--cookies(?:-from-browser)?)\s+("[^"]*"|'[^']*'|\S+)/gi,
+  /(token|secret|password)=([^\s&]+)/gi
 ]
 
 /**
@@ -192,7 +192,9 @@ export function sanitizeOutput(s: string): string {
 }
 
 export function takeStderrTail(s: string, bytes = STDERR_TAIL_BYTES): string {
-  if (Buffer.byteLength(s, 'utf8') <= bytes) return s
+  if (Buffer.byteLength(s, 'utf8') <= bytes) {
+    return s
+  }
   // We work in characters here; close enough for tail-of-log purposes and
   // never longer than `bytes` bytes after the slice.
   while (Buffer.byteLength(s, 'utf8') > bytes) {
@@ -207,16 +209,24 @@ export function takeStderrTail(s: string, bytes = STDERR_TAIL_BYTES): string {
  * failure or if the header is absent.
  */
 export function parseRetryAfter(header: string | null | undefined): number | null {
-  if (!header) return null
+  if (!header) {
+    return null
+  }
   const trimmed = header.trim()
-  if (!trimmed) return null
+  if (!trimmed) {
+    return null
+  }
   if (/^\d+$/.test(trimmed)) {
     const secs = Number.parseInt(trimmed, 10)
-    if (Number.isFinite(secs) && secs >= 0) return secs * 1000
+    if (Number.isFinite(secs) && secs >= 0) {
+      return secs * 1000
+    }
     return null
   }
   const t = Date.parse(trimmed)
-  if (Number.isNaN(t)) return null
+  if (Number.isNaN(t)) {
+    return null
+  }
   const delta = t - Date.now()
   return delta > 0 ? delta : 0
 }
@@ -239,7 +249,9 @@ export function classify(input: ClassifyInput): ClassifiedError {
   const sanitizedTail = sanitizeOutput(tail)
 
   for (const rule of CLASSIFIER_RULES) {
-    if (!rule.regex) continue
+    if (!rule.regex) {
+      continue
+    }
     if (
       rule.regex.test(tail) ||
       (rule.exitCodeHint != null && input.exitCode === rule.exitCodeHint)
@@ -257,10 +269,7 @@ export function classify(input: ClassifyInput): ClassifiedError {
  * `cancelled-by-user`). No stderr regex is consulted; the rule's defaults are
  * used directly.
  */
-export function virtualError(
-  category: ErrorCategory,
-  rawMessage: string
-): ClassifiedError {
+export function virtualError(category: ErrorCategory, rawMessage: string): ClassifiedError {
   const rule = getRuleForCategory(category)
   return {
     category,
@@ -273,22 +282,20 @@ export function virtualError(
   }
 }
 
-function buildError(
-  rule: Rule,
-  sanitizedTail: string,
-  input: ClassifyInput
-): ClassifiedError {
+function buildError(rule: Rule, sanitizedTail: string, input: ClassifyInput): ClassifiedError {
   let suggestedRetryAfterMs = rule.defaultBackoffMs
   if (rule.category === 'http-429') {
     const fromInput = parseRetryAfter(input.retryAfterHeader ?? null)
-    if (fromInput != null) {
-      suggestedRetryAfterMs = fromInput
-    } else {
+    if (fromInput == null) {
       const m = sanitizedTail.match(RETRY_AFTER_REGEX)
       if (m && m[1]) {
         const fromTail = parseRetryAfter(m[1])
-        if (fromTail != null) suggestedRetryAfterMs = fromTail
+        if (fromTail != null) {
+          suggestedRetryAfterMs = fromTail
+        }
       }
+    } else {
+      suggestedRetryAfterMs = fromInput
     }
   }
   return {

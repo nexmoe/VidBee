@@ -12,7 +12,7 @@ import Parser from 'rss-parser'
 import type { ParsedFeed, ParsedFeedItem } from './types'
 
 export interface FeedFetcher {
-  fetch(feedUrl: string): Promise<ParsedFeed>
+  fetch(feedUrl: string, signal?: AbortSignal): Promise<ParsedFeed>
 }
 
 const customFields = {
@@ -23,7 +23,7 @@ const customFields = {
     ['enclosure', 'enclosure'],
     ['content:encoded', 'contentEncoded'],
     ['description', 'description']
-  ] as Array<[string, string]>
+  ] as [string, string][]
 }
 
 /**
@@ -84,7 +84,11 @@ const toHttpsUrl = (feedUrl: string): string | null => {
  *
  * @param feedUrl Absolute HTTP(S) feed URL
  */
-const fetchFeedBody = async (feedUrl: string): Promise<string> => {
+const fetchFeedBody = async (
+  feedUrl: string,
+  signal?: AbortSignal
+): Promise<{ body: string; url: string }> => {
+  signal?.throwIfAborted()
   const controller = new AbortController()
   const timer = setTimeout(() => {
     controller.abort()
@@ -94,13 +98,14 @@ const fetchFeedBody = async (feedUrl: string): Promise<string> => {
       method: 'GET',
       redirect: 'follow',
       headers: RSS_FETCH_HEADERS,
-      signal: controller.signal
+      signal: signal ? AbortSignal.any([controller.signal, signal]) : controller.signal
     })
     if (!response.ok) {
       throw new Error(`Status code ${response.status}`)
     }
-    return await response.text()
+    return { body: await response.text(), url: response.url || feedUrl }
   } catch (error) {
+    signal?.throwIfAborted()
     if (error instanceof Error && error.name === 'AbortError') {
       throw new Error(`Request timed out after ${RSS_FETCH_TIMEOUT_MS}ms`)
     }
@@ -115,16 +120,57 @@ const fetchFeedBody = async (feedUrl: string): Promise<string> => {
  *
  * @param feedUrl Absolute HTTP(S) feed URL
  */
-const fetchFeedXml = async (feedUrl: string): Promise<string> => {
+const fetchFeedXml = async (
+  feedUrl: string,
+  signal?: AbortSignal
+): Promise<{ body: string; url: string }> => {
   try {
-    return await fetchFeedBody(feedUrl)
+    return await fetchFeedBody(feedUrl, signal)
   } catch (error) {
+    signal?.throwIfAborted()
     const httpsUrl = toHttpsUrl(feedUrl)
     if (!httpsUrl) {
       throw error
     }
-    return await fetchFeedBody(httpsUrl)
+    return await fetchFeedBody(httpsUrl, signal)
   }
+}
+
+/** Discover only explicitly advertised RSS/Atom links, resolving relative URLs after redirects. */
+export function discoverFeedUrls(html: string, pageUrl: string): string[] {
+  const urls = new Set<string>()
+  for (const tag of html.match(/<link\b[^>]*>/gi) ?? []) {
+    const attributes: Record<string, string> = {}
+    for (const match of tag.matchAll(/([\w:-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/g)) {
+      const key = match[1]
+      if (key) {
+        attributes[key.toLowerCase()] = match[2] ?? match[3] ?? match[4] ?? ''
+      }
+    }
+    if (
+      !(
+        attributes.rel?.toLowerCase().split(/\s+/).includes('alternate') &&
+        ['application/rss+xml', 'application/atom+xml'].includes(
+          attributes.type?.toLowerCase() ?? ''
+        ) &&
+        attributes.href
+      )
+    ) {
+      continue
+    }
+    try {
+      const url = new URL(attributes.href.replace(/&amp;/gi, '&'), pageUrl)
+      if (['http:', 'https:'].includes(url.protocol) && !url.username && !url.password) {
+        urls.add(url.href)
+      }
+    } catch {
+      // Invalid advertised links are not candidates.
+    }
+    if (urls.size === 3) {
+      break
+    }
+  }
+  return [...urls]
 }
 
 /**
@@ -139,7 +185,42 @@ export class RssParserFeedFetcher implements FeedFetcher {
    *
    * @param feedUrl Absolute HTTP(S) feed URL
    */
-  async fetch(feedUrl: string): Promise<ParsedFeed> {
+  async fetch(feedUrl: string, signal?: AbortSignal): Promise<ParsedFeed> {
+    const { body } = await fetchFeedXml(feedUrl, signal)
+    const feed = await this.parse(body)
+    signal?.throwIfAborted()
+    return feed
+  }
+
+  /** Test a feed or follow up to three advertised feeds without saving or queuing anything. */
+  async probe(
+    feedUrl: string,
+    signal?: AbortSignal
+  ): Promise<{ feed: ParsedFeed; feedUrl: string; discovered: boolean }> {
+    const { body, url } = await fetchFeedXml(feedUrl, signal)
+    try {
+      const feed = await this.parse(body)
+      signal?.throwIfAborted()
+      return { feed, feedUrl: url, discovered: false }
+    } catch (error) {
+      signal?.throwIfAborted()
+      for (const candidate of discoverFeedUrls(body, url)) {
+        if (candidate === url) {
+          continue
+        }
+        try {
+          const feed = await this.fetch(candidate, signal)
+          return { feed, feedUrl: candidate, discovered: true }
+        } catch {
+          signal?.throwIfAborted()
+        }
+      }
+      throw error
+    }
+  }
+
+  /** Share one configured parser between direct fetches and discovery probes. */
+  private async parse(xml: string): Promise<ParsedFeed> {
     if (!this.parser) {
       this.parser = new Parser<Record<string, never>, ParsedFeedItem>({
         customFields,
@@ -149,7 +230,6 @@ export class RssParserFeedFetcher implements FeedFetcher {
         defaultRSS: 2
       })
     }
-    const xml = await fetchFeedXml(feedUrl)
     const raw = await this.parser.parseString(xml)
     return toParsedFeed(raw)
   }

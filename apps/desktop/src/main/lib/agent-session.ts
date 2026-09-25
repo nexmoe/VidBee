@@ -2,6 +2,7 @@ import { Agent, type AgentMessage, type AgentTool } from '@earendil-works/pi-age
 import {
   type Api,
   type AssistantMessage,
+  type Context,
   type FetchFunction,
   InMemoryCredentialStore,
   InMemoryModelsStore,
@@ -14,9 +15,9 @@ import {
   type AgentThread,
   selectedAgentMessages
 } from '../../shared/agent-chat'
-import { isRecoverableAiFailure } from '../../shared/ai-run'
+import { AgentUserError, parseAgentError, toSdkRetryMessage } from '../../shared/agent-errors'
 import { summarizeAgentHistory } from './agent-compaction'
-import { repairAgentHistory } from './agent-context'
+import { HistoryRepairer, repairAgentHistory } from './agent-context'
 import { agentHistoryText, agentMessageId } from './agent-memory'
 import { type AgentHarnessTuning, agentRuntimePolicy } from './agent-model-profile'
 
@@ -28,22 +29,14 @@ export const AGENT_SESSION_RETRY_BASE_DELAY_MS = 2000
 /**
  * Translate a Cloud transport failure into the SDK's retry vocabulary.
  *
- * The Pi SDK decides retry eligibility by looking for `Connection error` in the
- * assistant error text, so a recoverable Cloud failure has to be re-worded before the
- * session will retry it. Recovery itself is classified by the shared
- * `isRecoverableAiFailure`, so this path stays aligned with the prompt runner instead of
- * carrying its own list of message strings.
+ * The Pi SDK retries only messages containing `Connection error`. This adapter is the
+ * only place that speaks that vocabulary.
  *
  * @param message Public error text from the Cloud stream.
  * @returns Reworded text, or undefined to leave the failure terminal.
  */
-export const cloudRetryErrorMessage = (message: string): string | undefined => {
-  const text = message.trim()
-  if (!text || /^connection error/i.test(text)) {
-    return undefined
-  }
-  return isRecoverableAiFailure({ message: text }) ? `Connection error: ${text}` : undefined
-}
+export const toSdkRetryMessageFromText = (message: string): string | undefined =>
+  toSdkRetryMessage(parseAgentError(message))
 
 /** Surface cancellation even if the SDK prompt wait does not reject after abort(). */
 export async function runUntilAborted<T>(signal: AbortSignal, work: Promise<T>): Promise<T> {
@@ -79,59 +72,33 @@ export function restoreVideoAgentSession(
     | SessionEntry[]
     | undefined
   const ids = new Map<string, string>()
-  const pending = new Map<string, string>()
-  /** Persist explicit interrupted results before a later user turn can cross an unfinished tool batch. */
-  const finishPending = (): void => {
-    for (const [toolCallId, toolName] of pending) {
-      manager.appendMessage({
-        role: 'toolResult',
-        toolCallId,
-        toolName,
-        content: [
-          {
-            type: 'text',
-            text: 'This tool call was interrupted before a result was saved. Do not assume it succeeded.'
-          }
-        ],
-        isError: true,
-        timestamp: Date.now()
-      })
-    }
-    pending.clear()
-  }
+  const repairer = new HistoryRepairer()
   /** Repair stored failures while preserving the original archive outside the SDK request context. */
   const append = (message: AgentMessage): string | undefined => {
-    if (message.role === 'custom') {
-      finishPending()
-      return manager.appendCustomMessageEntry(
-        message.customType,
-        message.content,
-        message.display,
-        message.details
-      )
-    }
-    if (message.role === 'toolResult') {
-      return pending.delete(message.toolCallId) ? manager.appendMessage(message) : undefined
-    }
-    if (message.role !== 'user' && message.role !== 'assistant') {
-      return undefined
-    }
-    finishPending()
-    const repaired =
-      message.role === 'assistant' && ['error', 'aborted'].includes(message.stopReason)
-        ? repairAgentHistory([message])[0]
-        : message
-    if (repaired.role !== 'user' && repaired.role !== 'assistant') {
-      return undefined
-    }
-    if (repaired.role === 'assistant') {
-      for (const part of repaired.content) {
-        if (part.type === 'toolCall') {
-          pending.set(part.id, part.name)
-        }
+    const ready = repairer.push(message)
+    let last: string | undefined
+    for (const item of ready) {
+      if (item.role === 'custom') {
+        last = manager.appendCustomMessageEntry(
+          item.customType,
+          item.content,
+          item.display,
+          item.details
+        )
+        continue
+      }
+      if (item.role === 'user' || item.role === 'assistant' || item.role === 'toolResult') {
+        last = manager.appendMessage(item)
       }
     }
-    return manager.appendMessage(repaired)
+    return last
+  }
+  const flush = (): void => {
+    for (const item of repairer.flush()) {
+      if (item.role === 'toolResult') {
+        manager.appendMessage(item)
+      }
+    }
   }
   for (const entry of entries ?? []) {
     let id: string | undefined
@@ -143,6 +110,7 @@ export function restoreVideoAgentSession(
     ) {
       id = append(entry.message)
     } else if (entry.type === 'compaction') {
+      flush()
       const kept = ids.get(entry.firstKeptEntryId)
       if (kept) {
         id = manager.appendCompaction(
@@ -155,7 +123,7 @@ export function restoreVideoAgentSession(
         )
       }
     } else if (entry.type === 'custom_message') {
-      finishPending()
+      flush()
       id = manager.appendCustomMessageEntry(
         entry.customType,
         entry.content,
@@ -172,7 +140,7 @@ export function restoreVideoAgentSession(
       append(message)
     }
   }
-  finishPending()
+  flush()
   return manager
 }
 
@@ -190,12 +158,18 @@ export async function createVideoAgentSession(options: {
   systemPrompt: string
   task: string
   tools: AgentTool[]
+  /** Registered tools may stay hidden until the current request needs them. */
+  initialActiveToolNames?: string[]
   signal: AbortSignal
   memory: () => string
   shouldStop: (context?: { message?: AssistantMessage }) => boolean
   onSummaryUsage: (message: import('@earendil-works/pi-ai').AssistantMessage) => void
   /** Live output cap so a truncated turn can retry with a larger budget. */
   outputTokens?: () => number
+  /** Observed/estimated EMA factor for compaction token math. */
+  calibration?: () => number
+  /** Capture the request-time token estimate before the provider stream starts. */
+  onBeforeStream?: (context: Context) => void
 }): Promise<AgentSession> {
   const {
     AgentSession,
@@ -238,7 +212,7 @@ export async function createVideoAgentSession(options: {
           if (message.role !== 'assistant' || message.stopReason !== 'error') {
             return undefined
           }
-          const errorMessage = cloudRetryErrorMessage(message.errorMessage ?? '')
+          const errorMessage = toSdkRetryMessage(parseAgentError(message.errorMessage))
           return errorMessage ? { message: { ...message, errorMessage } } : undefined
         })
         /** Preserve full video evidence while delegating boundaries and recovery to the SDK. */
@@ -259,16 +233,19 @@ export async function createVideoAgentSession(options: {
             contextWindow: model.contextWindow,
             maxOutputTokens: summaryOutputTokens,
             outputTokens: summaryOutputTokens,
+            calibration: options.calibration?.() ?? 1,
             complete: (context, maxTokens) =>
-              streamSimple(model, context, {
+              streamAgentCompletionMessage({
+                model,
                 apiKey: options.apiKey,
                 fetch: options.fetch,
                 signal: AbortSignal.any([options.signal, event.signal]),
+                context,
                 maxTokens,
-                reasoning:
-                  policy.summaryThinkingLevel === 'off' ? undefined : policy.summaryThinkingLevel,
-                maxRetries: 1
-              }).result(),
+                thinkingLevel: policy.summaryThinkingLevel,
+                maxRetries: 1,
+                onUsage: options.onSummaryUsage
+              }),
             onUsage: options.onSummaryUsage
           })
           return {
@@ -312,40 +289,33 @@ export async function createVideoAgentSession(options: {
       thinkingLevel: options.thinkingLevel ?? policy.defaultThinkingLevel,
       systemPrompt: options.systemPrompt,
       messages: repairAgentHistory(sessionManager.buildSessionContext().messages),
-      tools: options.tools
+      tools: options.initialActiveToolNames
+        ? options.tools.filter((tool) => options.initialActiveToolNames?.includes(tool.name))
+        : options.tools
     },
     toolExecution: 'sequential',
     getApiKey: () => options.apiKey,
     convertToLlm,
     streamFn: (currentModel, context, streamOptions) => {
-      const memory = options.memory()
-      return streamSimple(
-        currentModel,
-        {
-          ...context,
-          messages: memory
-            ? [...context.messages, { role: 'user', content: memory, timestamp: Date.now() }]
-            : context.messages
-        },
-        {
-          ...streamOptions,
-          apiKey: options.apiKey,
-          fetch: options.fetch,
-          signal: AbortSignal.any([
-            options.signal,
-            ...(streamOptions?.signal ? [streamOptions.signal] : [])
-          ]),
-          maxTokens:
-            outputLimit() > 0
-              ? Math.min(streamOptions?.maxTokens ?? outputLimit(), outputLimit())
-              : 0,
-          maxRetries: 0
-        }
-      )
+      options.onBeforeStream?.(context)
+      return streamSimple(currentModel, context, {
+        ...streamOptions,
+        apiKey: options.apiKey,
+        fetch: options.fetch,
+        signal: AbortSignal.any([
+          options.signal,
+          ...(streamOptions?.signal ? [streamOptions.signal] : [])
+        ]),
+        maxTokens:
+          outputLimit() > 0
+            ? Math.min(streamOptions?.maxTokens ?? outputLimit(), outputLimit())
+            : 0,
+        maxRetries: 0
+      })
     },
     shouldStopAfterTurn: (context) => options.shouldStop(context)
   })
-  return new AgentSession({
+  const session = new AgentSession({
     agent,
     cwd: process.cwd(),
     sessionManager,
@@ -353,73 +323,115 @@ export async function createVideoAgentSession(options: {
     resourceLoader,
     modelRuntime,
     baseToolsOverride: Object.fromEntries(options.tools.map((tool) => [tool.name, tool])),
-    initialActiveToolNames: options.tools.map((tool) => tool.name),
+    initialActiveToolNames:
+      options.initialActiveToolNames ?? options.tools.map((tool) => tool.name),
     allowedToolNames: options.tools.map((tool) => tool.name)
   })
+  // The SDK also activates allowedToolNames during registry construction; apply visibility last.
+  if (options.initialActiveToolNames) {
+    session.setActiveToolsByName(options.initialActiveToolNames)
+  }
+  return session
 }
 
-/** Run a bounded evidence check through the same SDK recovery and Cloud transport as the writer. */
-export async function completeAgentTask(options: {
+const ONE_SHOT_RETRY = new Set([
+  'TRANSPORT_LOST',
+  'PROVIDER_UNAVAILABLE',
+  'STREAM_INTERRUPTED',
+  'RESUME_FAILED'
+])
+
+/** Run a bounded one-shot completion and return the provider message. */
+export async function streamAgentCompletionMessage(options: {
   maxRetries?: number
   model: Model<Api>
-  tuning?: AgentHarnessTuning
-  thinkingLevel: AgentThinkingLevel
+  thinkingLevel?: AgentThinkingLevel
   apiKey: string
   fetch?: FetchFunction
   signal: AbortSignal
-  systemPrompt: string
-  content: string
+  systemPrompt?: string
+  content?: string
+  context?: Context
+  maxTokens?: number
   onUsage: (message: AssistantMessage) => void
-}): Promise<string> {
-  const session = await createVideoAgentSession({
-    ...options,
-    thread: {
-      id: 'source-review',
-      downloadId: '',
-      promptId: '',
-      leafId: null,
-      seq: 0,
-      messages: [],
-      runs: [],
-      artifacts: []
-    },
-    history: [],
-    task: 'Check source fidelity and completeness.',
-    tools: [],
-    memory: () => '',
-    shouldStop: () => false,
-    onSummaryUsage: options.onUsage
-  })
-  const unsubscribe = session.subscribe((event) => {
-    if (event.type === 'message_end' && event.message.role === 'assistant') {
-      options.onUsage(event.message)
-    }
-  })
-  const abort = (): void => {
-    session.agent.abort()
-    session.abortCompaction()
-  }
-  options.signal.addEventListener('abort', abort, { once: true })
-  try {
-    await runUntilAborted(
-      options.signal,
-      session.prompt(options.content, { expandPromptTemplates: false })
-    )
-    const last = session.agent.state.messages.at(-1)
-    if (last?.role !== 'assistant' || last.stopReason !== 'stop') {
-      throw new Error(
-        last?.role === 'assistant'
-          ? last.errorMessage || 'The source review did not finish'
-          : 'The source review returned no result'
+  onMessageUpdate?: (message: AssistantMessage) => void
+}): Promise<AssistantMessage> {
+  const retries = options.maxRetries ?? AGENT_SESSION_MAX_RETRIES
+  let lastError: Error | undefined
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    options.signal.throwIfAborted()
+    if (attempt > 0) {
+      await new Promise((resolve) =>
+        setTimeout(resolve, AGENT_SESSION_RETRY_BASE_DELAY_MS * 2 ** (attempt - 1))
       )
     }
-    return last.content
-      .filter((part) => part.type === 'text')
-      .map((part) => part.text)
-      .join('')
-  } finally {
-    options.signal.removeEventListener('abort', abort)
-    unsubscribe()
-    session.dispose()
+    try {
+      const context: Context = options.context ?? {
+        systemPrompt: options.systemPrompt ?? '',
+        messages: [{ role: 'user', content: options.content ?? '', timestamp: Date.now() }]
+      }
+      const stream = streamSimple(options.model, context, {
+        apiKey: options.apiKey,
+        fetch: options.fetch,
+        signal: options.signal,
+        maxTokens: options.maxTokens,
+        reasoning:
+          !options.thinkingLevel || options.thinkingLevel === 'off'
+            ? undefined
+            : options.thinkingLevel,
+        maxRetries: 0
+      })
+      const consume = (async () => {
+        for await (const event of stream) {
+          if ('partial' in event && event.partial?.role === 'assistant') {
+            options.onMessageUpdate?.(event.partial)
+          }
+        }
+      })()
+      const result = await stream.result()
+      await consume
+      options.onUsage(result)
+      if (result.stopReason === 'error' || result.stopReason === 'aborted') {
+        const failure = parseAgentError(result.errorMessage)
+        if (ONE_SHOT_RETRY.has(failure.code) && attempt < retries) {
+          lastError = new Error(result.errorMessage || 'The source review did not finish')
+          continue
+        }
+      }
+      return result
+    } catch (error) {
+      if (options.signal.aborted) {
+        throw error
+      }
+      if (error instanceof AgentUserError && !error.retryable) {
+        throw error
+      }
+      const failure = parseAgentError(error instanceof Error ? error.message : String(error))
+      if (failure.retryable && attempt < retries) {
+        lastError = error instanceof Error ? error : new Error(String(error))
+        continue
+      }
+      throw error
+    }
   }
+  throw lastError ?? new Error('The source review returned no result')
+}
+
+/** Run a bounded one-shot completion with shared retry, without constructing a full session. */
+export async function streamAgentCompletion(
+  options: Parameters<typeof streamAgentCompletionMessage>[0]
+): Promise<string> {
+  const result = await streamAgentCompletionMessage(options)
+  if (result.stopReason === 'error' || result.stopReason === 'aborted') {
+    const failure = parseAgentError(result.errorMessage)
+    throw new AgentUserError(
+      result.errorMessage || 'The source review did not finish',
+      failure.code,
+      failure.retryable
+    )
+  }
+  return result.content
+    .filter((part) => part.type === 'text')
+    .map((part) => part.text)
+    .join('')
 }

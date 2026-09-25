@@ -706,6 +706,75 @@ export const buildVideoInfoArgs = (
   return args
 }
 
+/**
+ * Build a skip-download yt-dlp argv that writes caption sidecars next to an info JSON.
+ *
+ * @param url Watch URL.
+ * @param outputTemplate yt-dlp `-o` template without an extension.
+ * @param settings Host cookies, proxy, and config.
+ * @param jsRuntimeArgs Active Desktop JS runtime flags.
+ * @param subtitleLanguages yt-dlp `--sub-langs` value.
+ */
+export const buildCaptionExtractArgs = (
+  url: string,
+  outputTemplate: string,
+  settings: YtDlpDownloadSettings,
+  jsRuntimeArgs: string[] = [],
+  subtitleLanguages = 'all'
+): string[] => {
+  assertDownloadSourceUrl(url)
+  const args = [
+    '--skip-download',
+    '--write-subs',
+    '--write-auto-subs',
+    '--write-info-json',
+    '--sub-langs',
+    subtitleLanguages || 'all',
+    '--sub-format',
+    'vtt/srt/ttml/best',
+    '--sleep-subtitles',
+    '1',
+    '--no-playlist',
+    '--no-warnings',
+    '--encoding',
+    'utf-8',
+    '-o',
+    outputTemplate
+  ]
+
+  const proxy = trim(settings.proxy)
+  if (proxy) {
+    args.push('--proxy', proxy)
+  }
+
+  appendMetadataNetworkResilienceArgs(args)
+
+  const browserForCookies = normalizeBrowserCookiesSettingForYtDlp(settings.browserForCookies)
+  if (browserForCookies && browserForCookies !== 'none') {
+    args.push('--cookies-from-browser', browserForCookies)
+  }
+
+  const cookiesPath = trim(settings.cookiesPath)
+  if (cookiesPath) {
+    args.push('--cookies', cookiesPath)
+  }
+
+  const configPath = resolvePathWithHome(settings.configPath)
+  if (configPath) {
+    args.push('--config-location', configPath)
+  } else {
+    args.push('--ignore-config')
+    appendYouTubeSafeExtractorArgs(args, url)
+  }
+
+  if (jsRuntimeArgs.length > 0) {
+    args.push(...jsRuntimeArgs)
+  }
+
+  args.push(url)
+  return args
+}
+
 export const buildPlaylistInfoArgs = (
   url: string,
   settings: YtDlpDownloadSettings,

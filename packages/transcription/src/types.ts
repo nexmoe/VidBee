@@ -183,6 +183,8 @@ export interface ModelDownloadProgress {
 }
 
 export interface ModelStatus {
+  /** Queue-owned downloads that should stay visible while waiting for a worker. */
+  pendingTiers?: AsrTierId[]
   ready: boolean
   version: string
   bytes: number

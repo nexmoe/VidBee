@@ -1,5 +1,6 @@
 import { basename, dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import type { TaskCreationMetadata } from '@vidbee/task-queue'
 import { type Task, TRANSCRIBABLE_TASK_KINDS } from '@vidbee/task-queue'
 import {
   type AsrTierId,
@@ -54,10 +55,12 @@ import { settingsManager } from '../settings'
 import { scopedLoggers } from '../utils/logger'
 import { stopPromptRunsForDownload } from './ai-prompt-runner'
 import { deletePersistedPromptRunsForDownload } from './ai-prompt-store'
+import { enqueueAsrModelDownload, listAsrModelTasks, waitForAsrModelTask } from './asr-model-task'
 import { getDatabaseConnection } from './database'
 import { ffmpegManager } from './ffmpeg-manager'
 import { type ImportLocalMediaResult, importLocalMediaFiles } from './import-local-media'
-import { getDesktopTaskQueueRef } from './queue-ref'
+import { readTaskCreation } from './projection'
+import { getDesktopTaskQueueRef, peekDesktopTaskQueueRef } from './queue-ref'
 import { resolveTaskSourceFile } from './source-file'
 import { readElectronLocaleHints } from './system-locale'
 import { resolveWorkerBundle } from './transcription-worker-path'
@@ -75,6 +78,7 @@ export type TranscriptListState =
   | 'retry-scheduled'
 
 export interface TranscriptSnapshot {
+  creation?: TaskCreationMetadata
   downloadTaskId: string
   transcriptionTaskId: string | null
   transcriptId: string | null
@@ -477,6 +481,7 @@ export const getTranscriptSnapshot = (downloadTaskId: string): TranscriptSnapsho
   return {
     downloadTaskId,
     transcriptionTaskId: task?.id ?? listedRecord?.transcriptionTaskId ?? null,
+    creation: task ? readTaskCreation(task) : undefined,
     transcriptId: record?.id ?? null,
     listState: listStateOf(task, listedRecord),
     stage: transcriptionPartials.getByDownload(downloadTaskId)?.stage ?? stageFromTask(task),
@@ -594,7 +599,8 @@ export const startTranscriptionForDownload = async (
   downloadTaskId: string,
   force = false,
   asrTier?: AsrTierId,
-  speakerCount?: SpeakerCount
+  speakerCount?: SpeakerCount,
+  creation?: TaskCreationMetadata
 ): Promise<TranscriptSnapshot> => {
   const queue = getDesktopTaskQueueRef()
   const download = queue.get(downloadTaskId)
@@ -615,6 +621,7 @@ export const startTranscriptionForDownload = async (
   }
   await enqueueTranscription({
     queue,
+    creation,
     store: getTranscriptStore(),
     downloadTaskId,
     sourceFilePath: source,
@@ -750,6 +757,15 @@ export const getTranscriptionModelStatus = async (): Promise<ModelStatus> => {
   const language = readUiLanguage()
   return {
     ...status,
+    pendingTiers: peekDesktopTaskQueueRef()
+      ? listAsrModelTasks().flatMap((task) => {
+          const tier = task.input.options?.asrTier
+          return isAsrTierId(tier) &&
+            ['queued', 'running', 'processing', 'retry-scheduled'].includes(task.status)
+            ? [tier]
+            : []
+        })
+      : [],
     language,
     machine,
     recommended: recommendAsrModels({
@@ -776,27 +792,40 @@ export const readActiveAsrTier = (): AsrTierId => {
  */
 export const readUiLanguage = (): string => String(settingsManager.get('language') ?? 'en')
 
-/**
- * Download one ASR package. A user cancel returns disk status instead of throwing.
- */
-const downloadAsrTier = (tier: AsrTierId): Promise<ModelStatus> =>
-  getModelManager().ensureReadyAllowCancel({ groups: MINIMAL_MODEL_GROUPS, tiers: [tier] })
-
+/** Select a model after its queue-owned package download is ready. */
 export const setActiveAsrTier = async (tier: AsrTierId): Promise<ModelStatus> => {
-  const status = await downloadAsrTier(tier)
+  const status = await ensureAsrTier(tier)
   if (status.tiers.find((item) => item.id === tier)?.ready !== true) {
-    return status
+    throw Object.assign(new Error('ASR model download cancelled or paused'), { name: 'AbortError' })
   }
   settingsManager.set('asrTier', tier)
   return getModelManager().status(undefined, [tier])
 }
 
-export const ensureAsrTier = (tier: AsrTierId): Promise<ModelStatus> => downloadAsrTier(tier)
+/** Await a durable package task, preserving the Settings download API. */
+export const ensureAsrTier = async (tier: AsrTierId): Promise<ModelStatus> => {
+  const ready = getModelManager().status(['asr'], [tier])
+  if (ready.ready) {
+    return ready
+  }
+  const { task } = await enqueueAsrModelDownload(tier)
+  if (task.status === 'paused') {
+    await getDesktopTaskQueueRef().resume(task.id)
+  }
+  await waitForAsrModelTask(task.id)
+  return getModelManager().status(['asr'], [tier])
+}
 
 /**
  * Stop an in-flight ASR model download and drop its partial files.
  */
 export const cancelAsrTier = async (tier: AsrTierId): Promise<ModelStatus> => {
+  const tasks = listAsrModelTasks(tier).filter(
+    (task) => !['completed', 'failed', 'cancelled'].includes(task.status)
+  )
+  for (const task of tasks) {
+    await getDesktopTaskQueueRef().cancel(task.id)
+  }
   getModelManager().cancelDownload(tier)
   return getTranscriptionModelStatus()
 }
@@ -807,6 +836,13 @@ export const cancelAsrTier = async (tier: AsrTierId): Promise<ModelStatus> => {
 export const deleteAsrTier = async (tier: AsrTierId): Promise<ModelStatus> => {
   if (readActiveAsrTier() === tier) {
     throw new Error('cannot delete the active ASR model')
+  }
+  if (
+    listAsrModelTasks(tier).some(
+      (task) => !['completed', 'failed', 'cancelled'].includes(task.status)
+    )
+  ) {
+    throw new Error('Cancel the queued ASR download before deleting its model')
   }
   getModelManager().removeTier(tier)
   return getTranscriptionModelStatus()

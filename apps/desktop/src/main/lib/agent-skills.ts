@@ -35,7 +35,7 @@ export const AGENT_SKILLS = {
 } as const
 
 /**
- * Load only the workflow skill for this tab. Tools stay registered separately.
+ * Pick the workflow for this tab, defaulting rewrites and detailed chat to the article skill.
  * Overview keeps its text-only product rules; FAQ and illustrated rewrites do not share one skill.
  */
 export function selectAgentSkills(input: {
@@ -51,7 +51,7 @@ export function selectAgentSkills(input: {
   return [AGENT_SKILLS.articleRewrite]
 }
 
-/** One selected skill body for the system prompt. Empty when none applies. */
+/** Inline the selected skill body so its workflow reaches the model without load_tools. */
 export function formatAgentSkillsForPrompt(skills: AgentSkill[]): string {
   return skills
     .map((skill) => `Skill (${skill.name}): ${skill.description}\n${skill.body}`)

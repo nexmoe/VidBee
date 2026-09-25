@@ -3,6 +3,16 @@ import { AI_CHAT_PROMPT_ID } from './ai-prompts'
 
 const DAY_MS = 86_400_000
 const TITLE_MAX = 80
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/**
+ * True when the value is a canonical 8-4-4-4-12 hex UUID.
+ *
+ * @param value Candidate identifier.
+ */
+export function isUuid(value: string): boolean {
+  return UUID.test(value)
+}
 
 /**
  * Collapse whitespace and cap length for a conversation tab title.

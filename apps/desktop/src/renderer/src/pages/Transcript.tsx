@@ -909,6 +909,7 @@ export function TranscriptPage() {
             downloadId={downloadId}
             error={snapshot?.error ?? null}
             failed={failed}
+            hasStoredTranscript={!holdingAsrIdle && Boolean(snapshot?.record)}
             noSpeech={noSpeech}
             noSpeechDetail={t('transcript.noSpeechDetail')}
             onCancel={running ? () => void handleCancel() : undefined}

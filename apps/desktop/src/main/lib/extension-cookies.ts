@@ -7,6 +7,7 @@ import type { DownloadRuntimeSettings } from '@vidbee/downloader-core'
 import {
   type CookieHealth,
   cookieDomainsForUrl,
+  cookieMatchesUrlScope,
   looksLikeNetscapeCookies,
   matchCookieSites,
   type NetscapeCookieInput,
@@ -145,7 +146,7 @@ export async function handleExtensionCookies(
   req: IncomingMessage,
   res: ServerResponse,
   pathname: string,
-  consumeToken: (token: string) => boolean
+  consumeToken: (token: string, origin: string) => boolean
 ): Promise<void> {
   const origin = extensionRequestOrigin(req)
   if (!origin) {
@@ -163,7 +164,7 @@ export async function handleExtensionCookies(
   const bearer = readBearer(req)
 
   if (pathname === CONNECT_PATH && req.method === 'POST') {
-    if (!consumeToken(bearer)) {
+    if (!consumeToken(bearer, origin)) {
       replyExtensionJson(res, 401, { error: 'Invalid start token' })
       return
     }
@@ -222,6 +223,10 @@ export async function handleExtensionCookies(
     const job = jobs.get(payload.id)
     if (!job || job.sessionToken !== session.token) {
       replyExtensionJson(res, 404, { error: 'Unknown cookie request' })
+      return
+    }
+    if (payload.cookies.some((cookie) => !cookieMatchesUrlScope(cookie.domain, job.url))) {
+      replyExtensionJson(res, 400, { error: 'Cookie domain outside requested scope' })
       return
     }
     session.sites = matchCookieSites(

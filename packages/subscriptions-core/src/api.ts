@@ -1,3 +1,4 @@
+import type { TaskCreationMetadata } from '@vidbee/task-queue'
 /**
  * Public surface of `@vidbee/subscriptions-core`.
  *
@@ -37,6 +38,7 @@ import {
 } from './types'
 
 export interface EnqueueItemContext {
+  creation?: TaskCreationMetadata
   subscription: SubscriptionRule
   item: NormalizedFeedItem
   /** Why we're enqueuing — 'auto' for scheduled feed-check, 'manual' for user. */
@@ -239,10 +241,14 @@ export class SubscriptionsApi {
     }
   }
 
-  async itemsQueue(input: {
-    subscriptionId: string
-    itemId: string
-  }): Promise<{ queued: boolean; taskId: string | null }> {
+  /** Queue a selected entry once, retaining trusted creator metadata when supplied by the host. */
+  async itemsQueue(
+    input: {
+      subscriptionId: string
+      itemId: string
+    },
+    creation?: TaskCreationMetadata
+  ): Promise<{ queued: boolean; taskId: string | null }> {
     const sub = await this.store.get(input.subscriptionId)
     if (!sub) {
       throw new Error(`Subscription not found: ${input.subscriptionId}`)
@@ -266,7 +272,8 @@ export class SubscriptionsApi {
     const taskId = await this.enqueueItem({
       subscription: sub,
       item: normalized,
-      trigger: 'manual'
+      trigger: 'manual',
+      ...(creation ? { creation } : {})
     })
     if (taskId) {
       await this.store.markItemQueued(input.subscriptionId, input.itemId, taskId)
@@ -355,7 +362,13 @@ export class SubscriptionsApi {
       if (decision.coverUrl) {
         patch.coverUrl = decision.coverUrl
       }
-      if (typeof feed.title === 'string' && feed.title.trim()) {
+      const current = await this.store.get(subscriptionId)
+      const placeholderTitle =
+        current &&
+        (!current.title.trim() ||
+          current.title === current.sourceUrl ||
+          current.title === current.feedUrl)
+      if (placeholderTitle && typeof feed.title === 'string' && feed.title.trim()) {
         patch.title = feed.title.trim()
       }
       if (typeof feed.link === 'string' && feed.link.trim()) {

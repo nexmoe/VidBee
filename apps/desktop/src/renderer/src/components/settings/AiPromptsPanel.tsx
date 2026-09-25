@@ -53,6 +53,10 @@ export function AiPromptsPanel() {
 
   useEffect(() => {
     void refresh()
+    const listener = window.api.on('settings:changed', () => {
+      void refresh()
+    })
+    return () => window.api.removeListener('settings:changed', listener)
   }, [refresh])
 
   /**

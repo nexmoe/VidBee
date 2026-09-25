@@ -280,7 +280,14 @@
     "cookiesSetupKeyring": "Questa build Linux non può leggere i cookie di Chrome. Usa Firefox o importa un file di cookie.",
     "cookiesSetupStale": "I cookie attuali sembrano scaduti o bloccati. Aggiorna l’accesso e riprova.",
     "cookiesSetupRetry": "Riprova il download",
-    "cookiesSetupDone": "Fatto"
+    "cookiesSetupDone": "Fatto",
+    "creationSource": "Origine della creazione",
+    "allSources": "Tutte le origini",
+    "createdManually": "Creato manualmente",
+    "createdByAgent": "Creato dall’IA",
+    "createdBySubscription": "Abbonamento",
+    "openSourceConversation": "Apri la conversazione di origine",
+    "sourceFile": "File di origine"
   },
   "error": {
     "title": "Qualcosa è andato storto",
@@ -382,7 +389,7 @@
     "home": "Home",
     "download": "Scarica",
     "playlist": "Scarica Playlist",
-    "rss": "RSS",
+    "rss": "Iscriviti",
     "transcripts": "Trascrizioni",
     "subscriptions": "Abbonamenti",
     "preferences": "Preferenze",
@@ -978,12 +985,21 @@
       "extensionInstallStep1": "Install the VidBee extension in Chrome, Edge, or Firefox",
       "extensionInstallStep2": "Keep VidBee Desktop running so the extension can connect",
       "extensionInstallStep3": "Sign in to YouTube, Bilibili, or other sites in that browser, then open the VidBee toolbar icon once"
-    }
+    },
+    "agentManagementTools": "Strumenti di gestione dell’agente",
+    "agentManagementToolsDescription": "Se l’agente può modificare attività e iscrizioni e se deve chiedere prima",
+    "agentManagementToolsOptions": {
+      "off": "Disattivato",
+      "ask": "Chiedi prima",
+      "auto": "Consenti automaticamente"
+    },
+    "agentMaxConcurrentRuns": "Esecuzioni locali contemporanee",
+    "agentMaxConcurrentRunsDescription": "Quante conversazioni dell’agente con modello locale possono essere attive insieme"
   },
   "subscriptions": {
     "title": "Abbonamenti",
     "subtitle": "{{count}} abbonamento{{count, plural, one {} other {s}}}",
-    "description": "Monitora automaticamente i feed RSS e accoda i nuovi download senza lavoro manuale.",
+    "description": "Monitora automaticamente i canali e accoda i nuovi download senza lavoro manuale.",
     "defaults": {
       "title": "Impostazioni predefinite dell'automazione",
       "description": "Controlla dove vengono archiviati i download degli abbonamenti e la frequenza con cui VidBee verifica la presenza di nuovi video.",
@@ -993,8 +1009,8 @@
       "onlyLatestDescription": "Se abilitato, VidBee salta gli elementi del backlog più vecchi e acquisisce solo il caricamento più recente."
     },
     "add": {
-      "title": "Aggiungi RSS",
-      "description": "Incolla un collegamento al feed RSS. \nVidBee rileverà automaticamente il feed."
+      "title": "Aggiungi abbonamento",
+      "description": "Incolla un link di canale o feed. VidBee lo rileverà automaticamente."
     },
     "fields": {
       "url": "URL del feed",
@@ -1061,8 +1077,8 @@
       "itemAlreadyQueued": "Questo video è già in coda",
       "queueError": "Impossibile aggiungere alla coda di download.",
       "openLinkError": "Impossibile aprire il collegamento video.",
-      "resolveError": "Impossibile risolvere l'URL del feed RSS.",
-      "duplicateUrl": "Questo feed RSS è già sottoscritto."
+      "resolveError": "Impossibile risolvere l'URL dell'abbonamento.",
+      "duplicateUrl": "Questo abbonamento esiste già."
     },
     "detectedFeed": "Feed {{platform}} rilevato -> {{feed}}",
     "detecting": "Rilevamento alimentazione...",
@@ -1089,7 +1105,7 @@
       "description": "Combina VidBee con RSSHub per abilitare abbonamenti e download automatizzati da varie piattaforme. \nUna volta configurato, VidBee viene eseguito in background e scarica automaticamente i video e i contenuti più recenti.",
       "learnMore": "Ulteriori informazioni su RSSHub",
       "openDocs": "Apri la documentazione RSSHub",
-      "hint": "Non hai l'URL del feed RSS? \nUtilizza RSSHub per generare feed RSS per YouTube, Twitter e migliaia di altre piattaforme."
+      "hint": "Non hai un URL del feed? Usa RSSHub per generare feed per YouTube, Twitter e migliaia di altre piattaforme."
     }
   },
   "kernelPreparation": {
@@ -1631,7 +1647,9 @@
     "eventStatus": {
       "running": "Running",
       "completed": "Completed",
-      "error": "Failed"
+      "error": "Failed",
+      "pendingApproval": "In attesa di approvazione",
+      "denied": "Rifiutato"
     },
     "placeholder": "Ask a follow-up about this video…",
     "send": "Send message",
@@ -1658,12 +1676,12 @@
     "thinkingOnly": "Thinking only",
     "allowDisableThinking": "Allow turning thinking off",
     "thinkingCapabilitiesHint": "Al momento viene mostrato solo l’interruttore del ragionamento, non i livelli di intensità. Se il modello li supporta, selezionali sotto.",
-    "defaultThinkingLevel": "Livello di ragionamento predefinito",
-    "defaultThinkingAuto": "Automatico (usa il valore predefinito della richiesta)",
-    "supportedThinkingLevels": "Livelli di ragionamento supportati",
+    "defaultThinkingLevel": "Default thinking level",
+    "defaultThinkingAuto": "Auto (use request default)",
+    "supportedThinkingLevels": "Supported thinking levels",
     "inputTokens": "Input",
     "outputTokens": "Output",
-    "providerDefault": "Usa il valore predefinito del provider",
+    "providerDefault": "Use provider default",
     "automatic": "Use model defaults",
     "enabled": "Supported",
     "disabled": "Not supported",
@@ -1674,6 +1692,9 @@
     "catalogMatched": "Matched {{name}}. Context window and capabilities were filled in.",
     "catalogBadge": "Catalog",
     "tools": {
+      "list_transcripts": "Controllo dei sottotitoli disponibili",
+      "select_transcript": "Selezione della fonte dei sottotitoli",
+      "load_tools": "Ricerca delle funzionalità disponibili",
       "get_video_info": "Reading video information",
       "read_transcript": "Reading transcript",
       "search_transcript": "Searching transcript",
@@ -1719,12 +1740,12 @@
     "faster": "Più veloce",
     "smarter": "Più intelligente",
     "retrying": "Connection interrupted. Retrying…",
-    "defaultThinkingLevel": "Default thinking level",
-    "defaultThinkingAuto": "Auto (use request default)",
-    "supportedThinkingLevels": "Supported thinking levels",
-    "inputTokens": "Input",
-    "outputTokens": "Output",
-    "providerDefault": "Use provider default"
+    "approval": {
+      "allow": "Consenti",
+      "allowAndRemember": "Consenti e ricorda",
+      "deny": "Nega",
+      "pending": "{{summary}}"
+    }
   },
   "web": {
     "saveToThisComputer": "Save to this computer",

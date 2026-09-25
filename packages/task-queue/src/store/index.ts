@@ -3,7 +3,7 @@
  * by groupKey/status. Only the orchestrator writes here; consumers receive
  * read-only snapshots.
  */
-import type { Task, TaskQueueStats, TaskSnapshot, TaskStatus } from '../types'
+import type { Task, TaskKind, TaskQueueStats, TaskSnapshot, TaskStatus } from '../types'
 
 const STATUSES: readonly TaskStatus[] = [
   'queued',
@@ -22,7 +22,9 @@ export class TaskStore {
   private readonly byStatus = new Map<TaskStatus, Set<string>>()
 
   constructor() {
-    for (const s of STATUSES) this.byStatus.set(s, new Set())
+    for (const s of STATUSES) {
+      this.byStatus.set(s, new Set())
+    }
   }
 
   has(id: string): boolean {
@@ -49,7 +51,9 @@ export class TaskStore {
    */
   update(next: Task): void {
     const prev = this.byId.get(next.id)
-    if (!prev) throw new Error(`TaskStore: missing id ${next.id}`)
+    if (!prev) {
+      throw new Error(`TaskStore: missing id ${next.id}`)
+    }
     if (prev.status !== next.status) {
       this.byStatus.get(prev.status)?.delete(prev.id)
       this.byStatus.get(next.status)?.add(next.id)
@@ -57,7 +61,9 @@ export class TaskStore {
     if (prev.groupKey !== next.groupKey) {
       const oldBucket = this.byGroup.get(prev.groupKey)
       oldBucket?.delete(prev.id)
-      if (oldBucket && oldBucket.size === 0) this.byGroup.delete(prev.groupKey)
+      if (oldBucket && oldBucket.size === 0) {
+        this.byGroup.delete(prev.groupKey)
+      }
       this.bucket(this.byGroup, next.groupKey).add(next.id)
     }
     this.byId.set(next.id, next)
@@ -66,12 +72,16 @@ export class TaskStore {
   /** Remove a record (used by removeFromHistory). */
   remove(id: string): boolean {
     const prev = this.byId.get(id)
-    if (!prev) return false
+    if (!prev) {
+      return false
+    }
     this.byId.delete(id)
     this.byStatus.get(prev.status)?.delete(id)
     const groupSet = this.byGroup.get(prev.groupKey)
     groupSet?.delete(id)
-    if (groupSet && groupSet.size === 0) this.byGroup.delete(prev.groupKey)
+    if (groupSet && groupSet.size === 0) {
+      this.byGroup.delete(prev.groupKey)
+    }
     return true
   }
 
@@ -81,6 +91,8 @@ export class TaskStore {
   }
 
   list(opts?: {
+    query?: string
+    kind?: TaskKind
     status?: TaskStatus
     groupKey?: string
     parentId?: string
@@ -97,15 +109,33 @@ export class TaskStore {
     }
 
     const all: Task[] = []
+    const query = opts?.query?.trim().toLocaleLowerCase()
     for (const id of candidates) {
       const t = this.byId.get(id)
-      if (!t) continue
-      if (opts?.groupKey && t.groupKey !== opts.groupKey) continue
-      if (opts?.parentId && t.parentId !== opts.parentId) continue
+      if (!t) {
+        continue
+      }
+      if (opts?.groupKey && t.groupKey !== opts.groupKey) {
+        continue
+      }
+      if (opts?.parentId && t.parentId !== opts.parentId) {
+        continue
+      }
+      if (opts?.kind && t.kind !== opts.kind) {
+        continue
+      }
+      if (
+        query &&
+        !`${t.id}\n${t.input.title ?? ''}\n${t.input.url}`.toLocaleLowerCase().includes(query)
+      ) {
+        continue
+      }
       all.push(t)
     }
     all.sort((a, b) => {
-      if (a.createdAt !== b.createdAt) return a.createdAt - b.createdAt
+      if (a.createdAt !== b.createdAt) {
+        return a.createdAt - b.createdAt
+      }
       return a.id < b.id ? -1 : a.id > b.id ? 1 : 0
     })
 
@@ -117,9 +147,7 @@ export class TaskStore {
     const limit = opts?.limit ?? 100
     const slice = all.slice(startIdx, startIdx + limit)
     const nextCursor =
-      startIdx + slice.length < all.length && slice.length > 0
-        ? slice[slice.length - 1]!.id
-        : null
+      startIdx + slice.length < all.length && slice.length > 0 ? slice[slice.length - 1]!.id : null
     return { tasks: slice, nextCursor }
   }
 
@@ -134,9 +162,13 @@ export class TaskStore {
       failed: 0,
       cancelled: 0
     }
-    for (const s of STATUSES) byStatus[s] = this.byStatus.get(s)?.size ?? 0
+    for (const s of STATUSES) {
+      byStatus[s] = this.byStatus.get(s)?.size ?? 0
+    }
     const perGroup: Record<string, number> = {}
-    for (const [k, set] of this.byGroup) perGroup[k] = set.size
+    for (const [k, set] of this.byGroup) {
+      perGroup[k] = set.size
+    }
     return {
       total: this.byId.size,
       byStatus,

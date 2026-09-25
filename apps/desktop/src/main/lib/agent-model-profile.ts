@@ -4,14 +4,22 @@ import {
   type AgentThinkingLevel,
   type AgentThinkingOptions
 } from '../../shared/agent-chat'
+import { AGENT_ARTICLE_REVIEW_PROMPT } from './agent-article-review'
+import {
+  DEFAULT_WIRE_BUDGET,
+  reviewInputMaxBytes,
+  TOKEN_BYTES,
+  type WireBudget
+} from './agent-budget'
 import { AGENT_TOOL_BYTES } from './agent-memory'
 
 const CONTEXT_SAFETY_TOKENS = 4096
 const SUMMARY_MAX_TOKENS = 8192
 const REVIEW_TIMEOUT_MS = 60_000
+const DEFAULT_CONCURRENT_STREAMS = 2
 
 /** Document shape Desktop understands; keep in sync with Cloud `AGENT_PROFILE_VERSION`. */
-export const AGENT_PROFILE_VERSION = 2
+export const AGENT_PROFILE_VERSION = 3
 /** Advertised by Desktop so Cloud can refuse unreadable documents. Keep in sync with Cloud. */
 export const AGENT_PROFILE_HEADER = 'X-VidBee-Agent-Profile'
 
@@ -31,14 +39,20 @@ export interface AgentHarnessTuning {
   defaultThinkingLevel: AgentThinkingLevel
 }
 
+export interface AgentModelLimits {
+  concurrentStreams: number
+}
+
 export interface AgentModelProfile {
-  version: 2
+  version: 2 | 3
   modelRelease: string
   contextWindow: number
   maxTokens: number
   vision: boolean
   thinkingLevels?: AgentThinkingLevel[]
   harness: AgentHarnessTuning
+  limits: AgentModelLimits
+  wireBudget: WireBudget
 }
 
 /** Fail closed with a stable prefix so callers can match Cloud profile errors. */
@@ -150,15 +164,65 @@ export function readAgentModelProfile(value: unknown): AgentModelProfile {
   ) {
     throw new Error('Invalid Cloud agent resource controls')
   }
+  const limits = readLimits(profile)
+  const wireBudget = readWireBudget(profile, profile.contextWindow)
   return {
-    version: 2,
+    version: profile.version >= 3 ? 3 : 2,
     modelRelease: profile.modelRelease,
     contextWindow: profile.contextWindow,
     maxTokens: profile.maxTokens,
     vision: profile.vision,
     thinkingLevels: knownThinkingLevels(profile.thinkingLevels, defaultThinkingLevel),
-    harness: { outputMaxTokens, defaultThinkingLevel }
+    harness: { outputMaxTokens, defaultThinkingLevel },
+    limits,
+    wireBudget
   }
+}
+
+/**
+ * Parse v3 concurrent stream limits, defaulting for v2 documents.
+ *
+ * @param profile Raw capabilities object.
+ */
+function readLimits(profile: { limits?: { concurrentStreams?: unknown } }): AgentModelLimits {
+  const value = profile.limits?.concurrentStreams
+  if (value === undefined) {
+    return { concurrentStreams: DEFAULT_CONCURRENT_STREAMS }
+  }
+  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 1 || value > 8) {
+    invalidCloudProfile('limits.concurrentStreams is out of range')
+  }
+  return { concurrentStreams: value }
+}
+
+/**
+ * Parse v3 wire-budget parameters, defaulting to today's admission formula.
+ *
+ * @param profile Raw capabilities object.
+ * @param contextWindow Fallback maxInputUnits when the field is omitted.
+ */
+function readWireBudget(
+  profile: { wireBudget?: Partial<WireBudget> },
+  contextWindow: number
+): WireBudget {
+  const budget = profile.wireBudget
+  if (!budget) {
+    return { ...DEFAULT_WIRE_BUDGET, maxInputUnits: contextWindow }
+  }
+  const textBytesPerUnit = budget.textBytesPerUnit ?? DEFAULT_WIRE_BUDGET.textBytesPerUnit
+  const imageBytesPerUnit = budget.imageBytesPerUnit ?? DEFAULT_WIRE_BUDGET.imageBytesPerUnit
+  const maxInputUnits = budget.maxInputUnits ?? contextWindow
+  if (
+    !Number.isSafeInteger(textBytesPerUnit) ||
+    textBytesPerUnit < 1 ||
+    !Number.isSafeInteger(imageBytesPerUnit) ||
+    imageBytesPerUnit < 1 ||
+    !Number.isSafeInteger(maxInputUnits) ||
+    maxInputUnits < 4096
+  ) {
+    invalidCloudProfile('wireBudget is out of range')
+  }
+  return { textBytesPerUnit, imageBytesPerUnit, maxInputUnits }
 }
 
 /**
@@ -199,10 +263,16 @@ export function agentRuntimePolicy(model: Model<Api>, tuning?: AgentHarnessTunin
     reserveTokens,
     keepRecentTokens: summaryTargetTokens,
     summaryTargetTokens,
-    toolResultMaxBytes: Math.min(AGENT_TOOL_BYTES, 2 * (contextWindow - reserveTokens)),
+    toolResultMaxBytes: Math.min(AGENT_TOOL_BYTES, TOKEN_BYTES * (contextWindow - reserveTokens)),
     reviewOutputTokens: summaryOutputTokens,
     reviewTimeoutMs: REVIEW_TIMEOUT_MS,
     articleSectionTokens: Math.min(outputTokens, contextWindow - reserveTokens),
+    reviewInputMaxBytes: reviewInputMaxBytes({
+      contextWindow,
+      reviewOutputTokens: summaryOutputTokens,
+      contextSafetyTokens,
+      promptBytes: Buffer.byteLength(AGENT_ARTICLE_REVIEW_PROMPT)
+    }),
     defaultThinkingLevel,
     summaryThinkingLevel: defaultThinkingLevel
   }

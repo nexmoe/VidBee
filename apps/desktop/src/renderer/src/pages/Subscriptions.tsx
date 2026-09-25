@@ -365,7 +365,7 @@ export function Subscriptions() {
           </div>
         </ScrollArea>
 
-        {/* Add RSS Button */}
+        {/* Add subscription button */}
         <Button
           className="flex h-auto w-20 shrink-0 grow-0 flex-col items-center gap-1 rounded-2xl bg-transparent px-2 py-2 transition-all hover:bg-neutral-100 hover:opacity-80"
           onClick={() => setAddDialogOpen(true)}

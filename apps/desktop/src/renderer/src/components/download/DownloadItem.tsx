@@ -17,6 +17,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { useNavigate } from '@tanstack/react-router'
 import { getCookieSetupFailureKind } from '@vidbee/downloader-core/cookie-setup'
+import type { TaskCreationMetadata } from '@vidbee/task-queue'
 import { DownloadPlatformIcon } from '@vidbee/ui/components/ui/download-platform-icon'
 import {
   DOWNLOAD_FEEDBACK_ISSUE_TITLE,
@@ -761,6 +762,14 @@ export function DownloadItem({
   if (inlineFileSize && !showInlineProgress) {
     metaItems.push({ key: 'size', node: inlineFileSize })
   }
+  if (download.origin === 'agent' || download.origin === 'subscription') {
+    metaItems.push({
+      key: 'origin',
+      node: (
+        <TaskOriginBadge agentConversation={download.agentConversation} origin={download.origin} />
+      )
+    })
+  }
   if (subtitleRow) {
     metaItems.push({
       key: 'subtitle',
@@ -778,6 +787,21 @@ export function DownloadItem({
         </DownloadMetaTip>
       )
     })
+  }
+
+  const sameCreationSource =
+    transcript?.creation?.origin === download.origin &&
+    transcript?.creation?.agentConversation?.downloadId ===
+      download.agentConversation?.downloadId &&
+    transcript?.creation?.agentConversation?.threadId === download.agentConversation?.threadId &&
+    transcript?.creation?.agentConversation?.promptId === download.agentConversation?.promptId
+  if (
+    subtitleRow &&
+    transcript?.creation &&
+    transcript.creation.origin !== 'manual' &&
+    !sameCreationSource
+  ) {
+    metaItems.push({ key: 'transcript-origin', node: <TaskOriginBadge {...transcript.creation} /> })
   }
 
   return (
@@ -1464,4 +1488,41 @@ const transcriptStatusIcon = (listState: TranscriptListState): ReactNode => {
     default:
       return null
   }
+}
+
+/** Label task provenance and link to the exact conversation that admitted it. */
+function TaskOriginBadge({ origin, agentConversation }: Partial<TaskCreationMetadata>) {
+  const { t } = useTranslation()
+  const navigate = useNavigate()
+  if (origin === 'subscription') {
+    return (
+      <span className="text-muted-foreground text-xs">{t('download.createdBySubscription')}</span>
+    )
+  }
+  if (origin !== 'agent') {
+    return null
+  }
+  const className =
+    'pointer-events-auto relative z-20 inline-flex rounded-sm text-muted-foreground text-xs'
+  return agentConversation ? (
+    <button
+      aria-label={t('download.openSourceConversation')}
+      className={`${className} hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`}
+      data-task-origin="agent"
+      onClick={(event) => {
+        event.stopPropagation()
+        void navigate({
+          to: '/downloads/$downloadId/transcript',
+          params: { downloadId: agentConversation.downloadId },
+          search: { tab: agentConversation.promptId, thread: agentConversation.threadId }
+        })
+      }}
+      title={t('download.openSourceConversation')}
+      type="button"
+    >
+      {t('download.createdByAgent')}
+    </button>
+  ) : (
+    <span className={className}>{t('download.createdByAgent')}</span>
+  )
 }

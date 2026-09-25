@@ -280,7 +280,14 @@
       "subscription": "Subscription"
     },
     "formatFallbackTitle": "Selected format unavailable",
-    "formatFallbackHint": "Your pick wasn't deliverable, so VidBee fell back to best available ({{resolved}}). Try clearing browser cookies or picking a non-premium tier."
+    "formatFallbackHint": "Your pick wasn't deliverable, so VidBee fell back to best available ({{resolved}}). Try clearing browser cookies or picking a non-premium tier.",
+    "creationSource": "Creation source",
+    "allSources": "All sources",
+    "createdManually": "Created manually",
+    "createdByAgent": "AI-created",
+    "createdBySubscription": "Subscription",
+    "openSourceConversation": "Open source conversation",
+    "sourceFile": "Source file"
   },
   "error": {
     "title": "Something went wrong",
@@ -382,7 +389,7 @@
     "home": "Home",
     "download": "Download",
     "playlist": "Download Playlist",
-    "rss": "RSS",
+    "rss": "Subscribe",
     "transcripts": "Transcripts",
     "subscriptions": "Subscriptions",
     "preferences": "Preferences",
@@ -617,9 +624,9 @@
       "profileMissingDb": "This Firefox profile has no cookies database. Open Firefox once, then try again.",
       "statusHeading": "Cookie status",
       "methodRecommended": "Recommended",
-      "methodExtensionWhy": "Best option. Desktop uses live cookies for each download, including Chrome and Edge on Windows.",
+      "methodExtensionWhy": "Best option. Read transcripts in the side panel, and Desktop uses live cookies for each download, including Chrome and Edge on Windows.",
       "extensionTitle": "Browser extension",
-      "extensionDescription": "Install the VidBee extension so Desktop can use your live signed-in cookies when downloading",
+      "extensionDescription": "Read video transcripts in your browser. Desktop can also use live signed-in cookies from this extension when downloading",
       "extensionConnected": "Connected",
       "extensionDisconnected": "Not connected",
       "extensionConnectedHint": "{{browser}} is connected. New downloads will use cookies from this browser",
@@ -627,9 +634,9 @@
       "extensionInstallChrome": "Add to Chrome",
       "extensionInstallEdge": "Add to Edge",
       "extensionInstallFirefox": "Add to Firefox",
-      "extensionInstallStep1": "Install the VidBee extension in Chrome, Edge, or Firefox",
+      "extensionInstallStep1": "Install the VidBee Transcript extension in Chrome, Edge, or Firefox",
       "extensionInstallStep2": "Keep VidBee Desktop running so the extension can connect",
-      "extensionInstallStep3": "Sign in to YouTube, Bilibili, or other sites in that browser, then open the VidBee toolbar icon once"
+      "extensionInstallStep3": "Open a video and click the VidBee toolbar icon to read its transcript. Sign in on that site if a download needs cookies."
     },
     "openLinkError": "Failed to open link",
     "browserOptions": {
@@ -709,6 +716,15 @@
     "shareWatermarkDescription": "Add a watermark with the original title, author, and VidBee branding",
     "maxConcurrentDownloads": "Maximum number of active downloads",
     "maxConcurrentDownloadsDescription": "Maximum number of simultaneous downloads",
+    "agentManagementTools": "Agent management tools",
+    "agentManagementToolsDescription": "Whether the agent can change tasks and subscriptions, and whether it must ask first",
+    "agentManagementToolsOptions": {
+      "off": "Off",
+      "ask": "Ask first",
+      "auto": "Allow automatically"
+    },
+    "agentMaxConcurrentRuns": "Concurrent local agent runs",
+    "agentMaxConcurrentRunsDescription": "How many local-provider agent conversations can run at once",
     "none": "None",
     "oneClickDownload": "One-Click Download",
     "oneClickDownloadDescription": "Enable one-click download with default settings",
@@ -983,7 +999,7 @@
   "subscriptions": {
     "title": "Subscriptions",
     "subtitle": "{{count}} subscription{{count, plural, one {} other {s}}}",
-    "description": "Automatically monitor RSS feeds and queue new downloads without manual work.",
+    "description": "Automatically monitor channels and queue new downloads without manual work.",
     "defaults": {
       "title": "Automation defaults",
       "description": "Control where subscription downloads are stored and how often VidBee checks for new videos.",
@@ -993,8 +1009,8 @@
       "onlyLatestDescription": "When enabled, VidBee skips older backlog items and only grabs the newest upload."
     },
     "add": {
-      "title": "Add RSS",
-      "description": "Paste an RSS feed link. VidBee will detect the feed automatically."
+      "title": "Add subscription",
+      "description": "Paste a channel or feed link. VidBee will detect it automatically."
     },
     "fields": {
       "url": "Feed URL",
@@ -1054,7 +1070,7 @@
       "missingUrl": "Please paste a channel link first.",
       "created": "Subscription added",
       "createError": "Failed to add subscription.",
-      "duplicateUrl": "This RSS feed is already subscribed.",
+      "duplicateUrl": "This subscription already exists.",
       "refreshStarted": "Refresh started",
       "removed": "Subscription removed",
       "updated": "Subscription updated",
@@ -1062,7 +1078,7 @@
       "itemAlreadyQueued": "This video is already queued",
       "queueError": "Failed to add to download queue.",
       "openLinkError": "Failed to open the video link.",
-      "resolveError": "Failed to resolve RSS feed URL."
+      "resolveError": "Failed to resolve the subscription URL."
     },
     "detectedFeed": "Detected {{platform}} feed -> {{feed}}",
     "detecting": "Detecting feed...",
@@ -1089,7 +1105,7 @@
       "description": "Combine VidBee with RSSHub to enable automated subscriptions and downloads from various platforms. Once set up, VidBee runs in the background and automatically downloads the latest videos and content.",
       "learnMore": "Learn more about RSSHub",
       "openDocs": "Open RSSHub Documentation",
-      "hint": "Don't have an RSS feed URL? Use RSSHub to generate RSS feeds for YouTube, Twitter, and thousands of other platforms."
+      "hint": "Don't have a feed URL? Use RSSHub to generate feeds for YouTube, Twitter, and thousands of other platforms."
     }
   },
   "kernelPreparation": {
@@ -1631,7 +1647,15 @@
     "eventStatus": {
       "running": "Running",
       "completed": "Completed",
-      "error": "Failed"
+      "error": "Failed",
+      "pendingApproval": "Waiting for approval",
+      "denied": "Declined"
+    },
+    "approval": {
+      "allow": "Allow",
+      "allowAndRemember": "Allow and remember",
+      "deny": "Deny",
+      "pending": "The agent wants to {{summary}}"
     },
     "placeholder": "Ask a follow-up about this video…",
     "send": "Send message",
@@ -1674,6 +1698,9 @@
     "catalogMatched": "Matched {{name}}. Context window and capabilities were filled in.",
     "catalogBadge": "Catalog",
     "tools": {
+      "list_transcripts": "Checking available subtitles",
+      "select_transcript": "Selecting subtitle source",
+      "load_tools": "Finding available capabilities",
       "get_video_info": "Reading video information",
       "read_transcript": "Reading transcript",
       "search_transcript": "Searching transcript",

@@ -1,11 +1,129 @@
 import { randomUUID } from 'node:crypto'
+import { existsSync, readFileSync } from 'node:fs'
+import type { SessionEntry } from '@earendil-works/pi-coding-agent'
 import type { Database } from 'better-sqlite3'
-import type { AgentRunEvent, AgentThread } from '../../shared/agent-chat'
+import type {
+  AgentArtifact,
+  AgentChatRun,
+  AgentRunEvent,
+  AgentThread
+} from '../../shared/agent-chat'
 import { sanitizeAgentConversationTitle } from '../../shared/agent-history'
 import { agentActivity } from './agent-activity'
-import { agentAnswer } from './agent-output'
 import { loadPersistedPromptRun } from './ai-prompt-store'
 import { getDatabaseConnection } from './database'
+
+export interface SaveScope {
+  thread?: boolean
+  messageIds?: string[]
+  runIds?: string[]
+  artifactIds?: string[]
+}
+
+const EVENT_RETENTION = 1000
+const IMAGE_UNAVAILABLE = '[Image unavailable; it was removed from disk]'
+
+/**
+ * Replace inline image data with artifact references before persistence.
+ *
+ * @param entry SDK session log entry.
+ * @param artifacts Conversation artifacts that may own the image bytes.
+ */
+export function dehydrateEntry(entry: SessionEntry, _artifacts: AgentArtifact[]): SessionEntry {
+  if (entry.type !== 'message' || entry.message.role !== 'toolResult') {
+    return entry
+  }
+  const message = entry.message
+  if (!(Array.isArray(message.content) && message.content.some((part) => part.type === 'image'))) {
+    return entry
+  }
+  const ids = artifactIdsFromDetails(message.details)
+  let index = 0
+  const content = message.content.map((part) => {
+    if (
+      part.type !== 'image' ||
+      typeof part.data !== 'string' ||
+      part.data.startsWith('artifact:')
+    ) {
+      return part
+    }
+    const id = ids[index++]
+    if (!id) {
+      return { type: 'text' as const, text: IMAGE_UNAVAILABLE }
+    }
+    return { ...part, data: `artifact:${id}` }
+  })
+  return { ...entry, message: { ...message, content } }
+}
+
+/**
+ * Restore image bytes from artifact files; missing files become text placeholders.
+ *
+ * @param entry Persisted session log entry.
+ * @param artifacts Conversation artifacts.
+ */
+export function rehydrateEntry(entry: SessionEntry, artifacts: AgentArtifact[]): SessionEntry {
+  if (entry.type !== 'message' || entry.message.role !== 'toolResult') {
+    return entry
+  }
+  const message = entry.message
+  if (!Array.isArray(message.content)) {
+    return entry
+  }
+  const content = message.content.flatMap((part) => {
+    if (
+      part.type !== 'image' ||
+      typeof part.data !== 'string' ||
+      !part.data.startsWith('artifact:')
+    ) {
+      return [part]
+    }
+    const id = part.data.slice('artifact:'.length)
+    const artifact = artifacts.find((item) => item.id === id)
+    const file = artifact?.kind === 'image' ? artifact.path : artifact?.posterPath
+    if (!(file && existsSync(file))) {
+      return [{ type: 'text' as const, text: IMAGE_UNAVAILABLE }]
+    }
+    return [{ ...part, data: readFileSync(file).toString('base64') }]
+  })
+  return { ...entry, message: { ...message, content } }
+}
+
+/**
+ * Collect artifact ids recorded on a tool result.
+ *
+ * @param details Tool result details blob.
+ */
+function artifactIdsFromDetails(details: unknown): string[] {
+  if (!details || typeof details !== 'object') {
+    return []
+  }
+  const record = details as { artifacts?: unknown; artifact?: unknown }
+  const list = Array.isArray(record.artifacts)
+    ? record.artifacts
+    : record.artifact
+      ? [record.artifact]
+      : []
+  return list.flatMap((item) =>
+    item && typeof item === 'object' && typeof (item as { id?: unknown }).id === 'string'
+      ? [(item as { id: string }).id]
+      : []
+  )
+}
+
+/**
+ * Persistable run metadata without the in-memory history copies.
+ *
+ * @param run Live run object.
+ * @param keepRawMessages True for unread legacy rows that have no session entries.
+ */
+function persistableRun(run: AgentChatRun, keepRawMessages: boolean): AgentChatRun {
+  return {
+    ...run,
+    rawMessages: keepRawMessages ? run.rawMessages : [],
+    sessionEntries: undefined
+  }
+}
 
 /** SQLite is the source of truth; full provider messages never travel to the renderer. */
 export class AgentChatStore {
@@ -18,8 +136,11 @@ export class AgentChatStore {
       CREATE TABLE IF NOT EXISTS agent_runs (id TEXT PRIMARY KEY, thread_id TEXT NOT NULL REFERENCES agent_threads(id) ON DELETE CASCADE, data TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS agent_artifacts (id TEXT PRIMARY KEY, thread_id TEXT NOT NULL REFERENCES agent_threads(id) ON DELETE CASCADE, data TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS agent_events (thread_id TEXT NOT NULL REFERENCES agent_threads(id) ON DELETE CASCADE, seq INTEGER NOT NULL, data TEXT NOT NULL, PRIMARY KEY(thread_id,seq));
+      CREATE TABLE IF NOT EXISTS agent_run_entries (run_id TEXT NOT NULL REFERENCES agent_runs(id) ON DELETE CASCADE, seq INTEGER NOT NULL, data TEXT NOT NULL, PRIMARY KEY (run_id, seq));
+      CREATE TABLE IF NOT EXISTS agent_schema (key TEXT PRIMARY KEY, value INTEGER NOT NULL);
       CREATE INDEX IF NOT EXISTS agent_threads_download_prompt ON agent_threads (download_id, prompt_id);`)
     this.dropLegacyThreadUniqueness()
+    this.migrateToEntryStorage()
     for (const row of db.prepare('SELECT id FROM agent_threads').all() as { id: string }[]) {
       const thread = this.get(row.id)
       if (!thread) {
@@ -34,7 +155,7 @@ export class AgentChatStore {
         run.error = 'Execution interrupted by application restart.'
         run.updatedAt = Date.now()
         for (const tool of run.tools) {
-          if (tool.status === 'running') {
+          if (tool.status === 'running' || tool.status === 'pending-approval') {
             tool.status = 'error'
           }
         }
@@ -180,21 +301,39 @@ export class AgentChatStore {
       return null
     }
     const thread = JSON.parse(row.data) as AgentThread
-    for (const [key, table] of [
-      ['messages', 'agent_messages'],
-      ['runs', 'agent_runs'],
-      ['artifacts', 'agent_artifacts']
-    ] as const) {
-      thread[key] = this.db
-        .prepare(`SELECT data FROM ${table} WHERE thread_id = ? ORDER BY rowid`)
-        .all(id)
-        .map((item) => JSON.parse((item as { data: string }).data))
-    }
+    thread.messages = this.db
+      .prepare('SELECT data FROM agent_messages WHERE thread_id = ? ORDER BY rowid')
+      .all(id)
+      .map((item) => JSON.parse((item as { data: string }).data))
+    thread.artifacts = this.db
+      .prepare('SELECT data FROM agent_artifacts WHERE thread_id = ? ORDER BY rowid')
+      .all(id)
+      .map((item) => JSON.parse((item as { data: string }).data))
+    thread.runs = this.db
+      .prepare('SELECT data FROM agent_runs WHERE thread_id = ? ORDER BY rowid')
+      .all(id)
+      .map((item) => {
+        const run = JSON.parse((item as { data: string }).data) as AgentChatRun
+        const entries = this.db
+          .prepare('SELECT data FROM agent_run_entries WHERE run_id = ? ORDER BY seq')
+          .all(run.id) as { data: string }[]
+        if (entries.length) {
+          run.sessionEntries = entries.map((entry) =>
+            rehydrateEntry(JSON.parse(entry.data) as SessionEntry, thread.artifacts)
+          )
+        }
+        return run
+      })
     return thread
   }
 
   /** Commit entities and a sequenced event atomically before broadcasting. */
-  save(thread: AgentThread, type: string, runId: string | null = null): AgentRunEvent {
+  save(
+    thread: AgentThread,
+    type: string,
+    runId: string | null = null,
+    scope?: SaveScope
+  ): AgentRunEvent {
     const nextSeq = thread.seq + 1
     const event: AgentRunEvent = {
       threadId: thread.id,
@@ -205,6 +344,7 @@ export class AgentChatStore {
       createdAt: Date.now(),
       snapshot: publicAgentThread({ ...thread, seq: nextSeq })
     }
+    const writeAll = !scope
     this.db.transaction(() => {
       this.db
         .prepare(
@@ -214,19 +354,49 @@ export class AgentChatStore {
           thread.id,
           thread.downloadId,
           thread.promptId,
-          JSON.stringify({ ...thread, seq: nextSeq, messages: [], runs: [], artifacts: [] })
+          JSON.stringify({
+            ...thread,
+            seq: nextSeq,
+            messages: [],
+            runs: [],
+            artifacts: []
+          })
         )
-      for (const [key, table] of [
-        ['messages', 'agent_messages'],
-        ['runs', 'agent_runs'],
-        ['artifacts', 'agent_artifacts']
-      ] as const) {
-        const put = this.db.prepare(
-          `INSERT INTO ${table} VALUES (?, ?, ?) ON CONFLICT(id) DO UPDATE SET data = excluded.data`
-        )
-        for (const item of thread[key]) {
-          put.run(item.id, thread.id, JSON.stringify(item))
-        }
+      const putMessage = this.db.prepare(
+        'INSERT INTO agent_messages VALUES (?, ?, ?) ON CONFLICT(id) DO UPDATE SET data = excluded.data'
+      )
+      const putRun = this.db.prepare(
+        'INSERT INTO agent_runs VALUES (?, ?, ?) ON CONFLICT(id) DO UPDATE SET data = excluded.data'
+      )
+      const putArtifact = this.db.prepare(
+        'INSERT INTO agent_artifacts VALUES (?, ?, ?) ON CONFLICT(id) DO UPDATE SET data = excluded.data'
+      )
+      const messages = writeAll
+        ? thread.messages
+        : thread.messages.filter((message) => scope.messageIds?.includes(message.id))
+      for (const message of messages) {
+        putMessage.run(message.id, thread.id, JSON.stringify(message))
+      }
+      const runs = writeAll
+        ? thread.runs
+        : thread.runs.filter((run) => scope.runIds?.includes(run.id))
+      for (const run of runs) {
+        const storedEntries = this.db
+          .prepare('SELECT COUNT(*) AS n FROM agent_run_entries WHERE run_id = ?')
+          .get(run.id) as { n: number }
+        const keepRaw =
+          storedEntries.n === 0 &&
+          Array.isArray(run.rawMessages) &&
+          run.rawMessages.length > 0 &&
+          !run.sessionEntries?.length
+        putRun.run(run.id, thread.id, JSON.stringify(persistableRun(run, keepRaw)))
+        this.appendRunEntries(run, thread.artifacts, storedEntries.n)
+      }
+      const artifacts = writeAll
+        ? thread.artifacts
+        : thread.artifacts.filter((artifact) => scope.artifactIds?.includes(artifact.id))
+      for (const artifact of artifacts) {
+        putArtifact.run(artifact.id, thread.id, JSON.stringify(artifact))
       }
       this.db
         .prepare('INSERT INTO agent_events VALUES (?, ?, ?)')
@@ -234,6 +404,21 @@ export class AgentChatStore {
     })()
     thread.seq = nextSeq
     return event
+  }
+
+  /**
+   * Drop old cursor rows while keeping the latest snapshot for reconnect repair.
+   *
+   * @param thread Conversation whose event log should be trimmed.
+   */
+  pruneEvents(thread: AgentThread): void {
+    const cutoff = thread.seq - EVENT_RETENTION
+    if (cutoff <= 0) {
+      return
+    }
+    this.db
+      .prepare('DELETE FROM agent_events WHERE thread_id = ? AND seq <= ?')
+      .run(thread.id, cutoff)
   }
 
   /** Read the durable cursor log; the current snapshot repairs any missed UI updates. */
@@ -311,25 +496,78 @@ export class AgentChatStore {
   deleteThread(id: string): void {
     this.db.prepare('DELETE FROM agent_threads WHERE id = ?').run(id)
   }
+
+  /**
+   * Insert only new append-only session entries for a run.
+   *
+   * @param run Live run whose in-memory sessionEntries may have grown.
+   * @param artifacts Conversation artifacts used to dehydrate images.
+   * @param persistedCount Rows already stored for this run.
+   */
+  private appendRunEntries(
+    run: AgentChatRun,
+    artifacts: AgentArtifact[],
+    persistedCount: number
+  ): void {
+    const entries = (run.sessionEntries as SessionEntry[] | undefined) ?? []
+    if (entries.length <= persistedCount) {
+      return
+    }
+    const insert = this.db.prepare(
+      'INSERT INTO agent_run_entries (run_id, seq, data) VALUES (?, ?, ?)'
+    )
+    for (let seq = persistedCount; seq < entries.length; seq += 1) {
+      insert.run(run.id, seq, JSON.stringify(dehydrateEntry(entries[seq], artifacts)))
+    }
+  }
+
+  /** Move sessionEntries out of run.data into agent_run_entries once. */
+  private migrateToEntryStorage(): void {
+    const row = this.db.prepare('SELECT value FROM agent_schema WHERE key = ?').get('version') as
+      | { value: number }
+      | undefined
+    if ((row?.value ?? 0) >= 2) {
+      return
+    }
+    const runs = this.db.prepare('SELECT id, data FROM agent_runs').all() as {
+      id: string
+      data: string
+    }[]
+    const insert = this.db.prepare(
+      'INSERT OR IGNORE INTO agent_run_entries (run_id, seq, data) VALUES (?, ?, ?)'
+    )
+    const update = this.db.prepare('UPDATE agent_runs SET data = ? WHERE id = ?')
+    for (const run of runs) {
+      const data = JSON.parse(run.data) as AgentChatRun
+      const entries = data.sessionEntries as SessionEntry[] | undefined
+      const raw = data.rawMessages
+      if (entries?.length) {
+        for (const [seq, entry] of entries.entries()) {
+          insert.run(run.id, seq, JSON.stringify(entry))
+        }
+        update.run(
+          JSON.stringify(persistableRun({ ...data, sessionEntries: undefined }, false)),
+          run.id
+        )
+      } else if (Array.isArray(raw) && raw.length) {
+        update.run(JSON.stringify(persistableRun(data, true)), run.id)
+      } else if (data.sessionEntries) {
+        update.run(JSON.stringify(persistableRun(data, false)), run.id)
+      }
+    }
+    this.db
+      .prepare(
+        'INSERT INTO agent_schema(key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value'
+      )
+      .run('version', 2)
+  }
 }
 
 /** Strip provider-private state and local paths from IPC snapshots. */
 export function publicAgentThread(thread: AgentThread): AgentThread {
   return {
     ...thread,
-    messages: thread.messages.map((message) => {
-      const run = thread.runs.find((item) => item.id === message.runId)
-      if (message.role !== 'assistant' || !run || message.legacy) {
-        return { ...message }
-      }
-      return {
-        ...message,
-        text:
-          run.status !== 'completed' && run.rawMessages.length && !run.articleSections?.length
-            ? agentAnswer(run.rawMessages)
-            : message.text
-      }
-    }),
+    messages: thread.messages.map((message) => ({ ...message })),
     runs: thread.runs.map((run) => ({
       ...run,
       activity: agentActivity(run),

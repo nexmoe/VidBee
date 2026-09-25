@@ -1,33 +1,11 @@
 import { type IpcContext, IpcMethod, IpcService } from 'electron-ipc-decorator'
 import type { AppSettings } from '../../../shared/types'
-import { refreshAppIconMenus } from '../../lib/app-icon-menu'
-import {
-  applyBatchSettingSideEffects,
-  applySingleSettingSideEffects
-} from '../../lib/settings-effects'
+import { updateDesktopSettings } from '../../lib/settings-host'
 import { applyDesktopQueueConcurrency } from '../../lib/task-queue-host'
 import { applyUpdateChannel } from '../../lib/update-channel'
 import { settingsManager } from '../../settings'
 import { applyAutoLaunchSetting } from '../../utils/auto-launch'
 import { applyDockVisibility } from '../../utils/dock'
-
-const settingSideEffectHandlers = {
-  onLanguage: () => {
-    refreshAppIconMenus()
-  },
-  onHideDockIcon: (value: boolean) => {
-    applyDockVisibility(value)
-  },
-  onLaunchAtLogin: (value: boolean) => {
-    applyAutoLaunchSetting(value)
-  },
-  onMaxConcurrentDownloads: () => {
-    applyDesktopQueueConcurrency()
-  },
-  onMaxConcurrentTranscriptions: () => {
-    applyDesktopQueueConcurrency()
-  }
-}
 
 class SettingsService extends IpcService {
   static readonly groupName = 'settings'
@@ -39,8 +17,7 @@ class SettingsService extends IpcService {
 
   @IpcMethod()
   set<K extends keyof AppSettings>(_context: IpcContext, key: K, value: AppSettings[K]): void {
-    settingsManager.set(key, value)
-    applySingleSettingSideEffects(key, value, settingSideEffectHandlers)
+    updateDesktopSettings({ [key]: value })
   }
 
   @IpcMethod()
@@ -50,8 +27,7 @@ class SettingsService extends IpcService {
 
   @IpcMethod()
   setAll(_context: IpcContext, settings: Partial<AppSettings>): void {
-    settingsManager.setAll(settings)
-    applyBatchSettingSideEffects(settings, settingSideEffectHandlers)
+    updateDesktopSettings(settings)
   }
 
   @IpcMethod()

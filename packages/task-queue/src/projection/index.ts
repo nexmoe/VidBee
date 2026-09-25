@@ -186,7 +186,10 @@ export function projectTaskToLegacy(task: Readonly<Task>): LegacyTaskProjection 
     url: task.input.url,
     title: task.input.title,
     thumbnail: task.input.thumbnail,
-    type: task.kind === 'audio' ? 'audio' : 'video',
+    type:
+      task.kind === 'audio' || (task.kind === 'conversion' && task.input.options?.type === 'audio')
+        ? 'audio'
+        : 'video',
     status,
     internalStatus: task.status,
     statusReason: task.statusReason,
@@ -203,7 +206,8 @@ export function projectTaskToLegacy(task: Readonly<Task>): LegacyTaskProjection 
     playlistSize: opts.playlistSize,
     fileSize: opts.fileSize,
     startedAt: opts.startedAt,
-    completedAt: opts.completedAt ?? (TERMINAL_STATUSES.has(task.status) ? task.enteredStatusAt : undefined),
+    completedAt:
+      opts.completedAt ?? (TERMINAL_STATUSES.has(task.status) ? task.enteredStatusAt : undefined),
     downloadPath: opts.downloadPath,
     attempt: task.attempt,
     maxAttempts: task.maxAttempts

@@ -2,7 +2,7 @@ import { aiModelIconComponent } from '@renderer/components/settings/ai-provider-
 import { ipcServices } from '@renderer/lib/ipc'
 import { cn } from '@renderer/lib/utils'
 import type { AgentThinkingLevel } from '@shared/agent-chat'
-import type { AiProviderConfig, AiSettingsSnapshot } from '@shared/ai-types'
+import type { AiProviderConfig, AiSettingsSnapshot, CloudModelOption } from '@shared/ai-types'
 import {
   CommandMenu,
   CommandMenuEmpty,
@@ -17,6 +17,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 const CLOUD_PROVIDER_VALUE = 'cloud'
+const CLOUD_MODEL_PREFIX = 'cloud:'
 
 /** Hide the default Command Menu icon so the row can center a brand mark. */
 function HiddenCommandIcon() {
@@ -37,13 +38,21 @@ export function AgentReasoningSelect({
 }) {
   const { t } = useTranslation()
   const [snapshot, setSnapshot] = useState<AiSettingsSnapshot | null>(null)
+  const [cloudModels, setCloudModels] = useState<CloudModelOption[]>([])
+  const [defaultCloudModelId, setDefaultCloudModelId] = useState('default')
   const [modelsOpen, setModelsOpen] = useState(false)
   const [thinkingOpen, setThinkingOpen] = useState(false)
   const selectedProviderId = snapshot?.activeProviderId ?? null
   const selectedProvider = (snapshot?.providers ?? []).find(
     (provider) => provider.id === selectedProviderId
   )
-  const selectedLabel = providerMenuLabel(selectedProviderId, snapshot?.providers ?? [], t)
+  const selectedCloudModel = cloudModels.find(
+    (model) => model.id === (snapshot?.cloudModelId ?? defaultCloudModelId)
+  )
+  const selectedLabel =
+    !selectedProviderId && selectedCloudModel
+      ? `${selectedCloudModel.name} · ${selectedCloudModel.multiplier}×`
+      : providerMenuLabel(selectedProviderId, snapshot?.providers ?? [], t)
   const SelectedIcon = aiModelIconComponent({
     isCloud: !selectedProvider,
     modelId: selectedProvider?.modelId,
@@ -54,30 +63,48 @@ export function AgentReasoningSelect({
   const triggerLabel = `${selectedLabel}: ${t('agentChat.thinking.label')}: ${thinkingLabel}`
   const modelItems = useMemo<CommandMenuItemData[]>(
     () => [
-      {
-        icon: aiModelIconComponent({ isCloud: true }),
-        keywords: ['vidbee', 'cloud'],
-        label: t('agentChat.cloud'),
-        value: CLOUD_PROVIDER_VALUE
-      },
+      ...(cloudModels.length
+        ? cloudModels.map((model) => ({
+            icon: aiModelIconComponent({ isCloud: true }),
+            keywords: ['vidbee', 'cloud', model.id, model.name],
+            label: model.name,
+            description: `${model.multiplier}×`,
+            value: `${CLOUD_MODEL_PREFIX}${model.id}`
+          }))
+        : [
+            {
+              icon: aiModelIconComponent({ isCloud: true }),
+              keywords: ['vidbee', 'cloud'],
+              label: t('agentChat.cloud'),
+              value: CLOUD_PROVIDER_VALUE
+            }
+          ]),
       ...(snapshot?.providers ?? []).map((provider) => ({
-        description: provider.modelId,
+        description:
+          provider.modelId && provider.name !== provider.modelId ? provider.name : undefined,
         icon: aiModelIconComponent({
           modelId: provider.modelId,
           name: provider.name,
           presetId: provider.presetId
         }),
         keywords: [provider.modelId, provider.presetId, provider.name],
-        label: provider.name,
+        label: provider.modelId || provider.name,
         value: provider.id
       }))
     ],
-    [snapshot, t]
+    [snapshot, cloudModels, t]
   )
 
   const refreshSnapshot = useCallback(async (): Promise<void> => {
     try {
       setSnapshot(await ipcServices.ai.getSnapshot())
+      try {
+        const catalog = await ipcServices.ai.getCloudModels()
+        setCloudModels(catalog.models)
+        setDefaultCloudModelId(catalog.defaultModelId)
+      } catch {
+        setCloudModels([])
+      }
     } catch {
       setSnapshot(null)
     }
@@ -89,6 +116,16 @@ export function AgentReasoningSelect({
 
   /** Persist the Composer model and reload thinking options for the next send. */
   const selectProvider = async (nextValue: string): Promise<void> => {
+    if (nextValue.startsWith(CLOUD_MODEL_PREFIX)) {
+      setModelsOpen(false)
+      try {
+        setSnapshot(await ipcServices.ai.setCloudModel(nextValue.slice(CLOUD_MODEL_PREFIX.length)))
+        onProviderChange?.()
+      } catch {
+        await refreshSnapshot()
+      }
+      return
+    }
     const nextId = nextValue === CLOUD_PROVIDER_VALUE ? null : nextValue
     setModelsOpen(false)
     if (nextId === selectedProviderId) {
@@ -167,9 +204,10 @@ export function AgentReasoningSelect({
             sideOffset={8}
           >
             <CommandMenu
-              className="max-h-80"
+              className="max-h-80 [&_[data-slot=command-menu-input]>svg]:size-4 [&_[data-slot=command-menu-input]]:h-9 [&_[data-slot=command-menu-input]]:gap-2.5 [&_[data-slot=command-menu-input]]:px-4"
               items={modelItems}
               onSelect={(item) => void selectProvider(item.value)}
+              size="compact"
             >
               <CommandMenuInput placeholder={t('agentChat.searchModels')} />
               <CommandMenuList
@@ -177,7 +215,7 @@ export function AgentReasoningSelect({
                   const Icon = item.icon
                   return (
                     <CommandMenuItem
-                      className="h-auto min-h-12 items-center gap-2.5 py-1.5 pr-2 pl-3"
+                      className="h-9 items-center gap-2.5 py-1.5 pr-2 pl-3"
                       icon={HiddenCommandIcon}
                       value={item.value}
                     >
@@ -186,10 +224,15 @@ export function AgentReasoningSelect({
                           <Icon className="block size-4 shrink-0 object-contain" size={16} />
                         ) : null}
                       </span>
-                      <span className="flex min-w-0 flex-1 flex-col items-start justify-center text-left leading-tight">
-                        <span className="w-full truncate">{item.label}</span>
+                      <span className="flex min-w-0 flex-1 items-center gap-2 text-left">
+                        <span className="min-w-0 flex-1 truncate" title={item.label}>
+                          {item.label}
+                        </span>
                         {item.description ? (
-                          <span className="w-full truncate text-muted-foreground text-xs">
+                          <span
+                            className="max-w-[30%] shrink-0 truncate text-muted-foreground text-xs tabular-nums"
+                            title={item.description}
+                          >
                             {item.description}
                           </span>
                         ) : null}

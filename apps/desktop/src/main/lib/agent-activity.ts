@@ -12,6 +12,16 @@ export function agentActivity(run: AgentChatRun): AgentActivity[] {
       .map((message) => [message.toolCallId, record(message.details)])
   )
   const seen = new Set<string>()
+  if (run.preloadedSourceLines) {
+    activity.push({
+      id: 'source:preloaded',
+      kind: 'tool',
+      toolId: 'source:preloaded',
+      name: 'read_transcript',
+      count: run.preloadedSourceLines,
+      artifactIds: []
+    })
+  }
   for (const [messageIndex, raw] of run.rawMessages.entries()) {
     while (lifecycle.length && lifecycle[0].messageCount <= messageIndex) {
       const event = lifecycle.shift()
@@ -80,6 +90,39 @@ export function agentActivity(run: AgentChatRun): AgentActivity[] {
   }
   for (const event of lifecycle) {
     activity.push({ id: event.id, kind: 'status', status: event.status })
+  }
+  for (const [sectionIndex, rawSection] of (run.articleSections ?? []).entries()) {
+    const attempts = record(rawSection).attempts
+    if (!Array.isArray(attempts)) {
+      continue
+    }
+    for (const [attemptIndex, rawAttempt] of attempts.entries()) {
+      const attempt = record(rawAttempt)
+      const messages = Array.isArray(attempt.messages) ? [...attempt.messages] : []
+      if (attempt.liveMessage) {
+        messages.push(attempt.liveMessage)
+      }
+      for (const [messageIndex, rawMessage] of messages.entries()) {
+        const message = record(rawMessage)
+        if (message.role !== 'assistant' || !Array.isArray(message.content)) {
+          continue
+        }
+        for (const [blockIndex, rawBlock] of message.content.entries()) {
+          const block = record(rawBlock)
+          if (
+            block.type === 'thinking' &&
+            typeof block.thinking === 'string' &&
+            block.thinking.trim()
+          ) {
+            activity.push({
+              id: `article:${sectionIndex}:${attemptIndex}:${messageIndex}:${blockIndex}`,
+              kind: 'thinking',
+              text: block.thinking
+            })
+          }
+        }
+      }
+    }
   }
   for (const tool of run.tools) {
     if (!seen.has(tool.id)) {

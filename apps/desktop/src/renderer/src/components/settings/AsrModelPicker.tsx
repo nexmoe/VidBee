@@ -57,7 +57,7 @@ export const AsrModelPicker = ({
   const { t, i18n } = useTranslation()
   const [status, setStatus] = useState<AsrModelStatusView | null>(null)
   const [busyTiers, setBusyTiers] = useState<ReadonlySet<AsrTierId>>(() => new Set())
-  const downloadingCount = busyTiers.size
+  const downloadingCount = busyTiers.size + (status?.pendingTiers.length ?? 0)
   const refresh = useCallback(async () => {
     try {
       setStatus(toModelStatusView(await ipcServices.transcript.getModelStatus()))
@@ -251,7 +251,7 @@ export const AsrModelPicker = ({
             {downloaded.map((tier, index) => (
               <AsrModelRow
                 activeTier={activeTier}
-                busy={busyTiers.has(tier)}
+                busy={busyTiers.has(tier) || status?.pendingTiers.includes(tier) === true}
                 downloading={status?.downloads.find((item) => item.tier === tier) ?? null}
                 key={`downloaded-${tier}`}
                 onCancel={(id) => void handleCancel(id)}
@@ -291,7 +291,7 @@ export const AsrModelPicker = ({
             (tier, index) => (
               <AsrModelRow
                 activeTier={activeTier}
-                busy={busyTiers.has(tier)}
+                busy={busyTiers.has(tier) || status?.pendingTiers.includes(tier) === true}
                 downloading={status?.downloads.find((item) => item.tier === tier) ?? null}
                 key={`recommended-${tier}`}
                 onCancel={(id) => void handleCancel(id)}
@@ -324,7 +324,7 @@ export const AsrModelPicker = ({
                 {models.map((tier, index) => (
                   <AsrModelRow
                     activeTier={activeTier}
-                    busy={busyTiers.has(tier.id)}
+                    busy={busyTiers.has(tier.id) || status?.pendingTiers.includes(tier.id) === true}
                     downloading={status?.downloads.find((item) => item.tier === tier.id) ?? null}
                     key={`all-${tier.id}`}
                     onCancel={(id) => void handleCancel(id)}

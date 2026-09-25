@@ -91,8 +91,9 @@ export const COOKIES_CHROME_EXTENSION_URL =
   'https://chrome.google.com/webstore/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc'
 export const COOKIES_FIREFOX_EXTENSION_URL =
   'https://addons.mozilla.org/en-US/firefox/addon/cookies-txt/'
-export const VIDBEE_EXTENSION_CHROME_URL =
-  'https://chromewebstore.google.com/detail/vidbee-transcript'
+export const VIDBEE_EXTENSION_ID = 'kpelcaehdkgleenlldpipjpoopnacehk'
+export const VIDBEE_EXTENSION_ORIGIN = `chrome-extension://${VIDBEE_EXTENSION_ID}`
+export const VIDBEE_EXTENSION_CHROME_URL = `https://chromewebstore.google.com/detail/${VIDBEE_EXTENSION_ID}`
 
 const CHROMIUM_FAMILY_BROWSERS = new Set<CookieBrowserId>([
   'chrome',
@@ -384,7 +385,7 @@ export const matchCookieSites = (
   for (const spec of COOKIE_SITE_SPECS) {
     const matches = cookies.filter(
       (cookie) =>
-        spec.domainIncludes.some((fragment) => cookie.domain.includes(fragment)) &&
+        spec.domainIncludes.some((domain) => cookieDomainMatches(cookie.domain, domain)) &&
         spec.cookieNames.some((name) => name === cookie.name)
     )
     if (matches.length === 0) {
@@ -404,7 +405,11 @@ export const matchCookieSites = (
 export const cookieDomainsForUrl = (url: string): string[] => {
   let hostname = ''
   try {
-    hostname = new URL(url).hostname.toLowerCase()
+    const parsed = new URL(url)
+    if (!['http:', 'https:'].includes(parsed.protocol) || parsed.username || parsed.password) {
+      return []
+    }
+    hostname = parsed.hostname.toLowerCase()
   } catch {
     return []
   }
@@ -414,7 +419,7 @@ export const cookieDomainsForUrl = (url: string): string[] => {
 
   const domains = new Set<string>()
   for (const spec of COOKIE_SITE_SPECS) {
-    if (spec.domainIncludes.some((fragment) => hostname.includes(fragment))) {
+    if (spec.domainIncludes.some((domain) => cookieDomainMatches(hostname, domain))) {
       for (const fragment of spec.domainIncludes) {
         domains.add(fragment)
       }
@@ -424,11 +429,30 @@ export const cookieDomainsForUrl = (url: string): string[] => {
     return [...domains]
   }
 
-  const parts = hostname.split('.').filter(Boolean)
-  if (parts.length >= 2) {
-    return [parts.slice(-2).join('.')]
-  }
+  // Keep unknown hosts exact; guessing a registrable domain can expose sibling sites.
   return [hostname]
+}
+
+/** Match a cookie host to a domain boundary, never an arbitrary substring. */
+export function cookieDomainMatches(host: string, domain: string): boolean {
+  const normalized = host.toLowerCase().replace(/^\./, '')
+  const normalizedDomain = domain.toLowerCase().replace(/^\./, '')
+  return (
+    Boolean(normalizedDomain) &&
+    (normalized === normalizedDomain || normalized.endsWith(`.${normalizedDomain}`))
+  )
+}
+
+/** Accept configured auth hosts and parent-domain cookies applicable to the requested URL. */
+export function cookieMatchesUrlScope(cookieDomain: string, url: string): boolean {
+  const domains = cookieDomainsForUrl(url)
+  if (domains.length === 0) {
+    return false
+  }
+  return (
+    domains.some((domain) => cookieDomainMatches(cookieDomain, domain)) ||
+    cookieDomainMatches(new URL(url).hostname, cookieDomain)
+  )
 }
 
 /**

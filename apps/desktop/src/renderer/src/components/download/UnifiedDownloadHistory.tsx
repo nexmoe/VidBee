@@ -9,6 +9,13 @@ import {
   DialogHeader,
   DialogTitle
 } from '@renderer/components/ui/dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger
+} from '@renderer/components/ui/dropdown-menu'
 import { cn } from '@renderer/lib/utils'
 import { DownloadEmptyState } from '@vidbee/ui/components/ui/download-empty-state'
 import {
@@ -25,7 +32,7 @@ import {
 } from '@vidbee/ui/lib/download-platform'
 import { useListMarqueeSelection } from '@vidbee/ui/lib/use-list-marquee'
 import { useAtomValue, useSetAtom } from 'jotai'
-import { Layers } from 'lucide-react'
+import { ChevronDown, Layers, ListFilter } from 'lucide-react'
 import { type ReactNode, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -33,6 +40,7 @@ import {
   buildFilePathCandidates,
   normalizeSavedFileName
 } from '../../../../shared/utils/download-file'
+import { buildDownloadTaskTree } from '../../lib/download-task-tree'
 import { ipcServices } from '../../lib/ipc'
 import { logger } from '../../lib/logger'
 import { buildTranscriptPlaybackInput } from '../../lib/transcript-playback-source'
@@ -49,8 +57,15 @@ import { addPlaybackPlaylistItemsAtom } from '../../store/transcript-playlist'
 import { transcriptMapAtom } from '../../store/transcripts'
 import { ScrollArea } from '../ui/scroll-area'
 import { DownloadDialog } from './DownloadDialog'
-import { DownloadItem } from './DownloadItem'
+import { DownloadTaskTree } from './DownloadTaskTree'
 import { PlaylistDownloadGroup } from './PlaylistDownloadGroup'
+
+const SOURCE_FILTER_OPTIONS = [
+  ['all', 'download.allSources'],
+  ['manual', 'download.createdManually'],
+  ['agent', 'download.createdByAgent'],
+  ['subscription', 'download.createdBySubscription']
+] as const
 
 type ConfirmAction =
   | { type: 'delete-selected'; ids: string[] }
@@ -126,6 +141,7 @@ export function UnifiedDownloadHistory({
   const transcriptMap = useAtomValue(transcriptMapAtom)
   const settings = useAtomValue(settingsAtom)
   const [platformFilter, setPlatformFilter] = useState(ALL_DOWNLOAD_PLATFORM_FILTER)
+  const [originFilter, setOriginFilter] = useState('all')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const listRef = useRef<HTMLDivElement>(null)
   const { finishPointer, marquee, onPointerDown, onPointerMove } = useListMarqueeSelection({
@@ -162,8 +178,28 @@ export function UnifiedDownloadHistory({
   )
 
   const filteredRecords = useMemo(() => {
-    return allRecords.filter((record) => matchesDownloadPlatformFilter(record.url, platformFilter))
-  }, [allRecords, platformFilter])
+    return allRecords.filter(
+      (record) =>
+        matchesDownloadPlatformFilter(record.url, platformFilter) &&
+        (originFilter === 'all' || (record.origin ?? 'manual') === originFilter)
+    )
+  }, [allRecords, platformFilter, originFilter])
+
+  const taskTree = useMemo(
+    () =>
+      buildDownloadTaskTree(
+        allRecords,
+        filteredRecords,
+        originFilter === 'all'
+          ? []
+          : allRecords.filter(
+              (record) =>
+                matchesDownloadPlatformFilter(record.url, platformFilter) &&
+                transcriptMap[record.id]?.creation?.origin === originFilter
+            )
+      ),
+    [allRecords, filteredRecords, originFilter, platformFilter, transcriptMap]
+  )
 
   const visibleHistoryIds = useMemo(
     () =>
@@ -205,6 +241,9 @@ export function UnifiedDownloadHistory({
   }, [platformCounts, platformFilter])
 
   const selectableIds = useMemo(() => {
+    if (originFilter !== 'all') {
+      return visibleHistoryIds
+    }
     if (visibleHistoryIds.length === 0) {
       return []
     }
@@ -223,7 +262,7 @@ export function UnifiedDownloadHistory({
       }
     }
     return Array.from(ids)
-  }, [filteredRecords, historyRecords, visibleHistoryIds])
+  }, [filteredRecords, historyRecords, visibleHistoryIds, originFilter])
   const allSelected = selectableIds.length > 0 && selectableIds.every((id) => selectedIds.has(id))
   const selectionSummary = t('history.selectedCount', { count: selectedCount })
 
@@ -456,7 +495,7 @@ export function UnifiedDownloadHistory({
     const order: Array<{ type: 'group'; id: string } | { type: 'single'; record: DownloadRecord }> =
       []
 
-    for (const record of filteredRecords) {
+    for (const record of taskTree.roots) {
       if (record.playlistId) {
         let group = groups.get(record.playlistId)
         if (!group) {
@@ -496,7 +535,7 @@ export function UnifiedDownloadHistory({
     }
 
     return { order, groups }
-  }, [filteredRecords])
+  }, [taskTree])
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -538,10 +577,57 @@ export function UnifiedDownloadHistory({
       <CardHeader className="z-50 gap-4 bg-background p-0 px-6 py-4 backdrop-blur">
         <DownloadFilterBar
           actions={
-            <DownloadDialog
-              onOpenSettings={onOpenSettings}
-              onOpenSupportedSites={onOpenSupportedSites}
-            />
+            <div className="flex items-center gap-2">
+              <DropdownMenu modal={false}>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    aria-label={t('download.creationSource')}
+                    className={cn(
+                      'h-7 max-w-40 gap-1.5 rounded-full border border-black/[0.08] px-2.5 text-xs dark:border-white/12 [&_svg]:size-3.5',
+                      originFilter === 'all'
+                        ? 'text-muted-foreground'
+                        : 'border-transparent bg-muted text-foreground'
+                    )}
+                    data-testid="download-source-filter"
+                    size="sm"
+                    variant="ghost"
+                  >
+                    <ListFilter />
+                    <span className="truncate">
+                      {t(
+                        SOURCE_FILTER_OPTIONS.find(([value]) => value === originFilter)?.[1] ??
+                          'download.allSources'
+                      )}
+                    </span>
+                    <ChevronDown className="opacity-50" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="min-w-40 rounded-xl" sideOffset={6}>
+                  <DropdownMenuRadioGroup
+                    onValueChange={(value) => {
+                      setOriginFilter(value)
+                      setSelectedIds(new Set())
+                    }}
+                    value={originFilter}
+                  >
+                    {SOURCE_FILTER_OPTIONS.map(([value, label]) => (
+                      <DropdownMenuRadioItem
+                        className="rounded-lg text-xs"
+                        data-source-filter={value}
+                        key={value}
+                        value={value}
+                      >
+                        {t(label)}
+                      </DropdownMenuRadioItem>
+                    ))}
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <DownloadDialog
+                onOpenSettings={onOpenSettings}
+                onOpenSupportedSites={onOpenSupportedSites}
+              />
+            </div>
           }
           activeFilter={platformFilter}
           filters={filters}
@@ -588,7 +674,7 @@ export function UnifiedDownloadHistory({
               </div>
             </div>
           )}
-          {filteredRecords.length === 0 ? (
+          {taskTree.roots.length === 0 ? (
             <DownloadEmptyState
               className="mx-6 mb-4"
               hint={t('download.ingestEmptyHint')}
@@ -607,11 +693,14 @@ export function UnifiedDownloadHistory({
               {groupedView.order.map((item) => {
                 if (item.type === 'single') {
                   return (
-                    <DownloadItem
+                    <DownloadTaskTree
+                      childrenByParent={taskTree.children}
+                      contextIds={taskTree.contextIds}
                       download={item.record}
-                      isSelected={selectedIds.has(item.record.id)}
                       key={`${item.record.entryType}:${item.record.id}`}
+                      matchingIds={taskTree.matchingIds}
                       onToggleSelect={handleToggleSelect}
+                      selectedIds={selectedIds}
                       selectionActive={selectedCount > 0}
                     />
                   )
@@ -624,9 +713,14 @@ export function UnifiedDownloadHistory({
 
                 return (
                   <PlaylistDownloadGroup
+                    childrenByParent={taskTree.children}
+                    contextIds={taskTree.contextIds}
                     groupId={group.id}
                     key={`group:${group.id}`}
-                    onDeletePlaylist={handleRequestDeletePlaylist}
+                    matchingIds={taskTree.matchingIds}
+                    onDeletePlaylist={
+                      originFilter === 'all' ? handleRequestDeletePlaylist : undefined
+                    }
                     onToggleSelect={handleToggleSelect}
                     records={group.records}
                     selectedIds={selectedIds}

@@ -22,7 +22,8 @@ import type {
   AiProviderPresetId,
   AiProviderTestResult,
   AiProviderWriteInput,
-  AiSettingsSnapshot
+  AiSettingsSnapshot,
+  CloudModelOption
 } from '@shared/ai-types'
 import { Check, Plus, Trash2 } from 'lucide-react'
 import { type KeyboardEvent, useCallback, useEffect, useState } from 'react'
@@ -44,6 +45,8 @@ const catalogHint = (preset: AiProviderPreset): string => preset.website ?? ''
 export function AiProvidersPanel() {
   const { t } = useTranslation()
   const [snapshot, setSnapshot] = useState<AiSettingsSnapshot | null>(null)
+  const [cloudModels, setCloudModels] = useState<CloudModelOption[]>([])
+  const [defaultCloudModelId, setDefaultCloudModelId] = useState('default')
   const [dialogOpen, setDialogOpen] = useState(false)
   const [dialogPresetId, setDialogPresetId] = useState<AiProviderPresetId | null>(null)
   const [editing, setEditing] = useState<AiProviderConfig | null>(null)
@@ -65,7 +68,44 @@ export function AiProvidersPanel() {
 
   useEffect(() => {
     void refresh()
+    const listener = window.api.on('settings:changed', () => {
+      void refresh()
+    })
+    return () => window.api.removeListener('settings:changed', listener)
   }, [refresh])
+
+  useEffect(() => {
+    let disposed = false
+    if (user) {
+      void ipcServices.ai
+        .getCloudModels()
+        .then((catalog) => {
+          if (!disposed) {
+            setCloudModels(catalog.models)
+            setDefaultCloudModelId(catalog.defaultModelId)
+          }
+        })
+        .catch(() => {
+          if (!disposed) {
+            setCloudModels([])
+          }
+        })
+    } else {
+      setCloudModels([])
+    }
+    return () => {
+      disposed = true
+    }
+  }, [user])
+
+  /** Persist the Cloud selection and show request failures in the existing settings feedback. */
+  const selectCloudModel = async (id: string): Promise<void> => {
+    try {
+      setSnapshot(await ipcServices.ai.setCloudModel(id))
+    } catch {
+      toast.error(t('settings.ai.saveError'))
+    }
+  }
 
   useEffect(() => {
     if (!(user && cloudSignInWorking)) {
@@ -242,6 +282,28 @@ export function AiProvidersPanel() {
               </ItemTitle>
               <ItemDescription>{t('settings.ai.vidbeeCloudDescription')}</ItemDescription>
               <ItemDescription>{t('settings.ai.vidbeeCloudPrivacy')}</ItemDescription>
+              {user && cloudModels.length ? (
+                <label className="flex flex-col gap-1 text-sm">
+                  {t('agentChat.model')}
+                  <select
+                    className="rounded-md border bg-background px-2 py-1.5"
+                    onChange={(event) => void selectCloudModel(event.target.value)}
+                    value={snapshot?.cloudModelId ?? defaultCloudModelId}
+                  >
+                    {snapshot?.cloudModelId &&
+                    !cloudModels.some((model) => model.id === snapshot.cloudModelId) ? (
+                      <option disabled value={snapshot.cloudModelId}>
+                        {snapshot.cloudModelId}
+                      </option>
+                    ) : null}
+                    {cloudModels.map((model) => (
+                      <option key={model.id} value={model.id}>
+                        {model.name} · {model.multiplier}×
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
               {credits ? (
                 <p className="font-medium text-foreground text-xs tabular-nums">
                   {t('settings.account.creditsRemaining', {

@@ -108,7 +108,7 @@ function SidebarNavItem({ item, index, hovered, registerItem }: SidebarNavItemPr
       )}
 
       {showLabel ? (
-        <span className="px-3 text-center text-muted-foreground text-xs leading-tight">
+        <span className="w-full max-w-20 px-1 text-center text-muted-foreground text-xs leading-tight">
           {item.label}
         </span>
       ) : null}

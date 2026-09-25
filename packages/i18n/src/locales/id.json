@@ -280,7 +280,14 @@
     "cookiesSetupKeyring": "Build Linux ini tidak dapat membaca cookie Chrome. Gunakan Firefox atau impor file cookie.",
     "cookiesSetupStale": "Cookie saat ini tampak kedaluwarsa atau diblokir. Segarkan login, lalu coba lagi.",
     "cookiesSetupRetry": "Coba unduh lagi",
-    "cookiesSetupDone": "Selesai"
+    "cookiesSetupDone": "Selesai",
+    "creationSource": "Sumber pembuatan",
+    "allSources": "Semua sumber",
+    "createdManually": "Dibuat manual",
+    "createdByAgent": "Dibuat AI",
+    "createdBySubscription": "Langganan",
+    "openSourceConversation": "Buka percakapan asal",
+    "sourceFile": "Berkas sumber"
   },
   "error": {
     "title": "Terjadi kesalahan",
@@ -382,7 +389,7 @@
     "home": "Beranda",
     "download": "Unduh",
     "playlist": "Unduh Playlist",
-    "rss": "RSS",
+    "rss": "Langganan",
     "transcripts": "Transkrip",
     "subscriptions": "Berlangganan",
     "preferences": "Preferensi",
@@ -978,12 +985,21 @@
       "extensionInstallStep1": "Install the VidBee extension in Chrome, Edge, or Firefox",
       "extensionInstallStep2": "Keep VidBee Desktop running so the extension can connect",
       "extensionInstallStep3": "Sign in to YouTube, Bilibili, or other sites in that browser, then open the VidBee toolbar icon once"
-    }
+    },
+    "agentManagementTools": "Alat manajemen agen",
+    "agentManagementToolsDescription": "Apakah agen boleh mengubah tugas dan langganan, dan apakah harus bertanya dulu",
+    "agentManagementToolsOptions": {
+      "off": "Mati",
+      "ask": "Tanya dulu",
+      "auto": "Izinkan otomatis"
+    },
+    "agentMaxConcurrentRuns": "Jalankan agen lokal bersamaan",
+    "agentMaxConcurrentRunsDescription": "Berapa percakapan agen dengan model lokal yang boleh berjalan sekaligus"
   },
   "subscriptions": {
     "title": "Berlangganan",
     "subtitle": "{{count}} berlangganan{{count, plural, one {} other {}}}",
-    "description": "Pantau feed RSS secara otomatis dan antre unduhan baru tanpa pekerjaan manual.",
+    "description": "Pantau saluran secara otomatis dan antre unduhan baru tanpa pekerjaan manual.",
     "defaults": {
       "title": "Default otomatisasi",
       "description": "Kontrol di mana unduhan berlangganan disimpan dan seberapa sering VidBee memeriksa video baru.",
@@ -993,8 +1009,8 @@
       "onlyLatestDescription": "Saat diaktifkan, VidBee melewati item backlog lama dan hanya mengambil unggahan terbaru."
     },
     "add": {
-      "title": "Tambah RSS",
-      "description": "Tempel tautan feed RSS. VidBee akan mendeteksi feed secara otomatis."
+      "title": "Tambah langganan",
+      "description": "Tempel tautan saluran atau umpan. VidBee akan mendeteksinya secara otomatis."
     },
     "fields": {
       "url": "URL Feed",
@@ -1061,8 +1077,8 @@
       "itemAlreadyQueued": "Video ini sudah diantre",
       "queueError": "Gagal menambahkan ke antrian unduhan.",
       "openLinkError": "Gagal membuka tautan video.",
-      "resolveError": "Gagal menyelesaikan URL feed RSS.",
-      "duplicateUrl": "Feed RSS ini sudah berlangganan."
+      "resolveError": "Gagal menyelesaikan URL langganan.",
+      "duplicateUrl": "Langganan ini sudah ada."
     },
     "detectedFeed": "Feed {{platform}} terdeteksi -> {{feed}}",
     "detecting": "Mendeteksi feed...",
@@ -1089,7 +1105,7 @@
       "description": "Gabungkan VidBee dengan RSSHub untuk mengaktifkan berlangganan dan unduhan otomatis dari berbagai platform. Setelah disetel, VidBee berjalan di latar belakang dan secara otomatis mengunduh video dan konten terbaru.",
       "learnMore": "Pelajari lebih lanjut tentang RSSHub",
       "openDocs": "Buka Dokumentasi RSSHub",
-      "hint": "Tidak punya URL feed RSS? Gunakan RSSHub untuk menghasilkan feed RSS untuk YouTube, Twitter, dan ribuan platform lainnya."
+      "hint": "Tidak punya URL umpan? Gunakan RSSHub untuk membuat umpan YouTube, Twitter, dan ribuan platform lain."
     }
   },
   "kernelPreparation": {
@@ -1631,7 +1647,9 @@
     "eventStatus": {
       "running": "Running",
       "completed": "Completed",
-      "error": "Failed"
+      "error": "Failed",
+      "pendingApproval": "Menunggu persetujuan",
+      "denied": "Ditolak"
     },
     "placeholder": "Ask a follow-up about this video…",
     "send": "Send message",
@@ -1658,12 +1676,12 @@
     "thinkingOnly": "Thinking only",
     "allowDisableThinking": "Allow turning thinking off",
     "thinkingCapabilitiesHint": "Antarmuka saat ini hanya menampilkan sakelar berpikir, bukan tingkat intensitas. Jika model mendukung tingkat, pilih yang tersedia di bawah.",
-    "defaultThinkingLevel": "Tingkat berpikir default",
-    "defaultThinkingAuto": "Otomatis (gunakan default lapisan permintaan)",
-    "supportedThinkingLevels": "Tingkat berpikir yang didukung",
-    "inputTokens": "Masukan",
-    "outputTokens": "Keluaran",
-    "providerDefault": "Gunakan default penyedia",
+    "defaultThinkingLevel": "Default thinking level",
+    "defaultThinkingAuto": "Auto (use request default)",
+    "supportedThinkingLevels": "Supported thinking levels",
+    "inputTokens": "Input",
+    "outputTokens": "Output",
+    "providerDefault": "Use provider default",
     "automatic": "Use model defaults",
     "enabled": "Supported",
     "disabled": "Not supported",
@@ -1674,6 +1692,9 @@
     "catalogMatched": "Matched {{name}}. Context window and capabilities were filled in.",
     "catalogBadge": "Catalog",
     "tools": {
+      "list_transcripts": "Memeriksa subtitle yang tersedia",
+      "select_transcript": "Memilih sumber subtitle",
+      "load_tools": "Mencari kemampuan yang tersedia",
       "get_video_info": "Reading video information",
       "read_transcript": "Reading transcript",
       "search_transcript": "Searching transcript",
@@ -1719,12 +1740,12 @@
     "faster": "Lebih cepat",
     "smarter": "Lebih cerdas",
     "retrying": "Connection interrupted. Retrying…",
-    "defaultThinkingLevel": "Default thinking level",
-    "defaultThinkingAuto": "Auto (use request default)",
-    "supportedThinkingLevels": "Supported thinking levels",
-    "inputTokens": "Input",
-    "outputTokens": "Output",
-    "providerDefault": "Use provider default"
+    "approval": {
+      "allow": "Izinkan",
+      "allowAndRemember": "Izinkan dan ingat",
+      "deny": "Tolak",
+      "pending": "{{summary}}"
+    }
   },
   "web": {
     "saveToThisComputer": "Save to this computer",

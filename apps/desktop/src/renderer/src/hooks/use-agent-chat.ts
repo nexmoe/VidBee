@@ -107,6 +107,23 @@ export function useAgentChat(downloadId: string, promptId: string, threadId?: st
     }
   }, [downloadId, promptId, threadId])
 
+  /** Resolve a pending management-tool approval from the activity rail. */
+  const decideTool = useCallback(
+    async (input: { toolCallId: string; approved: boolean; remember: boolean }): Promise<void> => {
+      const current = snapshotRef.current
+      if (!current) {
+        return
+      }
+      await ipcServices.ai.decideAgentTool({
+        threadId: current.id,
+        toolCallId: input.toolCallId,
+        approved: input.approved,
+        remember: input.remember
+      })
+    },
+    []
+  )
+
   /** Send returns success so the composer only clears text after durable admission. */
   const send = useCallback(
     async (input: Omit<AgentChatInput, 'downloadId' | 'promptId'>): Promise<boolean> => {
@@ -227,6 +244,7 @@ export function useAgentChat(downloadId: string, promptId: string, threadId?: st
     thinkingOptions,
     reloadThinkingOptions,
     send,
+    decideTool,
     selectImages: () => updateImages(),
     removeImage: updateImages,
     stop,

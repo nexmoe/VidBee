@@ -1,6 +1,6 @@
 import { type AssistantMessage, type Context, isContextOverflow } from '@earendil-works/pi-ai'
 import { isRecoverableAiPromptError } from '../../shared/ai-run'
-import { estimateAgentContext } from './agent-context'
+import { estimateTokens } from './agent-budget'
 import { agentTextPage } from './agent-memory'
 
 interface SummaryOptions {
@@ -14,6 +14,7 @@ interface SummaryOptions {
   outputTokens: number
   complete: (context: Context, maxTokens: number) => Promise<AssistantMessage>
   onUsage: (message: AssistantMessage) => void
+  calibration?: number
 }
 
 /** Accept factual summary data, never a free-form tool invocation or continuation. */
@@ -63,7 +64,13 @@ async function summarizeChunk(options: SummaryOptions): Promise<string> {
     const available =
       window -
       safety -
-      Math.ceil(estimateAgentContext(context.messages, context.systemPrompt ?? '') * 1.25)
+      Math.ceil(
+        estimateTokens({
+          messages: context.messages,
+          systemPrompt: context.systemPrompt ?? '',
+          calibration: options.calibration ?? 1
+        })
+      )
     const maxTokens = Math.min(
       options.maxOutputTokens || 8192,
       options.outputTokens * (attempt + 1),
@@ -109,7 +116,7 @@ async function summarizeChunk(options: SummaryOptions): Promise<string> {
     if (
       result.stopReason !== 'length' &&
       text &&
-      estimateAgentContext([{ role: 'user', content: text, timestamp: 0 }], '') <=
+      estimateTokens({ messages: [{ role: 'user', content: text, timestamp: 0 }] }) <=
         options.targetTokens
     ) {
       return text

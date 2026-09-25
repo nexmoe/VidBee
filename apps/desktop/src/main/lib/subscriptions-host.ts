@@ -100,7 +100,7 @@ export const getDesktopSubscriptions = (): SubscriptionsApi => {
     metaStore,
     fetcher: new RssParserFeedFetcher(),
     isHistoryDup: (url) => historyManager.hasHistoryForUrl(url),
-    enqueueItem: async ({ subscription, item }) => {
+    enqueueItem: async ({ subscription, item, trigger, creation }) => {
       const settings = settingsManager.getAll()
       const downloadDirectory = subscription.downloadDirectory?.trim() || settings.downloadPath
       const namingTemplate = subscription.namingTemplate
@@ -130,7 +130,8 @@ export const getDesktopSubscriptions = (): SubscriptionsApi => {
             customDownloadPath: downloadDirectory,
             ...(namingTemplate ? { customFilenameTemplate: namingTemplate } : {}),
             tags,
-            origin: 'subscription',
+            origin: trigger === 'auto' ? 'subscription' : 'manual',
+            ...creation,
             subscriptionId: subscription.id,
             itemId: item.id
           }

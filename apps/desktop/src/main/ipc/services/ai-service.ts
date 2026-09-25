@@ -23,6 +23,7 @@ import {
   openAgentThread,
   removeAgentImage,
   deleteAgentThread as removeAgentThread,
+  decideAgentTool as resolveAgentToolDecision,
   selectAgentBranch,
   selectAgentImages,
   sendAgentMessage,
@@ -41,6 +42,7 @@ import { testProviderConnection } from '../../lib/ai-provider-test'
 import { type AiRemoteModelsInput, listRemoteProviderModels } from '../../lib/ai-remote-models'
 import { aiStore } from '../../lib/ai-store'
 import { dislikeCloudResult } from '../../lib/cloud-device'
+import { loadCloudModels } from '../../lib/cloud-models'
 import { peekDesktopTaskQueueRef } from '../../lib/queue-ref'
 import { settingsManager } from '../../settings'
 
@@ -93,6 +95,15 @@ class AiService extends IpcService {
   @IpcMethod()
   sendAgentMessage(_context: IpcContext, input: AgentChatInput): AgentThread {
     return sendAgentMessage(input)
+  }
+
+  /** Resolve a pending management-tool approval from the activity rail. */
+  @IpcMethod()
+  decideAgentTool(
+    _context: IpcContext,
+    input: { threadId: string; toolCallId: string; approved: boolean; remember: boolean }
+  ): void {
+    resolveAgentToolDecision(input)
   }
 
   /** Copy explicitly selected images into the conversation before admitting a message. */
@@ -253,6 +264,22 @@ class AiService extends IpcService {
   @IpcMethod()
   setActiveProvider(_context: IpcContext, id: string | null): AiSettingsSnapshot {
     return aiStore.setActiveProvider(id)
+  }
+
+  /** Advertise the current managed model catalog and server-owned billing rates. */
+  @IpcMethod()
+  async getCloudModels(_context: IpcContext) {
+    return await loadCloudModels()
+  }
+
+  /** Validate the chosen managed model against Cloud before persisting the selection. */
+  @IpcMethod()
+  async setCloudModel(_context: IpcContext, id: string): Promise<AiSettingsSnapshot> {
+    const catalog = await loadCloudModels()
+    if (!catalog.models.some((model) => model.id === id)) {
+      throw new Error('Cloud model is unavailable')
+    }
+    return aiStore.setCloudModel(id)
   }
 
   /**

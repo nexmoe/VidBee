@@ -54,6 +54,8 @@ export interface PersistAdapter {
   insertTask(task: Task): Promise<void>
   /** Replace the existing task row + progress row. Used for every transition. */
   upsertTask(input: PersistTransitionInput): Promise<void>
+  /** Atomically replace related task snapshots when a shared source file moves. */
+  upsertTasks(inputs: PersistTransitionInput[]): Promise<void>
   /** Downsampled progress write (the orchestrator calls at most every 1s). */
   upsertProgress(taskId: string, progress: TaskProgress): Promise<void>
   /**

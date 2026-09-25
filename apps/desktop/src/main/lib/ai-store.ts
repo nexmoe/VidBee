@@ -202,14 +202,28 @@ class AiStore {
     }
   }
 
-  /**
-   * Return providers and prompts for the renderer. API keys are never included.
-   */
+  /** Read the managed model selected for future requests. */
+  getCloudModelId(): string | null {
+    const id: unknown = this.store.get('cloudModelId')
+    return typeof id === 'string' && id ? id : null
+  }
+
+  /** Select a managed model and switch away from an own-key provider. */
+  setCloudModel(id: string): AiSettingsSnapshot {
+    if (typeof id !== 'string' || !id.trim() || id.length > 200) {
+      throw new Error('Invalid Cloud model id')
+    }
+    this.store.set({ cloudModelId: id, activeProviderId: null })
+    return this.getSnapshot()
+  }
+
+  /** Return safe provider settings and the persisted managed model selection. */
   getSnapshot(): AiSettingsSnapshot {
     const state = this.readState()
     const activeExists = state.providers.some((provider) => provider.id === state.activeProviderId)
     return {
       activeProviderId: activeExists ? state.activeProviderId : null,
+      cloudModelId: this.getCloudModelId(),
       providers: state.providers.map(toPublicProvider),
       prompts: [...state.prompts].sort((left, right) => left.sortOrder - right.sortOrder)
     }

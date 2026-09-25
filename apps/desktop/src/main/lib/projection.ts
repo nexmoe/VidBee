@@ -13,7 +13,7 @@
  * new component contract.
  */
 
-import type { Task } from '@vidbee/task-queue'
+import type { Task, TaskCreationMetadata } from '@vidbee/task-queue'
 import { projectTaskToLegacy } from '@vidbee/task-queue'
 
 import type {
@@ -24,17 +24,55 @@ import type {
 } from '../../shared/types'
 
 interface RendererTaskOptions {
-  origin?: 'manual' | 'subscription'
+  origin: TaskCreationMetadata['origin']
+  agentConversation?: TaskCreationMetadata['agentConversation']
   selectedFormat?: VideoFormat
   ytDlpCommand?: string
   glitchTipEventId?: string
 }
 
+/** Ignore incomplete legacy provenance instead of navigating to a guessed conversation. */
+function readAgentConversation(value: unknown): TaskCreationMetadata['agentConversation'] {
+  if (!value || typeof value !== 'object') {
+    return undefined
+  }
+  const record = value as Record<string, unknown>
+  if (
+    ![record.downloadId, record.threadId, record.promptId].every(
+      (item) => typeof item === 'string' && item.length > 0
+    )
+  ) {
+    return undefined
+  }
+  return {
+    downloadId: record.downloadId as string,
+    threadId: record.threadId as string,
+    promptId: record.promptId as string
+  }
+}
+
+/** Project creation provenance without exposing executor options. */
+export function readTaskCreation(task: Readonly<Task>): TaskCreationMetadata {
+  const opts = task.input.options ?? {}
+  return {
+    origin:
+      opts.origin === 'agent'
+        ? 'agent'
+        : opts.origin === 'manual'
+          ? 'manual'
+          : opts.origin === 'subscription' || task.input.subscriptionId
+            ? 'subscription'
+            : 'manual',
+    agentConversation:
+      opts.origin === 'agent' ? readAgentConversation(opts.agentConversation) : undefined
+  }
+}
+
+/** Read persisted creation metadata independently of the task's current lifecycle state. */
 const readRendererOptions = (task: Readonly<Task>): RendererTaskOptions => {
   const opts = (task.input.options ?? {}) as Record<string, unknown>
   return {
-    origin:
-      typeof opts.origin === 'string' ? (opts.origin as 'manual' | 'subscription') : undefined,
+    ...readTaskCreation(task),
     selectedFormat: opts.selectedFormat as VideoFormat | undefined,
     ytDlpCommand: typeof opts.ytDlpCommand === 'string' ? opts.ytDlpCommand : undefined,
     glitchTipEventId: typeof opts.glitchTipEventId === 'string' ? opts.glitchTipEventId : undefined
@@ -135,6 +173,9 @@ export const projectTaskForRenderer = (task: Readonly<Task>): DownloadItem => {
   if (renderer.origin !== undefined) {
     item.origin = renderer.origin
   }
+  item.agentConversation = renderer.agentConversation
+  item.parentId = task.parentId ?? undefined
+  item.taskKind = task.kind
   if (task.input.subscriptionId !== undefined) {
     item.subscriptionId = task.input.subscriptionId
   }
@@ -252,6 +293,9 @@ export const projectTaskForRendererHistory = (task: Readonly<Task>): DownloadHis
   if (renderer.origin !== undefined) {
     item.origin = renderer.origin
   }
+  item.agentConversation = renderer.agentConversation
+  item.parentId = task.parentId ?? undefined
+  item.taskKind = task.kind
   if (task.input.subscriptionId !== undefined) {
     item.subscriptionId = task.input.subscriptionId
   }

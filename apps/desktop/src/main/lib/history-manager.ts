@@ -17,7 +17,7 @@
  *     `clearHistory` delegate to `taskQueue.removeFromHistory`, then drop the
  *     stored transcripts and prompt runs for those downloads.
  */
-import { isDownloadTaskKind, type Task } from '@vidbee/task-queue'
+import { isMediaTaskKind, type Task } from '@vidbee/task-queue'
 
 import type { DownloadHistoryItem } from '../../shared/types'
 import { scopedLoggers } from '../utils/logger'
@@ -87,7 +87,7 @@ const allTerminalTasks = (): Task[] => {
   do {
     const page = queue.list({ limit: 200, cursor })
     for (const t of page.tasks) {
-      if (TERMINAL.has(t.status) && isDownloadTaskKind(t.kind)) {
+      if (TERMINAL.has(t.status) && isMediaTaskKind(t.kind)) {
         all.push(t)
       }
     }

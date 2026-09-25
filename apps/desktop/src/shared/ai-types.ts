@@ -184,7 +184,14 @@ export interface AiPromptRunInput {
 }
 
 /** Providers and prompts returned together for settings pages. */
+export interface CloudModelOption {
+  id: string
+  name: string
+  multiplier: number
+}
+
 export interface AiSettingsSnapshot {
+  cloudModelId?: string | null
   activeProviderId: string | null
   providers: AiProviderConfig[]
   prompts: AiPrompt[]

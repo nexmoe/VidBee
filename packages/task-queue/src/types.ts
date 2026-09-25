@@ -13,6 +13,8 @@ export type TaskKind =
   | 'subscription-item'
   | 'yt-dlp-forward'
   | 'transcription'
+  | 'conversion'
+  | 'model-download'
 
 /** Media download kinds that may receive a transcription child task. */
 export const TRANSCRIBABLE_TASK_KINDS: ReadonlySet<TaskKind> = new Set([
@@ -23,7 +25,13 @@ export const TRANSCRIBABLE_TASK_KINDS: ReadonlySet<TaskKind> = new Set([
 
 export const TRANSCRIPTION_GROUP_KEY = 'transcription'
 
-export const isDownloadTaskKind = (kind: TaskKind): boolean => kind !== 'transcription'
+/** Identify tasks handled by downloader-specific services. */
+export const isDownloadTaskKind = (kind: TaskKind): boolean =>
+  kind !== 'transcription' && kind !== 'conversion' && kind !== 'model-download'
+
+/** Media-producing tasks share file, playback and history surfaces. */
+export const isMediaTaskKind = (kind: TaskKind): boolean =>
+  isDownloadTaskKind(kind) || kind === 'conversion'
 
 export type TaskStatus =
   | 'queued'
@@ -61,6 +69,16 @@ export type ErrorCategory =
   | 'cancelled-by-user'
   | 'output-missing'
   | 'unknown'
+
+/** Creation provenance is independent of the executor and survives retries. */
+export interface TaskCreationMetadata {
+  origin: 'manual' | 'subscription' | 'agent'
+  agentConversation?: {
+    downloadId: string
+    threadId: string
+    promptId: string
+  }
+}
 
 export interface TaskInput {
   url: string

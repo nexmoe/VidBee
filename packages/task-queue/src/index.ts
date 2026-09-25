@@ -1,18 +1,13 @@
 // Public surface of @vidbee/task-queue. Adapters import from here.
 
-export * from './types'
-export * from './schemas'
-export { taskQueueContract } from './contract'
-export type { TaskQueueContract } from './contract'
-
-export {
-  IllegalTransitionError,
-  isLegalTransition,
-  LEGAL_TRANSITIONS,
-  transition
-} from './fsm'
-export type { TransitionContext, TransitionTrigger } from './fsm'
-
+export type {
+  AddTaskRequest,
+  ImportCompletedRequest,
+  ListOptions,
+  TaskQueueAPIOptions
+} from './api'
+export { TaskQueueAPI } from './api'
+export type { ClassifyInput } from './classifier'
 export {
   CLASSIFIER_RULES,
   classify,
@@ -23,11 +18,10 @@ export {
   takeStderrTail,
   virtualError
 } from './classifier'
-export type { ClassifyInput } from './classifier'
-
-export {
-  EventBus
-} from './events'
+export type { OutputCompleteCheck } from './complete'
+export { isOutputComplete } from './complete'
+export type { TaskQueueContract } from './contract'
+export { taskQueueContract } from './contract'
 export type {
   ErrorClassifiedEvent,
   OrphanKilledEvent,
@@ -36,57 +30,29 @@ export type {
   TaskQueueEvent,
   TaskQueueEventType,
   TaskQueueListener,
+  TaskRemovedEvent,
   TransitionEvent
 } from './events'
-
-export {
-  computeBackoffMs,
-  RetryScheduler,
-  Scheduler
-} from './scheduler'
-export type {
-  RetrySchedulerOptions,
-  SchedulerCallbacks,
-  SchedulerOptions
-} from './scheduler'
-
-export { TaskStore } from './store'
-
-export {
-  isPidAlive,
-  ProcessRegistry,
-  readPidStartTime,
-  setReadPidStartTimeImpl,
-  Watchdog
-} from './process'
-export type {
-  ProcessHandle,
-  ProcessRegistryDeps,
-  ReadPidStartTimeFn,
-  WatchdogConfig,
-  WatchdogEntry
-} from './process'
-
+export { EventBus } from './events'
 export type {
   Executor,
   ExecutorContext,
   ExecutorEvents,
   ExecutorFinishEvent,
   ExecutorProgressEvent,
-  ExecutorRun,
   ExecutorRouterOptions,
+  ExecutorRun,
   ExecutorSpawnEvent,
   ExecutorStdEvent
 } from './executor'
 export { ExecutorRouter } from './executor'
-
-export { isOutputComplete } from './complete'
-export type { OutputCompleteCheck } from './complete'
-
+export type { TransitionContext, TransitionTrigger } from './fsm'
 export {
-  MemoryPersistAdapter,
-  SqlitePersistAdapter
-} from './persist'
+  IllegalTransitionError,
+  isLegalTransition,
+  LEGAL_TRANSITIONS,
+  transition
+} from './fsm'
 export type {
   JournalAppendInput,
   PersistAdapter,
@@ -95,23 +61,45 @@ export type {
   RecordSpawnInput,
   SqlitePersistOptions
 } from './persist'
-
-export { TaskQueueAPI } from './api'
-export type {
-  AddTaskRequest,
-  ImportCompletedRequest,
-  ListOptions,
-  TaskQueueAPIOptions
-} from './api'
-
 export {
-  legacyDownloadStatusOf,
-  legacySubStatusOf,
-  projectTaskToLegacy
-} from './projection'
+  MemoryPersistAdapter,
+  SqlitePersistAdapter
+} from './persist'
+export type {
+  ProcessHandle,
+  ProcessRegistryDeps,
+  ReadPidStartTimeFn,
+  WatchdogConfig,
+  WatchdogEntry
+} from './process'
+export {
+  isPidAlive,
+  ProcessRegistry,
+  readPidStartTime,
+  setReadPidStartTimeImpl,
+  Watchdog
+} from './process'
 export type {
   LegacyDownloadProgress,
   LegacyDownloadStatus,
   LegacySubStatus,
   LegacyTaskProjection
 } from './projection'
+export {
+  legacyDownloadStatusOf,
+  legacySubStatusOf,
+  projectTaskToLegacy
+} from './projection'
+export type {
+  RetrySchedulerOptions,
+  SchedulerCallbacks,
+  SchedulerOptions
+} from './scheduler'
+export {
+  computeBackoffMs,
+  RetryScheduler,
+  Scheduler
+} from './scheduler'
+export * from './schemas'
+export { TaskStore } from './store'
+export * from './types'

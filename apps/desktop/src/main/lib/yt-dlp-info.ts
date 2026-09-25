@@ -60,9 +60,11 @@ const parseVideoInfoPayload = (stdout: string): VideoInfo => {
 /**
  * Run one yt-dlp `-j` probe and parse the resulting video info payload.
  */
-const execVideoInfo = (url: string, args: string[]): Promise<VideoInfo> =>
+const execVideoInfo = (url: string, args: string[], signal?: AbortSignal): Promise<VideoInfo> =>
   new Promise((resolve, reject) => {
-    const proc = ytdlpManager.getInstance().exec(args)
+    signal?.throwIfAborted()
+    const instance = ytdlpManager.getInstance()
+    const proc = signal ? instance.exec(args, {}, signal) : instance.exec(args)
     const stdout = createBoundedTextBuffer()
     const stderr = createBoundedTextBuffer()
     proc.ytDlpProcess?.stdout?.on('data', (d: Buffer) => stdout.append(d))
@@ -98,7 +100,7 @@ const settingsForUrl = async (url: string) => {
   return overlay ? { ...settings, ...overlay } : settings
 }
 
-export const fetchVideoInfo = async (url: string): Promise<VideoInfo> => {
+export const fetchVideoInfo = async (url: string, signal?: AbortSignal): Promise<VideoInfo> => {
   const settings = await settingsForUrl(url)
   if (settings.browserForCookies && settings.browserForCookies !== 'none') {
     const blocked = cookieAccessError()
@@ -107,7 +109,7 @@ export const fetchVideoInfo = async (url: string): Promise<VideoInfo> => {
     }
   }
   const args = buildVideoInfoArgs(url, settings)
-  return retryTransientYtDlpNetworkError(() => execVideoInfo(url, args))
+  return retryTransientYtDlpNetworkError(() => execVideoInfo(url, args, signal))
 }
 
 export const fetchVideoInfoWithCommand = async (url: string): Promise<VideoInfoCommandResult> => {
@@ -166,9 +168,15 @@ const resolveEntryUrl = (entry: RawPlaylistEntry): string => {
 /**
  * Run one yt-dlp playlist listing probe.
  */
-const execPlaylistInfo = (url: string, args: string[]): Promise<PlaylistInfo> =>
+const execPlaylistInfo = (
+  url: string,
+  args: string[],
+  signal?: AbortSignal
+): Promise<PlaylistInfo> =>
   new Promise((resolve, reject) => {
-    const proc = ytdlpManager.getInstance().exec(args)
+    signal?.throwIfAborted()
+    const instance = ytdlpManager.getInstance()
+    const proc = signal ? instance.exec(args, {}, signal) : instance.exec(args)
     const stdout = createBoundedTextBuffer()
     const stderr = createBoundedTextBuffer()
     proc.ytDlpProcess?.stdout?.on('data', (d: Buffer) => stdout.append(d))
@@ -210,7 +218,10 @@ const execPlaylistInfo = (url: string, args: string[]): Promise<PlaylistInfo> =>
     proc.on('error', reject)
   })
 
-export const fetchPlaylistInfo = async (url: string): Promise<PlaylistInfo> => {
+export const fetchPlaylistInfo = async (
+  url: string,
+  signal?: AbortSignal
+): Promise<PlaylistInfo> => {
   const settings = await settingsForUrl(url)
   if (settings.browserForCookies && settings.browserForCookies !== 'none') {
     const blocked = cookieAccessError()
@@ -219,5 +230,5 @@ export const fetchPlaylistInfo = async (url: string): Promise<PlaylistInfo> => {
     }
   }
   const args = buildPlaylistInfoArgs(url, settings)
-  return retryTransientYtDlpNetworkError(() => execPlaylistInfo(url, args))
+  return retryTransientYtDlpNetworkError(() => execPlaylistInfo(url, args, signal))
 }

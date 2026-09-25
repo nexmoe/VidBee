@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto'
 import type { IncomingMessage, ServerResponse } from 'node:http'
+import { isDownloadTaskKind } from '@vidbee/task-queue'
 import { AI_OVERVIEW_PROMPT_ID } from '../../shared/ai-prompts'
 import type { AiPromptRunSnapshot } from '../../shared/ai-types'
 import type {
@@ -7,12 +8,21 @@ import type {
   ExtensionOverviewSnapshot
 } from '../../shared/extension-overview'
 import {
+  isReusableOverviewSnapshot,
+  type OverviewDownloadMatch,
+  resolveExtensionOverviewTarget,
+  snapshotFromOverviewThread
+} from '../../shared/extension-overview-reuse'
+import { isExtensionSourceUrl } from '../../shared/extension-source-url'
+import { getAgentChatStore } from './agent-chat-store'
+import {
   getPromptRunSnapshot,
   startPromptRun,
   stopPromptRun,
   stopPromptRunsForDownload
 } from './ai-prompt-runner'
 import { applyExtensionCors, extensionRequestOrigin, replyExtensionJson } from './extension-origin'
+import { peekDesktopTaskQueueRef } from './queue-ref'
 
 const PREFIX = '/extension/v1/overview'
 const TTL_MS = 60 * 60 * 1000
@@ -21,6 +31,7 @@ const REQUEST_ID = /^[a-f0-9-]{36}$/i
 interface Job {
   digest: string
   downloadId: string
+  reused: boolean
   expiresAt: number
   origin: string
   token: string
@@ -72,19 +83,7 @@ async function readInput(req: IncomingMessage): Promise<ExtensionOverviewInput |
   ) {
     return null
   }
-  try {
-    const source = new URL(input.sourceUrl)
-    if (
-      source.protocol !== 'https:' ||
-      source.username ||
-      source.password ||
-      !['www.youtube.com', 'm.youtube.com', 'youtube.com', 'www.bilibili.com'].includes(
-        source.hostname
-      )
-    ) {
-      return null
-    }
-  } catch {
+  if (!isExtensionSourceUrl(input.sourceUrl)) {
     return null
   }
   for (const language of [input.uiLanguage, input.transcriptLanguage]) {
@@ -95,27 +94,87 @@ async function readInput(req: IncomingMessage): Promise<ExtensionOverviewInput |
   if (input.transcriptOrigin !== undefined && !['ai', 'human'].includes(input.transcriptOrigin)) {
     return null
   }
+  if (input.forceRegenerate !== undefined && typeof input.forceRegenerate !== 'boolean') {
+    return null
+  }
   return input
 }
 
-/** Remove credentials, reasoning and internal download identifiers from the wire result. */
+/** Remove credentials and internal download identifiers from the wire result. */
 function publicSnapshot(snapshot: AiPromptRunSnapshot): ExtensionOverviewSnapshot {
   return {
     status: snapshot.status,
     text: snapshot.text,
     error: snapshot.error,
     errorCode: snapshot.errorCode,
+    thinking: snapshot.thinking,
+    thinkingMs: snapshot.thinkingMs,
     updatedAt: snapshot.updatedAt
   }
 }
 
-/** Release expired extension-only runs without touching Desktop download history. */
+/** Page local download history so an extension watch URL can attach to an existing task. */
+function listDownloadMatches(): OverviewDownloadMatch[] {
+  const queue = peekDesktopTaskQueueRef()
+  if (!queue) {
+    return []
+  }
+  const matches: OverviewDownloadMatch[] = []
+  let cursor: string | null = null
+  do {
+    const page = queue.list({ limit: 200, cursor })
+    for (const task of page.tasks) {
+      if (isDownloadTaskKind(task.kind)) {
+        matches.push({
+          id: task.id,
+          kind: task.kind,
+          input: { url: task.input.url },
+          updatedAt: task.updatedAt
+        })
+      }
+    }
+    cursor = page.nextCursor
+  } while (cursor)
+  return matches
+}
+
+/** Read the Desktop Overview the user already sees, without creating an empty thread. */
+function liveOverviewSnapshot(downloadId: string): AiPromptRunSnapshot | null {
+  try {
+    const overview = getAgentChatStore()
+      .listVideoThreads(downloadId)
+      .find((thread) => thread.promptId === AI_OVERVIEW_PROMPT_ID)
+    const fromAgent = overview ? snapshotFromOverviewThread(overview) : null
+    if (fromAgent && isReusableOverviewSnapshot(fromAgent)) {
+      return fromAgent
+    }
+  } catch {
+    // Agent store is unavailable until Desktop SQLite is open.
+  }
+  const prompt = getPromptRunSnapshot(downloadId, AI_OVERVIEW_PROMPT_ID)
+  return isReusableOverviewSnapshot(prompt) ? prompt : null
+}
+
+/** Re-read a reused Desktop Overview, otherwise the extension-owned prompt run. */
+function jobSnapshot(job: Job): AiPromptRunSnapshot {
+  if (job.reused) {
+    return (
+      liveOverviewSnapshot(job.downloadId) ??
+      getPromptRunSnapshot(job.downloadId, AI_OVERVIEW_PROMPT_ID)
+    )
+  }
+  return getPromptRunSnapshot(job.downloadId, AI_OVERVIEW_PROMPT_ID)
+}
+
+/** Release expired extension-only runs without aborting a reused Desktop Overview. */
 function pruneJobs(): void {
   for (const [id, job] of jobs) {
     if (job.expiresAt > Date.now()) {
       continue
     }
-    stopPromptRunsForDownload(job.downloadId)
+    if (!job.reused) {
+      stopPromptRunsForDownload(job.downloadId)
+    }
     jobs.delete(id)
   }
 }
@@ -125,7 +184,7 @@ export async function handleExtensionOverview(
   req: IncomingMessage,
   res: ServerResponse,
   pathname: string,
-  consumeToken: (token: string) => boolean
+  consumeToken: (token: string, origin: string) => boolean
 ): Promise<void> {
   const origin = requestOrigin(req)
   if (!origin) {
@@ -141,7 +200,7 @@ export async function handleExtensionOverview(
   pruneJobs()
   const token = req.headers.authorization?.replace(/^Bearer /i, '') ?? ''
   if (pathname === PREFIX && req.method === 'POST') {
-    if (!consumeToken(token)) {
+    if (!consumeToken(token, origin)) {
       reply(res, 401, { error: 'Invalid start token' })
       return
     }
@@ -157,34 +216,48 @@ export async function handleExtensionOverview(
       reply(res, 409, { error: 'Request identity changed' })
       return
     }
-    const running = [...jobs.values()].filter(
-      (job) => getPromptRunSnapshot(job.downloadId, AI_OVERVIEW_PROMPT_ID).status === 'running'
-    )
+    const running = [...jobs.values()].filter((job) => jobSnapshot(job).status === 'running')
     if (!existing && (jobs.size >= MAX_JOBS || running.length >= 2)) {
       reply(res, 429, {
         error: 'Too many overview requests. Wait for a running overview to finish.'
       })
       return
     }
-    const job = existing ?? {
+    if (existing) {
+      reply(res, 200, {
+        id,
+        token: existing.token,
+        snapshot: publicSnapshot(jobSnapshot(existing))
+      })
+      return
+    }
+    const target = resolveExtensionOverviewTarget({
+      forceRegenerate: input.forceRegenerate === true,
+      sourceUrl: input.sourceUrl,
+      ephemeralDownloadId: `__extension-overview:${id}`,
+      tasks: listDownloadMatches(),
+      overviewFor: liveOverviewSnapshot
+    })
+    const job: Job = {
       digest,
-      downloadId: `__extension-overview:${id}`,
+      downloadId: target.downloadId,
+      reused: target.reused,
       origin,
       token: randomBytes(32).toString('hex'),
       expiresAt: Date.now() + TTL_MS
     }
     jobs.set(id, job)
-    const snapshot = existing
-      ? getPromptRunSnapshot(job.downloadId, AI_OVERVIEW_PROMPT_ID)
-      : startPromptRun({
-          downloadId: job.downloadId,
-          promptId: AI_OVERVIEW_PROMPT_ID,
-          transcriptText: input.transcriptText,
-          sourceUrl: input.sourceUrl,
-          transcriptLanguage: input.transcriptLanguage,
-          transcriptOrigin: input.transcriptOrigin,
-          uiLanguage: input.uiLanguage ?? 'en'
-        })
+    const snapshot =
+      target.snapshot ??
+      startPromptRun({
+        downloadId: job.downloadId,
+        promptId: AI_OVERVIEW_PROMPT_ID,
+        transcriptText: input.transcriptText,
+        sourceUrl: input.sourceUrl,
+        transcriptLanguage: input.transcriptLanguage,
+        transcriptOrigin: input.transcriptOrigin,
+        uiLanguage: input.uiLanguage ?? 'en'
+      })
     reply(res, 200, { id, token: job.token, snapshot: publicSnapshot(snapshot) })
     return
   }
@@ -195,11 +268,17 @@ export async function handleExtensionOverview(
     return
   }
   if (parts.length === 1 && req.method === 'GET') {
-    reply(res, 200, publicSnapshot(getPromptRunSnapshot(job.downloadId, AI_OVERVIEW_PROMPT_ID)))
+    reply(res, 200, publicSnapshot(jobSnapshot(job)))
     return
   }
   if (parts.length === 2 && parts[1] === 'cancel' && req.method === 'POST') {
-    reply(res, 200, publicSnapshot(stopPromptRun(job.downloadId, AI_OVERVIEW_PROMPT_ID)))
+    reply(
+      res,
+      200,
+      publicSnapshot(
+        job.reused ? jobSnapshot(job) : stopPromptRun(job.downloadId, AI_OVERVIEW_PROMPT_ID)
+      )
+    )
     return
   }
   reply(res, 405, { error: 'Method not allowed' })
@@ -208,7 +287,9 @@ export async function handleExtensionOverview(
 /** Stop extension-owned work when the local server shuts down. */
 export function clearExtensionOverviews(): void {
   for (const job of jobs.values()) {
-    stopPromptRunsForDownload(job.downloadId)
+    if (!job.reused) {
+      stopPromptRunsForDownload(job.downloadId)
+    }
   }
   jobs.clear()
 }

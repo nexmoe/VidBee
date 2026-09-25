@@ -22,6 +22,7 @@ export interface AsrMachineView {
 }
 
 export interface AsrModelStatusView {
+  pendingTiers: AsrTierId[]
   bytes: number
   downloads: AsrDownloadView[]
   language?: string
@@ -97,6 +98,7 @@ export const toDownloadViews = (
  * Map IPC model status into the picker/dialog view model.
  */
 export const toModelStatusView = (next: {
+  pendingTiers?: AsrTierId[]
   bytes: number
   downloads?: Array<{ received: number; tier?: AsrTierId; total: number | null }>
   downloading?: { received: number; tier?: AsrTierId; total: number | null } | null
@@ -106,6 +108,7 @@ export const toModelStatusView = (next: {
   recommended?: AsrTierId[]
   tiers?: Array<{ bytes: number; id: AsrTierId; ready: boolean }>
 }): AsrModelStatusView => ({
+  pendingTiers: next.pendingTiers ?? [],
   bytes: next.bytes,
   ready: next.ready,
   downloads: toDownloadViews(next.downloads, next.downloading),

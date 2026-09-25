@@ -1,5 +1,6 @@
 import {
   appendYouTubeSafeExtractorArgs as appendSharedYouTubeSafeExtractorArgs,
+  buildCaptionExtractArgs as buildSharedCaptionExtractArgs,
   buildPlaylistInfoArgs as buildSharedPlaylistInfoArgs,
   buildVideoInfoArgs as buildSharedVideoInfoArgs,
   formatYtDlpCommand,
@@ -50,6 +51,21 @@ export const buildVideoInfoArgs = (
   settings: ReturnType<typeof settingsManager.getAll>
 ): string[] =>
   buildSharedVideoInfoArgs(url, toSharedSettings(settings), ytdlpManager.getJsRuntimeArgs())
+
+/** Build skip-download caption sidecar arguments with the same host settings and runtime. */
+export const buildCaptionExtractArgs = (
+  url: string,
+  outputTemplate: string,
+  settings: ReturnType<typeof settingsManager.getAll>,
+  subtitleLanguages = 'all'
+): string[] =>
+  buildSharedCaptionExtractArgs(
+    url,
+    outputTemplate,
+    toSharedSettings(settings),
+    ytdlpManager.getJsRuntimeArgs(),
+    subtitleLanguages
+  )
 
 /** Build playlist metadata arguments with the same host settings and runtime. */
 export const buildPlaylistInfoArgs = (

@@ -1,4 +1,7 @@
+import { documentResultBudget } from './agent-budget'
 import type { AgentTranscriptLine, AgentTranscriptPageLine } from './agent-tools'
+
+export { documentResultBudget }
 
 /** JSON wrapper around a document page (coverage, cursors, references). */
 export const DOCUMENT_RESULT_OVERHEAD_BYTES = 1024
@@ -10,18 +13,6 @@ export const MIN_DOCUMENT_RESULT_BYTES = MIN_DOCUMENT_PAGE_BYTES + DOCUMENT_RESU
 /** Size a document page so wrapper overhead cannot reduce it to zero. */
 export function documentPageBudget(resultMaxBytes: number): number {
   return Math.max(MIN_DOCUMENT_PAGE_BYTES, resultMaxBytes - DOCUMENT_RESULT_OVERHEAD_BYTES)
-}
-
-/** Keep a usable document page even when the conservative remaining-token estimate is empty. */
-export function documentResultBudget(input: {
-  contextWindow: number
-  reserveTokens: number
-  usedTokens: number
-}): number {
-  return Math.max(
-    MIN_DOCUMENT_RESULT_BYTES,
-    2 * (input.contextWindow - input.reserveTokens - input.usedTokens)
-  )
 }
 
 /** Count a string as it would appear inside JSON, excluding the surrounding quotes. */

@@ -49,6 +49,15 @@ export class MemoryPersistAdapter implements PersistAdapter {
     this.progress.set(input.task.id, structuredClone(input.progress))
   }
 
+  /** Clone the entire batch before changing any stored task. */
+  async upsertTasks(inputs: PersistTransitionInput[]): Promise<void> {
+    const copies = structuredClone(inputs)
+    for (const { task, progress } of copies) {
+      this.tasks.set(task.id, task)
+      this.progress.set(task.id, progress)
+    }
+  }
+
   async upsertProgress(taskId: string, progress: TaskProgress): Promise<void> {
     this.progress.set(taskId, structuredClone(progress))
     const t = this.tasks.get(taskId)

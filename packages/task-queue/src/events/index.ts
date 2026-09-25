@@ -25,6 +25,13 @@ export interface SnapshotChangedEvent {
   at: number
 }
 
+/** A durable removal, including child tasks removed with their parent. */
+export interface TaskRemovedEvent {
+  type: 'task-removed'
+  taskId: string
+  at: number
+}
+
 export interface OrphanKilledEvent {
   type: 'orphan-killed'
   taskId: string
@@ -56,6 +63,7 @@ export type TaskQueueEvent =
   | TransitionEvent
   | ProgressEvent
   | SnapshotChangedEvent
+  | TaskRemovedEvent
   | OrphanKilledEvent
   | ErrorClassifiedEvent
   | LogEvent

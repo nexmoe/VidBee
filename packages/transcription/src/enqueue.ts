@@ -3,6 +3,7 @@ import {
   PRIORITY_BACKGROUND,
   PRIORITY_USER,
   type Task,
+  type TaskCreationMetadata,
   type TaskPriority,
   type TaskQueueAPI,
   TERMINAL_STATUSES,
@@ -18,6 +19,7 @@ const ACTIVE = new Set(['queued', 'running', 'processing', 'paused', 'retry-sche
 
 export interface EnqueueTranscriptionInput {
   queue: TaskQueueAPI
+  creation?: TaskCreationMetadata
   store: TranscriptStore | MemoryTranscriptStore
   downloadTaskId: string
   sourceFilePath: string
@@ -62,6 +64,7 @@ export function findActiveTranscription(
   )
 }
 
+/** Enqueue or reuse local transcription without rewriting existing creation provenance. */
 export async function enqueueTranscription(
   input: EnqueueTranscriptionInput
 ): Promise<EnqueueTranscriptionResult> {
@@ -100,6 +103,7 @@ export async function enqueueTranscription(
 
   const added = await input.queue.add({
     input: buildTranscriptionInput({
+      creation: input.creation,
       downloadTaskId: input.downloadTaskId,
       sourceFilePath: input.sourceFilePath,
       trigger: input.trigger,

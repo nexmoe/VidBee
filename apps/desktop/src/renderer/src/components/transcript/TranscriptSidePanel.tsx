@@ -107,6 +107,8 @@ interface TranscriptSidePanelProps {
   /** Typewriter incoming ASR lines. Off when viewing a finished caption track. */
   streamLive?: boolean
   transcriptText: string
+  /** True when Desktop already has a stored transcript record. */
+  hasStoredTranscript?: boolean
 }
 
 /**
@@ -339,7 +341,8 @@ export function TranscriptSidePanel({
   streamLive = running,
   transcriptLanguage,
   transcriptOrigin,
-  transcriptText
+  transcriptText,
+  hasStoredTranscript = false
 }: TranscriptSidePanelProps) {
   const { t } = useTranslation()
   const [pendingTab, setPendingTab] = useAtom(pendingPromptTabAtom)
@@ -907,6 +910,7 @@ export function TranscriptSidePanel({
             currentTimeMs={currentTimeMs}
             downloadId={downloadId}
             hasProvider={hasProvider}
+            hasStoredTranscript={hasStoredTranscript}
             onSeek={onSeek}
             prompt={activePrompt}
             ready={canUsePrompts}

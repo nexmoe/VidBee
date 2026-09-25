@@ -280,7 +280,14 @@
     "cookiesSetupKeyring": "이 Linux 빌드는 Chrome 쿠키를 읽을 수 없습니다. Firefox를 사용하거나 쿠키 파일을 가져오세요.",
     "cookiesSetupStale": "현재 쿠키가 만료되었거나 차단된 것 같습니다. 로그인을 새로 고친 뒤 다시 시도하세요.",
     "cookiesSetupRetry": "다운로드 다시 시도",
-    "cookiesSetupDone": "완료"
+    "cookiesSetupDone": "완료",
+    "creationSource": "생성 출처",
+    "allSources": "모든 출처",
+    "createdManually": "직접 생성",
+    "createdByAgent": "AI가 생성",
+    "createdBySubscription": "구독",
+    "openSourceConversation": "원본 대화 열기",
+    "sourceFile": "원본 파일"
   },
   "error": {
     "title": "문제가 발생했습니다",
@@ -382,7 +389,7 @@
     "home": "홈",
     "download": "다운로드",
     "playlist": "재생목록 다운로드",
-    "rss": "RSS",
+    "rss": "구독",
     "transcripts": "대본",
     "subscriptions": "구독",
     "preferences": "환경설정",
@@ -978,12 +985,21 @@
       "extensionInstallStep1": "Install the VidBee extension in Chrome, Edge, or Firefox",
       "extensionInstallStep2": "Keep VidBee Desktop running so the extension can connect",
       "extensionInstallStep3": "Sign in to YouTube, Bilibili, or other sites in that browser, then open the VidBee toolbar icon once"
-    }
+    },
+    "agentManagementTools": "에이전트 관리 도구",
+    "agentManagementToolsDescription": "에이전트가 작업과 구독을 변경할 수 있는지, 먼저 확인할지 정합니다",
+    "agentManagementToolsOptions": {
+      "off": "끔",
+      "ask": "먼저 묻기",
+      "auto": "자동 허용"
+    },
+    "agentMaxConcurrentRuns": "로컬 에이전트 동시 실행",
+    "agentMaxConcurrentRunsDescription": "로컬 모델을 쓸 때 동시에 실행할 수 있는 에이전트 대화 수"
   },
   "subscriptions": {
     "title": "구독",
     "subtitle": "{{count}} 구독{{count, plural, one {} other {s}}}",
-    "description": "RSS 피드를 자동으로 모니터링하고 수동 작업 없이 새 다운로드를 대기열에 추가하세요.",
+    "description": "채널을 자동으로 확인하고 새 다운로드를 수동 작업 없이 대기열에 넣습니다.",
     "defaults": {
       "title": "자동화 기본값",
       "description": "구독 다운로드가 저장되는 위치와 VidBee가 새 비디오를 확인하는 빈도를 제어합니다.",
@@ -993,8 +1009,8 @@
       "onlyLatestDescription": "활성화되면 VidBee는 이전 백로그 항목을 건너뛰고 최신 업로드만 가져옵니다."
     },
     "add": {
-      "title": "RSS 추가",
-      "description": "RSS 피드 링크를 붙여넣으세요. \nVidBee는 자동으로 피드를 감지합니다."
+      "title": "구독 추가",
+      "description": "채널 또는 피드 링크를 붙여넣으세요. VidBee가 자동으로 감지합니다."
     },
     "fields": {
       "url": "피드 URL",
@@ -1061,8 +1077,8 @@
       "itemAlreadyQueued": "이 동영상은 이미 대기열에 있습니다.",
       "queueError": "다운로드 대기열에 추가하지 못했습니다.",
       "openLinkError": "동영상 링크를 열지 못했습니다.",
-      "resolveError": "RSS 피드 URL을 확인하지 못했습니다.",
-      "duplicateUrl": "이 RSS 피드는 이미 구독되어 있습니다."
+      "resolveError": "구독 URL을 확인하지 못했습니다.",
+      "duplicateUrl": "이미 추가된 구독입니다."
     },
     "detectedFeed": "{{platform}} 피드 감지됨 -> {{feed}}",
     "detecting": "피드 감지 중...",
@@ -1089,7 +1105,7 @@
       "description": "VidBee를 RSSHub와 결합하면 다양한 플랫폼에서 자동 구독 및 다운로드가 가능해집니다. \n일단 설정되면 VidBee는 백그라운드에서 실행되어 최신 비디오와 콘텐츠를 자동으로 다운로드합니다.",
       "learnMore": "RSSHub에 대해 자세히 알아보기",
       "openDocs": "RSSHub 문서 열기",
-      "hint": "RSS 피드 URL이 없나요? \nRSSHub를 사용하여 YouTube, Twitter 및 기타 수천 개의 플랫폼에 대한 RSS 피드를 생성하세요."
+      "hint": "피드 URL이 없나요? RSSHub로 YouTube, Twitter 등 수천 개 플랫폼의 피드를 만들 수 있습니다."
     }
   },
   "kernelPreparation": {
@@ -1631,7 +1647,9 @@
     "eventStatus": {
       "running": "Running",
       "completed": "Completed",
-      "error": "Failed"
+      "error": "Failed",
+      "pendingApproval": "승인 대기",
+      "denied": "거절됨"
     },
     "placeholder": "Ask a follow-up about this video…",
     "send": "Send message",
@@ -1658,12 +1676,12 @@
     "thinkingOnly": "Thinking only",
     "allowDisableThinking": "Allow turning thinking off",
     "thinkingCapabilitiesHint": "지금은 사고 스위치만 표시되며 강도는 선택할 수 없습니다. 이 모델이 강도 조절을 지원하면 아래에서 사용 가능한 단계를 선택하세요.",
-    "defaultThinkingLevel": "기본 사고 강도",
-    "defaultThinkingAuto": "자동(요청 계층 기본값 사용)",
-    "supportedThinkingLevels": "지원하는 사고 강도",
-    "inputTokens": "입력",
-    "outputTokens": "출력",
-    "providerDefault": "제공자 기본값 사용",
+    "defaultThinkingLevel": "Default thinking level",
+    "defaultThinkingAuto": "Auto (use request default)",
+    "supportedThinkingLevels": "Supported thinking levels",
+    "inputTokens": "Input",
+    "outputTokens": "Output",
+    "providerDefault": "Use provider default",
     "automatic": "Use model defaults",
     "enabled": "Supported",
     "disabled": "Not supported",
@@ -1674,6 +1692,9 @@
     "catalogMatched": "Matched {{name}}. Context window and capabilities were filled in.",
     "catalogBadge": "Catalog",
     "tools": {
+      "list_transcripts": "사용 가능한 자막을 확인하는 중",
+      "select_transcript": "자막 소스를 선택하는 중",
+      "load_tools": "사용 가능한 기능 확인 중",
       "get_video_info": "Reading video information",
       "read_transcript": "Reading transcript",
       "search_transcript": "Searching transcript",
@@ -1719,12 +1740,12 @@
     "faster": "빠르게",
     "smarter": "더 똑똑하게",
     "retrying": "Connection interrupted. Retrying…",
-    "defaultThinkingLevel": "Default thinking level",
-    "defaultThinkingAuto": "Auto (use request default)",
-    "supportedThinkingLevels": "Supported thinking levels",
-    "inputTokens": "Input",
-    "outputTokens": "Output",
-    "providerDefault": "Use provider default"
+    "approval": {
+      "allow": "허용",
+      "allowAndRemember": "허용하고 기억",
+      "deny": "거절",
+      "pending": "{{summary}}"
+    }
   },
   "web": {
     "saveToThisComputer": "Save to this computer",

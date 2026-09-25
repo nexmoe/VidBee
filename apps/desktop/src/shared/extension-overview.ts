@@ -8,14 +8,20 @@ export interface ExtensionOverviewInput {
   transcriptLanguage?: string
   transcriptOrigin?: 'ai' | 'human'
   uiLanguage?: string
+  /** Skip attaching a Desktop download Overview and start a fresh ephemeral run. */
+  forceRegenerate?: boolean
 }
 
-/** Public result only; provider credentials and model reasoning stay in Desktop. */
+/** Public result only; provider credentials stay in Desktop. */
 export interface ExtensionOverviewSnapshot {
   status: AiPromptRunStatus
   text: string
   error: string | null
   errorCode: AiPromptErrorCode | null
+  /** Model reasoning shown in the same ThinkingSteps rail Desktop streams. */
+  thinking: string
+  /** Elapsed reasoning time for the same Thinking header Desktop shows. */
+  thinkingMs: number
   updatedAt: number
 }
 

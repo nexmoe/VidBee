@@ -1,3 +1,4 @@
+import type { TaskCreationMetadata } from '@vidbee/task-queue'
 import { atom } from 'jotai'
 import { ipcServices } from '../lib/ipc'
 import { applyTranscriptSnapshot, mergeTranscriptMaps } from '../lib/transcript-library'
@@ -37,6 +38,7 @@ export interface TranscriptSegmentView {
 }
 
 export interface TranscriptSnapshotView {
+  creation?: TaskCreationMetadata
   downloadTaskId: string
   transcriptionTaskId: string | null
   transcriptId: string | null

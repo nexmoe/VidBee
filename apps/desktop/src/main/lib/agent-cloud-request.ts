@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { setTimeout as delay } from 'node:timers/promises'
+import { agentFailureFromCloudReason, encodeAgentError } from '../../shared/agent-errors'
 import { normalizeCloudContextError } from './agent-cloud-budget'
 
 interface CloudRequestOptions {
@@ -90,4 +91,55 @@ export function createCloudAgentRequestManager(
       attempt.recoveries += 1
     }
   }
+}
+
+/** Rewrite one SSE data line, encoding a Cloud failure envelope's reason into its message. */
+export function markCloudFailureLine(line: string): string {
+  const trimmed = line.startsWith('data:') ? line.slice(5).trim() : undefined
+  if (!trimmed || trimmed === '[DONE]' || !trimmed.includes('"error"')) {
+    return line
+  }
+  try {
+    const frame = JSON.parse(trimmed) as {
+      error?: { reason?: string | null; retryable?: boolean | null; message?: string | null }
+    }
+    const envelope = frame.error
+    if (!envelope || typeof envelope !== 'object' || Array.isArray(envelope)) {
+      return line
+    }
+    const failure = agentFailureFromCloudReason(envelope)
+    if (!failure) {
+      return line
+    }
+    return `data: ${JSON.stringify({ ...frame, error: { ...envelope, message: encodeAgentError(failure) } })}`
+  } catch {
+    return line
+  }
+}
+
+/** Mark Cloud SSE failure frames with structured agent error codes before the SDK reads prose. */
+export function markCloudAgentFailures(
+  body: ReadableStream<Uint8Array>
+): ReadableStream<Uint8Array> {
+  const decoder = new TextDecoder()
+  const encoder = new TextEncoder()
+  let buffer = ''
+  return body.pipeThrough(
+    new TransformStream<Uint8Array, Uint8Array>({
+      transform(chunk, controller) {
+        buffer += decoder.decode(chunk, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() ?? ''
+        for (const line of lines) {
+          controller.enqueue(encoder.encode(`${markCloudFailureLine(line)}\n`))
+        }
+      },
+      flush(controller) {
+        buffer += decoder.decode()
+        if (buffer) {
+          controller.enqueue(encoder.encode(markCloudFailureLine(buffer)))
+        }
+      }
+    })
+  )
 }

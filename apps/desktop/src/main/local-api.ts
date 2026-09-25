@@ -4,6 +4,7 @@ import type { AddressInfo } from 'node:net'
 import type { Task, TaskQueueEvent } from '@vidbee/task-queue'
 
 import { projectTaskToLegacy } from '@vidbee/task-queue'
+import { app } from 'electron'
 import log from 'electron-log/main'
 import {
   getAutomationDescriptorPath,
@@ -18,12 +19,18 @@ import {
   handleExtensionCookies,
   isExtensionCookiesPath
 } from './lib/extension-cookies'
-import { applyExtensionCors } from './lib/extension-origin'
+import { applyExtensionCors, configureDevelopmentExtensionOrigins } from './lib/extension-origin'
 import {
   clearExtensionOverviews,
   handleExtensionOverview,
   isExtensionOverviewPath
 } from './lib/extension-overview'
+import { createExtensionTokenStore, EXTENSION_TOKEN_TTL_MS } from './lib/extension-token'
+import {
+  clearExtensionTranscripts,
+  handleExtensionTranscript,
+  isExtensionTranscriptPath
+} from './lib/extension-transcript'
 import {
   classifyLocalApiCaller,
   LOCAL_API_PORT_END,
@@ -40,15 +47,10 @@ import {
 const PORT_RANGE_START = LOCAL_API_PORT_START
 const PORT_RANGE_END = LOCAL_API_PORT_END
 
-const EXTENSION_TOKEN_TTL_MS = 60_000
 const AUTOMATION_TOKEN_TTL_MS = 60 * 60 * 1000
 
 const AUTOMATION_PREFIX = '/automation/v1'
 const AUTOMATION_SCHEMA_VERSION = '1.0.0'
-
-interface ExtensionTokenRecord {
-  expiresAt: number
-}
 
 interface AutomationTokenRecord {
   expiresAt: number
@@ -58,7 +60,7 @@ let server: http.Server | null = null
 const serverHost = '127.0.0.1'
 let serverPort: number | null = null
 
-const extensionTokens = new Map<string, ExtensionTokenRecord>()
+const extensionTokens = createExtensionTokenStore()
 
 let automationToken: string | null = null
 let automationTokenRecord: AutomationTokenRecord | null = null
@@ -72,7 +74,8 @@ const isLoopbackAddress = (address?: string | null): boolean => {
 
 const writeJson = (res: http.ServerResponse, status: number, body: unknown): void => {
   res.writeHead(status, {
-    'Content-Type': 'application/json; charset=utf-8'
+    'Content-Type': 'application/json; charset=utf-8',
+    'Cache-Control': 'no-store'
   })
   res.end(JSON.stringify(body))
 }
@@ -80,30 +83,6 @@ const writeJson = (res: http.ServerResponse, status: number, body: unknown): voi
 const writeEmpty = (res: http.ServerResponse, status: number): void => {
   res.writeHead(status)
   res.end()
-}
-
-// ───────────── Extension token ─────────────
-
-const issueExtensionToken = (): string => {
-  const token = crypto.randomBytes(16).toString('hex')
-  extensionTokens.set(token, { expiresAt: Date.now() + EXTENSION_TOKEN_TTL_MS })
-  return token
-}
-
-const consumeExtensionToken = (token?: string | null): boolean => {
-  if (!token) {
-    return false
-  }
-  const record = extensionTokens.get(token)
-  if (!record) {
-    return false
-  }
-  if (Date.now() > record.expiresAt) {
-    extensionTokens.delete(token)
-    return false
-  }
-  extensionTokens.delete(token)
-  return true
 }
 
 // ───────────── Automation token ─────────────
@@ -471,7 +450,17 @@ const handleRequest = async (
         req,
         res,
         new URL(req.url, 'http://127.0.0.1').pathname,
-        consumeExtensionToken
+        extensionTokens.consume
+      )
+      return
+    }
+
+    if (req.url && isExtensionTranscriptPath(new URL(req.url, 'http://127.0.0.1').pathname)) {
+      await handleExtensionTranscript(
+        req,
+        res,
+        new URL(req.url, 'http://127.0.0.1').pathname,
+        extensionTokens.consume
       )
       return
     }
@@ -481,7 +470,7 @@ const handleRequest = async (
         req,
         res,
         new URL(req.url, 'http://127.0.0.1').pathname,
-        consumeExtensionToken
+        extensionTokens.consume
       )
       return
     }
@@ -508,18 +497,28 @@ const handleRequest = async (
       return
     }
 
-    if (req.method !== 'GET') {
-      writeJson(res, 405, { error: 'Method not allowed' })
-      return
-    }
-
     if (pathname === '/token') {
-      if (caller.kind !== 'extension') {
+      // POST supplies a browser-controlled Origin; a custom header alone is forgeable.
+      if (caller.kind !== 'extension' || req.headers.origin !== caller.origin) {
         writeJson(res, 403, { error: 'Extension origin required' })
         return
       }
-      const token = issueExtensionToken()
+      if (req.method !== 'POST') {
+        res.setHeader('Allow', 'POST')
+        writeJson(res, 405, { error: 'Method not allowed' })
+        return
+      }
+      const token = extensionTokens.issue(caller.origin)
+      if (!token) {
+        writeJson(res, 429, { error: 'Too many pending extension handshakes' })
+        return
+      }
       writeJson(res, 200, { token, expiresInMs: EXTENSION_TOKEN_TTL_MS })
+      return
+    }
+
+    if (req.method !== 'GET') {
+      writeJson(res, 405, { error: 'Method not allowed' })
       return
     }
 
@@ -529,7 +528,7 @@ const handleRequest = async (
         return
       }
       const token = requestUrl.searchParams.get('token')
-      if (!consumeExtensionToken(token)) {
+      if (!extensionTokens.consume(token, caller.origin)) {
         writeJson(res, 401, { error: 'Invalid token' })
         return
       }
@@ -562,10 +561,20 @@ const handleRequest = async (
     }
 
     if (pathname === '/status') {
+      const connection = getExtensionCookieConnection()
       writeJson(res, 200, {
         ok: true,
-        capabilities: { extensionCookies: 1, extensionOverview: 1 },
-        extension: getExtensionCookieConnection()
+        capabilities: {
+          extensionSecurity: 1,
+          extensionCookies: 1,
+          extensionOverview: 1,
+          extensionTranscript: 1
+        },
+        extension: {
+          connected: connection.connected,
+          ...(connection.browser ? { browser: connection.browser } : {}),
+          ...(connection.lastSeenAt ? { lastSeenAt: connection.lastSeenAt } : {})
+        }
       })
       return
     }
@@ -591,10 +600,13 @@ const startServerOnPort = (port: number): Promise<http.Server> =>
     httpServer.listen(port, '127.0.0.1', () => resolve(httpServer))
   })
 
+/** Start the loopback API with production trust rules unless development origins are explicit. */
 export async function startExtensionApiServer(): Promise<number | null> {
   if (server && serverPort) {
     return serverPort
   }
+
+  configureDevelopmentExtensionOrigins(app.isPackaged, process.env.VIDBEE_DEV_EXTENSION_ORIGINS)
 
   for (let port = PORT_RANGE_START; port <= PORT_RANGE_END; port += 1) {
     try {
@@ -658,6 +670,7 @@ export async function stopExtensionApiServer(): Promise<void> {
   server = null
   serverPort = null
   clearExtensionOverviews()
+  clearExtensionTranscripts()
   clearExtensionCookies()
   extensionTokens.clear()
   automationToken = null

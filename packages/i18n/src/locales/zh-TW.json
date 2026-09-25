@@ -280,7 +280,14 @@
     "cookiesSetupKeyring": "此 Linux 版本無法讀取 Chrome Cookies。請改用 Firefox，或匯入 Cookies 檔。",
     "cookiesSetupStale": "目前 Cookies 可能已過期或被攔截。請重新登入後再試。",
     "cookiesSetupRetry": "重試下載",
-    "cookiesSetupDone": "完成"
+    "cookiesSetupDone": "完成",
+    "creationSource": "建立來源",
+    "allSources": "全部來源",
+    "createdManually": "手動建立",
+    "createdByAgent": "AI 建立",
+    "createdBySubscription": "訂閱",
+    "openSourceConversation": "開啟來源對話",
+    "sourceFile": "來源檔案"
   },
   "error": {
     "title": "發生錯誤",
@@ -382,7 +389,7 @@
     "home": "首頁",
     "download": "下載",
     "playlist": "下載播放清單",
-    "rss": "RSS",
+    "rss": "訂閱",
     "transcripts": "文稿",
     "subscriptions": "訂閱",
     "preferences": "偏好設定",
@@ -978,12 +985,21 @@
       "extensionInstallStep1": "Install the VidBee extension in Chrome, Edge, or Firefox",
       "extensionInstallStep2": "Keep VidBee Desktop running so the extension can connect",
       "extensionInstallStep3": "Sign in to YouTube, Bilibili, or other sites in that browser, then open the VidBee toolbar icon once"
-    }
+    },
+    "agentManagementTools": "智慧體管理工具",
+    "agentManagementToolsDescription": "智慧體能否變更任務和訂閱，以及是否必須先詢問你",
+    "agentManagementToolsOptions": {
+      "off": "關閉",
+      "ask": "先詢問",
+      "auto": "自動允許"
+    },
+    "agentMaxConcurrentRuns": "本機智慧體並行數",
+    "agentMaxConcurrentRunsDescription": "使用本機模型時，最多可同時執行幾段智慧體對話"
   },
   "subscriptions": {
     "title": "訂閱",
     "subtitle": "{{count}} 訂閱{{count，複數，一個 {} 其它 {s}}}",
-    "description": "自動監控 RSS 源並對新下載進行排隊，無需手動操作。",
+    "description": "自動關注訂閱來源，並將新內容加入下載佇列，無需手動操作。",
     "defaults": {
       "title": "自動化默認值",
       "description": "控制訂閱下載的存儲位置以及 VidBee 檢查新視頻的頻率。",
@@ -993,8 +1009,8 @@
       "onlyLatestDescription": "啟用後，VidBee 會跳過較舊的積壓項目，僅獲取最新上傳的項目。"
     },
     "add": {
-      "title": "添加RSS",
-      "description": "粘貼 RSS 源鏈接。 VidBee 將自動檢測提要。"
+      "title": "新增訂閱",
+      "description": "貼上頻道或訂閱連結。VidBee 會自動識別。"
     },
     "fields": {
       "url": "提要網址",
@@ -1061,8 +1077,8 @@
       "itemAlreadyQueued": "該視頻已排隊",
       "queueError": "無法添加到下載隊列。",
       "openLinkError": "無法打開視頻鏈接。",
-      "resolveError": "無法解析 RSS 源 URL。",
-      "duplicateUrl": "此 RSS 訂閱已存在。"
+      "resolveError": "無法解析訂閱連結。",
+      "duplicateUrl": "此訂閱已存在。"
     },
     "detectedFeed": "檢測到 {{platform}} feed -> {{feed}}",
     "detecting": "檢測飼料...",
@@ -1089,7 +1105,7 @@
       "description": "將 VidBee 與 RSSHub 結合起來，可以從各種平台實現自動訂閱和下載。設置完成後，VidBee 將在後台運行並自動下載最新的視頻和內容。",
       "learnMore": "了解有關 RSSHub 的更多信息",
       "openDocs": "打開 RSSHub 文檔",
-      "hint": "沒有 RSS 源 URL？使用 RSSHub 為 YouTube、Twitter 和數千個其他平台生成 RSS 源。"
+      "hint": "沒有訂閱連結？使用 RSSHub 為 YouTube、Twitter 和數千個其他平台產生訂閱來源。"
     }
   },
   "kernelPreparation": {
@@ -1631,7 +1647,9 @@
     "eventStatus": {
       "running": "Running",
       "completed": "Completed",
-      "error": "Failed"
+      "error": "Failed",
+      "pendingApproval": "等待核准",
+      "denied": "已拒絕"
     },
     "placeholder": "Ask a follow-up about this video…",
     "send": "Send message",
@@ -1658,12 +1676,12 @@
     "thinkingOnly": "Thinking only",
     "allowDisableThinking": "Allow turning thinking off",
     "thinkingCapabilitiesHint": "目前只會顯示思考開關，不會顯示強度選擇；如果此模型支援強度調節，請在下方選擇可用檔位。",
-    "defaultThinkingLevel": "預設思考強度",
-    "defaultThinkingAuto": "自動（使用請求層預設值）",
-    "supportedThinkingLevels": "支援的思考強度",
-    "inputTokens": "輸入",
-    "outputTokens": "輸出",
-    "providerDefault": "使用供應商預設值",
+    "defaultThinkingLevel": "Default thinking level",
+    "defaultThinkingAuto": "Auto (use request default)",
+    "supportedThinkingLevels": "Supported thinking levels",
+    "inputTokens": "Input",
+    "outputTokens": "Output",
+    "providerDefault": "Use provider default",
     "automatic": "Use model defaults",
     "enabled": "Supported",
     "disabled": "Not supported",
@@ -1674,6 +1692,9 @@
     "catalogMatched": "Matched {{name}}. Context window and capabilities were filled in.",
     "catalogBadge": "Catalog",
     "tools": {
+      "list_transcripts": "正在查看可用字幕",
+      "select_transcript": "正在選擇字幕來源",
+      "load_tools": "正在查找可用功能",
       "get_video_info": "Reading video information",
       "read_transcript": "Reading transcript",
       "search_transcript": "Searching transcript",
@@ -1719,12 +1740,12 @@
     "faster": "更快",
     "smarter": "更強",
     "retrying": "Connection interrupted. Retrying…",
-    "defaultThinkingLevel": "Default thinking level",
-    "defaultThinkingAuto": "Auto (use request default)",
-    "supportedThinkingLevels": "Supported thinking levels",
-    "inputTokens": "Input",
-    "outputTokens": "Output",
-    "providerDefault": "Use provider default"
+    "approval": {
+      "allow": "允許",
+      "allowAndRemember": "允許並記住",
+      "deny": "拒絕",
+      "pending": "{{summary}}"
+    }
   },
   "web": {
     "saveToThisComputer": "Save to this computer",

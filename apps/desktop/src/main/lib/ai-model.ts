@@ -104,7 +104,8 @@ export const createVidbeeCloudModel = (apiBaseUrl: string): Model<'openai-comple
   contextWindow: 0,
   maxTokens: 0,
   reasoning: true,
-  thinkingLevelMap: { off: 'none' },
+  // Cloud applies the selected model's default when a prompt has no explicit thinking choice.
+  thinkingLevelMap: { off: null },
   compat: { supportsDeveloperRole: false }
 })
 

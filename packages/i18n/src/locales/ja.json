@@ -280,7 +280,14 @@
     "cookiesSetupKeyring": "この Linux ビルドでは Chrome の Cookie を読めません。Firefox を使うか、Cookie ファイルを読み込んでください。",
     "cookiesSetupStale": "現在の Cookie は期限切れかブロックされています。ログインし直して再試行してください。",
     "cookiesSetupRetry": "ダウンロードを再試行",
-    "cookiesSetupDone": "完了"
+    "cookiesSetupDone": "完了",
+    "creationSource": "作成元",
+    "allSources": "すべての作成元",
+    "createdManually": "手動で作成",
+    "createdByAgent": "AI が作成",
+    "createdBySubscription": "購読",
+    "openSourceConversation": "作成元の会話を開く",
+    "sourceFile": "元のファイル"
   },
   "error": {
     "title": "問題が発生しました",
@@ -382,7 +389,7 @@
     "home": "ホーム",
     "download": "ダウンロード",
     "playlist": "プレイリストをダウンロード",
-    "rss": "RSS",
+    "rss": "購読",
     "transcripts": "文字起こし",
     "subscriptions": "定期購入",
     "preferences": "設定",
@@ -978,12 +985,21 @@
       "extensionInstallStep1": "Install the VidBee extension in Chrome, Edge, or Firefox",
       "extensionInstallStep2": "Keep VidBee Desktop running so the extension can connect",
       "extensionInstallStep3": "Sign in to YouTube, Bilibili, or other sites in that browser, then open the VidBee toolbar icon once"
-    }
+    },
+    "agentManagementTools": "エージェント管理ツール",
+    "agentManagementToolsDescription": "エージェントがタスクや定期購読を変更できるか、先に確認するか",
+    "agentManagementToolsOptions": {
+      "off": "オフ",
+      "ask": "確認する",
+      "auto": "自動で許可"
+    },
+    "agentMaxConcurrentRuns": "ローカルエージェントの同時実行数",
+    "agentMaxConcurrentRunsDescription": "ローカルモデル利用時に同時に実行できるエージェント会話の数"
   },
   "subscriptions": {
     "title": "定期購入",
     "subtitle": "{{count}} 件のサブスクリプション{{count、複数、one {} other {s}}}",
-    "description": "RSS フィードを自動的に監視し、手動作業なしで新しいダウンロードをキューに追加します。",
+    "description": "チャンネルを自動で監視し、新しいダウンロードを手動なしでキューに入れます。",
     "defaults": {
       "title": "自動化のデフォルト",
       "description": "サブスクリプションのダウンロードが保存される場所と、VidBee が新しいビデオをチェックする頻度を制御します。",
@@ -993,8 +1009,8 @@
       "onlyLatestDescription": "有効にすると、VidBee は古いバックログ項目をスキップし、最新のアップロードのみを取得します。"
     },
     "add": {
-      "title": "RSSを追加",
-      "description": "RSS フィードのリンクを貼り付けます。 \nVidBee はフィードを自動的に検出します。"
+      "title": "購読を追加",
+      "description": "チャンネルまたはフィードのリンクを貼り付けてください。VidBee が自動で検出します。"
     },
     "fields": {
       "url": "フィード URL",
@@ -1061,8 +1077,8 @@
       "itemAlreadyQueued": "このビデオはすでにキューに登録されています",
       "queueError": "ダウンロードキューへの追加に失敗しました。",
       "openLinkError": "ビデオリンクを開けませんでした。",
-      "resolveError": "RSS フィード URL を解決できませんでした。",
-      "duplicateUrl": "このRSSフィードはすでに登録されています。"
+      "resolveError": "購読 URL を解決できませんでした。",
+      "duplicateUrl": "この購読はすでに追加されています。"
     },
     "detectedFeed": "{{platform}} フィードが検出されました -> {{feed}}",
     "detecting": "フィードを検出中...",
@@ -1089,7 +1105,7 @@
       "description": "VidBee と RSSHub を組み合わせると、さまざまなプラットフォームからの自動サブスクリプションとダウンロードが可能になります。\nセットアップが完了すると、VidBee がバックグラウンドで実行され、最新のビデオとコンテンツが自動的にダウンロードされます。",
       "learnMore": "RSSHub について詳しく見る",
       "openDocs": "RSSHub ドキュメントを開く",
-      "hint": "RSS フィード URL をお持ちでない場合は、 \nRSSHub を使用して、YouTube、Twitter、その他数千のプラットフォーム用の RSS フィードを生成します。"
+      "hint": "フィード URL がありませんか？RSSHub で YouTube、Twitter など数千のプラットフォーム用フィードを生成できます。"
     }
   },
   "kernelPreparation": {
@@ -1631,7 +1647,9 @@
     "eventStatus": {
       "running": "Running",
       "completed": "Completed",
-      "error": "Failed"
+      "error": "Failed",
+      "pendingApproval": "承認待ち",
+      "denied": "拒否済み"
     },
     "placeholder": "Ask a follow-up about this video…",
     "send": "Send message",
@@ -1658,12 +1676,12 @@
     "thinkingOnly": "Thinking only",
     "allowDisableThinking": "Allow turning thinking off",
     "thinkingCapabilitiesHint": "現在は思考のオン/オフのみ表示し、強度は選択できません。このモデルが強度調整に対応している場合は、下で利用可能なレベルを選んでください。",
-    "defaultThinkingLevel": "デフォルトの思考レベル",
-    "defaultThinkingAuto": "自動（リクエスト層のデフォルトを使用）",
-    "supportedThinkingLevels": "対応する思考レベル",
-    "inputTokens": "入力",
-    "outputTokens": "出力",
-    "providerDefault": "プロバイダーのデフォルトを使用",
+    "defaultThinkingLevel": "Default thinking level",
+    "defaultThinkingAuto": "Auto (use request default)",
+    "supportedThinkingLevels": "Supported thinking levels",
+    "inputTokens": "Input",
+    "outputTokens": "Output",
+    "providerDefault": "Use provider default",
     "automatic": "Use model defaults",
     "enabled": "Supported",
     "disabled": "Not supported",
@@ -1674,6 +1692,9 @@
     "catalogMatched": "Matched {{name}}. Context window and capabilities were filled in.",
     "catalogBadge": "Catalog",
     "tools": {
+      "list_transcripts": "利用可能な字幕を確認しています",
+      "select_transcript": "字幕ソースを選択しています",
+      "load_tools": "利用可能な機能を確認中",
       "get_video_info": "Reading video information",
       "read_transcript": "Reading transcript",
       "search_transcript": "Searching transcript",
@@ -1719,12 +1740,12 @@
     "faster": "高速",
     "smarter": "高精度",
     "retrying": "Connection interrupted. Retrying…",
-    "defaultThinkingLevel": "Default thinking level",
-    "defaultThinkingAuto": "Auto (use request default)",
-    "supportedThinkingLevels": "Supported thinking levels",
-    "inputTokens": "Input",
-    "outputTokens": "Output",
-    "providerDefault": "Use provider default"
+    "approval": {
+      "allow": "許可",
+      "allowAndRemember": "許可して記憶",
+      "deny": "拒否",
+      "pending": "{{summary}}"
+    }
   },
   "web": {
     "saveToThisComputer": "Save to this computer",

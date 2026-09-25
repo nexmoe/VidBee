@@ -280,7 +280,14 @@
     "cookiesSetupKeyring": "لا يستطيع هذا الإصدار من Linux قراءة ملفات تعريف ارتباط Chrome. استخدم Firefox أو استورد ملفًا.",
     "cookiesSetupStale": "يبدو أن ملفات تعريف الارتباط الحالية منتهية أو محظورة. حدّث تسجيل الدخول ثم أعد المحاولة.",
     "cookiesSetupRetry": "إعادة التنزيل",
-    "cookiesSetupDone": "تم"
+    "cookiesSetupDone": "تم",
+    "creationSource": "مصدر الإنشاء",
+    "allSources": "كل المصادر",
+    "createdManually": "أُنشئت يدويًا",
+    "createdByAgent": "أنشأها الذكاء الاصطناعي",
+    "createdBySubscription": "اشتراك",
+    "openSourceConversation": "فتح المحادثة الأصلية",
+    "sourceFile": "الملف المصدر"
   },
   "error": {
     "title": "حدث خطأ ما",
@@ -382,7 +389,7 @@
     "home": "الرئيسية",
     "download": "تحميل",
     "playlist": "تحميل قائمة التشغيل",
-    "rss": "RSS",
+    "rss": "اشتراك",
     "transcripts": "النصوص",
     "subscriptions": "الاشتراكات",
     "preferences": "التفضيلات",
@@ -978,12 +985,21 @@
       "extensionInstallStep1": "Install the VidBee extension in Chrome, Edge, or Firefox",
       "extensionInstallStep2": "Keep VidBee Desktop running so the extension can connect",
       "extensionInstallStep3": "Sign in to YouTube, Bilibili, or other sites in that browser, then open the VidBee toolbar icon once"
-    }
+    },
+    "agentManagementTools": "أدوات إدارة الوكيل",
+    "agentManagementToolsDescription": "ما إذا كان الوكيل يستطيع تغيير المهام والاشتراكات وهل يجب أن يسأل أولاً",
+    "agentManagementToolsOptions": {
+      "off": "إيقاف",
+      "ask": "اسأل أولاً",
+      "auto": "السماح تلقائيًا"
+    },
+    "agentMaxConcurrentRuns": "تشغيلات الوكيل المحلية المتزامنة",
+    "agentMaxConcurrentRunsDescription": "كم محادثة وكيل بنموذج محلي يمكن أن تعمل في الوقت نفسه"
   },
   "subscriptions": {
     "title": "الاشتراكات",
     "subtitle": "{{count}} اشتراك{{count, plural, one {} other {}}}",
-    "description": "مراقبة تغذيات RSS تلقائياً ووضع التحميلات الجديدة في قائمة الانتظار دون عمل يدوي.",
+    "description": "راقب القنوات تلقائياً وضع التنزيلات الجديدة في قائمة الانتظار دون عمل يدوي.",
     "defaults": {
       "title": "الإعدادات الافتراضية للأتمتة",
       "description": "التحكم في مكان تخزين تحميلات الاشتراكات وعدد مرات فحص VidBee للفيديوهات الجديدة.",
@@ -993,8 +1009,8 @@
       "onlyLatestDescription": "عند التفعيل، يتخطى VidBee عناصر المتراكمة القديمة ويأخذ فقط آخر تحميل."
     },
     "add": {
-      "title": "إضافة RSS",
-      "description": "الصق رابط تغذية RSS. سيكتشف VidBee التغذية تلقائياً."
+      "title": "إضافة اشتراك",
+      "description": "الصق رابط قناة أو موجز. سيكتشفه VidBee تلقائياً."
     },
     "fields": {
       "url": "رابط التغذية",
@@ -1061,8 +1077,8 @@
       "itemAlreadyQueued": "هذا الفيديو موجود بالفعل في قائمة الانتظار",
       "queueError": "فشل في الإضافة إلى قائمة انتظار التحميل.",
       "openLinkError": "فشل في فتح رابط الفيديو.",
-      "resolveError": "فشل في حل رابط تغذية RSS.",
-      "duplicateUrl": "تم الاشتراك في موجز RSS هذا بالفعل."
+      "resolveError": "فشل في حل رابط الاشتراك.",
+      "duplicateUrl": "هذا الاشتراك موجود بالفعل."
     },
     "detectedFeed": "تم اكتشاف تغذية {{platform}} -> {{feed}}",
     "detecting": "جاري اكتشاف التغذية...",
@@ -1089,7 +1105,7 @@
       "description": "اجمع VidBee مع RSSHub لتمكين الاشتراكات والتحميلات الآلية من منصات مختلفة. بمجرد الإعداد، يعمل VidBee في الخلفية ويحمل تلقائياً أحدث الفيديوهات والمحتوى.",
       "learnMore": "تعرف على المزيد حول RSSHub",
       "openDocs": "فتح وثائق RSSHub",
-      "hint": "ليس لديك رابط تغذية RSS؟ استخدم RSSHub لإنشاء تغذيات RSS لـ YouTube و Twitter والآلاف من المنصات الأخرى."
+      "hint": "ليس لديك رابط موجز؟ استخدم RSSHub لإنشاء موجزات لـ YouTube وTwitter وآلاف المنصات الأخرى."
     }
   },
   "kernelPreparation": {
@@ -1631,7 +1647,9 @@
     "eventStatus": {
       "running": "Running",
       "completed": "Completed",
-      "error": "Failed"
+      "error": "Failed",
+      "pendingApproval": "بانتظار الموافقة",
+      "denied": "مرفوض"
     },
     "placeholder": "Ask a follow-up about this video…",
     "send": "Send message",
@@ -1658,12 +1676,12 @@
     "thinkingOnly": "Thinking only",
     "allowDisableThinking": "Allow turning thinking off",
     "thinkingCapabilitiesHint": "تعرض الواجهة حاليًا مفتاح التفكير فقط دون مستويات الشدة. إذا كان النموذج يدعم المستويات، فحدد المستويات المتاحة أدناه.",
-    "defaultThinkingLevel": "مستوى التفكير الافتراضي",
-    "defaultThinkingAuto": "تلقائي (استخدام القيمة الافتراضية لطبقة الطلب)",
-    "supportedThinkingLevels": "مستويات التفكير المدعومة",
-    "inputTokens": "الإدخال",
-    "outputTokens": "الإخراج",
-    "providerDefault": "استخدام القيمة الافتراضية للمزوّد",
+    "defaultThinkingLevel": "Default thinking level",
+    "defaultThinkingAuto": "Auto (use request default)",
+    "supportedThinkingLevels": "Supported thinking levels",
+    "inputTokens": "Input",
+    "outputTokens": "Output",
+    "providerDefault": "Use provider default",
     "automatic": "Use model defaults",
     "enabled": "Supported",
     "disabled": "Not supported",
@@ -1674,6 +1692,9 @@
     "catalogMatched": "Matched {{name}}. Context window and capabilities were filled in.",
     "catalogBadge": "Catalog",
     "tools": {
+      "list_transcripts": "جارٍ التحقق من الترجمات المتاحة",
+      "select_transcript": "جارٍ اختيار مصدر الترجمة",
+      "load_tools": "البحث عن الإمكانات المتاحة",
       "get_video_info": "Reading video information",
       "read_transcript": "Reading transcript",
       "search_transcript": "Searching transcript",
@@ -1719,12 +1740,12 @@
     "faster": "أسرع",
     "smarter": "أذكى",
     "retrying": "Connection interrupted. Retrying…",
-    "defaultThinkingLevel": "Default thinking level",
-    "defaultThinkingAuto": "Auto (use request default)",
-    "supportedThinkingLevels": "Supported thinking levels",
-    "inputTokens": "Input",
-    "outputTokens": "Output",
-    "providerDefault": "Use provider default"
+    "approval": {
+      "allow": "سماح",
+      "allowAndRemember": "سماح وتذكّر",
+      "deny": "رفض",
+      "pending": "{{summary}}"
+    }
   },
   "web": {
     "saveToThisComputer": "Save to this computer",

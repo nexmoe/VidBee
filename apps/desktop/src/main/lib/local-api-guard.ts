@@ -37,7 +37,9 @@ export function isTrustedLoopbackHost(
 }
 
 /**
- * Classify a loopback caller: CLI (no Origin), a browser extension, or a website.
+ * Classify a loopback caller: CLI, a browser extension, or a website.
+ * Edge/Chrome may omit Origin on extension fetches to 127.0.0.1; accept the
+ * matching `X-VidBee-Extension` header in that case.
  *
  * @param headers Incoming request headers.
  */
@@ -47,13 +49,29 @@ export function classifyLocalApiCaller(headers: IncomingHttpHeaders): LocalApiCa
     return { kind: 'rejected', reason: 'host' }
   }
   const origin = headerValue(headers.origin)
-  if (!origin) {
-    return { kind: 'cli' }
-  }
-  if (origin === 'null' || !isExtensionOrigin(origin)) {
+  const extension = headerValue(headers['x-vidbee-extension'])
+  if (
+    (headers.origin !== undefined && !origin) ||
+    (headers['x-vidbee-extension'] !== undefined && !extension)
+  ) {
     return { kind: 'rejected', reason: 'origin' }
   }
-  return { kind: 'extension', origin }
+  if (origin) {
+    if (origin === 'null' || !isExtensionOrigin(origin)) {
+      return { kind: 'rejected', reason: 'origin' }
+    }
+    if (extension && extension !== origin) {
+      return { kind: 'rejected', reason: 'origin' }
+    }
+    return { kind: 'extension', origin }
+  }
+  if (extension) {
+    if (!isExtensionOrigin(extension)) {
+      return { kind: 'rejected', reason: 'origin' }
+    }
+    return { kind: 'extension', origin: extension }
+  }
+  return { kind: 'cli' }
 }
 
 /**
@@ -105,8 +123,7 @@ export function parseHostHeader(
  */
 function headerValue(value: string | string[] | undefined): string | undefined {
   if (typeof value === 'string') {
-    const trimmed = value.trim()
-    return trimmed || undefined
+    return value && value === value.trim() ? value : undefined
   }
   return undefined
 }

@@ -5,10 +5,13 @@ import { logger } from '../../lib/logger'
 import type { DownloadRecord } from '../../store/downloads'
 import { Button } from '../ui/button'
 import { Progress } from '../ui/progress'
-import { DownloadItem } from './DownloadItem'
+import { DownloadTaskTree } from './DownloadTaskTree'
 
 interface PlaylistDownloadGroupProps {
   groupId: string
+  childrenByParent?: Map<string, DownloadRecord[]>
+  matchingIds?: Set<string>
+  contextIds?: Set<string>
   title: string
   records: DownloadRecord[]
   totalCount: number
@@ -44,6 +47,9 @@ const saveExpandedState = (groupId: string, isExpanded: boolean): void => {
 
 export function PlaylistDownloadGroup({
   groupId,
+  childrenByParent = new Map(),
+  matchingIds,
+  contextIds,
   title,
   records,
   totalCount,
@@ -158,10 +164,13 @@ export function PlaylistDownloadGroup({
         <div className="min-h-0">
           {records.map((record) => (
             <div key={`${groupId}:${record.entryType}:${record.id}`}>
-              <DownloadItem
+              <DownloadTaskTree
+                childrenByParent={childrenByParent}
+                contextIds={contextIds}
                 download={record}
-                isSelected={selectedIds?.has(record.id) ?? false}
+                matchingIds={matchingIds ?? new Set(records.map((item) => item.id))}
                 onToggleSelect={onToggleSelect}
+                selectedIds={selectedIds}
                 selectionActive={selectionActive}
               />
             </div>

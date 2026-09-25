@@ -1,3 +1,4 @@
+import { Button } from '@renderer/components/ui/button'
 import { thinkingDurationHeader } from '@renderer/lib/thinking-header'
 import {
   type AgentActivity,
@@ -175,13 +176,15 @@ export function AgentEventStream({
   run,
   artifacts,
   onSeek,
-  onRetry
+  onRetry,
+  onDecideTool
 }: {
   message: AgentChatMessage
   run?: AgentChatRun
   artifacts: AgentArtifact[]
   onSeek?: (seconds: number) => void
   onRetry: () => void
+  onDecideTool?: (input: { toolCallId: string; approved: boolean; remember: boolean }) => void
 }) {
   const { t } = useTranslation()
   const running = run?.status === 'running'
@@ -197,17 +200,20 @@ export function AgentEventStream({
   const failed = run?.status === 'error'
   const stopped = run?.status === 'aborted' || run?.status === 'interrupted'
   const answering = Boolean(message.text.trim())
+  const awaitingApproval = run?.tools.some((tool) => tool.status === 'pending-approval') ?? false
   const hasTail = message.legacy || failed || stopped
-  const [open, setOpen] = useState(() => (!answering && running) || failed || stopped)
+  const [open, setOpen] = useState(
+    () => (!answering && running) || failed || stopped || awaitingApproval
+  )
   useEffect(() => {
-    if (failed || stopped) {
+    if (failed || stopped || awaitingApproval) {
       setOpen(true)
       return
     }
     if (answering) {
       setOpen(false)
     }
-  }, [answering, failed, stopped])
+  }, [answering, awaitingApproval, failed, stopped])
   if (!(rows.length || running || hasTail)) {
     return null
   }
@@ -244,9 +250,13 @@ export function AgentEventStream({
           const description =
             tool?.status === 'error'
               ? t('agentChat.eventStatus.error')
-              : tool?.detail === 'downloading'
-                ? t('agentChat.downloading')
-                : tool?.detail
+              : tool?.status === 'pending-approval'
+                ? t('agentChat.eventStatus.pendingApproval')
+                : tool?.status === 'denied'
+                  ? t('agentChat.eventStatus.denied')
+                  : tool?.detail === 'downloading'
+                    ? t('agentChat.downloading')
+                    : tool?.detail
           return (
             <ThinkingStep
               description={description}
@@ -263,7 +273,46 @@ export function AgentEventStream({
               showIcon={event.kind === 'tool' || event.kind === 'status'}
               status={active ? 'active' : 'complete'}
             >
-              {event.kind === 'tool' ? (
+              {event.kind === 'tool' && tool?.status === 'pending-approval' && onDecideTool ? (
+                <div className="flex flex-col gap-2">
+                  <p className="text-muted-foreground text-xs">
+                    {t('agentChat.approval.pending', {
+                      summary: tool.approval?.summary ?? event.name
+                    })}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      onClick={() =>
+                        onDecideTool({ toolCallId: event.toolId, approved: true, remember: false })
+                      }
+                      size="sm"
+                      type="button"
+                    >
+                      {t('agentChat.approval.allow')}
+                    </Button>
+                    <Button
+                      onClick={() =>
+                        onDecideTool({ toolCallId: event.toolId, approved: true, remember: true })
+                      }
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                    >
+                      {t('agentChat.approval.allowAndRemember')}
+                    </Button>
+                    <Button
+                      onClick={() =>
+                        onDecideTool({ toolCallId: event.toolId, approved: false, remember: false })
+                      }
+                      size="sm"
+                      type="button"
+                      variant="ghost"
+                    >
+                      {t('agentChat.approval.deny')}
+                    </Button>
+                  </div>
+                </div>
+              ) : event.kind === 'tool' ? (
                 <EventMedia artifacts={artifacts} ids={event.artifactIds} onSeek={onSeek} />
               ) : null}
             </ThinkingStep>

@@ -61,6 +61,8 @@ interface TranscriptPromptPaneProps {
   /** Whether these captions came from ASR / platform-auto or a human track. */
   transcriptOrigin?: 'ai' | 'human'
   transcriptText: string
+  /** True when Desktop already has a stored transcript record; skip the IPC haul. */
+  hasStoredTranscript?: boolean
 }
 
 const CLOUD_FIRST_SUCCESS_STORAGE_KEY = 'vidbee.desktop.cloud-first-success'
@@ -129,7 +131,8 @@ export function TranscriptPromptPane({
   sourceTitle,
   sourceDurationMs = 0,
   transcriptRunning = false,
-  transcriptText
+  transcriptText,
+  hasStoredTranscript = false
 }: TranscriptPromptPaneProps) {
   const { t, i18n } = useTranslation()
   const {
@@ -139,6 +142,7 @@ export function TranscriptPromptPane({
     sending,
     attaching,
     send,
+    decideTool,
     stop,
     selectBranch,
     thinkingOptions,
@@ -172,9 +176,10 @@ export function TranscriptPromptPane({
     ? t(`settings.ai.presetPrompts.${prompt.id}.title`)
     : prompt.title
   const shareMessage = messages.find((message) => message.id === shareMessageId)
+  const transcriptReady = hasStoredTranscript || Boolean(transcriptText.trim())
   const context = {
     thinkingLevel,
-    transcriptText,
+    ...(hasStoredTranscript ? {} : { transcriptText }),
     uiLanguage: i18n.language,
     sourceTitle: sourceTitle ?? undefined,
     sourceDurationMs
@@ -184,7 +189,7 @@ export function TranscriptPromptPane({
   useEffect(() => {
     if (
       isChat ||
-      !(settingsReady && hydrated && thread && ready && transcriptText.trim()) ||
+      !(settingsReady && hydrated && thread && ready && transcriptReady) ||
       thread.messages.length ||
       autoStarted.current.has(identity)
     ) {
@@ -195,13 +200,15 @@ export function TranscriptPromptPane({
     }
     autoStarted.current.add(identity)
     void send({
-      transcriptText,
+      thinkingLevel,
+      ...(hasStoredTranscript ? {} : { transcriptText }),
       uiLanguage: i18n.language,
       sourceTitle: sourceTitle ?? undefined,
       sourceDurationMs
     })
   }, [
     armedIdentity,
+    hasStoredTranscript,
     hydrated,
     i18n.language,
     identity,
@@ -211,7 +218,9 @@ export function TranscriptPromptPane({
     settingsReady,
     sourceDurationMs,
     sourceTitle,
+    thinkingLevel,
     thread,
+    transcriptReady,
     transcriptRunning,
     transcriptText
   ])
@@ -276,7 +285,7 @@ export function TranscriptPromptPane({
       </p>
     )
   }
-  if (!(messages.length || (ready && transcriptText.trim()) || isChat)) {
+  if (!(messages.length || (ready && transcriptReady) || isChat)) {
     if (transcriptRunning) {
       return (
         <TranscriptPromptWaiting
@@ -311,11 +320,12 @@ export function TranscriptPromptPane({
                 ? messages.map((message, index) => (
                     <MessageScrollerItem key={message.id} messageId={message.id}>
                       <AgentChatMessageView
-                        busy={busy || !ready || !transcriptText.trim()}
+                        busy={busy || !ready || !transcriptReady}
                         currentTimeMs={currentTimeMs}
                         durationMs={sourceDurationMs}
                         message={message}
                         onBranch={(id) => void selectBranch(id)}
+                        onDecideTool={(input) => void decideTool(input)}
                         onRetry={(id) => void send({ ...context, retryMessageId: id })}
                         onSeek={onSeek}
                         onShare={setShareMessageId}
