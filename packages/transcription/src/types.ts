@@ -143,6 +143,18 @@ export type ModelRole =
 
 export type ModelGroup = 'vad' | 'speaker' | 'asr' | 'punct'
 
+/** One file that must exist inside a directory-shaped catalog entry. */
+export interface DirectoryMemberRequirement {
+  /** File name relative to the directory. */
+  name: string
+  /** Minimum size for this pinned model revision. Shorter files are truncated. */
+  minBytes: number
+  /** SHA-256 of the official file for this pinned model revision. */
+  sha256: string
+  /** Parse the file as JSON so a truncated object is not treated as complete. */
+  json?: boolean
+}
+
 export interface ModelFileSpec {
   id: string
   role: ModelRole
@@ -155,6 +167,11 @@ export interface ModelFileSpec {
   sha256?: string
   /** Earlier catalog file with a pinned SHA256 and files: [{ path, sha256 }]. */
   checksumManifest?: string
+  /**
+   * When set, `fileName` is a directory. It is present only when every member
+   * passes the pinned size, checksum, and JSON checks.
+   */
+  directoryMembers?: readonly DirectoryMemberRequirement[]
   required: boolean
 }
 

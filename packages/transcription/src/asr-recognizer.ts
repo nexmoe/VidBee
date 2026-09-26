@@ -169,15 +169,21 @@ export const applyAsrStreamLanguage = (
 /**
  * Resolve on-disk paths for every ASR role of a model id.
  */
-export const resolveAsrModelPaths = (models: ModelManager, tier: AsrTierId): AsrModelPaths => ({
-  decoder: models.pathByRole('asr-decoder', tier),
-  encoder: models.pathByRole('asr-encoder', tier),
-  frontend: models.pathByRole('asr-frontend', tier),
-  joiner: models.pathByRole('asr-joiner', tier),
-  model: models.pathByRole('asr-model', tier),
-  tokenizer: models.pathByRole('asr-tokenizer', tier),
-  tokens: models.pathByRole('asr-tokens', tier)
-})
+export const resolveAsrModelPaths = (models: ModelManager, tier: AsrTierId): AsrModelPaths => {
+  const issue = models.incompleteModelIssue(tier)
+  if (issue) {
+    throw new Error(issue)
+  }
+  return {
+    decoder: models.pathByRole('asr-decoder', tier),
+    encoder: models.pathByRole('asr-encoder', tier),
+    frontend: models.pathByRole('asr-frontend', tier),
+    joiner: models.pathByRole('asr-joiner', tier),
+    model: models.pathByRole('asr-model', tier),
+    tokenizer: models.pathByRole('asr-tokenizer', tier),
+    tokens: models.pathByRole('asr-tokens', tier)
+  }
+}
 
 /**
  * Build a sherpa-onnx OfflineRecognizer config for a supported family.
