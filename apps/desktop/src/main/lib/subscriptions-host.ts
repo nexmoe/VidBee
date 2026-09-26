@@ -101,7 +101,9 @@ export const getDesktopSubscriptions = (): SubscriptionsApi => {
     metaStore,
     fetcher: new RssParserFeedFetcher(),
     isHistoryDup: (url) => historyManager.hasHistoryForUrl(url),
-    taskExists: (taskId) => getDesktopTaskQueue().get(taskId) !== undefined,
+    // `get` is this process's startup snapshot. A task the API wrote to the
+    // shared database after that is still a real download.
+    taskExists: (taskId) => getDesktopTaskQueue().hasTask(taskId),
     enqueueItem: async ({ subscription, item, trigger, creation }) => {
       const settings = settingsManager.getAll()
       const downloadDirectory = subscription.downloadDirectory?.trim() || settings.downloadPath

@@ -51,7 +51,9 @@ export const getApiSubscriptions = (): SubscriptionsApi => {
     store,
     metaStore,
     fetcher: new RssParserFeedFetcher(),
-    taskExists: (taskId) => taskQueue.get(taskId) !== undefined,
+    // `get` is this process's startup snapshot. A task Desktop wrote to the
+    // shared database after that is still a real download.
+    taskExists: (taskId) => taskQueue.hasTask(taskId),
     enqueueItem: async ({ subscription, item }) => {
       const tags = Array.from(new Set([subscription.platform, ...subscription.tags]))
       const settings = toWebDownloadRuntimeSettings(await webSettingsStore.get())

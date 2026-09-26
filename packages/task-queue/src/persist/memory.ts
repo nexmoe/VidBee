@@ -39,6 +39,10 @@ export class MemoryPersistAdapter implements PersistAdapter {
   private readonly journal: ProcessJournalRow[] = []
   private journalSeq = 0
 
+  async hasTask(taskId: string): Promise<boolean> {
+    return this.tasks.has(taskId)
+  }
+
   async insertTask(task: Task): Promise<void> {
     this.tasks.set(task.id, structuredClone(task))
     this.progress.set(task.id, structuredClone(task.progress))

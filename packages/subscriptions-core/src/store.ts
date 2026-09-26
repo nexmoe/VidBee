@@ -196,7 +196,7 @@ export interface SubscriptionsStore {
    * Clear queue links whose task id is missing or rejected by `isLive`.
    * Returns how many rows changed.
    */
-  clearOrphanedQueueLinks(isLive: (taskId: string) => boolean): Promise<number>
+  clearOrphanedQueueLinks(isLive: (taskId: string) => boolean | Promise<boolean>): Promise<number>
 }
 
 export interface QueueLinkSelector {
@@ -489,9 +489,15 @@ export const createSqliteSubscriptionsStore = ({
       const taskIds: string[] = []
       const items: { subscriptionId: string; itemId: string }[] = []
       const seenTasks = new Set<string>()
+      const liveByTaskId = new Map<string, boolean>()
       for (const row of rows) {
         if (row.taskId) {
-          if (isLive(row.taskId) || seenTasks.has(row.taskId)) {
+          let live = liveByTaskId.get(row.taskId)
+          if (live === undefined) {
+            live = await isLive(row.taskId)
+            liveByTaskId.set(row.taskId, live)
+          }
+          if (live || seenTasks.has(row.taskId)) {
             continue
           }
           seenTasks.add(row.taskId)

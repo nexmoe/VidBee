@@ -62,11 +62,14 @@ export interface SubscriptionsApiOptions {
   /** Optional: returns true if a URL is already in download history. */
   isHistoryDup?: (url: string) => boolean
   /**
-   * Returns true when `taskId` still exists in the host task queue, including
-   * history. Used to drop queue links for removed tasks. When omitted, a
-   * stored queue flag keeps blocking manual enqueue.
+   * Returns true when `taskId` still exists in the shared task database,
+   * including history. Hosts must answer from that database: Desktop and the
+   * API share `vidbee.db`, and a task the other host created after startup is
+   * missing from this process's queue memory. Used to drop queue links for
+   * removed tasks. When omitted, a stored queue flag keeps blocking manual
+   * enqueue.
    */
-  taskExists?: (taskId: string) => boolean
+  taskExists?: (taskId: string) => boolean | Promise<boolean>
   /**
    * Lifted out of `LeaderElectionOptions` for ergonomics; the rest of the
    * leader knobs (heartbeat ms, lock TTL ms, etc.) accept a single options
@@ -88,7 +91,7 @@ export class SubscriptionsApi {
   private readonly fetcher: FeedFetcher
   private readonly enqueueItem: EnqueueItem
   private readonly isHistoryDup: (url: string) => boolean
-  private readonly taskExists: ((taskId: string) => boolean) | null
+  private readonly taskExists: ((taskId: string) => boolean | Promise<boolean>) | null
   private readonly log: NonNullable<SubscriptionsApiOptions['log']>
   private readonly now: () => number
   private readonly election: LeaderElection
@@ -274,7 +277,7 @@ export class SubscriptionsApi {
     }
     if (item.addedToQueue) {
       const linkedTaskId = item.taskId
-      const stillLive = linkedTaskId ? (this.taskExists?.(linkedTaskId) ?? true) : false
+      const stillLive = linkedTaskId ? await this.linkedTaskStillExists(linkedTaskId) : false
       if (stillLive || !this.taskExists) {
         return { queued: false, taskId: linkedTaskId ?? null }
       }
@@ -341,6 +344,17 @@ export class SubscriptionsApi {
         this.log('warn', 'subscriptions: failed to release removed tasks', { err })
       }
     })
+  }
+
+  /**
+   * A missing callback keeps the stored link. Otherwise the answer comes from
+   * the host, which must consult the shared task database.
+   */
+  private async linkedTaskStillExists(taskId: string): Promise<boolean> {
+    if (!this.taskExists) {
+      return true
+    }
+    return await this.taskExists(taskId)
   }
 
   /**

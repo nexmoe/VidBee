@@ -22,7 +22,7 @@
   "types": "./src/index.ts",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test tests/requeue-removed-task.test.ts"
+    "test": "tsx --test tests/requeue-removed-task.test.ts tests/requeue-shared-database.test.ts"
   },
   "dependencies": {
     "@orpc/contract": "^1.15.0",
