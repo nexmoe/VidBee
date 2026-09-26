@@ -76,6 +76,15 @@ test('HLS-only streams and empty results remain valid', () => {
   assert.deepEqual(filterFormatsByType([], 'video'), [])
 })
 
+test('higher-bitrate HLS remains available at the same resolution and codec', () => {
+  const formats = [
+    video({ formatId: 'http', tbr: 1500 }),
+    video({ formatId: 'hls', tbr: 4500, protocol: 'm3u8_native' })
+  ]
+  const shown = getDisplayFormats({ formats, type: 'video' }).videoFormats
+  assert.deepEqual(new Set(shown.map((format) => format.formatId)), new Set(['http', 'hls']))
+})
+
 test('desktop metadata adapts to the same selection rules as the web picker', () => {
   const formats = [
     video({ formatId: 'low-http', height: 360, width: 640 }),

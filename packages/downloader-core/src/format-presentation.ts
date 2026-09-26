@@ -33,6 +33,7 @@ const videoGroupKey = (format: VideoFormat): string =>
     format.height ?? format.formatId,
     format.width,
     format.fps,
+    format.tbr,
     format.ext,
     format.vcodec,
     format.acodec,
