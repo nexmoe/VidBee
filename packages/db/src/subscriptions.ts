@@ -51,9 +51,9 @@ export const subscriptionItemsTable = sqliteTable(
     url: text('url').notNull(),
     publishedAt: integer('published_at', { mode: 'number' }).notNull(),
     thumbnail: text('thumbnail'),
-    /** 1 if the item has been queued (or is already in history). */
+    /** 1 while the item is linked to a task that still exists. */
     added: integer('added', { mode: 'number' }).notNull(),
-    /** Task id in the shared task-queue once the item is queued. */
+    /** Task id while the item is queued. Null after that task is removed. */
     taskId: text('task_id'),
     createdAt: integer('created_at', { mode: 'number' }).notNull(),
     updatedAt: integer('updated_at', { mode: 'number' }).notNull()

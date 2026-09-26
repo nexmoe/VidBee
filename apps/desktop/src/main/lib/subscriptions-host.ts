@@ -79,6 +79,7 @@ const ensureDirectoryExists = (dir?: string): void => {
 
 let api: SubscriptionsApi | null = null
 let started = false
+let removeTaskListener: (() => void) | null = null
 
 export const getDesktopSubscriptions = (): SubscriptionsApi => {
   if (api) {
@@ -96,6 +97,9 @@ export const getDesktopSubscriptions = (): SubscriptionsApi => {
     metaStore,
     fetcher: new RssParserFeedFetcher(),
     isHistoryDup: (url) => historyManager.hasHistoryForUrl(url),
+    // `get` is this process's startup snapshot. A task the API wrote to the
+    // shared database after that is still a real download.
+    taskExists: (taskId) => getDesktopTaskQueue().hasTask(taskId),
     enqueueItem: async ({ subscription, item, trigger, creation }) => {
       const { task, downloadDirectory } = buildDesktopSubscriptionTaskInput({
         settings: settingsManager.getAll(),
@@ -130,7 +134,11 @@ export const startDesktopSubscriptions = async (): Promise<void> => {
   if (started) {
     return
   }
-  await getDesktopSubscriptions().start()
+  const subscriptions = getDesktopSubscriptions()
+  await subscriptions.start()
+  removeTaskListener = getDesktopTaskQueue().on('task-removed', (event) => {
+    subscriptions.noteTaskRemoved(event.taskId)
+  })
   started = true
 }
 
@@ -138,6 +146,8 @@ export const stopDesktopSubscriptions = async (): Promise<void> => {
   if (!started) {
     return
   }
+  removeTaskListener?.()
+  removeTaskListener = null
   await api?.stop()
   started = false
 }

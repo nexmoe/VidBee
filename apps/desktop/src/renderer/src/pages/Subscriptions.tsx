@@ -29,6 +29,7 @@ import { cn } from '@renderer/lib/utils'
 import { type DownloadRecord, downloadsArrayAtom } from '@renderer/store/downloads'
 import {
   createSubscriptionAtom,
+  loadSubscriptionsAtom,
   refreshSubscriptionAtom,
   removeSubscriptionAtom,
   resolveFeedAtom,
@@ -43,13 +44,15 @@ import {
 } from '@vidbee/subscriptions-core/status'
 import dayjs from 'dayjs'
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
-import { Download, Edit, ExternalLink, Plus, Power, RefreshCw, Trash2 } from 'lucide-react'
+import { Copy, Download, Edit, ExternalLink, Plus, Power, RefreshCw, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { logger } from '../lib/logger'
 
 type SubscriptionItemStatus = DownloadStatus | 'queued' | 'notQueued'
+
+const POLL_INTERVAL_MS = 5000
 
 const subscriptionItemStatusLabels: Record<SubscriptionItemStatus, string> = {
   notQueued: 'subscriptions.items.status.notQueued',
@@ -222,12 +225,22 @@ function SubscriptionTab({
 export function Subscriptions() {
   const { t } = useTranslation()
   const [subscriptions] = useAtom(subscriptionsAtom)
+  const loadSubscriptions = useSetAtom(loadSubscriptionsAtom)
   const updateSubscription = useSetAtom(updateSubscriptionAtom)
   const removeSubscription = useSetAtom(removeSubscriptionAtom)
   const refreshSubscription = useSetAtom(refreshSubscriptionAtom)
 
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [selectedTab, setSelectedTab] = useState<string>('')
+
+  useEffect(() => {
+    // Another host can update the shared database without a local IPC event.
+    void loadSubscriptions()
+    const timer = window.setInterval(() => {
+      void loadSubscriptions()
+    }, POLL_INTERVAL_MS)
+    return () => window.clearInterval(timer)
+  }, [loadSubscriptions])
 
   const sortedSubscriptions = useMemo(
     () =>
@@ -546,6 +559,20 @@ function SubscriptionCard({ subscription }: { subscription: SubscriptionRule }) 
     }
   }
 
+  const handleCopyItemUrl = async (url: string) => {
+    if (!(url && navigator.clipboard?.writeText)) {
+      toast.error(t('notifications.copyFailed'))
+      return
+    }
+    try {
+      await navigator.clipboard.writeText(url)
+      toast.success(t('notifications.urlCopied'))
+    } catch (error) {
+      logger.error('Failed to copy subscription item link:', error)
+      toast.error(t('notifications.copyFailed'))
+    }
+  }
+
   const handleQueueItem = useCallback(
     async (item: SubscriptionFeedItem) => {
       if (item.addedToQueue) {
@@ -679,6 +706,13 @@ function SubscriptionCard({ subscription }: { subscription: SubscriptionRule }) 
               <ContextMenuItem onClick={() => void handleOpenItem(item.url)}>
                 <ExternalLink className="h-4 w-4" />
                 {t('subscriptions.items.actions.open')}
+              </ContextMenuItem>
+              <ContextMenuItem
+                disabled={!item.url}
+                onClick={() => void handleCopyItemUrl(item.url)}
+              >
+                <Copy className="h-4 w-4" />
+                {t('subscriptions.items.actions.copyUrl')}
               </ContextMenuItem>
             </ContextMenuContent>
           </ContextMenu>

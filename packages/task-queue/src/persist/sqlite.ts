@@ -102,6 +102,12 @@ export class SqlitePersistAdapter implements PersistAdapter {
     this.applyPragmas()
   }
 
+  async hasTask(taskId: string): Promise<boolean> {
+    this.ensureStmts()
+    const row = this.stmts.hasTask.get(taskId) as { present: number } | undefined
+    return row !== undefined
+  }
+
   async insertTask(task: Task): Promise<void> {
     this.ensureStmts()
     const tx = this.db.transaction((row: Task) => {
@@ -291,6 +297,7 @@ export class SqlitePersistAdapter implements PersistAdapter {
       closeAttempt: this.db.prepare(SQL_CLOSE_ATTEMPT),
       appendJournal: this.db.prepare(SQL_APPEND_JOURNAL),
       findOpenSpawns: this.db.prepare(SQL_FIND_OPEN_SPAWNS),
+      hasTask: this.db.prepare(SQL_HAS_TASK),
       loadAllTasks: this.db.prepare(SQL_LOAD_ALL_TASKS),
       loadLatestAttempt: this.db.prepare(SQL_LOAD_LATEST_ATTEMPT),
       ageJournal: this.db.prepare(SQL_AGE_JOURNAL),
@@ -337,6 +344,7 @@ interface Stmts {
   closeAttempt: SqliteLikeStatement
   appendJournal: SqliteLikeStatement
   findOpenSpawns: SqliteLikeStatement
+  hasTask: SqliteLikeStatement
   loadAllTasks: SqliteLikeStatement
   loadLatestAttempt: SqliteLikeStatement
   ageJournal: SqliteLikeStatement
@@ -493,6 +501,10 @@ WHERE s.op = 'spawn'
       AND c.seq > s.seq
   )
 ORDER BY s.seq ASC
+`
+
+const SQL_HAS_TASK = `
+SELECT 1 AS present FROM tasks WHERE id = ?
 `
 
 const SQL_LOAD_ALL_TASKS = `

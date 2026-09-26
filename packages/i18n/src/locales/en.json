@@ -1063,7 +1063,8 @@
       },
       "actions": {
         "open": "Open in browser",
-        "queue": "Add to download queue"
+        "queue": "Add to download queue",
+        "copyUrl": "Copy URL"
       }
     },
     "labels": {

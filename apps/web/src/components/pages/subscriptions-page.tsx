@@ -42,6 +42,7 @@ import {
 } from "@vidbee/ui/components/ui/tooltip";
 import { cn } from "@vidbee/ui/lib/cn";
 import {
+	Copy,
 	Download,
 	Edit,
 	ExternalLink,
@@ -55,7 +56,11 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { useWebSettings } from "../../hooks/use-web-settings";
 import { logger } from "../../lib/logger";
-import { orpcClient, subscriptionsClient } from "../../lib/orpc-client";
+import {
+	eventsUrl,
+	orpcClient,
+	subscriptionsClient,
+} from "../../lib/orpc-client";
 import { AppShell } from "../layout/app-shell";
 import { ServerDirectoryDialog } from "../settings/server-directory-dialog";
 
@@ -151,6 +156,18 @@ export const SubscriptionsPage = () => {
 			void refreshSubscriptions().catch(() => undefined);
 		}, POLL_INTERVAL_MS);
 		return () => window.clearInterval(timer);
+	}, [refreshSubscriptions]);
+
+	useEffect(() => {
+		const source = new EventSource(eventsUrl);
+		const onChanged = () => {
+			void refreshSubscriptions().catch(() => undefined);
+		};
+		source.addEventListener("subscriptions-updated", onChanged);
+		return () => {
+			source.removeEventListener("subscriptions-updated", onChanged);
+			source.close();
+		};
 	}, [refreshSubscriptions]);
 
 	const sortedSubscriptions = useMemo(
@@ -587,6 +604,20 @@ const SubscriptionCard = ({
 	const { t } = useTranslation();
 	const feedItems = subscription.items ?? [];
 
+	const copyItemUrl = async (url: string) => {
+		if (!(url && navigator.clipboard?.writeText)) {
+			toast.error(t("notifications.copyFailed"));
+			return;
+		}
+		try {
+			await navigator.clipboard.writeText(url);
+			toast.success(t("notifications.urlCopied"));
+		} catch (error) {
+			logger.error("Failed to copy subscription item link:", error);
+			toast.error(t("notifications.copyFailed"));
+		}
+	};
+
 	if (feedItems.length === 0) {
 		return (
 			<div className="py-12 text-center text-muted-foreground text-sm">
@@ -709,6 +740,13 @@ const SubscriptionCard = ({
 							>
 								<ExternalLink className="h-4 w-4" />
 								{t("subscriptions.items.actions.open")}
+							</ContextMenuItem>
+							<ContextMenuItem
+								disabled={!item.url}
+								onClick={() => void copyItemUrl(item.url)}
+							>
+								<Copy className="h-4 w-4" />
+								{t("subscriptions.items.actions.copyUrl")}
 							</ContextMenuItem>
 						</ContextMenuContent>
 					</ContextMenu>

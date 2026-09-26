@@ -62,6 +62,15 @@ export interface SubscriptionsApiOptions {
   /** Optional: returns true if a URL is already in download history. */
   isHistoryDup?: (url: string) => boolean
   /**
+   * Returns true when `taskId` still exists in the shared task database,
+   * including history. Hosts must answer from that database: Desktop and the
+   * API share `vidbee.db`, and a task the other host created after startup is
+   * missing from this process's queue memory. Used to drop queue links for
+   * removed tasks. When omitted, a stored queue flag keeps blocking manual
+   * enqueue.
+   */
+  taskExists?: (taskId: string) => boolean | Promise<boolean>
+  /**
    * Lifted out of `LeaderElectionOptions` for ergonomics; the rest of the
    * leader knobs (heartbeat ms, lock TTL ms, etc.) accept a single options
    * bag. Defaults match the NEX-132 spec.
@@ -82,17 +91,21 @@ export class SubscriptionsApi {
   private readonly fetcher: FeedFetcher
   private readonly enqueueItem: EnqueueItem
   private readonly isHistoryDup: (url: string) => boolean
+  private readonly taskExists: ((taskId: string) => boolean | Promise<boolean>) | null
   private readonly log: NonNullable<SubscriptionsApiOptions['log']>
   private readonly now: () => number
   private readonly election: LeaderElection
   private readonly scheduler: FeedCheckScheduler
   private readonly listeners = new Set<SubscriptionsApiListener>()
+  private readonly pendingRemovedTaskIds = new Set<string>()
+  private removedTaskFlush: Promise<void> | null = null
 
   constructor(opts: SubscriptionsApiOptions) {
     this.store = opts.store
     this.fetcher = opts.fetcher
     this.enqueueItem = opts.enqueueItem
     this.isHistoryDup = opts.isHistoryDup ?? (() => false)
+    this.taskExists = opts.taskExists ?? null
     this.log = opts.log ?? (() => undefined)
     this.now = opts.now ?? (() => Date.now())
     this.election = new LeaderElection({
@@ -143,6 +156,11 @@ export class SubscriptionsApi {
    */
   async start(): Promise<void> {
     await this.election.tryAcquire()
+    try {
+      await this.reconcileOrphanedTasks()
+    } catch (err) {
+      this.log('warn', 'subscriptions: failed to reconcile orphaned queue links', { err })
+    }
     this.scheduler.start()
   }
 
@@ -258,7 +276,14 @@ export class SubscriptionsApi {
       return { queued: false, taskId: null }
     }
     if (item.addedToQueue) {
-      return { queued: false, taskId: item.taskId ?? null }
+      const linkedTaskId = item.taskId
+      const stillLive = linkedTaskId ? await this.linkedTaskStillExists(linkedTaskId) : false
+      if (stillLive || !this.taskExists) {
+        return { queued: false, taskId: linkedTaskId ?? null }
+      }
+      await this.store.clearQueueLinks({
+        items: [{ subscriptionId: input.subscriptionId, itemId: input.itemId }]
+      })
     }
     const normalized: NormalizedFeedItem = {
       id: item.id,
@@ -280,6 +305,72 @@ export class SubscriptionsApi {
     }
     this.emitChanged()
     return { queued: taskId !== null, taskId }
+  }
+
+  /**
+   * Clear queue links for tasks the host has removed. Item rows stay so the
+   * next feed check still treats them as already seen. Emits `changed` when
+   * at least one row was updated.
+   */
+  async releaseRemovedTasks(taskIds: readonly string[]): Promise<number> {
+    const released = await this.store.clearQueueLinks({ taskIds })
+    if (released > 0) {
+      this.log('info', 'subscriptions: cleared queue links for removed tasks', { released })
+      this.emitChanged()
+    }
+    return released
+  }
+
+  /**
+   * Coalesce task-removal notifications from a synchronous bulk delete into
+   * one queue-link update and one subscriber notification.
+   */
+  noteTaskRemoved(taskId: string): void {
+    const id = taskId.trim()
+    if (!id) {
+      return
+    }
+    this.pendingRemovedTaskIds.add(id)
+    if (this.removedTaskFlush) {
+      return
+    }
+    this.removedTaskFlush = Promise.resolve().then(async () => {
+      const ids = [...this.pendingRemovedTaskIds]
+      this.pendingRemovedTaskIds.clear()
+      this.removedTaskFlush = null
+      try {
+        await this.releaseRemovedTasks(ids)
+      } catch (err) {
+        this.log('warn', 'subscriptions: failed to release removed tasks', { err })
+      }
+    })
+  }
+
+  /**
+   * A missing callback keeps the stored link. Otherwise the answer comes from
+   * the host, which must consult the shared task database.
+   */
+  private async linkedTaskStillExists(taskId: string): Promise<boolean> {
+    if (!this.taskExists) {
+      return true
+    }
+    return await this.taskExists(taskId)
+  }
+
+  /**
+   * Drop queue links that point at tasks the host no longer has. Safe to call
+   * on startup; a missing `taskExists` callback leaves stored links alone.
+   */
+  async reconcileOrphanedTasks(): Promise<number> {
+    if (!this.taskExists) {
+      return 0
+    }
+    const released = await this.store.clearOrphanedQueueLinks(this.taskExists)
+    if (released > 0) {
+      this.log('info', 'subscriptions: reconciled orphaned queue links', { released })
+      this.emitChanged()
+    }
+    return released
   }
 
   // ---------- Feed-check pass ----------
