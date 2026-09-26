@@ -10,6 +10,24 @@ export const ONE_CLICK_CONTAINER_OPTIONS: OneClickContainerOption[] = [
   'original'
 ]
 
+/**
+ * Container passed into each playlist video download.
+ *
+ * Desktop and web playlist dialogs share this rule: an explicit playlist
+ * selection wins, otherwise the global Container setting is used. Audio
+ * downloads do not remux into a video container.
+ */
+export const resolvePlaylistContainerFormat = (
+  downloadType: 'video' | 'audio',
+  selectedContainer: OneClickContainerOption | undefined,
+  fallbackContainer: OneClickContainerOption | undefined
+): OneClickContainerOption | undefined => {
+  if (downloadType !== 'video') {
+    return undefined
+  }
+  return selectedContainer ?? fallbackContainer
+}
+
 export interface OneClickFormatSettings {
   oneClickQuality?: OneClickQualityPreset
 }

@@ -631,6 +631,7 @@
     "writeAutoSubsDescription": "Usar subtítulos automáticos cuando no haya subtítulos del creador en los idiomas seleccionados",
     "embedThumbnail": "Incrustar miniatura",
     "embedThumbnailDescription": "Agregar la miniatura como portada",
+    "embedThumbnailWebmUnsupported": "WebM no puede incrustar la miniatura como portada. Si la portada está activada, VidBee guarda la miniatura en un archivo aparte. Elige MP4 o MKV para incrustarla.",
     "filenameStyle": "Estilo de nombre de archivo",
     "filenameStyleDescription": "Elige cómo VidBee nombra los archivos de vídeo y audio guardados",
     "filenameStyleNote": "Se usa en los archivos que guarda VidBee. Las plantillas personalizadas de suscripciones o listas de reproducción tienen prioridad",

@@ -631,6 +631,7 @@
     "writeAutoSubsDescription": "Automatische Untertitel verwenden, wenn keine Ersteller-Untertitel in den ausgewählten Sprachen verfügbar sind",
     "embedThumbnail": "Vorschaubild einbetten",
     "embedThumbnailDescription": "Vorschaubild als Covergrafik hinzufügen",
+    "embedThumbnailWebmUnsupported": "WebM kann das Vorschaubild nicht als Cover einbetten. Ist das Cover aktiv, speichert VidBee das Vorschaubild als separate Datei. Wählen Sie MP4 oder MKV, um es einzubetten.",
     "filenameStyle": "Dateinamensstil",
     "filenameStyleDescription": "Lege fest, wie VidBee gespeicherte Video- und Audiodateien benennt",
     "filenameStyleNote": "Gilt für von VidBee gespeicherte Dateien. Eigene Vorlagen von Abos oder Wiedergabelisten haben Vorrang",

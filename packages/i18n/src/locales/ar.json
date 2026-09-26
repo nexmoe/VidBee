@@ -631,6 +631,7 @@
     "writeAutoSubsDescription": "استخدم الترجمة التلقائية عندما لا تتوفر ترجمة المنشئ باللغات المحددة",
     "embedThumbnail": "تضمين الصورة المصغرة",
     "embedThumbnailDescription": "إضافة الصورة المصغرة كغلاف",
+    "embedThumbnailWebmUnsupported": "لا يدعم WebM تضمين الصورة المصغرة كغلاف. عند تفعيل الغلاف، يحفظ VidBee الصورة المصغرة في ملف منفصل. اختر MP4 أو MKV لتضمينها.",
     "filenameStyle": "نمط اسم الملف",
     "filenameStyleDescription": "اختر كيف يسمّي VidBee ملفات الفيديو والصوت المحفوظة",
     "filenameStyleNote": "يُستخدم للملفات التي يحفظها VidBee. قوالب الاشتراكات أو قوائم التشغيل المخصصة تبقى لها الأولوية",

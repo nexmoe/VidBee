@@ -21,7 +21,7 @@ const toSharedOptions = (options: DownloadOptions): YtDlpDownloadOptions => ({
   containerFormat: options.containerFormat
 })
 
-const toSharedSettings = (settings: AppSettings): YtDlpDownloadSettings => ({
+export const toSharedSettings = (settings: AppSettings): YtDlpDownloadSettings => ({
   downloadPath: settings.downloadPath,
   browserForCookies: settings.browserForCookies,
   cookiesPath: settings.cookiesPath,

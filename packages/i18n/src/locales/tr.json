@@ -631,6 +631,7 @@
     "writeAutoSubsDescription": "Seçilen dillerde içerik üreticisi altyazısı yoksa otomatik altyazıları kullan",
     "embedThumbnail": "Küçük resmi gömün",
     "embedThumbnailDescription": "Küçük resmi, kapak resmi olarak ekle",
+    "embedThumbnailWebmUnsupported": "WebM küçük resmi kapak olarak gömemez. Kapak açıkken VidBee küçük resmi ayrı bir dosya olarak kaydeder. Gömmek için MP4 veya MKV seçin.",
     "filenameStyle": "Dosya adı stili",
     "filenameStyleDescription": "VidBee'nin kaydedilen video ve ses dosyalarını nasıl adlandıracağını seçin",
     "filenameStyleNote": "VidBee tarafından kaydedilen dosyalar için kullanılır. Abonelik veya oynatma listesi özel şablonları önceliklidir",
