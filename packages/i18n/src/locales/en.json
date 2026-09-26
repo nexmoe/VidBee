@@ -692,6 +692,7 @@
     "writeAutoSubsDescription": "Use automatic captions when selected creator subtitles are unavailable",
     "embedThumbnail": "Embed thumbnail",
     "embedThumbnailDescription": "Add the thumbnail as cover art",
+    "embedThumbnailWebmUnsupported": "WebM cannot embed a thumbnail as cover art. VidBee saves a separate thumbnail file when cover art is enabled. Choose MP4 or MKV to embed the thumbnail.",
     "filenameStyle": "Filename style",
     "filenameStyleDescription": "Choose how VidBee names saved video and audio files",
     "filenameStyleNote": "Used for files saved by VidBee. Custom templates from subscriptions or playlists still take priority",

@@ -631,6 +631,7 @@
     "writeAutoSubsDescription": "Utiliser les sous-titres automatiques lorsque ceux du créateur ne sont pas disponibles dans les langues sélectionnées",
     "embedThumbnail": "Intégrer la miniature",
     "embedThumbnailDescription": "Ajouter la miniature comme illustration de couverture",
+    "embedThumbnailWebmUnsupported": "Le WebM ne peut pas intégrer la miniature comme couverture. Si la couverture est activée, VidBee enregistre la miniature dans un fichier séparé. Choisissez MP4 ou MKV pour l’intégrer.",
     "filenameStyle": "Style de nom de fichier",
     "filenameStyleDescription": "Choisissez comment VidBee nomme les fichiers vidéo et audio enregistrés",
     "filenameStyleNote": "Utilisé pour les fichiers enregistrés par VidBee. Les modèles personnalisés des abonnements ou listes de lecture restent prioritaires",

@@ -692,6 +692,7 @@
     "writeAutoSubsDescription": "所选语言没有创作者字幕时使用自动字幕",
     "embedThumbnail": "嵌入缩略图",
     "embedThumbnailDescription": "将缩略图作为封面图",
+    "embedThumbnailWebmUnsupported": "WebM 无法将缩略图嵌入为封面。启用封面时，VidBee 会另存缩略图文件。若要嵌入封面，请选择 MP4 或 MKV。",
     "filenameStyle": "文件名样式",
     "filenameStyleDescription": "选择 VidBee 如何命名保存的视频和音频文件",
     "filenameStyleNote": "仅用于 VidBee 保存的文件。订阅或播放列表的自定义模板仍优先",

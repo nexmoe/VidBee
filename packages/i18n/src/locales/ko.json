@@ -631,6 +631,7 @@
     "writeAutoSubsDescription": "선택한 언어의 제작자 자막이 없을 때 자동 자막을 사용합니다",
     "embedThumbnail": "썸네일 포함",
     "embedThumbnailDescription": "썸네일을 커버 아트로 추가",
+    "embedThumbnailWebmUnsupported": "WebM은 썸네일을 커버 아트로 포함할 수 없습니다. 커버 아트가 켜져 있으면 VidBee가 썸네일을 별도 파일로 저장합니다. 포함하려면 MP4 또는 MKV를 선택하세요.",
     "filenameStyle": "파일 이름 스타일",
     "filenameStyleDescription": "저장된 동영상과 오디오 파일의 이름 지정 방식을 선택합니다",
     "filenameStyleNote": "VidBee가 저장하는 파일에 사용됩니다. 구독 또는 재생목록의 사용자 지정 템플릿이 우선합니다",

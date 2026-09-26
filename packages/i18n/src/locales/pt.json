@@ -631,6 +631,7 @@
     "writeAutoSubsDescription": "Usar legendas automáticas quando não houver legendas do criador nos idiomas selecionados",
     "embedThumbnail": "Incorporar miniatura",
     "embedThumbnailDescription": "Adicionar a miniatura como arte de capa",
+    "embedThumbnailWebmUnsupported": "O WebM não incorpora a miniatura como capa. Com a capa ativada, o VidBee salva a miniatura em um arquivo separado. Escolha MP4 ou MKV para incorporá-la.",
     "filenameStyle": "Estilo do nome do arquivo",
     "filenameStyleDescription": "Escolha como o VidBee nomeia os arquivos de vídeo e áudio salvos",
     "filenameStyleNote": "Usado nos arquivos salvos pelo VidBee. Modelos personalizados de assinaturas ou playlists ainda têm prioridade",

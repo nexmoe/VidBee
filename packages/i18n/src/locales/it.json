@@ -631,6 +631,7 @@
     "writeAutoSubsDescription": "Usa i sottotitoli automatici quando quelli del creatore non sono disponibili nelle lingue selezionate",
     "embedThumbnail": "Incorpora miniatura",
     "embedThumbnailDescription": "Aggiungi la miniatura come copertina",
+    "embedThumbnailWebmUnsupported": "WebM non può incorporare la miniatura come copertina. Se la copertina è attiva, VidBee salva la miniatura in un file separato. Scegli MP4 o MKV per incorporarla.",
     "filenameStyle": "Stile del nome file",
     "filenameStyleDescription": "Scegli come VidBee assegna il nome ai file video e audio salvati",
     "filenameStyleNote": "Usato per i file salvati da VidBee. I modelli personalizzati di iscrizioni o playlist hanno ancora la priorità",
