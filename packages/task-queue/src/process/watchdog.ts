@@ -34,16 +34,17 @@ export class Watchdog {
   private readonly setTimer: NonNullable<WatchdogConfig['setTimer']>
   private readonly clearTimer: NonNullable<WatchdogConfig['clearTimer']>
   private readonly clock: NonNullable<WatchdogConfig['clock']>
+  private readonly onStalled: (taskId: string, entry: Readonly<WatchdogEntry>) => void
 
   constructor(
-    private readonly onStalled: (taskId: string) => void,
+    onStalled: (taskId: string, entry: Readonly<WatchdogEntry>) => void,
     config: WatchdogConfig = {}
   ) {
+    this.onStalled = onStalled
     this.runningIdleMs = config.runningIdleMs ?? 60_000
     this.processingIdleMs = config.processingIdleMs ?? 600_000
     this.setTimer = config.setTimer ?? ((fn, ms) => setTimeout(fn, ms))
-    this.clearTimer =
-      config.clearTimer ?? ((h) => clearTimeout(h as never))
+    this.clearTimer = config.clearTimer ?? ((h) => clearTimeout(h as never))
     this.clock = config.clock ?? Date.now
   }
 
@@ -65,8 +66,12 @@ export class Watchdog {
    */
   promoteToProcessing(taskId: string): void {
     const e = this.entries.get(taskId)
-    if (!e) return
-    if (e.timer) this.clearTimer(e.timer)
+    if (!e) {
+      return
+    }
+    if (e.timer) {
+      this.clearTimer(e.timer)
+    }
     e.status = 'processing'
     e.lastBumpAt = this.clock()
     e.timer = this.scheduleNext(e)
@@ -74,16 +79,24 @@ export class Watchdog {
 
   bump(taskId: string): void {
     const e = this.entries.get(taskId)
-    if (!e) return
-    if (e.timer) this.clearTimer(e.timer)
+    if (!e) {
+      return
+    }
+    if (e.timer) {
+      this.clearTimer(e.timer)
+    }
     e.lastBumpAt = this.clock()
     e.timer = this.scheduleNext(e)
   }
 
   disarm(taskId: string): void {
     const e = this.entries.get(taskId)
-    if (!e) return
-    if (e.timer) this.clearTimer(e.timer)
+    if (!e) {
+      return
+    }
+    if (e.timer) {
+      this.clearTimer(e.timer)
+    }
     this.entries.delete(taskId)
   }
 
@@ -92,19 +105,18 @@ export class Watchdog {
   }
 
   private scheduleNext(entry: WatchdogEntry): unknown {
-    const idle =
-      entry.status === 'processing'
-        ? this.processingIdleMs
-        : this.runningIdleMs
+    const idle = entry.status === 'processing' ? this.processingIdleMs : this.runningIdleMs
     return this.setTimer(() => {
       const cur = this.entries.get(entry.taskId)
-      if (!cur) return
+      if (!cur) {
+        return
+      }
       const elapsed = this.clock() - cur.lastBumpAt
       if (elapsed >= idle) {
         // disarm before notifying so onStalled can call back into us safely
         this.entries.delete(entry.taskId)
         try {
-          this.onStalled(entry.taskId)
+          this.onStalled(entry.taskId, cur)
         } catch (err) {
           logCaughtError('task_queue_watchdog_threw', err)
         }

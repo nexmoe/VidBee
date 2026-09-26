@@ -132,12 +132,9 @@ const DEFAULT_KILL_GRACE_MS = 10_000
 const STDOUT_TAIL_BYTES = 8 * 1024
 const STDERR_TAIL_BYTES = 8 * 1024
 const OUTPUT_PATH_SCAN_BYTES = 4 * 1024
-const PROCESSING_DETECT_PATTERNS = [
-  /\bMerging formats?\b/i,
-  /^\[Postprocess\]/m,
-  /\b(?:Embedding|Adding|Fixing|Converting)\b/i,
-  /\b(?:ExtractAudio|VideoConvertor|FFmpeg)\b/i
-]
+const PROCESSING_LINE =
+  /^\[(?:Merger|Postprocess|ExtractAudio|VideoConvertor|VideoRemuxer|EmbedThumbnail|EmbedSubtitle|Metadata|Fixup\w*|FFmpeg)\]/i
+const OUTPUT_LINE_END = /\r\n|\n|\r/
 const SUBTITLE_DOWNLOAD_ERROR = /Unable to download video subtitles for/i
 const SUBTITLE_DOWNLOAD_INFO = /\[info\][^\r\n]*Downloading subtitles:\s*([^\r\n]+)/i
 const SUBTITLE_UNAVAILABLE_INFO =
@@ -230,6 +227,7 @@ export class YtDlpExecutor implements Executor {
     const stdoutTail = createTailBuffer(STDOUT_TAIL_BYTES)
     const stderrTail = createTailBuffer(STDERR_TAIL_BYTES)
     let postprocessSeen = false
+    const processingLines = { stdout: '', stderr: '' }
     let settled = false
     let cancelRequested = false
     let killTimer: NodeJS.Timeout | null = null
@@ -249,6 +247,18 @@ export class YtDlpExecutor implements Executor {
     let progressAggregator = new DownloadProgressAggregator()
     let subtitleFallbackAttempted = false
     const canRetryWithoutSubtitles = !(ctx.input.rawArgs?.length || this.opts.buildArgs)
+
+    const captureProcessing = (text: string, stream: 'stdout' | 'stderr'): void => {
+      if (postprocessSeen || settled || cancelRequested) {
+        return
+      }
+      const lines = `${processingLines[stream]}${text}`.split(OUTPUT_LINE_END)
+      processingLines[stream] = (lines.pop() ?? '').slice(-OUTPUT_PATH_SCAN_BYTES)
+      if (lines.some((line) => PROCESSING_LINE.test(line.trimStart()))) {
+        postprocessSeen = true
+        events.onProcessing?.({ taskId: ctx.taskId, attemptId: ctx.attemptId })
+      }
+    }
 
     /** Preserve complete path signals even after the persisted log tail rolls over. */
     const captureOutputPath = (text: string): void => {
@@ -356,9 +366,7 @@ export class YtDlpExecutor implements Executor {
         stdoutTail.append(text)
         captureOutputPath(text)
         captureSubtitleSignals(text)
-        if (!postprocessSeen && hasPostprocessSignal(text)) {
-          postprocessSeen = true
-        }
+        captureProcessing(text, 'stdout')
         const fid = extractFormatId(text)
         if (fid) {
           formatIdSeen = fid
@@ -371,9 +379,7 @@ export class YtDlpExecutor implements Executor {
         stderrTail.append(text)
         captureOutputPath(text)
         captureSubtitleSignals(text)
-        if (!postprocessSeen && hasPostprocessSignal(text)) {
-          postprocessSeen = true
-        }
+        captureProcessing(text, 'stderr')
         events.onStd({
           taskId: ctx.taskId,
           attemptId: ctx.attemptId,
@@ -568,6 +574,8 @@ export class YtDlpExecutor implements Executor {
             })
             progressAggregator = new DownloadProgressAggregator()
             postprocessSeen = false
+            processingLines.stdout = ''
+            processingLines.stderr = ''
             try {
               const fallbackArgs = withoutSubtitleDownloadArgs(processArgs)
               proc = spawnProcess(fallbackArgs)
@@ -843,10 +851,6 @@ function insertFfmpegLocation(args: string[], ffmpegLocation: string): void {
   if (urlArg !== undefined) {
     args.push(urlArg)
   }
-}
-
-function hasPostprocessSignal(text: string): boolean {
-  return PROCESSING_DETECT_PATTERNS.some((re) => re.test(text))
 }
 
 /** Return whether a produced media file is present and non-empty. */

@@ -4,13 +4,7 @@
  * @vidbee/downloader-core (`YtDlpExecutor`) and is owned by NEX-131. Tests
  * supply a fake.
  */
-import type {
-  ClassifiedError,
-  ProcessKind,
-  TaskInput,
-  TaskOutput,
-  TaskProgress
-} from '../types'
+import type { ClassifiedError, ProcessKind, TaskInput, TaskOutput, TaskProgress } from '../types'
 
 export interface ExecutorSpawnEvent {
   taskId: string
@@ -65,6 +59,8 @@ export interface ExecutorFinishEvent {
 export interface ExecutorEvents {
   onSpawn: (e: ExecutorSpawnEvent) => void
   onProgress: (e: ExecutorProgressEvent) => void
+  /** Postprocessing can start without another download progress event. */
+  onProcessing?: (e: Pick<ExecutorProgressEvent, 'taskId' | 'attemptId'>) => void
   onStd: (e: ExecutorStdEvent) => void
   onFinish: (e: ExecutorFinishEvent) => void
 }
@@ -96,10 +92,11 @@ export interface Executor {
    * Begin a new attempt. Returns a handle used to cancel/pause. The
    * orchestrator subscribes to events through the supplied `events`
    * callbacks; the executor MUST call them in order:
-   *    onSpawn → (onProgress|onStd)* → onFinish (exactly once).
+   *    onSpawn → (onProgress|onProcessing|onStd)* → onFinish (exactly once).
    */
   run(ctx: ExecutorContext, events: ExecutorEvents): ExecutorRun
 }
 
-export { ExecutorRouter } from './router'
 export type { ExecutorRouterOptions } from './router'
+// biome-ignore lint/performance/noBarrelFile: Preserve the existing executor subpath API.
+export { ExecutorRouter } from './router'
