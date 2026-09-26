@@ -210,3 +210,76 @@ test('a second host keeps a queue link when the task exists only in the shared d
   assert.equal(byId('kept').taskId, 'requeued-kept')
   assert.equal(taskCount(desktopSqlite), 1)
 })
+
+test('refreshing a host snapshot observes a removal made by another host', async (t) => {
+  const directory = mkdtempSync(join(tmpdir(), 'vidbee-shared-removal-'))
+  const dbPath = join(directory, 'vidbee.db')
+  const desktopSqlite = new Database(dbPath)
+  desktopSqlite.exec(TASK_QUEUE_DDL_V1)
+  applySubscriptionsMigrations((sql) => desktopSqlite.exec(sql), [])
+  const apiSqlite = new Database(dbPath, { timeout: 5000 })
+  const desktopQueue = openQueue(desktopSqlite)
+  const apiQueue = openQueue(apiSqlite)
+  t.after(async () => {
+    await apiQueue.stop()
+    await desktopQueue.stop()
+    apiSqlite.close()
+    desktopSqlite.close()
+    rmSync(directory, { recursive: true, force: true })
+  })
+  await desktopQueue.start()
+  const imported = await desktopQueue.importCompleted({
+    input: { url: 'https://videos.example/removed', kind: 'subscription-item' },
+    output: { filePath: join(directory, 'removed.mp4'), size: 4, durationMs: null, sha256: null }
+  })
+  await apiQueue.start()
+
+  const makeSubscriptions = (sqlite: Database.Database, queue: TaskQueueAPI) => {
+    const db = drizzle(sqlite)
+    return new SubscriptionsApi({
+      kind: queue === desktopQueue ? 'desktop' : 'api',
+      pid: process.pid,
+      store: createSqliteSubscriptionsStore({ db }),
+      metaStore: createSqliteMetaStore({ db }),
+      fetcher: { fetch: async () => ({ items: [] }) },
+      taskExists: (taskId) => queue.hasTask(taskId),
+      enqueueItem: async () => {
+        throw new Error('refreshing subscriptions must not enqueue a download')
+      }
+    })
+  }
+  const desktop = makeSubscriptions(desktopSqlite, desktopQueue)
+  const api = makeSubscriptions(apiSqlite, apiQueue)
+  const created = await desktop.add({
+    sourceUrl: 'https://videos.example/channel',
+    feedUrl: 'https://videos.example/feed.xml',
+    platform: 'custom',
+    autoDownload: false
+  })
+  const store = createSqliteSubscriptionsStore({ db: drizzle(desktopSqlite) })
+  await store.replaceItems(created.id, [
+    { id: 'removed', url: 'https://videos.example/removed', title: 'Removed', publishedAt: 1 }
+  ])
+  await store.markItemQueued(created.id, 'removed', imported.id)
+  const cached = await desktop.get({ id: created.id })
+  assert.equal(cached.items[0]?.addedToQueue, true)
+
+  let desktopNotifications = 0
+  desktop.on('changed', () => {
+    desktopNotifications += 1
+  })
+  const released = new Promise<void>((resolve) => {
+    api.on('changed', () => resolve())
+  })
+  apiQueue.on('task-removed', ({ taskId }) => api.noteTaskRemoved(taskId))
+  await apiQueue.removeFromHistory(imported.id)
+  await released
+
+  assert.equal(desktopNotifications, 0)
+  assert.equal(cached.items[0]?.addedToQueue, true)
+  assert.ok(desktopQueue.get(imported.id))
+  const refreshed = await desktop.list()
+  assert.equal(refreshed.items[0]?.items[0]?.addedToQueue, false)
+  assert.equal(refreshed.items[0]?.items[0]?.taskId, undefined)
+  assert.equal(taskCount(desktopSqlite), 0)
+})

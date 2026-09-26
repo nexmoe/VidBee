@@ -29,6 +29,7 @@ import { cn } from '@renderer/lib/utils'
 import { type DownloadRecord, downloadsArrayAtom } from '@renderer/store/downloads'
 import {
   createSubscriptionAtom,
+  loadSubscriptionsAtom,
   refreshSubscriptionAtom,
   removeSubscriptionAtom,
   resolveFeedAtom,
@@ -50,6 +51,8 @@ import { toast } from 'sonner'
 import { logger } from '../lib/logger'
 
 type SubscriptionItemStatus = DownloadStatus | 'queued' | 'notQueued'
+
+const POLL_INTERVAL_MS = 5000
 
 const subscriptionItemStatusLabels: Record<SubscriptionItemStatus, string> = {
   notQueued: 'subscriptions.items.status.notQueued',
@@ -222,12 +225,22 @@ function SubscriptionTab({
 export function Subscriptions() {
   const { t } = useTranslation()
   const [subscriptions] = useAtom(subscriptionsAtom)
+  const loadSubscriptions = useSetAtom(loadSubscriptionsAtom)
   const updateSubscription = useSetAtom(updateSubscriptionAtom)
   const removeSubscription = useSetAtom(removeSubscriptionAtom)
   const refreshSubscription = useSetAtom(refreshSubscriptionAtom)
 
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [selectedTab, setSelectedTab] = useState<string>('')
+
+  useEffect(() => {
+    // Another host can update the shared database without a local IPC event.
+    void loadSubscriptions()
+    const timer = window.setInterval(() => {
+      void loadSubscriptions()
+    }, POLL_INTERVAL_MS)
+    return () => window.clearInterval(timer)
+  }, [loadSubscriptions])
 
   const sortedSubscriptions = useMemo(
     () =>
