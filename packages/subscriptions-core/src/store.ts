@@ -17,7 +17,7 @@ import {
   subscriptionsMetaTable,
   subscriptionsTable
 } from '@vidbee/db/subscriptions'
-import { and, desc, eq, inArray } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNotNull, or } from 'drizzle-orm'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import { buildFeedKey } from './feed-resolver'
 import type { MetaStore } from './leader'
@@ -187,6 +187,21 @@ export interface SubscriptionsStore {
    * the row already records the same taskId nothing changes.
    */
   markItemQueued(subscriptionId: string, itemId: string, taskId: string | null): Promise<void>
+  /**
+   * Clear the queue flag and task id for the selected rows. The item rows
+   * stay so the feed still treats them as already seen.
+   */
+  clearQueueLinks(selector: QueueLinkSelector): Promise<number>
+  /**
+   * Clear queue links whose task id is missing or rejected by `isLive`.
+   * Returns how many rows changed.
+   */
+  clearOrphanedQueueLinks(isLive: (taskId: string) => boolean | Promise<boolean>): Promise<number>
+}
+
+export interface QueueLinkSelector {
+  taskIds?: readonly string[]
+  items?: readonly { subscriptionId: string; itemId: string }[]
 }
 
 export interface CreateSqliteStoresOptions {
@@ -195,6 +210,65 @@ export interface CreateSqliteStoresOptions {
   now?: () => number
   /** Defaults to `crypto.randomUUID`. */
   generateId?: () => string
+}
+
+const uniqueIds = (values: readonly string[] | undefined): string[] => {
+  if (!values || values.length === 0) {
+    return []
+  }
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const value of values) {
+    const trimmed = value.trim()
+    if (!trimmed || seen.has(trimmed)) {
+      continue
+    }
+    seen.add(trimmed)
+    out.push(trimmed)
+  }
+  return out
+}
+
+/**
+ * Drop queue flags without deleting feed rows. `added = 0` is what lets a
+ * user queue the item again; keeping the row is what blocks auto-download.
+ */
+const clearQueueLinkRows = (
+  db: BetterSQLite3Database,
+  at: number,
+  taskIds: readonly string[],
+  items: readonly { subscriptionId: string; itemId: string }[]
+): number => {
+  if (taskIds.length === 0 && items.length === 0) {
+    return 0
+  }
+  const cleared = { added: 0, taskId: null, updatedAt: at }
+  let changes = 0
+  db.transaction((tx) => {
+    if (taskIds.length > 0) {
+      const result = tx
+        .update(subscriptionItemsTable)
+        .set(cleared)
+        .where(inArray(subscriptionItemsTable.taskId, [...taskIds]))
+        .run()
+      changes += result.changes ?? 0
+    }
+    for (const item of items) {
+      const result = tx
+        .update(subscriptionItemsTable)
+        .set(cleared)
+        .where(
+          and(
+            eq(subscriptionItemsTable.subscriptionId, item.subscriptionId),
+            eq(subscriptionItemsTable.itemId, item.itemId),
+            or(eq(subscriptionItemsTable.added, 1), isNotNull(subscriptionItemsTable.taskId))
+          )
+        )
+        .run()
+      changes += result.changes ?? 0
+    }
+  })
+  return changes
 }
 
 export const createSqliteSubscriptionsStore = ({
@@ -324,22 +398,32 @@ export const createSqliteSubscriptionsStore = ({
     async replaceItems(subscriptionId, items) {
       const ts = now()
       db.transaction((tx) => {
+        const existing = tx
+          .select()
+          .from(subscriptionItemsTable)
+          .where(eq(subscriptionItemsTable.subscriptionId, subscriptionId))
+          .all()
+        const previous = new Map(existing.map((row) => [row.itemId, row]))
         tx.delete(subscriptionItemsTable)
           .where(eq(subscriptionItemsTable.subscriptionId, subscriptionId))
           .run()
         for (const item of items) {
+          const prev = previous.get(item.id)
           const insert: SubscriptionItemInsert = {
             subscriptionId,
             itemId: item.id,
             title: item.title,
             url: item.url,
             publishedAt: item.publishedAt,
-            added: 0,
-            createdAt: item.publishedAt,
+            added: prev?.added ?? 0,
+            createdAt: prev?.createdAt ?? item.publishedAt,
             updatedAt: ts
           }
           if (item.thumbnail) {
             insert.thumbnail = item.thumbnail
+          }
+          if (prev?.taskId) {
+            insert.taskId = prev.taskId
           }
           tx.insert(subscriptionItemsTable).values(insert).run()
         }
@@ -385,6 +469,46 @@ export const createSqliteSubscriptionsStore = ({
           })
           .run()
       }
+    },
+
+    async clearQueueLinks(selector) {
+      return clearQueueLinkRows(db, now(), uniqueIds(selector.taskIds), selector.items ?? [])
+    },
+
+    async clearOrphanedQueueLinks(isLive) {
+      const rows = db
+        .select({
+          subscriptionId: subscriptionItemsTable.subscriptionId,
+          itemId: subscriptionItemsTable.itemId,
+          taskId: subscriptionItemsTable.taskId,
+          added: subscriptionItemsTable.added
+        })
+        .from(subscriptionItemsTable)
+        .where(or(eq(subscriptionItemsTable.added, 1), isNotNull(subscriptionItemsTable.taskId)))
+        .all()
+      const taskIds: string[] = []
+      const items: { subscriptionId: string; itemId: string }[] = []
+      const seenTasks = new Set<string>()
+      const liveByTaskId = new Map<string, boolean>()
+      for (const row of rows) {
+        if (row.taskId) {
+          let live = liveByTaskId.get(row.taskId)
+          if (live === undefined) {
+            live = await isLive(row.taskId)
+            liveByTaskId.set(row.taskId, live)
+          }
+          if (live || seenTasks.has(row.taskId)) {
+            continue
+          }
+          seenTasks.add(row.taskId)
+          taskIds.push(row.taskId)
+          continue
+        }
+        if (row.added === 1) {
+          items.push({ subscriptionId: row.subscriptionId, itemId: row.itemId })
+        }
+      }
+      return clearQueueLinkRows(db, now(), taskIds, items)
     }
   }
 }

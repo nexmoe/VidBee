@@ -27,6 +27,7 @@ import { toWebDownloadRuntimeSettings, webSettingsStore } from './web-settings-s
 
 let api: SubscriptionsApi | null = null
 let started = false
+let removeTaskListener: (() => void) | null = null
 
 /**
  * Open (or reuse) the singleton SubscriptionsApi for the API host.
@@ -50,6 +51,9 @@ export const getApiSubscriptions = (): SubscriptionsApi => {
     store,
     metaStore,
     fetcher: new RssParserFeedFetcher(),
+    // `get` is this process's startup snapshot. A task Desktop wrote to the
+    // shared database after that is still a real download.
+    taskExists: (taskId) => taskQueue.hasTask(taskId),
     enqueueItem: async ({ subscription, item }) => {
       const tags = Array.from(new Set([subscription.platform, ...subscription.tags]))
       const settings = toWebDownloadRuntimeSettings(await webSettingsStore.get())
@@ -101,7 +105,11 @@ export const startApiSubscriptions = async (): Promise<void> => {
   if (started) {
     return
   }
-  await getApiSubscriptions().start()
+  const subscriptions = getApiSubscriptions()
+  await subscriptions.start()
+  removeTaskListener = taskQueue.on('task-removed', (event) => {
+    subscriptions.noteTaskRemoved(event.taskId)
+  })
   started = true
 }
 
@@ -109,6 +117,8 @@ export const stopApiSubscriptions = async (): Promise<void> => {
   if (!started) {
     return
   }
+  removeTaskListener?.()
+  removeTaskListener = null
   await api?.stop()
   started = false
 }

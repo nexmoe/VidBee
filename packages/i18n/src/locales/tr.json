@@ -1063,7 +1063,8 @@
       },
       "actions": {
         "open": "Tarayıcıda aç",
-        "queue": "İndirme kuyruğuna ekle"
+        "queue": "İndirme kuyruğuna ekle",
+        "copyUrl": "URL'i Kopyala"
       }
     },
     "labels": {

@@ -472,6 +472,15 @@ export class TaskQueueAPI {
     return this.store.get(id)
   }
 
+  /**
+   * Whether `id` exists in the durable store. `get` only reads this process's
+   * memory, which is loaded from SQLite at startup and does not observe tasks
+   * another host later writes to the shared database.
+   */
+  async hasTask(id: string): Promise<boolean> {
+    return await this.persist.hasTask(id)
+  }
+
   /** Persist a display title for any task kind without changing execution options. */
   async rename(id: string, title: string): Promise<void> {
     const task = this.store.get(id)

@@ -1063,7 +1063,8 @@
       },
       "actions": {
         "open": "Abrir en el navegador",
-        "queue": "Agregar a la cola de descarga"
+        "queue": "Agregar a la cola de descarga",
+        "copyUrl": "Copiar URL"
       }
     },
     "labels": {
