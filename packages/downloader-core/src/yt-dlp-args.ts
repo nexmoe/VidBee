@@ -578,21 +578,18 @@ export const buildDownloadArgs = (
   if (shouldAttemptSubtitles) {
     args.push('--sub-langs', subtitleLanguages.join(','))
     args.push('--sleep-subtitles', '1')
-    // `--embed-subs` only writes official / creator-uploaded captions.
-    // YouTube videos often have automatic captions and no official track, so
-    // also request those when the setting is on; otherwise the embed step
-    // has nothing to mux.
+    // `--embed-subs` does not request YouTube automatic captions. Ask for them
+    // only when that setting is on, or the embed step has nothing to mux.
     if (writeAutoSubs) {
       args.push('--write-auto-subs')
     } else {
       args.push('--no-write-auto-subs')
     }
-    if (shouldEmbedSubs) {
-      args.push('--embed-subs')
-    } else {
-      args.push('--write-subs')
-      args.push('--no-embed-subs')
-    }
+    // yt-dlp deletes the subtitle file after `--embed-subs` unless `--write-subs`
+    // is also set. Downloading subtitles means keep that sidecar; embedding is
+    // additional. GitHub issue #475.
+    args.push('--write-subs')
+    args.push(shouldEmbedSubs ? '--embed-subs' : '--no-embed-subs')
   } else {
     args.push('--no-write-subs', '--no-write-auto-subs', '--no-embed-subs')
   }

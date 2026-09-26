@@ -4,34 +4,13 @@ import {
   buildPlaylistInfoArgs as buildSharedPlaylistInfoArgs,
   buildVideoInfoArgs as buildSharedVideoInfoArgs,
   formatYtDlpCommand,
-  resolveFfmpegLocationFromPath,
-  type YtDlpDownloadSettings
+  resolveFfmpegLocationFromPath
 } from '@vidbee/downloader-core/yt-dlp-args'
+import { toSharedSettings } from '../download-engine/args-builder'
 import type { settingsManager } from '../settings'
 import { ytdlpManager } from './ytdlp-manager'
 
-export const toSharedSettings = (
-  settings: ReturnType<typeof settingsManager.getAll>
-): YtDlpDownloadSettings => ({
-  downloadPath: settings.downloadPath,
-  browserForCookies: settings.browserForCookies,
-  cookiesPath: settings.cookiesPath,
-  proxy: settings.proxy,
-  configPath: settings.configPath,
-  downloadSubtitles: settings.downloadSubtitles,
-  subtitleLanguages: settings.subtitleLanguages,
-  interfaceLanguage: settings.language,
-  embedSubs: settings.embedSubs,
-  writeAutoSubs: settings.writeAutoSubs,
-  embedThumbnail: settings.embedThumbnail,
-  embedMetadata: settings.embedMetadata,
-  embedChapters: settings.embedChapters,
-  filenameStyle: settings.filenameStyle,
-  filenameViaVidBee: settings.filenameViaVidBee,
-  shareWatermark: settings.shareWatermark
-})
-
-export { formatYtDlpCommand }
+export { formatYtDlpCommand, toSharedSettings }
 
 export const resolveFfmpegLocation = (ffmpegPath: string): string =>
   resolveFfmpegLocationFromPath(ffmpegPath)

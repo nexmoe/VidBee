@@ -28,15 +28,11 @@ import {
   type SubscriptionWithItems
 } from '@vidbee/subscriptions-core'
 import type { SubscriptionFeedItem, SubscriptionRule } from '../../shared/types'
-import {
-  buildAudioFormatPreference,
-  buildVideoFormatPreference
-} from '../../shared/utils/format-preferences'
-import { sanitizeFilenameTemplate } from '../download-engine/args-builder'
 import { settingsManager } from '../settings'
 import { scopedLoggers } from '../utils/logger'
 import { getDatabaseConnection } from './database'
 import { historyManager } from './history-manager'
+import { buildDesktopSubscriptionTaskInput } from './subscription-enqueue'
 import { getDesktopTaskQueue } from './task-queue-host'
 
 const logger = scopedLoggers.engine
@@ -101,41 +97,16 @@ export const getDesktopSubscriptions = (): SubscriptionsApi => {
     fetcher: new RssParserFeedFetcher(),
     isHistoryDup: (url) => historyManager.hasHistoryForUrl(url),
     enqueueItem: async ({ subscription, item, trigger, creation }) => {
-      const settings = settingsManager.getAll()
-      const downloadDirectory = subscription.downloadDirectory?.trim() || settings.downloadPath
-      const namingTemplate = subscription.namingTemplate
-        ? sanitizeFilenameTemplate(subscription.namingTemplate)
-        : undefined
-      const downloadType = settings.oneClickDownloadType ?? 'video'
-      const formatPreference =
-        downloadType === 'video'
-          ? buildVideoFormatPreference(settings)
-          : buildAudioFormatPreference(settings)
-      const containerFormat =
-        downloadType === 'video' ? (settings.oneClickContainer ?? 'auto') : undefined
+      const { task, downloadDirectory } = buildDesktopSubscriptionTaskInput({
+        settings: settingsManager.getAll(),
+        subscription,
+        item,
+        trigger,
+        creation
+      })
       ensureDirectoryExists(downloadDirectory)
-      const tags = Array.from(new Set([subscription.platform, ...subscription.tags]))
-
       const result = await getDesktopTaskQueue().add({
-        input: {
-          url: item.url,
-          kind: 'subscription-item',
-          title: item.title,
-          ...(item.thumbnail === undefined ? {} : { thumbnail: item.thumbnail }),
-          subscriptionId: subscription.id,
-          options: {
-            type: downloadType,
-            format: formatPreference,
-            ...(containerFormat === undefined ? {} : { containerFormat }),
-            customDownloadPath: downloadDirectory,
-            ...(namingTemplate ? { customFilenameTemplate: namingTemplate } : {}),
-            tags,
-            origin: trigger === 'auto' ? 'subscription' : 'manual',
-            ...creation,
-            subscriptionId: subscription.id,
-            itemId: item.id
-          }
-        },
+        input: task,
         priority: 10,
         groupKey: subscription.id
       })
