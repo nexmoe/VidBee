@@ -19,7 +19,7 @@ import { resolveAsrModelPaths, tryRecognizerConfig } from '../src/asr-recognizer
 import { QWEN3_ASR_DIR, WHISPER_TINY_DIR } from '../src/asr-tiers'
 import { classifyTranscriptionFailure } from '../src/errors'
 import { catalogFor, MODEL_CATALOG } from '../src/model-catalog'
-import { ModelManager } from '../src/model-manager'
+import { isModelDownloadCancelled, ModelManager } from '../src/model-manager'
 import { QWEN3_ASR_TOKENIZER_FILES, QWEN3_TOKENIZER_REPAIR_HINT } from '../src/qwen3-tokenizer'
 import type { DirectoryMemberRequirement, ModelFileSpec } from '../src/types'
 
@@ -612,4 +612,56 @@ test('incomplete model errors stay explicit for transcription', () => {
   assert.equal(error.category, 'binary-missing')
   assert.match(error.rawMessage, /incomplete model: missing tokenizer\/merges\.txt/)
   assert.match(error.rawMessage, /Whisper Tiny/)
+})
+
+test('cancelling an overlapping archive install preserves the model published by its peer', {
+  timeout: 10_000
+}, async (t) => {
+  const modelsDir = modelsDirFor(t)
+  const archivePath = join(modelsDir, '.downloads', archiveName)
+  mkdirSync(dirname(archivePath), { recursive: true })
+  const archived = goodArchive(t)
+  writeFileSync(archivePath, archived)
+  const { calls, fetchImpl } = offlineFetch()
+  const options = {
+    modelsDir,
+    catalog: qualityCatalog(),
+    fetchImpl,
+    preferChina: false,
+    resolveUrls: () => [archiveUrl]
+  }
+  let release = (): void => undefined
+  const hold = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  let staged = (): void => undefined
+  const readyToPublish = new Promise<void>((resolve) => {
+    staged = resolve
+  })
+  const cancelled = new ModelManager({
+    ...options,
+    afterArchiveStaged: async () => {
+      staged()
+      await hold
+    }
+  })
+  const peer = new ModelManager(options)
+  const cancelledRun = cancelled.ensureReady(quality)
+  const rejected = assert.rejects(cancelledRun, isModelDownloadCancelled)
+  try {
+    await readyToPublish
+    assert.equal((await peer.ensureReady(quality)).ready, true)
+    cancelled.cancelDownload('quality')
+  } finally {
+    release()
+  }
+  await rejected
+  assert.equal(peer.status(quality.groups, quality.tiers).ready, true)
+  assert.equal(readFileSync(markerPath(modelsDir), 'utf8'), 'ok')
+  assert.equal(statSync(archivePath).size, archived.length)
+  assert.equal(
+    calls.some((call) => call.startsWith('GET ')),
+    false
+  )
+  assertNoStagingLeftovers(archivePath)
 })

@@ -458,6 +458,11 @@ export class ModelManager {
       .catch((error: unknown) => {
         if (controller.signal.aborted || isModelDownloadCancelled(error)) {
           for (const tier of opts?.tiers ?? []) {
+            // Archive attempts clean up their own staging directory. The shared
+            // archive and published model may belong to another active caller.
+            if (this.wantedSpecs(['asr'], [tier]).some((spec) => isArchiveUrl(spec.url))) {
+              continue
+            }
             this.purgeTierFiles(tier)
           }
           throwIfAborted(controller.signal, opts?.tiers?.[0])
@@ -1133,7 +1138,10 @@ export class ModelManager {
       this.downloadProgressByKey.delete(dest)
       this.emitProgress(true)
     }
-    throwIfAborted(signal, tier)
+    if (signal?.aborted) {
+      rmSync(tmp, { force: true })
+      throwIfAborted(signal, tier)
+    }
     if (presentBytes(dest).present) {
       if (existsSync(tmp)) {
         rmSync(tmp, { force: true })
