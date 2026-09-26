@@ -11,6 +11,7 @@
     "./download-file": "./src/download-file.ts",
     "./filename-style": "./src/filename-style.ts",
     "./format-preferences": "./src/format-preferences.ts",
+    "./format-presentation": "./src/format-presentation.ts",
     "./format-selector": "./src/format-selector.ts",
     "./output-path": "./src/output-path.ts",
     "./audio-format-preferences": "./src/audio-format-preferences.ts",

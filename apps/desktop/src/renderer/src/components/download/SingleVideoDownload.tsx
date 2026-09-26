@@ -20,7 +20,7 @@ import { useTranslation } from 'react-i18next'
 import { settingsAtom } from '../../store/settings'
 import { pickPreferredAudioFormatId } from './audio-format-preferences'
 import { DownloadParseErrorBanner } from './DownloadParseErrorBanner'
-import { getDisplayFormats } from './format-presentation'
+import { filterFormatsByType, getDisplayFormats } from './format-presentation'
 
 export interface SingleVideoState {
   title: string
@@ -73,36 +73,6 @@ const getCodecShortName = (codec?: string): string => {
     return 'Unknown'
   }
   return codec.split('.')[0].toUpperCase()
-}
-
-const isHlsFormat = (format: VideoFormat): boolean =>
-  format.protocol === 'm3u8' || format.protocol === 'm3u8_native'
-
-const isHttpProtocol = (format: VideoFormat): boolean =>
-  !!format.protocol && format.protocol.startsWith('http')
-
-const filterFormatsByType = (
-  formats: VideoInfo['formats'],
-  activeTab: 'video' | 'audio'
-): VideoInfo['formats'] => {
-  if (!formats) {
-    return []
-  }
-
-  return formats.filter((format) => {
-    if (activeTab === 'video') {
-      return format.vcodec && format.vcodec !== 'none'
-    }
-
-    return (
-      format.acodec &&
-      format.acodec !== 'none' &&
-      (format.video_ext === 'none' ||
-        !format.video_ext ||
-        !format.vcodec ||
-        format.vcodec === 'none')
-    )
-  })
 }
 
 interface FormatListProps {
@@ -363,18 +333,7 @@ export function SingleVideoDownload({
     if (!videoInfo?.formats) {
       return []
     }
-    const baseFormats = filterFormatsByType(videoInfo.formats, activeTab)
-    if (baseFormats.length === 0) {
-      return []
-    }
-
-    const hasHttpFormats = baseFormats.some(isHttpProtocol)
-    if (!hasHttpFormats) {
-      return baseFormats
-    }
-
-    const nonHlsFormats = baseFormats.filter((format) => !isHlsFormat(format))
-    return nonHlsFormats.length > 0 ? nonHlsFormats : baseFormats
+    return filterFormatsByType(videoInfo.formats, activeTab)
   }, [videoInfo?.formats, activeTab])
 
   const containers = useMemo(() => {

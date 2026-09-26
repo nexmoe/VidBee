@@ -20,7 +20,7 @@ import { EventBus, type TaskQueueEvent, type TaskQueueListener } from '../events
 import type { Executor, ExecutorRun } from '../executor'
 import { transition as fsmTransition, IllegalTransitionError, type TransitionContext } from '../fsm'
 import type { PersistAdapter } from '../persist'
-import { ProcessRegistry, readPidStartTime, Watchdog } from '../process'
+import { ProcessRegistry, readPidStartTime, Watchdog, type WatchdogEntry } from '../process'
 import { computeBackoffMs, RetryScheduler, Scheduler } from '../scheduler'
 import { TaskStore } from '../store'
 import {
@@ -189,7 +189,7 @@ export class TaskQueueAPI {
       onDue: (id) => this.handleRetryDue(id)
     })
 
-    this.watchdog = new Watchdog((id) => this.handleStalled(id), {
+    this.watchdog = new Watchdog((id, entry) => this.handleStalled(id, entry), {
       runningIdleMs: opts.runningIdleMs,
       processingIdleMs: opts.processingIdleMs,
       setTimer: opts.setTimer,
@@ -688,7 +688,7 @@ export class TaskQueueAPI {
 
   async resume(id: string): Promise<void> {
     const t = this.store.get(id)
-    if (!t || t.status !== 'paused') {
+    if (t?.status !== 'paused') {
       return
     }
     await this.applyTransition(id, 'queued', { trigger: 'resume', reason: 'resume' })
@@ -782,7 +782,7 @@ export class TaskQueueAPI {
 
   private async dispatchOne(id: string): Promise<boolean> {
     const t = this.store.get(id)
-    if (!t || t.status !== 'queued') {
+    if (t?.status !== 'queued') {
       return false
     }
 
@@ -846,13 +846,10 @@ export class TaskQueueAPI {
             this.applyProgress(id, e.progress)
             this.watchdog.bump(id)
             if (e.enteredProcessing) {
-              void this.applyTransition(id, 'processing', {
-                trigger: 'progressing',
-                reason: null
-              })
-              this.watchdog.promoteToProcessing(id)
+              this.enterProcessing(id, attemptId)
             }
           },
+          onProcessing: () => this.enterProcessing(id, attemptId),
           onStd: (e) => {
             this.watchdog.bump(id)
             this.bus.emit({
@@ -1071,7 +1068,7 @@ export class TaskQueueAPI {
 
   private async handleRetryDue(id: string): Promise<void> {
     const t = this.store.get(id)
-    if (!t || t.status !== 'retry-scheduled') {
+    if (t?.status !== 'retry-scheduled') {
       return
     }
     const next = await this.applyTransition(id, 'queued', {
@@ -1081,9 +1078,20 @@ export class TaskQueueAPI {
     await this.scheduler.enqueue(id, next.priority)
   }
 
-  private handleStalled(id: string): void {
+  private enterProcessing(id: string, attemptId: string): void {
+    if (this.active.get(id)?.attemptId !== attemptId || this.store.get(id)?.status !== 'running') {
+      return
+    }
+    void this.applyTransition(id, 'processing', { trigger: 'progressing', reason: null })
+    this.watchdog.promoteToProcessing(id)
+  }
+
+  private handleStalled(id: string, entry: Readonly<WatchdogEntry>): void {
     void (async () => {
-      const err = virtualError('stalled', 'Watchdog: task idle exceeded')
+      const err = virtualError(
+        'stalled',
+        `Watchdog: task idle exceeded (phase=${entry.status}, idleMs=${this.clock() - entry.lastBumpAt}, lastOutputAt=${entry.lastBumpAt})`
+      )
       const a = this.active.get(id)
       if (a) {
         try {

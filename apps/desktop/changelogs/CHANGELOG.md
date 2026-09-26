@@ -6,6 +6,8 @@ For full release notes, see [GitHub Releases](https://github.com/nexmoe/VidBee/r
 ## [Unreleased]
 
 ### Fixed
+- Downloads no longer time out after one minute while merging or converting media. ([#462](https://github.com/nexmoe/VidBee/issues/462))
+- Desktop and web format pickers retain high-resolution HLS streams and distinct audio languages when HTTP downloads are also available. ([#443](https://github.com/nexmoe/VidBee/issues/443))
 - RSS videos can be queued again after their downloads are removed, including removals from another connected app. You can also copy video links from the RSS item menu. ([#479](https://github.com/nexmoe/VidBee/issues/479), [#485](https://github.com/nexmoe/VidBee/pull/485))
 - Incomplete Qwen3-ASR model files are repaired or reported clearly before transcription starts. Overlapping model installations no longer delete each other's files, including when one is cancelled. ([#473](https://github.com/nexmoe/VidBee/issues/473), [#486](https://github.com/nexmoe/VidBee/pull/486))
 
