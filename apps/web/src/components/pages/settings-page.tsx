@@ -52,6 +52,7 @@ import {
 	Tabs,
 	TabsList,
 } from "@vidbee/ui/components/ui/tabs";
+import { WebmThumbnailNotice } from "@vidbee/ui/components/ui/webm-thumbnail-notice";
 import {
 	Captions,
 	Cookie,
@@ -645,6 +646,9 @@ export const SettingsPage = () => {
 														<ItemDescription>
 															{t("settings.oneClickContainerDescription")}
 														</ItemDescription>
+														<WebmThumbnailNotice
+															container={settings.oneClickContainer}
+														/>
 													</ItemContent>
 													<ItemActions>
 														<Select
@@ -853,6 +857,9 @@ export const SettingsPage = () => {
 												<ItemDescription>
 													{t("settings.embedThumbnailDescription")}
 												</ItemDescription>
+												<WebmThumbnailNotice
+													container={settings.oneClickContainer}
+												/>
 											</ItemContent>
 											<ItemActions>
 												<Switch

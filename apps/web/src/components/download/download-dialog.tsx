@@ -2,6 +2,7 @@ import type { PlaylistInfo, VideoInfo } from "@vidbee/downloader-core";
 import {
 	ONE_CLICK_CONTAINER_OPTIONS,
 	type OneClickContainerOption,
+	resolvePlaylistContainerFormat,
 } from "@vidbee/downloader-core/format-preferences";
 import { buildSingleVideoFormatSelector } from "@vidbee/downloader-core/format-selector";
 import { AddUrlPopover } from "@vidbee/ui/components/ui/add-url-popover";
@@ -12,6 +13,7 @@ import { DownloadDialogLayout } from "@vidbee/ui/components/ui/download-dialog-l
 import { IngestDropOverlay } from "@vidbee/ui/components/ui/ingest-drop-overlay";
 import { Input } from "@vidbee/ui/components/ui/input";
 import { Label } from "@vidbee/ui/components/ui/label";
+import { WebmThumbnailNotice } from "@vidbee/ui/components/ui/webm-thumbnail-notice";
 import { useAddUrlInteraction } from "@vidbee/ui/lib/use-add-url-interaction";
 import { useHomeIngest } from "@vidbee/ui/lib/use-home-ingest";
 import { FolderOpen, Loader2 } from "lucide-react";
@@ -443,10 +445,11 @@ export function DownloadDialog({ onDownloadsChanged }: DownloadDialogProps) {
 				downloadType === "video"
 					? buildVideoFormatPreference(settings)
 					: buildAudioFormatPreference(settings);
-			const containerFormat =
-				downloadType === "video"
-					? (playlistContainer ?? settings.oneClickContainer)
-					: undefined;
+			const containerFormat = resolvePlaylistContainerFormat(
+				downloadType,
+				playlistContainer,
+				settings.oneClickContainer,
+			);
 
 			const result = await orpcClient.playlist.download({
 				url: trimmedUrl,
@@ -793,14 +796,24 @@ export function DownloadDialog({ onDownloadsChanged }: DownloadDialogProps) {
 						advancedOptionsOpen={advancedOptionsOpen}
 						containerSelect={
 							downloadType === "video" && (
-								<DownloadContainerSelect
-									disabled={playlistBusy}
-									onValueChange={setPlaylistContainer}
-									options={ONE_CLICK_CONTAINER_OPTIONS}
-									value={
-										playlistContainer ?? settings.oneClickContainer ?? "auto"
-									}
-								/>
+								<>
+									<DownloadContainerSelect
+										disabled={playlistBusy}
+										onValueChange={setPlaylistContainer}
+										options={ONE_CLICK_CONTAINER_OPTIONS}
+										value={
+											playlistContainer ?? settings.oneClickContainer ?? "auto"
+										}
+									/>
+									<WebmThumbnailNotice
+										className="w-full"
+										container={resolvePlaylistContainerFormat(
+											downloadType,
+											playlistContainer,
+											settings.oneClickContainer,
+										)}
+									/>
+								</>
 							)
 						}
 						downloadType={downloadType}

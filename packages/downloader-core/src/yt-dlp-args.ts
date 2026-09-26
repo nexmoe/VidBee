@@ -486,6 +486,52 @@ export const resolveVideoFormatSelector = (options: YtDlpDownloadOptions): strin
   return withBestFallback(`${format}+${audioFormat}`)
 }
 
+const UNSUPPORTED_THUMBNAIL_EMBED_ERROR = /supported filetypes for thumbnail embedding are/i
+
+export const THUMBNAIL_EMBED_UNSUPPORTED_LOG =
+  '[VidBee] Thumbnail embedding is unsupported for this container. The video was saved. Choose MP4 or MKV to embed cover art.'
+
+/**
+ * Thumbnail flags for one download.
+ *
+ * WebM cannot store cover art. `--embed-thumbnail` makes yt-dlp fail the
+ * download after the video is saved (GitHub issue #467). Write a separate
+ * thumbnail file instead. MP4, MKV, and Auto still embed the cover.
+ */
+export const resolveThumbnailDownloadArgs = (
+  type: YtDlpDownloadOptions['type'],
+  container: OneClickContainerOption | undefined,
+  embedThumbnail: boolean
+): string[] => {
+  if (!embedThumbnail) {
+    return ['--no-embed-thumbnail']
+  }
+  if (type === 'video' && container === 'webm') {
+    return ['--no-embed-thumbnail', '--write-thumbnail']
+  }
+  return ['--embed-thumbnail']
+}
+
+/**
+ * Return whether yt-dlp failed only because cover art cannot be embedded.
+ *
+ * Other ERROR lines still fail the download. Callers must also confirm a
+ * non-empty media file exists before treating the run as successful.
+ */
+export const isUnsupportedThumbnailEmbedOnlyFailure = (output: string): boolean => {
+  if (!UNSUPPORTED_THUMBNAIL_EMBED_ERROR.test(output)) {
+    return false
+  }
+  const errorLines = output
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => /^ERROR:/i.test(line))
+  return (
+    errorLines.length > 0 &&
+    errorLines.every((line) => UNSUPPORTED_THUMBNAIL_EMBED_ERROR.test(line))
+  )
+}
+
 export const resolveAudioFormatSelector = (options: YtDlpDownloadOptions): string => {
   const format = options.format
 
@@ -509,8 +555,10 @@ export const buildDownloadArgs = (
   assertDownloadSourceUrl(options.url)
   validateDownloadTimeRange(options.startTime, options.endTime)
   const args: string[] = ['--no-playlist', '--no-mtime', '--encoding', 'utf-8']
+  const container: OneClickContainerOption | undefined =
+    options.type === 'video' ? (options.containerFormat ?? 'auto') : undefined
 
-  if (options.type === 'video') {
+  if (options.type === 'video' && container) {
     const formatSelector = resolveVideoFormatSelector(options)
     if (formatSelector) {
       args.push('-f', formatSelector)
@@ -525,7 +573,6 @@ export const buildDownloadArgs = (
     // GitHub issues #207 and #129: `auto` keeps the mp4/mkv fallback so
     // ffmpeg muxing failures (HEVC + Hi-Res audio on bilibili, webm
     // fragments on YouTube under proxies, etc.) do not abort the download.
-    const container = options.containerFormat ?? 'auto'
     if (container === 'auto') {
       args.push('--merge-output-format', 'mp4/mkv')
     } else if (container !== 'original') {
@@ -594,7 +641,7 @@ export const buildDownloadArgs = (
     args.push('--no-write-subs', '--no-write-auto-subs', '--no-embed-subs')
   }
 
-  args.push(embedThumbnail ? '--embed-thumbnail' : '--no-embed-thumbnail')
+  args.push(...resolveThumbnailDownloadArgs(options.type, container, embedThumbnail))
   args.push(embedMetadata ? '--embed-metadata' : '--no-embed-metadata')
   args.push(embedChapters ? '--embed-chapters' : '--no-embed-chapters')
 
