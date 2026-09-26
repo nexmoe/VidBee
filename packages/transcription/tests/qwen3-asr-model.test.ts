@@ -1,10 +1,20 @@
 import assert from 'node:assert/strict'
-import { execFileSync } from 'node:child_process'
+import { type ChildProcessWithoutNullStreams, execFileSync, spawn } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync
+} from 'node:fs'
 import { tmpdir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { basename, dirname, join } from 'node:path'
 import { type TestContext, test } from 'node:test'
+import { fileURLToPath } from 'node:url'
 import { resolveAsrModelPaths, tryRecognizerConfig } from '../src/asr-recognizer'
 import { QWEN3_ASR_DIR, WHISPER_TINY_DIR } from '../src/asr-tiers'
 import { classifyTranscriptionFailure } from '../src/errors'
@@ -99,6 +109,120 @@ const writeMarker = (modelsDir: string, name = archiveName): void => {
   const marker = markerPath(modelsDir, name)
   mkdirSync(dirname(marker), { recursive: true })
   writeFileSync(marker, 'ok')
+}
+
+const assertNoStagingLeftovers = (archivePath: string): void => {
+  const directory = dirname(archivePath)
+  const name = basename(archivePath)
+  assert.equal(existsSync(`${archivePath}.staging`), false)
+  assert.equal(existsSync(`${archivePath}.lock`), false)
+  if (!existsSync(directory)) {
+    return
+  }
+  const leftovers = readdirSync(directory).filter(
+    (entry) =>
+      entry === `${name}.staging` ||
+      entry.startsWith(`${name}.staging.`) ||
+      entry === `${name}.lock` ||
+      entry.startsWith(`${name}.lock.`)
+  )
+  assert.deepEqual(leftovers, [])
+}
+
+const offlineFetch = (): { calls: string[]; fetchImpl: typeof fetch } => {
+  const calls: string[] = []
+  const fetchImpl: typeof fetch = async (input, init) => {
+    const method = init?.method ?? 'GET'
+    calls.push(`${method} ${String(input)}`)
+    if (method === 'HEAD') {
+      return new Response(null, { status: 200 })
+    }
+    throw new Error('download unavailable')
+  }
+  return { calls, fetchImpl }
+}
+
+const resolveTsx = (): string => {
+  const here = dirname(fileURLToPath(import.meta.url))
+  const candidates = [
+    join(here, '../../../node_modules/.pnpm/node_modules/.bin/tsx'),
+    join(here, '../../../node_modules/.bin/tsx')
+  ]
+  const found = candidates.find((candidate) => existsSync(candidate))
+  if (!found) {
+    throw new Error('tsx is required to spawn archive overlap processes')
+  }
+  return found
+}
+
+interface OverlapProcess {
+  child: ChildProcessWithoutNullStreams
+  done: Promise<{ code: number | null; stderr: string; stdout: string }>
+  output: () => string
+}
+
+const startOverlapProcess = (
+  role: 'leader' | 'follower',
+  modelsDir: string,
+  gate: string
+): OverlapProcess => {
+  const stdout: Buffer[] = []
+  const stderr: Buffer[] = []
+  const child = spawn(
+    resolveTsx(),
+    [join(dirname(fileURLToPath(import.meta.url)), 'qwen3-archive-overlap-child.ts')],
+    {
+      env: {
+        ...process.env,
+        VIDBEE_QWEN_OVERLAP_GATE: gate,
+        VIDBEE_QWEN_OVERLAP_MODELS: modelsDir,
+        VIDBEE_QWEN_OVERLAP_ROLE: role,
+        VIDBEE_QWEN_OVERLAP_URL: archiveUrl
+      },
+      stdio: ['ignore', 'pipe', 'pipe']
+    }
+  )
+  child.stdout.on('data', (chunk: Buffer) => {
+    stdout.push(chunk)
+  })
+  child.stderr.on('data', (chunk: Buffer) => {
+    stderr.push(chunk)
+  })
+  const done = new Promise<{ code: number | null; stderr: string; stdout: string }>(
+    (resolve, reject) => {
+      child.once('error', reject)
+      child.once('close', (code) => {
+        resolve({
+          code,
+          stderr: Buffer.concat(stderr).toString('utf8'),
+          stdout: Buffer.concat(stdout).toString('utf8')
+        })
+      })
+    }
+  )
+  return {
+    child,
+    done,
+    output: () =>
+      `${Buffer.concat(stderr).toString('utf8')}\n${Buffer.concat(stdout).toString('utf8')}`
+  }
+}
+
+const waitForOverlapFile = async (path: string, process: OverlapProcess): Promise<string> => {
+  const deadline = Date.now() + 20_000
+  while (Date.now() < deadline) {
+    if (existsSync(path)) {
+      return readFileSync(path, 'utf8').trim()
+    }
+    if (process.child.exitCode !== null) {
+      const result = await process.done
+      throw new Error(
+        `overlap process exited ${result.code} before ${path}\n${result.stderr}\n${result.stdout}`
+      )
+    }
+    await new Promise((resolve) => setTimeout(resolve, 20))
+  }
+  throw new Error(`timed out waiting for ${path}\n${process.output()}`)
 }
 
 test('Qwen3 tokenizer requirements are pinned to the 2026-03-25 package', () => {
@@ -218,7 +342,7 @@ test('a stale marker and partial extract are not skipped, and a bad archive is i
   assert.equal(manager.pathByRole('asr-tokenizer', 'quality'), null)
   assert.equal(existsSync(markerPath(modelsDir)), false)
   assert.equal(existsSync(archivePath), false)
-  assert.equal(existsSync(`${archivePath}.staging`), false)
+  assertNoStagingLeftovers(archivePath)
   assert.ok(calls.some((call) => call.startsWith(`GET ${archiveUrl}`)))
   assert.equal(readFileSync(sibling, 'utf8'), 'keep another model')
   assert.equal(readFileSync(join(modelsDir, 'silero_vad.onnx'), 'utf8'), 'keep shared VAD')
@@ -284,7 +408,7 @@ test('interrupted extraction stays incomplete, then a later archive can be publi
   assert.equal(readFileSync(join(root, 'tokenizer', 'merges.txt'), 'utf8'), mergesBody)
   assert.equal(readFileSync(markerPath(modelsDir), 'utf8'), 'ok')
   assert.equal(readFileSync(sibling, 'utf8'), 'keep another model')
-  assert.equal(existsSync(`${join(modelsDir, '.downloads', archiveName)}.staging`), false)
+  assertNoStagingLeftovers(join(modelsDir, '.downloads', archiveName))
 })
 
 test('a complete tokenizer replacement is reused and does not download', async (t) => {
@@ -365,7 +489,120 @@ test('whisper archives are validated in staging before the extracted marker is w
   assert.equal(readFileSync(join(root, 'tiny-tokens.txt'), 'utf8'), 'tokens')
   assert.equal(existsSync(join(root, 'tiny-encoder.onnx')), false)
   assert.equal(readFileSync(markerPath(modelsDir, whisperArchive), 'utf8'), 'ok')
-  assert.equal(existsSync(`${join(modelsDir, '.downloads', whisperArchive)}.staging`), false)
+  assertNoStagingLeftovers(join(modelsDir, '.downloads', whisperArchive))
+})
+
+test('overlapping model managers keep a cached Qwen archive', { timeout: 30_000 }, async (t) => {
+  const modelsDir = modelsDirFor(t)
+  const root = seedPartialTokenizer(modelsDir)
+  const archivePath = join(modelsDir, '.downloads', archiveName)
+  mkdirSync(dirname(archivePath), { recursive: true })
+  const archived = goodArchive(t)
+  writeFileSync(archivePath, archived)
+  let releaseLeader = (): void => undefined
+  const leaderHold = new Promise<void>((resolve) => {
+    releaseLeader = resolve
+  })
+  let leaderStaging = ''
+  let leaderStaged = (): void => undefined
+  const leaderReady = new Promise<void>((resolve) => {
+    leaderStaged = resolve
+  })
+  const { calls, fetchImpl } = offlineFetch()
+  const options = {
+    modelsDir,
+    catalog: qualityCatalog(),
+    fetchImpl,
+    preferChina: false as const,
+    resolveUrls: () => [archiveUrl]
+  }
+  const leader = new ModelManager({
+    ...options,
+    afterArchiveStaged: async (staging) => {
+      leaderStaging = staging
+      leaderStaged()
+      await leaderHold
+    }
+  })
+  const follower = new ModelManager({
+    ...options,
+    afterArchiveStaged: (staging) => {
+      assert.notEqual(staging, leaderStaging)
+      assert.equal(existsSync(join(leaderStaging, QWEN3_ASR_DIR, 'encoder.int8.onnx')), true)
+      assert.equal(existsSync(join(staging, QWEN3_ASR_DIR, 'encoder.int8.onnx')), true)
+      assert.equal(statSync(archivePath).size, archived.length)
+    }
+  })
+  const leaderRun = leader.ensureReady(quality)
+  let leaderStatus: Awaited<ReturnType<ModelManager['ensureReady']>>
+  try {
+    await leaderReady
+    const followerStatus = await follower.ensureReady(quality)
+    assert.equal(followerStatus.ready, true)
+    assert.equal(existsSync(join(leaderStaging, QWEN3_ASR_DIR, 'encoder.int8.onnx')), true)
+    assert.equal(statSync(archivePath).size, archived.length)
+    releaseLeader()
+    leaderStatus = await leaderRun
+  } finally {
+    releaseLeader()
+  }
+  assert.equal(leaderStatus.ready, true)
+  assert.equal(readFileSync(join(root, 'tokenizer', 'vocab.json'), 'utf8'), vocabBody)
+  assert.equal(readFileSync(join(root, 'tokenizer', 'merges.txt'), 'utf8'), mergesBody)
+  assert.equal(readFileSync(join(root, 'encoder.int8.onnx'), 'utf8'), encoderBody)
+  assert.equal(readFileSync(markerPath(modelsDir), 'utf8'), 'ok')
+  assert.equal(statSync(archivePath).size, archived.length)
+  assert.equal(
+    calls.some((call) => call.startsWith('GET ')),
+    false
+  )
+  assertNoStagingLeftovers(archivePath)
+})
+
+test('overlapping model manager processes keep a cached Qwen archive', {
+  timeout: 40_000
+}, async (t) => {
+  const modelsDir = modelsDirFor(t)
+  const root = seedPartialTokenizer(modelsDir)
+  const archivePath = join(modelsDir, '.downloads', archiveName)
+  mkdirSync(dirname(archivePath), { recursive: true })
+  const archived = goodArchive(t)
+  writeFileSync(archivePath, archived)
+  const gate = mkdtempSync(join(tmpdir(), 'vidbee-qwen3-overlap-'))
+  t.after(() => rmSync(gate, { recursive: true, force: true }))
+  const processes: OverlapProcess[] = []
+  t.after(() => {
+    for (const overlap of processes) {
+      if (overlap.child.exitCode === null) {
+        overlap.child.kill('SIGKILL')
+      }
+    }
+  })
+  const leader = startOverlapProcess('leader', modelsDir, gate)
+  processes.push(leader)
+  const leaderStaging = await waitForOverlapFile(join(gate, 'leader-staging'), leader)
+  const follower = startOverlapProcess('follower', modelsDir, gate)
+  processes.push(follower)
+  const followerStaging = await waitForOverlapFile(join(gate, 'follower-staging'), follower)
+  assert.notEqual(leaderStaging, followerStaging)
+  assert.equal(existsSync(join(leaderStaging, QWEN3_ASR_DIR, 'encoder.int8.onnx')), true)
+  assert.equal(existsSync(join(followerStaging, QWEN3_ASR_DIR, 'encoder.int8.onnx')), true)
+  assert.equal(statSync(archivePath).size, archived.length)
+  writeFileSync(join(gate, 'release'), 'go')
+  const [leaderResult, followerResult] = await Promise.all([leader.done, follower.done])
+  assert.equal(leaderResult.code, 0, `${leaderResult.stderr}\n${leaderResult.stdout}`)
+  assert.equal(followerResult.code, 0, `${followerResult.stderr}\n${followerResult.stdout}`)
+  const calls = [
+    readFileSync(join(gate, 'leader-calls'), 'utf8'),
+    readFileSync(join(gate, 'follower-calls'), 'utf8')
+  ].join('\n')
+  assert.equal(calls.includes('GET '), false)
+  assert.equal(statSync(archivePath).size, archived.length)
+  assert.equal(readFileSync(join(root, 'tokenizer', 'vocab.json'), 'utf8'), vocabBody)
+  assert.equal(readFileSync(join(root, 'tokenizer', 'merges.txt'), 'utf8'), mergesBody)
+  assert.equal(readFileSync(join(root, 'encoder.int8.onnx'), 'utf8'), encoderBody)
+  assert.equal(readFileSync(markerPath(modelsDir), 'utf8'), 'ok')
+  assertNoStagingLeftovers(archivePath)
 })
 
 test('incomplete model errors stay explicit for transcription', () => {

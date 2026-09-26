@@ -1,10 +1,11 @@
 import { execFile } from 'node:child_process'
-import { createHash } from 'node:crypto'
+import { createHash, randomBytes } from 'node:crypto'
 import {
   createWriteStream,
   existsSync,
   mkdirSync,
   readdirSync,
+  readFileSync,
   renameSync,
   rmSync,
   statSync,
@@ -39,6 +40,11 @@ export interface ModelManagerOptions {
   resolveUrls?: (spec: ModelFileSpec) => readonly string[]
   /** Per-URL header timeout so a blocked GitHub host does not sit at 0%. */
   attemptTimeoutMs?: number
+  /**
+   * Test seam. Runs after this attempt's files are in its private staging
+   * directory and before publication, so tests can overlap two managers.
+   */
+  afterArchiveStaged?: (stagingDir: string) => void | Promise<void>
 }
 
 export interface EnsureReadyOptions {
@@ -81,6 +87,161 @@ export const modelPartPath = (dest: string): string => `${dest}.part.${process.p
 export const removeModelPartFiles = (dest: string): void => {
   rmSync(`${dest}.part`, { force: true })
   rmSync(modelPartPath(dest), { force: true })
+}
+
+const ARCHIVE_LOCK_WAIT_MS = 60_000
+const ARCHIVE_LOCK_POLL_MS = 25
+/** A lock directory with no pid file is still being created for this long. */
+const ARCHIVE_LOCK_FRESH_MS = 2000
+
+const sleep = (ms: number): Promise<void> =>
+  new Promise((resolve) => {
+    setTimeout(resolve, ms)
+  })
+
+const errorCode = (error: unknown): string | undefined => {
+  if (!error || typeof error !== 'object' || !('code' in error)) {
+    return undefined
+  }
+  const code = (error as { code: unknown }).code
+  return typeof code === 'string' ? code : undefined
+}
+
+/**
+ * `process.kill(pid, 0)` probes liveness. EPERM means the process exists.
+ */
+const isProcessAlive = (pid: number): boolean => {
+  if (!Number.isInteger(pid) || pid <= 0) {
+    return false
+  }
+  try {
+    process.kill(pid, 0)
+    return true
+  } catch (error) {
+    return errorCode(error) !== 'ESRCH'
+  }
+}
+
+/**
+ * Staging directory owned by one extract attempt. The desktop host and the
+ * transcription worker are separate processes and must not share `<archive>.staging`.
+ */
+const archiveAttemptStagingPath = (archivePath: string): string =>
+  `${archivePath}.staging.${process.pid}.${randomBytes(6).toString('hex')}`
+
+const listAttemptStaging = (archivePath: string): string[] => {
+  const directory = dirname(archivePath)
+  if (!existsSync(directory)) {
+    return []
+  }
+  const prefix = `${basename(archivePath)}.staging.`
+  return readdirSync(directory)
+    .filter((entry) => entry.startsWith(prefix))
+    .map((entry) => join(directory, entry))
+}
+
+const stagingOwnerPid = (stagingPath: string): number | null => {
+  const match = /\.staging\.(\d+)\.[0-9a-f]+$/.exec(basename(stagingPath))
+  if (!match?.[1]) {
+    return null
+  }
+  const pid = Number(match[1])
+  return Number.isInteger(pid) && pid > 0 ? pid : null
+}
+
+const stagingProcessAlive = (stagingPath: string): boolean => {
+  const pid = stagingOwnerPid(stagingPath)
+  // An unrecognized directory is treated as live so we do not delete it.
+  return pid === null || isProcessAlive(pid)
+}
+
+/** Drop staging directories left by crashed processes. Live attempts stay. */
+const removeStaleAttemptStaging = (archivePath: string): void => {
+  for (const stagingPath of listAttemptStaging(archivePath)) {
+    if (!stagingProcessAlive(stagingPath)) {
+      rmSync(stagingPath, { recursive: true, force: true })
+    }
+  }
+}
+
+const liveAttemptStaging = (archivePath: string): string[] =>
+  listAttemptStaging(archivePath).filter((stagingPath) => stagingProcessAlive(stagingPath))
+
+const readLockPid = (lockDir: string): number => {
+  try {
+    const pid = Number(readFileSync(join(lockDir, 'pid'), 'utf8').trim())
+    return Number.isInteger(pid) && pid > 0 ? pid : 0
+  } catch {
+    return 0
+  }
+}
+
+const lockAgeMs = (lockDir: string): number => {
+  try {
+    return Date.now() - statSync(lockDir).mtimeMs
+  } catch {
+    return Number.POSITIVE_INFINITY
+  }
+}
+
+const lockOwnerPending = (lockDir: string): boolean =>
+  readLockPid(lockDir) === 0 && lockAgeMs(lockDir) < ARCHIVE_LOCK_FRESH_MS
+
+/**
+ * Cross-process mutex around archive publication and deletion. `mkdir` is
+ * atomic. The pid file lets a later caller steal a lock left by a crash
+ * without removing a lock a live manager still holds.
+ */
+const acquireArchiveLock = async (lockDir: string): Promise<void> => {
+  const deadline = Date.now() + ARCHIVE_LOCK_WAIT_MS
+  mkdirSync(dirname(lockDir), { recursive: true })
+  for (;;) {
+    try {
+      mkdirSync(lockDir)
+    } catch (error) {
+      if (errorCode(error) !== 'EEXIST') {
+        throw error
+      }
+      const pid = readLockPid(lockDir)
+      if (lockOwnerPending(lockDir) || isProcessAlive(pid)) {
+        if (Date.now() > deadline) {
+          throw new Error(`timed out waiting for model archive lock ${basename(lockDir)}`)
+        }
+        await sleep(ARCHIVE_LOCK_POLL_MS)
+        continue
+      }
+      const doomed = `${lockDir}.stale.${process.pid}.${randomBytes(4).toString('hex')}`
+      try {
+        const current = readLockPid(lockDir)
+        if (
+          current !== pid ||
+          isProcessAlive(current) ||
+          (current === 0 && lockAgeMs(lockDir) < ARCHIVE_LOCK_FRESH_MS)
+        ) {
+          continue
+        }
+        renameSync(lockDir, doomed)
+      } catch {
+        continue
+      }
+      rmSync(doomed, { recursive: true, force: true })
+      continue
+    }
+    try {
+      writeFileSync(join(lockDir, 'pid'), `${process.pid}\n`)
+      return
+    } catch (error) {
+      rmSync(lockDir, { recursive: true, force: true })
+      throw error
+    }
+  }
+}
+
+const releaseArchiveLock = (lockDir: string): void => {
+  if (readLockPid(lockDir) !== process.pid) {
+    return
+  }
+  rmSync(lockDir, { recursive: true, force: true })
 }
 
 /**
@@ -156,6 +317,7 @@ export class ModelManager {
   private readonly preferChinaOption?: boolean | (() => boolean)
   private readonly resolveUrls?: (spec: ModelFileSpec) => readonly string[]
   private readonly attemptTimeoutMs: number
+  private readonly afterArchiveStaged?: (stagingDir: string) => void | Promise<void>
   private readonly inflight = new Map<string, Promise<void>>()
   private readonly downloadProgressByKey = new Map<string, ModelDownloadProgress>()
   private readonly ensureCounts = new Map<AsrTierId, number>()
@@ -171,6 +333,7 @@ export class ModelManager {
     this.preferChinaOption = opts.preferChina
     this.resolveUrls = opts.resolveUrls
     this.attemptTimeoutMs = opts.attemptTimeoutMs ?? 15_000
+    this.afterArchiveStaged = opts.afterArchiveStaged
     mkdirSync(this.modelsDir, { recursive: true })
   }
 
@@ -617,33 +780,40 @@ export class ModelManager {
   ): Promise<void> {
     throwIfAborted(signal, spec.tier)
     const url = spec.url
-    const { archivePath, marker, staging } = this.archiveLocations(url)
+    const { archivePath, marker } = this.archiveLocations(url)
     mkdirSync(dirname(archivePath), { recursive: true })
-    if (this.archiveOutputReady(url)) {
-      writeFileSync(marker, 'ok')
-      return
-    }
     // A stale marker must not skip validation. Partial files stay until a
     // staged tree validates and replaces them.
-    this.invalidateExtract(archivePath, marker, staging, false)
+    if (await this.prepareArchiveAttempt(url, archivePath, marker)) {
+      return
+    }
     const expected = await this.remoteContentLength(url, signal)
     if (this.reusableArchive(archivePath, expected)) {
       try {
-        await this.extractPublishedArchive(url, archivePath, staging, marker, spec.tier, signal)
+        await this.extractPublishedArchive(url, archivePath, marker, spec.tier, signal)
         return
       } catch (error) {
         this.rethrowArchiveAbort(error, signal, spec.tier)
-        this.invalidateExtract(archivePath, marker, staging, true)
+        await this.discardFailedArchive(url, archivePath, marker)
+        if (this.archiveOutputReady(url)) {
+          return
+        }
       }
     } else {
-      this.invalidateExtract(archivePath, marker, staging, true)
+      await this.discardFailedArchive(url, archivePath, marker)
+      if (this.archiveOutputReady(url)) {
+        return
+      }
     }
     await this.downloadUrl(url, archivePath, undefined, spec.tier, signal)
     try {
-      await this.extractPublishedArchive(url, archivePath, staging, marker, spec.tier, signal)
+      await this.extractPublishedArchive(url, archivePath, marker, spec.tier, signal)
     } catch (error) {
       this.rethrowArchiveAbort(error, signal, spec.tier)
-      this.invalidateExtract(archivePath, marker, staging, true)
+      await this.discardFailedArchive(url, archivePath, marker)
+      if (this.archiveOutputReady(url)) {
+        return
+      }
       const message = error instanceof Error ? error.message : String(error)
       if (message.startsWith(INCOMPLETE_MODEL_ERROR)) {
         throw error instanceof Error ? error : new Error(message)
@@ -671,12 +841,11 @@ export class ModelManager {
     return { present: info.present, bytes: info.bytes, issue: null }
   }
 
-  private archiveLocations(url: string): { archivePath: string; marker: string; staging: string } {
+  private archiveLocations(url: string): { archivePath: string; marker: string } {
     const archivePath = join(this.modelsDir, '.downloads', archiveFileName(url))
     return {
       archivePath,
-      marker: `${archivePath}.extracted`,
-      staging: `${archivePath}.staging`
+      marker: `${archivePath}.extracted`
     }
   }
 
@@ -702,45 +871,85 @@ export class ModelManager {
   }
 
   /**
-   * Drop a stale marker and staging dir. Delete the archive only after it
-   * failed to produce a valid tree, so the next attempt does not reuse it.
-   * Partial published files are replaced by `publishStagedArchive`.
+   * Serialize publication and archive deletion across ModelManager instances.
+   * The in-memory inflight map does not cover the desktop host and the worker.
    */
-  private invalidateExtract(
-    archivePath: string,
-    marker: string,
-    staging: string,
-    deleteArchive: boolean
-  ): void {
-    rmSync(marker, { force: true })
-    rmSync(staging, { recursive: true, force: true })
-    if (!deleteArchive) {
-      return
+  private async withArchiveLock<T>(archivePath: string, body: () => T | Promise<T>): Promise<T> {
+    const lockDir = `${archivePath}.lock`
+    await acquireArchiveLock(lockDir)
+    try {
+      return await body()
+    } finally {
+      releaseArchiveLock(lockDir)
     }
-    rmSync(archivePath, { force: true })
-    removeModelPartFiles(archivePath)
+  }
+
+  /**
+   * Drop a stale marker unless another attempt already published a valid tree.
+   * Returns true when this caller should not extract.
+   */
+  private async prepareArchiveAttempt(
+    url: string,
+    archivePath: string,
+    marker: string
+  ): Promise<boolean> {
+    return this.withArchiveLock(archivePath, () => {
+      removeStaleAttemptStaging(archivePath)
+      if (this.archiveOutputReady(url)) {
+        writeFileSync(marker, 'ok')
+        return true
+      }
+      rmSync(marker, { force: true })
+      return false
+    })
+  }
+
+  /**
+   * Delete an archive that failed to produce a valid tree. A live peer's
+   * staging directory and a tree someone else just published are left alone.
+   */
+  private async discardFailedArchive(
+    url: string,
+    archivePath: string,
+    marker: string
+  ): Promise<void> {
+    await this.withArchiveLock(archivePath, () => {
+      removeStaleAttemptStaging(archivePath)
+      if (this.archiveOutputReady(url)) {
+        writeFileSync(marker, 'ok')
+        return
+      }
+      rmSync(marker, { force: true })
+      if (liveAttemptStaging(archivePath).length > 0) {
+        return
+      }
+      rmSync(archivePath, { force: true })
+      removeModelPartFiles(archivePath)
+    })
   }
 
   private async extractPublishedArchive(
     url: string,
     archivePath: string,
-    staging: string,
     marker: string,
     tier: AsrTierId | undefined,
     signal?: AbortSignal
   ): Promise<void> {
-    rmSync(staging, { recursive: true, force: true })
+    const staging = archiveAttemptStagingPath(archivePath)
     mkdirSync(staging, { recursive: true })
     try {
       await execFileAsync('tar', ['-xjf', archivePath, '-C', staging], signal ? { signal } : {})
       throwIfAborted(signal, tier)
+      if (this.afterArchiveStaged) {
+        await this.afterArchiveStaged(staging)
+        throwIfAborted(signal, tier)
+      }
       this.pruneWhisperFp32(url, staging)
       const issue = this.stagedArchiveIssue(url, staging)
       if (issue) {
         throw new Error(issue)
       }
-      this.publishStagedArchive(url, staging)
-      writeFileSync(marker, 'ok')
+      await this.publishStagedArchive(url, staging, archivePath, marker)
     } finally {
       rmSync(staging, { recursive: true, force: true })
     }
@@ -760,22 +969,37 @@ export class ModelManager {
     return null
   }
 
-  /** Move validated top-level archive directories into the models directory. */
-  private publishStagedArchive(url: string, staging: string): void {
-    const roots = new Set<string>()
-    for (const spec of this.specsSharingArchive(url)) {
-      const parts = spec.fileName.split(/[/\\]/).filter(Boolean)
-      roots.add(parts[0] ?? spec.fileName)
-    }
-    for (const root of roots) {
-      const from = join(staging, root)
-      const to = join(this.modelsDir, root)
-      if (!existsSync(from)) {
-        throw new Error(`${INCOMPLETE_MODEL_ERROR}: archive did not contain ${root}`)
+  /**
+   * Move validated top-level archive directories into the models directory.
+   * If another attempt already published a valid tree, leave that tree in place.
+   */
+  private async publishStagedArchive(
+    url: string,
+    staging: string,
+    archivePath: string,
+    marker: string
+  ): Promise<void> {
+    await this.withArchiveLock(archivePath, () => {
+      if (this.archiveOutputReady(url)) {
+        writeFileSync(marker, 'ok')
+        return
       }
-      rmSync(to, { recursive: true, force: true })
-      renameSync(from, to)
-    }
+      const roots = new Set<string>()
+      for (const spec of this.specsSharingArchive(url)) {
+        const parts = spec.fileName.split(/[/\\]/).filter(Boolean)
+        roots.add(parts[0] ?? spec.fileName)
+      }
+      for (const root of roots) {
+        const from = join(staging, root)
+        const to = join(this.modelsDir, root)
+        if (!existsSync(from)) {
+          throw new Error(`${INCOMPLETE_MODEL_ERROR}: archive did not contain ${root}`)
+        }
+        rmSync(to, { recursive: true, force: true })
+        renameSync(from, to)
+      }
+      writeFileSync(marker, 'ok')
+    })
   }
 
   private rethrowArchiveAbort(
