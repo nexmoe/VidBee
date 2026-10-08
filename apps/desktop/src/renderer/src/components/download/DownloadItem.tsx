@@ -438,25 +438,14 @@ export function DownloadItem({
     }
   }
 
+  /** Remove the resolved file and its record even if another action already deleted the file. */
   const handleDeleteFile = async () => {
     try {
-      const downloadPath = download.downloadPath || settings.downloadPath
-      if (!(downloadPath && download.title)) {
+      if (!existingFilePath) {
         toast.error(t('notifications.removeFailed'))
         return
       }
-
-      const format = resolvedExtension
-      const filePaths = buildFilePathCandidates(
-        downloadPath,
-        download.title,
-        format,
-        download.savedFileName
-      )
-
-      const deleted = await tryFileOperation(filePaths, (filePath) =>
-        ipcServices.fs.deleteFile(filePath)
-      )
+      const deleted = await ipcServices.fs.deleteFile(existingFilePath, true)
 
       if (!deleted) {
         toast.error(t('notifications.removeFailed'))
@@ -464,6 +453,7 @@ export function DownloadItem({
       }
 
       setFileExists(false)
+      setExistingFilePath(null)
       if (
         isHistory ||
         download.status === 'completed' ||

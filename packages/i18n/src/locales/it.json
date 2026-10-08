@@ -992,9 +992,7 @@
       "off": "Disattivato",
       "ask": "Chiedi prima",
       "auto": "Consenti automaticamente"
-    },
-    "agentMaxConcurrentRuns": "Esecuzioni locali contemporanee",
-    "agentMaxConcurrentRunsDescription": "Quante conversazioni dell’agente con modello locale possono essere attive insieme"
+    }
   },
   "subscriptions": {
     "title": "Abbonamenti",

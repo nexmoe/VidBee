@@ -14,7 +14,7 @@ import { mediaFileDialogFilters } from '../../lib/import-local-media'
 import {
   markdownToPrintableHtml,
   printHtmlToPdf,
-  withVidBeeExportFooter
+  withVidBeeExportAttribution
 } from '../../lib/markdown-pdf'
 import { captureShareCardPages } from '../../lib/share-capture-window'
 import { saveSplitShareImageFiles } from '../../lib/share-image-split'
@@ -150,7 +150,7 @@ class FileSystemService extends IpcService {
     const normalizedPath = path.normalize(this.sanitizePath(result.filePath))
     let content = await markdownWithEmbeddedImages(options.content, options.threadId)
     if (options.threadId) {
-      content = withVidBeeExportFooter(content)
+      content = withVidBeeExportAttribution(content)
     }
     await fs.writeFile(normalizedPath, content, 'utf8')
     return { path: normalizedPath }
@@ -690,8 +690,9 @@ class FileSystemService extends IpcService {
     }
   }
 
+  /** Delete a resolved path; optionally treat an already removed file as successful cleanup. */
   @IpcMethod()
-  async deleteFile(_context: IpcContext, filePath: string): Promise<boolean> {
+  async deleteFile(_context: IpcContext, filePath: string, allowMissing = false): Promise<boolean> {
     try {
       if (!filePath) {
         return false
@@ -709,7 +710,7 @@ class FileSystemService extends IpcService {
       })
 
       if (!stats) {
-        return false
+        return allowMissing
       }
 
       if (stats.isFile()) {

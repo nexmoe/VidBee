@@ -992,9 +992,7 @@
       "off": "關閉",
       "ask": "先詢問",
       "auto": "自動允許"
-    },
-    "agentMaxConcurrentRuns": "本機智慧體並行數",
-    "agentMaxConcurrentRunsDescription": "使用本機模型時，最多可同時執行幾段智慧體對話"
+    }
   },
   "subscriptions": {
     "title": "訂閱",

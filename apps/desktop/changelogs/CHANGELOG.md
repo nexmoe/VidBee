@@ -3,6 +3,14 @@
 This page only includes user-visible updates and avoids implementation details.
 For full release notes, see [GitHub Releases](https://github.com/nexmoe/VidBee/releases).
 
+## [Unreleased]
+
+### Fixed
+- Prevent duplicate downloads, including simultaneous requests and files already saved on this computer.
+- Keep transcription queues moving and preserve elapsed times after reloading the app.
+- Preserve agent reasoning history and improve Markdown PDF exports.
+- Remove download records reliably when their saved files have already been deleted.
+
 ## [v2.1.0](https://github.com/nexmoe/VidBee/releases/tag/v2.1.0) - 2026-08-30
 
 ### What's New

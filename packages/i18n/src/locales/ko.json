@@ -992,9 +992,7 @@
       "off": "끔",
       "ask": "먼저 묻기",
       "auto": "자동 허용"
-    },
-    "agentMaxConcurrentRuns": "로컬 에이전트 동시 실행",
-    "agentMaxConcurrentRunsDescription": "로컬 모델을 쓸 때 동시에 실행할 수 있는 에이전트 대화 수"
+    }
   },
   "subscriptions": {
     "title": "구독",

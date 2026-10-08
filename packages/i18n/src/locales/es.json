@@ -992,9 +992,7 @@
       "off": "Desactivado",
       "ask": "Preguntar primero",
       "auto": "Permitir automáticamente"
-    },
-    "agentMaxConcurrentRuns": "Ejecuciones locales simultáneas",
-    "agentMaxConcurrentRunsDescription": "Cuántas conversaciones del agente con modelo local pueden ejecutarse a la vez"
+    }
   },
   "subscriptions": {
     "title": "Suscripciones",

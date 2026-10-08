@@ -992,9 +992,7 @@
       "off": "Mati",
       "ask": "Tanya dulu",
       "auto": "Izinkan otomatis"
-    },
-    "agentMaxConcurrentRuns": "Jalankan agen lokal bersamaan",
-    "agentMaxConcurrentRunsDescription": "Berapa percakapan agen dengan model lokal yang boleh berjalan sekaligus"
+    }
   },
   "subscriptions": {
     "title": "Berlangganan",

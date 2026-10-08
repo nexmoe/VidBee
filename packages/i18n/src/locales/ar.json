@@ -992,9 +992,7 @@
       "off": "إيقاف",
       "ask": "اسأل أولاً",
       "auto": "السماح تلقائيًا"
-    },
-    "agentMaxConcurrentRuns": "تشغيلات الوكيل المحلية المتزامنة",
-    "agentMaxConcurrentRunsDescription": "كم محادثة وكيل بنموذج محلي يمكن أن تعمل في الوقت نفسه"
+    }
   },
   "subscriptions": {
     "title": "الاشتراكات",

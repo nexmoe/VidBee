@@ -38,19 +38,19 @@ const toolIcons = {
 export function eventRows(message: AgentChatMessage, run?: AgentChatRun): AgentActivity[] {
   const activity = run?.activity?.length
     ? run.activity
-    : [
-        ...(message.thinking.trim()
-          ? [{ id: 'thinking', kind: 'thinking' as const, text: message.thinking }]
-          : []),
-        ...(run?.tools.map((tool) => ({
-          id: tool.id,
-          kind: 'tool' as const,
-          toolId: tool.id,
-          name: tool.name,
-          artifactIds: []
-        })) ?? [])
-      ]
-  return activity.flatMap((event) =>
+    : (run?.tools.map((tool) => ({
+        id: tool.id,
+        kind: 'tool' as const,
+        toolId: tool.id,
+        name: tool.name,
+        artifactIds: []
+      })) ?? [])
+  const hasThinking = activity.some((event) => event.kind === 'thinking' && event.text.trim())
+  const events: AgentActivity[] =
+    !hasThinking && message.thinking.trim()
+      ? [{ id: 'thinking', kind: 'thinking', text: message.thinking }, ...activity]
+      : activity
+  return events.flatMap((event) =>
     event.kind === 'thinking'
       ? event.text
           .split(/\n\s*\n/)

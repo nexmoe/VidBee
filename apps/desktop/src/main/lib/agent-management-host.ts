@@ -141,33 +141,11 @@ export async function createAgentTask(
     throw new Error('Media tasks require a URL and video/audio kind')
   }
   const url = webUrl(input.url)
-  /** Recheck after asynchronous metadata resolution to avoid concurrent duplicate additions. */
-  const existingTask = () => {
-    let cursor: string | null = null
-    do {
-      const page = queue.list({ kind: kind === 'audio' ? 'audio' : 'video', limit: 200, cursor })
-      const existing = page.tasks.find(
-        (task) =>
-          task.input.url === url &&
-          (!input.format || task.input.options?.format === input.format) &&
-          (!input.container || task.input.options?.containerFormat === input.container)
-      )
-      if (existing) {
-        return existing
-      }
-      cursor = page.nextCursor
-    } while (cursor)
-    return undefined
-  }
-  const existing = existingTask()
-  if (existing) {
-    return { created: false, task: taskSummary(existing) }
-  }
   const settings = settingsManager.getAll()
   const id = randomUUID()
-  const prepared = await prepareDownloadTaskInput(id, {
+  const options = {
     url,
-    type: kind === 'audio' ? 'audio' : 'video',
+    type: kind === 'audio' ? ('audio' as const) : ('video' as const),
     title: input.title,
     format:
       input.format ??
@@ -176,17 +154,18 @@ export async function createAgentTask(
         : buildVideoFormatPreference(settings)),
     containerFormat:
       kind === 'video' ? (input.container ?? settings.oneClickContainer ?? 'auto') : undefined
-  })
-  signal?.throwIfAborted()
-  const concurrent = existingTask()
-  if (concurrent) {
-    return { created: false, task: taskSummary(concurrent) }
   }
+  const existing = queue.findDuplicateDownload({ url, kind: options.type, options })
+  if (existing) {
+    return { created: false, task: taskSummary(existing) }
+  }
+  const prepared = await prepareDownloadTaskInput(id, options)
+  signal?.throwIfAborted()
   const added = await queue.add({
     id,
     input: { ...prepared, options: { ...prepared.options, ...creation } }
   })
-  return { created: true, task: taskSummary(requireTask(added.id)) }
+  return { created: added.id === id, task: taskSummary(requireTask(added.id)) }
 }
 
 /** Rename an owned completed media file without overwriting another file or racing active readers. */

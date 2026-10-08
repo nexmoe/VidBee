@@ -992,9 +992,7 @@
       "off": "Kapalı",
       "ask": "Önce sor",
       "auto": "Otomatik izin ver"
-    },
-    "agentMaxConcurrentRuns": "Eşzamanlı yerel ajan çalıştırmaları",
-    "agentMaxConcurrentRunsDescription": "Yerel model kullanırken aynı anda kaç ajan konuşmasının çalışabileceği"
+    }
   },
   "subscriptions": {
     "title": "Abonelikler",

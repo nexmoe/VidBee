@@ -48,7 +48,7 @@ function MessageAction({
       <TooltipTrigger asChild>
         <Button
           aria-label={label}
-          className="h-6 w-6 justify-start rounded-md p-0 text-muted-foreground [&_svg]:size-3.5"
+          className="h-6 w-6 justify-center rounded-md p-0 text-muted-foreground [&_svg]:size-3.5"
           data-testid={testId}
           disabled={disabled}
           onClick={onClick}
@@ -287,7 +287,7 @@ export function AgentChatMessageView({
                   <DropdownMenuTrigger asChild>
                     <Button
                       aria-label={t('transcript.promptMore')}
-                      className="h-6 w-6 justify-start rounded-md p-0 text-muted-foreground [&_svg]:size-3.5"
+                      className="h-6 w-6 justify-center rounded-md p-0 text-muted-foreground [&_svg]:size-3.5"
                       data-testid="transcript-prompt-more"
                       size="icon"
                       type="button"

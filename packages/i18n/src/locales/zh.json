@@ -992,9 +992,7 @@
       "off": "关闭",
       "ask": "先询问",
       "auto": "自动允许"
-    },
-    "agentMaxConcurrentRuns": "本地智能体并发数",
-    "agentMaxConcurrentRunsDescription": "使用本地模型时，最多可同时运行几段智能体对话"
+    }
   },
   "subscriptions": {
     "title": "订阅",

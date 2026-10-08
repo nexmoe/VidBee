@@ -992,9 +992,7 @@
       "off": "Aus",
       "ask": "Zuerst fragen",
       "auto": "Automatisch erlauben"
-    },
-    "agentMaxConcurrentRuns": "Gleichzeitige lokale Agentenläufe",
-    "agentMaxConcurrentRunsDescription": "Wie viele Agentengespräche mit lokalem Modell gleichzeitig laufen dürfen"
+    }
   },
   "subscriptions": {
     "title": "Abonnements",

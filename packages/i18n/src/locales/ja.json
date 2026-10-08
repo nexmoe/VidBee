@@ -992,9 +992,7 @@
       "off": "オフ",
       "ask": "確認する",
       "auto": "自動で許可"
-    },
-    "agentMaxConcurrentRuns": "ローカルエージェントの同時実行数",
-    "agentMaxConcurrentRunsDescription": "ローカルモデル利用時に同時に実行できるエージェント会話の数"
+    }
   },
   "subscriptions": {
     "title": "定期購入",

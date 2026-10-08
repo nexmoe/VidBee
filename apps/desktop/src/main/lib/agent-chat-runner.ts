@@ -98,10 +98,6 @@ interface ActiveAgentRun {
 const active = new Map<string, ActiveAgentRun>()
 const cloudSlots = new AgentCloudSlots()
 const log = scopedLoggers.ai
-let cloudCapacity = {
-  concurrentStreams: CLOUD_AGENT_CONCURRENCY,
-  version: 2 as 2 | 3
-}
 
 /** Broadcast only committed product snapshots, never provider-private messages or secrets. */
 function broadcast(event: AgentRunEvent): void {
@@ -275,13 +271,6 @@ export function sendAgentMessage(input: AgentChatInput): AgentThread {
   }
   if (active.has(thread.id)) {
     throw new Error('This agent is already responding')
-  }
-  const provider = aiStore.getActiveProviderSecret()
-  const cap = provider
-    ? Math.min(4, Math.max(1, settingsManager.getAll().agentMaxConcurrentRuns ?? 2))
-    : cloudCapacity.concurrentStreams
-  if (active.size >= cap) {
-    throw new Error('Too many agents are already running. Stop one or wait for it to finish.')
   }
   const prompt = resolveAgentPrompt(thread.promptId)
   if (!getDesktopTaskQueueRef().get(input.downloadId)) {
@@ -513,7 +502,7 @@ export async function removeAgentImage(threadId: string, imageId: string): Promi
   return publicAgentThread(thread)
 }
 
-/** Fetch current serving capabilities for both the Composer and run admission. */
+/** Fetch current serving capabilities for the Composer and Cloud request scheduling. */
 async function loadCloudAgentProfile(signal?: AbortSignal, modelId = aiStore.getCloudModelId()) {
   const { authClient, getDesktopAuthApiUrl } = await import('./auth-client')
   const baseUrl = getDesktopAuthApiUrl()
@@ -528,16 +517,13 @@ async function loadCloudAgentProfile(signal?: AbortSignal, modelId = aiStore.get
   const payload: unknown = await response.json().catch(() => null)
   throwIfCloudProfileUnsupported(response.status, payload)
   if (!response.ok) {
-    throw new Error(
-      response.status === 401 ? 'Sign in required' : 'Cloud agent capabilities are unavailable'
-    )
+    if (response.status === 401) {
+      throw new AgentUserError('Sign in required')
+    }
+    throw new Error('Cloud agent capabilities are unavailable')
   }
   try {
     const capabilities = readAgentModelProfile(payload)
-    cloudCapacity = {
-      concurrentStreams: capabilities.limits.concurrentStreams,
-      version: capabilities.version
-    }
     cloudSlots.setLimit(capabilities.limits.concurrentStreams)
     return {
       baseUrl,

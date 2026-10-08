@@ -400,7 +400,7 @@
   "notifications": {
     "copyFailed": "Failed to copy to clipboard",
     "downloadCompleted": "Download completed",
-    "downloadAlreadyQueued": "This download is already in progress",
+    "downloadAlreadyQueued": "This download is already queued or downloaded",
     "downloadFailed": "Download failed",
     "historyCleared": "History cleared",
     "historyClearFailed": "Failed to clear history",
@@ -723,8 +723,6 @@
       "ask": "Ask first",
       "auto": "Allow automatically"
     },
-    "agentMaxConcurrentRuns": "Concurrent local agent runs",
-    "agentMaxConcurrentRunsDescription": "How many local-provider agent conversations can run at once",
     "none": "None",
     "oneClickDownload": "One-Click Download",
     "oneClickDownloadDescription": "Enable one-click download with default settings",
