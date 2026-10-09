@@ -876,6 +876,7 @@
       "testPlaceholder": "Komut çıktısı burada görünür",
       "presets": {
         "anthropic": "Anthropic",
+        "atlascloud": "Atlas Cloud",
         "azure": "Azure",
         "custom": "Custom",
         "deepseek": "Deepseek",

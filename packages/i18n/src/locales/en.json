@@ -846,6 +846,7 @@
       "presets": {
         "alibaba": "Alibaba Cloud",
         "anthropic": "Anthropic",
+        "atlascloud": "Atlas Cloud",
         "azure": "Azure",
         "custom": "Custom",
         "deepseek": "Deepseek",
