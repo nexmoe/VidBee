@@ -166,7 +166,10 @@ export function defineAgentTool<T extends TSchema>(
       executionSignal.throwIfAborted()
       const gate = requiredApproval(name, params)
       const pathGate = requiresInteractivePathApproval(name, params, context.downloadPath ?? '')
-      if ((gate || pathGate) && context.requestApproval) {
+      if (gate || pathGate) {
+        if (!context.requestApproval) {
+          return APPROVAL_DENIED_RESULT
+        }
         const request = gate ?? {
           action: 'subscription.update' as const,
           summary: 'Use a download folder outside the library',

@@ -48,6 +48,7 @@ interface TranscriptExportDialogProps {
   resolveSpeaker: (speakerId: string | null) => string
   segments: TranscriptSegmentView[]
   title: string
+  sourceUrl?: string | null
 }
 
 const STYLES: Array<{
@@ -83,7 +84,8 @@ export function TranscriptExportDialog({
   open,
   resolveSpeaker,
   segments,
-  title
+  title,
+  sourceUrl
 }: TranscriptExportDialogProps) {
   const { t } = useTranslation()
   const [style, setStyle] = useState<TranscriptExportStyle>('transcript')
@@ -154,7 +156,10 @@ export function TranscriptExportDialog({
     try {
       const saved = await ipcServices.fs.saveTextFile({
         content: preview,
-        defaultFileName: buildTranscriptExportFileName(title, format, style === 'subtitles')
+        defaultFileName: buildTranscriptExportFileName(title, format, style === 'subtitles'),
+        ...(format === 'md' && sourceUrl
+          ? { source: { url: sourceUrl, label: t('transcript.info.url') } }
+          : {})
       })
       if (!saved) {
         return

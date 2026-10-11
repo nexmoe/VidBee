@@ -159,6 +159,7 @@ export function TranscriptPromptPane({
   sourceCover,
   sourceByline,
   sourceTitle,
+  sourceUrl,
   sourceDurationMs = 0,
   transcriptRunning = false,
   transcriptText,
@@ -366,6 +367,7 @@ export function TranscriptPromptPane({
                         onShare={setShareMessageId}
                         overview={prompt.id === AI_OVERVIEW_PROMPT_ID && index <= 1}
                         sourceTitle={sourceTitle}
+                        sourceUrl={sourceUrl}
                         thread={thread}
                       />
                     </MessageScrollerItem>

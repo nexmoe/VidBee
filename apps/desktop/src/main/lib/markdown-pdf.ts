@@ -9,6 +9,11 @@ export interface MarkdownPdfWindow {
   }
 }
 
+export interface ExportVideoSource {
+  url: string
+  label?: string
+}
+
 const PRINT_PDF_OPTIONS = {
   margins: { bottom: 0.6, left: 0.6, right: 0.6, top: 0.6 },
   pageSize: 'A4' as const,
@@ -88,7 +93,7 @@ export const renderMarkdownInline = (text: string): string => {
   })
   html = html.replace(/\[([^\]]+)]\(([^)\s]+)\)/g, (_match, label: string, url: string) => {
     const href = safeHref(url)
-    return href ? `<a href="${escapeHtml(href)}">${label}</a>` : label
+    return href ? `<a href="${href.replaceAll('"', '&quot;')}">${label}</a>` : label
   })
   html = html.replace(
     /\*\*(.+?)\*\*|__(.+?)__/g,
@@ -291,6 +296,19 @@ const PRINT_STYLES = `
 export const VIDBEE_EXPORT_URL = 'https://vidbee.org'
 export const VIDBEE_EXPORT_NAME = 'VidBee'
 
+/** Append the original video's public URL below the exported document. */
+export const withVideoSourceLink = (markdown: string, source?: ExportVideoSource): string => {
+  const url = source?.url.trim()
+  if (!(url && /^https?:\/\//i.test(url) && URL.canParse(url))) {
+    return markdown
+  }
+  const href = new URL(url).href.replaceAll(
+    /[()[\]*_`\\]/g,
+    (character) => `%${character.charCodeAt(0).toString(16).toUpperCase()}`
+  )
+  return `${markdown.trimEnd()}\n\n---\n\n${source?.label ?? 'Source URL'}: [${href}](${href})\n`
+}
+
 /**
  * Place VidBee attribution directly below the opening heading, or before untitled content.
  * A finished thinking duration follows that attribution when one was recorded.
@@ -316,13 +334,15 @@ export const withVidBeeExportAttribution = (markdown: string, thinkingLabel?: st
  * @param markdown Reply body.
  * @param title Optional document title shown when the body has no H1.
  * @param thinkingLabel Localized duration printed under the attribution.
+ * @param source Original video URL and its localized label.
  */
 export const markdownToPrintableHtml = (
   markdown: string,
   title?: string,
-  thinkingLabel?: string
+  thinkingLabel?: string,
+  source?: ExportVideoSource
 ): string => {
-  const body = markdownToHtml(markdown.trim())
+  const body = markdownToHtml(withVideoSourceLink(markdown, source).trim())
   const heading = title?.trim()
   const hasTitle = Boolean(heading) && !/^\s*<h1[\s>]/i.test(body)
   const titleHtml = hasTitle ? `<h1>${escapeHtml(heading ?? '')}</h1>` : ''

@@ -477,7 +477,10 @@ export class AgentChatStore {
     return threads
   }
 
-  /** Set a conversation tab title without changing its messages. */
+  /**
+   * Set a conversation tab title without changing its messages.
+   * Loads a fresh database copy, so a live run must be renamed on that run's thread.
+   */
   rename(id: string, title: string): AgentThread {
     const thread = this.get(id)
     if (!thread) {

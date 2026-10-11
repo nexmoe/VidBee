@@ -971,6 +971,7 @@ export function TranscriptPage() {
         open={exportOpen}
         resolveSpeaker={speakerName}
         segments={committedSegments}
+        sourceUrl={download?.url ?? null}
         title={title}
       />
       <AsrUpgradeDialog

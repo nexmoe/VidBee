@@ -50,6 +50,14 @@ export type AgentApprovalAction =
   | 'subscription.add'
   | 'subscription.update'
   | 'subscription.remove'
+  | 'settings.proxy'
+  | 'settings.config_path'
+  | 'settings.download_path'
+  | 'settings.update'
+  | 'ai.delete_provider'
+  | 'ai.delete_prompt'
+  | 'asr.delete'
+  | 'ytdlp.update'
 export interface AgentApprovalRequest {
   action: AgentApprovalAction
   summary: string

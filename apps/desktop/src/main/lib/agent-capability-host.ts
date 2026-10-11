@@ -7,6 +7,7 @@ import { agentAiSettingsSchema, agentSettingsSchema } from '../../shared/agent-s
 import { AI_PROVIDER_PRESETS, getAiProviderPreset } from '../../shared/ai-presets'
 import { mediaTransformSchema } from '../../shared/media-transform'
 import { settingsManager } from '../settings'
+import { isOutsideDownloadPath } from './agent-tool-approval'
 import { ffmpegManager } from './ffmpeg-manager'
 import { probeLocalMedia } from './media-probe'
 import { broadcastSettingsChanged, updateDesktopSettings } from './settings-host'
@@ -49,8 +50,18 @@ export function getAgentSettings(): Record<string, unknown> {
   }
 }
 
-/** Validate the entire patch before persistence and preserve all unspecified preferences. */
-export async function updateAgentSettings(raw: unknown): Promise<Record<string, unknown>> {
+/**
+ * Validate the entire patch before persistence and preserve all unspecified preferences.
+ *
+ * An outside-library downloadPath is rejected unless this call was interactively approved.
+ *
+ * @param raw Model-supplied settings patch.
+ * @param options Path-approval flag from the tool gate.
+ */
+export async function updateAgentSettings(
+  raw: unknown,
+  options?: { approvedPath?: boolean }
+): Promise<Record<string, unknown>> {
   const patch = agentSettingsSchema.parse(raw)
   for (const key of ['downloadPath', 'cookiesPath', 'configPath'] as const) {
     const value = patch[key]
@@ -71,6 +82,12 @@ export async function updateAgentSettings(raw: unknown): Promise<Record<string, 
     }
   }
   if (patch.downloadPath) {
+    const library = settingsManager.getAll().downloadPath
+    if (isOutsideDownloadPath(patch.downloadPath, library) && !options?.approvedPath) {
+      throw new Error(
+        'downloadPath must stay inside the library folder unless the user approved this path.'
+      )
+    }
     await mkdir(patch.downloadPath, { recursive: true })
   }
   if (patch.asrTier) {

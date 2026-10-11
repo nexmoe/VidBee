@@ -60,10 +60,39 @@ export function rejectUnboundArticleImages(
 }
 
 /**
+ * Read screenshot ids from one `capture_frames` result.
+ *
+ * Cached frames keep the run that stored them. These ids are still the frames
+ * this article asked for, so binding may use them.
+ */
+function artifactIdsFromCapture(result: unknown): string[] {
+  if (!result || typeof result !== 'object' || !('details' in result)) {
+    return []
+  }
+  const details = result.details
+  if (!details || typeof details !== 'object' || !('artifacts' in details)) {
+    return []
+  }
+  const { artifacts } = details
+  if (!Array.isArray(artifacts)) {
+    return []
+  }
+  const ids: string[] = []
+  for (const item of artifacts) {
+    if (item && typeof item === 'object' && 'id' in item && typeof item.id === 'string') {
+      ids.push(item.id.toLowerCase())
+    }
+  }
+  return ids
+}
+
+/**
  * Capture cited screenshot times and rewrite the article onto real artifact ids.
  *
- * A capture failure is returned instead of dropped. `unresolved` clocks still
- * need a frame, so the caller must not report the article as fully complete.
+ * Each still-unbound clock is captured exactly, so two citations inside one short
+ * cue stay two frames. A capture failure is returned instead of dropped.
+ * `unresolved` clocks still need a frame, so the caller must not report the article
+ * as fully complete.
  */
 export async function materializeAgentArticleImages(input: {
   text: string
@@ -76,11 +105,19 @@ export async function materializeAgentArticleImages(input: {
   const timestamps = unboundArticleImageTimes(input.text, input.artifacts, input.runId)
   const capture = input.tools.find((tool) => tool.name === 'capture_frames')
   let captureError: string | undefined
+  const returnedIds = new Set<string>()
   if (timestamps.length && capture) {
     input.signal.throwIfAborted()
     input.onCapture?.('running')
     try {
-      await capture.execute('article-images', { timestamps }, input.signal)
+      const result = await capture.execute(
+        'article-images',
+        { timestamps, exact: true },
+        input.signal
+      )
+      for (const id of artifactIdsFromCapture(result)) {
+        returnedIds.add(id)
+      }
     } catch (error) {
       if (input.signal.aborted) {
         input.onCapture?.('error')
@@ -91,8 +128,8 @@ export async function materializeAgentArticleImages(input: {
       captureError = error instanceof Error ? error.message : String(error)
     }
   }
-  const text = bindArticleImageArtifacts(input.text, input.artifacts, input.runId)
-  const unresolved = unboundArticleImageTimes(text, input.artifacts, input.runId)
+  const text = bindArticleImageArtifacts(input.text, input.artifacts, input.runId, returnedIds)
+  const unresolved = unboundArticleImageTimes(text, input.artifacts, input.runId, returnedIds)
   if (timestamps.length && capture) {
     input.onCapture?.(unresolved.length ? 'error' : 'completed')
   } else if (unresolved.length) {

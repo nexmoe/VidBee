@@ -54,12 +54,18 @@ export function clockFromImage(alt: string, url: string): number | null {
   return end >= start ? (start + end) / 2 : null
 }
 
-/** Pick the unused image from this run whose source time is closest to the cited clock. */
+/**
+ * Pick the unused image whose source time is closest to the cited clock.
+ *
+ * @param runId When set, clock matches stay inside that run.
+ * @param returnedIds Frames this capture returned, including a cache hit from an earlier run.
+ */
 export function matchArtifactByClock(
   artifacts: AgentArtifact[],
   used: Set<string>,
   time: number | null,
-  runId?: string
+  runId?: string,
+  returnedIds?: ReadonlySet<string>
 ): AgentArtifact | undefined {
   if (time === null) {
     return undefined
@@ -70,7 +76,9 @@ export function matchArtifactByClock(
         artifact.kind === 'image' &&
         !used.has(artifact.id) &&
         Math.abs(artifact.start - time) <= 5 &&
-        (runId === undefined || artifact.runId === runId)
+        (runId === undefined ||
+          artifact.runId === runId ||
+          returnedIds?.has(artifact.id.toLowerCase()))
     )
     .sort((left, right) => Math.abs(left.start - time) - Math.abs(right.start - time))[0]
 }
@@ -90,6 +98,7 @@ interface ArticleImageClaim {
  * claimed frame cannot satisfy a later citation.
  *
  * @param allowClock When false, only an explicit artifact id can match.
+ * @param returnedIds Frames this capture returned, including a cache hit from an earlier run.
  */
 function claimArticleArtifact(
   artifacts: AgentArtifact[],
@@ -97,13 +106,14 @@ function claimArticleArtifact(
   alt: string,
   url: string,
   runId: string | undefined,
-  allowClock: boolean
+  allowClock: boolean,
+  returnedIds?: ReadonlySet<string>
 ): { artifact?: AgentArtifact; time: number | null } {
   const time = allowClock ? clockFromImage(alt, url) : null
   const id = artifactIdFromUrl(url, artifacts)
   const artifact =
     (id ? artifacts.find((item) => item.id.toLowerCase() === id) : undefined) ??
-    (allowClock ? matchArtifactByClock(artifacts, used, time, runId) : undefined)
+    (allowClock ? matchArtifactByClock(artifacts, used, time, runId, returnedIds) : undefined)
   if (artifact) {
     used.add(artifact.id)
   }
@@ -114,32 +124,47 @@ function claimArticleArtifact(
  * Claim one exclusive artifact for each markdown image, in document order.
  *
  * @param runId When set, clock matches stay inside that run. Explicit ids do not.
+ * @param returnedIds Frames this capture returned, including a cache hit from an earlier run.
  */
 function claimArticleImages(
   text: string,
   artifacts: AgentArtifact[],
-  runId?: string
+  runId?: string,
+  returnedIds?: ReadonlySet<string>
 ): ArticleImageClaim[] {
   const used = new Set<string>()
   const claims: ArticleImageClaim[] = []
   for (const match of text.matchAll(/!\[([^\]]*)\]\(([^)]*)\)/g)) {
     const alt = match[1]
     const url = match[2]
-    const { artifact, time } = claimArticleArtifact(artifacts, used, alt, url, runId, true)
+    const { artifact, time } = claimArticleArtifact(
+      artifacts,
+      used,
+      alt,
+      url,
+      runId,
+      true,
+      returnedIds
+    )
     claims.push({ index: match.index ?? 0, raw: match[0], alt, time, artifact })
   }
   return claims
 }
 
-/** Rewrite screenshot markdown onto real `artifact:` ids after frames have been captured. */
+/**
+ * Rewrite screenshot markdown onto real `artifact:` ids after frames have been captured.
+ *
+ * @param returnedIds Frames this capture returned, including a cache hit from an earlier run.
+ */
 export function bindArticleImageArtifacts(
   text: string,
   artifacts: AgentArtifact[],
-  runId: string
+  runId: string,
+  returnedIds?: ReadonlySet<string>
 ): string {
   const pieces: string[] = []
   let position = 0
-  for (const image of claimArticleImages(text, artifacts, runId)) {
+  for (const image of claimArticleImages(text, artifacts, runId, returnedIds)) {
     pieces.push(text.slice(position, image.index))
     pieces.push(image.artifact ? `![${image.alt}](artifact:${image.artifact.id})` : image.raw)
     position = image.index + image.raw.length
@@ -153,14 +178,17 @@ export function bindArticleImageArtifacts(
  *
  * A frame within five seconds can satisfy only one citation. The next nearby
  * citation stays in this list so another capture can be requested.
+ *
+ * @param returnedIds Frames this capture returned, including a cache hit from an earlier run.
  */
 export function unboundArticleImageTimes(
   text: string,
   artifacts: AgentArtifact[],
-  runId?: string
+  runId?: string,
+  returnedIds?: ReadonlySet<string>
 ): number[] {
   const times: number[] = []
-  for (const image of claimArticleImages(text, artifacts, runId)) {
+  for (const image of claimArticleImages(text, artifacts, runId, returnedIds)) {
     if (!image.artifact && image.time !== null) {
       times.push(image.time)
     }

@@ -74,6 +74,7 @@ export function AgentChatMessageView({
   currentTimeMs,
   durationMs,
   sourceTitle,
+  sourceUrl,
   onSeek,
   onRetry,
   onDecideTool,
@@ -88,6 +89,8 @@ export function AgentChatMessageView({
   durationMs: number
   /** Media title used as the default PDF / Markdown file name. */
   sourceTitle?: string | null
+  /** Original video URL appended to PDF and Markdown exports. */
+  sourceUrl?: string | null
   onSeek?: (seconds: number) => void
   onRetry: (id: string) => void
   onDecideTool?: (input: { toolCallId: string; approved: boolean; remember: boolean }) => void
@@ -170,6 +173,7 @@ export function AgentChatMessageView({
           content: message.text,
           defaultFileName: exportFileName(sourceTitle, 'md'),
           threadId: thread.id,
+          ...(sourceUrl ? { source: { url: sourceUrl, label: t('transcript.info.url') } } : {}),
           ...(thinkingLabel ? { thinkingLabel } : {})
         })
       )
@@ -190,6 +194,7 @@ export function AgentChatMessageView({
           markdown: message.text,
           threadId: thread.id,
           title: sourceTitle ?? undefined,
+          ...(sourceUrl ? { source: { url: sourceUrl, label: t('transcript.info.url') } } : {}),
           ...(thinkingLabel ? { thinkingLabel } : {})
         })
       )

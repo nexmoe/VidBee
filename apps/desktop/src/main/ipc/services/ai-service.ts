@@ -19,6 +19,7 @@ import type {
 } from '../../../shared/ai-types'
 import { saveAgentArtifact } from '../../lib/agent-artifacts'
 import {
+  renameAgentThread as commitAgentThreadTitle,
   getAgentThinkingOptions,
   openAgentThread,
   removeAgentImage,
@@ -163,7 +164,7 @@ class AiService extends IpcService {
     _context: IpcContext,
     input: { threadId: string; title: string }
   ): AgentThreadSummary[] {
-    getAgentChatStore().rename(input.threadId, input.title)
+    commitAgentThreadTitle(input.threadId, input.title)
     return listHistorySummaries()
   }
 

@@ -12,9 +12,11 @@ import { getAgentChatStore } from '../../lib/agent-chat-store'
 import { readAgentArtifactImage } from '../../lib/agent-media'
 import { mediaFileDialogFilters } from '../../lib/import-local-media'
 import {
+  type ExportVideoSource,
   markdownToPrintableHtml,
   printHtmlToPdf,
-  withVidBeeExportAttribution
+  withVidBeeExportAttribution,
+  withVideoSourceLink
 } from '../../lib/markdown-pdf'
 import { captureShareCardPages } from '../../lib/share-capture-window'
 import { saveSplitShareImageFiles } from '../../lib/share-image-split'
@@ -133,6 +135,7 @@ class FileSystemService extends IpcService {
       defaultFileName: string
       threadId?: string
       thinkingLabel?: string
+      source?: ExportVideoSource
     }
   ): Promise<{ path: string } | null> {
     const fileName = path.basename(options.defaultFileName || 'transcript.txt')
@@ -157,6 +160,9 @@ class FileSystemService extends IpcService {
     if (options.threadId) {
       content = withVidBeeExportAttribution(content, options.thinkingLabel)
     }
+    if (extension === 'md') {
+      content = withVideoSourceLink(content, options.source)
+    }
     await fs.writeFile(normalizedPath, content, 'utf8')
     return { path: normalizedPath }
   }
@@ -176,6 +182,7 @@ class FileSystemService extends IpcService {
       title?: string
       threadId?: string
       thinkingLabel?: string
+      source?: ExportVideoSource
     }
   ): Promise<{ path: string } | null> {
     let fileName = path.basename(options.defaultFileName || 'VidBee.pdf')
@@ -198,7 +205,12 @@ class FileSystemService extends IpcService {
 
     const normalizedPath = path.normalize(this.sanitizePath(result.filePath))
     const markdown = await markdownWithEmbeddedImages(options.markdown, options.threadId)
-    const html = markdownToPrintableHtml(markdown, options.title, options.thinkingLabel)
+    const html = markdownToPrintableHtml(
+      markdown,
+      options.title,
+      options.thinkingLabel,
+      options.source
+    )
     const tempPath = path.join(os.tmpdir(), `vidbee-export-${process.pid}-${Date.now()}.html`)
     try {
       await fs.writeFile(tempPath, html, 'utf8')
