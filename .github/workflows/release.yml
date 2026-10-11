@@ -14,7 +14,23 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  verify-source:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out complete release history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Require a release from main
+        if: github.ref_type == 'tag'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-list --first-parent origin/main | grep -Fx "$GITHUB_SHA"
+
   build:
+    needs: [verify-source]
     uses: ./.github/workflows/build.yml
     with:
       upload_artifacts: true

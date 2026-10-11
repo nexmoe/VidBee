@@ -182,6 +182,10 @@ jobs:
             echo "::notice::No DMG artifacts found to validate"
           fi
 
+      - name: Refresh macOS update checksums after notarization
+        if: matrix.platform == 'macos'
+        run: node apps/desktop/scripts/refresh-mac-update-manifest.mjs
+
       - name: Upload build artifacts
         if: inputs.upload_artifacts == true
         uses: actions/upload-artifact@v4
