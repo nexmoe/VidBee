@@ -6,6 +6,7 @@ import type { AiProviderPresetId } from '@shared/ai-types'
 import { Sparkles } from 'lucide-react'
 import type { ComponentType } from 'react'
 import LobeAnthropic from '~icons/lobehub/anthropic'
+import LobeAtlascloud from '~icons/lobehub/atlascloud'
 import LobeAzureColor from '~icons/lobehub/azure-color'
 import LobeBaichuanColor from '~icons/lobehub/baichuan-color'
 import LobeClaudeColor from '~icons/lobehub/claude-color'
@@ -48,6 +49,7 @@ type MenuIcon = ComponentType<{ className?: string; size?: number; strokeWidth?:
 const PRESET_ICON: Partial<Record<AiProviderPresetId, MenuIcon>> = {
   alibaba: LobeQwenColor,
   anthropic: LobeAnthropic,
+  atlascloud: LobeAtlascloud,
   azure: LobeAzureColor,
   deepseek: LobeDeepseekColor,
   fireworks: LobeFireworksColor,
@@ -100,6 +102,7 @@ const MODEL_ICON: Record<AiModelIconId, MenuIcon> = {
   ollama: LobeOllama,
   openrouter: LobeOpenrouter,
   azure: LobeAzureColor,
+  atlascloud: LobeAtlascloud,
   fireworks: LobeFireworksColor,
   together: LobeTogetherColor,
   huggingface: LobeHuggingfaceColor,

@@ -876,6 +876,7 @@
       "testPlaceholder": "프롬프트 결과가 여기에 표시됩니다",
       "presets": {
         "anthropic": "Anthropic",
+        "atlascloud": "Atlas Cloud",
         "azure": "Azure",
         "custom": "Custom",
         "deepseek": "Deepseek",

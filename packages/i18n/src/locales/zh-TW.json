@@ -876,6 +876,7 @@
       "testPlaceholder": "提示詞結果會顯示在這裡",
       "presets": {
         "anthropic": "Anthropic",
+        "atlascloud": "Atlas Cloud",
         "azure": "Azure",
         "custom": "Custom",
         "deepseek": "Deepseek",
