@@ -998,9 +998,7 @@
       "off": "Выкл.",
       "ask": "Сначала спросить",
       "auto": "Разрешать автоматически"
-    },
-    "agentMaxConcurrentRuns": "Параллельные локальные запуски",
-    "agentMaxConcurrentRunsDescription": "Сколько диалогов агента с локальной моделью могут идти одновременно"
+    }
   },
   "subscriptions": {
     "title": "Подписки",
@@ -1468,8 +1466,8 @@
     "promptWaiting": "Ожидание ответа модели · {{seconds}} с",
     "promptRunning": "Пишет…",
     "promptThinking": "Размышление",
-    "promptThinkingFor": "Думает {{seconds}} с",
-    "promptThoughtFor": "Думал {{seconds}} с",
+    "promptThinkingFor": "Думает {{duration}}",
+    "promptThoughtFor": "Думал {{duration}}",
     "promptAborted": "Остановлено",
     "promptTabCompleted": "Готово",
     "promptTabError": "Ошибка",
@@ -1608,10 +1606,10 @@
     "promptShareSplitCount": "Number of images (optional)",
     "promptShareSplitCountAuto": "Automatic",
     "promptShareSplitCountHint": "Leave blank for automatic splitting. Fewer images may be saved to keep content intact.",
-    "thinkingSecond": "{{count}} second",
-    "thinkingSeconds": "{{count}} seconds",
-    "thinkingMinute": "{{count}} minute",
-    "thinkingMinutes": "{{count}} minutes",
+    "thinkingSecond": "{{count}} с",
+    "thinkingSeconds": "{{count}} с",
+    "thinkingMinute": "{{count}} мин",
+    "thinkingMinutes": "{{count}} мин",
     "promptCloudServiceErrorDetail": "Your transcript is saved. This service issue needs to be resolved before you can generate the response."
   },
   "whatsNew": {

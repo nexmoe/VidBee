@@ -10,6 +10,7 @@ import {
 import { useAgentChat } from '@renderer/hooks/use-agent-chat'
 import { shareImageFileName } from '@renderer/lib/capture-prompt-share'
 import { trackDesktopEvent } from '@renderer/lib/rybbit-client'
+import { thinkingDurationHeader } from '@renderer/lib/thinking-header'
 import {
   AGENT_MAX_MESSAGE_IMAGES,
   type AgentThinkingLevel,
@@ -67,6 +68,35 @@ interface TranscriptPromptPaneProps {
 
 const CLOUD_FIRST_SUCCESS_STORAGE_KEY = 'vidbee.desktop.cloud-first-success'
 let cloudFirstSuccessShown = false
+
+/**
+ * Prompts the user armed to run when the transcript is ready.
+ * The skill pane unmounts on tab and page changes, so this cannot live in component state.
+ */
+const armedPromptIdentities = new Set<string>()
+
+/**
+ * Remember that this prompt should keep its waiting state across navigation.
+ *
+ * @param identity Thread id, or `downloadId:promptId` when the thread is not pinned.
+ */
+function armPromptIdentity(identity: string): void {
+  armedPromptIdentities.add(identity)
+}
+
+/**
+ * Drop the waiting mark once the prompt has started.
+ *
+ * @param identity Thread id, or `downloadId:promptId` when the thread is not pinned.
+ */
+function disarmPromptIdentity(identity: string): void {
+  armedPromptIdentities.delete(identity)
+}
+
+/** Forget armed prompts so unit tests do not leak across cases. */
+export function resetArmedPromptIdentities(): void {
+  armedPromptIdentities.clear()
+}
 
 /** Remember the first successful Cloud prompt without delaying prompt rendering. */
 function markFirstCloudSuccess(): boolean {
@@ -153,7 +183,8 @@ export function TranscriptPromptPane({
   const identity = threadId || `${downloadId}:${prompt.id}`
   const isChat = prompt.id === AI_CHAT_PROMPT_ID
   const autoStarted = useRef(new Set<string>())
-  const [armedIdentity, setArmedIdentity] = useState<string | null>(null)
+  const [, setArmedTick] = useState(0)
+  const armed = armedPromptIdentities.has(identity)
   const [thinkingLevels, setThinkingLevels] = useState<Record<string, AgentThinkingLevel>>({})
   const preferredThinkingLevel = thinkingLevels[identity]
   const thinkingLevel =
@@ -195,10 +226,11 @@ export function TranscriptPromptPane({
     ) {
       return
     }
-    if (transcriptRunning && armedIdentity !== identity) {
+    if (transcriptRunning && !armed) {
       return
     }
     autoStarted.current.add(identity)
+    disarmPromptIdentity(identity)
     void send({
       thinkingLevel,
       ...(hasStoredTranscript ? {} : { transcriptText }),
@@ -207,7 +239,7 @@ export function TranscriptPromptPane({
       sourceDurationMs
     })
   }, [
-    armedIdentity,
+    armed,
     hasStoredTranscript,
     hydrated,
     i18n.language,
@@ -289,8 +321,11 @@ export function TranscriptPromptPane({
     if (transcriptRunning) {
       return (
         <TranscriptPromptWaiting
-          armed={armedIdentity === identity}
-          onArm={() => setArmedIdentity(identity)}
+          armed={armed}
+          onArm={() => {
+            armPromptIdentity(identity)
+            setArmedTick((tick) => tick + 1)
+          }}
         />
       )
     }
@@ -429,6 +464,10 @@ export function TranscriptPromptPane({
                 sourceByline,
                 sourceTitle,
                 tagline: t('transcript.promptShareTagline'),
+                thinkingLabel:
+                  (shareMessage.thinkingMs ?? 0) > 0
+                    ? thinkingDurationHeader(t, false, shareMessage.thinkingMs ?? 0)
+                    : undefined,
                 userText: sharePromptUserText(
                   thread?.messages ?? [],
                   shareMessage.id,

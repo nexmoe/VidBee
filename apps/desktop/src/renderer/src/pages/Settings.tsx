@@ -721,33 +721,6 @@ export function Settings() {
                       </Select>
                     </ItemActions>
                   </Item>
-                  <Item variant="muted">
-                    <ItemContent>
-                      <ItemTitle>{t('settings.agentMaxConcurrentRuns')}</ItemTitle>
-                      <ItemDescription>
-                        {t('settings.agentMaxConcurrentRunsDescription')}
-                      </ItemDescription>
-                    </ItemContent>
-                    <ItemActions>
-                      <Select
-                        onValueChange={(value) => {
-                          handleSettingChange('agentMaxConcurrentRuns', Number(value))
-                        }}
-                        value={String(settings.agentMaxConcurrentRuns ?? 2)}
-                      >
-                        <SelectTrigger className="w-20">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {[1, 2, 3, 4].map((num) => (
-                            <SelectItem key={num} value={num.toString()}>
-                              {num}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </ItemActions>
-                  </Item>
                 </ItemGroup>
               </TabPanel>
 

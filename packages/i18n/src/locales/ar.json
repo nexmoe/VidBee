@@ -998,9 +998,7 @@
       "off": "إيقاف",
       "ask": "اسأل أولاً",
       "auto": "السماح تلقائيًا"
-    },
-    "agentMaxConcurrentRuns": "تشغيلات الوكيل المحلية المتزامنة",
-    "agentMaxConcurrentRunsDescription": "كم محادثة وكيل بنموذج محلي يمكن أن تعمل في الوقت نفسه"
+    }
   },
   "subscriptions": {
     "title": "الاشتراكات",
@@ -1468,8 +1466,8 @@
     "promptWaiting": "بانتظار استجابة النموذج · {{seconds}} ثانية",
     "promptRunning": "جارٍ الكتابة…",
     "promptThinking": "التفكير",
-    "promptThinkingFor": "يفكّر منذ {{seconds}} ثانية",
-    "promptThoughtFor": "فكّر لمدة {{seconds}} ثانية",
+    "promptThinkingFor": "يفكّر منذ {{duration}}",
+    "promptThoughtFor": "فكّر لمدة {{duration}}",
     "promptAborted": "تم الإيقاف",
     "promptTabCompleted": "مكتمل",
     "promptTabError": "فشل",
@@ -1608,10 +1606,10 @@
     "promptShareSplitCount": "Number of images (optional)",
     "promptShareSplitCountAuto": "Automatic",
     "promptShareSplitCountHint": "Leave blank for automatic splitting. Fewer images may be saved to keep content intact.",
-    "thinkingSecond": "{{count}} second",
-    "thinkingSeconds": "{{count}} seconds",
-    "thinkingMinute": "{{count}} minute",
-    "thinkingMinutes": "{{count}} minutes",
+    "thinkingSecond": "{{count}} ثانية",
+    "thinkingSeconds": "{{count}} ثوانٍ",
+    "thinkingMinute": "{{count}} دقيقة",
+    "thinkingMinutes": "{{count}} دقائق",
     "promptCloudServiceErrorDetail": "Your transcript is saved. This service issue needs to be resolved before you can generate the response."
   },
   "whatsNew": {

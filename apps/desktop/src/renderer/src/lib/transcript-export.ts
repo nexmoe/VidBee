@@ -1,3 +1,5 @@
+import { applyViaVidBeeFilename } from '@vidbee/downloader-core/filename-style'
+
 export type TranscriptExportStyle = 'transcript' | 'subtitles' | 'segments' | 'whisper' | 'video'
 export type TranscriptExportFormat = 'txt' | 'md'
 export type TranscriptVideoEncode = 'soft' | 'hard'
@@ -290,26 +292,35 @@ export const videoEncodeExtension = (mode: TranscriptVideoEncode): 'mkv' | 'mp4'
 
 /**
  * Turn a media title into a safe export file name.
+ *
+ * @param title Media title.
+ * @param format File extension without a leading dot.
+ * @param viaVidBee Append `via VidBee` before the extension. Used for subtitle exports.
  */
 export const buildTranscriptExportFileName = (
   title: string,
-  format: TranscriptExportFileExtension = 'txt'
+  format: TranscriptExportFileExtension = 'txt',
+  viaVidBee = false
 ): string => {
   const base = title
     .trim()
     .replace(/[<>:"/\\|?*]/g, '_')
     .replace(/\s+/g, ' ')
     .slice(0, 80)
-  return `${base || 'transcript'}.${format}`
+  const name = `${base || 'transcript'}.${format}`
+  return viaVidBee ? applyViaVidBeeFilename(name) : name
 }
 
 /**
  * Default file name for muxing or burning captions into a video.
+ *
+ * @param title Media title.
+ * @param mode Soft mux or hard burn.
  */
 export const buildVideoSubtitleExportFileName = (
   title: string,
   mode: TranscriptVideoEncode
 ): string => {
   const suffix = mode === 'soft' ? 'subs' : 'burned'
-  return buildTranscriptExportFileName(`${title} ${suffix}`, videoEncodeExtension(mode))
+  return buildTranscriptExportFileName(`${title} ${suffix}`, videoEncodeExtension(mode), true)
 }

@@ -38,6 +38,7 @@ export function AgentResponseShareCard({ cardRef, payload }: AgentResponseShareC
       sourceByline={payload.sourceByline}
       sourceTitle={payload.sourceTitle}
       tagline={payload.tagline}
+      thinkingLabel={payload.thinkingLabel}
       userText={payload.userText}
     />
   )

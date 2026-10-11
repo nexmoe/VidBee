@@ -998,9 +998,7 @@
       "off": "Desligado",
       "ask": "Perguntar primeiro",
       "auto": "Permitir automaticamente"
-    },
-    "agentMaxConcurrentRuns": "Execuções locais simultâneas",
-    "agentMaxConcurrentRunsDescription": "Quantas conversas do agente com modelo local podem correr ao mesmo tempo"
+    }
   },
   "subscriptions": {
     "title": "Assinaturas",
@@ -1468,8 +1466,8 @@
     "promptWaiting": "Aguardando resposta do modelo · {{seconds}} s",
     "promptRunning": "Escrevendo…",
     "promptThinking": "Pensando",
-    "promptThinkingFor": "Pensando há {{seconds}} s",
-    "promptThoughtFor": "Pensou por {{seconds}} s",
+    "promptThinkingFor": "Pensando há {{duration}}",
+    "promptThoughtFor": "Pensou por {{duration}}",
     "promptAborted": "Interrompido",
     "promptTabCompleted": "Concluído",
     "promptTabError": "Falhou",
@@ -1608,10 +1606,10 @@
     "promptShareSplitCount": "Number of images (optional)",
     "promptShareSplitCountAuto": "Automatic",
     "promptShareSplitCountHint": "Leave blank for automatic splitting. Fewer images may be saved to keep content intact.",
-    "thinkingSecond": "{{count}} second",
-    "thinkingSeconds": "{{count}} seconds",
-    "thinkingMinute": "{{count}} minute",
-    "thinkingMinutes": "{{count}} minutes",
+    "thinkingSecond": "{{count}} segundo",
+    "thinkingSeconds": "{{count}} segundos",
+    "thinkingMinute": "{{count}} minuto",
+    "thinkingMinutes": "{{count}} minutos",
     "promptCloudServiceErrorDetail": "Your transcript is saved. This service issue needs to be resolved before you can generate the response."
   },
   "whatsNew": {

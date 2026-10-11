@@ -998,9 +998,7 @@
       "off": "Mati",
       "ask": "Tanya dulu",
       "auto": "Izinkan otomatis"
-    },
-    "agentMaxConcurrentRuns": "Jalankan agen lokal bersamaan",
-    "agentMaxConcurrentRunsDescription": "Berapa percakapan agen dengan model lokal yang boleh berjalan sekaligus"
+    }
   },
   "subscriptions": {
     "title": "Berlangganan",
@@ -1468,8 +1466,8 @@
     "promptWaiting": "Menunggu respons model · {{seconds}} dtk",
     "promptRunning": "Menulis…",
     "promptThinking": "Berpikir",
-    "promptThinkingFor": "Sedang berpikir {{seconds}} dtk",
-    "promptThoughtFor": "Berpikir selama {{seconds}} dtk",
+    "promptThinkingFor": "Sedang berpikir {{duration}}",
+    "promptThoughtFor": "Berpikir selama {{duration}}",
     "promptAborted": "Dihentikan",
     "promptTabCompleted": "Selesai",
     "promptTabError": "Gagal",
@@ -1608,10 +1606,10 @@
     "promptShareSplitCount": "Number of images (optional)",
     "promptShareSplitCountAuto": "Automatic",
     "promptShareSplitCountHint": "Leave blank for automatic splitting. Fewer images may be saved to keep content intact.",
-    "thinkingSecond": "{{count}} second",
-    "thinkingSeconds": "{{count}} seconds",
-    "thinkingMinute": "{{count}} minute",
-    "thinkingMinutes": "{{count}} minutes",
+    "thinkingSecond": "{{count}} detik",
+    "thinkingSeconds": "{{count}} detik",
+    "thinkingMinute": "{{count}} menit",
+    "thinkingMinutes": "{{count}} menit",
     "promptCloudServiceErrorDetail": "Your transcript is saved. This service issue needs to be resolved before you can generate the response."
   },
   "whatsNew": {

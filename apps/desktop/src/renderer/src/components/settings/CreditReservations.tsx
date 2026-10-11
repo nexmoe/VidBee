@@ -18,7 +18,7 @@ import { TABLE_CELL_CLASS, TABLE_HEAD_CLASS } from './account-table'
 export function CreditReservations(props: {
   error: boolean
   items: DesktopAiReservation[] | null
-  onRefresh: () => Promise<void>
+  onRefresh: () => Promise<unknown>
 }) {
   const { t, i18n } = useTranslation()
   const [now, setNow] = useState(Date.now)
@@ -92,19 +92,21 @@ export function CreditReservations(props: {
                 </p>
               </TableCell>
               <TableCell className={`${TABLE_CELL_CLASS} text-muted-foreground`}>
-                {item.status === 'reconciling'
-                  ? t('settings.account.reservationReviewDeadline', {
-                      time: time.format(item.expiresAt)
-                    })
-                  : t('settings.account.reservationElapsed', {
-                      minutes: Math.max(0, Math.floor((now - item.createdAt) / 60_000))
-                    })}
+                {item.recoveryStoppedAt
+                  ? t('settings.account.reservationReview')
+                  : item.status === 'reconciling'
+                    ? t('settings.account.reservationReviewDeadline', {
+                        time: time.format(item.expiresAt)
+                      })
+                    : t('settings.account.reservationElapsed', {
+                        minutes: Math.max(0, Math.floor((now - item.createdAt) / 60_000))
+                      })}
               </TableCell>
               <TableCell className={`${TABLE_CELL_CLASS} text-right font-medium tabular-nums`}>
                 {formatAiCredits(item.reservedCredits)}
               </TableCell>
               <TableCell className={`${TABLE_CELL_CLASS} pr-0 text-right`}>
-                {item.status === 'reconciling' ? (
+                {item.status === 'reconciling' || item.recoveryStoppedAt ? (
                   <span className="text-muted-foreground text-xs">
                     {t('settings.account.reservationReview')}
                   </span>

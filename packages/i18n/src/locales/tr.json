@@ -998,9 +998,7 @@
       "off": "Kapalı",
       "ask": "Önce sor",
       "auto": "Otomatik izin ver"
-    },
-    "agentMaxConcurrentRuns": "Eşzamanlı yerel ajan çalıştırmaları",
-    "agentMaxConcurrentRunsDescription": "Yerel model kullanırken aynı anda kaç ajan konuşmasının çalışabileceği"
+    }
   },
   "subscriptions": {
     "title": "Abonelikler",
@@ -1468,8 +1466,8 @@
     "promptWaiting": "Model yanıtı bekleniyor · {{seconds}} sn",
     "promptRunning": "Yazılıyor…",
     "promptThinking": "Düşünüyor",
-    "promptThinkingFor": "{{seconds}} sn düşünüyor",
-    "promptThoughtFor": "{{seconds}} sn düşündü",
+    "promptThinkingFor": "{{duration}} düşünüyor",
+    "promptThoughtFor": "{{duration}} düşündü",
     "promptAborted": "Durduruldu",
     "promptTabCompleted": "Tamamlandı",
     "promptTabError": "Başarısız",
@@ -1608,10 +1606,10 @@
     "promptShareSplitCount": "Number of images (optional)",
     "promptShareSplitCountAuto": "Automatic",
     "promptShareSplitCountHint": "Leave blank for automatic splitting. Fewer images may be saved to keep content intact.",
-    "thinkingSecond": "{{count}} second",
-    "thinkingSeconds": "{{count}} seconds",
-    "thinkingMinute": "{{count}} minute",
-    "thinkingMinutes": "{{count}} minutes",
+    "thinkingSecond": "{{count}} saniye",
+    "thinkingSeconds": "{{count}} saniye",
+    "thinkingMinute": "{{count}} dakika",
+    "thinkingMinutes": "{{count}} dakika",
     "promptCloudServiceErrorDetail": "Your transcript is saved. This service issue needs to be resolved before you can generate the response."
   },
   "whatsNew": {

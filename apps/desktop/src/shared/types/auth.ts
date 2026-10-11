@@ -76,6 +76,8 @@ export type DesktopCloudCacheStats = Record<
 
 /** An authenticated task hold; reconciliation is included in the reserved balance. */
 export interface DesktopAiReservation {
+  /** Automatic recovery has stopped; the held balance requires operator review. */
+  recoveryStoppedAt?: number | null
   createdAt: number
   deadlineAt: number
   expiresAt: number

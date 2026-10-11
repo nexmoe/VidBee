@@ -372,8 +372,6 @@ export interface AppSettings {
   lastSeenWhatsNew: string
   /** How management tools run: hidden, ask first, or autonomous. */
   agentManagementTools: 'off' | 'ask' | 'auto'
-  /** Max simultaneous local-provider agent runs. Cloud uses the profile cap. */
-  agentMaxConcurrentRuns: number
 }
 
 export const DEFAULT_SUBSCRIPTION_FILENAME_TEMPLATE = '%(uploader)s/%(title)s.%(ext)s'
@@ -416,6 +414,5 @@ export const defaultSettings: AppSettings = {
   asrTier: 'minimal',
   downloadMirror: 'auto',
   lastSeenWhatsNew: '',
-  agentManagementTools: 'ask',
-  agentMaxConcurrentRuns: 2
+  agentManagementTools: 'ask'
 }

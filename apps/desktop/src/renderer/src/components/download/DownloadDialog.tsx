@@ -566,24 +566,7 @@ export function DownloadDialog({
         return
       }
 
-      const baseCreatedAt = Date.now()
-      result.entries.forEach((entry, index) => {
-        const downloadItem = {
-          id: entry.downloadId,
-          url: entry.url,
-          title: entry.title || t('download.fetchingVideoInfo'),
-          type: downloadType,
-          status: 'pending' as const,
-          progress: { percent: 0 },
-          createdAt: baseCreatedAt + index,
-          playlistId: result.groupId,
-          playlistTitle: result.playlistTitle,
-          playlistIndex: entry.index,
-          playlistSize: result.totalCount
-        }
-        addDownload(downloadItem)
-      })
-
+      // Queue events preserve the actual state and group of reused download tasks.
       setOpen(false) // Close dialog after download starts
     } catch (error) {
       logger.error('Failed to start playlist download:', error)
@@ -597,7 +580,6 @@ export function DownloadDialog({
     computePlaylistRange,
     downloadType,
     settings,
-    addDownload,
     t,
     playlistCustomDownloadPath,
     playlistContainer,

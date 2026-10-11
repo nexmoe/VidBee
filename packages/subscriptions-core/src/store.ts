@@ -358,6 +358,7 @@ export const createSqliteSubscriptionsStore = ({
       return { ...rule, items: [] }
     },
 
+    /** Update a subscription while preserving boolean settings omitted by callers. */
     async update(id, patch) {
       const existingRow = db
         .select()
@@ -371,6 +372,9 @@ export const createSqliteSubscriptionsStore = ({
       const next: SubscriptionRule = {
         ...existing,
         ...patch,
+        onlyDownloadLatest: patch.onlyDownloadLatest ?? existing.onlyDownloadLatest,
+        autoDownload: patch.autoDownload ?? existing.autoDownload,
+        enabled: patch.enabled ?? existing.enabled,
         keywords: patch.keywords ? sanitizeList(patch.keywords) : existing.keywords,
         tags: patch.tags ? sanitizeList(patch.tags) : existing.tags,
         updatedAt: now()

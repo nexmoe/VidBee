@@ -15,10 +15,16 @@ STAGED_HASH=$(git diff --cached | sha256sum | cut -d' ' -f1)
 STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR)
 PARTIALLY_STAGED=$(git diff --name-only)
 
-# Stash unstaged changes to preserve working directory
-# --keep-index keeps staged changes in working tree
-git stash push --quiet --keep-index --message "pre-commit-stash" || true
-STASHED=$?
+# Clean commits need no stash; stashing during a merge clears MERGE_HEAD.
+STASHED=1
+if [ -n "$PARTIALLY_STAGED" ]; then
+  if [ -f "$(git rev-parse --git-path MERGE_HEAD)" ]; then
+    echo "Stage merge resolutions or preserve unfinished edits before committing the merge."
+    exit 1
+  fi
+  git stash push --quiet --keep-index --message "pre-commit-stash"
+  STASHED=0
+fi
 
 # Run formatter on the staged files
 pnpm --filter ./apps/desktop run fix

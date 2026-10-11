@@ -998,9 +998,7 @@
       "off": "关闭",
       "ask": "先询问",
       "auto": "自动允许"
-    },
-    "agentMaxConcurrentRuns": "本地智能体并发数",
-    "agentMaxConcurrentRunsDescription": "使用本地模型时，最多可同时运行几段智能体对话"
+    }
   },
   "subscriptions": {
     "title": "订阅",
@@ -1468,8 +1466,8 @@
     "promptWaiting": "等待模型响应 · 已等待 {{seconds}} 秒",
     "promptRunning": "正在生成…",
     "promptThinking": "思考过程",
-    "promptThinkingFor": "已思考 {{seconds}} 秒",
-    "promptThoughtFor": "思考了 {{seconds}} 秒",
+    "promptThinkingFor": "已思考 {{duration}}",
+    "promptThoughtFor": "思考了 {{duration}}",
     "promptAborted": "已停止",
     "promptTabCompleted": "已完成",
     "promptTabError": "异常",
@@ -1608,10 +1606,10 @@
     "promptShareSplitCount": "Number of images (optional)",
     "promptShareSplitCountAuto": "Automatic",
     "promptShareSplitCountHint": "Leave blank for automatic splitting. Fewer images may be saved to keep content intact.",
-    "thinkingSecond": "{{count}} second",
-    "thinkingSeconds": "{{count}} seconds",
-    "thinkingMinute": "{{count}} minute",
-    "thinkingMinutes": "{{count}} minutes",
+    "thinkingSecond": "{{count}} 秒",
+    "thinkingSeconds": "{{count}} 秒",
+    "thinkingMinute": "{{count}} 分钟",
+    "thinkingMinutes": "{{count}} 分钟",
     "promptCloudServiceErrorDetail": "Your transcript is saved. This service issue needs to be resolved before you can generate the response."
   },
   "whatsNew": {

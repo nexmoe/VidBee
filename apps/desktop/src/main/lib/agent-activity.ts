@@ -1,13 +1,43 @@
 import type { AgentActivity, AgentChatRun } from '../../shared/agent-chat'
 import { agentMessageRecord as record } from './agent-output'
 
+/** Restore this run's display archive without including inherited conversation turns. */
+function activityMessages(run: AgentChatRun): Record<string, unknown>[] {
+  if (run.rawMessages.length) {
+    return run.rawMessages.map(record)
+  }
+  const entries = (run.sessionEntries ?? []).map(record)
+  // Entry timestamps change when a branch is restored; message timestamps retain their origin.
+  let start = entries.findIndex((entry) => {
+    const message = record(entry.message)
+    return (
+      entry.type === 'message' &&
+      typeof message.timestamp === 'number' &&
+      message.timestamp >= run.createdAt
+    )
+  })
+  if (start < 0) {
+    return []
+  }
+  // Leading app-state/source messages also occupy positions in the live lifecycle timeline.
+  while (start > 0 && entries[start - 1].type === 'custom_message') {
+    start -= 1
+  }
+  return entries.slice(start).flatMap((entry) => {
+    if (entry.type === 'message') {
+      return [record(entry.message)]
+    }
+    return entry.type === 'custom_message' ? [{ role: 'custom' }] : []
+  })
+}
+
 /** Project reasoning and tool calls in provider order, omitting arguments and private results. */
 export function agentActivity(run: AgentChatRun): AgentActivity[] {
   const activity: AgentActivity[] = []
+  const messages = activityMessages(run)
   const lifecycle = [...(run.lifecycle ?? [])]
   const results = new Map(
-    run.rawMessages
-      .map(record)
+    messages
       .filter((message) => message.role === 'toolResult')
       .map((message) => [message.toolCallId, record(message.details)])
   )
@@ -22,14 +52,13 @@ export function agentActivity(run: AgentChatRun): AgentActivity[] {
       artifactIds: []
     })
   }
-  for (const [messageIndex, raw] of run.rawMessages.entries()) {
+  for (const [messageIndex, message] of messages.entries()) {
     while (lifecycle.length && lifecycle[0].messageCount <= messageIndex) {
       const event = lifecycle.shift()
       if (event) {
         activity.push({ id: event.id, kind: 'status', status: event.status })
       }
     }
-    const message = record(raw)
     if (message.role !== 'assistant' || !Array.isArray(message.content)) {
       continue
     }

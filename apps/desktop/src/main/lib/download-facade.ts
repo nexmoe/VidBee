@@ -18,6 +18,7 @@ import { EventEmitter } from 'node:events'
 import path from 'node:path'
 
 import {
+  downloadIdentity,
   isMediaTaskKind,
   PRIORITY_USER,
   type Task,
@@ -163,7 +164,10 @@ class DownloadFacade extends EventEmitter {
   /** Accumulated live yt-dlp output per active task, replayed to the renderer via `download-log`. */
   private readonly logBuffers = new Map<string, string>()
   /** Starts that have been shown in the list but are still hydrating metadata. */
-  private readonly pendingStarts = new Map<string, { cancelled: boolean }>()
+  private readonly pendingStarts = new Map<
+    string,
+    { cancelled: boolean; identity: string | null }
+  >()
 
   private get queue(): TaskQueueAPI {
     return getDesktopTaskQueue()
@@ -257,12 +261,24 @@ class DownloadFacade extends EventEmitter {
 
   // ───────────── Queue control ─────────────
 
+  /** Reject duplicate requests before displaying or hydrating another pending download. */
   startDownload(id: string, options: DownloadOptions): boolean {
     this.subscribeOnce()
+    const input = buildTaskInput(id, options)
+    const identity = downloadIdentity(input)
+    if (
+      this.queue.get(id) ||
+      this.queue.findDuplicateDownload(input) ||
+      this.pendingStarts.has(id) ||
+      (identity &&
+        [...this.pendingStarts.values()].some((pending) => pending.identity === identity))
+    ) {
+      return false
+    }
     // Show the row immediately. Bilibili (and similar) metadata probes can
     // take tens of seconds; the list must not wait on that hydration.
     this.emit('download-queued', buildPendingDownloadItem(id, options))
-    const pending = { cancelled: false }
+    const pending = { cancelled: false, identity }
     this.pendingStarts.set(id, pending)
     void (async () => {
       try {
@@ -276,11 +292,15 @@ class DownloadFacade extends EventEmitter {
         }
         // Pass the renderer-generated id through so optimistic-UI rows merge
         // with the real task instead of showing as two separate entries.
-        await this.queue.add({
+        const result = await this.queue.add({
           id,
           input,
           priority: PRIORITY_USER
         })
+        if (result.id !== id) {
+          this.emit('download-removed', id)
+          return
+        }
         if (pending.cancelled) {
           await this.queue.cancel(id, 'user')
         }
@@ -292,7 +312,9 @@ class DownloadFacade extends EventEmitter {
         const message = err instanceof Error ? err : new Error(String(err))
         this.emit('download-error', id, message)
       } finally {
-        this.pendingStarts.delete(id)
+        if (this.pendingStarts.get(id) === pending) {
+          this.pendingStarts.delete(id)
+        }
       }
     })()
     return true

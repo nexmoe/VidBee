@@ -14,7 +14,7 @@ import { mediaFileDialogFilters } from '../../lib/import-local-media'
 import {
   markdownToPrintableHtml,
   printHtmlToPdf,
-  withVidBeeExportFooter
+  withVidBeeExportAttribution
 } from '../../lib/markdown-pdf'
 import { captureShareCardPages } from '../../lib/share-capture-window'
 import { saveSplitShareImageFiles } from '../../lib/share-image-split'
@@ -128,7 +128,12 @@ class FileSystemService extends IpcService {
   @IpcMethod()
   async saveTextFile(
     _context: IpcContext,
-    options: { content: string; defaultFileName: string; threadId?: string }
+    options: {
+      content: string
+      defaultFileName: string
+      threadId?: string
+      thinkingLabel?: string
+    }
   ): Promise<{ path: string } | null> {
     const fileName = path.basename(options.defaultFileName || 'transcript.txt')
     const defaultPath = path.join(this.getDefaultDownloadPath(_context), fileName)
@@ -150,7 +155,7 @@ class FileSystemService extends IpcService {
     const normalizedPath = path.normalize(this.sanitizePath(result.filePath))
     let content = await markdownWithEmbeddedImages(options.content, options.threadId)
     if (options.threadId) {
-      content = withVidBeeExportFooter(content)
+      content = withVidBeeExportAttribution(content, options.thinkingLabel)
     }
     await fs.writeFile(normalizedPath, content, 'utf8')
     return { path: normalizedPath }
@@ -165,7 +170,13 @@ class FileSystemService extends IpcService {
   @IpcMethod()
   async saveMarkdownPdf(
     _context: IpcContext,
-    options: { markdown: string; defaultFileName: string; title?: string; threadId?: string }
+    options: {
+      markdown: string
+      defaultFileName: string
+      title?: string
+      threadId?: string
+      thinkingLabel?: string
+    }
   ): Promise<{ path: string } | null> {
     let fileName = path.basename(options.defaultFileName || 'VidBee.pdf')
     if (!fileName.toLowerCase().endsWith('.pdf')) {
@@ -187,7 +198,7 @@ class FileSystemService extends IpcService {
 
     const normalizedPath = path.normalize(this.sanitizePath(result.filePath))
     const markdown = await markdownWithEmbeddedImages(options.markdown, options.threadId)
-    const html = markdownToPrintableHtml(markdown, options.title)
+    const html = markdownToPrintableHtml(markdown, options.title, options.thinkingLabel)
     const tempPath = path.join(os.tmpdir(), `vidbee-export-${process.pid}-${Date.now()}.html`)
     try {
       await fs.writeFile(tempPath, html, 'utf8')
@@ -690,8 +701,9 @@ class FileSystemService extends IpcService {
     }
   }
 
+  /** Delete a resolved path; optionally treat an already removed file as successful cleanup. */
   @IpcMethod()
-  async deleteFile(_context: IpcContext, filePath: string): Promise<boolean> {
+  async deleteFile(_context: IpcContext, filePath: string, allowMissing = false): Promise<boolean> {
     try {
       if (!filePath) {
         return false
@@ -709,7 +721,7 @@ class FileSystemService extends IpcService {
       })
 
       if (!stats) {
-        return false
+        return allowMissing
       }
 
       if (stats.isFile()) {

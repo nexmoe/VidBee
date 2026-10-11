@@ -553,6 +553,10 @@ export const captionLanguageScore = (
 /**
  * Pick the caption track that best matches the UI language.
  *
+ * Platform auto captions score below official tracks. A negative score still
+ * wins when it is the only usable file, so Bilibili `ai-zh` is imported
+ * instead of starting a local transcription.
+ *
  * @param tracks Candidate tracks.
  * @param preferred Preferred language tags.
  */
@@ -563,7 +567,7 @@ export const pickCaptionTrack = <
   preferred: string[]
 ): T | null => {
   let best: T | null = null
-  let bestScore = -1
+  let bestScore = Number.NEGATIVE_INFINITY
   for (const track of tracks) {
     if (!(track.text.trim() && isImportableCaptionTrack(track))) {
       continue

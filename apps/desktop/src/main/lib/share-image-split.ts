@@ -3,7 +3,7 @@ import path from 'node:path'
 import type { ShareImageLayout } from '@shared/types/share-card'
 import { nativeImage } from 'electron'
 
-/** Target a maximum page height of two widths, including continuation padding. */
+/** Target a maximum page height of two widths, including padding and the footer. */
 export const SHARE_IMAGE_MAX_ASPECT_RATIO = 2
 
 /** Balance a requested count across safe gaps, reserving enough gaps for later pages. */
@@ -43,16 +43,27 @@ export const shareImageSlices = (
   }
   const scale = width / layout.width
   const padding = Math.ceil(layout.padding * scale)
-  const maxContent = Math.floor(width * SHARE_IMAGE_MAX_ASPECT_RATIO) - 2 * padding
-  const safe = layout.safeBreaks.map((y) => Math.round(y * scale))
-  const preferred = layout.preferredBreaks.map((y) => Math.round(y * scale))
-  const boundaries = imageCount === undefined ? [0] : countedBoundaries(height, safe, imageCount)
+  const contentHeight =
+    layout.footerTop === undefined
+      ? height
+      : Math.min(height, Math.max(1, Math.round(layout.footerTop * scale)))
+  const footerHeight = height - contentHeight
+  const maxPageContent = Math.floor(width * SHARE_IMAGE_MAX_ASPECT_RATIO) - footerHeight
+  const maxContent = Math.max(1, maxPageContent - 2 * padding)
+  const safe = layout.safeBreaks
+    .map((y) => Math.round(y * scale))
+    .filter((y) => y > 0 && y < contentHeight)
+  const preferred = layout.preferredBreaks
+    .map((y) => Math.round(y * scale))
+    .filter((y) => y > 0 && y < contentHeight)
+  const boundaries =
+    imageCount === undefined ? [0] : countedBoundaries(contentHeight, safe, imageCount)
   let offset = boundaries.at(-1) ?? 0
-  while (height - offset > width * SHARE_IMAGE_MAX_ASPECT_RATIO - (offset > 0 ? padding : 0)) {
-    const remaining = height - offset
+  while (contentHeight - offset > maxPageContent - (offset > 0 ? padding : 0)) {
+    const remaining = contentHeight - offset
     const target = offset + remaining / Math.ceil(remaining / maxContent)
     const lower = offset + maxContent * 0.45
-    const upper = Math.min(offset + maxContent, height - padding)
+    const upper = Math.min(offset + maxContent, contentHeight - padding)
     /** Pick the nearest eligible gap while keeping each page reasonably substantial. */
     const nearest = (values: number[], min: number, max: number): number | undefined =>
       values
@@ -68,13 +79,13 @@ export const shareImageSlices = (
       nearest(safe, lower, upper) ??
       nearest(safe, offset + 1, upper) ??
       // An indivisible oversized image or table row is kept whole instead of clipped.
-      safe.find((y) => y > upper && y < height) ??
-      height
+      safe.find((y) => y > upper) ??
+      contentHeight
     boundaries.push(end)
     offset = end
   }
-  if (boundaries.at(-1) !== height) {
-    boundaries.push(height)
+  if (boundaries.at(-1) !== contentHeight) {
+    boundaries.push(contentHeight)
   }
   return boundaries.slice(0, -1).map((y, index) => ({
     x: 0,
@@ -82,7 +93,8 @@ export const shareImageSlices = (
     width,
     height: boundaries[index + 1] - y,
     paddingTop: index === 0 ? 0 : padding,
-    paddingBottom: index === boundaries.length - 2 ? 0 : padding
+    paddingBottom: index === boundaries.length - 2 ? 0 : padding,
+    footerHeight
   }))
 }
 
@@ -102,7 +114,7 @@ const marginRow = (bitmap: Buffer, width: number, y: number): Buffer => {
   return row
 }
 
-/** Preserve every source pixel and add clean top/bottom margins at safe page breaks. */
+/** Preserve body pixels at safe page breaks and append the branded footer to every page. */
 export const splitShareImage = (
   png: Buffer,
   layout: ShareImageLayout,
@@ -120,7 +132,7 @@ export const splitShareImage = (
   const bitmap = image.toBitmap()
   const stride = width * 4
   return slices.map((slice) => {
-    const pageHeight = slice.height + slice.paddingTop + slice.paddingBottom
+    const pageHeight = slice.height + slice.paddingTop + slice.paddingBottom + slice.footerHeight
     const page = Buffer.alloc(stride * pageHeight)
     const top = marginRow(bitmap, width, slice.y)
     const bottom = marginRow(bitmap, width, slice.y + slice.height - 1)
@@ -133,9 +145,25 @@ export const splitShareImage = (
       slice.y * stride,
       (slice.y + slice.height) * stride
     )
-    for (let y = slice.paddingTop + slice.height; y < pageHeight; y += 1) {
-      bottom.copy(page, y * stride)
+    const footerOffset = pageHeight - slice.footerHeight
+    const marginTop = slice.paddingTop + slice.height
+    const footerRow =
+      slice.footerHeight > 0
+        ? bitmap.subarray(
+            (height - slice.footerHeight) * stride,
+            (height - slice.footerHeight + 1) * stride
+          )
+        : bottom
+    // Blend only the empty margin so a poster's gradient meets the reused footer smoothly.
+    for (let y = marginTop; y < footerOffset; y += 1) {
+      const ratio = (y - marginTop + 1) / (slice.paddingBottom + 1)
+      for (let channel = 0; channel < stride; channel += 1) {
+        page[y * stride + channel] = Math.round(
+          bottom[channel] * (1 - ratio) + footerRow[channel] * ratio
+        )
+      }
     }
+    bitmap.copy(page, footerOffset * stride, (height - slice.footerHeight) * stride)
     return nativeImage.createFromBitmap(page, { width, height: pageHeight }).toPNG()
   })
 }

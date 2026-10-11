@@ -29,6 +29,8 @@ export interface SharePromptCardPayload {
   sourceByline?: string | null
   sourceTitle?: string | null
   tagline: string
+  /** Finished thinking duration, such as "Thought for 2 minutes". Omitted when unknown. */
+  thinkingLabel?: string
   /** User-visible instruction that produced this reply, when it is not the prompt name. */
   userText?: string | null
 }
@@ -108,6 +110,8 @@ export interface ShareImageLayout {
   width: number
   height: number
   padding: number
+  /** Start of the reusable footer, including its gap above and bottom padding. */
+  footerTop?: number
   safeBreaks: number[]
   preferredBreaks: number[]
 }

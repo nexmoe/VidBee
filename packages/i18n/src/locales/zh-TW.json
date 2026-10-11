@@ -998,9 +998,7 @@
       "off": "關閉",
       "ask": "先詢問",
       "auto": "自動允許"
-    },
-    "agentMaxConcurrentRuns": "本機智慧體並行數",
-    "agentMaxConcurrentRunsDescription": "使用本機模型時，最多可同時執行幾段智慧體對話"
+    }
   },
   "subscriptions": {
     "title": "訂閱",
@@ -1468,8 +1466,8 @@
     "promptWaiting": "等待模型回應 · 已等待 {{seconds}} 秒",
     "promptRunning": "正在產生…",
     "promptThinking": "思考過程",
-    "promptThinkingFor": "已思考 {{seconds}} 秒",
-    "promptThoughtFor": "思考了 {{seconds}} 秒",
+    "promptThinkingFor": "已思考 {{duration}}",
+    "promptThoughtFor": "思考了 {{duration}}",
     "promptAborted": "已停止",
     "promptTabCompleted": "已完成",
     "promptTabError": "異常",
@@ -1608,10 +1606,10 @@
     "promptShareSplitCount": "Number of images (optional)",
     "promptShareSplitCountAuto": "Automatic",
     "promptShareSplitCountHint": "Leave blank for automatic splitting. Fewer images may be saved to keep content intact.",
-    "thinkingSecond": "{{count}} second",
-    "thinkingSeconds": "{{count}} seconds",
-    "thinkingMinute": "{{count}} minute",
-    "thinkingMinutes": "{{count}} minutes",
+    "thinkingSecond": "{{count}} 秒",
+    "thinkingSeconds": "{{count}} 秒",
+    "thinkingMinute": "{{count}} 分鐘",
+    "thinkingMinutes": "{{count}} 分鐘",
     "promptCloudServiceErrorDetail": "Your transcript is saved. This service issue needs to be resolved before you can generate the response."
   },
   "whatsNew": {

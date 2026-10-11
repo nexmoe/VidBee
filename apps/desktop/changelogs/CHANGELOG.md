@@ -10,6 +10,16 @@ For full release notes, see [GitHub Releases](https://github.com/nexmoe/VidBee/r
 - Desktop and web format pickers retain high-resolution HLS streams and distinct audio languages when HTTP downloads are also available. ([#443](https://github.com/nexmoe/VidBee/issues/443), [#488](https://github.com/nexmoe/VidBee/pull/488))
 - RSS videos can be queued again after their downloads are removed, including removals from another connected app. You can also copy video links from the RSS item menu. ([#479](https://github.com/nexmoe/VidBee/issues/479), [#485](https://github.com/nexmoe/VidBee/pull/485))
 - Incomplete Qwen3-ASR model files are repaired or reported clearly before transcription starts. Overlapping model installations no longer delete each other's files, including when one is cancelled. ([#473](https://github.com/nexmoe/VidBee/issues/473), [#486](https://github.com/nexmoe/VidBee/pull/486))
+- Resume unfinished article sections and capture relevant screenshots while writing.
+- Finish completed agent answers promptly and keep long thinking histories readable.
+- Preserve thinking duration and branded footers in shared images and exported documents.
+- Keep subscription settings enabled when saving auto-download changes.
+- Import available platform-generated subtitles before starting local transcription.
+- Show account balances and pending credit recovery more reliably.
+- Prevent duplicate downloads, including simultaneous requests and files already saved on this computer.
+- Keep transcription queues moving and preserve elapsed times after reloading the app.
+- Preserve agent reasoning history and improve Markdown PDF exports.
+- Remove download records reliably when their saved files have already been deleted.
 
 ## [v2.1.0](https://github.com/nexmoe/VidBee/releases/tag/v2.1.0) - 2026-08-30
 

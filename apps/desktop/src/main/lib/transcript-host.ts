@@ -63,6 +63,7 @@ import { readTaskCreation } from './projection'
 import { getDesktopTaskQueueRef, peekDesktopTaskQueueRef } from './queue-ref'
 import { resolveTaskSourceFile } from './source-file'
 import { readElectronLocaleHints } from './system-locale'
+import { transcriptStageHistory } from './transcript-stage-history'
 import { resolveWorkerBundle } from './transcription-worker-path'
 
 const logger = scopedLoggers.engine
@@ -466,6 +467,8 @@ export const getTranscriptSnapshot = (downloadTaskId: string): TranscriptSnapsho
     })
   }
   const task = active ?? latest
+  const partial = task ? transcriptionPartials.getByTask(task.id) : null
+  const stage = partial?.stage ?? stageFromTask(task)
   const stored = getTranscriptStore().listForDownload(downloadTaskId)
   const sources = buildTranscriptSources({
     asrActive: Boolean(active && !isRediarizeTask(active)),
@@ -484,8 +487,8 @@ export const getTranscriptSnapshot = (downloadTaskId: string): TranscriptSnapsho
     creation: task ? readTaskCreation(task) : undefined,
     transcriptId: record?.id ?? null,
     listState: listStateOf(task, listedRecord),
-    stage: transcriptionPartials.getByDownload(downloadTaskId)?.stage ?? stageFromTask(task),
-    stageHistory: transcriptionPartials.getByDownload(downloadTaskId)?.stageHistory ?? [],
+    stage,
+    stageHistory: transcriptStageHistory(task, stage, partial?.stageHistory),
     error: task?.lastError?.rawMessage ?? null,
     sourceFilePath,
     title: titleFromDownload(download, sourceFilePath),

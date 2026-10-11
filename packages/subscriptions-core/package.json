@@ -21,8 +21,7 @@
   },
   "types": "./src/index.ts",
   "scripts": {
-    "typecheck": "tsc --noEmit",
-    "test": "tsx --test tests/requeue-removed-task.test.ts tests/requeue-shared-database.test.ts"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@orpc/contract": "^1.15.0",

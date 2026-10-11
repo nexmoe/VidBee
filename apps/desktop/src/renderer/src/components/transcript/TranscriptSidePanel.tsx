@@ -362,6 +362,11 @@ export function TranscriptSidePanel({
   const scrolledDownloadIdRef = useRef(downloadId)
   const scrolledTabIdRef = useRef<string | null>(null)
   const canUsePrompts = promptsReady ?? !running
+  /**
+   * Same wait control while the file is still downloading and after it finishes,
+   * until a transcript exists. No-speech and failed runs keep the guidance.
+   */
+  const canWaitForTranscript = !(canUsePrompts || noSpeech || failed)
 
   /**
    * Load enabled prompts and the active provider.
@@ -923,7 +928,7 @@ export function TranscriptSidePanel({
             threadId={threadId}
             transcriptLanguage={transcriptLanguage}
             transcriptOrigin={transcriptOrigin}
-            transcriptRunning={running && !canUsePrompts}
+            transcriptRunning={canWaitForTranscript}
             transcriptText={promptTranscriptText}
           />
         ) : (
