@@ -20,9 +20,7 @@ import { useTranslation } from 'react-i18next'
 
 /** Settings sections shown in the left-hand settings menu. */
 export const SETTINGS_NAV_ITEMS = [
-  ...(import.meta.env.DEV
-    ? [{ icon: UserRound, labelKey: 'settings.account.tab', value: 'account' } as const]
-    : []),
+  { icon: UserRound, labelKey: 'settings.account.tab', value: 'account' },
   { icon: Settings2, labelKey: 'settings.general', value: 'general' },
   { icon: FileText, labelKey: 'settings.metadataTab', value: 'metadata' },
   { icon: Cookie, labelKey: 'settings.cookiesTab', value: 'cookies' },
