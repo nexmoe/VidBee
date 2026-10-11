@@ -75,42 +75,94 @@ export function matchArtifactByClock(
     .sort((left, right) => Math.abs(left.start - time) - Math.abs(right.start - time))[0]
 }
 
+interface ArticleImageClaim {
+  index: number
+  raw: string
+  alt: string
+  time: number | null
+  artifact?: AgentArtifact
+}
+
+/**
+ * Claim one artifact for a markdown image or link.
+ *
+ * An explicit id wins and is consumed. Clock matching is image-only, and the
+ * claimed frame cannot satisfy a later citation.
+ *
+ * @param allowClock When false, only an explicit artifact id can match.
+ */
+function claimArticleArtifact(
+  artifacts: AgentArtifact[],
+  used: Set<string>,
+  alt: string,
+  url: string,
+  runId: string | undefined,
+  allowClock: boolean
+): { artifact?: AgentArtifact; time: number | null } {
+  const time = allowClock ? clockFromImage(alt, url) : null
+  const id = artifactIdFromUrl(url, artifacts)
+  const artifact =
+    (id ? artifacts.find((item) => item.id.toLowerCase() === id) : undefined) ??
+    (allowClock ? matchArtifactByClock(artifacts, used, time, runId) : undefined)
+  if (artifact) {
+    used.add(artifact.id)
+  }
+  return { artifact, time }
+}
+
+/**
+ * Claim one exclusive artifact for each markdown image, in document order.
+ *
+ * @param runId When set, clock matches stay inside that run. Explicit ids do not.
+ */
+function claimArticleImages(
+  text: string,
+  artifacts: AgentArtifact[],
+  runId?: string
+): ArticleImageClaim[] {
+  const used = new Set<string>()
+  const claims: ArticleImageClaim[] = []
+  for (const match of text.matchAll(/!\[([^\]]*)\]\(([^)]*)\)/g)) {
+    const alt = match[1]
+    const url = match[2]
+    const { artifact, time } = claimArticleArtifact(artifacts, used, alt, url, runId, true)
+    claims.push({ index: match.index ?? 0, raw: match[0], alt, time, artifact })
+  }
+  return claims
+}
+
 /** Rewrite screenshot markdown onto real `artifact:` ids after frames have been captured. */
 export function bindArticleImageArtifacts(
   text: string,
   artifacts: AgentArtifact[],
   runId: string
 ): string {
-  const used = new Set<string>()
-  return text.replace(/!\[([^\]]*)\]\(([^)]*)\)/g, (raw, alt: string, url: string) => {
-    const id = artifactIdFromUrl(url, artifacts)
-    const known =
-      (id ? artifacts.find((artifact) => artifact.id.toLowerCase() === id) : undefined) ??
-      matchArtifactByClock(artifacts, used, clockFromImage(alt, url), runId)
-    if (!known) {
-      return raw
-    }
-    used.add(known.id)
-    return `![${alt}](artifact:${known.id})`
-  })
+  const pieces: string[] = []
+  let position = 0
+  for (const image of claimArticleImages(text, artifacts, runId)) {
+    pieces.push(text.slice(position, image.index))
+    pieces.push(image.artifact ? `![${image.alt}](artifact:${image.artifact.id})` : image.raw)
+    position = image.index + image.raw.length
+  }
+  pieces.push(text.slice(position))
+  return pieces.join('')
 }
 
-/** Collect screenshot times cited in markdown that are not already bound to a stored artifact. */
+/**
+ * Collect screenshot times that did not claim an exclusive stored frame.
+ *
+ * A frame within five seconds can satisfy only one citation. The next nearby
+ * citation stays in this list so another capture can be requested.
+ */
 export function unboundArticleImageTimes(
   text: string,
   artifacts: AgentArtifact[],
   runId?: string
 ): number[] {
   const times: number[] = []
-  for (const match of text.matchAll(/!\[([^\]]*)\]\(([^)]*)\)/g)) {
-    const url = match[2].trim()
-    const id = artifactIdFromUrl(url, artifacts)
-    if (id && artifacts.some((artifact) => artifact.id.toLowerCase() === id)) {
-      continue
-    }
-    const time = clockFromImage(match[1], url)
-    if (time !== null && !matchArtifactByClock(artifacts, new Set(), time, runId)) {
-      times.push(time)
+  for (const image of claimArticleImages(text, artifacts, runId)) {
+    if (!image.artifact && image.time !== null) {
+      times.push(image.time)
     }
   }
   return [...new Set(times)]
@@ -229,12 +281,7 @@ export function splitAgentResponseMedia(
     const [raw, bang, alt, url] = match
     const index = match.index
     const image = bang === '!'
-    const id = artifactIdFromUrl(url, artifacts)
-    const artifact =
-      (id ? artifacts.find((item) => item.id.toLowerCase() === id) : undefined) ??
-      (image
-        ? matchArtifactByClock(artifacts, used, clockFromImage(alt, url), ownRunId)
-        : undefined)
+    const { artifact } = claimArticleArtifact(artifacts, used, alt, url, ownRunId, image)
     if (!(image || artifact)) {
       continue
     }
@@ -242,7 +289,6 @@ export function splitAgentResponseMedia(
       parts.push({ key: `text-${position}`, text: text.slice(position, index) })
     }
     if (artifact) {
-      used.add(artifact.id)
       parts.push({ key: `${artifact.id}-${index}`, artifact, caption: alt })
     } else {
       parts.push({ key: `image-${index}`, text: alt.trim() })

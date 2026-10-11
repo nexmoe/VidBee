@@ -131,21 +131,34 @@ function isDesktopAiCreditUsage(value: unknown): value is DesktopAiCreditUsage {
   )
 }
 
-/** Call one authenticated oRPC endpoint without exposing the session cookie. */
-async function callAuthenticatedRpc(route: string, input?: unknown): Promise<unknown> {
-  const response = await fetch(`${authApiUrl}/rpc/${route}`, {
-    body: JSON.stringify(input === undefined ? {} : { json: input }),
-    headers: {
-      'Content-Type': 'application/json',
-      Cookie: authClient.getCookie()
-    },
-    method: 'POST'
-  })
-  if (!response.ok) {
-    throw new Error('Unable to load account data.')
+const accountReads = new Map<string, Promise<unknown>>()
+
+/** Coalesce identical account reads across windows and bound their network lifetime. */
+function callAuthenticatedRpc(route: string, input?: unknown): Promise<unknown> {
+  const cookie = authClient.getCookie()
+  const body = JSON.stringify(input === undefined ? {} : { json: input })
+  const key = JSON.stringify([cookie, route, body])
+  const existing = accountReads.get(key)
+  if (existing) {
+    return existing
   }
-  const payload = (await response.json()) as { json?: unknown }
-  return payload.json
+  /** Read and validate one authenticated response before releasing its shared promise. */
+  const read = async (): Promise<unknown> => {
+    const response = await fetch(`${authApiUrl}/rpc/${route}`, {
+      body,
+      headers: { 'Content-Type': 'application/json', Cookie: cookie },
+      method: 'POST',
+      signal: AbortSignal.timeout(10_000)
+    })
+    if (!response.ok) {
+      throw new Error('Unable to load account data.')
+    }
+    const payload = (await response.json()) as { json?: unknown }
+    return payload.json
+  }
+  const pending = read().finally(() => accountReads.delete(key))
+  accountReads.set(key, pending)
+  return pending
 }
 
 /** Validate account-owned task details before exposing them to the renderer. */
@@ -159,6 +172,9 @@ function isDesktopAiReservation(value: unknown): value is DesktopAiReservation {
     row.requestId.length <= 128 &&
     (row.status === 'reserved' || row.status === 'reconciling') &&
     (row.taskLabel === null || typeof row.taskLabel === 'string') &&
+    (row.recoveryStoppedAt === undefined ||
+      row.recoveryStoppedAt === null ||
+      (Number.isSafeInteger(row.recoveryStoppedAt) && row.recoveryStoppedAt >= 0)) &&
     [
       row.createdAt,
       row.deadlineAt,
@@ -184,6 +200,7 @@ export async function getDesktopAiReservations(): Promise<DesktopAiReservation[]
     lastProgressAt: row.lastProgressAt,
     requestId: row.requestId,
     reservedCredits: row.reservedCredits,
+    recoveryStoppedAt: row.recoveryStoppedAt,
     status: row.status,
     taskLabel: row.taskLabel
   }))

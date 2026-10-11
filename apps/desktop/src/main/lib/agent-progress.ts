@@ -112,7 +112,7 @@ export class AgentProgressGuard {
     this.cursor = historyLength
   }
 
-  /** Measure source novelty independently of response cursors and cumulative metadata. */
+  /** Count new characters, or a new read range or body, and ignore cursors and cumulative metadata. */
   observe(messages: AgentMessage[]): boolean {
     const recent = messages.slice(this.cursor)
     this.cursor = messages.length
@@ -123,9 +123,11 @@ export class AgentProgressGuard {
         continue
       }
       called = true
-      const details = message.details as { newCharacters?: number } | undefined
-      if (typeof details?.newCharacters === 'number') {
-        progressed ||= details.newCharacters > 0
+      const details = message.details as
+        | { newCharacters?: number; requestedRange?: unknown }
+        | undefined
+      if (typeof details?.newCharacters === 'number' && details.newCharacters > 0) {
+        progressed = true
         continue
       }
       const semantic = message.content.map((part) => {
@@ -140,17 +142,12 @@ export class AgentProgressGuard {
       })
       const signature = createHash('sha256')
         .update(
-          JSON.stringify({ name: message.toolName, content: semantic }, (key, value) =>
-            [
-              'nextOffset',
-              'nextTextOffset',
-              'total',
-              'coverage',
-              'requestedRange',
-              'messageId'
-            ].includes(key)
-              ? undefined
-              : value
+          JSON.stringify(
+            { name: message.toolName, requestedRange: details?.requestedRange, content: semantic },
+            (key, value) =>
+              ['nextOffset', 'nextTextOffset', 'total', 'coverage', 'messageId'].includes(key)
+                ? undefined
+                : value
           )
         )
         .digest('hex')
@@ -167,9 +164,14 @@ export class AgentProgressGuard {
   }
 }
 
-/** Resume a failed article retry in bounded sections, never a cancelled or permanently rejected run. */
+/** Resume saved article sections on explicit retries, never cancelled runs or ordinary chat. */
 export function retryArticleInSections(input: {
-  previous?: { status: string; error: string | null; errorCode?: AgentErrorCode }
+  previous?: {
+    status: string
+    error: string | null
+    errorCode?: AgentErrorCode
+    articleSections?: unknown[]
+  }
   sourceReady: boolean
   isChat: boolean
 }): boolean {
@@ -177,5 +179,9 @@ export function retryArticleInSections(input: {
     return false
   }
   const code = input.previous.errorCode ?? parseAgentError(input.previous.error ?? '').code
-  return INCOMPLETE_CODES.has(code)
+  return (
+    INCOMPLETE_CODES.has(code) ||
+    code === 'TIMEOUT' ||
+    Boolean(input.previous.articleSections?.length)
+  )
 }

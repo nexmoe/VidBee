@@ -429,48 +429,108 @@ export function AccountPanel() {
   const [reservations, setReservations] = useState<DesktopAiReservation[] | null>(null)
   const [reservationsError, setReservationsError] = useState(false)
   const creditRequestVersion = useRef(0)
+  const creditRefresh = useRef<{ version: number; promise: Promise<boolean> } | undefined>(
+    undefined
+  )
+  const lastCreditData = useRef<string | undefined>(undefined)
   const [creditHistoryVersion, setCreditHistoryVersion] = useState(0)
 
   /** Ignore stale account responses and refresh the balance alongside its underlying holds. */
-  const refreshCreditData = useCallback(async (): Promise<void> => {
-    const version = ++creditRequestVersion.current
-    const [balance, tasks] = await Promise.allSettled([
-      ipcServices.account.getAiCredits(),
-      ipcServices.account.getAiReservations()
-    ])
-    if (version !== creditRequestVersion.current) {
-      return
+  const refreshCreditData = useCallback((): Promise<boolean> => {
+    const version = creditRequestVersion.current
+    if (creditRefresh.current?.version === version) {
+      return creditRefresh.current.promise
     }
-    setCreditHistoryVersion(version)
-    if (balance.status === 'fulfilled') {
-      setCredits(balance.value)
+    /** Apply one snapshot only while it still belongs to the current account. */
+    const refresh = async (): Promise<boolean> => {
+      const [balance, tasks] = await Promise.allSettled([
+        ipcServices.account.getAiCredits(),
+        ipcServices.account.getAiReservations()
+      ])
+      if (version !== creditRequestVersion.current) {
+        return false
+      }
+      if (balance.status === 'fulfilled') {
+        setCredits(balance.value)
+      }
+      if (tasks.status === 'fulfilled') {
+        setReservations(tasks.value)
+      }
+      const success = balance.status === 'fulfilled' && tasks.status === 'fulfilled'
+      if (success) {
+        const snapshot = JSON.stringify([balance.value, tasks.value])
+        if (snapshot !== lastCreditData.current) {
+          lastCreditData.current = snapshot
+          setCreditHistoryVersion((previous) => previous + 1)
+        }
+      }
+      setAccountDataError(balance.status === 'rejected')
+      setReservationsError(tasks.status === 'rejected')
+      return success
     }
-    if (tasks.status === 'fulfilled') {
-      setReservations(tasks.value)
-    }
-    setAccountDataError(balance.status === 'rejected')
-    setReservationsError(tasks.status === 'rejected')
+    const promise = refresh().finally(() => {
+      if (creditRefresh.current?.promise === promise) {
+        creditRefresh.current = undefined
+      }
+    })
+    creditRefresh.current = { version, promise }
+    return promise
   }, [])
 
-  const hasReservedCredits = (credits?.reservedCredits ?? 0) > 0
+  const hasReservedCredits =
+    (credits?.reservedCredits ?? 0) > 0 &&
+    (!reservations?.length || reservations.some((row) => !row.recoveryStoppedAt))
   useEffect(() => {
     if (!user) {
       return
     }
-    /** Refresh active holds while visible and whenever the account regains focus. */
+    let stopped = false
+    let running = false
+    let failures = 0
+    let timer: ReturnType<typeof setTimeout> | undefined
+    /** Schedule only after completion, with bounded backoff and jitter. */
+    const schedule = () => {
+      if (stopped || document.hidden || !hasReservedCredits || failures >= 5) {
+        return
+      }
+      timer = setTimeout(
+        () => void poll(),
+        Math.min(240_000, 15_000 * 2 ** failures) + Math.random() * 1500
+      )
+    }
+    /** Keep one refresh in flight and stop automatic retries after five failures. */
+    const poll = async () => {
+      if (stopped || running || document.hidden) {
+        return
+      }
+      running = true
+      if (timer) {
+        clearTimeout(timer)
+        timer = undefined
+      }
+      const success = await refreshCreditData()
+      running = false
+      failures = success ? 0 : failures + 1
+      schedule()
+    }
+    /** A visible account event explicitly starts a fresh, bounded polling cycle. */
     const refreshVisible = () => {
       if (!document.hidden) {
-        void refreshCreditData()
+        failures = 0
+        void poll()
       }
     }
     window.addEventListener('focus', refreshVisible)
+    document.addEventListener('visibilitychange', refreshVisible)
     const subscription = ipcEvents.on('account:credits-updated', refreshVisible)
-    const interval = hasReservedCredits ? setInterval(refreshVisible, 15_000) : undefined
+    schedule()
     return () => {
+      stopped = true
       window.removeEventListener('focus', refreshVisible)
+      document.removeEventListener('visibilitychange', refreshVisible)
       ipcEvents.removeListener('account:credits-updated', subscription)
-      if (interval) {
-        clearInterval(interval)
+      if (timer) {
+        clearTimeout(timer)
       }
     }
   }, [user, hasReservedCredits, refreshCreditData])
@@ -529,12 +589,16 @@ export function AccountPanel() {
       })
 
     const removeAuthenticated = window.onAuthenticated((nextUser) => {
+      creditRequestVersion.current++
+      lastCreditData.current = undefined
       setUser(nextUser as DesktopAuthUser)
       void refreshAccountData()
       setWorking(false)
       setErrorMessage(null)
     })
     const removeUpdated = window.onUserUpdated((nextUser) => {
+      creditRequestVersion.current++
+      lastCreditData.current = undefined
       setUser(nextUser as DesktopAuthUser | null)
       if (nextUser) {
         void refreshAccountData()

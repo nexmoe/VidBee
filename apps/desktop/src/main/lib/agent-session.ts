@@ -20,6 +20,7 @@ import { summarizeAgentHistory } from './agent-compaction'
 import { HistoryRepairer, repairAgentHistory } from './agent-context'
 import { agentHistoryText, agentMessageId } from './agent-memory'
 import { type AgentHarnessTuning, agentRuntimePolicy } from './agent-model-profile'
+import { AgentProgressGuard, assistantDeliveredArticle } from './agent-progress'
 
 /** Agent-turn retries for transient Cloud/provider failures. Deeper than Pi's default 3 so worker restarts and stream drops can recover. */
 export const AGENT_SESSION_MAX_RETRIES = 5
@@ -64,11 +65,11 @@ export async function runUntilAborted<T>(signal: AbortSignal, work: Promise<T>):
 /** Restore the selected SDK branch through public append APIs, remapping compaction boundaries. */
 export function restoreVideoAgentSession(
   manager: SessionManager,
-  thread: AgentThread,
+  thread: AgentThread | undefined,
   history: AgentMessage[]
 ): SessionManager {
-  const selected = selectedAgentMessages(thread).at(-1)
-  const entries = thread.runs.find((run) => run.id === selected?.runId)?.sessionEntries as
+  const selected = thread ? selectedAgentMessages(thread).at(-1) : undefined
+  const entries = thread?.runs.find((run) => run.id === selected?.runId)?.sessionEntries as
     | SessionEntry[]
     | undefined
   const ids = new Map<string, string>()
@@ -148,7 +149,7 @@ export function restoreVideoAgentSession(
 export async function createVideoAgentSession(options: {
   /** 0 disables retries so an unfinished stream can hand off instead of thinking again. */
   maxRetries?: number
-  thread: AgentThread
+  thread?: AgentThread
   thinkingLevel?: AgentThinkingLevel
   tuning?: AgentHarnessTuning
   history: AgentMessage[]
@@ -206,6 +207,18 @@ export async function createVideoAgentSession(options: {
     noExtensions: true,
     extensionFactories: [
       (pi) => {
+        let answerDelivered = false
+        /** Allow preflight compaction again when a new user request arrives. */
+        pi.on('input', () => {
+          answerDelivered = false
+          return { action: 'continue' }
+        })
+        /** A completed answer must settle before doing maintenance for a later request. */
+        pi.on('agent_end', (event) => {
+          answerDelivered = assistantDeliveredArticle(
+            event.messages.findLast((message) => message.role === 'assistant') ?? {}
+          )
+        })
         /** Translate the Cloud transport's public error into the SDK retry vocabulary. */
         pi.on('message_end', (event) => {
           const message = event.message
@@ -217,6 +230,9 @@ export async function createVideoAgentSession(options: {
         })
         /** Preserve full video evidence while delegating boundaries and recovery to the SDK. */
         pi.on('session_before_compact', async (event) => {
+          if (answerDelivered && !event.willRetry && event.reason !== 'manual') {
+            return { cancel: true }
+          }
           const preparation = event.preparation
           const source = [...preparation.messagesToSummarize, ...preparation.turnPrefixMessages]
           const summary = await summarizeAgentHistory({
@@ -246,7 +262,8 @@ export async function createVideoAgentSession(options: {
                 maxRetries: 1,
                 onUsage: options.onSummaryUsage
               }),
-            onUsage: options.onSummaryUsage
+            /** The completion helper already records each provider attempt, including retries. */
+            onUsage: () => undefined
           })
           return {
             compaction: {
@@ -417,11 +434,92 @@ export async function streamAgentCompletionMessage(options: {
   throw lastError ?? new Error('The source review returned no result')
 }
 
-/** Run a bounded one-shot completion with shared retry, without constructing a full session. */
-export async function streamAgentCompletion(
-  options: Parameters<typeof streamAgentCompletionMessage>[0]
-): Promise<string> {
-  const result = await streamAgentCompletionMessage(options)
+type AgentCompletionOptions = Parameters<typeof streamAgentCompletionMessage>[0] & {
+  tools?: AgentTool[]
+  tuning?: AgentHarnessTuning
+  onMessage?: (message: AgentMessage) => void
+}
+
+/** Same STALLED copy as the main agent loop when repeated tool work makes no progress. */
+const SECTION_STALLED_MESSAGE =
+  'The assistant was stopped after repeating the same action without new progress. Your progress is saved.'
+
+/**
+ * Run one section with the parent agent's tool loop, retries, compaction, and stall stop.
+ *
+ * These sessions start from an empty history, so duplicate detection begins at the first tool result.
+ */
+async function streamAgentToolCompletion(
+  options: AgentCompletionOptions & { tools: AgentTool[] }
+): Promise<AssistantMessage> {
+  const archived: AgentMessage[] = []
+  const progressGuard = new AgentProgressGuard(0)
+  let stalled = false
+  const session = await createVideoAgentSession({
+    maxRetries: options.maxRetries,
+    tuning: options.tuning,
+    thinkingLevel: options.thinkingLevel,
+    history: [],
+    model: options.model,
+    apiKey: options.apiKey,
+    fetch: options.fetch,
+    signal: options.signal,
+    systemPrompt: options.systemPrompt ?? '',
+    task: options.content ?? '',
+    tools: options.tools,
+    memory: () => options.content ?? '',
+    shouldStop: () => {
+      if (!progressGuard.observe(archived)) {
+        return false
+      }
+      stalled = true
+      return true
+    },
+    onSummaryUsage: options.onUsage,
+    outputTokens: () => options.maxTokens ?? options.model.maxTokens
+  })
+  const unsubscribe = session.subscribe((event) => {
+    if (event.type === 'message_update' && event.message.role === 'assistant') {
+      options.onMessageUpdate?.(event.message)
+    } else if (event.type === 'message_end') {
+      // Listeners run before shouldStopAfterTurn, matching the main loop's archive.
+      archived.push(structuredClone(event.message))
+      if (event.message.role === 'assistant') {
+        options.onUsage(event.message)
+      }
+      if (event.message.role === 'assistant' || event.message.role === 'toolResult') {
+        options.onMessage?.(structuredClone(event.message))
+      }
+    }
+  })
+  try {
+    await runUntilAborted(
+      options.signal,
+      session.prompt(options.content ?? '', { expandPromptTemplates: false })
+    )
+    if (stalled) {
+      throw new AgentUserError(SECTION_STALLED_MESSAGE, 'STALLED', false)
+    }
+    const result = session.agent.state.messages.findLast((message) => message.role === 'assistant')
+    if (result?.role !== 'assistant') {
+      throw new AgentUserError('The source section returned no result', 'INTERNAL')
+    }
+    return result
+  } finally {
+    await session.abort()
+    unsubscribe()
+    session.dispose()
+  }
+}
+
+/** Complete one task, retaining a full agent loop whenever tools are available. */
+export async function streamAgentCompletion(options: AgentCompletionOptions): Promise<string> {
+  const result = options.tools?.length
+    ? await streamAgentToolCompletion({ ...options, tools: options.tools })
+    : await streamAgentCompletionMessage(options)
+  if (!options.tools?.length) {
+    options.onMessage?.(result)
+  }
   if (result.stopReason === 'error' || result.stopReason === 'aborted') {
     const failure = parseAgentError(result.errorMessage)
     throw new AgentUserError(

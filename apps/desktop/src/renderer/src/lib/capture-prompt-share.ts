@@ -1,5 +1,6 @@
 import { ipcServices } from '@renderer/lib/ipc'
 import type { ShareCardPayload } from '@shared/types/share-card'
+import { applyViaVidBeeFilename } from '@vidbee/downloader-core/filename-style'
 
 /**
  * Wait for the next two animation frames so layout and paint can settle.
@@ -145,19 +146,23 @@ export const exportBaseFileName = (title?: string | null): string => {
 /**
  * Build a filesystem-safe PNG name from a media title.
  *
+ * The name ends with `via VidBee` before the extension.
+ *
  * @param title Source title shown on the share card.
  */
 export const shareImageFileName = (title?: string | null): string =>
-  `${exportBaseFileName(title)}.png`
+  applyViaVidBeeFilename(`${exportBaseFileName(title)}.png`)
 
 /**
  * Build a filesystem-safe export name with the given extension.
+ *
+ * The name ends with `via VidBee` before the extension.
  *
  * @param title Source title used as the default file name.
  * @param extension File extension without a leading dot.
  */
 export const exportFileName = (title: string | null | undefined, extension: string): string =>
-  `${exportBaseFileName(title)}.${extension.replace(/^\./, '')}`
+  applyViaVidBeeFilename(`${exportBaseFileName(title)}.${extension.replace(/^\./, '')}`)
 
 /**
  * Render the share card in the hidden window and return a PNG blob.

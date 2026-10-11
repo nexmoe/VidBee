@@ -6,6 +6,12 @@ For full release notes, see [GitHub Releases](https://github.com/nexmoe/VidBee/r
 ## [Unreleased]
 
 ### Fixed
+- Resume unfinished article sections and capture relevant screenshots while writing.
+- Finish completed agent answers promptly and keep long thinking histories readable.
+- Preserve thinking duration and branded footers in shared images and exported documents.
+- Keep subscription settings enabled when saving auto-download changes.
+- Import available platform-generated subtitles before starting local transcription.
+- Show account balances and pending credit recovery more reliably.
 - Prevent duplicate downloads, including simultaneous requests and files already saved on this computer.
 - Keep transcription queues moving and preserve elapsed times after reloading the app.
 - Preserve agent reasoning history and improve Markdown PDF exports.

@@ -150,7 +150,8 @@ export function defineAgentTool<T extends TSchema>(
   parameters: T,
   execute: (
     params: Static<T>,
-    toolCallId: string
+    toolCallId: string,
+    signal: AbortSignal
   ) => Promise<AgentToolResult<Record<string, unknown>>>,
   resultBudget?: (params: Static<T>) => number
 ): AgentTool<T> {
@@ -161,8 +162,8 @@ export function defineAgentTool<T extends TSchema>(
     parameters,
     executionMode: 'sequential',
     execute: async (id, params, signal) => {
-      context.signal.throwIfAborted()
-      signal?.throwIfAborted()
+      const executionSignal = signal ? AbortSignal.any([context.signal, signal]) : context.signal
+      executionSignal.throwIfAborted()
       const gate = requiredApproval(name, params)
       const pathGate = requiresInteractivePathApproval(name, params, context.downloadPath ?? '')
       if ((gate || pathGate) && context.requestApproval) {
@@ -176,8 +177,8 @@ export function defineAgentTool<T extends TSchema>(
           return APPROVAL_DENIED_RESULT
         }
       }
-      const result = await execute(params, id)
-      context.signal.throwIfAborted()
+      const result = await execute(params, id, executionSignal)
+      executionSignal.throwIfAborted()
       const fullText = result.content
         .filter((part) => part.type === 'text')
         .map((part) => part.text)
@@ -207,7 +208,7 @@ export function defineAgentTool<T extends TSchema>(
   }
 }
 
-/** Expose video-scoped evidence and media capabilities with explicit per-run limits. */
+/** Expose video-scoped evidence and media capabilities for content-driven tool use. */
 export function createAgentTools(context: AgentToolContext): AgentTool[] {
   const reviewArticle = context.reviewArticle
   const writeArticle = context.writeArticle
@@ -216,24 +217,35 @@ export function createAgentTools(context: AgentToolContext): AgentTool[] {
   const transcriptLines = (source?: string): AgentTranscriptLine[] =>
     source === 'original' ? (context.timingLines ?? context.lines) : context.lines
   const downloadBudget = { used: 0 }
-  let frameCount = 0
-  let clipCount = 0
   const completed = new Map<string, AgentArtifact>()
   /** Reuse an identical immutable result rather than repeating work after a model retry. */
   async function media(
     kind: 'image' | 'video',
     start: number,
     end: number,
-    callId: string
+    callId: string,
+    signal: AbortSignal
   ): Promise<AgentArtifact> {
     const { createAgentMedia } = await import('./agent-media')
     const key = `${kind}:${start}:${end}`
-    const cached = completed.get(key)
+    const cached =
+      completed.get(key) ??
+      context.artifacts?.find(
+        (artifact) =>
+          artifact.kind === kind &&
+          artifact.start === start &&
+          (kind === 'image' || artifact.end === end)
+      )
     if (cached) {
       return cached
     }
     const artifact = await createAgentMedia(
-      { ...context, downloadBudget, onProgress: (text) => context.onProgress(callId, text) },
+      {
+        ...context,
+        signal,
+        downloadBudget,
+        onProgress: (text) => context.onProgress(callId, text)
+      },
       kind,
       start,
       end
@@ -616,7 +628,7 @@ export function createAgentTools(context: AgentToolContext): AgentTool[] {
     defineAgentTool(
       context,
       'capture_frames',
-      'Extract real screenshots at source video times in seconds (maximum 6 per call, 12 per run). For topic-based screenshots, first search_transcript and read the matching original cue; pass a time within that cue. By default the tool captures its midpoint to avoid cue boundaries; timestamps in gaps or cues longer than 10 seconds remain unchanged. Use exact=true only for an explicitly requested instant or an inspected alternative frame. Avoid transitions, partial reveals and mismatched subjects; a cue midpoint does not guarantee the intended visual. Missing video is downloaded automatically. Check returned transcriptAtTimestamp against the intended topic before embedding. Cite each screenshot by copying the returned reference exactly: ![caption](artifact:xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx). Never shorten the UUID, drop the artifact: prefix, or replace it with a timestamp. Recapture if the cue does not match. If vision is unavailable, captions must attribute claims to the transcript, not claim visual verification.',
+      'Extract real screenshots at source video times in seconds whenever they help the task, including during article writing. Choose the number and timing from the content; there is no fixed screenshot quota. Existing identical frames are reused. For topic-based screenshots, use a matching original subtitle cue; search_transcript and read_transcript can locate missing timing evidence. By default the tool captures its midpoint to avoid cue boundaries; timestamps in gaps or cues longer than 10 seconds remain unchanged. Use exact=true when a specific instant serves the task better. Avoid transitions, partial reveals and mismatched subjects; a cue midpoint does not guarantee the intended visual. Missing video is downloaded automatically. Check returned transcriptAtTimestamp against the intended topic before embedding. Cite each screenshot by copying the returned reference exactly: ![caption](artifact:xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx). Never shorten the UUID, drop the artifact: prefix, or replace it with a timestamp. Recapture if the cue does not match. If vision is unavailable, captions must attribute claims to the transcript, not claim visual verification.',
       Type.Object(
         {
           exact: Type.Optional(
@@ -627,13 +639,12 @@ export function createAgentTools(context: AgentToolContext): AgentTool[] {
           ),
           timestamps: Type.Array(Type.Number({ minimum: 0 }), {
             minItems: 1,
-            maxItems: 6,
             uniqueItems: true
           })
         },
         { additionalProperties: false }
       ),
-      async ({ timestamps, exact }, callId) => {
+      async ({ timestamps, exact }, callId, signal) => {
         const { validateAgentRange, readAgentArtifactImage } = await import('./agent-media')
         for (const time of timestamps) {
           validateAgentRange(time, time + 0.1, context.duration)
@@ -643,19 +654,13 @@ export function createAgentTools(context: AgentToolContext): AgentTool[] {
           timestamp: agentFrameTimestamp(time, context.timingLines ?? [], exact)
         }))
         timestamps = [...new Set(selections.map((selection) => selection.timestamp))]
-        const newCount = timestamps.filter(
-          (time) => !completed.has(`image:${time}:${time + 0.1}`)
-        ).length
-        if (frameCount + newCount > 12) {
-          throw new Error('Screenshot limit reached (12 per run)')
-        }
         for (const time of timestamps) {
           validateAgentRange(time, time + 0.1, context.duration)
         }
-        frameCount += newCount
         const artifacts: AgentArtifact[] = []
         for (const time of timestamps) {
-          artifacts.push(await media('image', time, time + 0.1, callId))
+          signal.throwIfAborted()
+          artifacts.push(await media('image', time, time + 0.1, callId, signal))
         }
         const result = textResult({
           selections,
@@ -759,7 +764,7 @@ export function createAgentTools(context: AgentToolContext): AgentTool[] {
           defineAgentTool(
             context,
             'write_article',
-            'Optionally hand off a detailed rewrite when the complete source cannot fit the available context. Section writers use the current user request, full source and existing screenshots, and deliver the assembled article directly. If illustrations are needed, capture them before calling this tool; section writers cannot call media tools. This makes multiple model requests; do not use for a summary or when the source is already available in context.',
+            'Optionally hand off a detailed rewrite when the complete source cannot fit the available context. Section writers use the current user request and full source, reuse relevant screenshots and can capture or inspect more frames while writing. They deliver the assembled article directly. This makes multiple model requests; do not use for a summary or when the source is already available in context.',
             Type.Object({}, { additionalProperties: false }),
             async () => {
               writeArticle()
@@ -774,18 +779,15 @@ export function createAgentTools(context: AgentToolContext): AgentTool[] {
     defineAgentTool(
       context,
       'create_clip',
-      'Cut an accurate MP4 clip from this video, using start/end source seconds. Maximum duration 120 seconds, 3 clips per run. Returns a playable attachment and poster. Cite it by copying the returned reference exactly: [caption](artifact:xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx). Never shorten the UUID or drop the artifact: prefix.',
+      'Cut an accurate MP4 clip from this video, using start/end source seconds. Each clip can last at most 120 seconds. Choose how many clips the content needs; there is no fixed clip count. Existing identical ranges are reused. Returns a playable attachment and poster. Cite it by copying the returned reference exactly: [caption](artifact:xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx). Never shorten the UUID or drop the artifact: prefix.',
       Type.Object(
         { start: Type.Number({ minimum: 0 }), end: Type.Number({ exclusiveMinimum: 0 }) },
         { additionalProperties: false }
       ),
-      async ({ start, end }, callId) => {
+      async ({ start, end }, callId, signal) => {
         const { validateAgentRange } = await import('./agent-media')
         validateAgentRange(start, end, context.duration)
-        if (!completed.has(`video:${start}:${end}`) && ++clipCount > 3) {
-          throw new Error('Clip limit reached (3 per run)')
-        }
-        const artifact = await media('video', start, end, callId)
+        const artifact = await media('video', start, end, callId, signal)
         return textResult({
           artifact: {
             id: artifact.id,

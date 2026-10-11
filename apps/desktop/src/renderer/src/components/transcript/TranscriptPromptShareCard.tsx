@@ -1,5 +1,6 @@
 import { TranscriptShareCardChrome } from '@renderer/components/transcript/TranscriptShareCardChrome'
 import type { AgentArtifact } from '@shared/agent-chat'
+import { Brain } from 'lucide-react'
 import type { Ref } from 'react'
 import { AgentResponseContent } from './AgentResponseContent'
 
@@ -12,6 +13,7 @@ interface TranscriptPromptShareCardProps {
   sourceByline?: string | null
   sourceTitle?: string | null
   tagline: string
+  thinkingLabel?: string
   userText?: string | null
 }
 
@@ -24,6 +26,7 @@ interface TranscriptPromptShareCardProps {
  * @param props.sourceByline Platform and channel under the title.
  * @param props.sourceTitle Media title in the header.
  * @param props.tagline One-line VidBee intro in the footer.
+ * @param props.thinkingLabel Finished thinking duration. Omitted when the run has none.
  * @param props.userText User-sent instruction that produced this reply.
  */
 export function TranscriptPromptShareCard({
@@ -35,6 +38,7 @@ export function TranscriptPromptShareCard({
   sourceByline,
   sourceTitle,
   tagline,
+  thinkingLabel,
   userText
 }: TranscriptPromptShareCardProps) {
   return (
@@ -58,6 +62,16 @@ export function TranscriptPromptShareCard({
               {userText}
             </p>
           </div>
+        ) : null}
+        {thinkingLabel ? (
+          <p
+            className="mb-4 flex items-center gap-1.5 text-sm text-white/70 leading-snug"
+            data-testid="transcript-share-card-thinking"
+            dir="auto"
+          >
+            <Brain aria-hidden className="size-3.5 shrink-0" />
+            <span>{thinkingLabel}</span>
+          </p>
         ) : null}
         <div className="text-white [&_*]:text-white">
           <AgentResponseContent

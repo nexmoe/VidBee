@@ -17,7 +17,7 @@ import {
   ThinkingStepsContent,
   ThinkingStepsHeader
 } from '@vidbee/ui/components/ui/thinking-steps'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { TranscriptPromptGuidance } from './TranscriptPromptGuidance'
 
@@ -34,7 +34,7 @@ const toolIcons = {
   read_artifact: 'image'
 } as const
 
-/** Expand each reasoning paragraph once, preserving its position between tool calls. */
+/** Preserve reasoning between tools without mounting thousands of animated paragraph rows. */
 export function eventRows(message: AgentChatMessage, run?: AgentChatRun): AgentActivity[] {
   const activity = run?.activity?.length
     ? run.activity
@@ -50,14 +50,16 @@ export function eventRows(message: AgentChatMessage, run?: AgentChatRun): AgentA
     !hasThinking && message.thinking.trim()
       ? [{ id: 'thinking', kind: 'thinking', text: message.thinking }, ...activity]
       : activity
-  return events.flatMap((event) =>
-    event.kind === 'thinking'
-      ? event.text
-          .split(/\n\s*\n/)
-          .map((text, index) => ({ ...event, id: `${event.id}:${index}`, text: text.trim() }))
-          .filter((event) => event.text)
-      : [event]
-  )
+  return events.flatMap((event) => {
+    if (event.kind !== 'thinking') {
+      return [event]
+    }
+    const paragraphs = event.text.split(/\n\s*\n/)
+    const rows = paragraphs.length > 64 ? [event.text] : paragraphs
+    return rows
+      .map((text, index) => ({ ...event, id: `${event.id}:${index}`, text: text.trim() }))
+      .filter((event) => event.text)
+  })
 }
 
 /** Format a tool artifact's source timestamp for an inline video link. */
@@ -199,21 +201,25 @@ export function AgentEventStream({
   const rows = eventRows(message, run)
   const failed = run?.status === 'error'
   const stopped = run?.status === 'aborted' || run?.status === 'interrupted'
-  const answering = Boolean(message.text.trim())
   const awaitingApproval = run?.tools.some((tool) => tool.status === 'pending-approval') ?? false
   const hasTail = message.legacy || failed || stopped
-  const [open, setOpen] = useState(
-    () => (!answering && running) || failed || stopped || awaitingApproval
-  )
+  const userClosed = useRef(false)
+  const [open, setOpen] = useState(() => running || failed || stopped || awaitingApproval)
   useEffect(() => {
     if (failed || stopped || awaitingApproval) {
       setOpen(true)
       return
     }
-    if (answering) {
+    if (running) {
+      if (!userClosed.current) {
+        setOpen(true)
+      }
+      return
+    }
+    if (!userClosed.current) {
       setOpen(false)
     }
-  }, [answering, awaitingApproval, failed, stopped])
+  }, [awaitingApproval, failed, running, stopped])
   if (!(rows.length || running || hasTail)) {
     return null
   }
@@ -227,7 +233,10 @@ export function AgentEventStream({
     <ThinkingSteps
       className="w-full font-sans"
       data-testid="transcript-prompt-thinking"
-      onOpenChange={setOpen}
+      onOpenChange={(next) => {
+        userClosed.current = !next
+        setOpen(next)
+      }}
       open={open}
     >
       <ThinkingStepsHeader icon="brain">{header}</ThinkingStepsHeader>

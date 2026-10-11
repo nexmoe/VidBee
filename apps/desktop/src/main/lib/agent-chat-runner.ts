@@ -21,8 +21,8 @@ import { AI_CHAT_PROMPT_ID, agentChatPrompt, resolveAiPromptContent } from '../.
 import type { AiPrompt } from '../../shared/ai-types'
 import { settingsManager } from '../settings'
 import { scopedLoggers } from '../utils/logger'
-import { writeSectionedArticle } from './agent-article'
-import { materializeAgentArticleImages } from './agent-article-images'
+import { type AgentArticleSection, writeSectionedArticle } from './agent-article'
+import { materializeAgentArticleImages, rejectUnboundArticleImages } from './agent-article-images'
 import { AGENT_ARTICLE_REVIEW_PROMPT, tryReviewAgentArticle } from './agent-article-review'
 import {
   BudgetCalibration,
@@ -1077,7 +1077,13 @@ function registerRunTools(ctx: AgentRunContext): AgentTool[] {
       return selected
     },
     artifacts: thread.artifacts,
-    history: () => [...ctx.history, ...ctx.archived],
+    history: () => [
+      ...ctx.history,
+      ...ctx.archived,
+      ...((run.articleSections as AgentArticleSection[] | undefined) ?? []).flatMap((section) =>
+        section.attempts.flatMap((attempt) => attempt.messages as AgentMessage[])
+      )
+    ],
     notes: () => run.workingNotes ?? '',
     writeNotes: (notes) => {
       const previous = run.workingNotes
@@ -1479,7 +1485,7 @@ async function prepareRun(ctx: AgentRunContext): Promise<void> {
   const retriedMessage = thread.messages.find((item) => item.id === input.retryMessageId)
   const retryInSections = retryArticleInSections({
     previous: thread.runs.find((item) => item.id === retriedMessage?.runId),
-    sourceReady: !chooseSource && Boolean(ctx.prepared || !needsSource),
+    sourceReady: !chooseSource && lines.some((line) => line.text.trim()),
     isChat: thread.promptId === AI_CHAT_PROMPT_ID
   })
   signals.sectionedRetry = retryInSections
@@ -1531,6 +1537,13 @@ async function sectionedWritePhase(ctx: AgentRunContext): Promise<void> {
     ctx.previousPhase === 'continue-truncated' ||
     ctx.signals.sectionedRetry
   run.contextStatus = 'writing'
+  const retriedMessage = thread.messages.find((item) => item.id === input.retryMessageId)
+  const previousRun = thread.runs.find((item) => item.id === retriedMessage?.runId)
+  const resume =
+    previousRun?.evidenceSource === run.evidenceSource &&
+    previousRun?.instruction === run.instruction
+      ? (previousRun?.articleSections as AgentArticleSection[] | undefined)
+      : undefined
   persist(entry, 'article.writing-started', true)
   const result = await runUntilAborted(
     controller.signal,
@@ -1538,6 +1551,7 @@ async function sectionedWritePhase(ctx: AgentRunContext): Promise<void> {
       lines: source.lines,
       task: `${run.instruction}\nLatest user request: ${text}\nFollow the user’s output language, otherwise the transcript language.`,
       artifacts: thread.artifacts,
+      resume,
       sectionMaxBytes: afterTruncation
         ? Math.min(TOKEN_BYTES * policy.articleSectionTokens, 8192)
         : TOKEN_BYTES * policy.articleSectionTokens,
@@ -1561,12 +1575,41 @@ async function sectionedWritePhase(ctx: AgentRunContext): Promise<void> {
           apiKey: provider?.apiKey || 'vidbee-cloud',
           fetch: transport.fetch,
           signal: request.signal,
+          tuning: transport.profile?.harness,
+          tools: request.useTools
+            ? ctx.tools.filter((tool) =>
+                [
+                  'get_video_info',
+                  'read_transcript',
+                  'search_transcript',
+                  'read_history',
+                  'search_history',
+                  'capture_frames',
+                  'read_artifact'
+                ].includes(tool.name)
+              )
+            : undefined,
           systemPrompt: request.systemPrompt,
           content: request.content,
           onMessageUpdate: request.onMessageUpdate,
+          onMessage: (result) => {
+            if (result.role === 'assistant') {
+              for (const part of result.content) {
+                if (part.type === 'toolCall') {
+                  run.tools.push({ id: part.id, name: part.name, status: 'running' })
+                }
+              }
+            } else if (result.role === 'toolResult') {
+              const tool = run.tools.find((item) => item.id === result.toolCallId)
+              if (tool) {
+                tool.status = result.isError ? 'error' : 'completed'
+                tool.detail = undefined
+              }
+            }
+            request.onMessage(result)
+          },
           onUsage: (result) => {
             run.usage = addAgentUsage(run.usage, result.usage)
-            request.onMessage(result)
             persist(entry, 'article.usage', true)
           }
         }),
@@ -1644,7 +1687,7 @@ async function finalizePhase(ctx: AgentRunContext): Promise<void> {
   }
   if (ctx.source.mediaEnabled && ctx.message.text.trim()) {
     try {
-      ctx.message.text = await materializeAgentArticleImages({
+      const materialized = await materializeAgentArticleImages({
         text: ctx.message.text,
         artifacts: thread.artifacts,
         runId: run.id,
@@ -1660,7 +1703,13 @@ async function finalizePhase(ctx: AgentRunContext): Promise<void> {
           persist(entry, status === 'running' ? 'tool.started' : 'tool.completed', true)
         }
       })
-      persist(entry, 'article.images-attached', true)
+      ctx.message.text = materialized.text
+      const missing = rejectUnboundArticleImages(
+        run,
+        materialized.unresolved,
+        materialized.captureError
+      )
+      persist(entry, missing ? 'article.images-unresolved' : 'article.images-attached', true)
     } catch (error) {
       if (controller.signal.aborted) {
         throw error

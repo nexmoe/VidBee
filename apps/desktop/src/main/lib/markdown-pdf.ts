@@ -293,17 +293,21 @@ export const VIDBEE_EXPORT_NAME = 'VidBee'
 
 /**
  * Place VidBee attribution directly below the opening heading, or before untitled content.
+ * A finished thinking duration follows that attribution when one was recorded.
  *
  * @param markdown Reply body after images have been inlined.
+ * @param thinkingLabel Localized duration, such as "Thought for 6 seconds".
  */
-export const withVidBeeExportAttribution = (markdown: string): string => {
+export const withVidBeeExportAttribution = (markdown: string, thinkingLabel?: string): string => {
   const body = markdown.trim()
   const attribution = `Made with [${VIDBEE_EXPORT_NAME}](${VIDBEE_EXPORT_URL})`
+  const duration = thinkingLabel?.trim() ?? ''
+  const preface = duration ? `${attribution}\n\n${duration}` : attribution
   const heading = body.match(/^#{1,6}[ \t]+[^\n]*(?:\n|$)/)?.[0]
   if (heading) {
-    return `${heading.trimEnd()}\n\n${attribution}\n\n${body.slice(heading.length).trimStart()}\n`
+    return `${heading.trimEnd()}\n\n${preface}\n\n${body.slice(heading.length).trimStart()}\n`
   }
-  return `${attribution}\n\n${body}\n`
+  return `${preface}\n\n${body}\n`
 }
 
 /**
@@ -311,8 +315,13 @@ export const withVidBeeExportAttribution = (markdown: string): string => {
  *
  * @param markdown Reply body.
  * @param title Optional document title shown when the body has no H1.
+ * @param thinkingLabel Localized duration printed under the attribution.
  */
-export const markdownToPrintableHtml = (markdown: string, title?: string): string => {
+export const markdownToPrintableHtml = (
+  markdown: string,
+  title?: string,
+  thinkingLabel?: string
+): string => {
   const body = markdownToHtml(markdown.trim())
   const heading = title?.trim()
   const hasTitle = Boolean(heading) && !/^\s*<h1[\s>]/i.test(body)
@@ -320,8 +329,12 @@ export const markdownToPrintableHtml = (markdown: string, title?: string): strin
   const pageTitle = heading || VIDBEE_EXPORT_NAME
   const content = `${titleHtml}${body}`
   const attribution = markdownToHtml(withVidBeeExportAttribution('')).trim()
+  const duration = thinkingLabel?.trim()
+  const thinkingHtml = duration ? markdownToHtml(duration).trim() : ''
   const openingHeading = content.match(/^<h[1-6]>.*?<\/h[1-6]>/s)?.[0] ?? ''
-  const attributedBody = `${openingHeading}${attribution}${content.slice(openingHeading.length)}`
+  const attributedBody = `${openingHeading}${attribution}${thinkingHtml}${content.slice(
+    openingHeading.length
+  )}`
   return `<!DOCTYPE html><html><head><meta charset="utf-8" /><title>${escapeHtml(pageTitle)}</title><style>${PRINT_STYLES}</style></head><body><article>${attributedBody}</article></body></html>`
 }
 
