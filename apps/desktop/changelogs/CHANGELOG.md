@@ -6,6 +6,10 @@ For full release notes, see [GitHub Releases](https://github.com/nexmoe/VidBee/r
 ## [Unreleased]
 
 ### Fixed
+- Reduce account refresh requests and reuse Cloud model capabilities between conversations. ([#495](https://github.com/nexmoe/VidBee/pull/495))
+- Keep Agent titles saved during live runs, pause execution timers while awaiting approval, and release Cloud capacity when streams stop. ([#495](https://github.com/nexmoe/VidBee/pull/495))
+- Ask before protected settings changes and deletions, including download folders outside the library reached through symbolic links. ([#495](https://github.com/nexmoe/VidBee/pull/495))
+- Preserve original video links in Markdown and PDF exports and capture the requested article screenshots accurately, including cached frames. ([#495](https://github.com/nexmoe/VidBee/pull/495))
 - Downloads no longer time out after one minute while merging or converting media. ([#462](https://github.com/nexmoe/VidBee/issues/462), [#488](https://github.com/nexmoe/VidBee/pull/488))
 - Desktop and web format pickers retain high-resolution HLS streams and distinct audio languages when HTTP downloads are also available. ([#443](https://github.com/nexmoe/VidBee/issues/443), [#488](https://github.com/nexmoe/VidBee/pull/488))
 - RSS videos can be queued again after their downloads are removed, including removals from another connected app. You can also copy video links from the RSS item menu. ([#479](https://github.com/nexmoe/VidBee/issues/479), [#485](https://github.com/nexmoe/VidBee/pull/485))
