@@ -9,6 +9,11 @@ For full release notes, see [GitHub Releases](https://github.com/nexmoe/VidBee/r
 - Keep models from the same AI provider together when editing or removing the provider.
 - Avoid appending unused screenshots after illustrated Agent answers.
 
+## [v2.2.2](https://github.com/nexmoe/VidBee/releases/tag/v2.2.2) - 2026-10-11
+
+### Fixed
+- Restore Agent conversations and transcript prompts that fail immediately in the installed app.
+
 ## [v2.2.1](https://github.com/nexmoe/VidBee/releases/tag/v2.2.1) - 2026-10-11
 
 ### Fixed
