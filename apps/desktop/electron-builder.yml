@@ -83,14 +83,11 @@ files:
   - '!node_modules/react-resizable-panels{,/**}'
   - '!node_modules/dayjs{,/**}'
   # Main/renderer already bundle these; keep them out of app.asar.
+  # pi-coding-agent stays external: retain jiti and pi-ai's provider SDK dependencies.
   - '!node_modules/opencc-js{,/**}'
-  - '!node_modules/openai{,/**}'
-  - '!node_modules/@google{,/**}'
-  - '!node_modules/@anthropic-ai{,/**}'
   - '!node_modules/zod{,/**}'
   - '!node_modules/drizzle-orm{,/**}'
   - '!node_modules/es-toolkit{,/**}'
-  - '!node_modules/jiti{,/**}'
   # better-sqlite3 ships its C sources and every platform prebuild.
   - '!node_modules/better-sqlite3/deps{,/**}'
   - '!node_modules/better-sqlite3/src{,/**}'
