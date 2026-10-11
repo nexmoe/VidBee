@@ -825,7 +825,8 @@
       "whisper": "Whisper — 多语种",
       "parakeet": "Parakeet",
       "sense-voice": "SenseVoice — 中日韩英",
-      "qwen3": "Qwen3-ASR — 中文精度最高"
+      "qwen3": "Qwen3-ASR — 中文精度最高",
+      "fire-red-asr": "FireRedASR — 中文、英文及中文方言"
     },
     "asrLanguages": {
       "multi": "多语种"
@@ -882,9 +883,19 @@
         "size": "约 670 MB"
       },
       "quality": {
-        "title": "Qwen3-ASR",
+        "title": "Qwen3-ASR 0.6B",
         "tag": "中文精度最高，需要高性能电脑",
         "size": "约 840 MB"
+      },
+      "qwen3-1.7b": {
+        "title": "Qwen3-ASR 1.7B",
+        "tag": "更大的 Qwen3 模型，需要更多内存",
+        "size": "约 2.4 GB"
+      },
+      "fire-red-asr": {
+        "title": "FireRedASR v2",
+        "tag": "支持中文、英文及中文方言，需要较多内存",
+        "size": "约 1.2 GB"
       }
     },
     "providersTab": "服务商",

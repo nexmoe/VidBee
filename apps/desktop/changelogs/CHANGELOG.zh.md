@@ -3,6 +3,36 @@
 本页只记录你能直接感知到的更新，不展开技术实现细节。
 完整发布记录请查看 [GitHub Releases](https://github.com/nexmoe/VidBee/releases)。
 
+## [v2.2.0](https://github.com/nexmoe/VidBee/releases/tag/v2.2.0) - 2026-10-11
+
+### 新增功能
+- 本地转录新增 FireRedASR v2，支持中文、英文和中文方言；也可选择更大的 Qwen3-ASR 1.7B 模型。
+- 本地转录新增 Orukeet 模型。(by @Nathan-Roll1, [#480](https://github.com/nexmoe/VidBee/pull/480))
+- 可以登录 VidBee 账号，在 Agent 对话中使用 Cloud 模型。
+- 可以让 Agent 管理下载和订阅、转录文件，以及转换和裁剪音视频。
+
+### 改进与修复
+- 下载播放列表时可以选择视频容器格式。(by @jabrailkhalil, [#469](https://github.com/nexmoe/VidBee/pull/469))
+- WebM 视频无法嵌入封面时仍会保留下载文件；订阅下载也会保留字幕文件。([#487](https://github.com/nexmoe/VidBee/pull/487), [#484](https://github.com/nexmoe/VidBee/pull/484))
+- 减少账号刷新请求，在不同对话间复用可用的 Cloud 模型信息。([#495](https://github.com/nexmoe/VidBee/pull/495))
+- Agent 运行期间修改的标题会保存；等待确认时暂停计时，停止回答后及时释放 Cloud 使用额度。([#495](https://github.com/nexmoe/VidBee/pull/495))
+- 修改受保护的设置或删除内容前会请求确认，包括通过符号链接访问资料库之外的下载目录。([#495](https://github.com/nexmoe/VidBee/pull/495))
+- Markdown 和 PDF 导出保留原始视频链接；文章截图会准确捕获所选画面，包括已缓存的画面。([#495](https://github.com/nexmoe/VidBee/pull/495))
+- 合并或转换音视频时，不再因超过一分钟而误报下载超时。([#462](https://github.com/nexmoe/VidBee/issues/462), [#488](https://github.com/nexmoe/VidBee/pull/488))
+- 桌面版和网页版选择格式时，会保留高分辨率 HLS 视频和不同语言的音轨。([#443](https://github.com/nexmoe/VidBee/issues/443), [#488](https://github.com/nexmoe/VidBee/pull/488))
+- 删除 RSS 视频的下载记录后可重新加入队列，也支持从条目菜单复制视频链接。([#479](https://github.com/nexmoe/VidBee/issues/479), [#485](https://github.com/nexmoe/VidBee/pull/485))
+- 转录前会修复或明确提示不完整的 Qwen3-ASR 模型文件；同时安装或取消模型时，不再误删其他安装任务的文件。([#473](https://github.com/nexmoe/VidBee/issues/473), [#486](https://github.com/nexmoe/VidBee/pull/486))
+- 写文章时可以继续未完成的章节，并捕获相关截图。
+- Agent 完成回答后会及时结束，较长的思考历史也更容易阅读。
+- 分享图片和导出文档保留思考耗时与品牌页脚。
+- 保存自动下载选项时，订阅的启用状态会保留。
+- 本地转录前会先导入可用的平台字幕。
+- 账号余额和待退还积分显示更可靠。
+- 避免重复下载，包括同时提交的请求和已保存在电脑上的文件。
+- 转录队列持续推进，重新加载后保留已用时间。
+- 保留 Agent 的推理历史，并改进 Markdown PDF 导出。
+- 已保存的文件被删除后，仍可正常移除下载记录。
+
 ## [v2.1.0](https://github.com/nexmoe/VidBee/releases/tag/v2.1.0) - 2026-08-30
 
 ### 新增功能

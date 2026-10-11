@@ -762,9 +762,14 @@
         "size": "~670 Mo"
       },
       "quality": {
-        "title": "Qwen3-ASR",
+        "title": "Qwen3-ASR 0.6B",
         "tag": "Meilleure précision chinoise. Nécessite un PC puissant",
         "size": "~840 MB"
+      },
+      "qwen3-1.7b": {
+        "title": "Qwen3-ASR 1.7B",
+        "tag": "Modèle Qwen3 plus grand. Nécessite plus de RAM",
+        "size": "~2,4 Go"
       },
       "whisper-medium": {
         "title": "Whisper Medium",
@@ -790,6 +795,11 @@
         "title": "Parakeet TDT v3",
         "tag": "Parakeet anglais plus récent. Meilleur choix anglais",
         "size": "~650 MB"
+      },
+      "fire-red-asr": {
+        "title": "FireRedASR v2",
+        "tag": "Chinois, anglais et dialectes chinois. Nécessite plus de RAM",
+        "size": "~1,2 Go"
       }
     },
     "asrDownload": "Télécharger",
@@ -808,7 +818,8 @@
       "whisper": "Whisper — multilingue",
       "sense-voice": "SenseVoice — chinois, japonais, coréen, anglais",
       "qwen3": "Qwen3-ASR — meilleure précision chinoise",
-      "parakeet": "Parakeet"
+      "parakeet": "Parakeet",
+      "fire-red-asr": "FireRedASR — chinois, anglais et dialectes chinois"
     },
     "asrLanguages": {
       "multi": "multilingue"

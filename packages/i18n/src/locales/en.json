@@ -937,6 +937,7 @@
       "whisper": "Whisper — multilingual",
       "parakeet": "Parakeet",
       "sense-voice": "SenseVoice — Chinese, Japanese, Korean, English",
+      "fire-red-asr": "FireRedASR — Chinese, English, and Chinese dialects",
       "qwen3": "Qwen3-ASR — highest Chinese accuracy"
     },
     "asrLanguages": {
@@ -983,6 +984,11 @@
         "tag": "Strong English. Fast on typical PCs",
         "size": "~650 MB"
       },
+      "fire-red-asr": {
+        "title": "FireRedASR v2",
+        "tag": "Chinese, English, and Chinese dialects. Needs more RAM",
+        "size": "~1.2 GB"
+      },
       "parakeet-v3": {
         "title": "Parakeet TDT v3",
         "tag": "Newer English Parakeet. Best English pick",
@@ -994,9 +1000,14 @@
         "size": "~670 MB"
       },
       "quality": {
-        "title": "Qwen3-ASR",
+        "title": "Qwen3-ASR 0.6B",
         "tag": "Best Chinese accuracy. Needs a powerful PC",
         "size": "~840 MB"
+      },
+      "qwen3-1.7b": {
+        "title": "Qwen3-ASR 1.7B",
+        "tag": "Larger Qwen3 model. Needs more RAM",
+        "size": "~2.4 GB"
       }
     }
   },

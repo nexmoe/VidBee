@@ -6,10 +6,12 @@ export const ASR_TIER_IDS = [
   'whisper-turbo',
   'sense-voice',
   'sense-voice-2025',
+  'fire-red-asr',
   'parakeet-v2',
   'parakeet-v3',
   'orukeet',
-  'quality'
+  'quality',
+  'qwen3-1.7b'
 ] as const
 
 export type AsrTierId = (typeof ASR_TIER_IDS)[number]
@@ -24,7 +26,7 @@ export {
   sherpaNumClusters
 } from './speaker-count'
 
-export type AsrFamily = 'whisper' | 'qwen3' | 'sense-voice' | 'parakeet'
+export type AsrFamily = 'whisper' | 'qwen3' | 'sense-voice' | 'parakeet' | 'fire-red-asr'
 
 export type AsrLanguageGroup = 'zh' | 'cjk' | 'en' | 'multi'
 
@@ -71,6 +73,8 @@ export const SENSE_VOICE_DIR = 'sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-
 export const SENSE_VOICE_2025_ARCHIVE =
   'https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2025-09-09.tar.bz2'
 export const SENSE_VOICE_2025_DIR = 'sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2025-09-09'
+export const FIRE_RED_ASR_DIR = 'sherpa-onnx-fire-red-asr2-zh_en-int8-2026-02-26'
+export const FIRE_RED_ASR_ARCHIVE = `https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/${FIRE_RED_ASR_DIR}.tar.bz2`
 export const PARAKEET_V2_ARCHIVE =
   'https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8.tar.bz2'
 export const PARAKEET_V2_DIR = 'sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8'
@@ -81,6 +85,7 @@ export const ORUKEET_DIR = 'sherpa-onnx-orukeet-v0.1.0-int8'
 export const QWEN3_ASR_ARCHIVE =
   'https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25.tar.bz2'
 export const QWEN3_ASR_DIR = 'sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25'
+export const QWEN3_ASR_1_7B_DIR = 'qwen3-asr-1.7b-int8-cb045ad8'
 
 export const ASR_TIERS: readonly AsrTierInfo[] = [
   {
@@ -189,6 +194,21 @@ export const ASR_TIERS: readonly AsrTierInfo[] = [
     }
   },
   {
+    id: 'fire-red-asr',
+    family: 'fire-red-asr',
+    modelId: 'fire-red-asr2-zh-en-int8',
+    archiveName: `${FIRE_RED_ASR_DIR}.tar.bz2`,
+    bytesHint: 1_235_000_000,
+    minRamGB: 16,
+    qualityRank: 45,
+    languages: ['zh', 'en'],
+    performance: {
+      machine: 'high-end',
+      speed: 'medium',
+      quality: 'better'
+    }
+  },
+  {
     id: 'parakeet-v2',
     family: 'parakeet',
     modelId: 'nemo-parakeet-tdt-0.6b-v2-int8',
@@ -247,6 +267,21 @@ export const ASR_TIERS: readonly AsrTierInfo[] = [
       speed: 'slow',
       quality: 'best-zh'
     }
+  },
+  {
+    id: 'qwen3-1.7b',
+    family: 'qwen3',
+    modelId: 'qwen3-asr-1.7b-int8',
+    archiveName: QWEN3_ASR_1_7B_DIR,
+    bytesHint: 2_404_222_421,
+    minRamGB: 24,
+    qualityRank: 60,
+    languages: ['zh'],
+    performance: {
+      machine: 'high-end',
+      speed: 'slow',
+      quality: 'best-zh'
+    }
   }
 ]
 
@@ -254,6 +289,7 @@ export const ASR_FAMILY_ORDER: readonly AsrFamily[] = [
   'whisper',
   'parakeet',
   'sense-voice',
+  'fire-red-asr',
   'qwen3'
 ]
 

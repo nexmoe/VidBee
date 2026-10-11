@@ -762,9 +762,14 @@
         "size": "약 670 MB"
       },
       "quality": {
-        "title": "Qwen3-ASR",
+        "title": "Qwen3-ASR 0.6B",
         "tag": "중국어 정확도가 가장 높습니다. 고성능 PC가 필요합니다",
         "size": "약 840 MB"
+      },
+      "qwen3-1.7b": {
+        "title": "Qwen3-ASR 1.7B",
+        "tag": "더 큰 Qwen3 모델. 더 많은 RAM 필요",
+        "size": "약 2.4 GB"
       },
       "whisper-medium": {
         "title": "Whisper Medium",
@@ -790,6 +795,11 @@
         "title": "Parakeet TDT v3",
         "tag": "더 새로운 영어 Parakeet. 영어에 가장 적합합니다",
         "size": "약 650 MB"
+      },
+      "fire-red-asr": {
+        "title": "FireRedASR v2",
+        "tag": "중국어, 영어 및 중국어 방언 지원. 더 많은 RAM 필요",
+        "size": "약 1.2 GB"
       }
     },
     "asrDownload": "다운로드",
@@ -808,7 +818,8 @@
       "whisper": "Whisper — 다국어",
       "sense-voice": "SenseVoice — 중국어, 일본어, 한국어, 영어",
       "qwen3": "Qwen3-ASR — 중국어 정확도 최고",
-      "parakeet": "Parakeet"
+      "parakeet": "Parakeet",
+      "fire-red-asr": "FireRedASR — 중국어, 영어 및 중국어 방언"
     },
     "asrLanguages": {
       "multi": "다국어"

@@ -3,6 +3,36 @@
 Cette page ne présente que les évolutions visibles par les utilisateurs, sans détails techniques.
 Pour les notes de version complètes, consultez [GitHub Releases](https://github.com/nexmoe/VidBee/releases).
 
+## [v2.2.0](https://github.com/nexmoe/VidBee/releases/tag/v2.2.0) - 2026-10-11
+
+### Nouveautés
+- Choisissez FireRedASR v2 pour le chinois, l’anglais et les dialectes chinois, ou le modèle Qwen3-ASR 1.7B, plus volumineux, pour la transcription locale.
+- Choisissez Orukeet pour la transcription locale. (by @Nathan-Roll1, [#480](https://github.com/nexmoe/VidBee/pull/480))
+- Connectez-vous à votre compte VidBee et utilisez les modèles Cloud dans les conversations avec Agent.
+- Demandez à Agent de gérer les téléchargements et les abonnements, de transcrire des fichiers, ou de convertir et découper des médias.
+
+### Améliorations
+- Choisissez le format de conteneur vidéo pour télécharger une liste de lecture. (by @jabrailkhalil, [#469](https://github.com/nexmoe/VidBee/pull/469))
+- Conservez les vidéos WebM même si la pochette ne peut pas être intégrée, ainsi que les fichiers de sous-titres des téléchargements par abonnement. ([#487](https://github.com/nexmoe/VidBee/pull/487), [#484](https://github.com/nexmoe/VidBee/pull/484))
+- Le compte se rafraîchit moins souvent et les informations sur les modèles Cloud disponibles sont réutilisées entre les conversations. ([#495](https://github.com/nexmoe/VidBee/pull/495))
+- Les titres modifiés pendant une réponse d’Agent sont enregistrés ; le chronomètre s’arrête pendant une demande de confirmation et la capacité Cloud est libérée à l’arrêt de la réponse. ([#495](https://github.com/nexmoe/VidBee/pull/495))
+- Une confirmation est demandée avant de modifier des réglages protégés ou de supprimer du contenu, y compris dans les dossiers hors bibliothèque accessibles par un lien symbolique. ([#495](https://github.com/nexmoe/VidBee/pull/495))
+- Les exports Markdown et PDF conservent les liens vidéo d’origine et les captures d’articles montrent précisément les images demandées, même déjà chargées. ([#495](https://github.com/nexmoe/VidBee/pull/495))
+- La fusion ou la conversion d’un média ne provoque plus un échec du téléchargement après une minute. ([#462](https://github.com/nexmoe/VidBee/issues/462), [#488](https://github.com/nexmoe/VidBee/pull/488))
+- Les sélecteurs de format des versions bureau et web conservent les vidéos HLS en haute résolution et les pistes audio de langues différentes. ([#443](https://github.com/nexmoe/VidBee/issues/443), [#488](https://github.com/nexmoe/VidBee/pull/488))
+- Les vidéos RSS peuvent être ajoutées à nouveau après suppression de leur téléchargement ; leur lien peut aussi être copié depuis le menu. ([#479](https://github.com/nexmoe/VidBee/issues/479), [#485](https://github.com/nexmoe/VidBee/pull/485))
+- Les fichiers Qwen3-ASR incomplets sont réparés ou signalés clairement avant la transcription. Les installations simultanées ne suppriment plus les fichiers des autres, même en cas d’annulation. ([#473](https://github.com/nexmoe/VidBee/issues/473), [#486](https://github.com/nexmoe/VidBee/pull/486))
+- Reprenez les sections inachevées d’un article et capturez les images pertinentes pendant la rédaction.
+- Les réponses terminées d’Agent s’arrêtent rapidement et les longs historiques de réflexion restent lisibles.
+- Les images partagées et les documents exportés conservent la durée de réflexion et le pied de page VidBee.
+- L’état actif d’un abonnement est conservé lors de l’enregistrement des options de téléchargement automatique.
+- Les sous-titres disponibles de la plateforme sont importés avant la transcription locale.
+- Le solde du compte et les crédits en attente de restitution s’affichent plus sûrement.
+- Les téléchargements en double sont évités, même pour des demandes simultanées ou des fichiers déjà enregistrés sur cet ordinateur.
+- Les files de transcription continuent d’avancer et conservent le temps écoulé après un rechargement.
+- L’historique de raisonnement d’Agent est conservé et l’export de Markdown en PDF est amélioré.
+- Les entrées de téléchargement peuvent être supprimées même si leurs fichiers ont déjà disparu.
+
 ## [v2.1.0](https://github.com/nexmoe/VidBee/releases/tag/v2.1.0) - 2026-08-30
 
 ### Nouveautés

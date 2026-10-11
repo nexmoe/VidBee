@@ -762,9 +762,14 @@
         "size": "~670 МБ"
       },
       "quality": {
-        "title": "Qwen3-ASR",
+        "title": "Qwen3-ASR 0.6B",
         "tag": "Лучшая точность по китайскому. Нужен мощный ПК",
         "size": "~840 MB"
+      },
+      "qwen3-1.7b": {
+        "title": "Qwen3-ASR 1.7B",
+        "tag": "Более крупная модель Qwen3. Требует больше ОЗУ",
+        "size": "~2,4 ГБ"
       },
       "whisper-medium": {
         "title": "Whisper Medium",
@@ -790,6 +795,11 @@
         "title": "Parakeet TDT v3",
         "tag": "Новый английский Parakeet. Лучший выбор для английского",
         "size": "~650 MB"
+      },
+      "fire-red-asr": {
+        "title": "FireRedASR v2",
+        "tag": "Китайский, английский и китайские диалекты. Требуется больше ОЗУ",
+        "size": "~1,2 ГБ"
       }
     },
     "asrDownload": "Скачать",
@@ -808,7 +818,8 @@
       "whisper": "Whisper — многоязычная",
       "sense-voice": "SenseVoice — китайский, японский, корейский, английский",
       "qwen3": "Qwen3-ASR — лучшая точность по китайскому",
-      "parakeet": "Parakeet"
+      "parakeet": "Parakeet",
+      "fire-red-asr": "FireRedASR — китайский, английский и китайские диалекты"
     },
     "asrLanguages": {
       "multi": "многоязычный"

@@ -174,10 +174,12 @@ export const WebAppSettingsSchema = z.object({
         'whisper-turbo',
         'sense-voice',
         'sense-voice-2025',
+        'fire-red-asr',
         'parakeet-v2',
         'parakeet-v3',
         'orukeet',
-        'quality'
+        'quality',
+        'qwen3-1.7b'
       ])
       .default('minimal')
   )

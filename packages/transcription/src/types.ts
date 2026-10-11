@@ -163,6 +163,7 @@ export interface ModelFileSpec {
   tier?: AsrTierId
   /** Path relative to the models directory after download/extract. */
   fileName: string
+  /** Download URL, or the raw directory URL when directoryMembers is set without an archive. */
   url: string
   sha256?: string
   /** Earlier catalog file with a pinned SHA256 and files: [{ path, sha256 }]. */
