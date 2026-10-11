@@ -137,6 +137,7 @@ function readDefaultThinkingLevel(value: unknown): ProviderDefaultThinkingLevel 
  */
 const toPublicProvider = (provider: StoredProvider): AiProviderConfig => ({
   id: provider.id,
+  groupId: provider.groupId,
   presetId: provider.presetId,
   name: provider.name,
   baseUrl: provider.baseUrl,
@@ -301,6 +302,7 @@ class AiStore {
     }
     const record: StoredProvider = {
       id: existing?.id ?? randomUUID(),
+      groupId: input.groupId ?? existing?.groupId,
       presetId: input.presetId,
       name: input.name?.trim() || existing?.name || PRESET_NAMES[input.presetId],
       baseUrl,

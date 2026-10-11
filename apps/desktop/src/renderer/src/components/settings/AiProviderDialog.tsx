@@ -19,6 +19,7 @@ import {
   aiProviderRequiresBaseUrl,
   getAiProviderPreset
 } from '@shared/ai-presets'
+import { aiProviderName } from '@shared/ai-provider-groups'
 import type {
   AiProviderConfig,
   AiProviderPresetId,
@@ -34,7 +35,7 @@ import {
   ComboboxList
 } from '@vidbee/ui/components/ui/combobox'
 import { Check, Loader2 } from 'lucide-react'
-import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AiProviderIcon } from './ai-provider-icon'
 
@@ -68,6 +69,7 @@ interface AiProviderDialogProps {
   open: boolean
   presetId: AiProviderPresetId | null
   provider?: AiProviderConfig | null
+  providers?: AiProviderConfig[]
   saving?: boolean
 }
 
@@ -84,6 +86,7 @@ export function AiProviderDialog({
   open,
   presetId,
   provider,
+  providers,
   saving = false
 }: AiProviderDialogProps) {
   const { t } = useTranslation()
@@ -128,24 +131,48 @@ export function AiProviderDialog({
   const keepSavedCapabilities = useRef(false)
   const [testing, setTesting] = useState(false)
   const [testResult, setTestResult] = useState<AiProviderTestResult | null>(null)
+
+  /** Restore the selected model's saved capabilities without changing its siblings. */
+  const restoreCapabilities = useCallback((saved?: AiProviderConfig | null): void => {
+    setContextWindow(saved?.contextWindow ? String(saved.contextWindow) : '')
+    setTools(saved?.tools ?? true)
+    setVision(saved?.vision ?? true)
+    setReasoning(saved?.reasoning ?? Boolean(saved))
+    setThinkingOnly(saved?.thinkingOnly ?? false)
+    setAllowDisableThinking(saved?.allowDisableThinking ?? true)
+    setThinkingLevels(saved?.thinkingLevels ?? [])
+    setMaxTokens(saved?.maxTokens ? String(saved.maxTokens) : '')
+    keepSavedCapabilities.current = Boolean(
+      saved &&
+        (saved.contextWindow !== undefined ||
+          saved.vision !== undefined ||
+          saved.tools !== undefined ||
+          saved.reasoning !== undefined ||
+          saved.thinkingOnly !== undefined ||
+          saved.allowDisableThinking !== undefined ||
+          saved.thinkingLevels !== undefined ||
+          saved.defaultThinkingLevel !== undefined ||
+          saved.maxTokens !== undefined)
+    )
+  }, [])
+
   openRef.current = open
   useEffect(() => {
     if (!open) {
       return
     }
-    setName(provider?.name ?? '')
+    setName(provider ? aiProviderName(provider) : '')
     setBaseUrl(provider?.baseUrl ?? '')
     setApiKey('')
-    setContextWindow(provider?.contextWindow ? String(provider.contextWindow) : '')
-    setTools(provider?.tools ?? true)
-    setVision(provider?.vision ?? true)
-    setReasoning(provider?.reasoning ?? Boolean(provider))
-    setThinkingOnly(provider?.thinkingOnly ?? false)
-    setAllowDisableThinking(provider?.allowDisableThinking ?? true)
-    setThinkingLevels(provider?.thinkingLevels ?? [])
-    setMaxTokens(provider?.maxTokens ? String(provider.maxTokens) : '')
+    restoreCapabilities(provider)
     setModels(
-      [provider?.modelId ?? preset?.defaultModel ?? ''].map((id) => id.trim()).filter(Boolean)
+      (
+        providers?.map((entry) => entry.modelId) ?? [
+          provider?.modelId ?? preset?.defaultModel ?? ''
+        ]
+      )
+        .map((id) => id.trim())
+        .filter(Boolean)
     )
     setCreatedItems([])
     setCatalogItems([])
@@ -154,21 +181,9 @@ export function AiProviderDialog({
     setCatalogStatus('idle')
     setCatalogName(null)
     setJustFilled(false)
-    keepSavedCapabilities.current = Boolean(
-      provider &&
-        (provider.contextWindow !== undefined ||
-          provider.vision !== undefined ||
-          provider.tools !== undefined ||
-          provider.reasoning !== undefined ||
-          provider.thinkingOnly !== undefined ||
-          provider.allowDisableThinking !== undefined ||
-          provider.thinkingLevels !== undefined ||
-          provider.defaultThinkingLevel !== undefined ||
-          provider.maxTokens !== undefined)
-    )
     setTesting(false)
     setTestResult(null)
-  }, [open, preset?.defaultModel, provider])
+  }, [open, preset?.defaultModel, provider, providers, restoreCapabilities])
 
   useEffect(() => {
     if (!open) {
@@ -266,6 +281,10 @@ export function AiProviderDialog({
       setJustFilled(false)
       return
     }
+    const saved = providers?.find((entry) => entry.modelId === modelId)
+    if (saved) {
+      restoreCapabilities(saved)
+    }
     setCatalogStatus('looking')
     setCatalogName(null)
     setJustFilled(false)
@@ -321,7 +340,7 @@ export function AiProviderDialog({
       cancelled = true
       window.clearTimeout(timer)
     }
-  }, [lastModel, open, resolvedPresetId])
+  }, [lastModel, open, providers, resolvedPresetId, restoreCapabilities])
 
   useEffect(() => {
     if (!justFilled) {
@@ -353,15 +372,11 @@ export function AiProviderDialog({
     (!needsKey || apiKey.trim().length > 0 || Boolean(provider?.hasApiKey))
 
   /**
-   * Collect one write payload per selected model, sharing credentials.
+   * Keep model identities and capabilities while sharing the provider name and credentials.
    */
-  const writeInputs = (): AiProviderWriteInput[] =>
-    models.map((modelId, index) => ({
-      id: index === 0 ? provider?.id : undefined,
-      presetId: resolvedPresetId,
-      name: providerDisplayName(name, modelId, models.length > 1),
-      baseUrl: showBaseUrl ? baseUrl.trim() : undefined,
-      modelId,
+  const writeInputs = (): AiProviderWriteInput[] => {
+    const groupId = provider?.groupId ?? providers?.[0]?.id ?? provider?.id ?? crypto.randomUUID()
+    const currentCapabilities = {
       contextWindow: parsedContextWindow,
       vision,
       tools,
@@ -369,11 +384,37 @@ export function AiProviderDialog({
       thinkingOnly: reasoning && thinkingOnly,
       allowDisableThinking: !reasoning || allowDisableThinking,
       thinkingLevels: reasoning && thinkingLevels.length > 0 ? thinkingLevels : undefined,
-      defaultThinkingLevel: reasoning ? 'auto' : undefined,
-      maxTokens: parsedMaxTokens,
-      apiKey: apiKey.trim() || undefined,
-      copyApiKeyFromId: index > 0 && provider?.id && !apiKey.trim() ? provider.id : undefined
-    }))
+      defaultThinkingLevel: reasoning ? ('auto' as const) : undefined,
+      maxTokens: parsedMaxTokens
+    }
+    return models.map((modelId, index) => {
+      const existing = providers
+        ? providers.find((entry) => entry.modelId === modelId)
+        : index === 0
+          ? provider
+          : undefined
+      const capabilities = modelId !== lastModel && existing ? existing : currentCapabilities
+      return {
+        id: existing?.id,
+        groupId,
+        presetId: resolvedPresetId,
+        name: name.trim() || t(`settings.ai.presets.${resolvedPresetId}`),
+        baseUrl: showBaseUrl ? baseUrl.trim() : undefined,
+        modelId,
+        contextWindow: capabilities.contextWindow,
+        vision: capabilities.vision,
+        tools: capabilities.tools,
+        reasoning: capabilities.reasoning,
+        thinkingOnly: capabilities.thinkingOnly,
+        allowDisableThinking: capabilities.allowDisableThinking,
+        thinkingLevels: capabilities.thinkingLevels,
+        defaultThinkingLevel: capabilities.defaultThinkingLevel,
+        maxTokens: capabilities.maxTokens,
+        apiKey: apiKey.trim() || undefined,
+        copyApiKeyFromId: !existing && provider?.id && !apiKey.trim() ? provider.id : undefined
+      }
+    })
+  }
 
   /**
    * Persist every selected model through the parent.
@@ -421,7 +462,7 @@ export function AiProviderDialog({
       if (!input) {
         return
       }
-      const result = await onTest(input)
+      const result = await onTest({ ...input, id: input.id ?? provider?.id })
       if (openRef.current) {
         setTestResult(result)
       }
@@ -793,22 +834,6 @@ function mergeModelItems(groups: CatalogModelItem[][], selected: string[]): Cata
     items.push({ label: value, value })
   }
   return items
-}
-
-/**
- * Name written for one selected model. Multiple picks keep the typed name
- * and append the model id so the composer can tell them apart.
- *
- * @param name Dialog name field.
- * @param modelId Selected model id.
- * @param many Whether more than one model will be saved.
- */
-function providerDisplayName(name: string, modelId: string, many: boolean): string | undefined {
-  const typed = name.trim()
-  if (many) {
-    return typed ? `${typed} · ${modelId}` : modelId
-  }
-  return typed || undefined
 }
 
 /**

@@ -16,8 +16,8 @@ import { ipcServices } from '@renderer/lib/ipc'
 import { logger } from '@renderer/lib/logger'
 import { trackDesktopEvent } from '@renderer/lib/rybbit-client'
 import { AI_PROVIDER_PRESETS } from '@shared/ai-presets'
+import { type AiProviderGroup, groupAiProviders } from '@shared/ai-provider-groups'
 import type {
-  AiProviderConfig,
   AiProviderPreset,
   AiProviderPresetId,
   AiProviderTestResult,
@@ -49,7 +49,7 @@ export function AiProvidersPanel() {
   const [defaultCloudModelId, setDefaultCloudModelId] = useState('default')
   const [dialogOpen, setDialogOpen] = useState(false)
   const [dialogPresetId, setDialogPresetId] = useState<AiProviderPresetId | null>(null)
-  const [editing, setEditing] = useState<AiProviderConfig | null>(null)
+  const [editing, setEditing] = useState<AiProviderGroup | null>(null)
   const [saving, setSaving] = useState(false)
   const [cloudSignInWorking, setCloudSignInWorking] = useState(false)
   const { credits, user } = useCloudAccount()
@@ -139,11 +139,11 @@ export function AiProvidersPanel() {
   /**
    * Open the unified dialog for an existing provider.
    *
-   * @param provider Saved provider.
+   * @param group Saved provider and its configured models.
    */
-  const openEdit = (provider: AiProviderConfig): void => {
-    setEditing(provider)
-    setDialogPresetId(provider.presetId)
+  const openEdit = (group: AiProviderGroup): void => {
+    setEditing(group)
+    setDialogPresetId(group.providers[0].presetId)
     setDialogOpen(true)
   }
 
@@ -158,7 +158,7 @@ export function AiProvidersPanel() {
   /**
    * Persist dialog values and refresh the list.
    *
-   * @param input Dialog payload.
+   * @param inputs Dialog payloads for the provider's selected models.
    */
   const handleSave = async (inputs: AiProviderWriteInput[]): Promise<void> => {
     setSaving(true)
@@ -166,6 +166,22 @@ export function AiProvidersPanel() {
       let snapshot: AiSettingsSnapshot | null = null
       for (const input of inputs) {
         snapshot = await ipcServices.ai.upsertProvider(input)
+      }
+      const removed =
+        editing?.providers.filter(
+          (provider) => !inputs.some((input) => input.id === provider.id)
+        ) ?? []
+      const activeModelRemoved = removed.some(
+        (provider) => provider.id === snapshot?.activeProviderId
+      )
+      for (const provider of removed) {
+        snapshot = await ipcServices.ai.deleteProvider(provider.id)
+      }
+      if (snapshot && activeModelRemoved) {
+        const remaining = snapshot.providers.find(
+          (provider) => provider.groupId === inputs[0]?.groupId
+        )
+        snapshot = await ipcServices.ai.setActiveProvider(remaining?.id ?? null)
       }
       if (snapshot) {
         setSnapshot(snapshot)
@@ -186,7 +202,7 @@ export function AiProvidersPanel() {
   /**
    * Enable a provider for transcript prompts.
    *
-   * @param id Provider id.
+   * @param id Provider model id.
    */
   const handleUse = async (id: string): Promise<void> => {
     try {
@@ -248,18 +264,24 @@ export function AiProvidersPanel() {
   /**
    * Remove a configured provider.
    *
-   * @param id Provider id.
+   * @param group Provider and all of its configured models.
    */
-  const handleDelete = async (id: string): Promise<void> => {
+  const handleDelete = async (group: AiProviderGroup): Promise<void> => {
     try {
-      setSnapshot(await ipcServices.ai.deleteProvider(id))
+      let nextSnapshot: AiSettingsSnapshot | null = null
+      for (const provider of group.providers) {
+        nextSnapshot = await ipcServices.ai.deleteProvider(provider.id)
+      }
+      if (nextSnapshot) {
+        setSnapshot(nextSnapshot)
+      }
     } catch (error) {
       logger.error('Failed to delete AI provider', error)
       toast.error(t('settings.ai.saveError'))
     }
   }
 
-  const providers = snapshot?.providers ?? []
+  const providers = groupAiProviders(snapshot?.providers ?? [])
   const activeProviderId = snapshot?.activeProviderId ?? null
   return (
     <div className="space-y-4">
@@ -342,18 +364,19 @@ export function AiProvidersPanel() {
               {t('settings.ai.configured')}
             </h3>
             <ItemGroup>
-              {providers.map((provider, index) => {
-                const inUse = provider.id === activeProviderId
+              {providers.map((group, index) => {
+                const provider = group.providers[0]
+                const inUse = group.providers.some((model) => model.id === activeProviderId)
                 return (
-                  <div key={provider.id}>
+                  <div key={group.id}>
                     {index > 0 ? <ItemSeparator /> : null}
-                    <Item data-testid={`ai-configured-provider-${provider.id}`} variant="muted">
+                    <Item data-testid={`ai-configured-provider-${group.id}`} variant="muted">
                       <ItemMedia className="border-border bg-background" variant="icon">
                         <AiProviderIcon presetId={provider.presetId} />
                       </ItemMedia>
                       <ItemContent>
                         <ItemTitle>
-                          {provider.name}
+                          {group.name || t(`settings.ai.presets.${provider.presetId}`)}
                           {inUse ? (
                             <Badge variant="secondary">
                               <Check aria-hidden className="size-3" />
@@ -361,7 +384,9 @@ export function AiProvidersPanel() {
                             </Badge>
                           ) : null}
                         </ItemTitle>
-                        <ItemDescription>{provider.modelId}</ItemDescription>
+                        <ItemDescription>
+                          {group.providers.map((model) => model.modelId).join(', ')}
+                        </ItemDescription>
                       </ItemContent>
                       <ItemActions>
                         {inUse ? null : (
@@ -375,7 +400,7 @@ export function AiProvidersPanel() {
                           </Button>
                         )}
                         <Button
-                          onClick={() => openEdit(provider)}
+                          onClick={() => openEdit(group)}
                           size="sm"
                           type="button"
                           variant="outline"
@@ -385,7 +410,7 @@ export function AiProvidersPanel() {
                         <Button
                           aria-label={t('settings.ai.deleteProvider')}
                           className="size-8"
-                          onClick={() => void handleDelete(provider.id)}
+                          onClick={() => void handleDelete(group)}
                           size="icon"
                           title={t('settings.ai.deleteProvider')}
                           type="button"
@@ -449,7 +474,8 @@ export function AiProvidersPanel() {
         onTest={handleTest}
         open={dialogOpen}
         presetId={dialogPresetId}
-        provider={editing}
+        provider={editing?.providers.at(-1)}
+        providers={editing?.providers}
         saving={saving}
       />
     </div>

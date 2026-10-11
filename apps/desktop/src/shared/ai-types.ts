@@ -55,6 +55,8 @@ export interface AiProviderPreset {
 
 /** Persisted provider configuration. The API key never leaves the main process. */
 export interface AiProviderConfig {
+  /** Stable identity shared by all model records configured for one provider. */
+  groupId?: string
   contextWindow?: number
   vision?: boolean
   /** When false, Agent chat does not send tools to this model. */
@@ -83,6 +85,7 @@ export interface AiProviderConfig {
 
 /** Payload used to create or update a provider from the renderer. */
 export interface AiProviderWriteInput {
+  groupId?: string
   contextWindow?: number
   vision?: boolean
   tools?: boolean

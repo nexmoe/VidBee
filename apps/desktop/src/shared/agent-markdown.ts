@@ -295,7 +295,7 @@ export function artifactsForMessage(
   return artifacts.filter((item) => runs.has(item.runId) || cited.has(item.id.toLowerCase()))
 }
 
-/** Split verified attachments out of markdown so Streamdown never sees disallowed image URLs. */
+/** Render selected inline media, falling back to run attachments only when none are selected. */
 export function splitAgentResponseMedia(
   text: string,
   artifacts: AgentArtifact[],
@@ -326,9 +326,11 @@ export function splitAgentResponseMedia(
   if (position < text.length) {
     parts.push({ key: `text-${position}`, text: text.slice(position) })
   }
-  for (const artifact of artifacts) {
-    if (includeUncited && artifact.runId === ownRunId && !used.has(artifact.id)) {
-      parts.push({ key: artifact.id, artifact })
+  if (includeUncited && used.size === 0) {
+    for (const artifact of artifacts) {
+      if (artifact.runId === ownRunId) {
+        parts.push({ key: artifact.id, artifact })
+      }
     }
   }
   return parts

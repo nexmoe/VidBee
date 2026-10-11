@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - v*.*.*
+      - '!v*-*'
   workflow_dispatch:
 
 # Never run two releases for the same ref at once, and never cancel an in-progress
@@ -29,16 +30,6 @@ jobs:
       - name: Check out Git repository
         uses: actions/checkout@v4
 
-      - name: Detect release type
-        id: release_meta
-        shell: bash
-        run: |
-          if [[ "${GITHUB_REF_NAME}" == *-preview.* ]]; then
-            echo "is_preview=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "is_preview=false" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
@@ -52,7 +43,7 @@ jobs:
           body: |
             View the full changelog at [vidbee.org/changelog](https://vidbee.org/changelog/).
           generate_release_notes: true
-          prerelease: ${{ steps.release_meta.outputs.is_preview == 'true' }}
+          prerelease: false
           files: |
             dist/*.exe
             dist/*.zip
@@ -68,7 +59,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
 
       - name: Notify Cloudflare Pages
-        if: steps.release_meta.outputs.is_preview != 'true'
         env:
           CLOUDFLARE_WEBHOOK_URL: ${{ secrets.CLOUDFLARE_WEBHOOK_URL }}
         run: |

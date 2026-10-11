@@ -5,6 +5,10 @@ For full release notes, see [GitHub Releases](https://github.com/nexmoe/VidBee/r
 
 ## [Unreleased]
 
+### Fixed
+- Keep models from the same AI provider together when editing or removing the provider.
+- Avoid appending unused screenshots after illustrated Agent answers.
+
 ## [v2.2.1](https://github.com/nexmoe/VidBee/releases/tag/v2.2.1) - 2026-10-11
 
 ### Fixed
