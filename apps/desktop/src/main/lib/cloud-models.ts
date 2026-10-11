@@ -1,22 +1,16 @@
 import type { CloudModelOption } from '../../shared/ai-types'
-import { cloudProfileRequestHeaders } from './agent-model-profile'
+import { loadCloudCapabilities } from './cloud-capabilities'
 
 /** Load the authenticated public catalog without exposing credentials. */
 export async function loadCloudModels(): Promise<{
   models: CloudModelOption[]
   defaultModelId: string
 }> {
-  const { authClient, getDesktopAuthApiUrl } = await import('./auth-client')
-  const response = await fetch(`${getDesktopAuthApiUrl()}/api/ai/agent/capabilities`, {
-    headers: { Cookie: authClient.getCookie(), ...cloudProfileRequestHeaders() },
-    signal: AbortSignal.timeout(10_000)
-  })
-  if (!response.ok) {
-    throw new Error('Cloud models are unavailable')
-  }
-  const payload = (await response.json()) as {
-    models?: CloudModelOption[]
-    defaultModelId?: string
+  const { payload } = (await loadCloudCapabilities()) as {
+    payload: {
+      models?: CloudModelOption[]
+      defaultModelId?: string
+    }
   }
   // Older Cloud deployments expose a single unnamed model.
   if (!payload.models) {

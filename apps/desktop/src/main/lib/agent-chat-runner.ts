@@ -54,9 +54,7 @@ import {
   cloudProfileRequestHeaders,
   expandTruncatedOutputBudget,
   fallbackThinkingOptions,
-  readAgentModelProfile,
-  thinkingOptionsFromProfile,
-  throwIfCloudProfileUnsupported
+  thinkingOptionsFromProfile
 } from './agent-model-profile'
 import { agentAnswer, finalAgentAnswer } from './agent-output'
 import {
@@ -77,6 +75,7 @@ import { createAgentTools } from './agent-tools'
 import { addAgentUsage } from './agent-usage'
 import { createVidbeeCloudModel, resolvePiModel, thinkingOptionsFromProvider } from './ai-model'
 import { aiStore } from './ai-store'
+import { loadCloudCapabilities } from './cloud-capabilities'
 import { getDesktopTaskQueueRef, peekDesktopTaskQueueRef } from './queue-ref'
 
 interface ActiveAgentRun {
@@ -504,39 +503,18 @@ export async function removeAgentImage(threadId: string, imageId: string): Promi
 
 /** Fetch current serving capabilities for the Composer and Cloud request scheduling. */
 async function loadCloudAgentProfile(signal?: AbortSignal, modelId = aiStore.getCloudModelId()) {
-  const { authClient, getDesktopAuthApiUrl } = await import('./auth-client')
-  const baseUrl = getDesktopAuthApiUrl()
-  const cookie = authClient.getCookie()
-  const response = await fetch(
-    `${baseUrl}/api/ai/agent/capabilities${modelId ? `?modelId=${encodeURIComponent(modelId)}` : ''}`,
-    {
-      headers: { Cookie: cookie, ...cloudProfileRequestHeaders() },
-      signal: signal ?? AbortSignal.timeout(10_000)
-    }
-  )
-  const payload: unknown = await response.json().catch(() => null)
-  throwIfCloudProfileUnsupported(response.status, payload)
-  if (!response.ok) {
-    if (response.status === 401) {
-      throw new AgentUserError('Sign in required')
-    }
-    throw new Error('Cloud agent capabilities are unavailable')
-  }
-  try {
-    const capabilities = readAgentModelProfile(payload)
-    cloudSlots.setLimit(capabilities.limits.concurrentStreams)
-    return {
-      baseUrl,
-      cookie,
-      modelId:
-        payload && typeof payload === 'object' && 'id' in payload && typeof payload.id === 'string'
-          ? payload.id
-          : modelId,
-      capabilities
-    }
-  } catch (error) {
-    log.error('Rejected Cloud agent model profile:', payload)
-    throw error
+  const {
+    baseUrl,
+    cookie,
+    payload,
+    profile: capabilities
+  } = await loadCloudCapabilities(modelId ?? undefined, signal)
+  cloudSlots.setLimit(capabilities.limits.concurrentStreams)
+  return {
+    baseUrl,
+    cookie,
+    modelId: typeof payload.id === 'string' ? payload.id : modelId,
+    capabilities
   }
 }
 

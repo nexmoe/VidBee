@@ -27,6 +27,7 @@ import {
 import { ipcEvents, ipcServices } from '@renderer/lib/ipc'
 import { buildLocalizedVidBeeUrl, withDesktopUtm } from '@renderer/lib/url'
 import type {
+  DesktopAiCreditSnapshot,
   DesktopAiCreditSourceUsage,
   DesktopAiCreditUsage,
   DesktopAiReservation,
@@ -436,46 +437,48 @@ export function AccountPanel() {
   const [creditHistoryVersion, setCreditHistoryVersion] = useState(0)
 
   /** Ignore stale account responses and refresh the balance alongside its underlying holds. */
-  const refreshCreditData = useCallback((): Promise<boolean> => {
-    const version = creditRequestVersion.current
-    if (creditRefresh.current?.version === version) {
-      return creditRefresh.current.promise
-    }
-    /** Apply one snapshot only while it still belongs to the current account. */
-    const refresh = async (): Promise<boolean> => {
-      const [balance, tasks] = await Promise.allSettled([
-        ipcServices.account.getAiCredits(),
-        ipcServices.account.getAiReservations()
-      ])
-      if (version !== creditRequestVersion.current) {
-        return false
+  const refreshCreditData = useCallback(
+    (initial?: Promise<DesktopAiCreditSnapshot>): Promise<boolean> => {
+      const version = creditRequestVersion.current
+      if (creditRefresh.current?.version === version) {
+        return creditRefresh.current.promise
       }
-      if (balance.status === 'fulfilled') {
-        setCredits(balance.value)
-      }
-      if (tasks.status === 'fulfilled') {
-        setReservations(tasks.value)
-      }
-      const success = balance.status === 'fulfilled' && tasks.status === 'fulfilled'
-      if (success) {
-        const snapshot = JSON.stringify([balance.value, tasks.value])
+      /** Apply one snapshot only while it still belongs to the current account. */
+      const refresh = async (): Promise<boolean> => {
+        let data: DesktopAiCreditSnapshot
+        try {
+          data = await (initial ?? ipcServices.account.getAiCreditSnapshot())
+        } catch {
+          if (version === creditRequestVersion.current) {
+            setAccountDataError(true)
+            setReservationsError(true)
+          }
+          return false
+        }
+        if (version !== creditRequestVersion.current) {
+          return false
+        }
+        setCredits(data.credits)
+        setReservations(data.reservations)
+        const snapshot = JSON.stringify([data.credits, data.reservations])
         if (snapshot !== lastCreditData.current) {
           lastCreditData.current = snapshot
           setCreditHistoryVersion((previous) => previous + 1)
         }
+        setAccountDataError(false)
+        setReservationsError(false)
+        return true
       }
-      setAccountDataError(balance.status === 'rejected')
-      setReservationsError(tasks.status === 'rejected')
-      return success
-    }
-    const promise = refresh().finally(() => {
-      if (creditRefresh.current?.promise === promise) {
-        creditRefresh.current = undefined
-      }
-    })
-    creditRefresh.current = { version, promise }
-    return promise
-  }, [])
+      const promise = refresh().finally(() => {
+        if (creditRefresh.current?.promise === promise) {
+          creditRefresh.current = undefined
+        }
+      })
+      creditRefresh.current = { version, promise }
+      return promise
+    },
+    []
+  )
 
   const hasReservedCredits =
     (credits?.reservedCredits ?? 0) > 0 &&
@@ -495,7 +498,7 @@ export function AccountPanel() {
       }
       timer = setTimeout(
         () => void poll(),
-        Math.min(240_000, 15_000 * 2 ** failures) + Math.random() * 1500
+        Math.min(240_000, 60_000 * 2 ** failures) + Math.random() * 1500
       )
     }
     /** Keep one refresh in flight and stop automatic retries after five failures. */
@@ -538,30 +541,30 @@ export function AccountPanel() {
 
   /** Refresh credits and the first invitation pages through the secure main bridge. */
   const refreshAccountData = useCallback(async () => {
+    const version = creditRequestVersion.current
     setAccountDataLoading(true)
     setAccountDataError(false)
+    const pending = ipcServices.account.getOverview()
+    const creditResult = refreshCreditData(pending)
     try {
-      const [, nextOverview, nextInvitedUsers, nextGiftRecords] = await Promise.allSettled([
-        refreshCreditData(),
-        ipcServices.account.getInvitationOverview(),
-        ipcServices.account.getInvitedUsers(),
-        ipcServices.account.getGiftedCreditRecords()
-      ])
-      if (nextOverview.status === 'fulfilled') {
-        setOverview(nextOverview.value)
+      const data = await pending
+      await creditResult
+      if (version !== creditRequestVersion.current) {
+        return
       }
-      if (nextInvitedUsers.status === 'fulfilled') {
-        setInvitedUsers(nextInvitedUsers.value.items)
-        setInvitedCursor(nextInvitedUsers.value.nextCursor)
-      }
-      if (nextGiftRecords.status === 'fulfilled') {
-        setGiftRecords(nextGiftRecords.value.items)
-        setGiftCursor(nextGiftRecords.value.nextCursor)
-      }
+      setOverview(data.invitationOverview)
+      setInvitedUsers(data.invitedUsers.items)
+      setInvitedCursor(data.invitedUsers.nextCursor)
+      setGiftRecords(data.giftedCreditRecords.items)
+      setGiftCursor(data.giftedCreditRecords.nextCursor)
     } catch {
-      setAccountDataError(true)
+      if (version === creditRequestVersion.current) {
+        setAccountDataError(true)
+      }
     } finally {
-      setAccountDataLoading(false)
+      if (version === creditRequestVersion.current) {
+        setAccountDataLoading(false)
+      }
     }
   }, [refreshCreditData])
 

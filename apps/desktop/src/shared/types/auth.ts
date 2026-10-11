@@ -64,6 +64,17 @@ export interface DesktopPaginatedResult<T> {
   nextCursor: string | null
 }
 
+export interface DesktopAiCreditSnapshot {
+  credits: DesktopAiCreditUsage
+  reservations: DesktopAiReservation[]
+}
+
+export interface DesktopAccountOverview extends DesktopAiCreditSnapshot {
+  invitationOverview: DesktopInvitationOverview
+  invitedUsers: DesktopPaginatedResult<DesktopInvitedUser>
+  giftedCreditRecords: DesktopPaginatedResult<DesktopGiftedCreditRecord>
+}
+
 export type DesktopCloudCacheStats = Record<
   'today' | 'week' | 'month' | 'all',
   {

@@ -2,9 +2,11 @@ import { resolve } from 'node:path'
 import { electronClient } from '@better-auth/electron/client'
 import { storage } from '@better-auth/electron/storage'
 import type {
+  DesktopAccountOverview,
   DesktopAiCreditHistory,
   DesktopAiCreditHistoryCursor,
   DesktopAiCreditReceipt,
+  DesktopAiCreditSnapshot,
   DesktopAiCreditSourceUsage,
   DesktopAiCreditUsage,
   DesktopAiReservation,
@@ -189,6 +191,11 @@ function isDesktopAiReservation(value: unknown): value is DesktopAiReservation {
 /** Read live holds without exposing provider identifiers or session credentials. */
 export async function getDesktopAiReservations(): Promise<DesktopAiReservation[]> {
   const result = await callAuthenticatedRpc('aiCredits/reservations')
+  return desktopAiReservations(result)
+}
+
+/** Validate and copy task holds without forwarding private server fields. */
+function desktopAiReservations(result: unknown): DesktopAiReservation[] {
   if (!Array.isArray(result) || result.length > 50 || !result.every(isDesktopAiReservation)) {
     throw new Error('The AI reservation response is invalid.')
   }
@@ -286,6 +293,11 @@ export async function cancelDesktopAiReservation(requestId: string): Promise<voi
 /** Read the signed-in user's AI credits without exposing the stored session cookie. */
 export async function getDesktopAiCreditUsage(): Promise<DesktopAiCreditUsage> {
   const result = await callAuthenticatedRpc('aiCredits/me')
+  return desktopAiCreditUsage(result)
+}
+
+/** Validate and copy a balance before sharing it with a renderer. */
+function desktopAiCreditUsage(result: unknown): DesktopAiCreditUsage {
   if (!isDesktopAiCreditUsage(result)) {
     throw new Error('The AI credit response is invalid.')
   }
@@ -310,6 +322,48 @@ export async function getDesktopAiCreditUsage(): Promise<DesktopAiCreditUsage> {
         ? Math.max(0, result.reconcilingCredits)
         : undefined,
     usedCredits: result.usedCredits
+  }
+}
+
+/** Validate the combined credit response using the same narrow IPC contracts. */
+function desktopAiCreditSnapshot(result: unknown): DesktopAiCreditSnapshot {
+  if (
+    !result ||
+    typeof result !== 'object' ||
+    !('credits' in result) ||
+    !('reservations' in result)
+  ) {
+    throw new Error('The AI credit snapshot is invalid.')
+  }
+  return {
+    credits: desktopAiCreditUsage(result.credits),
+    reservations: desktopAiReservations(result.reservations)
+  }
+}
+
+/** Fetch the balance and task holds with one authenticated request. */
+export async function getDesktopAiCreditSnapshot(): Promise<DesktopAiCreditSnapshot> {
+  return desktopAiCreditSnapshot(await callAuthenticatedRpc('aiCredits/snapshot'))
+}
+
+/** Fetch the initial account panel through one authenticated RPC invocation. */
+export async function getDesktopAccountOverview(): Promise<DesktopAccountOverview> {
+  const result = (await callAuthenticatedRpc('account/overview')) as DesktopAccountOverview
+  const snapshot = desktopAiCreditSnapshot(result)
+  if (
+    !(
+      result.invitationOverview &&
+      Array.isArray(result.invitedUsers?.items) &&
+      Array.isArray(result.giftedCreditRecords?.items)
+    )
+  ) {
+    throw new Error('The account overview response is invalid.')
+  }
+  return {
+    ...snapshot,
+    invitationOverview: result.invitationOverview,
+    invitedUsers: result.invitedUsers,
+    giftedCreditRecords: result.giftedCreditRecords
   }
 }
 

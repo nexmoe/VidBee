@@ -1,7 +1,9 @@
 import { type IpcContext, IpcMethod, IpcService } from 'electron-ipc-decorator'
 import type {
+  DesktopAccountOverview,
   DesktopAiCreditHistory,
   DesktopAiCreditHistoryCursor,
+  DesktopAiCreditSnapshot,
   DesktopAiCreditUsage,
   DesktopAiReservation,
   DesktopCloudCacheStats,
@@ -13,7 +15,9 @@ import type {
 import {
   authClient,
   cancelDesktopAiReservation,
+  getDesktopAccountOverview,
   getDesktopAiCreditHistory,
+  getDesktopAiCreditSnapshot,
   getDesktopAiCreditUsage,
   getDesktopAiReservations,
   getDesktopAuthApiUrl,
@@ -24,6 +28,18 @@ import {
 
 class AccountService extends IpcService {
   static readonly groupName = 'account'
+
+  /** Return the first account pages and credit snapshot with one network request. */
+  @IpcMethod()
+  async getOverview(_context: IpcContext): Promise<DesktopAccountOverview> {
+    return getDesktopAccountOverview()
+  }
+
+  /** Read the balance together with its task holds through one RPC invocation. */
+  @IpcMethod()
+  async getAiCreditSnapshot(_context: IpcContext): Promise<DesktopAiCreditSnapshot> {
+    return getDesktopAiCreditSnapshot()
+  }
 
   /** Return audited credit receipts for the authenticated account only. */
   @IpcMethod()
