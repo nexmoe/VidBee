@@ -47,6 +47,7 @@ const PRESET_NAMES: Record<AiProviderPresetId, string> = {
   alibaba: 'Alibaba Cloud',
   anthropic: 'Anthropic',
   azure: 'Azure',
+  cheaperinference: 'Cheaper Inference',
   custom: 'Custom',
   deepseek: 'Deepseek',
   fireworks: 'Fireworks',

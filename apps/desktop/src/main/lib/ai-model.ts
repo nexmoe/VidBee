@@ -42,6 +42,7 @@ const PI_PROVIDER_BY_PRESET: Partial<Record<AiProviderPresetId, PiKnownProvider>
 
 const OPENAI_COMPLETIONS_PRESETS = new Set<AiProviderPresetId>([
   'alibaba',
+  'cheaperinference',
   'custom',
   'deepseek',
   'fireworks',
