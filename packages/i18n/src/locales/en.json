@@ -845,6 +845,7 @@
         "alibaba": "Alibaba Cloud",
         "anthropic": "Anthropic",
         "azure": "Azure",
+        "cheaperinference": "Cheaper Inference",
         "custom": "Custom",
         "deepseek": "Deepseek",
         "fireworks": "Fireworks",
