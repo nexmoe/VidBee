@@ -4,6 +4,7 @@ import type { AgentThinkingLevel, ProviderDefaultThinkingLevel } from './agent-c
 export type AiProviderPresetId =
   | 'alibaba'
   | 'anthropic'
+  | 'atlascloud'
   | 'azure'
   | 'custom'
   | 'deepseek'

@@ -892,6 +892,7 @@
       "testPlaceholder": "O resultado do prompt aparecerá aqui",
       "presets": {
         "anthropic": "Anthropic",
+        "atlascloud": "Atlas Cloud",
         "azure": "Azure",
         "custom": "Custom",
         "deepseek": "Deepseek",

@@ -45,6 +45,7 @@ const log = scopedLoggers.ai
 const PRESET_NAMES: Record<AiProviderPresetId, string> = {
   alibaba: 'Alibaba Cloud',
   anthropic: 'Anthropic',
+  atlascloud: 'Atlas Cloud',
   azure: 'Azure',
   custom: 'Custom',
   deepseek: 'Deepseek',
