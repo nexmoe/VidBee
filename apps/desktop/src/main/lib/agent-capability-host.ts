@@ -371,8 +371,7 @@ export async function manageAgentAi(raw: unknown): Promise<Record<string, unknow
         id: existing?.id,
         title,
         content,
-        enabled: input.enabled ?? existing?.enabled,
-        icon: existing?.icon ?? 'sparkles'
+        enabled: input.enabled ?? existing?.enabled
       })
       break
     }

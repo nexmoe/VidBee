@@ -23,8 +23,8 @@ import {
   playbackSessionAtom,
   playbackVolumeAtom
 } from '@renderer/store/transcript-playback'
+import { useTranscriptPlaybackCues } from '@renderer/store/transcript-playback-cues'
 import { playbackPlaylistAtom } from '@renderer/store/transcript-playlist'
-import { transcriptMapAtom } from '@renderer/store/transcripts'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
 import { useAtomValue, useSetAtom } from 'jotai'
 import { type CSSProperties, type ReactNode, useEffect, useMemo, useState } from 'react'
@@ -66,7 +66,7 @@ export function TranscriptPlaybackBar(): ReactNode {
   const setPlaybackRate = useSetAtom(playbackRateAtom)
   const controls = useAtomValue(playbackControlsAtom)
   const playlistIds = useAtomValue(playbackPlaylistAtom)
-  const transcriptMap = useAtomValue(transcriptMapAtom)
+  const segments = useTranscriptPlaybackCues()
   const closeSession = useSetAtom(closePlaybackSessionAtom)
   const navigate = useNavigate()
   const pathname = useRouterState({ select: (state) => state.location.pathname })
@@ -83,9 +83,8 @@ export function TranscriptPlaybackBar(): ReactNode {
     if (!session) {
       return null
     }
-    const segments = transcriptMap[session.downloadId]?.record?.segments ?? []
     return segmentAtTime(segments, Math.round(clock.currentTime * 1000))?.text ?? null
-  }, [clock.currentTime, session, transcriptMap])
+  }, [clock.currentTime, segments, session])
 
   useEffect(() => {
     let hideTimer: number | undefined

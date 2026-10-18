@@ -7,6 +7,7 @@ import { BrowserWindow } from 'electron'
 import {
   AGENT_MAX_MESSAGE_IMAGES,
   AGENT_THINKING_LEVELS,
+  type AgentCatalogNotice,
   type AgentChatInput,
   type AgentChatRun,
   type AgentRunEvent,
@@ -67,6 +68,12 @@ import {
   retryArticleInSections
 } from './agent-progress'
 import { assertAgentImagesSupported, buildAgentRunSource } from './agent-run-context'
+import {
+  AGENT_CATALOG_TYPES,
+  agentCatalogRemove,
+  agentCatalogUpsert,
+  agentSavePlan
+} from './agent-run-event'
 import { nextRunPhase, type RunPhase, type RunSignals } from './agent-run-machine'
 import { AgentRunTimers } from './agent-run-timers'
 import { createVideoAgentSession, runUntilAborted, streamAgentCompletion } from './agent-session'
@@ -123,7 +130,41 @@ export function peekAgentRunDirty(threadId: string): SaveScope | undefined {
   return dirty
 }
 
-/** Broadcast only committed product snapshots, never provider-private messages or secrets. */
+/**
+ * Broadcast a directory notice without writing another thread seq.
+ *
+ * @param thread Conversation the notice describes.
+ * @param type Event name stored only on the broadcast.
+ * @param catalog Upsert or removal ordered by revision.
+ */
+function broadcastCatalog(thread: AgentThread, type: string, catalog: AgentCatalogNotice): void {
+  broadcast({
+    threadId: thread.id,
+    runId: null,
+    messageId: null,
+    seq: thread.seq,
+    type,
+    createdAt: Date.now(),
+    catalog
+  })
+}
+
+/**
+ * Attach a catalog notice when this commit changes title, membership, or selected status.
+ *
+ * @param event Committed event. Its payload is not written again.
+ * @param thread Thread used to build the notice.
+ * @param type Event type that selects whether a notice is required.
+ */
+function broadcastSaved(event: AgentRunEvent, thread: AgentThread, type: string): void {
+  if (!AGENT_CATALOG_TYPES.has(type)) {
+    broadcast(event)
+    return
+  }
+  broadcast({ ...event, catalog: agentCatalogUpsert(thread) })
+}
+
+/** Broadcast only committed product payloads, never provider-private messages or secrets. */
 function broadcast(event: AgentRunEvent): void {
   for (const window of BrowserWindow.getAllWindows()) {
     if (!window.isDestroyed()) {
@@ -199,14 +240,16 @@ function persist(
     syncThinkingMs(entry, now)
     const eventType = entry.pendingType ?? type
     const dirty = entry.dirty
-    const full =
-      eventType.startsWith('run.') ||
-      eventType === 'thread.renamed' ||
-      eventType === 'thread.grants-updated'
+    const plan = agentSavePlan(eventType, dirty)
     try {
-      broadcast(
-        getAgentChatStore().save(entry.thread, eventType, entry.run.id, full ? undefined : dirty)
+      const saved = getAgentChatStore().save(
+        entry.thread,
+        eventType,
+        entry.run.id,
+        plan.scope,
+        plan.delivery
       )
+      broadcastSaved(saved, entry.thread, eventType)
       if (entry.dirty === dirty) {
         entry.dirty = {}
       }
@@ -269,7 +312,25 @@ export function createAgentThread(downloadId: string): AgentThread {
   if (!peekDesktopTaskQueueRef()?.get(downloadId)) {
     throw new Error('Video no longer exists')
   }
-  return publicAgentThread(getAgentChatStore().create(downloadId, AI_CHAT_PROMPT_ID))
+  const thread = getAgentChatStore().create(downloadId, AI_CHAT_PROMPT_ID)
+  broadcastCatalog(thread, 'thread.created', agentCatalogUpsert(thread))
+  return publicAgentThread(thread)
+}
+
+/**
+ * Repair a gap from the live run when it is at least as new as the database.
+ *
+ * @param threadId Conversation id.
+ * @param after Seq the renderer has already applied.
+ */
+export function readAgentEvents(
+  threadId: string,
+  after: number
+): { events: AgentRunEvent[]; snapshot: AgentThread | null } {
+  if (!Number.isSafeInteger(after) || after < 0) {
+    throw new Error('Invalid event cursor')
+  }
+  return getAgentChatStore().events(threadId, after, active.get(threadId)?.thread)
 }
 
 /** Start one product run; the synchronous admission path prevents duplicate sends and automatic starts. */
@@ -296,6 +357,13 @@ export function sendAgentMessage(input: AgentChatInput): AgentThread {
   }
   if (input.imageIds?.some((id) => !thread.images?.some((image) => image.id === id))) {
     throw new Error('Image does not belong to this conversation')
+  }
+  // Opening a skill and its background automatic run can admit the same initial request.
+  if (
+    !(input.retryMessageId || input.text?.trim() || input.imageIds?.length) &&
+    thread.messages.length
+  ) {
+    return publicAgentThread(active.get(thread.id)?.thread ?? thread)
   }
   if (active.has(thread.id)) {
     throw new Error('This agent is already responding')
@@ -327,8 +395,6 @@ export function sendAgentMessage(input: AgentChatInput): AgentThread {
       parentId = null
       text = instruction
     }
-  } else if (!(text || imageIds.length) && thread.messages.length) {
-    return publicAgentThread(thread)
   }
   if (!(text || imageIds.length)) {
     if (thread.promptId === AI_CHAT_PROMPT_ID) {
@@ -494,7 +560,8 @@ export function selectAgentBranch(threadId: string, messageId: string): AgentThr
     leaf = last.id
   }
   thread.leafId = leaf
-  broadcast(getAgentChatStore().save(thread, 'thread.branch-selected'))
+  const saved = getAgentChatStore().save(thread, 'thread.branch-selected', null, { thread: true })
+  broadcastSaved(saved, thread, 'thread.branch-selected')
   return publicAgentThread(thread)
 }
 
@@ -506,15 +573,32 @@ export async function stopAllAgentRuns(): Promise<void> {
 /** Delete only agent-owned state and artifacts after its source video is removed. */
 export async function deleteAgentVideo(downloadId: string): Promise<void> {
   const store = getAgentChatStore()
+  const threadIds = store.listVideo(downloadId)
   for (const entry of active.values()) {
     if (entry.thread.downloadId === downloadId) {
       await stopAgentRun(entry.thread.id)
     }
   }
-  for (const threadId of store.listVideo(downloadId)) {
+  for (const threadId of threadIds) {
     await rm(agentMediaDirectory(threadId), { recursive: true, force: true })
   }
   store.deleteVideo(downloadId)
+  for (const threadId of threadIds) {
+    broadcastCatalog(
+      {
+        id: threadId,
+        downloadId,
+        promptId: '',
+        leafId: null,
+        seq: 0,
+        messages: [],
+        runs: [],
+        artifacts: []
+      },
+      'thread.deleted',
+      agentCatalogRemove(threadId, downloadId)
+    )
+  }
 }
 
 /** Delete one conversation and its artifacts, leaving the video and other prompts. */
@@ -522,9 +606,18 @@ export async function deleteAgentThread(threadId: string): Promise<void> {
   if (!isUuid(threadId)) {
     throw new Error('Invalid conversation')
   }
+  const store = getAgentChatStore()
+  const existing = store.get(threadId, { sessionEntries: false })
   await stopAgentRun(threadId)
   await rm(agentMediaDirectory(threadId), { recursive: true, force: true })
-  getAgentChatStore().deleteThread(threadId)
+  store.deleteThread(threadId)
+  if (existing) {
+    broadcastCatalog(
+      existing,
+      'thread.deleted',
+      agentCatalogRemove(existing.id, existing.downloadId)
+    )
+  }
 }
 
 /** Save selected images against the live thread so an in-flight reply cannot overwrite them. */
@@ -548,7 +641,8 @@ export async function selectAgentImages(threadId: string): Promise<AgentThread> 
     const previous = thread.images
     thread.images = [...(previous ?? []), ...images]
     try {
-      broadcast(store.save(thread, 'images.selected'))
+      const saved = store.save(thread, 'images.selected', null, { thread: true })
+      broadcastSaved(saved, thread, 'images.selected')
     } catch (error) {
       thread.images = previous
       await removeAgentImageFiles(images)
@@ -572,7 +666,8 @@ export async function removeAgentImage(threadId: string, imageId: string): Promi
   const previous = thread.images
   thread.images = thread.images?.filter((item) => item.id !== imageId)
   try {
-    broadcast(store.save(thread, 'images.removed'))
+    const saved = store.save(thread, 'images.removed', null, { thread: true })
+    broadcastSaved(saved, thread, 'images.removed')
   } catch (error) {
     thread.images = previous
     throw error
@@ -612,7 +707,20 @@ export function renameAgentThread(threadId: string, title: string): void {
     renameLiveThread(entry, title)
     return
   }
-  getAgentChatStore().rename(threadId, title)
+  const thread = getAgentChatStore().rename(threadId, title)
+  broadcastSaved(
+    {
+      threadId: thread.id,
+      runId: null,
+      messageId: null,
+      seq: thread.seq,
+      type: 'thread.renamed',
+      createdAt: Date.now(),
+      snapshot: publicAgentThread(thread)
+    },
+    thread,
+    'thread.renamed'
+  )
 }
 
 /** Fetch current serving capabilities for the Composer and Cloud request scheduling. */

@@ -8,7 +8,19 @@
  * directly; any host-local divergence is a contract bug.
  */
 
+import type {
+  OneClickContainerOption,
+  OneClickQualityPreset
+} from '@vidbee/downloader-core/format-preferences'
+
 export type SubscriptionPlatform = 'youtube' | 'bilibili' | 'custom'
+
+/** Per-subscription overrides; omitted values follow the host's download defaults. */
+export interface SubscriptionDownloadPreferences {
+  downloadType?: 'video' | 'audio'
+  downloadQuality?: OneClickQualityPreset
+  downloadContainer?: OneClickContainerOption
+}
 
 /**
  * High-level subscription state. The granular task lifecycle for a
@@ -25,7 +37,7 @@ export interface ResolvedFeed {
   platform: SubscriptionPlatform
 }
 
-export interface SubscriptionRule {
+export interface SubscriptionRule extends SubscriptionDownloadPreferences {
   id: string
   title: string
   sourceUrl: string
@@ -71,7 +83,7 @@ export interface SubscriptionWithItems extends SubscriptionRule {
   items: SubscriptionFeedItem[]
 }
 
-export interface SubscriptionCreateInput {
+export interface SubscriptionCreateInput extends SubscriptionDownloadPreferences {
   sourceUrl: string
   feedUrl: string
   platform: SubscriptionPlatform
@@ -85,7 +97,7 @@ export interface SubscriptionCreateInput {
   enabled?: boolean
 }
 
-export interface SubscriptionUpdateInput {
+export interface SubscriptionUpdateInput extends SubscriptionDownloadPreferences {
   title?: string
   sourceUrl?: string
   feedUrl?: string
@@ -164,7 +176,7 @@ export interface LeaderAcquireOptions {
 
 export const DEFAULT_LEADER_HEARTBEAT_MS = 30_000
 export const DEFAULT_LEADER_LOCK_TTL_MS = 90_000
-export const DEFAULT_FEED_CHECK_INTERVAL_MS = 3 * 60 * 60 * 1_000 // 3h
+export const DEFAULT_FEED_CHECK_INTERVAL_MS = 3 * 60 * 60 * 1000 // 3h
 export const DEFAULT_REFRESH_DEDUPE_WINDOW_MS = 30_000
 export const DEFAULT_SUBSCRIPTION_FILENAME_TEMPLATE = '%(uploader)s/%(title)s.%(ext)s'
 export const SUBSCRIPTION_DUPLICATE_FEED_ERROR = 'SUBSCRIPTION_DUPLICATE_FEED_URL'

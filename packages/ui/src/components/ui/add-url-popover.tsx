@@ -1,5 +1,5 @@
 import { ChevronDown, FileAudio, Plus } from 'lucide-react'
-import { useId } from 'react'
+import { type Ref, useId } from 'react'
 import { cn } from '../../lib/cn'
 import { Button } from './button'
 import {
@@ -14,6 +14,8 @@ import { Switch } from './switch'
 import { Textarea } from './textarea'
 
 interface AddUrlPopoverProps {
+  contentRef?: Ref<HTMLDivElement>
+  submitting?: boolean
   open: boolean
   value: string
   triggerLabel: string
@@ -44,6 +46,8 @@ interface AddUrlPopoverProps {
  * Popover for pasting a video URL, toggling one-click download, and opening supported sites.
  */
 export const AddUrlPopover = ({
+  contentRef,
+  submitting = false,
   open,
   value,
   triggerLabel,
@@ -82,13 +86,14 @@ export const AddUrlPopover = ({
               'h-[34px] px-3.5',
               showLocalMenu ? 'rounded-none rounded-l-full' : 'rounded-full'
             )}
+            disabled={submitting}
             onClick={onTriggerClick}
           >
             <Plus className="h-4 w-4" />
             {triggerLabel}
           </Button>
         </PopoverTrigger>
-        <PopoverContent align="end" className="w-96 p-5">
+        <PopoverContent align="end" className="w-96 p-5" ref={contentRef}>
           <div className="flex flex-col">
             <div>
               <Label className="font-semibold text-sm leading-snug" htmlFor={textareaId}>
@@ -107,6 +112,7 @@ export const AddUrlPopover = ({
                 aria-invalid={Boolean(invalidMessage)}
                 autoFocus
                 className="-mx-[3px] mt-3 min-h-24 w-[calc(100%+6px)] resize-none rounded-lg border-transparent bg-muted/70 px-3.5 py-3 text-sm shadow-none focus-visible:border-ring focus-visible:bg-background dark:bg-muted/50"
+                disabled={submitting}
                 id={textareaId}
                 onChange={(event) => {
                   onValueChange(event.target.value)
@@ -154,7 +160,7 @@ export const AddUrlPopover = ({
               <Button onClick={onCancel} variant="outline">
                 {cancelLabel}
               </Button>
-              <Button disabled={confirmDisabled} onClick={onConfirm}>
+              <Button disabled={confirmDisabled || submitting} onClick={onConfirm}>
                 {confirmLabel}
               </Button>
             </div>

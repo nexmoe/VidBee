@@ -102,7 +102,8 @@ export async function applyExtensionCookieSettings(
   url: string,
   settings?: DownloadRuntimeSettings
 ): Promise<DownloadRuntimeSettings | undefined> {
-  if (!getExtensionCookieConnection().connected) {
+  const connection = getExtensionCookieConnection()
+  if (!connection.connected) {
     return undefined
   }
   const cookies = await requestCookiesForUrl(url)
@@ -117,7 +118,12 @@ export async function applyExtensionCookieSettings(
   }
   const cookiesPath = await writeCookiesFile(netscape)
   logger.info(`extension-cookies: wrote ${cookies.length} cookies for download`)
-  return { ...settings, browserForCookies: 'none', cookiesPath }
+  return {
+    ...settings,
+    browserForCookies: 'none',
+    cookiesPath,
+    cookieSource: { type: 'extension', browser: connection.browser }
+  }
 }
 
 /** Drop sessions and pending jobs when the local API stops. */

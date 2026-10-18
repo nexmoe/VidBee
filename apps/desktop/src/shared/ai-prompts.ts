@@ -1,5 +1,5 @@
 import { languageList, languages, normalizeLanguageCode } from '@vidbee/i18n/languages'
-import type { AiPrompt, AiPromptIconId } from './ai-types'
+import type { AiPrompt } from './ai-types'
 
 /** Replaced with the current UI language name before a prompt is shown or sent. */
 export const AI_PROMPT_UI_LANGUAGE_TOKEN = '{{uiLanguage}}'
@@ -11,7 +11,6 @@ export const AI_PROMPT_SAMPLE_TRANSCRIPT =
 interface AiPromptPresetSeed {
   id: string
   title: string
-  icon: AiPromptIconId
   content: string
 }
 
@@ -61,7 +60,6 @@ const AGENT_CHAT_CONTENT = [
 export const agentChatPrompt = (now: number = Date.now()): AiPrompt => ({
   id: AI_CHAT_PROMPT_ID,
   title: 'Chat',
-  icon: 'message-circle-question',
   content: AGENT_CHAT_CONTENT,
   enabled: true,
   isPreset: true,
@@ -79,7 +77,6 @@ export const AI_PROMPT_PRESETS: readonly AiPromptPresetSeed[] = [
   {
     id: AI_OVERVIEW_PROMPT_ID,
     title: 'Overview',
-    icon: 'sparkles',
     content: [
       'Write a navigable, topic-by-topic overview of this transcript with chapters and key quotes.',
       '',
@@ -105,7 +102,6 @@ export const AI_PROMPT_PRESETS: readonly AiPromptPresetSeed[] = [
   {
     id: 'bullet-points',
     title: 'Bullet Points',
-    icon: 'list',
     content: [
       'Turn this transcript into a scannable bullet summary.',
       '',
@@ -120,7 +116,6 @@ export const AI_PROMPT_PRESETS: readonly AiPromptPresetSeed[] = [
   {
     id: 'improve-grammar',
     title: 'Improve Grammar & Punctuation',
-    icon: 'spell-check',
     content: [
       'Correct grammar, spelling, and punctuation so the transcript reads naturally and professionally. Keep the original meaning, speakers, and details. Do not add new facts.',
       '',
@@ -135,7 +130,6 @@ export const AI_PROMPT_PRESETS: readonly AiPromptPresetSeed[] = [
   {
     id: 'generate-faq',
     title: 'Generate FAQ',
-    icon: 'message-circle-question',
     content: [
       'Generate a FAQ from this transcript. Write clear questions and concise answers grounded only in the transcript. If the transcript does not contain an answer, say so.',
       '',
@@ -150,7 +144,6 @@ export const AI_PROMPT_PRESETS: readonly AiPromptPresetSeed[] = [
   {
     id: 'extract-statistics',
     title: 'Extract Statistics',
-    icon: 'chart-no-axes-column',
     content: [
       'Extract numbers, percentages, amounts, dates, and growth rates from this transcript.',
       '',
@@ -169,7 +162,6 @@ export const AI_PROMPT_PRESETS: readonly AiPromptPresetSeed[] = [
   {
     id: 'paraphrase-content',
     title: 'Paraphrase Content',
-    icon: 'repeat-2',
     content: [
       'Paraphrase this transcript in a clear, natural style while keeping the original meaning. Do not add claims that are not in the source.',
       '',
@@ -184,7 +176,6 @@ export const AI_PROMPT_PRESETS: readonly AiPromptPresetSeed[] = [
   {
     id: 'create-mindmap',
     title: 'Create a mindmap',
-    icon: 'git-branch',
     content: [
       'Organize this transcript into a hierarchical mind map.',
       '',
@@ -205,7 +196,6 @@ export const AI_PROMPT_PRESETS: readonly AiPromptPresetSeed[] = [
   {
     id: 'translate',
     title: 'Translate',
-    icon: 'languages',
     content: [
       `Translate this transcript into ${AI_PROMPT_UI_LANGUAGE_TOKEN}. If it is already in ${AI_PROMPT_UI_LANGUAGE_TOKEN}, rewrite it clearly without changing the meaning.`,
       '',
@@ -396,9 +386,9 @@ export const createDefaultAiPrompts = (now: number = Date.now()): AiPrompt[] =>
   AI_PROMPT_PRESETS.map((preset, index) => ({
     id: preset.id,
     title: preset.title,
-    icon: preset.icon,
     content: preset.content,
     enabled: true,
+    autoRun: false,
     isPreset: true,
     sortOrder: index,
     createdAt: now,
@@ -406,12 +396,17 @@ export const createDefaultAiPrompts = (now: number = Date.now()): AiPrompt[] =>
   }))
 
 /**
- * Replace a stored built-in prompt body when it still matches an older official seed.
+ * Drop retired icon settings and refresh unedited built-in prompt bodies.
  *
- * @param prompt Prompt loaded from storage.
+ * @param stored Prompt loaded from storage.
  * @param now Timestamp written onto updatedAt when the body changes.
  */
-const withCurrentPresetContent = (prompt: AiPrompt, now: number): AiPrompt => {
+const withCurrentPromptFields = (stored: AiPrompt & { icon?: unknown }, now: number): AiPrompt => {
+  let prompt: AiPrompt = stored
+  if ('icon' in stored) {
+    const { icon: _icon, ...current } = stored
+    prompt = current
+  }
   if (!prompt.isPreset) {
     return prompt
   }
@@ -446,7 +441,7 @@ export const partitionTranscriptPromptTabs = (
 /**
  * Re-insert any missing built-in prompts without overwriting user edits,
  * refresh unedited official prompt bodies to the current seed, and drop
- * retired built-in ids so they are not restored.
+ * retired icon settings and built-in ids so they are not restored.
  *
  * @param existing Prompts already in storage.
  * @param now Timestamp for newly inserted or refreshed presets.
@@ -458,9 +453,9 @@ export const mergeDefaultAiPrompts = (
   const kept = existing.filter((prompt) => !DEPRECATED_PRESET_IDS.has(prompt.id))
   const present = new Set(kept.map((prompt) => prompt.id))
   const missing = createDefaultAiPrompts(now).filter((prompt) => !present.has(prompt.id))
-  const refreshed = kept.map((prompt) => withCurrentPresetContent(prompt, now))
-  const contentChanged = refreshed.some((prompt, index) => prompt !== kept[index])
-  if (missing.length === 0 && kept.length === existing.length && !contentChanged) {
+  const refreshed = kept.map((prompt) => withCurrentPromptFields(prompt, now))
+  const fieldsChanged = refreshed.some((prompt, index) => prompt !== kept[index])
+  if (missing.length === 0 && kept.length === existing.length && !fieldsChanged) {
     return existing
   }
   const overviewMissing = missing.find((prompt) => prompt.id === AI_OVERVIEW_PROMPT_ID)

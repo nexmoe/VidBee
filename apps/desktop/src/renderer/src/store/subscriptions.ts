@@ -3,6 +3,7 @@ import type {
   SubscriptionRule,
   SubscriptionUpdatePayload
 } from '@shared/types'
+import type { SubscriptionDownloadPreferences } from '@vidbee/subscriptions-core/types'
 import { atom } from 'jotai'
 import { ipcServices } from '../lib/ipc'
 import { logger } from '../lib/logger'
@@ -19,20 +20,36 @@ const normalizeCommaList = (value?: string): string[] => {
 
 export const subscriptionsAtom = atom<SubscriptionRule[]>([])
 
-export const setSubscriptionsAtom = atom(null, (_get, set, subscriptions: SubscriptionRule[]) => {
+/**
+ * Compare list payloads so an unchanged poll does not notify subscribers.
+ * @param current Rules already in the store.
+ * @param next Rules returned by the latest list call.
+ * @returns True when every field matches.
+ */
+function sameSubscriptionList(current: SubscriptionRule[], next: SubscriptionRule[]): boolean {
+  return JSON.stringify(current) === JSON.stringify(next)
+}
+
+export const setSubscriptionsAtom = atom(null, (get, set, subscriptions: SubscriptionRule[]) => {
+  if (sameSubscriptionList(get(subscriptionsAtom), subscriptions)) {
+    return
+  }
   set(subscriptionsAtom, subscriptions)
 })
 
-export const loadSubscriptionsAtom = atom(null, async (_get, set) => {
+export const loadSubscriptionsAtom = atom(null, async (get, set) => {
   try {
     const subscriptions = await ipcServices.subscriptions.list()
+    if (sameSubscriptionList(get(subscriptionsAtom), subscriptions)) {
+      return
+    }
     set(subscriptionsAtom, subscriptions)
   } catch (error) {
     logger.error('Failed to load subscriptions:', error)
   }
 })
 
-export interface CreateSubscriptionForm {
+export interface CreateSubscriptionForm extends SubscriptionDownloadPreferences {
   url: string
   keywords?: string
   tags?: string
@@ -52,6 +69,9 @@ export const createSubscriptionAtom = atom(
       tags: normalizeCommaList(payload.tags),
       onlyDownloadLatest: payload.onlyDownloadLatest,
       autoDownload: payload.autoDownload,
+      downloadType: payload.downloadType,
+      downloadQuality: payload.downloadQuality,
+      downloadContainer: payload.downloadContainer,
       downloadDirectory: payload.downloadDirectory,
       namingTemplate: payload.namingTemplate,
       enabled: payload.enabled
@@ -59,10 +79,16 @@ export const createSubscriptionAtom = atom(
   }
 )
 
+/** Publish the persisted snapshot before a saved dialog can be reopened. */
 export const updateSubscriptionAtom = atom(
   null,
-  async (_get, _set, update: { id: string; data: SubscriptionUpdatePayload }) => {
-    await ipcServices.subscriptions.update(update.id, update.data)
+  async (_get, set, update: { id: string; data: SubscriptionUpdatePayload }) => {
+    const updated = await ipcServices.subscriptions.update(update.id, update.data)
+    if (updated) {
+      set(subscriptionsAtom, (current) =>
+        current.map((subscription) => (subscription.id === updated.id ? updated : subscription))
+      )
+    }
   }
 )
 

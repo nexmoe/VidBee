@@ -89,6 +89,7 @@ export interface LegacyTaskProjection {
   resolvedFormatId?: string
   subtitleStatus?: TaskOutput['subtitleStatus']
   subtitleLanguages?: string[]
+  cookieSources?: TaskOutput['cookieSources']
   description?: string
   channel?: string
   uploader?: string
@@ -228,6 +229,9 @@ export function projectTaskToLegacy(task: Readonly<Task>): LegacyTaskProjection 
 
   if (task.output) {
     const out = task.output as TaskOutput
+    if (out.cookieSources) {
+      proj.cookieSources = out.cookieSources.map((source) => ({ ...source }))
+    }
     proj.fileSize = out.size
     proj.savedFileName = basenameOf(out.filePath)
     proj.downloadPath = dirnameOf(out.filePath)

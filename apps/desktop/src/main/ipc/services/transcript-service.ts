@@ -30,12 +30,16 @@ import {
   insertTranscriptSegment,
   overlayCaptionSpeakersIfNeeded,
   readMinimalModelPrep,
+  readTranscriptDetail,
+  readTranscriptPlaybackCues,
   rediarizeTranscription,
   redownloadTranscriptionModels,
   retryTranscription,
   selectTranscriptSource,
   setActiveAsrTier,
   startTranscriptionForDownload,
+  type TranscriptListSnapshot,
+  type TranscriptPlaybackCueSnapshot,
   type TranscriptSnapshot,
   updateTranscriptSegment,
   upgradeAndRetranscribe
@@ -66,8 +70,24 @@ class TranscriptService extends IpcService {
     return next
   }
 
+  /**
+   * Read the current detail without importing sidecars or starting a task.
+   */
   @IpcMethod()
-  async getStatusMap(_context: IpcContext): Promise<Record<string, TranscriptSnapshot>> {
+  getDetail(_context: IpcContext, downloadId: string): TranscriptSnapshot {
+    return readTranscriptDetail(downloadId)
+  }
+
+  /**
+   * Read cue text for the selected source. Word timestamps are not included.
+   */
+  @IpcMethod()
+  getPlaybackCues(_context: IpcContext, downloadId: string): TranscriptPlaybackCueSnapshot | null {
+    return readTranscriptPlaybackCues(downloadId)
+  }
+
+  @IpcMethod()
+  async getStatusMap(_context: IpcContext): Promise<Record<string, TranscriptListSnapshot>> {
     await startDesktopTaskQueue()
     return getTranscriptStatusMap()
   }

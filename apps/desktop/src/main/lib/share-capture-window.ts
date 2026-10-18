@@ -306,7 +306,8 @@ export const createShareCaptureHost = (deps: ShareCaptureDeps) => {
     })
 
   /**
-   * Load the capture page once and reuse the same hidden window.
+   * Create the hidden offscreen window for the capture that is about to run.
+   * The caller destroys it when that capture settles.
    */
   const ensureShareCaptureWindow = async (): Promise<ShareCaptureWindowLike> => {
     bindShareCaptureReadyListener()
@@ -370,6 +371,23 @@ export const createShareCaptureHost = (deps: ShareCaptureDeps) => {
     payload: ShareCardPayload
   ): Promise<{ png: Buffer; layout: ShareCaptureReadyMessage['layout'] }> => {
     const window = await ensureShareCaptureWindow()
+    try {
+      return await paintShareCapture(window, payload)
+    } finally {
+      destroyShareCaptureWindow()
+    }
+  }
+
+  /**
+   * Paint one payload in an existing window, then snapshot it in GPU-safe strips.
+   *
+   * @param window Hidden offscreen window for this capture.
+   * @param payload Serializable card props.
+   */
+  const paintShareCapture = async (
+    window: ShareCaptureWindowLike,
+    payload: ShareCardPayload
+  ): Promise<{ png: Buffer; layout: ShareCaptureReadyMessage['layout'] }> => {
     const requestId = nextRequestId
     nextRequestId += 1
     const ready = waitForShareCardReady(requestId)
@@ -423,7 +441,7 @@ export const createShareCaptureHost = (deps: ShareCaptureDeps) => {
   }
 
   /**
-   * Capture the share card in a reused hidden window. Serialized across callers.
+   * Capture the share card in a hidden window. Serialized across callers.
    *
    * @param payload Serializable card props from the visible preview.
    */

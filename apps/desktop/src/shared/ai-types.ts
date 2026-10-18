@@ -27,21 +27,6 @@ export type AiProviderPresetId =
   | 'xai'
   | 'zhipu'
 
-/** Lucide icon names stored with a prompt. */
-export type AiPromptIconId =
-  | 'list'
-  | 'spell-check'
-  | 'rows-3'
-  | 'highlighter'
-  | 'circle-help'
-  | 'smile'
-  | 'message-circle-question'
-  | 'chart-no-axes-column'
-  | 'repeat-2'
-  | 'git-branch'
-  | 'languages'
-  | 'sparkles'
-
 /** Catalog entry for a built-in provider. */
 export interface AiProviderPreset {
   id: AiProviderPresetId
@@ -109,9 +94,10 @@ export interface AiProviderWriteInput {
 export interface AiPrompt {
   id: string
   title: string
-  icon: AiPromptIconId
   content: string
   enabled: boolean
+  /** Run once for each completed download when a transcript is available. Defaults to false. */
+  autoRun?: boolean
   isPreset: boolean
   sortOrder: number
   createdAt: number
@@ -122,9 +108,9 @@ export interface AiPrompt {
 export interface AiPromptWriteInput {
   id?: string
   title: string
-  icon: AiPromptIconId
   content: string
   enabled?: boolean
+  autoRun?: boolean
 }
 
 /** Lifecycle of a prompt run that lives in the main process. */

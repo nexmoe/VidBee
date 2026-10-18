@@ -3,7 +3,30 @@
  * thumbnail/cover extraction. All functions are pure — feeding the same
  * `ParsedFeedItem[]` always returns the same `NormalizedFeedItem[]`.
  */
-import type { NormalizedFeedItem, ParsedFeed, ParsedFeedItem } from './types'
+import type { NormalizedFeedItem, ParsedFeed, ParsedFeedItem, SubscriptionFeedItem } from './types'
+
+interface SubscriptionFeedSource {
+  id: string
+  items?: SubscriptionFeedItem[]
+}
+
+export interface SubscriptionFeedEntry<TSubscription extends SubscriptionFeedSource> {
+  subscription: TSubscription
+  item: NonNullable<TSubscription['items']>[number]
+}
+
+/** Merge subscription items into one newest-first timeline while retaining their source. */
+export const getSubscriptionFeedEntries = <TSubscription extends SubscriptionFeedSource>(
+  subscriptions: TSubscription[]
+): SubscriptionFeedEntry<TSubscription>[] => {
+  const entries: SubscriptionFeedEntry<TSubscription>[] = []
+  for (const subscription of subscriptions) {
+    for (const item of subscription.items ?? []) {
+      entries.push({ subscription, item })
+    }
+  }
+  return entries.sort((left, right) => right.item.publishedAt - left.item.publishedAt)
+}
 
 const resolveItemId = (item: ParsedFeedItem): string | null => {
   const candidate =

@@ -13,6 +13,7 @@
 import { existsSync, statSync } from 'node:fs'
 import type {
   ClassifiedError,
+  DownloadCookieSource,
   Executor,
   ExecutorContext,
   ExecutorEvents,
@@ -21,7 +22,11 @@ import type {
   TaskOutput
 } from '@vidbee/task-queue'
 import { classify, virtualError } from '@vidbee/task-queue'
-import { killProcessTree } from '@vidbee/task-queue/process'
+import {
+  backgroundChildSpawnOptions,
+  killProcessTree,
+  lowerChildPriority
+} from '@vidbee/task-queue/process'
 import YTDlpWrap from 'yt-dlp-wrap-plus'
 import type { OneClickContainerOption } from './format-preferences'
 import type { DownloadRuntimeSettings } from './types'
@@ -51,7 +56,7 @@ interface YtDlpExecProcess {
 }
 
 interface YtDlpWrapInstance {
-  exec(args: string[], options?: { signal?: AbortSignal }): YtDlpExecProcess
+  exec(args: string[], options?: { signal?: AbortSignal; detached?: boolean }): YtDlpExecProcess
 }
 
 type YtDlpWrapConstructor = new (binaryPath: string) => YtDlpWrapInstance
@@ -320,6 +325,10 @@ export class YtDlpExecutor implements Executor {
         return makeNoopRun()
       }
       const subtitlesRequested = hasSubtitleDownloadArgs(args)
+      const cookieSources = cookieSourcesFromArgs(
+        args,
+        this.resolveRuntimeSettings(ctx.input, settingsOverride)
+      )
       const initialSubtitleStatus = this.resolveInitialSubtitleStatus(ctx.input)
 
       const ffmpegLocation = this.opts.resolveFfmpegLocation()
@@ -389,10 +398,16 @@ export class YtDlpExecutor implements Executor {
       }
 
       /** Spawn one yt-dlp child with the shared cancellation signal. */
-      const spawnProcess = (processArgs: string[]): YtDlpExecProcess =>
-        this.opts.spawnFn
+      const spawnProcess = (processArgs: string[]): YtDlpExecProcess => {
+        const proc = this.opts.spawnFn
           ? this.opts.spawnFn(ytDlpPath, processArgs, controller.signal)
-          : this.getYtDlp(ytDlpPath).exec(processArgs, { signal: controller.signal })
+          : this.getYtDlp(ytDlpPath).exec(processArgs, {
+              signal: controller.signal,
+              ...backgroundChildSpawnOptions()
+            })
+        lowerChildPriority(proc.ytDlpProcess?.pid)
+        return proc
+      }
 
       /** Finish a successful child after verifying the output file on disk. */
       const finishSuccessfulProcess = (closedAt: number): void => {
@@ -431,6 +446,9 @@ export class YtDlpExecutor implements Executor {
           subtitlesRequested,
           unavailableSeen: subtitleUnavailableSeen
         })
+        if (cookieSources !== undefined) {
+          output.cookieSources = cookieSources
+        }
         if (subtitleOutcome) {
           output.subtitleStatus = subtitleOutcome.status
           output.subtitleAcquisition = {
@@ -933,6 +951,45 @@ function extractSavedFilePath(rawLog: string): string | undefined {
 /** Use the queue's canonical classifier for both process errors and non-zero exits. */
 function classifyYtDlpExit(exitCode: number | null, stderr: string): ClassifiedError {
   return classify({ exitCode, stderr: stderr || `yt-dlp exited with code ${exitCode ?? -1}` })
+}
+
+/** Capture explicit cookie sources from the executed arguments without retaining credentials. */
+function cookieSourcesFromArgs(
+  args: readonly string[],
+  settings: DownloadRuntimeSettings
+): DownloadCookieSource[] | undefined {
+  let browser: string | undefined
+  let cookieFile: string | undefined
+  let hasConfig = false
+  const argumentsIterator = args.values()
+  for (const argument of argumentsIterator) {
+    const [flag, inlineValue] = argument.split(/[=](.*)/s)
+    if (flag === '--cookies-from-browser') {
+      browser = inlineValue ?? argumentsIterator.next().value
+    } else if (flag === '--cookies') {
+      cookieFile = inlineValue ?? argumentsIterator.next().value
+    } else if (flag === '--no-cookies-from-browser') {
+      browser = undefined
+    } else if (flag === '--no-cookies') {
+      cookieFile = undefined
+    } else if (flag === '--config-location' || flag === '--config-locations') {
+      hasConfig = true
+    }
+  }
+  const sources: DownloadCookieSource[] = []
+  if (browser) {
+    sources.push({ type: 'browser', browser: browser.split(/[:+]/, 1)[0] })
+  }
+  if (cookieFile) {
+    sources.push(
+      cookieFile === settings.cookiesPath && settings.cookieSource
+        ? { ...settings.cookieSource }
+        : { type: 'file' }
+    )
+  }
+  return sources.length > 0 || (args.includes('--ignore-config') && !hasConfig)
+    ? sources
+    : undefined
 }
 
 interface TailBuffer {

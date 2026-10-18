@@ -1,4 +1,3 @@
-import { AiPromptIcon } from '@renderer/components/settings/ai-prompt-icon'
 import { TabUnderline } from '@renderer/components/transcript/TabUnderline'
 import { TranscriptCaptionsPane } from '@renderer/components/transcript/TranscriptCaptionsPane'
 import { TranscriptPromptHistory } from '@renderer/components/transcript/TranscriptPromptHistory'
@@ -24,6 +23,11 @@ import { cn } from '@renderer/lib/utils'
 import { pendingPromptTabAtom } from '@renderer/store/transcript-prompt-tab'
 import type { TranscriptSegmentView, TranscriptSpeakerView } from '@renderer/store/transcripts'
 import type { AgentRunEvent, AgentThreadSummary } from '@shared/agent-chat'
+import {
+  type CatalogMemoryEntry,
+  mergeCatalogList,
+  rememberCatalog
+} from '@shared/agent-thread-patch'
 import { buildOverviewPromptTranscriptText } from '@shared/ai-prompt-text'
 import {
   AI_CHAT_PROMPT_ID,
@@ -32,12 +36,7 @@ import {
   partitionTranscriptPromptTabs
 } from '@shared/ai-prompts'
 import { promptTabIndicator } from '@shared/ai-run'
-import type {
-  AiPrompt,
-  AiPromptIconId,
-  AiPromptRunStatus,
-  AiSettingsSnapshot
-} from '@shared/ai-types'
+import type { AiPrompt, AiPromptRunStatus, AiSettingsSnapshot } from '@shared/ai-types'
 import { useAtom } from 'jotai'
 import { Captions, Check, ChevronDown, History, MessageCircle, Plus, X } from 'lucide-react'
 import { type ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
@@ -202,7 +201,6 @@ function isPromptTabViewed(
  * One prompt chip in the transcript tab bar.
  *
  * @param props.active Whether this chip is the current tab.
- * @param props.icon Optional leading icon shown beside the label.
  * @param props.label Visible tab label.
  * @param props.onSelect Activate this tab.
  * @param props.promptId Prompt id used as `data-tab-id`.
@@ -211,7 +209,6 @@ function isPromptTabViewed(
  */
 function PromptTabButton({
   active,
-  icon,
   label,
   onClose,
   onSelect,
@@ -220,7 +217,6 @@ function PromptTabButton({
   viewed
 }: {
   active: boolean
-  icon?: AiPromptIconId
   label: string
   onClose?: () => void
   onSelect: () => void
@@ -240,7 +236,6 @@ function PromptTabButton({
         onClick={onSelect}
         type="button"
       >
-        {icon ? <AiPromptIcon icon={icon} /> : null}
         <span className="max-w-40 truncate">{label}</span>
         <PromptTabStatus promptId={promptId} status={status} viewed={viewed} />
       </button>
@@ -267,7 +262,7 @@ function PromptTabButton({
  * One row in the overflow prompt menu.
  *
  * @param props.active Whether this row is the current tab.
- * @param props.icon Leading icon shown beside the label.
+ * @param props.icon Optional leading icon for transcript and chat entries.
  * @param props.label Visible label.
  * @param props.onSelect Activate this tab.
  * @param props.promptId Prompt id when this row is a prompt tab.
@@ -284,7 +279,7 @@ function PromptMenuItem({
   viewed = false
 }: {
   active: boolean
-  icon: ReactNode
+  icon?: ReactNode
   label: string
   onSelect: () => void
   promptId?: string
@@ -544,9 +539,13 @@ export function TranscriptSidePanel({
   /**
    * Reload this video's conversations so new chats stay on the tab bar.
    */
+  const catalogMemory = useRef(new Map<string, CatalogMemoryEntry>())
+  const catalogClock = useRef(0)
   const refreshVideoThreads = useCallback(async (): Promise<void> => {
+    const seen = catalogClock.current
     try {
-      setVideoThreads(await ipcServices.ai.listAgentThreads({ downloadId }))
+      const rows = await ipcServices.ai.listAgentThreads({ downloadId })
+      setVideoThreads(mergeCatalogList(rows, catalogMemory.current, seen, { downloadId }))
     } catch (error) {
       logger.error('Failed to load video conversations', error)
     }
@@ -591,15 +590,38 @@ export function TranscriptSidePanel({
   }, [downloadId, openChatTab, pendingTab, selectConversation, setPendingTab])
 
   useEffect(() => {
+    catalogMemory.current = new Map()
+    catalogClock.current = 0
     void refreshVideoThreads()
     const listener = ipcEvents.on('ai:agent-event', (...args: unknown[]) => {
       const event = args[0] as AgentRunEvent
-      if (event?.snapshot?.downloadId === downloadId) {
-        void refreshVideoThreads()
+      const notice = event?.catalog
+      if (!notice) {
+        return
       }
+      const owner = notice.kind === 'remove' ? notice.downloadId : notice.summary.downloadId
+      if (owner !== downloadId) {
+        return
+      }
+      const next = rememberCatalog(catalogMemory.current, notice)
+      if (!next.applied) {
+        return
+      }
+      catalogMemory.current = next.memory
+      catalogClock.current = Math.max(catalogClock.current, notice.revision)
+      setVideoThreads((current) =>
+        mergeCatalogList(current, catalogMemory.current, notice.revision - 1, { downloadId })
+      )
     })
+    const repair = (): void => {
+      void refreshVideoThreads()
+    }
+    window.addEventListener('focus', repair)
+    window.addEventListener('online', repair)
     return () => {
       ipcEvents.removeListener('ai:agent-event', listener)
+      window.removeEventListener('focus', repair)
+      window.removeEventListener('online', repair)
     }
   }, [downloadId, refreshVideoThreads])
 
@@ -737,7 +759,6 @@ export function TranscriptSidePanel({
             {overview ? (
               <PromptTabButton
                 active={tab === overview.id}
-                icon={overview.icon}
                 label={promptLabel(overview, t)}
                 onSelect={() => selectTab(overview.id)}
                 promptId={overview.id}
@@ -857,7 +878,6 @@ export function TranscriptSidePanel({
                   {overview ? (
                     <PromptMenuItem
                       active={tab === overview.id}
-                      icon={<AiPromptIcon className="size-4 shrink-0" icon={overview.icon} />}
                       label={promptLabel(overview, t)}
                       onSelect={() => selectTab(overview.id)}
                       promptId={overview.id}
@@ -875,7 +895,6 @@ export function TranscriptSidePanel({
                   {otherPrompts.map((prompt) => (
                     <PromptMenuItem
                       active={tab === prompt.id}
-                      icon={<AiPromptIcon className="size-4 shrink-0" icon={prompt.icon} />}
                       key={prompt.id}
                       label={promptLabel(prompt, t)}
                       onSelect={() => selectTab(prompt.id)}

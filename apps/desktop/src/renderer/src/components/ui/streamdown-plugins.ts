@@ -1,4 +1,4 @@
-import { mermaid } from '@renderer/lib/beautiful-mermaid-plugin'
+import { mermaid } from '@renderer/lib/pele-mermaid-plugin'
 import { cjk } from '@streamdown/cjk'
 import { code } from '@streamdown/code'
 import { math } from '@streamdown/math'

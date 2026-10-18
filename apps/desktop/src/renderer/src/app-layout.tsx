@@ -6,6 +6,7 @@ import { Sidebar } from '@renderer/components/ui/sidebar'
 import { Toaster } from '@renderer/components/ui/sonner'
 import { TitleBar } from '@renderer/components/ui/title-bar'
 import { WhatsNewHost } from '@renderer/components/whats-new/WhatsNewDialog'
+import { APP_ICON_SHOW_HOME_CHANNEL } from '@shared/app-icon-menu'
 import type { SubscriptionRule } from '@shared/types'
 import { Outlet, useNavigate, useRouteContext, useRouterState } from '@tanstack/react-router'
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
@@ -122,6 +123,8 @@ export function AppLayout() {
   const updateDownloadInProgressRef = useRef(false)
   const navigate = useNavigate()
   const pathname = useRouterState({ select: (state) => state.location.pathname })
+  const pathnameRef = useRef(pathname)
+  pathnameRef.current = pathname
   const playbackSession = useAtomValue(playbackSessionAtom)
   const playbackPlaylist = useAtomValue(playbackPlaylistAtom)
   const playbackBarVisible = shouldShowPlaybackBar({
@@ -168,6 +171,18 @@ export function AppLayout() {
 
   const handleOpenCookiesSettings = useCallback(() => {
     void navigate({ search: { tab: 'cookies' }, to: '/settings' })
+  }, [navigate])
+
+  useEffect(() => {
+    const unsubscribe = ipcEvents.on(APP_ICON_SHOW_HOME_CHANNEL, () => {
+      if (normalizePathname(pathnameRef.current) === '/') {
+        return
+      }
+      void navigate({ to: '/' })
+    })
+    return () => {
+      ipcEvents.removeListener(APP_ICON_SHOW_HOME_CHANNEL, unsubscribe)
+    }
   }, [navigate])
 
   const handleOpenSupportedSites = useCallback(() => {

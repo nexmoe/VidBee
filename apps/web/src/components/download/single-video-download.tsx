@@ -581,6 +581,8 @@ export function SingleVideoDownload({
 								iconClassName="h-2.5 w-2.5"
 								issueTitle={DOWNLOAD_FEEDBACK_ISSUE_TITLE}
 								sourceUrl={feedbackSourceUrl}
+								stage="metadata"
+								ytDlpLog={error}
 							/>
 						</div>
 					</div>

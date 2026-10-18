@@ -106,6 +106,15 @@ const rowToSubscription = (row: SubscriptionRow): SubscriptionRule => {
   if (row.namingTemplate) {
     rule.namingTemplate = row.namingTemplate
   }
+  if (row.downloadType) {
+    rule.downloadType = row.downloadType as SubscriptionRule['downloadType']
+  }
+  if (row.downloadQuality) {
+    rule.downloadQuality = row.downloadQuality as SubscriptionRule['downloadQuality']
+  }
+  if (row.downloadContainer) {
+    rule.downloadContainer = row.downloadContainer as SubscriptionRule['downloadContainer']
+  }
   return rule
 }
 
@@ -165,6 +174,15 @@ const subscriptionToInsert = (rule: SubscriptionRule, now: number): Subscription
   }
   if (rule.namingTemplate !== undefined) {
     payload.namingTemplate = rule.namingTemplate
+  }
+  if (rule.downloadType !== undefined) {
+    payload.downloadType = rule.downloadType
+  }
+  if (rule.downloadQuality !== undefined) {
+    payload.downloadQuality = rule.downloadQuality
+  }
+  if (rule.downloadContainer !== undefined) {
+    payload.downloadContainer = rule.downloadContainer
   }
   return payload
 }
@@ -343,6 +361,9 @@ export const createSqliteSubscriptionsStore = ({
         tags: sanitizeList(input.tags),
         onlyDownloadLatest: input.onlyDownloadLatest ?? true,
         autoDownload: input.autoDownload ?? true,
+        downloadType: input.downloadType,
+        downloadQuality: input.downloadQuality,
+        downloadContainer: input.downloadContainer,
         enabled: input.enabled ?? true,
         status: 'idle',
         createdAt: ts,
@@ -374,6 +395,9 @@ export const createSqliteSubscriptionsStore = ({
         ...patch,
         onlyDownloadLatest: patch.onlyDownloadLatest ?? existing.onlyDownloadLatest,
         autoDownload: patch.autoDownload ?? existing.autoDownload,
+        downloadType: patch.downloadType ?? existing.downloadType,
+        downloadQuality: patch.downloadQuality ?? existing.downloadQuality,
+        downloadContainer: patch.downloadContainer ?? existing.downloadContainer,
         enabled: patch.enabled ?? existing.enabled,
         keywords: patch.keywords ? sanitizeList(patch.keywords) : existing.keywords,
         tags: patch.tags ? sanitizeList(patch.tags) : existing.tags,

@@ -679,7 +679,10 @@ export const DownloadPage = () => {
 				</CardHeader>
 
 				<ScrollArea className="flex-1 overflow-y-auto">
-					<CardContent className="w-full space-y-3 overflow-x-hidden p-0">
+					<CardContent
+						className="w-full space-y-3 overflow-x-hidden p-0"
+						data-download-transfer-list=""
+					>
 						{!hasCookieConfig ? (
 							<div className="mx-6 mt-4 rounded-xl bg-muted/40 px-6 py-5">
 								<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

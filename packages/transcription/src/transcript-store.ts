@@ -7,6 +7,7 @@ import {
   type TranscriptSegmentPatch,
   updateTranscriptSegmentList
 } from './transcript-edit'
+import type { TranscriptHead } from './transcript-sources'
 import type {
   PipelineResult,
   TranscriptRecord,
@@ -67,9 +68,52 @@ interface SegmentDbRow {
   sort_index: number
 }
 
+/** Playback cue columns. Word timestamps stay in `words_json` and are not selected. */
+export interface TranscriptPlaybackCue {
+  confidence: number | null
+  endMs: number
+  id: string
+  sortIndex: number
+  speakerId: string | null
+  startMs: number
+  text: string
+}
+
+/** Head columns only. This statement must not reference `transcript_segments`. */
+export const TRANSCRIPT_HEAD_SQL = `SELECT id, download_task_id, transcription_task_id, result_kind,
+            model_version, asr_tier, language, source_file_path, source_kind, superseded_at,
+            created_at, updated_at
+     FROM transcripts`
+
+/** Cue columns for one transcript. `words_json` is intentionally absent. */
+export const TRANSCRIPT_PLAYBACK_CUE_SQL = `SELECT id, speaker_id, start_ms, end_ms, text, confidence, sort_index
+     FROM transcript_segments
+     WHERE transcript_id = ?
+     ORDER BY start_ms ASC, sort_index ASC`
+
 /**
  * Parse persisted ASR words, ignoring corrupt JSON.
  */
+/**
+ * Map a transcript table row to a head. Segment tables are not queried.
+ *
+ * @param row Transcripts table row.
+ */
+const mapTranscriptHead = (row: TranscriptDbRow): TranscriptHead => ({
+  asrTier: row.asr_tier ?? null,
+  createdAt: row.created_at,
+  downloadTaskId: row.download_task_id,
+  id: row.id,
+  language: row.language,
+  modelVersion: row.model_version,
+  resultKind: row.result_kind,
+  sourceFilePath: row.source_file_path,
+  sourceKind: row.source_kind === 'captions' ? 'captions' : 'asr',
+  supersededAt: row.superseded_at,
+  transcriptionTaskId: row.transcription_task_id,
+  updatedAt: row.updated_at
+})
+
 const parseWordsJson = (raw: string | null): TranscriptSegment['words'] => {
   if (!raw) {
     return []
@@ -182,6 +226,71 @@ export class TranscriptStore {
       )
       .all() as TranscriptDbRow[]
     return rows.map((row) => this.hydrate(row))
+  }
+
+  /**
+   * Return every transcript row without speakers, segments, or word timestamps.
+   * Newest first, including superseded history needed for source selection.
+   */
+  listHeads(): TranscriptHead[] {
+    const rows = this.db
+      .prepare(`${TRANSCRIPT_HEAD_SQL} ORDER BY created_at DESC`)
+      .all() as TranscriptDbRow[]
+    return rows.map((row) => mapTranscriptHead(row))
+  }
+
+  /**
+   * Return one download's transcript heads, newest first, without caption bodies.
+   *
+   * @param downloadTaskId Parent download id.
+   */
+  listHeadsForDownload(downloadTaskId: string): TranscriptHead[] {
+    const rows = this.db
+      .prepare(`${TRANSCRIPT_HEAD_SQL} WHERE download_task_id = ? ORDER BY created_at DESC`)
+      .all(downloadTaskId) as TranscriptDbRow[]
+    return rows.map((row) => mapTranscriptHead(row))
+  }
+
+  /**
+   * True when a download already has a current transcript row.
+   *
+   * @param downloadTaskId Parent download id.
+   */
+  hasCurrent(downloadTaskId: string): boolean {
+    const row = this.db
+      .prepare(
+        `SELECT 1 AS ok FROM transcripts
+         WHERE download_task_id = ? AND superseded_at IS NULL
+         LIMIT 1`
+      )
+      .get(downloadTaskId)
+    return Boolean(row)
+  }
+
+  /**
+   * Read cue text and times for one transcript. Word JSON is not selected.
+   *
+   * @param transcriptId Stored transcript id.
+   */
+  listPlaybackCues(transcriptId: string): TranscriptPlaybackCue[] {
+    const rows = this.db.prepare(TRANSCRIPT_PLAYBACK_CUE_SQL).all(transcriptId) as Array<{
+      confidence: number | null
+      end_ms: number
+      id: string
+      sort_index: number
+      speaker_id: string | null
+      start_ms: number
+      text: string
+    }>
+    return rows.map((row) => ({
+      confidence: row.confidence,
+      endMs: row.end_ms,
+      id: row.id,
+      sortIndex: row.sort_index,
+      speakerId: row.speaker_id,
+      startMs: row.start_ms,
+      text: row.text
+    }))
   }
 
   commit(input: {

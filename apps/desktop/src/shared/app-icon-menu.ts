@@ -1,4 +1,5 @@
 export const APP_ICON_MENU_COMMAND_CHANNEL = 'playback:icon-menu'
+export const APP_ICON_SHOW_HOME_CHANNEL = 'app:show-home'
 
 export type AppIconMenuCommand = 'next' | 'previous' | 'toggle'
 

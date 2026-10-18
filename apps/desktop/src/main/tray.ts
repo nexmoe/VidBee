@@ -3,7 +3,7 @@ import { app, BrowserWindow, nativeImage, Tray } from 'electron'
 import windowsTrayIcon from '../../build/icon.ico?asset'
 import appIcon from '../../resources/icon.png?asset'
 import trayIcon from '../../resources/tray-icon.png?asset'
-import { bindTrayMenuApplier, refreshAppIconMenus } from './lib/app-icon-menu'
+import { getTrayContextMenu, refreshAppIconMenus, showAndFocusWindow } from './lib/app-icon-menu'
 import { isShareCaptureWindow } from './lib/share-capture-window'
 
 let tray: Tray | null = null
@@ -52,27 +52,26 @@ export function createTray(): void {
   tray = new Tray(trayIconImage)
 
   tray.setToolTip('VidBee')
-  bindTrayMenuApplier((menu) => {
-    tray?.setContextMenu(menu)
-  })
   refreshAppIconMenus()
+  // Ignore the synthesized double-click so every single click shows the window.
+  if (process.platform === 'darwin') {
+    tray.setIgnoreDoubleClickEvents(true)
+  }
 
-  // On Windows/Linux: click to show/hide main window
+  // Left click shows the window. The menu stays on right click so a single click is not swallowed.
   tray.on('click', async () => {
     const mainWindow = findMainWindow()
-    if (mainWindow) {
-      if (mainWindow.isVisible()) {
-        mainWindow.hide()
-      } else {
-        if (mainWindow.isMinimized()) {
-          mainWindow.restore()
-        }
-        mainWindow.show()
-        mainWindow.focus()
-      }
-    } else {
+    if (!mainWindow) {
       const { createWindow } = await import('./index')
       createWindow()
+      return
+    }
+    showAndFocusWindow(mainWindow)
+  })
+  tray.on('right-click', () => {
+    const menu = getTrayContextMenu()
+    if (menu) {
+      tray?.popUpContextMenu(menu)
     }
   })
 }
@@ -81,7 +80,6 @@ export function createTray(): void {
  * Destroy tray icon
  */
 export function destroyTray(): void {
-  bindTrayMenuApplier(null)
   if (tray) {
     tray.destroy()
     tray = null

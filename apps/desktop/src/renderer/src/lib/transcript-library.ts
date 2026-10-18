@@ -3,6 +3,7 @@ import type {
   TranscriptSegmentView,
   TranscriptSnapshotView
 } from '../store/transcripts'
+import { stripTranscriptMapSnapshot } from './transcript-detail-merge'
 
 const ACTIVE_STATES = new Set<TranscriptListState>(['queued', 'retry-scheduled', 'running'])
 const LISTED_STATES = new Set<TranscriptListState>([
@@ -77,6 +78,7 @@ export interface TranscriptWorkspaceView {
  * Speaker overlay reuses the stored text. It must not switch the AI transcript to an
  * empty live stream, or prompt results that depend on that text disappear with it.
  * A captions-only speaker overlay must not look like an ASR run on the AI tab.
+ * A failed or cancelled replacement run keeps the previous transcript ready for AI.
  *
  * @param input Stored rows, live partials, and the current source/task.
  */
@@ -91,6 +93,7 @@ export const resolveTranscriptWorkspaceView = (
   const streamLive = running && !input.viewingCaptions && !relabelingSpeakers
   const segments = !streamLive && input.committed.length > 0 ? input.committed : input.partials
   const ready =
+    (!pipelineRunning && input.hasRecord && input.committed.length > 0) ||
     (input.viewingCaptions && input.hasRecord) ||
     (relabelingSpeakers && input.hasRecord) ||
     (input.listState === 'completed' && (segments.length > 0 || input.hasRecord))
@@ -383,13 +386,9 @@ export const mergeTranscriptSnapshot = (
   previous: TranscriptSnapshotView | undefined,
   incoming: TranscriptSnapshotView
 ): TranscriptSnapshotView => {
-  if (!previous) {
-    return incoming
-  }
-  if ((incoming.updatedAt ?? 0) < (previous.updatedAt ?? 0)) {
-    return previous
-  }
-  return incoming
+  const next =
+    previous && (incoming.updatedAt ?? 0) < (previous.updatedAt ?? 0) ? previous : incoming
+  return stripTranscriptMapSnapshot(next)
 }
 
 /**

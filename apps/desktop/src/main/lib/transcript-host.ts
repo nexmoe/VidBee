@@ -5,7 +5,6 @@ import { type Task, TRANSCRIBABLE_TASK_KINDS } from '@vidbee/task-queue'
 import {
   type AsrTierId,
   AutoTranscriptionCoordinator,
-  buildTranscriptSources,
   captionLanguageKey,
   preferredCaptionLanguages as captionLanguagePreference,
   captionRecordNeedsSpeakers,
@@ -19,10 +18,12 @@ import {
   findSidecarCaptionTracks,
   type GpuKind,
   gpuKindFromHint,
+  groupTranscriptHeads,
   type InsertTranscriptSegmentInput,
   importCaptionsForDownload,
   importSidecarCaptionsIfPresent,
   isAsrTierId,
+  latestTranscriptHead,
   listTranscriptionChildren,
   MINIMAL_MODEL_GROUPS,
   MINIMAL_MODEL_TIERS,
@@ -33,13 +34,14 @@ import {
   parseAsrTier,
   parseSpeakerCount,
   readMachineProfile,
-  readTranscriptionOptions,
   recommendAsrModels,
-  recordForTranscriptSource,
+  resolveTranscriptHeads,
   type SpeakerCount,
   startMinimalModelFill,
   switchToCaptionLanguage,
+  type TranscriptHead,
   type TranscriptionStage,
+  type TranscriptPlaybackCue,
   type TranscriptRecord,
   type TranscriptSegmentPatch,
   type TranscriptSourceKind,
@@ -55,28 +57,30 @@ import { settingsManager } from '../settings'
 import { scopedLoggers } from '../utils/logger'
 import { stopPromptRunsForDownload } from './ai-prompt-runner'
 import { deletePersistedPromptRunsForDownload } from './ai-prompt-store'
+import { runAutoSkillsForTranscript } from './ai-skill-auto-run'
 import { enqueueAsrModelDownload, listAsrModelTasks, waitForAsrModelTask } from './asr-model-task'
 import { getDatabaseConnection } from './database'
 import { ffmpegManager } from './ffmpeg-manager'
 import { type ImportLocalMediaResult, importLocalMediaFiles } from './import-local-media'
-import { readTaskCreation } from './projection'
 import { getDesktopTaskQueueRef, peekDesktopTaskQueueRef } from './queue-ref'
 import { resolveTaskSourceFile } from './source-file'
 import { readElectronLocaleHints } from './system-locale'
+import {
+  buildTranscriptListSnapshot,
+  isRediarizeTask,
+  stageFromTask,
+  type TranscriptListSnapshot,
+  type TranscriptListState,
+  type TranscriptViewModel,
+  toTranscriptListSnapshot
+} from './transcript-list-snapshot'
+import { readTranscriptQueueIndex, type TranscriptQueueChildren } from './transcript-queue-index'
 import { transcriptStageHistory } from './transcript-stage-history'
 import { resolveWorkerBundle } from './transcription-worker-path'
 
-const logger = scopedLoggers.engine
+export type { TranscriptListSnapshot, TranscriptListState }
 
-export type TranscriptListState =
-  | 'none'
-  | 'queued'
-  | 'running'
-  | 'completed'
-  | 'no-speech'
-  | 'failed'
-  | 'cancelled'
-  | 'retry-scheduled'
+const logger = scopedLoggers.engine
 
 export interface TranscriptSnapshot {
   creation?: TaskCreationMetadata
@@ -144,14 +148,6 @@ const rememberTranscriptView = (downloadTaskId: string, key: string): void => {
 }
 
 /**
- * True when this transcription child is relabeling speakers, not running ASR.
- *
- * @param task Active or latest transcription child.
- */
-const isRediarizeTask = (task: Task | undefined): boolean =>
-  Boolean(task && readTranscriptionOptions(task.input)?.rediarize)
-
-/**
  * Keep the captions language selected while speakers are overlaid.
  *
  * @param record Current captions transcript.
@@ -210,7 +206,7 @@ const clearLiveAsrView = (downloadTaskId: string): void => {
     return
   }
   const hasAsr = getTranscriptStore()
-    .listForDownload(downloadTaskId)
+    .listHeadsForDownload(downloadTaskId)
     .some((row) => row.sourceKind === 'asr' && row.resultKind === 'transcript')
   if (!hasAsr) {
     viewingKeys.delete(downloadTaskId)
@@ -301,40 +297,6 @@ export const importCaptionsForFinishedDownload = async (
   return record?.sourceKind === 'captions'
 }
 
-/**
- * Import sidecar caption files for already-downloaded media. Embedded extract
- * stays on the live download path so startup does not ffprobe the whole library.
- */
-const scanCompletedDownloadsForCaptions = (): void => {
-  const queue = getDesktopTaskQueueRef()
-  let cursor: string | null = null
-  do {
-    const page = queue.list({ limit: 200, cursor })
-    for (const task of page.tasks) {
-      if (!TRANSCRIBABLE_TASK_KINDS.has(task.kind) || task.status !== 'completed') {
-        continue
-      }
-      if (getTranscriptStore().getLatestForDownload(task.id)) {
-        continue
-      }
-      const source = resolveTaskSourceFile(task)
-      if (!source) {
-        continue
-      }
-      const imported = importSidecarCaptionsIfPresent({
-        downloadTaskId: task.id,
-        preferredLanguages: preferredCaptionLanguages(),
-        sourceFilePath: source,
-        store: getTranscriptStore()
-      })
-      if (imported) {
-        broadcastTranscript(getTranscriptSnapshot(task.id))
-      }
-    }
-    cursor = page.nextCursor
-  } while (cursor)
-}
-
 export const startAutoTranscription = (): void => {
   startHostGpuProbe()
   if (coordinator) {
@@ -361,7 +323,6 @@ export const startAutoTranscription = (): void => {
     logger
   })
   coordinator.start()
-  scanCompletedDownloadsForCaptions()
 }
 
 export const stopAutoTranscription = (): void => {
@@ -369,140 +330,143 @@ export const stopAutoTranscription = (): void => {
   coordinator = null
 }
 
+/** Cue text for the transcript source the snapshot would select. Words are omitted. */
+export interface TranscriptPlaybackCueSnapshot {
+  language: string | null
+  segments: TranscriptPlaybackCue[]
+  sourceKind: TranscriptSourceKind
+  snapshotSourceKind: TranscriptSourceKind | null
+  transcriptId: string
+  updatedAt: number
+}
+
 /**
- * Keep an existing transcript visible when a speaker overlay ends without a new commit.
+ * Resolve the viewed transcript from heads.
+ * List reads pass `scanSidecars: false` and choose only from stored heads plus `viewingKeys`.
+ * Detail reads may scan sibling subtitle files and, when asked, import one.
  *
- * @param task Latest transcription child.
- * @param record Current stored transcript, if any.
+ * @param downloadTaskId Parent download id.
+ * @param options Preloaded heads and sidecar import/scan flags.
  */
-const listStateFromFinishedRediarize = (
-  task: Task,
-  record: TranscriptRecord | null
-): TranscriptListState | null => {
-  if (!(isRediarizeTask(task) && record)) {
-    return null
+const readTranscriptView = (
+  downloadTaskId: string,
+  options: {
+    heads?: TranscriptHead[]
+    importSidecars: boolean
+    scanSidecars: boolean
+    /** Library reads pass children from one queue pass. Detail omits this and reads one download. */
+    transcription?: TranscriptQueueChildren
   }
-  if (record.resultKind === 'no-speech') {
-    return 'no-speech'
-  }
-  if (record.resultKind === 'transcript') {
-    return 'completed'
-  }
-  return null
-}
-
-const listStateOf = (
-  task: Task | undefined,
-  record: TranscriptRecord | null
-): TranscriptListState => {
-  if (task) {
-    if (task.status === 'queued') {
-      return 'queued'
-    }
-    if (task.status === 'paused') {
-      return task.statusReason === 'crash-recovery' ? 'running' : 'queued'
-    }
-    if (task.status === 'running' || task.status === 'processing') {
-      return 'running'
-    }
-    if (task.status === 'retry-scheduled') {
-      return 'retry-scheduled'
-    }
-    if (task.status === 'failed') {
-      return listStateFromFinishedRediarize(task, record) ?? 'failed'
-    }
-    if (task.status === 'cancelled') {
-      return listStateFromFinishedRediarize(task, record) ?? 'cancelled'
-    }
-    if (task.status === 'completed') {
-      const kind = task.output?.transcript?.resultKind ?? record?.resultKind
-      return kind === 'no-speech' ? 'no-speech' : 'completed'
-    }
-  }
-  if (record?.resultKind === 'no-speech') {
-    return 'no-speech'
-  }
-  if (record?.resultKind === 'transcript') {
-    return 'completed'
-  }
-  return 'none'
-}
-
-const stageFromTask = (task: Task | undefined): TranscriptionStage | null => {
-  if (!task || (task.status !== 'running' && task.status !== 'processing')) {
-    return null
-  }
-  const reason = task.statusReason
-  if (
-    reason === 'preparing-models' ||
-    reason === 'preparing-audio' ||
-    reason === 'detecting-speech' ||
-    reason === 'diarizing' ||
-    reason === 'recognizing' ||
-    reason === 'committing'
-  ) {
-    return reason
-  }
-  return task.status === 'processing' ? 'committing' : 'recognizing'
-}
-
-export const getTranscriptSnapshot = (downloadTaskId: string): TranscriptSnapshot => {
+): TranscriptViewModel => {
   const queue = getDesktopTaskQueueRef()
+  const store = getTranscriptStore()
+  let heads = options.heads ?? store.listHeadsForDownload(downloadTaskId)
   const download = queue.get(downloadTaskId)
-  const children = listTranscriptionChildren(queue, downloadTaskId)
-  const active = findActiveTranscription(queue, downloadTaskId)
-  const latest = children[0]
-  let record =
-    getTranscriptStore().getLatestForDownload(downloadTaskId) ??
-    (latest ? getTranscriptStore().getByTranscriptionTaskId(latest.id) : null)
+  const children =
+    options.transcription?.children ?? listTranscriptionChildren(queue, downloadTaskId)
+  const active =
+    options.transcription === undefined
+      ? findActiveTranscription(queue, downloadTaskId)
+      : options.transcription.active
+  const latestTask = children[0]
+  const latestBeforeImport = latestTranscriptHead(heads, latestTask?.id ?? null)
   const sourceFilePath = download
     ? resolveTaskSourceFile(download)
-    : (record?.sourceFilePath ?? null)
-  if (!record && sourceFilePath) {
-    record = importSidecarCaptionsIfPresent({
+    : (latestBeforeImport?.sourceFilePath ?? null)
+  if (options.importSidecars && !latestBeforeImport && sourceFilePath) {
+    importSidecarCaptionsIfPresent({
       downloadTaskId,
       preferredLanguages: preferredCaptionLanguages(),
       sourceFilePath,
-      store: getTranscriptStore()
+      store
     })
+    heads = store.listHeadsForDownload(downloadTaskId)
   }
-  const task = active ?? latest
-  const partial = task ? transcriptionPartials.getByTask(task.id) : null
-  const stage = partial?.stage ?? stageFromTask(task)
-  const stored = getTranscriptStore().listForDownload(downloadTaskId)
-  const sources = buildTranscriptSources({
+  const resolved = resolveTranscriptHeads({
     asrActive: Boolean(active && !isRediarizeTask(active)),
-    current: record,
+    heads,
+    latestTaskId: latestTask?.id ?? null,
     preferredKey: viewingKeys.get(downloadTaskId),
-    stored,
-    tracks: sourceFilePath ? findSidecarCaptionTracks(sourceFilePath) : []
+    tracks: options.scanSidecars && sourceFilePath ? findSidecarCaptionTracks(sourceFilePath) : []
   })
-  const selected = sources.find((item) => item.selected)
-  const latestRecord = record
-  record = recordForTranscriptSource(selected, stored, latestRecord)
-  const listedRecord = record ?? latestRecord
   return {
+    active,
+    download,
     downloadTaskId,
-    transcriptionTaskId: task?.id ?? listedRecord?.transcriptionTaskId ?? null,
-    creation: task ? readTaskCreation(task) : undefined,
-    transcriptId: record?.id ?? null,
-    listState: listStateOf(task, listedRecord),
-    stage,
-    stageHistory: transcriptStageHistory(task, stage, partial?.stageHistory),
-    error: task?.lastError?.rawMessage ?? null,
+    latest: resolved.latest,
+    selected: resolved.selected,
     sourceFilePath,
-    title: titleFromDownload(download, sourceFilePath),
-    updatedAt: Math.max(task?.updatedAt ?? 0, listedRecord?.updatedAt ?? 0),
-    record,
-    asrTier: isAsrTierId(record?.asrTier)
-      ? record.asrTier
-      : parseAsrTier(task?.input.options?.asrTier, DEFAULT_ASR_TIER),
-    speakerCount: parseSpeakerCount(task?.input.options?.speakerCount, DEFAULT_SPEAKER_COUNT),
-    sourceKind: selected?.kind ?? record?.sourceKind ?? (task ? 'asr' : null),
-    sources,
-    rediarize: isRediarizeTask(active)
+    sources: resolved.sources,
+    task: active ?? latestTask,
+    title: titleFromDownload(download, sourceFilePath)
   }
 }
+
+/**
+ * Turn a resolved view into a snapshot, hydrating only the selected row when asked.
+ *
+ * @param view Selection for one download.
+ * @param hydrate When true, load speakers and segments for the selected row only.
+ */
+const finishTranscriptSnapshot = (
+  view: TranscriptViewModel,
+  hydrate: boolean
+): TranscriptSnapshot => {
+  const record = hydrate && view.selected ? getTranscriptStore().getById(view.selected.id) : null
+  const partial = view.task ? transcriptionPartials.getByTask(view.task.id) : null
+  const stage = partial?.stage ?? stageFromTask(view.task)
+  const list = buildTranscriptListSnapshot(
+    view,
+    stage,
+    transcriptStageHistory(view.task, stage, partial?.stageHistory)
+  )
+  return {
+    ...list,
+    record,
+    sources: view.sources,
+    transcriptId: record?.id ?? null
+  }
+}
+
+/**
+ * Read one transcript without importing sidecars or starting work.
+ *
+ * @param downloadTaskId Parent download id.
+ */
+export const readTranscriptDetail = (downloadTaskId: string): TranscriptSnapshot =>
+  finishTranscriptSnapshot(
+    readTranscriptView(downloadTaskId, { importSidecars: false, scanSidecars: true }),
+    true
+  )
+
+/**
+ * Read playback cues for the selected source. This does not hydrate word timestamps.
+ *
+ * @param downloadTaskId Parent download id.
+ */
+export const readTranscriptPlaybackCues = (
+  downloadTaskId: string
+): TranscriptPlaybackCueSnapshot | null => {
+  const view = readTranscriptView(downloadTaskId, { importSidecars: false, scanSidecars: true })
+  if (!view.selected) {
+    return null
+  }
+  const selectedOption = view.sources.find((item) => item.selected)
+  return {
+    language: view.selected.language,
+    segments: getTranscriptStore().listPlaybackCues(view.selected.id),
+    sourceKind: view.selected.sourceKind,
+    snapshotSourceKind: selectedOption?.kind ?? view.selected.sourceKind,
+    transcriptId: view.selected.id,
+    updatedAt: view.selected.updatedAt
+  }
+}
+
+export const getTranscriptSnapshot = (downloadTaskId: string): TranscriptSnapshot =>
+  finishTranscriptSnapshot(
+    readTranscriptView(downloadTaskId, { importSidecars: true, scanSidecars: true }),
+    true
+  )
 
 /**
  * Switch the visible transcript between caption languages and local ASR.
@@ -524,7 +488,7 @@ export const selectTranscriptSource = async (
   rememberTranscriptView(downloadTaskId, key)
   if (source.kind === 'asr') {
     const stored = getTranscriptStore()
-      .listForDownload(downloadTaskId)
+      .listHeadsForDownload(downloadTaskId)
       .find((row) => row.sourceKind === 'asr' && row.resultKind === 'transcript')
     if (stored) {
       getTranscriptStore().activate(downloadTaskId, stored.id)
@@ -549,28 +513,63 @@ export const selectTranscriptSource = async (
   return next
 }
 
-export const getTranscriptStatusMap = (): Record<string, TranscriptSnapshot> => {
-  const queue = getDesktopTaskQueueRef()
-  const out: Record<string, TranscriptSnapshot> = {}
-  let cursor: string | null = null
-  do {
-    const page = queue.list({ limit: 200, cursor })
-    for (const task of page.tasks) {
-      if (task.kind === 'transcription' && task.parentId && !out[task.parentId]) {
-        out[task.parentId] = getTranscriptSnapshot(task.parentId)
-      }
-      if (TRANSCRIBABLE_TASK_KINDS.has(task.kind) && task.status === 'completed' && !out[task.id]) {
-        const snapshot = getTranscriptSnapshot(task.id)
-        if (snapshot.listState !== 'none') {
-          out[task.id] = snapshot
-        }
-      }
+/**
+ * Build one list snapshot from preloaded heads.
+ * Does not import sidecars, scan sibling files, or hydrate bodies.
+ *
+ * @param downloadTaskId Parent download id.
+ * @param heads Newest-first heads for that download.
+ */
+const readTranscriptListSnapshot = (
+  downloadTaskId: string,
+  heads: TranscriptHead[],
+  transcription: TranscriptQueueChildren
+): TranscriptListSnapshot => {
+  const view = readTranscriptView(downloadTaskId, {
+    heads,
+    importSidecars: false,
+    scanSidecars: false,
+    transcription
+  })
+  const partial = view.task ? transcriptionPartials.getByTask(view.task.id) : null
+  const stage = partial?.stage ?? stageFromTask(view.task)
+  return buildTranscriptListSnapshot(
+    view,
+    stage,
+    transcriptStageHistory(view.task, stage, partial?.stageHistory)
+  )
+}
+
+export const getTranscriptStatusMap = (): Record<string, TranscriptListSnapshot> => {
+  const grouped = groupTranscriptHeads(getTranscriptStore().listHeads())
+  const { childrenByParent, tasks } = readTranscriptQueueIndex(getDesktopTaskQueueRef())
+  const emptyChildren: TranscriptQueueChildren = { active: undefined, children: [] }
+  const out: Record<string, TranscriptListSnapshot> = {}
+  const put = (downloadTaskId: string, skipEmpty: boolean): void => {
+    if (out[downloadTaskId]) {
+      return
     }
-    cursor = page.nextCursor
-  } while (cursor)
-  for (const record of getTranscriptStore().listLatest()) {
-    if (!out[record.downloadTaskId]) {
-      out[record.downloadTaskId] = getTranscriptSnapshot(record.downloadTaskId)
+    const snapshot = readTranscriptListSnapshot(
+      downloadTaskId,
+      grouped.get(downloadTaskId) ?? [],
+      childrenByParent.get(downloadTaskId) ?? emptyChildren
+    )
+    if (skipEmpty && snapshot.listState === 'none') {
+      return
+    }
+    out[downloadTaskId] = snapshot
+  }
+  for (const task of tasks) {
+    if (task.kind === 'transcription' && task.parentId) {
+      put(task.parentId, false)
+    }
+    if (TRANSCRIBABLE_TASK_KINDS.has(task.kind) && task.status === 'completed') {
+      put(task.id, true)
+    }
+  }
+  for (const [downloadTaskId, heads] of grouped) {
+    if (heads.some((head) => head.supersededAt == null)) {
+      put(downloadTaskId, false)
     }
   }
   return out
@@ -931,7 +930,7 @@ export const rediarizeTranscription = async (
  */
 const readActiveAsrTierForDownload = (downloadTaskId: string): AsrTierId => {
   const latest = getTranscriptStore()
-    .listForDownload(downloadTaskId)
+    .listHeadsForDownload(downloadTaskId)
     .find((row) => row.sourceKind === 'asr' && isAsrTierId(row.asrTier))
   return latest?.asrTier && isAsrTierId(latest.asrTier) ? latest.asrTier : readActiveAsrTier()
 }
@@ -1087,10 +1086,13 @@ export const broadcastTranscriptPartials = (
   }
 }
 
+/** Publish transcript changes and admit any configured automatic skill runs. */
 export const broadcastTranscript = (snapshot: TranscriptSnapshot): void => {
+  runAutoSkillsForTranscript(snapshot)
+  const list = toTranscriptListSnapshot(snapshot)
   for (const window of BrowserWindow.getAllWindows()) {
     if (!window.isDestroyed()) {
-      window.webContents.send('transcript:updated', snapshot)
+      window.webContents.send('transcript:updated', list)
     }
   }
 }
@@ -1112,6 +1114,11 @@ export const subscribeTranscriptBroadcasts = (): void => {
     if (task.kind !== 'transcription' && event.type === 'snapshot-changed') {
       return
     }
-    broadcastTranscript(getTranscriptSnapshot(downloadId))
+    broadcastTranscript(
+      finishTranscriptSnapshot(
+        readTranscriptView(downloadId, { importSidecars: false, scanSidecars: false }),
+        true
+      )
+    )
   })
 }

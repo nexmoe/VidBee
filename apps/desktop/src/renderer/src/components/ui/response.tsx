@@ -3,6 +3,7 @@ import { RemoteImage } from '@renderer/components/ui/remote-image'
 import { promptStreamdownPlugins } from '@renderer/components/ui/streamdown-plugins'
 import { normalizePromptMarkdown } from '@renderer/lib/prompt-markdown'
 import { cn } from '@renderer/lib/utils'
+import { MinusIcon, PlusIcon } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { type ComponentProps, memo, useMemo } from 'react'
 import { type Components, type ExtraProps, Streamdown, type StreamdownProps } from 'streamdown'
@@ -12,6 +13,7 @@ const ORDERED_LIST_CLASS =
 const UNORDERED_LIST_CLASS =
   'list-outside list-disc whitespace-normal ps-[1.15em] [li_&]:ps-[1.15em]'
 const LIST_ITEM_CLASS = '[&>:first-child]:mt-0 [&>p]:my-0 [&>p+p]:mt-1.5'
+const DIAGRAM_ICONS = { ZoomInIcon: PlusIcon, ZoomOutIcon: MinusIcon }
 
 export type ResponseProps = StreamdownProps & {
   /** Seek the player when a prompt clock token is clicked. */
@@ -167,6 +169,7 @@ export const Response = memo(function Response({
   className,
   components,
   dir = 'auto',
+  icons,
   mermaid,
   onSeek,
   plugins,
@@ -182,6 +185,7 @@ export const Response = memo(function Response({
       className={cn('w-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0', className)}
       components={{ ...LIST_COMPONENTS, ...clockComponents, ...components }}
       dir={dir}
+      icons={{ ...DIAGRAM_ICONS, ...icons }}
       mermaid={mermaid ?? { config: { theme: mermaidThemeForApp(resolvedTheme) } }}
       plugins={{ ...promptStreamdownPlugins, ...plugins }}
       shikiTheme={shikiTheme}

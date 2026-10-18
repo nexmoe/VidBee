@@ -5,7 +5,6 @@ import {
   ItemContent,
   ItemDescription,
   ItemGroup,
-  ItemMedia,
   ItemSeparator,
   ItemTitle
 } from '@renderer/components/ui/item'
@@ -19,7 +18,6 @@ import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { AiPromptDialog } from './AiPromptDialog'
-import { AiPromptIcon } from './ai-prompt-icon'
 
 /**
  * Translate a built-in prompt title, falling back to the stored English title.
@@ -125,7 +123,6 @@ export function AiPromptsPanel() {
       await ipcServices.ai.upsertPrompt({
         id: prompt.id,
         title: prompt.title,
-        icon: prompt.icon,
         content: prompt.content,
         enabled
       })
@@ -166,9 +163,6 @@ export function AiPromptsPanel() {
           <div key={prompt.id}>
             {index > 0 ? <ItemSeparator /> : null}
             <Item variant="muted">
-              <ItemMedia variant="icon">
-                <AiPromptIcon icon={prompt.icon} />
-              </ItemMedia>
               <ItemContent>
                 <ItemTitle>{promptTitle(prompt, t)}</ItemTitle>
                 <ItemDescription className="line-clamp-2">

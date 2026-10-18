@@ -62,7 +62,7 @@ files:
   - '!node_modules/katex{,/**}'
   - '!node_modules/streamdown{,/**}'
   - '!node_modules/@streamdown{,/**}'
-  - '!node_modules/beautiful-mermaid{,/**}'
+  - '!node_modules/pele{,/**}'
   - '!node_modules/@shikijs{,/**}'
   - '!node_modules/shiki{,/**}'
   - '!node_modules/@radix-ui{,/**}'

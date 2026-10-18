@@ -9,6 +9,7 @@
     "./types": "./src/types.ts",
     "./schemas": "./src/schemas.ts",
     "./form": "./src/form.ts",
+    "./download-options": "./src/download-options.ts",
     "./status": "./src/status.ts",
     "./feed-resolver": "./src/feed-resolver.ts",
     "./feed-parser": "./src/feed-parser.ts",
@@ -25,6 +26,7 @@
   },
   "dependencies": {
     "@orpc/contract": "^1.15.0",
+    "@vidbee/downloader-core": "workspace:*",
     "drizzle-orm": "^0.45.2",
     "rss-parser": "^3.13.0",
     "ulid": "^2.3.0",

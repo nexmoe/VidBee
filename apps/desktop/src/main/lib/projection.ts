@@ -137,6 +137,9 @@ export const projectTaskForRenderer = (task: Readonly<Task>): DownloadItem => {
   if (proj.subtitleLanguages !== undefined) {
     item.subtitleLanguages = proj.subtitleLanguages
   }
+  if (proj.cookieSources !== undefined) {
+    item.cookieSources = proj.cookieSources
+  }
   if (proj.speed !== undefined) {
     item.speed = proj.speed
   }
@@ -259,6 +262,9 @@ export const projectTaskForRendererHistory = (task: Readonly<Task>): DownloadHis
   }
   if (proj.subtitleLanguages !== undefined) {
     item.subtitleLanguages = proj.subtitleLanguages
+  }
+  if (proj.cookieSources !== undefined) {
+    item.cookieSources = proj.cookieSources
   }
   if (proj.error !== undefined) {
     item.error = proj.error

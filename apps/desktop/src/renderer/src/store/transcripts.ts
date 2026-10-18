@@ -52,6 +52,10 @@ export interface TranscriptSnapshotView {
   asrTier?: string | null
   speakerCount?: import('@vidbee/transcription/asr').SpeakerCount
   sourceKind?: 'asr' | 'captions' | null
+  /** True when the open page is showing the previous body while a newer one loads. */
+  bodyStale?: boolean
+  /** `record.updatedAt` of the body currently shown. List events must not advance this. */
+  bodyUpdatedAt?: number
   /** True while a speaker overlay task is queued or running. Recognition is not re-run. */
   rediarize?: boolean
   sources?: Array<{
@@ -68,9 +72,13 @@ export interface TranscriptSnapshotView {
     asrTier?: string | null
     language?: string | null
     modelVersion?: string
+    sourceKind?: 'asr' | 'captions'
     createdAt?: number
-    speakers: TranscriptSpeakerView[]
-    segments: TranscriptSegmentView[]
+    updatedAt?: number
+    speakers?: TranscriptSpeakerView[]
+    segments?: TranscriptSegmentView[]
+    /** False while the detail page is waiting for a read-only body fetch. */
+    segmentsLoaded?: boolean
   } | null
 }
 

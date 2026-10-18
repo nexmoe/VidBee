@@ -4,6 +4,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import os from 'node:os'
 import path from 'node:path'
 import { expandSubtitleLanguageAliases } from '@vidbee/downloader-core/subtitle-languages'
+import { lowerChildPriority } from '@vidbee/task-queue/process'
 import { isExtensionSourceUrl } from '../../shared/extension-source-url'
 import type {
   ExtensionTranscriptInput,
@@ -152,6 +153,7 @@ function execCaptionExtract(
 ): Promise<{ code: number | null; stderr: string }> {
   return new Promise((resolve, reject) => {
     const proc = ytdlpManager.getInstance().exec(args)
+    lowerChildPriority(proc.ytDlpProcess?.pid)
     const stderr = createBoundedTextBuffer()
     proc.ytDlpProcess?.stderr?.on('data', (chunk: Buffer) => stderr.append(chunk))
     const child = {

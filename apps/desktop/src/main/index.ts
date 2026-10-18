@@ -22,8 +22,7 @@ import {
 import { configureLogger } from './config/logger-config'
 import { services } from './ipc'
 import { registerAgentArtifactProtocol } from './lib/agent-artifacts'
-import { stopAllAgentRuns } from './lib/agent-chat-runner'
-import { stopAllPromptRuns } from './lib/ai-prompt-runner'
+import { isAppQuitPrepared, isAppQuitting, prepareAppQuit } from './lib/app-quit'
 import {
   AUTH_PROTOCOL,
   handleDesktopAuthCallback,
@@ -40,6 +39,11 @@ import {
   initGlitchTipMain
 } from './lib/glitchtip'
 import { localMediaKind } from './lib/import-local-media'
+import {
+  createKeyedCoalescer,
+  LOG_IPC_INTERVAL_MS,
+  PROGRESS_IPC_INTERVAL_MS
+} from './lib/ipc-coalescer'
 import { stopPlayerHost } from './lib/player-host'
 import {
   installPrivilegedSchemeCollector,
@@ -158,9 +162,6 @@ protocol.registerSchemesAsPrivileged([
 ])
 
 let mainWindow: BrowserWindow | null = null
-let isQuitting = false
-let promptRunsStoppingForQuit = false
-let promptRunsStoppedForQuit = false
 let isYtdlpReady = false
 let kernelBackgroundUpdatesStarted = false
 interface DeepLinkData {
@@ -203,7 +204,7 @@ const isRendererUnavailable = (window: BrowserWindow): boolean =>
  * Replace a failed renderer process with a fresh home route in the same native window.
  */
 const recoverRendererToHome = (window: BrowserWindow, trigger: string): void => {
-  if (isQuitting || window.isDestroyed() || window.webContents.isDestroyed()) {
+  if (isAppQuitting() || window.isDestroyed() || window.webContents.isDestroyed()) {
     return
   }
   if (rendererRecoveryPromise) {
@@ -574,7 +575,7 @@ export function createWindow(): void {
   mainWindow = new BrowserWindow(windowOptions)
 
   mainWindow.on('close', (event) => {
-    if (isQuitting) {
+    if (isAppQuitting()) {
       return
     }
 
@@ -695,7 +696,7 @@ function setupRendererErrorHandling(window: BrowserWindow): void {
   }
 
   window.webContents.on('render-process-gone', (_event, details) => {
-    if (isQuitting) {
+    if (isAppQuitting()) {
       return
     }
     const rendererUrl = window.webContents.getURL()
@@ -749,7 +750,7 @@ function setupRendererErrorHandling(window: BrowserWindow): void {
     if (process.platform === 'win32' && app.isPackaged) {
       unresponsiveRecoveryTimer = setTimeout(() => {
         unresponsiveRecoveryTimer = null
-        if (unresponsiveSince === null || isQuitting || isRendererUnavailable(window)) {
+        if (unresponsiveSince === null || isAppQuitting() || isRendererUnavailable(window)) {
           return
         }
         log.error(
@@ -828,11 +829,57 @@ function setupRendererErrorHandling(window: BrowserWindow): void {
   })
 }
 
+const progressIpc = createKeyedCoalescer<unknown>({
+  intervalMs: PROGRESS_IPC_INTERVAL_MS,
+  merge: (_pending, next) => next,
+  emit: (id, progress) => {
+    sendToRenderer('download:progress', { id, progress })
+  }
+})
+
+const logIpc = createKeyedCoalescer<string>({
+  intervalMs: LOG_IPC_INTERVAL_MS,
+  merge: (pending, next) => `${pending ?? ''}${next}`,
+  emit: (id, chunk) => {
+    sendToRenderer('download:log', { id, chunk })
+  }
+})
+
+/**
+ * Deliver the latest progress and any unsent log text, then drop coalescer state.
+ *
+ * @param id Download task id.
+ */
+function flushDownloadIpc(id: string): void {
+  progressIpc.flush(id)
+  logIpc.flush(id)
+  progressIpc.clear(id)
+  logIpc.clear(id)
+}
+
+/**
+ * Read a download id from a queued renderer item.
+ *
+ * @param item Queued download payload.
+ */
+function queuedDownloadId(item: unknown): string {
+  if (!item || typeof item !== 'object' || !('id' in item)) {
+    return ''
+  }
+  return typeof item.id === 'string' ? item.id : ''
+}
+
 function setupDownloadEvents(): void {
   downloadEngine.on('download-removed', (id: string) => {
+    flushDownloadIpc(id)
     sendToRenderer('download:removed', id)
   })
   downloadEngine.on('download-queued', (item: unknown) => {
+    const id = queuedDownloadId(item)
+    if (id) {
+      progressIpc.clear(id)
+      logIpc.clear(id)
+    }
     addMainBreadcrumb('download', 'Download queued')
     sendToRenderer('download:queued', item)
   })
@@ -847,14 +894,15 @@ function setupDownloadEvents(): void {
   })
 
   downloadEngine.on('download-progress', (id: string, progress: unknown) => {
-    sendToRenderer('download:progress', { id, progress })
+    progressIpc.push(id, progress)
   })
 
-  downloadEngine.on('download-log', (id: string, logText: string) => {
-    sendToRenderer('download:log', { id, log: logText })
+  downloadEngine.on('download-log', (id: string, chunk: string) => {
+    logIpc.push(id, chunk)
   })
 
   downloadEngine.on('download-completed', (id: string) => {
+    flushDownloadIpc(id)
     addMainBreadcrumb('download', 'Download completed', { downloadId: id })
     sendToRenderer('download:completed', id)
   })
@@ -877,10 +925,12 @@ function setupDownloadEvents(): void {
     if (glitchTipEventId) {
       downloadEngine.updateDownloadInfo(id, { glitchTipEventId })
     }
+    flushDownloadIpc(id)
     sendToRenderer('download:error', { id, error: error.message })
   })
 
   downloadEngine.on('download-cancelled', (id: string) => {
+    flushDownloadIpc(id)
     sendToRenderer('download:cancelled', id)
   })
 }
@@ -1094,7 +1144,6 @@ function initAutoUpdater(): void {
     })
 
     autoUpdater.on('download-progress', (progressObj) => {
-      log.info('Download progress:', progressObj.percent)
       sendToRenderer('update:download-progress', progressObj)
     })
 
@@ -1142,7 +1191,7 @@ if (gotSingleInstanceLock) {
 }
 
 app.on('child-process-gone', (_event, details) => {
-  if (isQuitting || details.reason === 'clean-exit') {
+  if (isAppQuitting() || details.reason === 'clean-exit') {
     return
   }
 
@@ -1350,20 +1399,16 @@ app.on('before-quit', (event) => {
     log.warn('Skipping quit confirmation because the renderer is unavailable')
   }
 
-  if (!promptRunsStoppedForQuit) {
+  if (!isAppQuitPrepared()) {
     event.preventDefault()
-    isQuitting = true
-    if (!promptRunsStoppingForQuit) {
-      promptRunsStoppingForQuit = true
-      void Promise.all([stopAllPromptRuns(), stopAllAgentRuns()]).finally(() => {
-        promptRunsStoppedForQuit = true
+    if (!isAppQuitting()) {
+      void prepareAppQuit().then(() => {
         app.quit()
       })
     }
     return
   }
 
-  isQuitting = true
   stopYtDlpKernelService()
   downloadEngine.flushDownloadSession()
   void stopPlayerHost()

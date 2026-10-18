@@ -1,10 +1,5 @@
 import { type IpcContext, IpcMethod, IpcService } from 'electron-ipc-decorator'
 import type { AgentChatInput, AgentThread, AgentThreadSummary } from '../../../shared/agent-chat'
-import {
-  agentConversationTitle,
-  agentThreadIsRunning,
-  agentThreadUpdatedAt
-} from '../../../shared/agent-history'
 import { AI_PROVIDER_PRESETS } from '../../../shared/ai-presets'
 import type {
   AiPrompt,
@@ -22,6 +17,7 @@ import {
   renameAgentThread as commitAgentThreadTitle,
   getAgentThinkingOptions,
   openAgentThread,
+  readAgentEvents,
   removeAgentImage,
   deleteAgentThread as removeAgentThread,
   decideAgentTool as resolveAgentToolDecision,
@@ -32,6 +28,7 @@ import {
   stopAgentRun
 } from '../../lib/agent-chat-runner'
 import { getAgentChatStore } from '../../lib/agent-chat-store'
+import { agentDirectorySummary } from '../../lib/agent-run-event'
 import {
   type CatalogModelCapabilities,
   type CatalogModelOption,
@@ -44,20 +41,11 @@ import { type AiRemoteModelsInput, listRemoteProviderModels } from '../../lib/ai
 import { aiStore } from '../../lib/ai-store'
 import { dislikeCloudResult } from '../../lib/cloud-device'
 import { loadCloudModels } from '../../lib/cloud-models'
-import { peekDesktopTaskQueueRef } from '../../lib/queue-ref'
 import { settingsManager } from '../../settings'
 
 /** Public history row that omits messages, runs and artifact paths. */
 function toHistorySummary(thread: AgentThread): AgentThreadSummary {
-  const videoTitle = peekDesktopTaskQueueRef()?.get(thread.downloadId)?.input.title?.trim() ?? ''
-  return {
-    id: thread.id,
-    downloadId: thread.downloadId,
-    promptId: thread.promptId,
-    title: agentConversationTitle(thread, videoTitle),
-    updatedAt: agentThreadUpdatedAt(thread),
-    running: agentThreadIsRunning(thread)
-  }
+  return agentDirectorySummary(thread)
 }
 
 /** Conversations with messages, newest first. */
@@ -140,10 +128,7 @@ class AiService extends IpcService {
   /** Recover missed events and the current committed snapshot. */
   @IpcMethod()
   getAgentEvents(_context: IpcContext, input: { threadId: string; after: number }) {
-    if (!Number.isSafeInteger(input.after) || input.after < 0) {
-      throw new Error('Invalid event cursor')
-    }
-    return getAgentChatStore().events(input.threadId, input.after)
+    return readAgentEvents(input.threadId, input.after)
   }
 
   /** List conversations with messages or selected image drafts. */

@@ -5,10 +5,11 @@ import {
 } from '@vidbee/subscriptions-core/form'
 import {
   DEFAULT_SUBSCRIPTION_FILENAME_TEMPLATE,
+  type SubscriptionDownloadPreferences,
   type SubscriptionRule
 } from '@vidbee/subscriptions-core/types'
-import { ChevronRight } from 'lucide-react'
-import { useEffect, useId, useRef, useState } from 'react'
+import { ChevronRight, Loader2 } from 'lucide-react'
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { cn } from '../../lib/cn'
@@ -23,10 +24,21 @@ import {
   DialogTitle
 } from '../ui/dialog'
 import { Input } from '../ui/input'
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemSeparator,
+  ItemTitle
+} from '../ui/item'
 import { Label } from '../ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { Switch } from '../ui/switch'
+import { WebmThumbnailNotice } from '../ui/webm-thumbnail-notice'
 
-export interface SubscriptionFormData {
+export interface SubscriptionFormData extends SubscriptionDownloadPreferences {
   url?: string
   keywords?: string[]
   tags?: string[]
@@ -41,6 +53,7 @@ interface SubscriptionFormDialogProps {
   mode: 'add' | 'edit'
   subscription?: Pick<
     SubscriptionRule,
+    | 'id'
     | 'title'
     | 'feedUrl'
     | 'keywords'
@@ -49,9 +62,13 @@ interface SubscriptionFormDialogProps {
     | 'autoDownload'
     | 'downloadDirectory'
     | 'namingTemplate'
+    | 'downloadType'
+    | 'downloadQuality'
+    | 'downloadContainer'
   >
   open: boolean
   downloadPath: string
+  downloadDefaults?: SubscriptionDownloadPreferences
   onlyLatestDefault: boolean
   onSave: (data: SubscriptionFormData) => Promise<void>
   onClose: () => void
@@ -68,6 +85,7 @@ export function SubscriptionFormDialog({
   subscription,
   open,
   downloadPath,
+  downloadDefaults,
   onlyLatestDefault,
   onSave,
   onClose,
@@ -81,21 +99,72 @@ export function SubscriptionFormDialog({
   const [tags, setTags] = useState('')
   const [onlyLatest, setOnlyLatest] = useState(false)
   const [autoDownload, setAutoDownload] = useState(true)
+  const [downloadType, setDownloadType] =
+    useState<Required<SubscriptionDownloadPreferences>['downloadType']>('video')
+  const [downloadQuality, setDownloadQuality] =
+    useState<Required<SubscriptionDownloadPreferences>['downloadQuality']>('best')
+  const [downloadContainer, setDownloadContainer] =
+    useState<Required<SubscriptionDownloadPreferences>['downloadContainer']>('auto')
   const [downloadDirectory, setDownloadDirectory] = useState('')
   const [namingTemplate, setNamingTemplate] = useState('')
   const [detectingFeed, setDetectingFeed] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const savingRef = useRef(false)
+  const feedResolutionRef = useRef<{ url: string; promise: Promise<unknown> } | null>(null)
   const detectTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
   const prevDefaultPathRef = useRef(buildDefaultSubscriptionDirectory(downloadPath))
   const urlInputId = useId()
   const advancedOptionsId = useId()
+  const downloadTypeId = useId()
+  const downloadQualityId = useId()
+  const downloadContainerId = useId()
   const [advancedOptionsOpen, setAdvancedOptionsOpen] = useState(false)
+  const initializedFormRef = useRef<string | null>(null)
+  const defaultDownloadType = downloadDefaults?.downloadType ?? 'video'
+  const defaultDownloadQuality = downloadDefaults?.downloadQuality ?? 'best'
+  const defaultDownloadContainer = downloadDefaults?.downloadContainer ?? 'auto'
+  const feedUrl = subscription?.feedUrl
 
-  useEffect(() => {
+  /** Share detection and save validation for the same URL during one form session. */
+  const resolveFeedOnce = useCallback(
+    (sourceUrl: string) => {
+      if (feedResolutionRef.current?.url === sourceUrl) {
+        return feedResolutionRef.current.promise
+      }
+      const promise = onResolveFeed(sourceUrl)
+      feedResolutionRef.current = { url: sourceUrl, promise }
+      void promise.catch(() => {
+        if (feedResolutionRef.current?.promise === promise) {
+          feedResolutionRef.current = null
+        }
+      })
+      return promise
+    },
+    [onResolveFeed]
+  )
+
+  useLayoutEffect(() => {
     if (!open) {
+      initializedFormRef.current = null
       return
     }
+    const formKey = mode === 'edit' ? subscription?.id : 'add'
+    if (formKey && initializedFormRef.current === formKey) {
+      return
+    }
+    initializedFormRef.current = formKey ?? null
+    feedResolutionRef.current = null
 
     setAdvancedOptionsOpen(false)
+    setDownloadType(
+      (mode === 'edit' ? subscription?.downloadType : undefined) ?? defaultDownloadType
+    )
+    setDownloadQuality(
+      (mode === 'edit' ? subscription?.downloadQuality : undefined) ?? defaultDownloadQuality
+    )
+    setDownloadContainer(
+      (mode === 'edit' ? subscription?.downloadContainer : undefined) ?? defaultDownloadContainer
+    )
 
     if (mode === 'edit' && subscription) {
       setUrl(subscription.feedUrl)
@@ -115,7 +184,16 @@ export function SubscriptionFormDialog({
     setAutoDownload(true)
     setDownloadDirectory(buildDefaultSubscriptionDirectory(downloadPath))
     setNamingTemplate(DEFAULT_SUBSCRIPTION_FILENAME_TEMPLATE)
-  }, [open, mode, subscription, onlyLatestDefault, downloadPath])
+  }, [
+    open,
+    mode,
+    subscription,
+    onlyLatestDefault,
+    downloadPath,
+    defaultDownloadType,
+    defaultDownloadQuality,
+    defaultDownloadContainer
+  ])
 
   useEffect(() => {
     if (mode !== 'add') {
@@ -138,11 +216,12 @@ export function SubscriptionFormDialog({
   }, [onlyLatestDefault, mode])
 
   useEffect(() => {
-    if (!url.trim()) {
+    setDetectingFeed(false)
+    if (!open || saving || !url.trim()) {
       return
     }
 
-    if (mode === 'edit' && subscription && url.trim() === subscription.feedUrl) {
+    if (mode === 'edit' && url.trim() === feedUrl) {
       return
     }
 
@@ -150,24 +229,29 @@ export function SubscriptionFormDialog({
       clearTimeout(detectTimeout.current)
     }
 
+    let cancelled = false
     detectTimeout.current = setTimeout(async () => {
       setDetectingFeed(true)
       try {
-        await onResolveFeed(url.trim())
+        await resolveFeedOnce(url.trim())
       } catch {
         // Detection is best-effort; save still validates.
       } finally {
-        setDetectingFeed(false)
+        if (!cancelled) {
+          setDetectingFeed(false)
+        }
       }
     }, 500)
 
     return () => {
+      cancelled = true
       if (detectTimeout.current) {
         clearTimeout(detectTimeout.current)
       }
     }
-  }, [url, onResolveFeed, mode, subscription])
+  }, [open, saving, url, resolveFeedOnce, mode, feedUrl])
 
+  /** Choose a download directory using the host's picker. */
   const handleSelectDirectory = async () => {
     if (!onSelectDirectory) {
       return
@@ -182,6 +266,7 @@ export function SubscriptionFormDialog({
     }
   }
 
+  /** Open RSS setup documentation using the host's link handler. */
   const handleOpenRSSHubDocs = async () => {
     if (!onOpenRssDocs) {
       return
@@ -193,7 +278,11 @@ export function SubscriptionFormDialog({
     }
   }
 
+  /** Validate the feed and persist this subscription's download preferences. */
   const handleSave = async () => {
+    if (savingRef.current) {
+      return
+    }
     if (mode === 'add' && !url.trim()) {
       toast.error(t('subscriptions.notifications.missingUrl'))
       return
@@ -204,24 +293,31 @@ export function SubscriptionFormDialog({
       tags: sanitizeCommaList(tags),
       onlyDownloadLatest: onlyLatest,
       autoDownload,
+      downloadType,
+      downloadQuality,
+      downloadContainer,
       downloadDirectory: downloadDirectory || undefined,
       namingTemplate: namingTemplate || undefined
     }
 
-    if (
-      url.trim() &&
-      (mode === 'add' || (mode === 'edit' && subscription && url.trim() !== subscription.feedUrl))
-    ) {
-      try {
-        await onResolveFeed(url.trim())
-        formData.url = url.trim()
-      } catch {
-        toast.error(t('subscriptions.notifications.resolveError'))
-        return
+    savingRef.current = true
+    setSaving(true)
+    try {
+      if (url.trim() && (mode === 'add' || (mode === 'edit' && url.trim() !== feedUrl))) {
+        try {
+          await resolveFeedOnce(url.trim())
+          formData.url = url.trim()
+        } catch {
+          toast.error(t('subscriptions.notifications.resolveError'))
+          return
+        }
       }
-    }
 
-    await onSave(formData)
+      await onSave(formData)
+    } finally {
+      savingRef.current = false
+      setSaving(false)
+    }
   }
 
   const titleKey = mode === 'add' ? 'subscriptions.add.title' : 'subscriptions.edit.title'
@@ -231,7 +327,7 @@ export function SubscriptionFormDialog({
 
   return (
     <Dialog onOpenChange={(isOpen) => !isOpen && onClose()} open={open}>
-      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>
             {mode === 'edit' && subscription
@@ -242,16 +338,18 @@ export function SubscriptionFormDialog({
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-2">
-            <Label htmlFor={urlInputId}>{t('subscriptions.fields.url')}</Label>
+            <div className="flex items-center justify-between gap-2">
+              <Label htmlFor={urlInputId}>{t('subscriptions.fields.url')}</Label>
+              <span aria-live="polite" className="text-muted-foreground text-xs">
+                {detectingFeed ? t('subscriptions.detecting') : null}
+              </span>
+            </div>
             <Input
               id={urlInputId}
               onChange={(event) => setUrl(event.target.value)}
               placeholder="https://docs.rsshub.app/routes/youtube/user/@FKJ"
               value={url}
             />
-            {detectingFeed && (
-              <p className="text-muted-foreground text-xs">{t('subscriptions.detecting')}</p>
-            )}
             {mode === 'add' && !url.trim() && (
               <div className="flex items-center gap-2 rounded-md bg-primary/5 px-3 py-2">
                 <p className="flex-1 text-muted-foreground text-xs">
@@ -305,13 +403,117 @@ export function SubscriptionFormDialog({
           <div
             aria-hidden={!advancedOptionsOpen}
             className={cn(
-              'grid overflow-hidden transition-[grid-template-rows,opacity] duration-200 ease-out',
+              'grid overflow-hidden transition-[grid-template-rows,opacity] duration-200 ease-out motion-reduce:transition-none',
               advancedOptionsOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
             )}
             data-state={advancedOptionsOpen ? 'open' : 'closed'}
+            inert={!advancedOptionsOpen}
           >
             <div className={cn('min-h-0', !advancedOptionsOpen && 'pointer-events-none')}>
               <div className="space-y-3 border-t pt-4">
+                <ItemGroup>
+                  <Item variant="muted">
+                    <ItemContent className="min-w-48">
+                      <ItemTitle>
+                        <Label htmlFor={downloadTypeId}>
+                          {t('subscriptions.downloadOptions.type')}
+                        </Label>
+                      </ItemTitle>
+                      <ItemDescription className="line-clamp-none">
+                        {t('subscriptions.downloadOptions.typeDescription')}
+                      </ItemDescription>
+                    </ItemContent>
+                    <ItemActions className="ml-auto">
+                      <Select
+                        onValueChange={(value) => setDownloadType(value as typeof downloadType)}
+                        value={downloadType}
+                      >
+                        <SelectTrigger className="w-44" id={downloadTypeId}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="video">{t('download.video')}</SelectItem>
+                          <SelectItem value="audio">{t('download.audio')}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </ItemActions>
+                  </Item>
+                  <ItemSeparator />
+                  <Item variant="muted">
+                    <ItemContent className="min-w-48">
+                      <ItemTitle>
+                        <Label htmlFor={downloadQualityId}>
+                          {t('subscriptions.downloadOptions.quality')}
+                        </Label>
+                      </ItemTitle>
+                      <ItemDescription className="line-clamp-none">
+                        {t('subscriptions.downloadOptions.qualityDescription')}
+                      </ItemDescription>
+                    </ItemContent>
+                    <ItemActions className="ml-auto">
+                      <Select
+                        onValueChange={(value) =>
+                          setDownloadQuality(value as typeof downloadQuality)
+                        }
+                        value={downloadQuality}
+                      >
+                        <SelectTrigger className="w-44" id={downloadQualityId}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(['best', 'good', 'normal', 'bad', 'worst'] as const).map((quality) => (
+                            <SelectItem key={quality} value={quality}>
+                              {t(
+                                downloadType === 'audio'
+                                  ? `subscriptions.downloadOptions.audioQualityOptions.${quality}`
+                                  : `settings.oneClickQualityOptions.${quality}`
+                              )}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </ItemActions>
+                  </Item>
+                  {downloadType === 'video' && (
+                    <>
+                      <ItemSeparator />
+                      <Item variant="muted">
+                        <ItemContent className="min-w-48">
+                          <ItemTitle>
+                            <Label htmlFor={downloadContainerId}>
+                              {t('subscriptions.downloadOptions.container')}
+                            </Label>
+                          </ItemTitle>
+                          <ItemDescription className="line-clamp-none">
+                            {t('subscriptions.downloadOptions.containerDescription')}
+                          </ItemDescription>
+                          <WebmThumbnailNotice container={downloadContainer} />
+                        </ItemContent>
+                        <ItemActions className="ml-auto">
+                          <Select
+                            onValueChange={(value) =>
+                              setDownloadContainer(value as typeof downloadContainer)
+                            }
+                            value={downloadContainer}
+                          >
+                            <SelectTrigger className="w-44" id={downloadContainerId}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {(['auto', 'mp4', 'mkv', 'webm', 'original'] as const).map(
+                                (container) => (
+                                  <SelectItem key={container} value={container}>
+                                    {t(`settings.oneClickContainerOptions.${container}`)}
+                                  </SelectItem>
+                                )
+                              )}
+                            </SelectContent>
+                          </Select>
+                        </ItemActions>
+                      </Item>
+                    </>
+                  )}
+                </ItemGroup>
                 <div className="space-y-2">
                   <Label>{t('subscriptions.fields.keywords')}</Label>
                   <Input onChange={(event) => setKeywords(event.target.value)} value={keywords} />
@@ -351,7 +553,19 @@ export function SubscriptionFormDialog({
                   {t('download.cancel')}
                 </Button>
               )}
-              <Button onClick={() => void handleSave()}>{t(saveButtonKey)}</Button>
+              <Button aria-busy={saving} disabled={saving} onClick={() => void handleSave()}>
+                <span className="inline-grid place-items-center">
+                  <span className={cn('col-start-1 row-start-1', saving && 'opacity-0')}>
+                    {t(saveButtonKey)}
+                  </span>
+                  {saving && (
+                    <Loader2
+                      aria-hidden="true"
+                      className="col-start-1 row-start-1 size-4 animate-spin motion-reduce:animate-none"
+                    />
+                  )}
+                </span>
+              </Button>
             </div>
           </div>
         </DialogFooter>

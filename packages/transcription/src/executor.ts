@@ -1,7 +1,9 @@
 import { type ChildProcess, spawn } from 'node:child_process'
-import { mkdirSync, rmSync } from 'node:fs'
+import { mkdirSync } from 'node:fs'
+import { rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, sep } from 'node:path'
+import { backgroundChildSpawnOptions, lowerChildPriority } from '@vidbee/task-queue/process'
 import type {
   ClassifiedError,
   Executor,
@@ -55,6 +57,24 @@ import {
   type WorkerInbound,
   type WorkerOutbound
 } from './worker/protocol'
+
+/**
+ * Delete one transcription scratch directory after the job settles.
+ * Refuses any path that is not a child of `vidbee-transcript`.
+ *
+ * @param workDir Job directory created under `vidbee-transcript`.
+ */
+export async function removeTranscriptionWorkDir(workDir: string): Promise<void> {
+  const marker = `${sep}vidbee-transcript${sep}`
+  if (!workDir.includes(marker)) {
+    return
+  }
+  try {
+    await rm(workDir, { recursive: true, force: true })
+  } catch {
+    // A missing directory is already clean.
+  }
+}
 
 export type TranscriptionBackend = 'sherpa' | 'fake'
 
@@ -291,42 +311,42 @@ export class TranscriptionExecutor implements Executor {
       )
       mkdirSync(workDir, { recursive: true })
       persistDir = workDir
-      ensureChunkManifest({
-        workDir,
-        taskId: ctx.taskId,
-        fingerprint,
-        modelVersion: `${modelVersion}:${asrTier}:spk-${speakerCount}`
-      })
-      const restored = transcriptionPartials.restoreFromManifest({
-        taskId: ctx.taskId,
-        downloadTaskId: parsed.downloadTaskId,
-        workDir
-      })
-      if (restored) {
-        this.opts.onPartial?.({
+      try {
+        ensureChunkManifest({
+          workDir,
+          taskId: ctx.taskId,
+          fingerprint,
+          modelVersion: `${modelVersion}:${asrTier}:spk-${speakerCount}`
+        })
+        const restored = transcriptionPartials.restoreFromManifest({
           taskId: ctx.taskId,
           downloadTaskId: parsed.downloadTaskId,
-          segments: restored.segments
+          workDir
         })
-        if (restored.stage) {
-          this.opts.onStage?.({
+        if (restored) {
+          this.opts.onPartial?.({
             taskId: ctx.taskId,
             downloadTaskId: parsed.downloadTaskId,
-            stage: restored.stage
+            segments: restored.segments
+          })
+          if (restored.stage) {
+            this.opts.onStage?.({
+              taskId: ctx.taskId,
+              downloadTaskId: parsed.downloadTaskId,
+              stage: restored.stage
+            })
+          }
+        }
+        const runtime = await this.resolveRuntime(events, ctx)
+        for (const line of formatRuntimeLog(runtime, 0)) {
+          tails.stdout += `${line}\n`
+          events.onStd({
+            taskId: ctx.taskId,
+            attemptId: ctx.attemptId,
+            stream: 'stdout',
+            line
           })
         }
-      }
-      const runtime = await this.resolveRuntime(events, ctx)
-      for (const line of formatRuntimeLog(runtime, 0)) {
-        tails.stdout += `${line}\n`
-        events.onStd({
-          taskId: ctx.taskId,
-          attemptId: ctx.attemptId,
-          stream: 'stdout',
-          line
-        })
-      }
-      try {
         const compute = await this.resolveComputeProvider(runtime, asrTier, events, ctx)
         if (existingTranscript) {
           writePipelineSeed(join(workDir, SEED_TRANSCRIPT_FILE), existingTranscript)
@@ -347,14 +367,15 @@ export class TranscriptionExecutor implements Executor {
             ? join(workDir, SEED_TRANSCRIPT_FILE)
             : undefined
         })
-        rmSync(workDir, { recursive: true, force: true })
+        await removeTranscriptionWorkDir(workDir)
         transcriptionPartials.clear(ctx.taskId)
       } catch (err) {
         if (abort.signal.aborted) {
-          rmSync(workDir, { recursive: true, force: true })
+          await removeTranscriptionWorkDir(workDir)
           transcriptionPartials.clear(ctx.taskId)
           return { result: { type: 'cancelled' }, tails }
         }
+        // Failed jobs keep the work dir so a retry can resume from the chunk manifest.
         const error = classifyTranscriptionFailure(err)
         const exitCode = err instanceof WorkerExitError ? err.code : null
         return {
@@ -626,9 +647,11 @@ export class TranscriptionExecutor implements Executor {
           env: sherpaWorkerEnv(this.opts.env, {
             electronAsNode: input.runtime.layer === 'electron'
           }),
-          stdio: ['pipe', 'pipe', 'pipe']
+          stdio: ['pipe', 'pipe', 'pipe'],
+          ...backgroundChildSpawnOptions()
         }
       )
+      lowerChildPriority(child.pid)
       input.attach(child)
       child.stdin?.on('error', () => {
         /* process error and close events own worker failure reporting */

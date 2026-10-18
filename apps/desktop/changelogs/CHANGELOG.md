@@ -5,6 +5,17 @@ For full release notes, see [GitHub Releases](https://github.com/nexmoe/VidBee/r
 
 ## [Unreleased]
 
+### Added
+- Connect external AI assistants to VidBee through local MCP tools for downloads, subscriptions, transcription, and exports.
+- Download AI diagrams as JPG alongside SVG, PNG, and Mermaid source.
+
+### Changed
+- Keep large download and transcript libraries responsive and improve navigation between converted media.
+- Render AI diagrams with Pele and consistent controls in light and dark themes.
+
+### Fixed
+- Preserve the complete download engine in Intel macOS packages so managed preparation and bundled fallback can start successfully.
+
 ## [v2.2.3](https://github.com/nexmoe/VidBee/releases/tag/v2.2.3) - 2026-10-11
 
 ### Fixed

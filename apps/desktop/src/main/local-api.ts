@@ -43,6 +43,7 @@ import {
   startDesktopTaskQueue,
   stopDesktopTaskQueue
 } from './lib/task-queue-host'
+import { handleMcpRequest, startDesktopMcp, stopDesktopMcp } from './mcp/http'
 
 const PORT_RANGE_START = LOCAL_API_PORT_START
 const PORT_RANGE_END = LOCAL_API_PORT_END
@@ -441,6 +442,14 @@ const handleRequest = async (
       })
       return
     }
+    if (req.url && new URL(req.url, 'http://127.0.0.1').pathname === '/mcp') {
+      if (caller.kind !== 'cli') {
+        writeJson(res, 403, { error: 'Forbidden origin' })
+        return
+      }
+      await handleMcpRequest(req, res)
+      return
+    }
     if (caller.kind === 'extension') {
       applyExtensionCors(res, caller.origin)
     }
@@ -627,6 +636,11 @@ export async function startExtensionApiServer(): Promise<number | null> {
       } catch (err) {
         log.warn('startExtensionApiServer: failed to write descriptor:', err)
       }
+      try {
+        startDesktopMcp(serverHost, serverPort)
+      } catch (error) {
+        log.warn('Desktop MCP failed to start:', error)
+      }
       return serverPort
     } catch (error) {
       const err = error as NodeJS.ErrnoException
@@ -644,6 +658,7 @@ export async function stopExtensionApiServer(): Promise<void> {
   if (!server) {
     return
   }
+  await stopDesktopMcp()
 
   if (unsubscribeFromTaskQueue) {
     try {

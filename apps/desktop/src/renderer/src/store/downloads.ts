@@ -1,5 +1,13 @@
-import { atom } from 'jotai'
+import { atom, type Getter, type Setter } from 'jotai'
 import type { DownloadHistoryItem, DownloadItem } from '../../../shared/types'
+import {
+  downloadLivePatchesAtom,
+  livePatchHasFields,
+  sameChangedFields,
+  splitDownloadChanges,
+  withLivePatch,
+  withoutLivePatches
+} from './download-live-patch'
 import { removePlaybackPlaylistItemsAtom } from './transcript-playlist'
 
 export type DownloadRecord = DownloadItem & {
@@ -13,6 +21,33 @@ const isFinalStatus = (status: DownloadHistoryItem['status']): boolean =>
   status === 'completed' || status === 'error' || status === 'cancelled'
 
 const recordKey = (entryType: DownloadRecord['entryType'], id: string) => `${entryType}:${id}`
+
+/**
+ * Drop overlay patches for ids that left the active set. No-op when none were stored.
+ */
+const dropLivePatches = (get: Getter, set: Setter, ids: Iterable<string>): void => {
+  const next = withoutLivePatches(get(downloadLivePatchesAtom), ids)
+  if (next) {
+    set(downloadLivePatchesAtom, next)
+  }
+}
+
+/**
+ * Shallow field compare for a full record write. Nested values stay reference checks.
+ */
+const sameShallowRecord = (existing: DownloadRecord, next: DownloadRecord): boolean => {
+  const leftKeys = Object.keys(existing)
+  const rightKeys = Object.keys(next)
+  if (leftKeys.length !== rightKeys.length) {
+    return false
+  }
+  for (const key of rightKeys) {
+    if (!Object.is(existing[key as keyof DownloadRecord], next[key as keyof DownloadRecord])) {
+      return false
+    }
+  }
+  return true
+}
 
 const toActiveRecord = (item: DownloadItem): DownloadRecord => ({
   ...item,
@@ -30,7 +65,7 @@ const toHistoryRecord = (item: DownloadHistoryItem): DownloadRecord => ({
   progress: undefined,
   error: item.error,
   ytDlpCommand: item.ytDlpCommand,
-  ytDlpLog: item.ytDlpLog,
+  // Terminal yt-dlp text is loaded on demand by DownloadItem via history.getHistoryById.
   downloadPath: item.downloadPath,
   speed: undefined,
   duration: item.duration,
@@ -57,6 +92,7 @@ const toHistoryRecord = (item: DownloadHistoryItem): DownloadRecord => ({
   resolvedFormatId: item.resolvedFormatId,
   subtitleStatus: item.subtitleStatus,
   subtitleLanguages: item.subtitleLanguages,
+  cookieSources: item.cookieSources,
   entryType: 'history',
   downloadedAt: item.downloadedAt
 })
@@ -73,22 +109,24 @@ export const addDownloadAtom = atom(null, (get, set, item: DownloadItem) => {
 export const updateDownloadAtom = atom(
   null,
   (get, set, update: { id: string; changes: Partial<DownloadItem> }) => {
-    const downloads = new Map(get(downloadRecordsAtom))
-    const key = recordKey('active', update.id)
-    const existing = downloads.get(key)
+    const existing = get(downloadRecordsAtom).get(recordKey('active', update.id))
     if (!existing) {
       return
     }
-    // The facade emits the full projected DownloadItem on snapshot-changed,
-    // so an undefined `title`/`thumbnail`/etc. (when the kernel doesn't have
-    // metadata stashed on TaskInput) would otherwise stomp the optimistic
-    // row. Filter undefined so existing values stick around. status/error
-    // can still be set explicitly via narrow `changes` from `handleStarted`/
-    // `handleCompleted`/`handleError`.
-    const filtered = Object.fromEntries(
-      Object.entries(update.changes).filter(([, value]) => value !== undefined)
-    ) as Partial<DownloadItem>
-    downloads.set(key, { ...existing, ...filtered })
+    // Undefined fields are omitted so a snapshot cannot wipe optimistic metadata.
+    // Empty strings are kept. Progress and logs stay on the live overlay.
+    const { live, structural } = splitDownloadChanges(update.changes)
+    if (livePatchHasFields(live)) {
+      const nextPatches = withLivePatch(get(downloadLivePatchesAtom), update.id, live)
+      if (nextPatches) {
+        set(downloadLivePatchesAtom, nextPatches)
+      }
+    }
+    if (Object.keys(structural).length === 0 || sameChangedFields(existing, structural)) {
+      return
+    }
+    const downloads = new Map(get(downloadRecordsAtom))
+    downloads.set(recordKey('active', update.id), { ...existing, ...structural })
     set(downloadRecordsAtom, downloads)
   }
 )
@@ -97,30 +135,82 @@ export const removeDownloadAtom = atom(null, (get, set, id: string) => {
   const downloads = new Map(get(downloadRecordsAtom))
   downloads.delete(recordKey('active', id))
   set(downloadRecordsAtom, downloads)
+  dropLivePatches(get, set, [id])
 })
 
 export const clearCompletedAtom = atom(null, (get, set) => {
   const downloads = new Map(get(downloadRecordsAtom))
+  const removed: string[] = []
   for (const [key, item] of downloads.entries()) {
     if (item.entryType === 'active' && item.status === 'completed') {
       downloads.delete(key)
+      removed.push(item.id)
     }
   }
   set(downloadRecordsAtom, downloads)
+  dropLivePatches(get, set, removed)
 })
 
 export const addHistoryRecordAtom = atom(null, (get, set, item: DownloadHistoryItem) => {
-  const downloads = new Map(get(downloadRecordsAtom))
+  const current = get(downloadRecordsAtom)
   const activeKey = recordKey('active', item.id)
-  if (downloads.has(activeKey)) {
-    if (!isFinalStatus(item.status)) {
-      set(downloadRecordsAtom, downloads)
-      return
-    }
+  const active = current.get(activeKey)
+  if (active && !isFinalStatus(item.status)) {
+    return
+  }
+  const nextRecord = toHistoryRecord(item)
+  const historyKey = recordKey('history', item.id)
+  const existingHistory = current.get(historyKey)
+  const keepsActive = Boolean(active && isFinalStatus(item.status))
+  if (!keepsActive && existingHistory && sameShallowRecord(existingHistory, nextRecord)) {
+    return
+  }
+  const downloads = new Map(current)
+  if (active && isFinalStatus(item.status)) {
     downloads.delete(activeKey)
   }
-  downloads.set(recordKey('history', item.id), toHistoryRecord(item))
+  downloads.set(historyKey, nextRecord)
   set(downloadRecordsAtom, downloads)
+  if (isFinalStatus(item.status)) {
+    dropLivePatches(get, set, [item.id])
+  }
+})
+
+/**
+ * Replace every history row in one write and drop patches for removed or finished tasks.
+ */
+export const replaceHistoryRecordsAtom = atom(null, (get, set, items: DownloadHistoryItem[]) => {
+  const current = get(downloadRecordsAtom)
+  const downloads = new Map(current)
+  const clearIds: string[] = []
+  let changed = false
+  for (const [key, item] of current) {
+    if (item.entryType !== 'history') {
+      continue
+    }
+    downloads.delete(key)
+    clearIds.push(item.id)
+    changed = true
+  }
+  for (const item of items) {
+    const activeKey = recordKey('active', item.id)
+    if (downloads.has(activeKey)) {
+      if (!isFinalStatus(item.status)) {
+        continue
+      }
+      downloads.delete(activeKey)
+      clearIds.push(item.id)
+    } else if (isFinalStatus(item.status)) {
+      clearIds.push(item.id)
+    }
+    downloads.set(recordKey('history', item.id), toHistoryRecord(item))
+    changed = true
+  }
+  if (!changed) {
+    return
+  }
+  set(downloadRecordsAtom, downloads)
+  dropLivePatches(get, set, clearIds)
 })
 
 /** Remove downloads from history and the persisted playback playlist together. */
@@ -133,6 +223,7 @@ export const removeHistoryRecordsAtom = atom(null, (get, set, ids: string[]) => 
     downloads.delete(recordKey('history', id))
   }
   set(downloadRecordsAtom, downloads)
+  dropLivePatches(get, set, ids)
   set(removePlaybackPlaylistItemsAtom, ids)
 })
 
@@ -155,12 +246,15 @@ export const removeHistoryRecordsByPlaylistAtom = atom(null, (get, set, playlist
 /** Reset cached history for reloading without changing the playback playlist. */
 export const clearHistoryRecordsAtom = atom(null, (get, set) => {
   const downloads = new Map(get(downloadRecordsAtom))
+  const removed: string[] = []
   for (const [key, item] of downloads.entries()) {
     if (item.entryType === 'history') {
       downloads.delete(key)
+      removed.push(item.id)
     }
   }
   set(downloadRecordsAtom, downloads)
+  dropLivePatches(get, set, removed)
 })
 
 /** Delete history records with the requested status and their playlist entries. */

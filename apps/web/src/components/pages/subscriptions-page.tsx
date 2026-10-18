@@ -1,4 +1,8 @@
 import {
+	getSubscriptionFeedEntries,
+	type SubscriptionFeedEntry,
+} from "@vidbee/subscriptions-core/feed-items";
+import {
 	getSubscriptionStatusMeta,
 	resolveSubscriptionItemStatus,
 	type SubscriptionItemQueueStatus,
@@ -35,6 +39,7 @@ import {
 } from "@vidbee/ui/components/ui/hover-card";
 import { RemoteImage } from "@vidbee/ui/components/ui/remote-image";
 import { ScrollArea } from "@vidbee/ui/components/ui/scroll-area";
+import { SubscriptionAllTab } from "@vidbee/ui/components/ui/subscription-all-tab";
 import {
 	Tooltip,
 	TooltipContent,
@@ -111,6 +116,7 @@ const formatTimestamp = (timestamp?: number): string => {
 	return `${year}-${month}-${day} ${hours}:${minutes}`;
 };
 
+/** Render all RSS items or the selected subscription's items. */
 export const SubscriptionsPage = () => {
 	const { t } = useTranslation();
 	const { settings } = useWebSettings();
@@ -121,7 +127,7 @@ export const SubscriptionsPage = () => {
 		Map<string, { status: string }>
 	>(new Map());
 	const [addDialogOpen, setAddDialogOpen] = useState(false);
-	const [selectedTab, setSelectedTab] = useState("");
+	const [selectedTab, setSelectedTab] = useState<string | null>(null);
 	const [directoryDialogOpen, setDirectoryDialogOpen] = useState(false);
 	const directoryPickerRef = useRef<((path: string | null) => void) | null>(
 		null,
@@ -181,17 +187,13 @@ export const SubscriptionsPage = () => {
 	);
 
 	useEffect(() => {
-		if (!selectedTab && sortedSubscriptions.length > 0) {
-			setSelectedTab(sortedSubscriptions[0].id);
-			return;
-		}
 		if (
-			selectedTab &&
+			selectedTab !== null &&
 			!sortedSubscriptions.some(
 				(subscription) => subscription.id === selectedTab,
 			)
 		) {
-			setSelectedTab(sortedSubscriptions[0]?.id ?? "");
+			setSelectedTab(null);
 		}
 	}, [selectedTab, sortedSubscriptions]);
 
@@ -230,6 +232,9 @@ export const SubscriptionsPage = () => {
 					tags: data.tags,
 					onlyDownloadLatest: data.onlyDownloadLatest,
 					autoDownload: data.autoDownload,
+					downloadType: data.downloadType,
+					downloadQuality: data.downloadQuality,
+					downloadContainer: data.downloadContainer,
 					downloadDirectory: data.downloadDirectory,
 					namingTemplate: data.namingTemplate,
 					enabled: data.enabled,
@@ -253,6 +258,7 @@ export const SubscriptionsPage = () => {
 		[refreshSubscriptions, resolveFeed, t],
 	);
 
+	/** Persist preferences before refreshing the feed in the background. */
 	const handleUpdateSubscription = useCallback(
 		async (id: string, data: SubscriptionFormData) => {
 			try {
@@ -262,6 +268,9 @@ export const SubscriptionsPage = () => {
 					tags: data.tags,
 					onlyDownloadLatest: data.onlyDownloadLatest,
 					autoDownload: data.autoDownload,
+					downloadType: data.downloadType,
+					downloadQuality: data.downloadQuality,
+					downloadContainer: data.downloadContainer,
 					downloadDirectory: data.downloadDirectory,
 					namingTemplate: data.namingTemplate,
 					enabled: data.enabled,
@@ -272,10 +281,21 @@ export const SubscriptionsPage = () => {
 					payload.feedUrl = resolved.feedUrl;
 					payload.platform = resolved.platform;
 				}
-				await subscriptionsClient.update(payload);
-				await subscriptionsClient.refresh({ id });
+				const updated = await subscriptionsClient.update(payload);
+				setSubscriptions((current) =>
+					current.map((subscription) =>
+						subscription.id === updated.id ? updated : subscription,
+					),
+				);
+				// Feed fetching must not delay dismissal after the preferences are persisted.
+				void subscriptionsClient.refresh({ id }).catch((error) => {
+					logger.error("Failed to refresh saved subscription:", error);
+				});
 				toast.success(t("subscriptions.notifications.updated"));
-				await refreshSubscriptions();
+				void refreshSubscriptions().catch((error) => {
+					logger.error("Failed to reload subscriptions:", error);
+				});
+				return true;
 			} catch (error) {
 				logger.error("Failed to update subscription:", error);
 				toast.error(
@@ -283,18 +303,49 @@ export const SubscriptionsPage = () => {
 						? t("subscriptions.notifications.duplicateUrl")
 						: t("subscriptions.notifications.createError"),
 				);
+				return false;
 			}
 		},
 		[refreshSubscriptions, resolveFeed, t],
 	);
 
-	const displayedSubscriptions = useMemo(
+	const displayedItems = useMemo(
 		() =>
-			sortedSubscriptions.filter(
-				(subscription) => subscription.id === selectedTab,
+			getSubscriptionFeedEntries(
+				selectedTab === null
+					? sortedSubscriptions
+					: sortedSubscriptions.filter(
+							(subscription) => subscription.id === selectedTab,
+						),
 			),
 		[selectedTab, sortedSubscriptions],
 	);
+
+	/** Queue an item against its original subscription, including in the all view. */
+	const handleQueueItem = async (
+		subscriptionId: string,
+		item: SubscriptionFeedItem,
+	) => {
+		if (item.addedToQueue) {
+			toast.info(t("subscriptions.notifications.itemAlreadyQueued"));
+			return;
+		}
+		try {
+			const queued = await subscriptionsClient.itemsQueue({
+				subscriptionId,
+				itemId: item.id,
+			});
+			if (queued.queued) {
+				toast.success(t("subscriptions.notifications.itemQueued"));
+				await refreshSubscriptions();
+				return;
+			}
+			toast.info(t("subscriptions.notifications.itemAlreadyQueued"));
+		} catch (error) {
+			logger.error("Failed to queue subscription item:", error);
+			toast.error(t("subscriptions.notifications.queueError"));
+		}
+	};
 
 	return (
 		<AppShell page="subscriptions">
@@ -306,6 +357,10 @@ export const SubscriptionsPage = () => {
 						viewportClassName="h-auto"
 					>
 						<div className="flex h-auto w-auto justify-start">
+							<SubscriptionAllTab
+								isActive={selectedTab === null}
+								onSelect={() => setSelectedTab(null)}
+							/>
 							{sortedSubscriptions.map((subscription) => (
 								<SubscriptionTab
 									isActive={subscription.id === selectedTab}
@@ -353,52 +408,16 @@ export const SubscriptionsPage = () => {
 				<ScrollArea className="overflow-y-auto">
 					<div className="relative space-y-8 p-6 pt-0">
 						<section className="space-y-4">
-							{sortedSubscriptions.length === 0 || !selectedTab ? (
+							{sortedSubscriptions.length === 0 ? (
 								<div className="py-12 text-center text-muted-foreground text-sm">
 									{t("subscriptions.empty")}
 								</div>
 							) : (
-								<div className="space-y-3">
-									{displayedSubscriptions.map((subscription) => (
-										<SubscriptionCard
-											downloadById={downloadById}
-											key={subscription.id}
-											onQueueItem={async (item) => {
-												if (item.addedToQueue) {
-													toast.info(
-														t("subscriptions.notifications.itemAlreadyQueued"),
-													);
-													return;
-												}
-												try {
-													const queued = await subscriptionsClient.itemsQueue({
-														subscriptionId: subscription.id,
-														itemId: item.id,
-													});
-													if (queued.queued) {
-														toast.success(
-															t("subscriptions.notifications.itemQueued"),
-														);
-														await refreshSubscriptions();
-														return;
-													}
-													toast.info(
-														t("subscriptions.notifications.itemAlreadyQueued"),
-													);
-												} catch (error) {
-													logger.error(
-														"Failed to queue subscription item:",
-														error,
-													);
-													toast.error(
-														t("subscriptions.notifications.queueError"),
-													);
-												}
-											}}
-											subscription={subscription}
-										/>
-									))}
-								</div>
+								<SubscriptionItems
+									downloadById={downloadById}
+									entries={displayedItems}
+									onQueueItem={handleQueueItem}
+								/>
 							)}
 						</section>
 
@@ -428,6 +447,11 @@ export const SubscriptionsPage = () => {
 				</ScrollArea>
 
 				<SubscriptionFormDialog
+					downloadDefaults={{
+						downloadType: settings.oneClickDownloadType,
+						downloadQuality: settings.oneClickQuality,
+						downloadContainer: settings.oneClickContainer,
+					}}
 					downloadPath={settings.downloadPath}
 					mode="add"
 					onClose={() => setAddDialogOpen(false)}
@@ -462,12 +486,19 @@ interface SubscriptionTabProps {
 	onRefresh: () => Promise<void>;
 	onRemove: () => Promise<void>;
 	onSelect: () => void;
-	onUpdate: (data: SubscriptionFormData) => Promise<void>;
+	onUpdate: (data: SubscriptionFormData) => Promise<boolean>;
 	pickDirectory: () => Promise<string | null>;
 	resolveFeed: (url: string) => Promise<unknown>;
-	settings: { downloadPath: string; subscriptionOnlyLatestDefault: boolean };
+	settings: {
+		downloadPath: string;
+		subscriptionOnlyLatestDefault: boolean;
+		oneClickDownloadType: "video" | "audio";
+		oneClickQuality: NonNullable<SubscriptionFormData["downloadQuality"]>;
+		oneClickContainer: NonNullable<SubscriptionFormData["downloadContainer"]>;
+	};
 }
 
+/** Render one subscription's selector and management actions. */
 const SubscriptionTab = ({
 	subscription,
 	isActive,
@@ -505,6 +536,7 @@ const SubscriptionTab = ({
 					<ContextMenuTrigger asChild>
 						<HoverCardTrigger asChild>
 							<button
+								aria-pressed={isActive}
 								className={cn(
 									"flex h-auto w-20 shrink-0 grow-0 flex-col items-center gap-1 rounded-2xl px-2 py-2 transition-all hover:opacity-80",
 									isActive && "bg-muted/45",
@@ -575,13 +607,19 @@ const SubscriptionTab = ({
 				</ContextMenuContent>
 			</ContextMenu>
 			<SubscriptionFormDialog
+				downloadDefaults={{
+					downloadType: settings.oneClickDownloadType,
+					downloadQuality: settings.oneClickQuality,
+					downloadContainer: settings.oneClickContainer,
+				}}
 				downloadPath={settings.downloadPath}
 				mode="edit"
 				onClose={() => setEditOpen(false)}
 				onResolveFeed={resolveFeed}
 				onSave={async (data) => {
-					await onUpdate(data);
-					setEditOpen(false);
+					if (await onUpdate(data)) {
+						setEditOpen(false);
+					}
 				}}
 				onSelectDirectory={pickDirectory}
 				onlyLatestDefault={settings.subscriptionOnlyLatestDefault}
@@ -592,18 +630,22 @@ const SubscriptionTab = ({
 	);
 };
 
-const SubscriptionCard = ({
+/** Render a mixed feed while retaining the source for each item's actions. */
+const SubscriptionItems = ({
 	downloadById,
-	subscription,
+	entries,
 	onQueueItem,
 }: {
 	downloadById: ReadonlyMap<string, { status: string }>;
-	subscription: SubscriptionWithItems;
-	onQueueItem: (item: SubscriptionFeedItem) => Promise<void>;
+	entries: SubscriptionFeedEntry<SubscriptionWithItems>[];
+	onQueueItem: (
+		subscriptionId: string,
+		item: SubscriptionFeedItem,
+	) => Promise<void>;
 }) => {
 	const { t } = useTranslation();
-	const feedItems = subscription.items ?? [];
 
+	/** Copy the selected feed item's URL. */
 	const copyItemUrl = async (url: string) => {
 		if (!(url && navigator.clipboard?.writeText)) {
 			toast.error(t("notifications.copyFailed"));
@@ -618,7 +660,7 @@ const SubscriptionCard = ({
 		}
 	};
 
-	if (feedItems.length === 0) {
+	if (entries.length === 0) {
 		return (
 			<div className="py-12 text-center text-muted-foreground text-sm">
 				{t("subscriptions.items.empty")}
@@ -628,7 +670,7 @@ const SubscriptionCard = ({
 
 	return (
 		<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-			{feedItems.map((item) => {
+			{entries.map(({ subscription, item }) => {
 				const itemStatus = resolveSubscriptionItemStatus(item, downloadById);
 				const hasResolvedDownloadStatus =
 					item.addedToQueue &&
@@ -704,31 +746,20 @@ const SubscriptionCard = ({
 										<TooltipContent>{tooltipLabel}</TooltipContent>
 									</Tooltip>
 								</div>
-								<div className="flex flex-col gap-4 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+								<div className="px-3 py-2">
 									<p
 										className="font-semibold text-base text-card-foreground leading-snug"
 										title={item.title}
 									>
 										{item.title}
 									</p>
-									<Button
-										className="rounded-full px-4"
-										onClick={() =>
-											window.open(item.url, "_blank", "noopener,noreferrer")
-										}
-										size="sm"
-										title={t("subscriptions.items.actions.open")}
-										variant="secondary"
-									>
-										<ExternalLink className="h-4 w-4" />
-									</Button>
 								</div>
 							</article>
 						</ContextMenuTrigger>
 						<ContextMenuContent>
 							<ContextMenuItem
 								disabled={item.addedToQueue}
-								onClick={() => void onQueueItem(item)}
+								onClick={() => void onQueueItem(subscription.id, item)}
 							>
 								<Download className="h-4 w-4" />
 								{t("subscriptions.items.actions.queue")}

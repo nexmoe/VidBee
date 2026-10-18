@@ -1,6 +1,9 @@
 import type { ElectronAPI } from '@electron-toolkit/preload'
 import type { IpcServices } from '../main/ipc'
 import type { authClient } from '../main/lib/auth-client'
+import type { DownloadLogIpcPayload } from '../shared/live-log'
+
+export type { DownloadLogIpcPayload }
 
 type DesktopAuthBridges = (typeof authClient)['$Infer']['Bridges']
 

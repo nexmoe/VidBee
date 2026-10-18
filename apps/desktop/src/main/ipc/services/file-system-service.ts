@@ -4,17 +4,13 @@ import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { promisify } from 'node:util'
-import { embedArtifactImages } from '@shared/agent-markdown'
 import type { ShareCardPayload } from '@shared/types/share-card'
 import { BrowserWindow, clipboard, dialog, Notification, ShareMenu, shell } from 'electron'
 import { type IpcContext, IpcMethod, IpcService } from 'electron-ipc-decorator'
-import { getAgentChatStore } from '../../lib/agent-chat-store'
-import { readAgentArtifactImage } from '../../lib/agent-media'
 import { mediaFileDialogFilters } from '../../lib/import-local-media'
+import { markdownWithEmbeddedImages, writeMarkdownPdf } from '../../lib/markdown-export'
 import {
   type ExportVideoSource,
-  markdownToPrintableHtml,
-  printHtmlToPdf,
   withVidBeeExportAttribution,
   withVideoSourceLink
 } from '../../lib/markdown-pdf'
@@ -24,23 +20,6 @@ import { getPortableDownloadsPath, isPortableMode } from '../../portable'
 import { scopedLoggers } from '../../utils/logger'
 
 const execFileAsync = promisify(execFile)
-
-/**
- * Inline cited screenshots as data URIs so exported Markdown/PDF files stay self-contained.
- *
- * @param markdown Reply body that may still use `artifact:` ids.
- * @param threadId Conversation that owns those attachments.
- */
-async function markdownWithEmbeddedImages(markdown: string, threadId?: string): Promise<string> {
-  if (!threadId) {
-    return markdown
-  }
-  const artifacts = getAgentChatStore().get(threadId)?.artifacts
-  if (!artifacts?.length) {
-    return markdown
-  }
-  return await embedArtifactImages(markdown, artifacts, readAgentArtifactImage)
-}
 
 class FileSystemService extends IpcService {
   static readonly groupName = 'fs'
@@ -204,30 +183,8 @@ class FileSystemService extends IpcService {
     }
 
     const normalizedPath = path.normalize(this.sanitizePath(result.filePath))
-    const markdown = await markdownWithEmbeddedImages(options.markdown, options.threadId)
-    const html = markdownToPrintableHtml(
-      markdown,
-      options.title,
-      options.thinkingLabel,
-      options.source
-    )
-    const tempPath = path.join(os.tmpdir(), `vidbee-export-${process.pid}-${Date.now()}.html`)
-    try {
-      await fs.writeFile(tempPath, html, 'utf8')
-      const pdf = await printHtmlToPdf(
-        tempPath,
-        () =>
-          new BrowserWindow({
-            backgroundColor: '#ffffff',
-            show: false,
-            webPreferences: { sandbox: true }
-          })
-      )
-      await fs.writeFile(normalizedPath, pdf)
-      return { path: normalizedPath }
-    } finally {
-      await fs.unlink(tempPath).catch(() => {})
-    }
+    await writeMarkdownPdf(normalizedPath, options)
+    return { path: normalizedPath }
   }
 
   /**

@@ -754,6 +754,15 @@ export class TaskQueueAPI {
     await this.scheduler.setMaxConcurrency(n)
   }
 
+  /**
+   * Defer new ASR tasks while this many downloads are already running.
+   *
+   * @param n Configured download concurrency cap.
+   */
+  async setMaxConcurrentDownloads(n: number): Promise<void> {
+    await this.scheduler.setMaxConcurrentDownloads(n)
+  }
+
   async setMaxPerGroup(groupKey: string, n: number | null): Promise<void> {
     await this.scheduler.setMaxPerGroup(groupKey, n)
   }
@@ -895,6 +904,10 @@ export class TaskQueueAPI {
           onProcessing: () => this.enterProcessing(id, attemptId),
           onStd: (e) => {
             this.watchdog.bump(id)
+            // Transcription keepalives must not enter the log bus or renderer IPC.
+            if (e.line === 'worker-alive') {
+              return
+            }
             this.bus.emit({
               type: 'log',
               taskId: id,

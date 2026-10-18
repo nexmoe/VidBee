@@ -26,6 +26,7 @@ import {
 import { type ReactNode, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import { AgentChatRunFeedback } from './AgentChatRunFeedback'
 import { AgentEventStream } from './AgentEventStream'
 import { AgentResponseContent, agentArtifactUrl } from './AgentResponseContent'
 import { TranscriptOverviewResult } from './TranscriptOverviewResult'
@@ -210,7 +211,6 @@ export function AgentChatMessageView({
             artifacts={artifacts}
             message={message}
             onDecideTool={onDecideTool}
-            onRetry={() => onRetry(message.id)}
             onSeek={seekSource}
             run={run}
           />
@@ -269,6 +269,9 @@ export function AgentChatMessageView({
               )}
             </BubbleContent>
           </Bubble>
+        ) : null}
+        {message.role === 'assistant' ? (
+          <AgentChatRunFeedback busy={busy} onRetry={() => onRetry(message.id)} run={run} />
         ) : null}
         {message.role === 'assistant' && !running ? (
           <MessageFooter className="gap-0 px-0">

@@ -182,6 +182,41 @@ export interface AgentThreadSummary {
   updatedAt: number
   running: boolean
 }
+/**
+ * Entities changed by one streaming commit.
+ * `downloadId` and `promptId` route the patch before the renderer has a thread.
+ */
+export interface AgentThreadPatch {
+  downloadId: string
+  promptId: string
+  threadId: string
+  leafId?: string | null
+  title?: string
+  toolGrants?: string[]
+  images?: AgentImageAttachment[]
+  messages?: AgentChatMessage[]
+  runs?: AgentChatRun[]
+  artifacts?: AgentArtifact[]
+}
+/**
+ * Directory change that is ordered by `revision`, not by the thread seq.
+ * Upserts that do not write a new seq still carry a newer revision.
+ */
+export type AgentCatalogNotice =
+  | {
+      kind: 'upsert'
+      summary: AgentThreadSummary
+      history: boolean
+      runStatus: AgentRunStatus | 'idle'
+      statusUpdatedAt: number
+      revision: number
+    }
+  | {
+      kind: 'remove'
+      id: string
+      downloadId: string
+      revision: number
+    }
 export interface AgentRunEvent {
   threadId: string
   runId: string | null
@@ -189,7 +224,12 @@ export interface AgentRunEvent {
   seq: number
   type: string
   createdAt: number
-  snapshot: AgentThread
+  /** Full public thread for the first load, admission, terminal, and gap repair. */
+  snapshot?: AgentThread
+  /** Hot-path entity update. Mutually exclusive with `snapshot`. */
+  patch?: AgentThreadPatch
+  /** Title, membership, or selected-run status. Independent of snapshot seq. */
+  catalog?: AgentCatalogNotice
 }
 export interface AgentChatInput {
   thinkingLevel?: AgentThinkingLevel

@@ -1,4 +1,4 @@
-import { readFileSync, realpathSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, join, resolve } from 'node:path'
 import tailwindcss from '@tailwindcss/vite'
@@ -14,23 +14,9 @@ const lobeIconsDir = join(
   dirname(require.resolve('@lobehub/icons-static-svg/package.json')),
   'icons'
 )
-const streamdownMermaidDir = dirname(
-  realpathSync(join(import.meta.dirname, 'node_modules/@streamdown/mermaid/package.json'))
-)
-const mermaidRoot = dirname(
-  require.resolve('mermaid/package.json', {
-    paths: [dirname(streamdownMermaidDir)]
-  })
-)
-const mermaidBundledEntry = join(mermaidRoot, 'dist/mermaid.esm.min.mjs')
-const beautifulMermaidDir = dirname(
-  realpathSync(join(import.meta.dirname, 'node_modules/beautiful-mermaid/package.json'))
-)
-const elkBundledEntry = require.resolve('elkjs/lib/elk.bundled.js', {
-  paths: [dirname(beautifulMermaidDir)]
-})
 
 const bundledWorkspacePackages = [
+  '@modelcontextprotocol/sdk',
   '@vidbee/db',
   '@vidbee/downloader-core',
   '@vidbee/i18n',
@@ -40,7 +26,8 @@ const bundledWorkspacePackages = [
   '@vidbee/transcription',
   '@earendil-works/pi-ai',
   '@earendil-works/pi-agent-core',
-  '@earendil-works/pi-telemetry'
+  '@earendil-works/pi-telemetry',
+  'zod'
 ]
 const nativeRuntimeExternals = ['electron', 'better-sqlite3', 'sherpa-onnx-node'] as const
 const nativeRuntimeExternalMatchers: Array<string | RegExp> = [
@@ -107,7 +94,9 @@ export default defineConfig(({ mode }) => {
           },
           output: {
             format: 'cjs',
-            entryFileNames: '[name].js'
+            entryFileNames: '[name].js',
+            // Runtime helpers resolve preload and worker paths relative to the main output directory.
+            chunkFileNames: '[name]-[hash].js'
           },
           external: nativeRuntimeExternalMatchers
         },
@@ -203,11 +192,6 @@ export default defineConfig(({ mode }) => {
           '@vidbee/downloader-core/cookie-setup',
           '@vidbee/downloader-core/filename-style',
           '@vidbee/downloader-core/format-preferences',
-          // mermaid.core.mjs pulls CJS named exports (`sanitizeUrl`) that Vite 8
-          // serves raw. Alias mermaid to the bundled ESM build instead of
-          // prebundling mermaid (Rolldown then loses chunk metadata).
-          'mermaid',
-          '@streamdown/mermaid',
           'katex'
         ],
         include: [
@@ -219,20 +203,10 @@ export default defineConfig(({ mode }) => {
           '@streamdown/code',
           '@streamdown/math',
           '@streamdown/cjk',
-          '@shadcn/react/message-scroller',
-          // CJS UMD; Vite 8 otherwise serves it as ESM without a default export.
-          'beautiful-mermaid',
-          'elkjs/lib/elk.bundled.js'
+          '@shadcn/react/message-scroller'
         ]
       },
-      resolve: {
-        ...rendererResolve,
-        alias: {
-          ...rendererResolve.alias,
-          mermaid: mermaidBundledEntry,
-          'elkjs/lib/elk.bundled.js': elkBundledEntry
-        }
-      },
+      resolve: rendererResolve,
       plugins: [
         {
           name: 'dev-csp-inline-scripts',

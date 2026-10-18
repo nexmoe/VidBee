@@ -303,9 +303,20 @@ export {
   resolveInsertSegmentPlacement,
   updateTranscriptSegmentList
 } from './transcript-edit'
-export { buildTranscriptSources, recordForTranscriptSource } from './transcript-sources'
-export type { TranscriptStoreOptions } from './transcript-store'
-export { TranscriptStore } from './transcript-store'
+export type { TranscriptHead, TranscriptSourceMeta } from './transcript-sources'
+export {
+  buildTranscriptSources,
+  groupTranscriptHeads,
+  latestTranscriptHead,
+  recordForTranscriptSource,
+  resolveTranscriptHeads
+} from './transcript-sources'
+export type { TranscriptPlaybackCue, TranscriptStoreOptions } from './transcript-store'
+export {
+  TRANSCRIPT_HEAD_SQL,
+  TRANSCRIPT_PLAYBACK_CUE_SQL,
+  TranscriptStore
+} from './transcript-store'
 export type {
   AsrTierStatus,
   MachineProfileStatus,

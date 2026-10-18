@@ -5,7 +5,18 @@
  *
  * Keep these in lockstep with `./types.ts`.
  */
+import {
+  DownloadTypeSchema,
+  OneClickContainerOptionSchema,
+  OneClickQualityPresetSchema
+} from '@vidbee/downloader-core/schemas'
 import { z } from 'zod'
+
+const subscriptionDownloadPreferences = {
+  downloadType: DownloadTypeSchema.optional(),
+  downloadQuality: OneClickQualityPresetSchema.optional(),
+  downloadContainer: OneClickContainerOptionSchema.optional()
+}
 
 export const SubscriptionPlatformSchema = z.enum(['youtube', 'bilibili', 'custom'])
 export const SubscriptionStatusSchema = z.enum(['idle', 'checking', 'up-to-date', 'failed'])
@@ -18,6 +29,7 @@ export const ResolvedFeedSchema = z.object({
 })
 
 export const SubscriptionRuleSchema = z.object({
+  ...subscriptionDownloadPreferences,
   id: z.string(),
   title: z.string(),
   sourceUrl: z.string(),
@@ -56,6 +68,7 @@ export const SubscriptionWithItemsSchema = SubscriptionRuleSchema.extend({
 })
 
 export const SubscriptionCreateInputSchema = z.object({
+  ...subscriptionDownloadPreferences,
   sourceUrl: z.string().min(1),
   feedUrl: z.string().min(1),
   platform: SubscriptionPlatformSchema,
@@ -70,6 +83,7 @@ export const SubscriptionCreateInputSchema = z.object({
 })
 
 export const SubscriptionUpdateInputSchema = z.object({
+  ...subscriptionDownloadPreferences,
   title: z.string().optional(),
   sourceUrl: z.string().optional(),
   feedUrl: z.string().optional(),

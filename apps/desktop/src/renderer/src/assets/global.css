@@ -4,12 +4,12 @@
 @import "@vidbee/ui/base.css";
 @import "streamdown/styles.css";
 @import "katex/dist/katex.min.css";
+@import "./mermaid.css";
 @import "./view-transitions.css";
 
 /* Streamdown core + plugin utilities live in package JS, not this app tree. */
 @source "../../../../node_modules/streamdown/dist/*.js";
 @source "../../../../node_modules/@streamdown/code/dist/*.js";
-@source "../../../../node_modules/@streamdown/mermaid/dist/*.js";
 @source "../../../../node_modules/@streamdown/math/dist/*.js";
 @source "../../../../node_modules/@streamdown/cjk/dist/*.js";
 
@@ -42,6 +42,20 @@
     monospace;
   --accent: #525252;
   --accent-foreground: #f5f5f5;
+}
+
+/* Pele diagrams follow the app palette without re-rendering on theme changes. */
+.pele {
+  --pele-bg: var(--background);
+  --pele-fg: var(--foreground);
+  --pele-muted: var(--muted-foreground);
+  --pele-line: var(--foreground);
+  --pele-surface: var(--card);
+  --pele-surface-alt: var(--muted);
+  --pele-border: var(--border);
+  --pele-accent: var(--primary);
+  --pele-critical: var(--destructive);
+  --pele-error: var(--destructive);
 }
 
 /* Keep prose readable while allowing tables, diagrams, and code to use the full output width. */

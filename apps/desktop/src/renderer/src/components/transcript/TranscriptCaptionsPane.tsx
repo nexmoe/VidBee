@@ -101,6 +101,7 @@ import {
   type PointerEvent,
   type ReactNode,
   useCallback,
+  useDeferredValue,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -263,6 +264,7 @@ export function TranscriptCaptionsPane({
   const pendingCaptionJumpRef = useRef<string | null>(null)
   const suppressFollowPauseUntilRef = useRef(0)
   const [query, setQuery] = useState('')
+  const deferredQuery = useDeferredValue(query)
   const [activeMatch, setActiveMatch] = useState(0)
   const [focusedSegmentId, setFocusedSegmentId] = useState<string | null>(null)
   const [followPaused, setFollowPaused] = useState(false)
@@ -306,11 +308,11 @@ export function TranscriptCaptionsPane({
   const matches = useMemo(
     () =>
       displaySegments.filter((segment) =>
-        matchesTranscriptQuery(query, segment.text, resolveSpeaker(segment.speakerId))
+        matchesTranscriptQuery(deferredQuery, segment.text, resolveSpeaker(segment.speakerId))
       ),
-    [displaySegments, query, resolveSpeaker]
+    [deferredQuery, displaySegments, resolveSpeaker]
   )
-  const hasQuery = query.trim().length > 0
+  const hasQuery = deferredQuery.trim().length > 0
   const visibleSegments = hasQuery ? matches : displaySegments
   const matchesRef = useRef(matches)
   matchesRef.current = matches
@@ -1500,7 +1502,7 @@ export function TranscriptCaptionsPane({
                       onInsertBefore={() => void insertCaption({ beforeId: segment.id })}
                       onSeek={(seconds) => onSeekToken(seconds, segment.id)}
                       onSelectMatch={jumpToSearchMatch}
-                      query={query}
+                      query={deferredQuery}
                       resolveColorIndex={resolveColorIndex}
                       resolveSpeaker={resolveSpeaker}
                       segment={segment}

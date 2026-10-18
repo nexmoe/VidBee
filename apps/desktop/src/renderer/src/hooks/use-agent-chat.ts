@@ -5,12 +5,28 @@ import type {
   AgentThinkingOptions,
   AgentThread
 } from '@shared/agent-chat'
+import {
+  type AgentGapRecovery,
+  acceptAgentThread,
+  agentEventMatches,
+  applyAgentRunEvent,
+  createAgentGapRecovery,
+  observeAgentSeq,
+  requestAgentRecovery,
+  resetAgentRecovery,
+  settleAgentRecovery
+} from '@shared/agent-thread-patch'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-/** Keep product snapshots ordered across initial reads, live updates and reconnects. */
+/**
+ * Keep an older seq from replacing the thread already accepted for this identity.
+ *
+ * @param current Authoritative thread, or null before the first accept.
+ * @param incoming Snapshot or applied patch.
+ */
 export function newerAgentThread(current: AgentThread | null, incoming: AgentThread): AgentThread {
-  return current?.id === incoming.id && current.seq > incoming.seq ? current : incoming
+  return acceptAgentThread(current, incoming)
 }
 
 /** Connect one persistent agent thread to IPC while rejecting responses for a previous tab. */
@@ -25,34 +41,137 @@ export function useAgentChat(downloadId: string, promptId: string, threadId?: st
   const identity = threadId || `${downloadId}:${promptId}`
   const currentIdentity = useRef(identity)
   currentIdentity.current = identity
-  const snapshotRef = useRef(thread)
-  snapshotRef.current = thread
+  const snapshotRef = useRef<AgentThread | null>(null)
+  const acceptRef = useRef<(incoming: AgentThread) => void>(() => {})
 
   useEffect(() => {
     let disposed = false
+    snapshotRef.current = null
+    let recovery: AgentGapRecovery = createAgentGapRecovery()
+    let knownThreadId = threadId || undefined
     setThread(null)
     setError(null)
     setHydrated(false)
     setSending(false)
     setAttaching(false)
-    /** Apply only snapshots belonging to the current product identity. */
+    const route = { downloadId, promptId, threadId }
+    /**
+     * True when a thread belongs to this effect's video and prompt or pinned thread.
+     *
+     * @param incoming Thread from IPC.
+     */
+    const belongs = (incoming: AgentThread): boolean => {
+      if (incoming.downloadId !== downloadId) {
+        return false
+      }
+      if (threadId) {
+        return incoming.id === threadId
+      }
+      return incoming.promptId === promptId
+    }
+    /**
+     * Accept one thread for this identity. The ref is updated before React state.
+     *
+     * @param incoming Snapshot or patch result.
+     */
     const accept = (incoming: AgentThread): void => {
-      if (disposed || incoming.downloadId !== downloadId) {
+      if (disposed || !belongs(incoming)) {
         return
       }
-      if (threadId ? incoming.id !== threadId : incoming.promptId !== promptId) {
+      recovery = observeAgentSeq(recovery, incoming.seq)
+      const next = acceptAgentThread(snapshotRef.current, incoming)
+      if (next === snapshotRef.current) {
         return
       }
-      setThread((current) => newerAgentThread(current, incoming))
+      snapshotRef.current = next
+      knownThreadId = next.id
+      setThread(next)
       setHydrated(true)
     }
+    acceptRef.current = accept
+    /**
+     * Load the thread or the commits after the authoritative seq.
+     * A short reply may start the one allowed follow-up. Disposed effects drop the result.
+     */
+    const runRecovery = (): void => {
+      const local = snapshotRef.current
+      const same = Boolean(local && belongs(local))
+      const pending =
+        same && local
+          ? ipcServices.ai
+              .getAgentEvents({ threadId: local.id, after: local.seq })
+              .then((result) => result.snapshot)
+          : ipcServices.ai.getAgentThread({
+              downloadId,
+              promptId,
+              ...(threadId ? { threadId } : knownThreadId ? { threadId: knownThreadId } : {})
+            })
+      void pending
+        .then((incoming) => {
+          if (disposed) {
+            return
+          }
+          if (incoming) {
+            accept(incoming)
+          } else {
+            setHydrated(true)
+          }
+          const applied =
+            snapshotRef.current && belongs(snapshotRef.current) ? snapshotRef.current.seq : 0
+          const settled = settleAgentRecovery(recovery, applied)
+          recovery = settled.recovery
+          if (settled.action === 'follow-up') {
+            runRecovery()
+          }
+        })
+        .catch((failure: unknown) => {
+          if (disposed) {
+            return
+          }
+          recovery = {
+            ...recovery,
+            inflight: false,
+            followUpUsed: false,
+            coveredSeq: recovery.observedSeq
+          }
+          setError(failure instanceof Error ? failure.message : String(failure))
+          setHydrated(true)
+        })
+    }
+    /**
+     * Start one recovery when none is in flight.
+     * A gap waits for a seq newer than the episode that already fell behind.
+     *
+     * @param reason Gap events coalesce; focus and first load always read.
+     */
+    const ensureRecovery = (reason: 'gap' | 'refresh'): void => {
+      const requested = requestAgentRecovery(recovery, reason)
+      recovery = requested.recovery
+      if (requested.action === 'start') {
+        runRecovery()
+      }
+    }
     const listener = ipcEvents.on('ai:agent-event', (...args: unknown[]) => {
-      const event = args[0] as AgentRunEvent
-      if (event?.snapshot) {
-        accept(event.snapshot)
+      const agentEvent = args[0] as AgentRunEvent
+      if (disposed || !agentEvent || !agentEventMatches(agentEvent, route)) {
+        return
+      }
+      recovery = observeAgentSeq(recovery, agentEvent.seq)
+      const result = applyAgentRunEvent(snapshotRef.current, agentEvent, route)
+      if (result.kind === 'applied') {
+        accept(result.thread)
+        return
+      }
+      if (result.kind === 'gap') {
+        if (agentEvent.patch?.threadId) {
+          knownThreadId = agentEvent.patch.threadId
+        }
+        ensureRecovery('gap')
       }
     })
-    /** Refresh using a durable event cursor when the window reconnects or gains focus. */
+    /**
+     * Refresh thinking options and repair a seq gap after focus or reconnect.
+     */
     const restore = (): void => {
       void ipcServices.ai
         .getAgentThinkingOptions()
@@ -66,41 +185,15 @@ export function useAgentChat(downloadId: string, promptId: string, threadId?: st
             setThinkingOptions(null)
           }
         })
-      const current = snapshotRef.current
-      const sameThread = Boolean(
-        current &&
-          (threadId
-            ? current.id === threadId
-            : current.downloadId === downloadId && current.promptId === promptId)
-      )
-      const load =
-        current && sameThread
-          ? ipcServices.ai
-              .getAgentEvents({ threadId: current.id, after: current.seq })
-              .then((result) => result.snapshot)
-          : ipcServices.ai.getAgentThread({
-              downloadId,
-              promptId,
-              ...(threadId ? { threadId } : {})
-            })
-      void load
-        .then((incoming) => {
-          if (incoming) {
-            accept(incoming)
-          }
-        })
-        .catch((failure) => {
-          if (!disposed) {
-            setError(failure instanceof Error ? failure.message : String(failure))
-            setHydrated(true)
-          }
-        })
+      recovery = resetAgentRecovery(recovery)
+      ensureRecovery('refresh')
     }
     restore()
     window.addEventListener('focus', restore)
     window.addEventListener('online', restore)
     return () => {
       disposed = true
+      acceptRef.current = () => {}
       ipcEvents.removeListener('ai:agent-event', listener)
       window.removeEventListener('focus', restore)
       window.removeEventListener('online', restore)
@@ -140,7 +233,7 @@ export function useAgentChat(downloadId: string, promptId: string, threadId?: st
           ...(snapshotRef.current?.id ? { threadId: snapshotRef.current.id } : {})
         })
         if (currentIdentity.current === identity) {
-          setThread((current) => newerAgentThread(current, incoming))
+          acceptRef.current(incoming)
         }
         return true
       } catch (failure) {
@@ -171,7 +264,7 @@ export function useAgentChat(downloadId: string, promptId: string, threadId?: st
           ? await ipcServices.ai.removeAgentImage({ threadId: current.id, imageId })
           : await ipcServices.ai.selectAgentImages(current.id)
         if (currentIdentity.current === identity) {
-          setThread((previous) => newerAgentThread(previous, incoming))
+          acceptRef.current(incoming)
         }
       } catch {
         if (currentIdentity.current === identity) {
@@ -188,22 +281,22 @@ export function useAgentChat(downloadId: string, promptId: string, threadId?: st
 
   /** Cancel this thread without touching any other conversation. */
   const stop = useCallback(async (): Promise<void> => {
-    if (!thread) {
+    const current = snapshotRef.current
+    if (!current) {
       return
     }
     try {
-      const incoming = await ipcServices.ai.stopAgentRun(thread.id)
+      const incoming = await ipcServices.ai.stopAgentRun(current.id)
       if (incoming && currentIdentity.current === identity) {
-        setThread((current) => newerAgentThread(current, incoming))
+        acceptRef.current(incoming)
       }
     } catch (failure) {
       if (currentIdentity.current === identity) {
         setError(String(failure))
       }
     }
-  }, [identity, thread])
+  }, [identity])
 
-  /** Switch reply versions and restore their descendant history. */
   /** Reload model thinking capabilities after the Composer provider changes. */
   const reloadThinkingOptions = useCallback(async (): Promise<void> => {
     try {
@@ -213,15 +306,17 @@ export function useAgentChat(downloadId: string, promptId: string, threadId?: st
     }
   }, [])
 
+  /** Switch reply versions and restore their descendant history. */
   const selectBranch = useCallback(
     async (messageId: string): Promise<void> => {
-      if (!thread) {
+      const current = snapshotRef.current
+      if (!current) {
         return
       }
       try {
-        const incoming = await ipcServices.ai.selectAgentBranch({ threadId: thread.id, messageId })
+        const incoming = await ipcServices.ai.selectAgentBranch({ threadId: current.id, messageId })
         if (currentIdentity.current === identity) {
-          setThread((current) => newerAgentThread(current, incoming))
+          acceptRef.current(incoming)
         }
       } catch (failure) {
         if (currentIdentity.current === identity) {
@@ -229,7 +324,7 @@ export function useAgentChat(downloadId: string, promptId: string, threadId?: st
         }
       }
     },
-    [identity, thread]
+    [identity]
   )
   return {
     thread:

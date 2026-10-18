@@ -105,6 +105,12 @@ const needsThinning = (architectures, keepArch) =>
  * @returns {boolean}
  */
 const thinMachOToArch = (filePath, arch) => {
+  // PyInstaller's shared PKG archive lives in the final universal2 slice.
+  // Thinning yt-dlp to x86_64 removes that archive and breaks both kernel paths.
+  if (path.basename(filePath) === 'yt-dlp_macos') {
+    return false
+  }
+
   const keepArch = lipoArchForElectronArch(arch)
   if (!keepArch) {
     return false

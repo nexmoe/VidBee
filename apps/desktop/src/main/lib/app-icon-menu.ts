@@ -1,5 +1,6 @@
 import {
   APP_ICON_MENU_COMMAND_CHANNEL,
+  APP_ICON_SHOW_HOME_CHANNEL,
   type AppIconMenuCommand,
   type AppIconMenuState,
   EMPTY_APP_ICON_MENU_STATE,
@@ -33,7 +34,7 @@ const FALLBACK_COPY: AppIconMenuCopy = {
 }
 
 let menuState: AppIconMenuState = EMPTY_APP_ICON_MENU_STATE
-let applyTrayMenu: ((menu: Menu) => void) | null = null
+let trayContextMenu: Menu | null = null
 
 /**
  * Read localized dock/tray labels, falling back to English.
@@ -66,14 +67,35 @@ const findMainWindow = (): BrowserWindow | null => {
 }
 
 /**
- * Restore, show, and focus a window.
+ * Restore a hidden or minimized window and bring the app to the foreground.
+ * macOS menu-bar clicks do not activate the app, so show() alone leaves the window behind.
  */
-const showAndFocusWindow = (window: BrowserWindow): void => {
+export const showAndFocusWindow = (window: BrowserWindow): void => {
   if (window.isMinimized()) {
     window.restore()
   }
+  if (process.platform === 'darwin') {
+    app.focus({ steal: true })
+    app.dock?.show()
+  }
   window.show()
+  window.moveTop()
   window.focus()
+}
+
+/**
+ * Show the main window and ask the renderer to open the home route.
+ */
+const showHomeWindow = async (): Promise<void> => {
+  const mainWindow = await ensureMainWindow()
+  if (!mainWindow) {
+    return
+  }
+  showAndFocusWindow(mainWindow)
+  if (mainWindow.webContents.isDestroyed() || mainWindow.webContents.isCrashed()) {
+    return
+  }
+  mainWindow.webContents.send(APP_ICON_SHOW_HOME_CHANNEL)
 }
 
 /**
@@ -131,10 +153,11 @@ const buildPlaybackMenuTemplate = (
 ]
 
 /**
- * Bind the live tray so menu refreshes can replace its context menu.
+ * Return the latest tray menu so a right-click can open it without stealing the left click.
+ * setContextMenu makes macOS open that menu on every click, including a single left click.
  */
-export function bindTrayMenuApplier(applier: ((menu: Menu) => void) | null): void {
-  applyTrayMenu = applier
+export function getTrayContextMenu(): Menu | null {
+  return trayContextMenu
 }
 
 /**
@@ -144,39 +167,34 @@ export function refreshAppIconMenus(): void {
   const copy = loadAppIconMenuCopy()
   const playbackItems = buildPlaybackMenuTemplate(copy, menuState)
   applyDockMenu(Menu.buildFromTemplate(playbackItems))
-  applyTrayMenu?.(
-    Menu.buildFromTemplate([
-      ...playbackItems,
-      { type: 'separator' },
-      {
-        click: () => {
-          const mainWindow = findMainWindow()
-          if (mainWindow) {
-            showAndFocusWindow(mainWindow)
-          }
-        },
-        label: copy.showHome
+  trayContextMenu = Menu.buildFromTemplate([
+    ...playbackItems,
+    { type: 'separator' },
+    {
+      click: () => {
+        void showHomeWindow()
       },
-      {
-        click: async () => {
-          const mainWindow = await ensureMainWindow()
-          if (!mainWindow) {
-            return
-          }
-          showAndFocusWindow(mainWindow)
-          mainWindow.webContents.openDevTools()
-        },
-        label: copy.openDevTools
+      label: copy.showHome
+    },
+    {
+      click: async () => {
+        const mainWindow = await ensureMainWindow()
+        if (!mainWindow) {
+          return
+        }
+        showAndFocusWindow(mainWindow)
+        mainWindow.webContents.openDevTools()
       },
-      { type: 'separator' },
-      {
-        click: () => {
-          app.quit()
-        },
-        label: copy.quit
-      }
-    ])
-  )
+      label: copy.openDevTools
+    },
+    { type: 'separator' },
+    {
+      click: () => {
+        app.quit()
+      },
+      label: copy.quit
+    }
+  ])
 }
 
 /**

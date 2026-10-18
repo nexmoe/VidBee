@@ -1,0 +1,140 @@
+/* Keep the diagram and its controls on one quiet, theme-aware surface. */
+@media (prefers-reduced-motion: reduce) {
+  [data-streamdown="mermaid"] [role="application"] {
+    transition: none;
+  }
+}
+
+div[data-streamdown="mermaid-block"] {
+  --mermaid-control-width: 2rem;
+  --mermaid-control-height: 1.75rem;
+  min-width: 0;
+  gap: 0.5rem;
+  border: 0;
+  border-radius: 0.75rem;
+  background: var(--surface-1);
+  padding: 0.75rem 1rem;
+}
+
+div[data-streamdown="mermaid-block"] > div:first-child {
+  height: var(--mermaid-control-height);
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+}
+
+div[data-streamdown="mermaid-block"] > div:first-child > span {
+  margin: 0;
+}
+
+div[data-streamdown="mermaid-block"]
+  > div:has(> [data-streamdown="mermaid-block-actions"]) {
+  position: absolute;
+  inset-block-start: 0.75rem;
+  inset-inline-end: 1rem;
+  height: var(--mermaid-control-height);
+  margin: 0;
+}
+
+[data-streamdown="mermaid-block-actions"] {
+  gap: 0.125rem;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  backdrop-filter: none;
+}
+
+[data-streamdown="mermaid-block-actions"] > button,
+[data-streamdown="mermaid-block-actions"] > div > button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--mermaid-control-width);
+  height: var(--mermaid-control-height);
+  border-radius: 0.25rem;
+  padding: 0.25rem 0.375rem;
+}
+
+[data-streamdown="mermaid-block-actions"] > button:hover,
+[data-streamdown="mermaid-block-actions"] > div > button:hover {
+  background: var(--hover);
+}
+
+div[data-streamdown="mermaid-block"] > div:last-child {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+[data-streamdown="mermaid-block"] [data-streamdown="mermaid"] > div {
+  min-height: 14rem;
+  justify-content: center;
+}
+
+[data-streamdown="mermaid-block"]
+  [data-streamdown="mermaid"]
+  [role="application"] {
+  flex: none;
+  padding: 0.75rem 2.75rem;
+}
+
+[data-streamdown="mermaid-block"] [data-streamdown="mermaid"] [role="img"] {
+  min-width: 0;
+  width: 100%;
+}
+
+/* Position the existing zoom tools independently of the SVG's dimensions. */
+[data-streamdown="mermaid-block"]
+  [data-streamdown="mermaid"]
+  > div
+  > div:has(> button[title="Zoom in"]) {
+  inset-block-start: auto;
+  inset-block-end: 0.5rem;
+  inset-inline-start: 0;
+  inset-inline-end: auto;
+  gap: 0;
+  border-color: color-mix(in oklab, var(--foreground) 14%, transparent);
+  border-radius: 0.375rem;
+  background: var(--surface-1);
+  padding: 0;
+  backdrop-filter: none;
+}
+
+[data-streamdown="mermaid-block"] [data-streamdown="mermaid"] button {
+  width: var(--mermaid-control-width);
+  height: var(--mermaid-control-height);
+  border-radius: 0.25rem;
+  padding: 0.25rem 0.375rem;
+  color: var(--muted-foreground);
+}
+
+[data-streamdown="mermaid-block"] [data-streamdown="mermaid"] button:hover {
+  background: var(--hover);
+  color: var(--foreground);
+}
+
+[data-streamdown="mermaid-block"] [data-streamdown="mermaid"] button svg {
+  stroke-width: 1.5;
+}
+
+[data-streamdown="mermaid-block"] .pele {
+  --pele-bg: var(--surface-1);
+  --pele-surface: color-mix(in oklab, var(--foreground) 5%, var(--surface-1));
+  --pele-surface-alt: color-mix(
+    in oklab,
+    var(--foreground) 8%,
+    var(--surface-1)
+  );
+  --pele-border: color-mix(in oklab, var(--foreground) 20%, var(--surface-1));
+}
+
+@media (width < 640px) {
+  [data-streamdown="mermaid-block"] [data-streamdown="mermaid"] > div {
+    min-height: 12rem;
+  }
+
+  [data-streamdown="mermaid-block"]
+    [data-streamdown="mermaid"]
+    [role="application"] {
+    padding: 0.75rem 1.5rem;
+  }
+}

@@ -1,8 +1,25 @@
-import { BookOpen, Bug, Github } from 'lucide-react'
+import { BookOpen, Copy, Download, Github, Mail } from 'lucide-react'
 import { type MouseEvent, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import {
+  buildFeedbackMail,
+  buildFeedbackReport,
+  FEEDBACK_REPORT_FILENAME,
+  type FeedbackDiagnostics
+} from '../../lib/feedback-diagnostics'
 import { Button, type ButtonProps } from './button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from './dialog'
+import { Textarea } from './textarea'
+
+export type { FeedbackAppInfo } from '../../lib/feedback-diagnostics'
 
 export const DOWNLOAD_FEEDBACK_ISSUE_TITLE = '[Bug]: Download error report'
 
@@ -14,9 +31,11 @@ const FEEDBACK_COMMAND_LABEL = 'yt-dlp command'
 const FEEDBACK_MAX_GITHUB_URL_LENGTH = 7000
 const FAQ_URL = 'https://vidbee.org/docs/faq/'
 
+/** Normalize an error for feedback links. */
 const normalizeErrorText = (value?: string | null): string =>
   value ? value.replace(/\s+/g, ' ').trim() : ''
 
+/** Format the diagnostic snippet for the GitHub issue template. */
 const buildIssueLogs = (
   errorText: string,
   sourceUrl: string | undefined,
@@ -41,15 +60,14 @@ interface FeedbackLinkButtonsProps {
   sourceUrl?: string | null
   issueTitle?: string
   includeAppInfo?: boolean
-  appInfo?: {
-    appVersion?: string | null
-    osVersion?: string | null
-  }
+  appInfo?: FeedbackDiagnostics['appInfo']
+  task?: FeedbackDiagnostics['task']
+  stage?: FeedbackDiagnostics['stage']
+  ytDlpLog?: string | null
   buttonVariant?: ButtonProps['variant']
   buttonSize?: ButtonProps['size']
   buttonClassName?: string
   iconClassName?: string
-  onGlitchTipFeedback?: (event: MouseEvent<HTMLButtonElement>) => Promise<void> | void
   onLinkClick?: (event: MouseEvent<HTMLAnchorElement>) => void
   ytDlpCommand?: string
   useSimpleGithubUrl?: boolean
@@ -57,27 +75,46 @@ interface FeedbackLinkButtonsProps {
   showGroupSeparator?: boolean
 }
 
+/** Render feedback and help links with the available diagnostic context. */
 export const FeedbackLinkButtons = ({
   error,
   sourceUrl,
   issueTitle = '[Bug]: ',
   includeAppInfo = false,
   appInfo,
+  task,
+  stage,
+  ytDlpLog,
   buttonVariant = 'outline',
   buttonSize = 'sm',
   buttonClassName,
   iconClassName,
-  onGlitchTipFeedback,
   onLinkClick,
   ytDlpCommand,
   useSimpleGithubUrl = false,
   wrapperClassName = 'flex flex-wrap gap-2',
   showGroupSeparator = false
 }: FeedbackLinkButtonsProps) => {
-  const { t } = useTranslation()
-  const [isSubmittingToGlitchTip, setIsSubmittingToGlitchTip] = useState(false)
+  const { t, i18n } = useTranslation()
+  const [reportOpen, setReportOpen] = useState(false)
   const appVersion = appInfo?.appVersion ?? ''
   const osVersion = appInfo?.osVersion ?? ''
+  const report = useMemo(
+    () =>
+      buildFeedbackReport({
+        appInfo,
+        task,
+        stage,
+        error,
+        sourceUrl,
+        ytDlpCommand,
+        ytDlpLog,
+        language: i18n.language,
+        userAgent: typeof navigator === 'undefined' ? undefined : navigator.userAgent
+      }),
+    [appInfo, task, stage, error, sourceUrl, ytDlpCommand, ytDlpLog, i18n.language]
+  )
+  const email = useMemo(() => buildFeedbackMail(report), [report])
 
   const links = useMemo(() => {
     const compactError = normalizeErrorText(error)
@@ -124,6 +161,12 @@ export const FeedbackLinkButtons = ({
         label: t('about.resources.githubIssues'),
         href: githubUrl,
         group: 'feedback'
+      },
+      {
+        icon: Mail,
+        label: t('download.feedback.email'),
+        href: email.href,
+        group: 'feedback'
       }
     ]
 
@@ -139,6 +182,7 @@ export const FeedbackLinkButtons = ({
     return feedbackLinks
   }, [
     appVersion,
+    email.href,
     error,
     includeAppInfo,
     issueTitle,
@@ -149,28 +193,42 @@ export const FeedbackLinkButtons = ({
     useSimpleGithubUrl
   ])
 
+  /** Warn about oversized GitHub links and preserve caller click handling. */
   const handleLinkClick = (event: MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (href.startsWith('mailto:')) {
+      event.preventDefault()
+      setReportOpen(true)
+    }
     if (href.startsWith('https://github.com') && href.length >= FEEDBACK_MAX_GITHUB_URL_LENGTH) {
       toast.info(t('download.feedback.githubUrlTooLong'))
     }
     onLinkClick?.(event)
   }
 
-  const feedbackLinks = links.filter((link) => link.group === 'feedback')
-  const utilityLinks = links.filter((link) => link.group === 'utility')
-
-  const handleGlitchTipFeedback = async (event: MouseEvent<HTMLButtonElement>) => {
-    if (!(onGlitchTipFeedback && !isSubmittingToGlitchTip)) {
-      return
-    }
-
-    setIsSubmittingToGlitchTip(true)
+  /** Copy the complete report rather than the shortened mail link body. */
+  const handleCopyReport = async (): Promise<void> => {
     try {
-      await onGlitchTipFeedback(event)
-    } finally {
-      setIsSubmittingToGlitchTip(false)
+      await navigator.clipboard.writeText(report)
+      toast.success(t('error.copySuccess'))
+    } catch {
+      toast.error(t('error.copyFailed'))
     }
   }
+
+  /** Export every diagnostic line as a text attachment using the platform download handler. */
+  const handleDownloadReport = (): void => {
+    const url = URL.createObjectURL(new Blob([report], { type: 'text/plain;charset=utf-8' }))
+    const link = document.createElement('a')
+    link.href = url
+    link.download = FEEDBACK_REPORT_FILENAME
+    document.body.append(link)
+    link.click()
+    link.remove()
+    setTimeout(() => URL.revokeObjectURL(url), 60_000)
+  }
+
+  const feedbackLinks = links.filter((link) => link.group === 'feedback')
+  const utilityLinks = links.filter((link) => link.group === 'utility')
 
   return (
     <div className={wrapperClassName}>
@@ -221,20 +279,42 @@ export const FeedbackLinkButtons = ({
           </Button>
         )
       })}
-      {onGlitchTipFeedback && (
-        <Button
-          className={buttonClassName}
-          disabled={isSubmittingToGlitchTip}
-          onClick={(event) => void handleGlitchTipFeedback(event)}
-          size={buttonSize}
-          variant="secondary"
-        >
-          <Bug className={iconClassName} />
-          {isSubmittingToGlitchTip
-            ? t('download.feedback.reportingNow')
-            : t('download.feedback.reportNow')}
-        </Button>
-      )}
+      <Dialog onOpenChange={setReportOpen} open={reportOpen}>
+        <DialogContent className="sm:max-w-2xl" onClick={(event) => event.stopPropagation()}>
+          <DialogHeader>
+            <DialogTitle>{t('download.feedback.diagnosticReport')}</DialogTitle>
+            <DialogDescription>
+              {t(
+                email.needsAttachment
+                  ? 'download.feedback.attachReportDescription'
+                  : 'download.feedback.reportDescription'
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            aria-label={t('download.feedback.diagnosticReport')}
+            className="h-72 resize-none overflow-auto font-mono [field-sizing:fixed]"
+            readOnly
+            value={report}
+          />
+          <DialogFooter className="flex-wrap gap-2">
+            <Button onClick={() => void handleCopyReport()} variant="outline">
+              <Copy className="h-4 w-4" />
+              {t('error.copyReport')}
+            </Button>
+            <Button onClick={handleDownloadReport} variant="outline">
+              <Download className="h-4 w-4" />
+              {t('download.feedback.downloadReport')}
+            </Button>
+            <Button asChild>
+              <a href={email.href} rel="noreferrer" target="_blank">
+                <Mail className="h-4 w-4" />
+                {t('download.feedback.openEmail')}
+              </a>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

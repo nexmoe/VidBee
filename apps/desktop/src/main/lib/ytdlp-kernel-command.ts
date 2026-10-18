@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process'
+import { backgroundChildSpawnOptions, lowerChildPriority } from '@vidbee/task-queue/process'
 import { createBoundedTextBuffer } from './bounded-output-buffer'
 import type {
   KernelCommandOptions,
@@ -22,8 +23,10 @@ export const runKernelCommand: KernelCommandRunner = (
     const child = spawn(executable, args, {
       env: { ...process.env, NO_COLOR: '1' },
       shell: false,
-      windowsHide: true
+      windowsHide: true,
+      ...backgroundChildSpawnOptions()
     })
+    lowerChildPriority(child.pid)
 
     const abort = (): void => {
       aborted = true

@@ -21,10 +21,11 @@ import {
 } from '@renderer/components/ui/select'
 import { Switch } from '@renderer/components/ui/switch'
 import { ipcEvents, ipcServices } from '@renderer/lib/ipc'
+import { cn } from '@renderer/lib/utils'
+import type { TranscriptSegmentView } from '@renderer/store/transcripts'
+import { buildAssDocument, buildSrtDocument } from '@shared/subtitle-export'
 import {
-  buildAssDocument,
   buildExportUnits,
-  buildSrtDocument,
   buildTranscriptExportFileName,
   buildTranscriptExportText,
   buildVideoSubtitleExportFileName,
@@ -32,9 +33,7 @@ import {
   type TranscriptExportGrouping,
   type TranscriptExportStyle,
   type TranscriptVideoEncode
-} from '@renderer/lib/transcript-export'
-import { cn } from '@renderer/lib/utils'
-import type { TranscriptSegmentView } from '@renderer/store/transcripts'
+} from '@shared/transcript-export'
 import { AlignLeft, Captions, Copy, FileText, Flame, Layers, List, Mic, Video } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'

@@ -6,6 +6,7 @@ import path from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
 import { buildDownloadArgs } from '@vidbee/downloader-core/yt-dlp-args'
 import type { Task } from '@vidbee/task-queue'
+import { lowerChildPriority } from '@vidbee/task-queue/process'
 import { app, nativeImage } from 'electron'
 import type { AgentArtifact } from '../../shared/agent-chat'
 import {
@@ -21,6 +22,8 @@ import { resolveTaskSourceFile } from './source-file'
 import { ytdlpManager } from './ytdlp-manager'
 
 const MAX_BYTES = 1_000_000_000
+/** How often a running agent media job checks its output directory size. */
+const MEDIA_BUDGET_POLL_MS = 2000
 let mediaBusy = false
 
 /** Restrict every generated file to an application-owned UUID directory. */
@@ -80,6 +83,7 @@ export async function runAgentMediaProcess(
       windowsHide: true,
       stdio: ['ignore', 'pipe', 'pipe']
     })
+    lowerChildPriority(child.pid)
     let output = ''
     let errorOutput = ''
     let failure: Error | undefined
@@ -131,7 +135,7 @@ export async function runAgentMediaProcess(
         .finally(() => {
           checking = false
         })
-    }, 250)
+    }, MEDIA_BUDGET_POLL_MS)
     /** Release timers and abort listeners when the child settles. */
     const cleanup = (): void => {
       clearTimeout(timeout)

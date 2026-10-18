@@ -25,6 +25,7 @@ export type SettingsTab =
   | 'prompts'
   | 'providers'
   | 'transcribe'
+  | 'mcp'
 
 export interface DesktopRouterContext {
   platform: string
@@ -46,7 +47,8 @@ const validateSettingsSearch = (search: Record<string, unknown>): { tab?: Settin
     tab === 'metadata' ||
     tab === 'prompts' ||
     tab === 'providers' ||
-    tab === 'transcribe'
+    tab === 'transcribe' ||
+    tab === 'mcp'
   ) {
     return { tab }
   }

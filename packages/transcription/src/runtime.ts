@@ -2,6 +2,7 @@ import { execFileSync, spawn } from 'node:child_process'
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { backgroundChildSpawnOptions, lowerChildPriority } from '@vidbee/task-queue/process'
 import type { AsrTierId } from './asr-tiers'
 import { atomicWriteJson } from './atomic-file'
 import {
@@ -286,14 +287,12 @@ export const probeWorkerProvider = (
 ): Promise<SherpaProviderProbeResult> => {
   const timeoutMs = input.timeoutMs ?? 120_000
   return new Promise((resolve) => {
-    const child = spawn(
-      input.execPath,
-      [...(input.execArgv ?? []), input.workerScript],
-      {
-        env: input.env,
-        stdio: ['pipe', 'pipe', 'pipe']
-      }
-    )
+    const child = spawn(input.execPath, [...(input.execArgv ?? []), input.workerScript], {
+      env: input.env,
+      stdio: ['pipe', 'pipe', 'pipe'],
+      ...backgroundChildSpawnOptions()
+    })
+    lowerChildPriority(child.pid)
     child.stdin?.on('error', () => {
       /* process error and close events own probe failure reporting */
     })

@@ -247,6 +247,15 @@ export const projectSubscriptionForRenderer = (sub: SubscriptionWithItems): Subs
   if (sub.namingTemplate !== undefined) {
     projected.namingTemplate = sub.namingTemplate
   }
+  if (sub.downloadType !== undefined) {
+    projected.downloadType = sub.downloadType
+  }
+  if (sub.downloadQuality !== undefined) {
+    projected.downloadQuality = sub.downloadQuality
+  }
+  if (sub.downloadContainer !== undefined) {
+    projected.downloadContainer = sub.downloadContainer
+  }
   return projected
 }
 

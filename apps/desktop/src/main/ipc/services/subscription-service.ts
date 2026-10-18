@@ -1,5 +1,6 @@
 import path from 'node:path'
 import { SUBSCRIPTION_DUPLICATE_FEED_ERROR } from '@vidbee/subscriptions-core'
+import type { SubscriptionDownloadPreferences } from '@vidbee/subscriptions-core/types'
 import { type IpcContext, IpcMethod, IpcService } from 'electron-ipc-decorator'
 import type {
   SubscriptionResolvedFeed,
@@ -16,7 +17,7 @@ import {
 } from '../../lib/subscriptions-host'
 import { settingsManager } from '../../settings'
 
-interface CreateSubscriptionOptions {
+interface CreateSubscriptionOptions extends SubscriptionDownloadPreferences {
   url: string
   keywords?: string[]
   tags?: string[]
@@ -58,6 +59,9 @@ class SubscriptionService extends IpcService {
         onlyDownloadLatest:
           options.onlyDownloadLatest ?? settings.subscriptionOnlyLatestDefault ?? true,
         autoDownload: options.autoDownload ?? true,
+        downloadType: options.downloadType,
+        downloadQuality: options.downloadQuality,
+        downloadContainer: options.downloadContainer,
         downloadDirectory: options.downloadDirectory || defaultDownloadDirectory,
         namingTemplate: sanitizeFilenameTemplate(
           options.namingTemplate || DEFAULT_SUBSCRIPTION_FILENAME_TEMPLATE

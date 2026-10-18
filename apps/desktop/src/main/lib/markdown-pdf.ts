@@ -54,7 +54,11 @@ export const PRINT_DOCUMENT_READY = `(async () => {
  * @param value Raw markdown or attribute text.
  */
 export const escapeHtml = (value: string): string =>
-  value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+  value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
 
 /**
  * Keep http(s), mailto, in-page, and embedded raster images; drop javascript and opaque artifact URLs.
@@ -89,7 +93,7 @@ export const renderMarkdownInline = (text: string): string => {
     if (!href) {
       return alt ? `<em>${alt}</em>` : ''
     }
-    return `<img alt="${alt}" src="${escapeHtml(href)}" />`
+    return `<img alt="${alt}" src="${href}" />`
   })
   html = html.replace(/\[([^\]]+)]\(([^)\s]+)\)/g, (_match, label: string, url: string) => {
     const href = safeHref(url)
@@ -355,7 +359,7 @@ export const markdownToPrintableHtml = (
   const attributedBody = `${openingHeading}${attribution}${thinkingHtml}${content.slice(
     openingHeading.length
   )}`
-  return `<!DOCTYPE html><html><head><meta charset="utf-8" /><title>${escapeHtml(pageTitle)}</title><style>${PRINT_STYLES}</style></head><body><article>${attributedBody}</article></body></html>`
+  return `<!DOCTYPE html><html><head><meta charset="utf-8" /><meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data: https: http:; style-src 'unsafe-inline'" /><title>${escapeHtml(pageTitle)}</title><style>${PRINT_STYLES}</style></head><body><article>${attributedBody}</article></body></html>`
 }
 
 /**

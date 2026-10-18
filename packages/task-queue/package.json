@@ -7,6 +7,7 @@
     ".": "./src/index.ts",
     "./contract": "./src/contract.ts",
     "./types": "./src/types.ts",
+    "./schemas": "./src/schemas.ts",
     "./fsm": "./src/fsm/index.ts",
     "./classifier": "./src/classifier/index.ts",
     "./scheduler": "./src/scheduler/index.ts",

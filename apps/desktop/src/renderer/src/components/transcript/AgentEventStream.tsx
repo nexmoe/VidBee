@@ -7,19 +7,17 @@ import {
   type AgentChatRun,
   agentThinkingElapsedMs
 } from '@shared/agent-chat'
-import { classifyAiPromptError } from '@shared/ai-run'
 import {
   ThinkingStep,
   ThinkingStepImage,
   ThinkingStepSource,
   ThinkingStepSources,
   ThinkingSteps,
-  ThinkingStepsContent,
   ThinkingStepsHeader
 } from '@vidbee/ui/components/ui/thinking-steps'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { TranscriptPromptGuidance } from './TranscriptPromptGuidance'
+import { AgentThinkingContent } from './AgentThinkingContent'
 
 const toolIcons = {
   get_video_info: 'monitor',
@@ -34,7 +32,7 @@ const toolIcons = {
   read_artifact: 'image'
 } as const
 
-/** Preserve reasoning between tools without mounting thousands of animated paragraph rows. */
+/** Keep one stable row per reasoning block as streamed paragraphs grow. */
 export function eventRows(message: AgentChatMessage, run?: AgentChatRun): AgentActivity[] {
   const activity = run?.activity?.length
     ? run.activity
@@ -54,11 +52,8 @@ export function eventRows(message: AgentChatMessage, run?: AgentChatRun): AgentA
     if (event.kind !== 'thinking') {
       return [event]
     }
-    const paragraphs = event.text.split(/\n\s*\n/)
-    const rows = paragraphs.length > 64 ? [event.text] : paragraphs
-    return rows
-      .map((text, index) => ({ ...event, id: `${event.id}:${index}`, text: text.trim() }))
-      .filter((event) => event.text)
+    const text = event.text.trim()
+    return text ? [{ ...event, id: `${event.id}:0`, text }] : []
   })
 }
 
@@ -178,14 +173,12 @@ export function AgentEventStream({
   run,
   artifacts,
   onSeek,
-  onRetry,
   onDecideTool
 }: {
   message: AgentChatMessage
   run?: AgentChatRun
   artifacts: AgentArtifact[]
   onSeek?: (seconds: number) => void
-  onRetry: () => void
   onDecideTool?: (input: { toolCallId: string; approved: boolean; remember: boolean }) => void
 }) {
   const { t } = useTranslation()
@@ -240,7 +233,7 @@ export function AgentEventStream({
       open={open}
     >
       <ThinkingStepsHeader icon="brain">{header}</ThinkingStepsHeader>
-      <ThinkingStepsContent>
+      <AgentThinkingContent open={open}>
         {rows.map((event, index) => {
           const tool =
             event.kind === 'tool' ? run?.tools.find((item) => item.id === event.toolId) : undefined
@@ -350,16 +343,7 @@ export function AgentEventStream({
             showIcon={false}
           />
         ) : null}
-        {failed && run?.error ? (
-          <ThinkingStep icon="x" isLast label={t('agentChat.eventStatus.error')}>
-            <TranscriptPromptGuidance
-              error={run.error}
-              errorCode={classifyAiPromptError(run.error)}
-              onRetry={onRetry}
-              usingCloud={run.model === 'vidbee-cloud'}
-            />
-          </ThinkingStep>
-        ) : null}
+        {failed ? <ThinkingStep icon="x" isLast label={t('agentChat.eventStatus.error')} /> : null}
         {stopped ? (
           <ThinkingStep
             icon="pause"
@@ -369,7 +353,7 @@ export function AgentEventStream({
             )}
           />
         ) : null}
-      </ThinkingStepsContent>
+      </AgentThinkingContent>
     </ThinkingSteps>
   )
 }

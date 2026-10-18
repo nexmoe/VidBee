@@ -1,3 +1,4 @@
+import type { DownloadCookieSource } from '@vidbee/task-queue'
 import type { FilenameStyle } from './filename-style'
 import type { OneClickContainerOption } from './format-preferences'
 
@@ -68,6 +69,7 @@ export interface DownloadTask {
   speed?: string
   ytDlpCommand?: string
   ytDlpLog?: string
+  cookieSources?: DownloadCookieSource[]
   downloadPath?: string
   savedFileName?: string
   description?: string
@@ -96,6 +98,8 @@ export interface DownloadRuntimeSettings {
   downloadPath?: string
   browserForCookies?: string
   cookiesPath?: string
+  /** Host-only provenance for the injected cookie file; never accepted from API settings. */
+  cookieSource?: DownloadCookieSource
   proxy?: string
   configPath?: string
   downloadSubtitles?: boolean

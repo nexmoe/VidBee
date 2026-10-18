@@ -24,9 +24,16 @@ interface ListMarqueePointer {
   startClientY: number
 }
 
+interface ListMarqueeGeometryRow {
+  id: string
+  rect: { bottom: number; left: number; right: number; top: number }
+}
+
 interface UseListMarqueeSelectionOptions {
   containerRef: RefObject<HTMLElement | null>
   enabled?: boolean
+  /** When set, hit-testing uses these boxes instead of mounted DOM nodes. */
+  geometryRows?: () => readonly ListMarqueeGeometryRow[]
   itemAttr?: string
   selectableAttr?: string
   selectedIds: ReadonlySet<string>
@@ -40,6 +47,7 @@ interface UseListMarqueeSelectionOptions {
 export const useListMarqueeSelection = ({
   containerRef,
   enabled = true,
+  geometryRows,
   itemAttr = 'data-download-id',
   selectableAttr = 'data-download-selectable',
   selectedIds,
@@ -50,8 +58,10 @@ export const useListMarqueeSelection = ({
   const holdTimerRef = useRef<number | null>(null)
   const selectedIdsRef = useRef(selectedIds)
   const onSelectIdsRef = useRef(onSelectIds)
+  const geometryRowsRef = useRef(geometryRows)
   selectedIdsRef.current = selectedIds
   onSelectIdsRef.current = onSelectIds
+  geometryRowsRef.current = geometryRows
 
   /**
    * Cancel a pending long-press timer.
@@ -71,6 +81,10 @@ export const useListMarqueeSelection = ({
     id: string
     rect: { bottom: number; left: number; right: number; top: number }
   }> => {
+    const provided = geometryRowsRef.current?.()
+    if (provided) {
+      return [...provided]
+    }
     const container = containerRef.current
     if (!container) {
       return []

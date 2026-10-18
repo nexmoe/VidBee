@@ -92,8 +92,8 @@
   align-items: center;
   justify-content: center;
   padding: 0;
-  color: #fff;
-  background: rgb(0 0 0 / 80%);
+  color: var(--primary-foreground);
+  background: var(--primary);
   border: 0;
   border-radius: 9999px;
   box-shadow: none;
@@ -105,8 +105,7 @@
 }
 
 .clipii-capture-submit:disabled {
-  background: rgb(0 0 0 / 30%);
-  opacity: 1;
+  opacity: 0.5;
 }
 
 .clipii-capture-submit svg {
@@ -175,15 +174,6 @@
 .dark .clipii-capture-menu[data-state="open"] {
   color: rgb(255 255 255 / 90%);
   background: rgb(255 255 255 / 8%);
-}
-
-.dark .clipii-capture-submit {
-  color: #282a30;
-  background: rgb(255 255 255 / 85%);
-}
-
-.dark .clipii-capture-submit:disabled {
-  background: rgb(255 255 255 / 30%);
 }
 
 @media (prefers-reduced-transparency: reduce) {

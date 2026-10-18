@@ -20,6 +20,13 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui
 import { DesktopChromeContext, useTitleBar } from '@renderer/desktop-chrome'
 import { useCachedThumbnail } from '@renderer/hooks/use-cached-thumbnail'
 import { ipcEvents, ipcServices } from '@renderer/lib/ipc'
+import {
+  bumpDetailRequest,
+  detailVersionMoved,
+  mergeTranscriptDetail,
+  takeDetailResponse,
+  transcriptBodyKey
+} from '@renderer/lib/transcript-detail-merge'
 import { segmentAtTime } from '@renderer/lib/transcript-index'
 import {
   isAsrTaskInFlight,
@@ -48,6 +55,7 @@ import {
   releaseIdlePlaybackAtom,
   takePlaybackSessionAtom
 } from '@renderer/store/transcript-playback'
+import { seedPlaybackCuesAtom } from '@renderer/store/transcript-playback-cues'
 import {
   type TranscriptSegmentView,
   type TranscriptSnapshotView,
@@ -123,6 +131,7 @@ const downloadFieldsForInfo = (
     audioCodec: format?.acodec && format.acodec !== 'none' ? format.acodec : null,
     codec: getCodecLabel(download) ?? null,
     completedAt: download.completedAt ?? null,
+    cookieSources: download.cookieSources ?? null,
     description: download.description ?? null,
     downloadPath: download.downloadPath ?? null,
     downloadedAt: download.createdAt ?? download.downloadedAt ?? null,
@@ -412,6 +421,8 @@ export function TranscriptPage() {
   const isWide = useWideTranscriptLayout()
   const records = useAtomValue(downloadRecordsAtom)
   const upsert = useSetAtom(upsertTranscriptAtom)
+  const detailRequestRef = useRef(0)
+  const detailExpectRef = useRef({ identity: null as string | null, updatedAt: 0 })
   const [snapshot, setSnapshot] = useState<TranscriptSnapshotView | null>(null)
   const [holdingAsrIdle, setHoldingAsrIdle] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
@@ -468,7 +479,22 @@ export function TranscriptPage() {
     )
   }, [download, t])
 
+  /**
+   * Commit a full snapshot and ignore any detail fetch still in flight.
+   *
+   * @param next RPC snapshot that includes caption text, or `record: null`.
+   */
+  const applyLoaded = useCallback(
+    (next: TranscriptSnapshotView) => {
+      detailRequestRef.current = bumpDetailRequest(detailRequestRef.current)
+      setSnapshot((current) => mergeTranscriptDetail(current, next))
+      upsert(next)
+    },
+    [upsert]
+  )
+
   const refresh = useCallback(async () => {
+    // Opening the page still imports sidecars. getDetail only refreshes a missing or stale body.
     let next = (await ipcServices.transcript.getForDownload(downloadId)) as TranscriptSnapshotView
     if (shouldAutoStartAsr(next)) {
       try {
@@ -477,17 +503,25 @@ export function TranscriptPage() {
         toast.error(error instanceof Error ? error.message : t('transcript.retryFailed'))
       }
     }
-    if (isListedTranscript(next.listState)) {
-      hadListedTranscript.current = true
-    }
-    setSnapshot(next)
-    upsert(next)
-  }, [downloadId, t, upsert])
+    return next
+  }, [downloadId, t])
 
   useEffect(() => {
+    let active = true
     hadListedTranscript.current = false
     setHoldingAsrIdle(false)
+    setSnapshot(null)
     void refresh()
+      .then((next) => {
+        if (!active) {
+          return
+        }
+        if (isListedTranscript(next.listState)) {
+          hadListedTranscript.current = true
+        }
+        applyLoaded(next)
+      })
+      .catch(() => undefined)
     const offUpdated = ipcEvents.on('transcript:updated', (...args: unknown[]) => {
       const next = args[0] as TranscriptSnapshotView
       if (next?.downloadTaskId !== downloadId) {
@@ -496,7 +530,12 @@ export function TranscriptPage() {
       if (isListedTranscript(next.listState)) {
         hadListedTranscript.current = true
       }
-      setSnapshot(next)
+      setSnapshot((current) => {
+        if (detailVersionMoved(current, next)) {
+          detailRequestRef.current = bumpDetailRequest(detailRequestRef.current)
+        }
+        return mergeTranscriptDetail(current, next)
+      })
       upsert(next)
       if (hadListedTranscript.current && next.listState === 'none') {
         void navigate({ to: '/' })
@@ -513,10 +552,80 @@ export function TranscriptPage() {
       setPartials(toPartialSegmentViews(payload.segments))
     })
     return () => {
+      active = false
+      detailRequestRef.current = bumpDetailRequest(detailRequestRef.current)
       ipcEvents.removeListener('transcript:updated', offUpdated as (...args: unknown[]) => void)
       ipcEvents.removeListener('transcript:partial', offPartial as (...args: unknown[]) => void)
     }
-  }, [downloadId, navigate, refresh, upsert])
+  }, [applyLoaded, downloadId, navigate, refresh, upsert])
+
+  const detailFetchKey = snapshot?.record
+    ? [
+        snapshot.record.id,
+        snapshot.record.sourceKind ?? '',
+        snapshot.record.language ?? '',
+        snapshot.record.updatedAt ?? 0,
+        snapshot.record.segmentsLoaded ? 1 : 0,
+        snapshot.bodyStale ? 1 : 0,
+        snapshot.bodyUpdatedAt ?? '',
+        snapshot.sourceKind ?? ''
+      ].join('|')
+    : ''
+  const needsDetailBody = Boolean(
+    snapshot?.record && (snapshot.record.segmentsLoaded !== true || snapshot.bodyStale === true)
+  )
+  detailExpectRef.current = {
+    identity: transcriptBodyKey(snapshot),
+    updatedAt: snapshot?.record?.updatedAt ?? 0
+  }
+
+  useEffect(() => {
+    if (!(needsDetailBody && detailFetchKey)) {
+      return
+    }
+    const requestId = bumpDetailRequest(detailRequestRef.current)
+    detailRequestRef.current = requestId
+    const expected = detailExpectRef.current
+    let cancelled = false
+    void ipcServices.transcript
+      .getDetail(downloadId)
+      .then((detail) => {
+        if (cancelled) {
+          return
+        }
+        const next = detail as TranscriptSnapshotView
+        let applied = false
+        setSnapshot((current) => {
+          const taken = takeDetailResponse(
+            detailRequestRef.current,
+            requestId,
+            current,
+            next,
+            expected
+          )
+          applied = !taken.stale
+          return taken.stale ? current : taken.snapshot
+        })
+        if (applied) {
+          upsert(next)
+        }
+      })
+      .catch(() => {
+        // Keep the body already on screen. A later list revision starts another read.
+      })
+    return () => {
+      cancelled = true
+      detailRequestRef.current = bumpDetailRequest(detailRequestRef.current)
+    }
+  }, [detailFetchKey, downloadId, needsDetailBody, upsert])
+
+  const seedCues = useSetAtom(seedPlaybackCuesAtom)
+  useEffect(() => {
+    if (session?.downloadId !== downloadId || !snapshot || snapshot.bodyStale === true) {
+      return
+    }
+    seedCues(snapshot)
+  }, [downloadId, seedCues, session?.downloadId, snapshot])
 
   useEffect(() => {
     if (!(snapshot?.listState && isInProgressTranscript(snapshot.listState))) {
@@ -639,31 +748,32 @@ export function TranscriptPage() {
   }, [sessionInput, takeSession])
 
   const handleRetry = useCallback(async () => {
+    detailRequestRef.current = bumpDetailRequest(detailRequestRef.current)
     try {
       const next = (await ipcServices.transcript.retry(downloadId)) as TranscriptSnapshotView
-      setSnapshot(next)
+      applyLoaded(next)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t('transcript.retryFailed'))
     }
-  }, [downloadId, t])
+  }, [applyLoaded, downloadId, t])
 
   /**
    * Start local ASR from the idle empty state or the no-speech "transcribe anyway" action.
    */
   const handleForce = useCallback(async () => {
     setHoldingAsrIdle(false)
+    detailRequestRef.current = bumpDetailRequest(detailRequestRef.current)
     try {
       const next = (await ipcServices.transcript.start({
         downloadId,
         force: true
       })) as TranscriptSnapshotView
-      setSnapshot(next)
-      upsert(next)
+      applyLoaded(next)
     } catch (error) {
       setHoldingAsrIdle(true)
       toast.error(error instanceof Error ? error.message : t('transcript.retryFailed'))
     }
-  }, [downloadId, t, upsert])
+  }, [applyLoaded, downloadId, t])
 
   /**
    * Switch captions language, or hold the AI transcript idle empty state until the user starts ASR.
@@ -673,6 +783,7 @@ export function TranscriptPage() {
   const handleSelectSource = useCallback(
     async (key: string) => {
       const asrAlreadyInFlight = isAsrTaskInFlight(snapshot ?? {})
+      detailRequestRef.current = bumpDetailRequest(detailRequestRef.current)
       try {
         const next = (await ipcServices.transcript.selectSource({
           downloadId,
@@ -680,8 +791,7 @@ export function TranscriptPage() {
         })) as TranscriptSnapshotView
         if (key !== 'asr') {
           setHoldingAsrIdle(false)
-          setSnapshot(next)
-          upsert(next)
+          applyLoaded(next)
           return
         }
         const asrReady =
@@ -690,40 +800,37 @@ export function TranscriptPage() {
           !isInProgressTranscript(next.listState)
         if (asrReady || asrAlreadyInFlight) {
           setHoldingAsrIdle(false)
-          setSnapshot(next)
-          upsert(next)
+          applyLoaded(next)
           return
         }
         if (isAsrTaskInFlight(next)) {
           const cancelled = (await ipcServices.transcript.cancel(
             downloadId
           )) as TranscriptSnapshotView
-          setSnapshot(cancelled)
-          upsert(cancelled)
+          applyLoaded(cancelled)
         } else {
-          setSnapshot(next)
-          upsert(next)
+          applyLoaded(next)
         }
         setHoldingAsrIdle(true)
       } catch (error) {
         toast.error(error instanceof Error ? error.message : t('transcript.retryFailed'))
       }
     },
-    [downloadId, snapshot, t, upsert]
+    [applyLoaded, downloadId, snapshot, t]
   )
 
   /**
    * Stop the in-flight local ASR run and return to captions when no AI transcript exists.
    */
   const handleCancel = useCallback(async () => {
+    detailRequestRef.current = bumpDetailRequest(detailRequestRef.current)
     try {
       const next = (await ipcServices.transcript.cancel(downloadId)) as TranscriptSnapshotView
-      setSnapshot(next)
-      upsert(next)
+      applyLoaded(next)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t('transcript.stopFailed'))
     }
-  }, [downloadId, t, upsert])
+  }, [applyLoaded, downloadId, t])
 
   const handleBack = useCallback(() => {
     void navigate({ to: '/' })
@@ -978,7 +1085,7 @@ export function TranscriptPage() {
         currentTier={snapshot?.asrTier}
         downloadId={downloadId}
         onOpenChange={setUpgradeOpen}
-        onUpgraded={(next) => setSnapshot(next)}
+        onUpgraded={(next) => applyLoaded(next)}
         open={upgradeOpen}
       />
       <SpeakerCountDialog
@@ -986,8 +1093,7 @@ export function TranscriptPage() {
         downloadId={downloadId}
         onOpenChange={setSpeakerCountOpen}
         onUpdated={(next) => {
-          setSnapshot(next)
-          upsert(next)
+          applyLoaded(next)
         }}
         open={speakerCountOpen}
       />

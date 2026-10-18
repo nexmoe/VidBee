@@ -52,7 +52,6 @@ import {
 } from '../../../../shared/utils/download-file'
 import { useCachedThumbnail } from '../../hooks/use-cached-thumbnail'
 import { getDownloadErrorGuidance } from '../../lib/download-error-guidance'
-import { sendGlitchTipFeedback } from '../../lib/glitchtip-feedback'
 import { ipcServices } from '../../lib/ipc'
 import { logger } from '../../lib/logger'
 import { openContextMenuFromClick } from '../../lib/open-context-menu'
@@ -661,10 +660,13 @@ export function DownloadItem({
     }
   }, [logAutoScroll, logContent, sheetOpen])
 
-  // Lazily load the persisted yt-dlp log when opening a terminal item that has
-  // no live log (e.g. a failed download reopened from history).
+  // Load persisted logs for failed rows before feedback opens, or when viewing terminal logs.
   useEffect(() => {
-    if (!(sheetOpen && isTerminalStatus) || liveLog.trim().length > 0 || savedLog !== null) {
+    if (
+      !((sheetOpen || download.status === 'error') && isTerminalStatus) ||
+      liveLog.trim().length > 0 ||
+      savedLog !== null
+    ) {
       return
     }
     let cancelled = false
@@ -683,7 +685,7 @@ export function DownloadItem({
     return () => {
       cancelled = true
     }
-  }, [sheetOpen, isTerminalStatus, liveLog, savedLog, download.id])
+  }, [sheetOpen, isTerminalStatus, liveLog, savedLog, download.id, download.status])
 
   const handleLogScroll = () => {
     const container = logContainerRef.current
@@ -818,6 +820,7 @@ export function DownloadItem({
             {/* Thumbnail */}
             <div
               className="pointer-events-none relative z-20 aspect-video h-14 shrink-0 overflow-hidden rounded-lg border border-border/60 bg-background/60"
+              data-download-transfer-cover=""
               ref={coverRef}
             >
               {selectionEnabled && (
@@ -1099,22 +1102,14 @@ export function DownloadItem({
                       iconClassName="h-3 w-3"
                       includeAppInfo
                       issueTitle={DOWNLOAD_FEEDBACK_ISSUE_TITLE}
-                      onGlitchTipFeedback={(event) => {
-                        event.stopPropagation()
-                        return sendGlitchTipFeedback({
-                          associatedEventId: download.glitchTipEventId,
-                          appInfo,
-                          error: download.error,
-                          sourceUrl: download.url,
-                          ytDlpCommand: download.ytDlpCommand,
-                          ytDlpLog: download.ytDlpLog
-                        })
-                      }}
                       onLinkClick={(event) => event.stopPropagation()}
                       showGroupSeparator={canShowSheet}
                       sourceUrl={download.url}
+                      stage="download"
+                      task={download}
                       wrapperClassName="flex flex-wrap items-center gap-1.5"
                       ytDlpCommand={download.ytDlpCommand}
+                      ytDlpLog={logContent}
                     />
                   </div>
                 </div>

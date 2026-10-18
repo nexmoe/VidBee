@@ -11,9 +11,37 @@ import {
   readPidStartTime,
   sanitizeOutput
 } from '@vidbee/task-queue'
+import { backgroundChildSpawnOptions, lowerChildPriority } from '@vidbee/task-queue/process'
 import { buildMediaTransformArgs, mediaTransformSchema } from '../../shared/media-transform'
 import { ffmpegManager } from './ffmpeg-manager'
+import { createKeyedCoalescer, PROGRESS_IPC_INTERVAL_MS } from './ipc-coalescer'
 import { probeLocalMedia } from './media-probe'
+
+/**
+ * Read the last `out_time_us=` integer from an ffmpeg progress buffer.
+ *
+ * @param buffer Rolling ffmpeg stdout text.
+ */
+export function latestOutTimeUs(buffer: string): number | null {
+  const marker = 'out_time_us='
+  const at = buffer.lastIndexOf(marker)
+  if (at < 0) {
+    return null
+  }
+  const start = at + marker.length
+  let end = start
+  while (end < buffer.length) {
+    const code = buffer.charCodeAt(end)
+    if (code < 48 || code > 57) {
+      break
+    }
+    end += 1
+  }
+  if (end === start) {
+    return null
+  }
+  return Number(buffer.slice(start, end))
+}
 
 /** File conflicts and invalid local inputs need correction, not automatic retries. */
 export function classifyMediaTransformError(error: unknown) {
@@ -83,8 +111,10 @@ export class MediaTransformExecutor implements Executor {
           child = spawn(ffmpeg, buildMediaTransformArgs(input, source, temporary), {
             shell: false,
             windowsHide: true,
-            stdio: ['ignore', 'pipe', 'pipe']
+            stdio: ['ignore', 'pipe', 'pipe'],
+            ...backgroundChildSpawnOptions()
           })
+          lowerChildPriority(child.pid)
           const timeout = setTimeout(
             () => {
               child?.kill('SIGKILL')
@@ -102,23 +132,30 @@ export class MediaTransformExecutor implements Executor {
               })
             }
           })
+          const duration = input.durationSeconds ?? Number(context.input.options?.durationSeconds)
+          const progressGate = createKeyedCoalescer<number>({
+            intervalMs: PROGRESS_IPC_INTERVAL_MS,
+            merge: (_pending, next) => next,
+            emit: (_key, microseconds) => {
+              events.onProgress({
+                ...identity,
+                enteredProcessing: true,
+                progress: {
+                  ...EMPTY_PROGRESS,
+                  percent:
+                    duration > 0 ? Math.min(0.99, microseconds / 1_000_000 / duration) : null,
+                  ticks: Date.now()
+                }
+              })
+            }
+          })
           child.stdout?.on('data', (chunk: Buffer) => {
             const text = chunk.toString()
             stdout = (stdout + text).slice(-8000)
-            const match = [...stdout.matchAll(/out_time_us=(\d+)/g)].at(-1)
-            const duration = input.durationSeconds ?? Number(context.input.options?.durationSeconds)
-            events.onProgress({
-              ...identity,
-              enteredProcessing: true,
-              progress: {
-                ...EMPTY_PROGRESS,
-                percent:
-                  match && duration > 0
-                    ? Math.min(0.99, Number(match[1]) / 1_000_000 / duration)
-                    : null,
-                ticks: Date.now()
-              }
-            })
+            const microseconds = latestOutTimeUs(stdout)
+            if (microseconds !== null) {
+              progressGate.push('progress', microseconds)
+            }
           })
           child.stderr?.on('data', (chunk: Buffer) => {
             const text = sanitizeOutput(chunk.toString())
@@ -127,10 +164,13 @@ export class MediaTransformExecutor implements Executor {
           })
           child.once('error', (error) => {
             clearTimeout(timeout)
+            progressGate.dispose()
             reject(error)
           })
           child.once('close', (code, signal) => {
             clearTimeout(timeout)
+            progressGate.flush('progress')
+            progressGate.dispose()
             if (code === 0) {
               resolve()
             } else {

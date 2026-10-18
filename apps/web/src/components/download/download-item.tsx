@@ -857,7 +857,10 @@ export function DownloadItem({
 					}
 				>
 					<div className="flex w-full items-start gap-3">
-						<div className="relative z-20 flex h-14 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border/60 bg-background/60">
+						<div
+							className="relative z-20 flex h-14 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border/60 bg-background/60"
+							data-download-transfer-cover=""
+						>
 							{isHistory && onToggleSelect && (
 								<div
 									className={`absolute top-1 left-1 z-30 rounded-md transition ${
@@ -1073,8 +1076,11 @@ export function DownloadItem({
 											onLinkClick={(event) => event.stopPropagation()}
 											showGroupSeparator={canShowSheet}
 											sourceUrl={download.url}
+											stage="download"
+											task={download}
 											wrapperClassName="flex flex-wrap items-center gap-1.5"
 											ytDlpCommand={download.ytDlpCommand}
+											ytDlpLog={logContent}
 										/>
 									</div>
 								</div>

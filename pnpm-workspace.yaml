@@ -73,3 +73,5 @@ overrides:
   shell-quote: '>=1.9.0'
   tmp: '>=0.2.6'
   ws: '>=8.21.0'
+patchedDependencies:
+  streamdown@2.5.0: patches/streamdown@2.5.0.patch

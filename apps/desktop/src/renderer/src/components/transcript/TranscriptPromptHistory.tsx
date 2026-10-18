@@ -25,16 +25,21 @@ import { ipcEvents, ipcServices } from '@renderer/lib/ipc'
 import { logger } from '@renderer/lib/logger'
 import { cn } from '@renderer/lib/utils'
 import { transcriptMapAtom } from '@renderer/store/transcripts'
-import type { AgentThreadSummary } from '@shared/agent-chat'
+import type { AgentRunEvent, AgentThreadSummary } from '@shared/agent-chat'
 import {
   type AgentHistoryGroup,
   agentHistoryDisplayTitle,
   groupAgentHistory
 } from '@shared/agent-history'
+import {
+  type CatalogMemoryEntry,
+  mergeCatalogList,
+  rememberCatalog
+} from '@shared/agent-thread-patch'
 import { AI_CHAT_PROMPT_ID } from '@shared/ai-prompts'
 import { useAtomValue } from 'jotai'
 import { MoreHorizontal } from 'lucide-react'
-import { type MouseEvent, useCallback, useEffect, useMemo, useState } from 'react'
+import { type MouseEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 interface TranscriptPromptHistoryProps {
@@ -166,6 +171,8 @@ export function TranscriptPromptHistory({
   const [pendingDelete, setPendingDelete] = useState<AgentThreadSummary | null>(null)
   const [pendingRename, setPendingRename] = useState<AgentThreadSummary | null>(null)
   const [renameDraft, setRenameDraft] = useState('')
+  const catalogMemory = useRef(new Map<string, CatalogMemoryEntry>())
+  const catalogClock = useRef(0)
 
   const titledItems = useMemo(
     () =>
@@ -185,8 +192,8 @@ export function TranscriptPromptHistory({
    *
    * @param next Rows returned by main.
    */
-  const accept = useCallback((next: AgentThreadSummary[]): void => {
-    setItems(next)
+  const accept = useCallback((next: AgentThreadSummary[], seen = catalogClock.current): void => {
+    setItems(mergeCatalogList(next, catalogMemory.current, seen, { historyOnly: true }))
     setLoaded(true)
   }, [])
 
@@ -199,11 +206,12 @@ export function TranscriptPromptHistory({
     }
     let cancelled = false
     const refresh = (): void => {
+      const seen = catalogClock.current
       void ipcServices.ai
         .listAgentHistory()
         .then((next) => {
           if (!cancelled) {
-            accept(next)
+            accept(next, seen)
           }
         })
         .catch((error) => {
@@ -213,11 +221,32 @@ export function TranscriptPromptHistory({
           }
         })
     }
+    const onEvent = (...args: unknown[]): void => {
+      const notice = (args[0] as AgentRunEvent | undefined)?.catalog
+      if (cancelled || !notice) {
+        return
+      }
+      const next = rememberCatalog(catalogMemory.current, notice)
+      if (!next.applied) {
+        return
+      }
+      catalogMemory.current = next.memory
+      catalogClock.current = Math.max(catalogClock.current, notice.revision)
+      setItems((current) =>
+        mergeCatalogList(current, catalogMemory.current, notice.revision - 1, {
+          historyOnly: true
+        })
+      )
+    }
     refresh()
-    const off = ipcEvents.on('ai:agent-event', refresh)
+    const off = ipcEvents.on('ai:agent-event', onEvent)
+    window.addEventListener('focus', refresh)
+    window.addEventListener('online', refresh)
     return () => {
       cancelled = true
-      ipcEvents.removeListener('ai:agent-event', off as (...args: unknown[]) => void)
+      ipcEvents.removeListener('ai:agent-event', off)
+      window.removeEventListener('focus', refresh)
+      window.removeEventListener('online', refresh)
     }
   }, [accept, open])
 
@@ -228,12 +257,14 @@ export function TranscriptPromptHistory({
     if (!pendingRename) {
       return
     }
+    const seen = catalogClock.current
     try {
       accept(
         await ipcServices.ai.renameAgentThread({
           threadId: pendingRename.id,
           title: renameDraft
-        })
+        }),
+        seen
       )
       setPendingRename(null)
     } catch (error) {
@@ -249,8 +280,9 @@ export function TranscriptPromptHistory({
       return
     }
     const item = pendingDelete
+    const seen = catalogClock.current
     try {
-      accept(await ipcServices.ai.deleteAgentThread(item.id))
+      accept(await ipcServices.ai.deleteAgentThread(item.id), seen)
       setPendingDelete(null)
       onDeleted(item)
     } catch (error) {

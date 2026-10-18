@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { classifyIngestText } from './ingest'
 import { isPlaylistLikeUrl } from './url-kind'
 
@@ -17,12 +17,13 @@ interface UseAddUrlInteractionOptions {
   isPlaylistBusy: boolean
   onEmptyUrl: () => void
   onInvalidUrl: () => void
-  onOneClickDownload: (url: string) => Promise<void> | void
+  onOneClickDownload: (url: string) => Promise<boolean> | boolean
   onParsePlaylist: (url: string) => Promise<void> | void
   onParseSingle: (url: string) => Promise<void> | void
 }
 
 interface UseAddUrlInteractionResult {
+  isSubmitting: boolean
   addUrlPopoverOpen: boolean
   addUrlValue: string
   batchRequiresOneClick: boolean
@@ -47,12 +48,41 @@ export const useAddUrlInteraction = ({
 }: UseAddUrlInteractionOptions): UseAddUrlInteractionResult => {
   const [addUrlPopoverOpen, setAddUrlPopoverOpen] = useState(false)
   const [addUrlValue, setAddUrlValue] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const submittingRef = useRef(false)
 
   const trimmedAddUrlValue = addUrlValue.trim()
   const hasAddUrlValue = trimmedAddUrlValue.length > 0
   const addUrlValues = classifyIngestText(trimmedAddUrlValue).urls
   const batchRequiresOneClick = addUrlValues.length > 1 && !isOneClickDownloadEnabled
   const canConfirmAddUrl = addUrlValues.length > 0 && !batchRequiresOneClick
+
+  /** Keep the source popover alive until the first accepted task can fly from it. */
+  const submitOneClickUrls = useCallback(
+    async (urls: string[]) => {
+      if (submittingRef.current) {
+        return
+      }
+      submittingRef.current = true
+      setIsSubmitting(true)
+      try {
+        for (const nextUrl of urls) {
+          const queued = await onOneClickDownload(nextUrl)
+          if (queued !== false) {
+            setAddUrlPopoverOpen(false)
+          }
+        }
+        if (urls.length > 1) {
+          setAddUrlValue('')
+        }
+      } finally {
+        setAddUrlPopoverOpen(false)
+        submittingRef.current = false
+        setIsSubmitting(false)
+      }
+    },
+    [onOneClickDownload]
+  )
 
   const handleOpenAddUrlPopover = useCallback(async () => {
     setAddUrlPopoverOpen(true)
@@ -85,6 +115,11 @@ export const useAddUrlInteraction = ({
         return
       }
 
+      if (isOneClickDownloadEnabled && activeTab !== 'playlist' && !isPlaylistLikeUrl(trimmedUrl)) {
+        await submitOneClickUrls([trimmedUrl])
+        return
+      }
+
       setAddUrlPopoverOpen(false)
 
       if (isPlaylistLikeUrl(trimmedUrl)) {
@@ -103,11 +138,6 @@ export const useAddUrlInteraction = ({
         return
       }
 
-      if (isOneClickDownloadEnabled) {
-        await onOneClickDownload(trimmedUrl)
-        return
-      }
-
       await onParseSingle(trimmedUrl)
     },
     [
@@ -116,7 +146,7 @@ export const useAddUrlInteraction = ({
       isPlaylistBusy,
       onEmptyUrl,
       onInvalidUrl,
-      onOneClickDownload,
+      submitOneClickUrls,
       onParsePlaylist,
       onParseSingle
     ]
@@ -134,18 +164,15 @@ export const useAddUrlInteraction = ({
       if (!isOneClickDownloadEnabled) {
         return
       }
-      setAddUrlPopoverOpen(false)
-      setAddUrlValue('')
-      for (const url of urls) {
-        await onOneClickDownload(url)
-      }
+      await submitOneClickUrls(urls)
       return
     }
 
     await submitUrl(urls[0])
-  }, [addUrlValue, isOneClickDownloadEnabled, onOneClickDownload, submitUrl])
+  }, [addUrlValue, isOneClickDownloadEnabled, submitOneClickUrls, submitUrl])
 
   return {
+    isSubmitting,
     addUrlPopoverOpen,
     addUrlValue,
     batchRequiresOneClick,

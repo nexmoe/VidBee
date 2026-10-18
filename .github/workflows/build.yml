@@ -127,6 +127,10 @@ jobs:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: ${{ matrix.build_script }}
 
+      - name: Verify packaged macOS download engines
+        if: matrix.platform == 'macos'
+        run: node apps/desktop/scripts/check-packaged-ytdlp.cjs
+
       - name: Verify packaged sherpa natives
         run: node apps/desktop/scripts/check-packaged-sherpa.cjs ${{ matrix.platform }}
 

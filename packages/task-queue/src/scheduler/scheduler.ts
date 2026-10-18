@@ -8,7 +8,13 @@
  * to perform the FSM transition through the `dispatch` callback. The Scheduler
  * only owns the dispatch ordering, slot bookkeeping and demote-on-shrink logic.
  */
-import type { Task, TaskPriority } from '../types'
+import {
+  canAdmitTranscription,
+  isDownloadTaskKind,
+  TRANSCRIPTION_GROUP_KEY,
+  type Task,
+  type TaskPriority
+} from '../types'
 import { AsyncMutex } from '../util/async-mutex'
 import { MinHeap } from '../util/min-heap'
 import { logCaughtError } from '@vidbee/logger'
@@ -62,6 +68,8 @@ export class Scheduler {
   private readonly mutex = new AsyncMutex()
   private seqCounter = 0
   private maxConcurrency: number
+  /** When set, new transcription tasks wait until fewer downloads are running. */
+  private maxConcurrentDownloads: number | null = null
   private defaultMaxPerGroup: number | null
 
   constructor(private readonly opts: SchedulerOptions) {
@@ -181,6 +189,21 @@ export class Scheduler {
     void this.tryDispatch()
   }
 
+  /**
+   * Remember the download cap used to defer ASR while downloads are saturated.
+   *
+   * @param n Maximum concurrent download tasks.
+   */
+  async setMaxConcurrentDownloads(n: number): Promise<void> {
+    if (!Number.isInteger(n) || n < 1) {
+      throw new Error(`maxConcurrentDownloads must be ≥ 1 integer, got ${n}`)
+    }
+    await this.mutex.runExclusive(() => {
+      this.maxConcurrentDownloads = n
+    })
+    await this.tryDispatch()
+  }
+
   async setMaxPerGroup(groupKey: string, n: number | null): Promise<void> {
     await this.mutex.runExclusive(() => {
       if (n == null) {
@@ -272,14 +295,46 @@ export class Scheduler {
         // Drop stale entries and tasks that already own a reservation.
         continue
       }
-      if (this.canRunInGroup(task.groupKey)) {
-        chosen = top
-        break
+      if (this.transcriptionWaitsForDownload(task) || !this.canRunInGroup(task.groupKey)) {
+        skipped.push(top)
+        continue
       }
-      skipped.push(top)
+      chosen = top
+      break
     }
     for (const s of skipped) this.readyHeap.push(s)
     return chosen
+  }
+
+  /**
+   * Hold a queued ASR task while every download slot is busy.
+   *
+   * @param task Candidate ready task.
+   */
+  private transcriptionWaitsForDownload(task: Readonly<Task>): boolean {
+    if (this.maxConcurrentDownloads == null) {
+      return false
+    }
+    const isTranscription =
+      task.kind === 'transcription' || task.groupKey === TRANSCRIPTION_GROUP_KEY
+    if (!isTranscription) {
+      return false
+    }
+    return !canAdmitTranscription(this.runningDownloadCount(), this.maxConcurrentDownloads)
+  }
+
+  /**
+   * Count download tasks that currently own a slot.
+   */
+  private runningDownloadCount(): number {
+    let count = 0
+    for (const id of this.running) {
+      const task = this.opts.getTask(id)
+      if (task && isDownloadTaskKind(task.kind)) {
+        count += 1
+      }
+    }
+    return count
   }
 
   private canRunInGroup(groupKey: string): boolean {

@@ -9,7 +9,9 @@ import type {
   AgentThread
 } from '../../shared/agent-chat'
 import { sanitizeAgentConversationTitle } from '../../shared/agent-history'
-import { agentActivity } from './agent-activity'
+import { durableAgentEvent } from '../../shared/agent-thread-patch'
+import { agentDirectoryMeta, readDirectoryThreads, readPromptThreadView } from './agent-directory'
+import { agentSavePlan, publicAgentPatch, publicAgentThread } from './agent-run-event'
 import { loadPersistedPromptRun } from './ai-prompt-store'
 import { getDatabaseConnection } from './database'
 
@@ -225,7 +227,8 @@ export class AgentChatStore {
       })
       thread.leafId = id
     }
-    this.save(thread, 'thread.created')
+    const created = agentSavePlan('thread.created')
+    this.save(thread, 'thread.created', null, created.scope, created.delivery)
     return thread
   }
 
@@ -249,7 +252,8 @@ export class AgentChatStore {
       runs: [],
       artifacts: []
     }
-    this.save(thread, 'thread.created')
+    const created = agentSavePlan('thread.created')
+    this.save(thread, 'thread.created', null, created.scope, created.delivery)
     return thread
   }
 
@@ -261,7 +265,7 @@ export class AgentChatStore {
       )
       .all(downloadId, promptId) as { id: string }[]
     for (const row of rows) {
-      const thread = this.get(row.id)
+      const thread = this.get(row.id, { sessionEntries: false })
       if (thread && thread.messages.length === 0) {
         return thread
       }
@@ -292,15 +296,21 @@ export class AgentChatStore {
       PRAGMA foreign_keys=ON;`)
   }
 
-  /** Restore typed entities from their independent durable records. */
-  get(id: string): AgentThread | null {
+  /**
+   * Restore typed entities from their independent durable records.
+   *
+   * @param id Thread id.
+   * @param options Pass `{ sessionEntries: false }` for directory scans that only need messages.
+   */
+  get(id: string, options?: { sessionEntries?: boolean }): AgentThread | null {
     const row = this.db.prepare('SELECT data FROM agent_threads WHERE id = ?').get(id) as
       | { data: string }
       | undefined
     if (!row) {
       return null
     }
-    const thread = JSON.parse(row.data) as AgentThread
+    const thread = JSON.parse(row.data) as AgentThread & { directory?: unknown }
+    thread.directory = undefined
     thread.messages = this.db
       .prepare('SELECT data FROM agent_messages WHERE thread_id = ? ORDER BY rowid')
       .all(id)
@@ -314,6 +324,9 @@ export class AgentChatStore {
       .all(id)
       .map((item) => {
         const run = JSON.parse((item as { data: string }).data) as AgentChatRun
+        if (options?.sessionEntries === false) {
+          return run
+        }
         const entries = this.db
           .prepare('SELECT data FROM agent_run_entries WHERE run_id = ? ORDER BY seq')
           .all(run.id) as { data: string }[]
@@ -327,22 +340,36 @@ export class AgentChatStore {
     return thread
   }
 
-  /** Commit entities and a sequenced event atomically before broadcasting. */
+  /**
+   * Commit entities and a sequenced event atomically before broadcasting.
+   *
+   * @param thread Live thread. Its seq advances only after the commit succeeds.
+   * @param type Event name.
+   * @param runId Run that owns the event, when there is one.
+   * @param scope Dirty rows. Omit it only when every row should be rewritten.
+   * @param delivery `patch` publishes dirty entities. `snapshot` publishes the public thread.
+   */
   save(
     thread: AgentThread,
     type: string,
     runId: string | null = null,
-    scope?: SaveScope
+    scope?: SaveScope,
+    delivery: 'snapshot' | 'patch' = 'snapshot'
   ): AgentRunEvent {
     const nextSeq = thread.seq + 1
+    const published = { ...thread, seq: nextSeq }
     const event: AgentRunEvent = {
       threadId: thread.id,
       runId,
       messageId: runId ? (thread.runs.find((run) => run.id === runId)?.messageId ?? null) : null,
       seq: nextSeq,
       type,
-      createdAt: Date.now(),
-      snapshot: publicAgentThread({ ...thread, seq: nextSeq })
+      createdAt: Date.now()
+    }
+    if (delivery === 'patch') {
+      event.patch = publicAgentPatch(published, scope ?? {})
+    } else {
+      event.snapshot = publicAgentThread(published)
     }
     const writeAll = !scope
     this.db.transaction(() => {
@@ -359,7 +386,8 @@ export class AgentChatStore {
             seq: nextSeq,
             messages: [],
             runs: [],
-            artifacts: []
+            artifacts: [],
+            directory: agentDirectoryMeta(thread)
           })
         )
       const putMessage = this.db.prepare(
@@ -400,7 +428,7 @@ export class AgentChatStore {
       }
       this.db
         .prepare('INSERT INTO agent_events VALUES (?, ?, ?)')
-        .run(thread.id, event.seq, JSON.stringify({ ...event, snapshot: undefined }))
+        .run(thread.id, event.seq, JSON.stringify(durableAgentEvent(event)))
     })()
     thread.seq = nextSeq
     return event
@@ -421,19 +449,46 @@ export class AgentChatStore {
       .run(thread.id, cutoff)
   }
 
-  /** Read the durable cursor log; the current snapshot repairs any missed UI updates. */
+  /**
+   * Read the durable cursor. A snapshot is included only when the caller is behind it.
+   *
+   * @param id Thread id.
+   * @param after Last seq the caller has applied.
+   * @param live In-memory run thread. Used when it is at least as new as the database.
+   */
   events(
     id: string,
-    after: number
-  ): { events: Omit<AgentRunEvent, 'snapshot'>[]; snapshot: AgentThread | null } {
+    after: number,
+    live?: AgentThread | null
+  ): { events: AgentRunEvent[]; snapshot: AgentThread | null } {
     const events = this.db
       .prepare(
         'SELECT data FROM agent_events WHERE thread_id = ? AND seq > ? ORDER BY seq LIMIT 500'
       )
       .all(id, after)
-      .map((row) => JSON.parse((row as { data: string }).data))
-    const thread = this.get(id)
-    return { events, snapshot: thread ? publicAgentThread(thread) : null }
+      .map((row) => JSON.parse((row as { data: string }).data) as AgentRunEvent)
+    const seq = this.threadSeq(id)
+    if (seq === null || seq <= after) {
+      return { events, snapshot: null }
+    }
+    const source = live && live.id === id && live.seq >= seq ? live : this.get(id)
+    return { events, snapshot: source ? publicAgentThread(source) : null }
+  }
+
+  /**
+   * Read the committed seq without loading messages or session entries.
+   *
+   * @param id Thread id.
+   */
+  private threadSeq(id: string): number | null {
+    const row = this.db.prepare('SELECT data FROM agent_threads WHERE id = ?').get(id) as
+      | { data: string }
+      | undefined
+    if (!row) {
+      return null
+    }
+    const data = JSON.parse(row.data) as { seq?: number }
+    return typeof data.seq === 'number' ? data.seq : 0
   }
 
   /** Enumerate existing threads without creating new ones during deletion. */
@@ -449,14 +504,17 @@ export class AgentChatStore {
 
   /** All conversations for one video, including unused blank chats. */
   listVideoThreads(downloadId: string): AgentThread[] {
-    const threads: AgentThread[] = []
-    for (const id of this.listVideo(downloadId)) {
-      const thread = this.get(id)
-      if (thread) {
-        threads.push(thread)
-      }
-    }
-    return threads
+    return readDirectoryThreads(this.db, downloadId)
+  }
+
+  /**
+   * Selected answer for one prompt. Directory lists stay metadata-only.
+   *
+   * @param downloadId Video that owns the prompt.
+   * @param promptId Prompt id, such as the Desktop Overview prompt.
+   */
+  loadPromptThreadView(downloadId: string, promptId: string): AgentThread | null {
+    return readPromptThreadView(this.db, downloadId, promptId)
   }
 
   /** Remove product state when its source video is deleted. */
@@ -466,15 +524,9 @@ export class AgentChatStore {
 
   /** Conversations with messages or selected image drafts, for the history drawer. */
   listHistory(): AgentThread[] {
-    const rows = this.db.prepare('SELECT id FROM agent_threads').all() as { id: string }[]
-    const threads: AgentThread[] = []
-    for (const row of rows) {
-      const thread = this.get(row.id)
-      if (thread && (thread.messages.length > 0 || thread.images?.length)) {
-        threads.push(thread)
-      }
-    }
-    return threads
+    return readDirectoryThreads(this.db).filter(
+      (thread) => thread.messages.length > 0 || Boolean(thread.images?.length)
+    )
   }
 
   /**
@@ -566,33 +618,9 @@ export class AgentChatStore {
   }
 }
 
-/** Strip provider-private state and local paths from IPC snapshots. */
-export function publicAgentThread(thread: AgentThread): AgentThread {
-  return {
-    ...thread,
-    messages: thread.messages.map((message) => ({ ...message })),
-    runs: thread.runs.map((run) => ({
-      ...run,
-      activity: agentActivity(run),
-      rawMessages: [],
-      workingNotes: undefined,
-      sessionEntries: undefined,
-      evidenceCoverage: undefined,
-      evidenceSource: undefined,
-      fullSourceReview: undefined,
-      articleSections: undefined,
-      contextCheckpoint: undefined,
-      contextSummary: undefined,
-      tools: run.tools.map((tool) => ({ ...tool }))
-    })),
-    artifacts: thread.artifacts.map((artifact) => ({
-      ...artifact,
-      path: '',
-      posterPath: undefined
-    })),
-    images: thread.images?.map((image) => ({ ...image, path: '' }))
-  }
-}
+/** Public projection lives in agent-run-event so store and runner share one scrub. */
+export { publicAgentThread }
+
 let store: AgentChatStore | undefined
 /** Return the single process-wide product store. */
 export function getAgentChatStore(): AgentChatStore {

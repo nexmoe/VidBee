@@ -10,6 +10,7 @@ import { Button } from "@vidbee/ui/components/ui/button";
 import { Checkbox } from "@vidbee/ui/components/ui/checkbox";
 import { DownloadContainerSelect } from "@vidbee/ui/components/ui/download-container-select";
 import { DownloadDialogLayout } from "@vidbee/ui/components/ui/download-dialog-layout";
+import { useDownloadTransfer } from "@vidbee/ui/components/ui/download-transfer";
 import { IngestDropOverlay } from "@vidbee/ui/components/ui/ingest-drop-overlay";
 import { Input } from "@vidbee/ui/components/ui/input";
 import { Label } from "@vidbee/ui/components/ui/label";
@@ -46,6 +47,7 @@ interface DownloadDialogProps {
 }
 
 export function DownloadDialog({ onDownloadsChanged }: DownloadDialogProps) {
+	const { contentRef, popoverRef, transferToList } = useDownloadTransfer();
 	const { t } = useTranslation();
 	const [open, setOpen] = useState(false);
 	const [videoInfo, setVideoInfo] = useState<VideoInfo | null>(null);
@@ -172,9 +174,10 @@ export function DownloadDialog({ onDownloadsChanged }: DownloadDialogProps) {
 			const trimmedUrl = targetUrl.trim();
 			if (!trimmedUrl) {
 				toast.error(t("errors.emptyUrl"));
-				return;
+				return false;
 			}
 
+			const source = popoverRef.current ?? contentRef.current;
 			if (options?.setInputValue) {
 				setUrl(trimmedUrl);
 			}
@@ -189,7 +192,7 @@ export function DownloadDialog({ onDownloadsChanged }: DownloadDialogProps) {
 					: undefined;
 
 			try {
-				await orpcClient.downloads.create({
+				const { download } = await orpcClient.downloads.create({
 					url: trimmedUrl,
 					type: settings.oneClickDownloadType,
 					format,
@@ -201,15 +204,25 @@ export function DownloadDialog({ onDownloadsChanged }: DownloadDialogProps) {
 
 				toast.success(t("download.oneClickDownloadStarted"));
 				await notifyDownloadsChanged();
+				transferToList(download.id, source);
 				if (options?.clearInput) {
 					setUrl("");
 				}
+				return true;
 			} catch (startError) {
 				logger.error("Failed to start one-click download:", startError);
 				toast.error(t("notifications.downloadFailed"));
+				return false;
 			}
 		},
-		[notifyDownloadsChanged, settings, t],
+		[
+			notifyDownloadsChanged,
+			settings,
+			t,
+			transferToList,
+			popoverRef,
+			contentRef,
+		],
 	);
 
 	const handleFetchVideo = useCallback(async () => {
@@ -292,7 +305,7 @@ export function DownloadDialog({ onDownloadsChanged }: DownloadDialogProps) {
 
 	const handleOneClickFromAddUrl = useCallback(
 		async (trimmedUrl: string) => {
-			await startOneClickDownload(trimmedUrl, {
+			return await startOneClickDownload(trimmedUrl, {
 				setInputValue: false,
 				clearInput: false,
 			});
@@ -308,6 +321,7 @@ export function DownloadDialog({ onDownloadsChanged }: DownloadDialogProps) {
 		handleConfirmAddUrl,
 		handleOpenAddUrlPopover,
 		hasAddUrlValue,
+		isSubmitting,
 		setAddUrlPopoverOpen,
 		setAddUrlValue,
 		submitUrl,
@@ -469,6 +483,7 @@ export function DownloadDialog({ onDownloadsChanged }: DownloadDialogProps) {
 			}
 
 			await notifyDownloadsChanged();
+			transferToList(result.result.entries[0]?.downloadId);
 			setOpen(false);
 		} catch (startError) {
 			logger.error("Failed to start playlist download:", startError);
@@ -485,6 +500,7 @@ export function DownloadDialog({ onDownloadsChanged }: DownloadDialogProps) {
 		downloadType,
 		settings,
 		notifyDownloadsChanged,
+		transferToList,
 		t,
 	]);
 
@@ -529,7 +545,7 @@ export function DownloadDialog({ onDownloadsChanged }: DownloadDialogProps) {
 		}
 
 		try {
-			await orpcClient.downloads.create({
+			const { download } = await orpcClient.downloads.create({
 				url: targetUrl,
 				type,
 				title: singleVideoState.title || videoInfo.title,
@@ -548,12 +564,20 @@ export function DownloadDialog({ onDownloadsChanged }: DownloadDialogProps) {
 			});
 
 			await notifyDownloadsChanged();
+			transferToList(download.id);
 			setOpen(false);
 		} catch (startError) {
 			logger.error("Failed to start download:", startError);
 			toast.error(t("notifications.downloadFailed"));
 		}
-	}, [notifyDownloadsChanged, singleVideoState, t, url, videoInfo]);
+	}, [
+		notifyDownloadsChanged,
+		singleVideoState,
+		t,
+		url,
+		videoInfo,
+		transferToList,
+	]);
 
 	const wasDialogOpenRef = useRef(open);
 
@@ -632,11 +656,14 @@ export function DownloadDialog({ onDownloadsChanged }: DownloadDialogProps) {
 	return (
 		<>
 			<DownloadDialogLayout
+				contentRef={contentRef}
 				activeTab={activeTab}
 				dialogSubtitle={t("download.dialogSubtitle")}
 				dialogTitle={t("download.dialogTitle")}
 				addUrlPopover={
 					<AddUrlPopover
+						contentRef={popoverRef}
+						submitting={isSubmitting}
 						cancelLabel={t("download.cancel")}
 						confirmDisabled={!canConfirmAddUrl}
 						confirmLabel={t("download.fetch")}

@@ -18,11 +18,11 @@ import {
   SelectValue
 } from '@renderer/components/ui/select'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
+import { useExtensionCookieConnection } from '@renderer/hooks/use-extension-cookie-connection'
 import { ipcServices } from '@renderer/lib/ipc'
 import { logger } from '@renderer/lib/logger'
 import { withDesktopUtm } from '@renderer/lib/url'
 import { saveSettingAtom, settingsAtom } from '@renderer/store/settings'
-import type { ExtensionCookieConnection } from '@shared/extension-cookies'
 import {
   buildBrowserCookiesSetting,
   parseBrowserCookiesSetting
@@ -154,10 +154,6 @@ export function CookiesSetupPanel({
     valid: boolean
     reason?: string
   }>({ valid: false })
-  const [connection, setConnection] = useState<ExtensionCookieConnection>({
-    connected: false,
-    sites: []
-  })
 
   const parsedBrowserCookies = parseBrowserCookiesSetting(settings.browserForCookies)
   const browserForCookiesValue = parsedBrowserCookies.browser
@@ -225,6 +221,7 @@ export function CookiesSetupPanel({
     parsedBrowserCookies.profile,
     settings.cookiesPath
   ])
+  const connection = useExtensionCookieConnection(refreshHealth)
 
   useEffect(() => {
     if (platformProp) {
@@ -243,32 +240,6 @@ export function CookiesSetupPanel({
 
   useEffect(() => {
     void refreshHealth()
-  }, [refreshHealth])
-
-  useEffect(() => {
-    let active = true
-    let previousConnected: boolean | undefined
-    const tick = async (): Promise<void> => {
-      try {
-        const next = await ipcServices.browserCookies.getExtensionConnection()
-        if (!active) {
-          return
-        }
-        setConnection(next)
-        if (previousConnected !== undefined && previousConnected !== next.connected) {
-          void refreshHealth()
-        }
-        previousConnected = next.connected
-      } catch (error) {
-        logger.error('[CookiesSetup] Failed to read extension connection:', error)
-      }
-    }
-    void tick()
-    const timer = window.setInterval(() => void tick(), 2000)
-    return () => {
-      active = false
-      window.clearInterval(timer)
-    }
   }, [refreshHealth])
 
   useEffect(() => {

@@ -351,6 +351,9 @@ export async function manageAgentSubscription(
     enabled?: boolean
     autoDownload?: boolean
     onlyDownloadLatest?: boolean
+    downloadType?: SubscriptionUpdateInput['downloadType']
+    downloadQuality?: SubscriptionUpdateInput['downloadQuality']
+    downloadContainer?: SubscriptionUpdateInput['downloadContainer']
     keywords?: string[]
     tags?: string[]
     offset?: number
@@ -405,6 +408,9 @@ export async function manageAgentSubscription(
     'enabled',
     'autoDownload',
     'onlyDownloadLatest',
+    'downloadType',
+    'downloadQuality',
+    'downloadContainer',
     'keywords',
     'tags'
   ] as const) {

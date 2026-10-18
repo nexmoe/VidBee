@@ -26,10 +26,10 @@ import { ArrowDown, Loader2 } from 'lucide-react'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { AgentChatMessageView } from './AgentChatMessageView'
 import { AgentChatScrollState } from './AgentChatScrollState'
 import { AgentReasoningSelect } from './AgentReasoningSelect'
 import { agentArtifactUrl } from './AgentResponseContent'
+import { TranscriptAgentMessages } from './TranscriptAgentMessageRow'
 import { TranscriptPromptGuidance } from './TranscriptPromptGuidance'
 import { TranscriptShareImageDialog } from './TranscriptShareImageDialog'
 
@@ -352,27 +352,23 @@ export function TranscriptPromptPane({
         <MessageScroller className="min-h-0 flex-1" data-testid="transcript-prompt-output">
           <MessageScrollerViewport aria-label={t('transcript.promptOutput')} ref={viewport}>
             <MessageScrollerContent className="gap-6 px-5 pt-5 pb-[calc(var(--agent-composer-height,44px)+var(--agent-composer-inset)+1rem)] text-sm leading-relaxed">
-              {thread
-                ? messages.map((message, index) => (
-                    <MessageScrollerItem key={message.id} messageId={message.id}>
-                      <AgentChatMessageView
-                        busy={busy || !ready || !transcriptReady}
-                        currentTimeMs={currentTimeMs}
-                        durationMs={sourceDurationMs}
-                        message={message}
-                        onBranch={(id) => void selectBranch(id)}
-                        onDecideTool={(input) => void decideTool(input)}
-                        onRetry={(id) => void send({ ...context, retryMessageId: id })}
-                        onSeek={onSeek}
-                        onShare={setShareMessageId}
-                        overview={prompt.id === AI_OVERVIEW_PROMPT_ID && index <= 1}
-                        sourceTitle={sourceTitle}
-                        sourceUrl={sourceUrl}
-                        thread={thread}
-                      />
-                    </MessageScrollerItem>
-                  ))
-                : null}
+              {thread ? (
+                <TranscriptAgentMessages
+                  busy={busy || !ready || !transcriptReady}
+                  currentTimeMs={currentTimeMs}
+                  durationMs={sourceDurationMs}
+                  messages={messages}
+                  onBranch={(id) => void selectBranch(id)}
+                  onDecideTool={(input) => void decideTool(input)}
+                  onRetry={(id) => void send({ ...context, retryMessageId: id })}
+                  onSeek={onSeek}
+                  onShare={setShareMessageId}
+                  overviewPrompt={prompt.id === AI_OVERVIEW_PROMPT_ID}
+                  sourceTitle={sourceTitle}
+                  sourceUrl={sourceUrl}
+                  thread={thread}
+                />
+              ) : null}
               {messages.length || isChat ? null : (
                 <MessageScrollerItem messageId="empty">
                   <p className="text-muted-foreground">{t('transcript.promptEmpty')}</p>

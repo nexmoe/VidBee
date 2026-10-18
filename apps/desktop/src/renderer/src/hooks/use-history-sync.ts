@@ -1,37 +1,25 @@
 import { useSetAtom } from 'jotai'
 import { useEffect } from 'react'
-// import type { DownloadHistoryItem } from '../../../shared/types'
 import { ipcServices } from '../lib/ipc'
 import { logger } from '../lib/logger'
-import { addHistoryRecordAtom, clearHistoryRecordsAtom } from '../store/downloads'
+import { replaceHistoryRecordsAtom } from '../store/downloads'
 
+/**
+ * Load the main-process history once. Later terminal rows arrive through download events.
+ */
 export function useHistorySync() {
-  const addHistoryItem = useSetAtom(addHistoryRecordAtom)
-  const clearHistory = useSetAtom(clearHistoryRecordsAtom)
+  const replaceHistory = useSetAtom(replaceHistoryRecordsAtom)
 
   useEffect(() => {
-    // Load initial history from main process
     const loadHistory = async () => {
       try {
         const historyData = await ipcServices.history.getHistory()
-        // Clear existing history and load from main process
-        clearHistory()
-        historyData.forEach((item) => {
-          addHistoryItem(item)
-        })
+        replaceHistory(historyData)
       } catch (error) {
         logger.error('Failed to load history:', error)
       }
     }
 
-    loadHistory()
-
-    // Listen for new history items from main process
-    // const _handleHistoryAdded = (item: DownloadHistoryItem) => {
-    //   addHistoryItem(item)
-    // }
-
-    // Note: We would need to add IPC events for real-time updates
-    // For now, we'll rely on manual refresh or page navigation
-  }, [addHistoryItem, clearHistory])
+    void loadHistory()
+  }, [replaceHistory])
 }

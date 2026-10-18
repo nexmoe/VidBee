@@ -3,6 +3,7 @@ import { AiPromptsPanel } from '@renderer/components/settings/AiPromptsPanel'
 import { AiProvidersPanel } from '@renderer/components/settings/AiProvidersPanel'
 import { AsrModelPicker } from '@renderer/components/settings/AsrModelPicker'
 import { CookiesSetupPanel } from '@renderer/components/settings/CookiesSetupPanel'
+import { McpPanel } from '@renderer/components/settings/McpPanel'
 import {
   SETTINGS_NAV_ITEMS,
   type SettingsNavTab,
@@ -750,6 +751,10 @@ export function Settings() {
                     )
                   }
                 />
+              </TabPanel>
+
+              <TabPanel className="space-y-4" value="mcp">
+                <McpPanel />
               </TabPanel>
 
               <TabPanel className="space-y-4" value="advanced">

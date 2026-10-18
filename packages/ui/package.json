@@ -11,6 +11,7 @@
     "./components/ui/*": "./src/components/ui/*.tsx",
     "./lib/cn": "./src/lib/cn.ts",
     "./lib/download-platform": "./src/lib/download-platform.ts",
+    "./lib/download-transfer-target": "./src/lib/download-transfer-target.ts",
     "./lib/list-marquee": "./src/lib/list-marquee.ts",
     "./lib/use-list-marquee": "./src/lib/use-list-marquee.ts",
     "./lib/shape-context": "./src/lib/shape-context.tsx",

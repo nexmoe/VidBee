@@ -7,11 +7,13 @@ import { useAtomValue, useSetAtom, useStore } from 'jotai'
 import { useCallback, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import { appendCappedLog, type DownloadLogIpcPayload } from '../../../shared/live-log'
 import { buildFilePathCandidates } from '../../../shared/utils/download-file'
 import { getDownloadErrorGuidance } from '../lib/download-error-guidance'
 import { ipcEvents, ipcServices } from '../lib/ipc'
 import { logger } from '../lib/logger'
 import { cookieSetupAutoPromptedAtom, cookieSetupRequestAtom } from '../store/cookie-setup'
+import { downloadLivePatchesAtom } from '../store/download-live-patch'
 import {
   addDownloadAtom,
   addHistoryRecordAtom,
@@ -114,13 +116,14 @@ export function useDownloadEvents() {
     }
 
     const handleLog = (rawData: unknown) => {
-      const data = rawData as { id?: string; log?: string }
+      const data = rawData as Partial<DownloadLogIpcPayload>
       const id = typeof data?.id === 'string' ? data.id : ''
       if (!id) {
         return
       }
-      const logText = typeof data?.log === 'string' ? data.log : ''
-      updateDownload({ id, changes: { ytDlpLog: logText } })
+      const chunk = typeof data?.chunk === 'string' ? data.chunk : ''
+      const current = store.get(downloadLivePatchesAtom).get(id)?.ytDlpLog ?? ''
+      updateDownload({ id, changes: { ytDlpLog: appendCappedLog(current, chunk) } })
     }
 
     const handleCompleted = (rawId: unknown) => {

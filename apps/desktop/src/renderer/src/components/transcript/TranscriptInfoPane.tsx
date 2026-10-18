@@ -1,5 +1,6 @@
 import { formatBytes } from '@renderer/components/settings/asr-model-shared'
 import { formatClock } from '@renderer/lib/format-clock'
+import type { DownloadCookieSource } from '@vidbee/task-queue'
 import { isAsrTierId } from '@vidbee/transcription/asr'
 import { DownloadPlatformIcon } from '@vidbee/ui/components/ui/download-platform-icon'
 import { useMemo } from 'react'
@@ -11,6 +12,7 @@ export interface TranscriptInfoFields {
   channel?: string | null
   codec?: string | null
   completedAt?: number | null
+  cookieSources?: DownloadCookieSource[] | null
   createdAt?: number | null
   description?: string | null
   downloadPath?: string | null
@@ -92,6 +94,7 @@ export const languageDisplayName = (code: string, locale: string): string => {
 export const hasTranscriptInfo = (info: TranscriptInfoFields): boolean =>
   Boolean(
     info.channel ||
+      info.cookieSources !== undefined ||
       info.platformLabel ||
       info.playlist ||
       info.quality ||
@@ -123,7 +126,7 @@ export const hasTranscriptInfo = (info: TranscriptInfoFields): boolean =>
 export function TranscriptInfoPane(info: TranscriptInfoFields) {
   const { t, i18n } = useTranslation()
   const groups = useMemo(() => buildInfoGroups(info, t, i18n.language), [i18n.language, info, t])
-  if (groups.length === 0) {
+  if (groups.length === 0 && info.cookieSources === undefined) {
     return <p className="px-4 py-6 text-muted-foreground text-sm">{t('transcript.info.empty')}</p>
   }
 
@@ -141,8 +144,48 @@ export function TranscriptInfoPane(info: TranscriptInfoFields) {
           </dl>
         </section>
       ))}
+      {info.cookieSources !== undefined && (
+        <dl className="border-border/50 border-t" data-testid="transcript-info-cookies">
+          <InfoRowView
+            openUrlLabel={t('transcript.info.openUrl')}
+            row={{
+              key: 'cookieSources',
+              label: t('transcript.info.cookieSource'),
+              value: cookieSourcesLabel(info.cookieSources, t)
+            }}
+          />
+        </dl>
+      )}
     </div>
   )
+}
+
+/** Describe the saved acquisition methods, keeping older downloads distinct from cookie-free ones. */
+function cookieSourcesLabel(
+  sources: DownloadCookieSource[] | null,
+  t: (key: string, options?: Record<string, unknown>) => string
+): string {
+  if (sources === null) {
+    return t('transcript.info.cookiesUnrecorded')
+  }
+  if (sources.length === 0) {
+    return t('transcript.info.cookiesNone')
+  }
+  return sources
+    .map((source) => {
+      const label =
+        source.type === 'extension'
+          ? t('settings.cookiesSetup.extensionTitle')
+          : source.type === 'browser'
+            ? t('transcript.info.cookiesBrowser')
+            : t('settings.cookiesFile')
+      const browser = source.browser?.toLowerCase()
+      const browserLabel = browser
+        ? t(`settings.browserOptions.${browser}`, { defaultValue: source.browser })
+        : undefined
+      return browserLabel ? `${label} (${browserLabel})` : label
+    })
+    .join(' + ')
 }
 
 interface InfoRowViewProps {
