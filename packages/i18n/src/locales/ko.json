@@ -893,6 +893,7 @@
       "presets": {
         "anthropic": "Anthropic",
         "azure": "Azure",
+        "cheaperinference": "Cheaper Inference",
         "custom": "Custom",
         "deepseek": "Deepseek",
         "google": "Google",
