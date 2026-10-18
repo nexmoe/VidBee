@@ -25,7 +25,7 @@
     "@vidbee/transcription": "workspace:*",
     "better-sqlite3": "^13.0.3",
     "drizzle-orm": "^0.45.2",
-    "fastify": "^5.12.1"
+    "fastify": "^5.12.5"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^9.6.0",
