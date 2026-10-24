@@ -36,12 +36,12 @@ import type {
   VideoInfo,
   VideoInfoCommandResult
 } from '../../shared/types'
-import { buildPendingDownloadItem, hasDisplayMetadata } from '../../shared/utils/pending-download'
-import { buildVideoInfoDownloadMetadata } from '../../shared/utils/video-info-metadata'
+import { buildPendingDownloadItem } from '../../shared/utils/pending-download'
 import { settingsManager } from '../settings'
 import { scopedLoggers } from '../utils/logger'
 import { cancelledPartTargets, deleteCancelledDownloadParts } from './cancelled-download-parts'
 import { toSharedSettings } from './command-utils'
+import { hydrateDownloadMetadata } from './download-metadata'
 import { shouldSurfaceQueuedDownload } from './download-queue-events'
 import { applyAutoVideoDownloadPath } from './path-resolver'
 import { projectProgressForRenderer, projectTaskForRenderer } from './projection'
@@ -72,31 +72,6 @@ const ensureDirectoryExists = (dir?: string): void => {
     fs.mkdirSync(dir, { recursive: true })
   } catch (err) {
     logger.warn('download-facade: failed to ensure download directory', err)
-  }
-}
-
-/** Fill missing title/thumbnail metadata from yt-dlp before a task is queued. */
-const hydrateDownloadMetadata = async (options: DownloadOptions): Promise<DownloadOptions> => {
-  if (hasDisplayMetadata(options)) {
-    return options
-  }
-
-  try {
-    const info = await fetchVideoInfo(options.url)
-    const metadata = buildVideoInfoDownloadMetadata(info)
-    return {
-      ...options,
-      title: options.title ?? metadata.title,
-      thumbnail: options.thumbnail ?? metadata.thumbnail,
-      description: options.description ?? metadata.description,
-      channel: options.channel ?? metadata.channel,
-      uploader: options.uploader ?? metadata.uploader,
-      viewCount: options.viewCount ?? metadata.viewCount,
-      duration: options.duration ?? metadata.duration
-    }
-  } catch (err) {
-    logger.warn('download-facade: failed to hydrate video metadata', err)
-    return options
   }
 }
 

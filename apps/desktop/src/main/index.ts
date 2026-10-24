@@ -30,6 +30,7 @@ import {
   registerDesktopAuthProtocol,
   setupDesktopAuth
 } from './lib/auth-client'
+import { initializeDesktopAnalytics } from './lib/desktop-analytics'
 import { downloadEngine } from './lib/download-facade'
 import { ffmpegManager } from './lib/ffmpeg-manager'
 import {
@@ -609,6 +610,10 @@ export function createWindow(): void {
     isRendererReady = false
     destroyShareCaptureWindow()
     applyDockVisibility(settingsManager.get('hideDockIcon'))
+    // The hidden analytics collector keeps window-all-closed from firing.
+    if (process.platform !== 'darwin' && !isAppQuitting() && !settingsManager.get('closeToTray')) {
+      app.quit()
+    }
   })
 
   mainWindow.on('show', () => {
@@ -1254,6 +1259,7 @@ app.whenReady().then(async () => {
   settingsManager.applyFreshInstallLocale()
 
   registerVidbeeProtocol()
+  initializeDesktopAnalytics(() => mainWindow, rendererEntryUrl(), app.getVersion())
 
   if (isPortableMode) {
     log.info(`Portable mode is active, skipping ${APP_PROTOCOL} protocol handler registration`)

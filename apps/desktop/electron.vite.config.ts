@@ -99,7 +99,8 @@ export default defineConfig(({ mode }) => {
             // Runtime helpers resolve preload and worker paths relative to the main output directory.
             chunkFileNames: '[name]-[hash].js'
           },
-          external: nativeRuntimeExternalMatchers
+          // The GA4 transport reads renderer-bootstrap.js beside its installed module.
+          external: [...nativeRuntimeExternalMatchers, /^electron-ga4-telemetry(?:\/|$)/]
         },
         externalizeDeps: {
           exclude: bundledWorkspacePackages
@@ -170,7 +171,7 @@ export default defineConfig(({ mode }) => {
       build: {
         sourcemap: true,
         externalizeDeps: {
-          exclude: bundledWorkspacePackages
+          exclude: [...bundledWorkspacePackages, 'electron-ga4-telemetry']
         }
       }
     },

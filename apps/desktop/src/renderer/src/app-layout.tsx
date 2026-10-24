@@ -28,8 +28,7 @@ import { useAppIconPlaybackMenu } from './hooks/use-app-icon-playback-menu'
 import { useDownloadEvents } from './hooks/use-download-events'
 import { useHistorySync } from './hooks/use-history-sync'
 import { useImportLocalMedia } from './hooks/use-import-local-media'
-import { useRybbitDailyClientVersion } from './hooks/use-rybbit-daily-client-version'
-import { useRybbitScript } from './hooks/use-rybbit-script'
+import { syncDesktopAnalytics } from './lib/desktop-analytics'
 import { addRendererBreadcrumb, setRendererTelemetryEnabled } from './lib/glitchtip'
 import { ipcEvents, ipcServices } from './lib/ipc'
 import { logger } from './lib/logger'
@@ -43,7 +42,7 @@ import {
   shouldShowPlaybackBar
 } from './lib/transcript-playback'
 import { withDesktopUtm } from './lib/url'
-import { loadSettingsAtom, settingsAtom } from './store/settings'
+import { loadSettingsAtom, settingsAtom, settingsLoadedAtom } from './store/settings'
 import { loadSubscriptionsAtom, setSubscriptionsAtom } from './store/subscriptions'
 import { playbackSessionAtom } from './store/transcript-playback'
 import { playbackPlaylistAtom } from './store/transcript-playlist'
@@ -108,6 +107,7 @@ export function AppLayout() {
   const loadSubscriptions = useSetAtom(loadSubscriptionsAtom)
   const setSubscriptions = useSetAtom(setSubscriptionsAtom)
   const [settings] = useAtom(settingsAtom)
+  const settingsLoaded = useAtomValue(settingsLoadedAtom)
   const loadSettings = useSetAtom(loadSettingsAtom)
   const { setTheme } = useTheme()
   const loadTranscripts = useSetAtom(loadTranscriptMapAtom)
@@ -141,21 +141,13 @@ export function AppLayout() {
   const currentPage = pathToPage(pathname)
   const supportedSitesUrl = withDesktopUtm('https://vidbee.org/supported-sites/')
   const toolsUrl = withDesktopUtm('https://vidbee.org/tools/')
-  const analyticsEnabled = settings.enableAnalytics ?? true
-  const isRybbitReady = useRybbitScript(analyticsEnabled)
+  const analyticsEnabled = settingsLoaded && settings.enableAnalytics !== false
 
   useDownloadEvents()
   useAgentTaskEvents()
   useAppIconPlaybackMenu()
   useHistorySync()
   const { applyImportResult } = useImportLocalMedia()
-  useRybbitDailyClientVersion({
-    appName: 'VidBee',
-    enabled: analyticsEnabled,
-    isReady: isRybbitReady,
-    platform,
-    version: appVersion
-  })
 
   const handlePageChange = useCallback(
     (page: Page) => {
@@ -198,6 +190,12 @@ export function AppLayout() {
   useEffect(() => {
     setRendererTelemetryEnabled(analyticsEnabled)
   }, [analyticsEnabled])
+
+  useEffect(() => {
+    if (settingsLoaded) {
+      void syncDesktopAnalytics(analyticsEnabled, pathname)
+    }
+  }, [analyticsEnabled, pathname, settingsLoaded])
 
   useEffect(() => {
     setTheme(settings.theme)

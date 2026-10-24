@@ -12,9 +12,9 @@ import {
 } from '@renderer/components/ui/item'
 import { useCloudAccount } from '@renderer/hooks/use-cloud-account'
 import { formatAiCredits } from '@renderer/lib/ai-credits'
+import { trackDesktopEvent } from '@renderer/lib/desktop-analytics'
 import { ipcServices } from '@renderer/lib/ipc'
 import { logger } from '@renderer/lib/logger'
-import { trackDesktopEvent } from '@renderer/lib/rybbit-client'
 import { AI_PROVIDER_PRESETS } from '@shared/ai-presets'
 import { type AiProviderGroup, groupAiProviders } from '@shared/ai-provider-groups'
 import type {

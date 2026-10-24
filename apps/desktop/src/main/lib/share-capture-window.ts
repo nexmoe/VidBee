@@ -16,6 +16,7 @@ import {
 } from '@shared/types/share-card'
 import { BrowserWindow, clipboard, ipcMain, nativeImage } from 'electron'
 import { scopedLoggers } from '../utils/logger'
+import { isDesktopAnalyticsWindow } from './desktop-analytics-window'
 import { splitShareImage } from './share-image-split'
 
 const log = scopedLoggers.window
@@ -253,7 +254,7 @@ export const createShareCaptureHost = (deps: ShareCaptureDeps) => {
    * @param window Candidate window.
    */
   const isAppWindow = (window: ShareCaptureWindowLike): boolean =>
-    !(window.isDestroyed() || isShareCaptureWindow(window))
+    !(window.isDestroyed() || isShareCaptureWindow(window) || isDesktopAnalyticsWindow(window))
 
   /**
    * Destroy the hidden share-capture window if it exists.

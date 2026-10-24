@@ -4,7 +4,7 @@ import windowsTrayIcon from '../../build/icon.ico?asset'
 import appIcon from '../../resources/icon.png?asset'
 import trayIcon from '../../resources/tray-icon.png?asset'
 import { getTrayContextMenu, refreshAppIconMenus, showAndFocusWindow } from './lib/app-icon-menu'
-import { isShareCaptureWindow } from './lib/share-capture-window'
+import { isAppWindow } from './lib/share-capture-window'
 
 let tray: Tray | null = null
 
@@ -13,7 +13,7 @@ let tray: Tray | null = null
  */
 function findMainWindow(): BrowserWindow | null {
   const windows = BrowserWindow.getAllWindows()
-  return windows.find((window) => !(window.isDestroyed() || isShareCaptureWindow(window))) || null
+  return windows.find(isAppWindow) || null
 }
 
 /**

@@ -84,6 +84,7 @@
     "conf": "^15.0.2",
     "dayjs": "^1.11.18",
     "drizzle-orm": "^0.45.2",
+    "electron-ga4-telemetry": "github:nexmoe/electron-ga4-telemetry#12e35349b209228930fe42a7e89cd96217d8f3a7",
     "electron-ipc-decorator": "^0.2.0",
     "electron-log": "^5.4.3",
     "electron-store": "^11.0.2",

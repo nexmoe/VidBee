@@ -1,5 +1,5 @@
 import { Button } from '@renderer/components/ui/button'
-import { trackDesktopEvent } from '@renderer/lib/rybbit-client'
+import { trackDesktopEvent } from '@renderer/lib/desktop-analytics'
 import { openSettingsTab } from '@renderer/lib/settings-navigation'
 import { aiPromptErrorNeedsProviderSettings, isIncompleteAiStreamError } from '@shared/ai-run'
 import type { AiPromptErrorCode } from '@shared/ai-types'

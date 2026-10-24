@@ -31,6 +31,7 @@ import type { SubscriptionFeedItem, SubscriptionRule } from '../../shared/types'
 import { settingsManager } from '../settings'
 import { scopedLoggers } from '../utils/logger'
 import { getDatabaseConnection } from './database'
+import { hydrateDownloadMetadata } from './download-metadata'
 import { historyManager } from './history-manager'
 import { buildDesktopSubscriptionTaskInput } from './subscription-enqueue'
 import { getDesktopTaskQueue } from './task-queue-host'
@@ -104,7 +105,7 @@ export const getDesktopSubscriptions = (): SubscriptionsApi => {
       const { task, downloadDirectory } = buildDesktopSubscriptionTaskInput({
         settings: settingsManager.getAll(),
         subscription,
-        item,
+        item: await hydrateDownloadMetadata(item),
         trigger,
         creation
       })

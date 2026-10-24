@@ -11,7 +11,7 @@ import { normalizeLanguageCode } from '@vidbee/i18n/languages'
 import { app, BrowserWindow, Menu, type MenuItemConstructorOptions } from 'electron'
 import { settingsManager } from '../settings'
 import { applyDockMenu } from '../utils/dock'
-import { isShareCaptureWindow } from './share-capture-window'
+import { isAppWindow } from './share-capture-window'
 
 interface AppIconMenuCopy {
   next: string
@@ -59,11 +59,7 @@ const loadAppIconMenuCopy = (): AppIconMenuCopy => {
  * Find the main window so dock/tray actions can reach the renderer.
  */
 const findMainWindow = (): BrowserWindow | null => {
-  return (
-    BrowserWindow.getAllWindows().find(
-      (window) => !(window.isDestroyed() || isShareCaptureWindow(window))
-    ) ?? null
-  )
+  return BrowserWindow.getAllWindows().find(isAppWindow) ?? null
 }
 
 /**

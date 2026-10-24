@@ -2,7 +2,7 @@ import { Button } from '@renderer/components/ui/button'
 import { MessageScrollerItem } from '@renderer/components/ui/message-scroller'
 import { useAgentChat } from '@renderer/hooks/use-agent-chat'
 import { shareImageFileName } from '@renderer/lib/capture-prompt-share'
-import { trackDesktopEvent } from '@renderer/lib/rybbit-client'
+import { trackDesktopEvent } from '@renderer/lib/desktop-analytics'
 import { thinkingDurationHeader } from '@renderer/lib/thinking-header'
 import {
   AGENT_MAX_MESSAGE_IMAGES,

@@ -352,6 +352,9 @@ importers:
       drizzle-orm:
         specifier: '>=0.45.2 <0.46'
         version: 0.45.2(@opentelemetry/api@1.9.1)(@types/better-sqlite3@9.6.0)(better-sqlite3@13.0.3)(kysely@0.29.5)
+      electron-ga4-telemetry:
+        specifier: github:nexmoe/electron-ga4-telemetry#12e35349b209228930fe42a7e89cd96217d8f3a7
+        version: https://codeload.github.com/nexmoe/electron-ga4-telemetry/tar.gz/12e35349b209228930fe42a7e89cd96217d8f3a7(electron@43.4.1)
       electron-ipc-decorator:
         specifier: ^0.2.0
         version: 0.2.0(electron@43.4.1)
@@ -5194,6 +5197,16 @@ packages:
     resolution: {integrity: sha512-a1KM5heqS3gQCZzizXEI8RjJy3QVogULPdeSknt76uLDpBIW/HDGsMg/XgP0riP6PI9COsRvFITKKGDqA8fJxA==}
     engines: {node: '>=14.0.0'}
     hasBin: true
+
+  electron-ga4-telemetry@https://codeload.github.com/nexmoe/electron-ga4-telemetry/tar.gz/12e35349b209228930fe42a7e89cd96217d8f3a7:
+    resolution: {gitHosted: true, tarball: https://codeload.github.com/nexmoe/electron-ga4-telemetry/tar.gz/12e35349b209228930fe42a7e89cd96217d8f3a7}
+    version: 0.3.0
+    engines: {node: '>=22'}
+    peerDependencies:
+      electron: '>=43.4.1 <44'
+    peerDependenciesMeta:
+      electron:
+        optional: true
 
   electron-ipc-decorator@0.2.0:
     resolution: {integrity: sha512-7020pQ/8qdm+CkVQRQG1A0zhWERI4OFyCnULtcPFv4JJRE1rwfBKrKwWIxsoeFpjBEGEV1M7Ms5FGt2jLrMY5g==}
@@ -13076,6 +13089,10 @@ snapshots:
     transitivePeerDependencies:
       - electron-builder-squirrel-windows
       - supports-color
+
+  electron-ga4-telemetry@https://codeload.github.com/nexmoe/electron-ga4-telemetry/tar.gz/12e35349b209228930fe42a7e89cd96217d8f3a7(electron@43.4.1):
+    optionalDependencies:
+      electron: 43.4.1
 
   electron-ipc-decorator@0.2.0(electron@43.4.1):
     dependencies:

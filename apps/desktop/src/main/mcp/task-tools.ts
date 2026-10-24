@@ -13,6 +13,7 @@ import {
 import { inspectAgentEngine } from '../lib/agent-capability-host'
 import { createAgentTask, getAgentTask, manageAgentTask } from '../lib/agent-management-host'
 import { prepareDownloadTaskInput } from '../lib/download-facade'
+import { hydrateDownloadMetadata } from '../lib/download-metadata'
 import { historyManager } from '../lib/history-manager'
 import { subtitleDownloadSchema } from '../lib/subtitle-download'
 import { getDesktopTaskQueue } from '../lib/task-queue-host'
@@ -103,8 +104,16 @@ async function downloadMedia(input: z.output<typeof downloadSchema>, signal: Abo
       }
     }
     signal.throwIfAborted()
+    const duplicate = queue.findDuplicateDownload(prepared)
+    if (duplicate) {
+      return { created: false, task: mcpTask(duplicate) }
+    }
+    const metadata = await hydrateDownloadMetadata({ url, title }, signal)
     const id = randomUUID()
-    const admitted = await queue.add({ id, input: prepared })
+    const admitted = await queue.add({
+      id,
+      input: { ...prepared, title: metadata.title, thumbnail: metadata.thumbnail }
+    })
     const task = queue.get(admitted.id)
     return { created: admitted.id === id, task: task ? mcpTask(task) : null }
   }
