@@ -5,12 +5,18 @@ For full release notes, see [GitHub Releases](https://github.com/nexmoe/VidBee/r
 
 ## [Unreleased]
 
+## [v2.2.4](https://github.com/nexmoe/VidBee/releases/tag/v2.2.4) - 2026-10-24
+
 ### Added
 - Connect external AI assistants to VidBee through local MCP tools for downloads, subscriptions, transcription, and exports.
+- Continue the same Agent conversation across VidBee Desktop and the browser extension.
+- Download subtitles on their own, without downloading the video.
 - Download AI diagrams as JPG alongside SVG, PNG, and Mermaid source.
 
 ### Changed
 - Keep large download and transcript libraries responsive and improve navigation between converted media.
+- Show download titles and covers as soon as items enter the queue.
+- Keep a separate cookie session for each browser profile used by the extension.
 - Render AI diagrams with Pele and consistent controls in light and dark themes.
 
 ### Fixed
