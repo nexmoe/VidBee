@@ -19,7 +19,7 @@ import path from 'node:path'
 
 import {
   downloadIdentity,
-  isMediaTaskKind,
+  isLibraryTaskKind,
   PRIORITY_USER,
   type Task,
   type TaskInput,
@@ -182,7 +182,7 @@ class DownloadFacade extends EventEmitter {
       this.emit('download-removed', event.taskId)
     })
     queue.on('snapshot-changed', (event) => {
-      if (!isMediaTaskKind(event.task.kind)) {
+      if (!isLibraryTaskKind(event.task.kind)) {
         return
       }
       const item = projectTaskForRenderer(event.task)
@@ -190,7 +190,7 @@ class DownloadFacade extends EventEmitter {
     })
     queue.on('transition', (event) => {
       const task = queue.get(event.taskId)
-      if (!(task && isMediaTaskKind(task.kind))) {
+      if (!(task && isLibraryTaskKind(task.kind))) {
         return
       }
       const item = projectTaskForRenderer(task)
@@ -325,6 +325,9 @@ class DownloadFacade extends EventEmitter {
    * @param task Cancelled download task.
    */
   private async removeCancelledPartialFiles(task: Task): Promise<void> {
+    if (task.kind === 'subtitles') {
+      return
+    }
     try {
       const options = task.input.options ?? {}
       let configured = ''
@@ -530,7 +533,7 @@ class DownloadFacade extends EventEmitter {
     do {
       const page = this.queue.list({ limit: 200, cursor })
       for (const t of page.tasks) {
-        if (NON_TERMINAL.has(t.status) && isMediaTaskKind(t.kind)) {
+        if (NON_TERMINAL.has(t.status) && isLibraryTaskKind(t.kind)) {
           active.push(projectTaskForRenderer(t))
         }
       }

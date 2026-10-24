@@ -311,7 +311,7 @@ export function TranscriptAgentMessages({
   const branch = useCallback((id: string) => {
     actions.current.onBranch(id)
   }, [])
-  return messages.map((message, index) => {
+  return messages.map((message) => {
     const rowDeps = deps.get(message.id)
     if (!rowDeps) {
       return null
@@ -329,7 +329,7 @@ export function TranscriptAgentMessages({
           onRetry={retry}
           onSeek={onSeek ? seek : undefined}
           onShare={share}
-          overview={overviewPrompt && index <= 1}
+          overview={overviewPrompt}
           sourceTitle={sourceTitle}
           sourceUrl={sourceUrl}
           thread={thread}

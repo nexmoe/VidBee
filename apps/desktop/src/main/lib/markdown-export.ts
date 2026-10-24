@@ -36,6 +36,16 @@ export async function writeMarkdownPdf(
   signal?: AbortSignal,
   overwrite = true
 ): Promise<void> {
+  await writeFile(outputPath, await renderMarkdownPdf(options, signal), {
+    flag: overwrite ? 'w' : 'wx'
+  })
+}
+
+/** Render native and browser PDF downloads through the same isolated print pipeline. */
+export async function renderMarkdownPdf(
+  options: Parameters<typeof writeMarkdownPdf>[1],
+  signal?: AbortSignal
+): Promise<Buffer> {
   const abort = signal
     ? AbortSignal.any([signal, AbortSignal.timeout(60_000)])
     : AbortSignal.timeout(60_000)
@@ -82,7 +92,7 @@ export async function writeMarkdownPdf(
       return window
     })
     abort.throwIfAborted()
-    await writeFile(outputPath, pdf, { flag: overwrite ? 'w' : 'wx' })
+    return pdf
   } finally {
     abort.removeEventListener('abort', cancel)
     cancel()

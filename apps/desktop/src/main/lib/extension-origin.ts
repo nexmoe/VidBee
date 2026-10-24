@@ -1,16 +1,18 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { VIDBEE_EXTENSION_ORIGIN } from '@vidbee/downloader-core/cookie-setup'
+import { VIDBEE_DEV_EXTENSION_ORIGIN } from '../../shared/extension-identity'
 
 const EXTENSION_ORIGIN =
   /^(chrome-extension:\/\/[a-p]{32}|moz-extension:\/\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})$/
 const developmentOrigins = new Set<string>()
 
-/** Allow explicitly configured unpacked extensions only in an unpackaged Desktop app. */
+/** Trust the fixed development build and explicit overrides only in unpackaged Desktop. */
 export function configureDevelopmentExtensionOrigins(isPackaged: boolean, origins?: string): void {
   developmentOrigins.clear()
   if (isPackaged) {
     return
   }
+  developmentOrigins.add(VIDBEE_DEV_EXTENSION_ORIGIN)
   for (const origin of origins?.split(',') ?? []) {
     const value = origin.trim()
     if (EXTENSION_ORIGIN.test(value)) {
@@ -20,7 +22,7 @@ export function configureDevelopmentExtensionOrigins(isPackaged: boolean, origin
 }
 
 /**
- * True only for the published VidBee extension or an explicit development origin.
+ * True only for the published extension or development identities enabled at startup.
  *
  * @param value Candidate Origin header.
  */

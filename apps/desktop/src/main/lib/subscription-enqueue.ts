@@ -5,6 +5,7 @@
  * snapshot the same runtime settings as a one-off download. The desktop
  * executor has no default runtime settings. GitHub issue #475.
  */
+import { resolveSubtitleLanguages } from '@vidbee/downloader-core/subtitle-languages'
 import { buildSubscriptionDownloadOptions } from '@vidbee/subscriptions-core/download-options'
 import type { SubscriptionDownloadPreferences } from '@vidbee/subscriptions-core/types'
 import type { TaskCreationMetadata, TaskInput } from '@vidbee/task-queue'
@@ -45,17 +46,26 @@ export const buildDesktopSubscriptionTaskInput = (input: {
     ? sanitizeFilenameTemplate(input.subscription.namingTemplate)
     : undefined
   const tags = Array.from(new Set([input.subscription.platform, ...input.subscription.tags]))
+  const downloadOptions = buildSubscriptionDownloadOptions(input.subscription, input.settings)
 
   return {
     downloadDirectory,
     task: {
       url: input.item.url,
-      kind: 'subscription-item',
+      kind: downloadOptions.type === 'subtitles' ? 'subtitles' : 'subscription-item',
       title: input.item.title,
       ...(input.item.thumbnail === undefined ? {} : { thumbnail: input.item.thumbnail }),
       subscriptionId: input.subscription.id,
       options: {
-        ...buildSubscriptionDownloadOptions(input.subscription, input.settings),
+        ...downloadOptions,
+        ...(downloadOptions.type === 'subtitles'
+          ? {
+              languages: resolveSubtitleLanguages(
+                input.settings.subtitleLanguages,
+                input.settings.language
+              )
+            }
+          : {}),
         customDownloadPath: downloadDirectory,
         ...(namingTemplate ? { customFilenameTemplate: namingTemplate } : {}),
         tags,

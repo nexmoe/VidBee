@@ -13,7 +13,7 @@ import {
 import { z } from 'zod'
 
 const subscriptionDownloadPreferences = {
-  downloadType: DownloadTypeSchema.optional(),
+  downloadType: DownloadTypeSchema.or(z.literal('subtitles')).optional(),
   downloadQuality: OneClickQualityPresetSchema.optional(),
   downloadContainer: OneClickContainerOptionSchema.optional()
 }

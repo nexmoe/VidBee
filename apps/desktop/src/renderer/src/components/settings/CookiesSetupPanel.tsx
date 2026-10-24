@@ -28,8 +28,6 @@ import {
   parseBrowserCookiesSetting
 } from '@vidbee/downloader-core/browser-cookies-setting'
 import {
-  COOKIES_CHROME_EXTENSION_URL,
-  COOKIES_FIREFOX_EXTENSION_URL,
   COOKIES_GUIDE_URL,
   type CookieBrowserId,
   type CookieHealth,
@@ -39,10 +37,11 @@ import {
   VIDBEE_EXTENSION_CHROME_URL
 } from '@vidbee/downloader-core/cookie-setup'
 import { useAtomValue, useSetAtom } from 'jotai'
-import { AlertTriangle, Cookie, Puzzle } from 'lucide-react'
+import { AlertTriangle } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import { ExtensionCookieSources } from './ExtensionCookieSources'
 
 interface CookiesSetupPanelProps {
   onHealthChange?: (health: CookieHealth) => void
@@ -83,6 +82,50 @@ const healthBadgeLabel = (health: CookieHealth, t: TranslateFn): string => {
     default:
       return t('settings.cookiesSetup.statusNotConfigured')
   }
+}
+
+/**
+ * Badge color for the current cookie health.
+ *
+ * @param health Cookie health snapshot.
+ */
+const healthBadgeVariant = (health: CookieHealth): 'default' | 'destructive' | 'outline' => {
+  if (health.status === 'ok') {
+    return 'default'
+  }
+  if (health.status === 'expired' || health.status === 'invalid') {
+    return 'destructive'
+  }
+  return 'outline'
+}
+
+/**
+ * Name of the cookie source the next download will use.
+ *
+ * @param health Cookie health snapshot.
+ * @param extensionBrowser Browser reported by the extension bridge.
+ * @param t i18n function.
+ */
+const sourceLabel = (
+  health: CookieHealth,
+  extensionBrowser: string | undefined,
+  t: TranslateFn
+): string => {
+  if (health.source === 'extension') {
+    const browser = health.browser ?? extensionBrowser
+    return browser
+      ? t('settings.cookiesSetup.statusUsingExtension', { browser: browserLabel(browser, t) })
+      : t('settings.cookiesSetup.extensionTitle')
+  }
+  if (health.source === 'browser' && health.browser) {
+    return t('settings.cookiesSetup.statusUsingBrowser', {
+      browser: browserLabel(health.browser, t)
+    })
+  }
+  if (health.source === 'file') {
+    return t('settings.cookiesSetup.statusUsingFile')
+  }
+  return t('settings.cookiesSetup.statusNotConfigured')
 }
 
 /**
@@ -391,24 +434,47 @@ export function CookiesSetupPanel({
     }
   }
 
-  const healthBadge = healthLoading
-    ? t('settings.cookiesSetup.checking')
-    : healthBadgeLabel(health, t)
-  const extensionBadge = connection.connected
-    ? t('settings.cookiesSetup.extensionConnected')
-    : t('settings.cookiesSetup.extensionDisconnected')
+  const extensionActive = health.source === 'extension'
+  const fileConfigured = cookiesPathValue.trim().length > 0
+  const browserConfigured = selectedBrowserValue !== 'none' && !fileConfigured
+  const showStatusBadge = healthLoading || health.status !== 'unconfigured'
+
+  /**
+   * Badge for a cookie source row: in use, kept as a fallback, or nothing.
+   *
+   * @param active Whether this source feeds the next download.
+   * @param configured Whether this source has a saved value.
+   */
+  const sourceBadge = (active: boolean, configured: boolean) => {
+    if (active) {
+      return <Badge variant="secondary">{t('settings.cookiesSetup.sourceInUse')}</Badge>
+    }
+    if (configured && extensionActive) {
+      return <Badge variant="outline">{t('settings.cookiesSetup.sourceFallback')}</Badge>
+    }
+    return null
+  }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      <div className="space-y-1 px-1">
+        <p className="font-medium text-sm">{t('settings.cookiesSetup.whyTitle')}</p>
+        <p className="text-muted-foreground text-sm">{t('settings.cookiesSetup.whyDescription')}</p>
+      </div>
       <ItemGroup>
-        <Item className="flex-col items-stretch" variant="muted">
+        <Item className="flex-col items-stretch sm:flex-row sm:items-start" variant="muted">
           <ItemContent>
             <div className="flex flex-wrap items-center gap-2">
-              <Cookie className="h-4 w-4 text-muted-foreground" />
-              <ItemTitle>{t('settings.cookiesSetup.statusHeading')}</ItemTitle>
-              <Badge variant={health.status === 'ok' ? 'secondary' : 'outline'}>
-                {healthBadge}
-              </Badge>
+              <ItemTitle className="text-base">
+                {sourceLabel(health, connection.browser, t)}
+              </ItemTitle>
+              {showStatusBadge ? (
+                <Badge variant={healthLoading ? 'outline' : healthBadgeVariant(health)}>
+                  {healthLoading
+                    ? t('settings.cookiesSetup.checking')
+                    : healthBadgeLabel(health, t)}
+                </Badge>
+              ) : null}
             </div>
             <ItemDescription>{healthDescription(health, t)}</ItemDescription>
             {health.sites.length > 0 ? (
@@ -426,194 +492,158 @@ export function CookiesSetupPanel({
               </div>
             ) : null}
           </ItemContent>
-        </Item>
-        <ItemSeparator />
-        <Item className="flex-col items-stretch" variant="muted">
-          <ItemContent>
-            <p className="font-medium text-muted-foreground text-xs uppercase tracking-wider">
-              {t('settings.cookiesSetup.methodRecommended')}
-            </p>
-            <div className="flex flex-wrap items-center gap-2">
-              <Puzzle className="h-4 w-4 text-muted-foreground" />
-              <ItemTitle>{t('settings.cookiesSetup.extensionTitle')}</ItemTitle>
-              <Badge variant={connection.connected ? 'secondary' : 'outline'}>
-                {extensionBadge}
-              </Badge>
-            </div>
-            <ItemDescription>
-              {connection.connected
-                ? t('settings.cookiesSetup.extensionConnectedHint', {
-                    browser: browserLabel(connection.browser ?? health.browser ?? '', t)
-                  })
-                : t('settings.cookiesSetup.methodExtensionWhy')}
-            </ItemDescription>
-            {connection.connected ? null : (
-              <div className="flex flex-wrap gap-2 pt-2">
-                <Button onClick={() => void handleOpenLink(VIDBEE_EXTENSION_CHROME_URL)} size="sm">
-                  {t('settings.cookiesSetup.extensionInstallChrome')}
-                </Button>
-              </div>
-            )}
-          </ItemContent>
-        </Item>
-      </ItemGroup>
-
-      <ItemGroup>
-        <Item className="flex-col items-stretch sm:flex-row sm:items-center" variant="muted">
-          <ItemContent>
-            <div className="flex flex-wrap items-center gap-2">
-              <ItemTitle>{t('settings.browserForCookies')}</ItemTitle>
-              {browserActive ? (
-                <Badge variant={health.status === 'ok' ? 'secondary' : 'outline'}>
-                  {healthBadge}
-                </Badge>
-              ) : null}
-            </div>
-            <ItemDescription>{t('settings.browserForCookiesDescription')}</ItemDescription>
-            {platform === 'win32' ? (
-              <ItemDescription>{t('settings.browserForCookiesWindowsNote')}</ItemDescription>
-            ) : null}
-            {currentBrowserUnsupported ? (
-              <ItemDescription className="text-destructive">
-                {t('settings.cookiesSetup.windowsUnsupportedCurrent', {
-                  browser: browserLabel(browserForCookiesValue, t)
-                })}
-              </ItemDescription>
-            ) : null}
-          </ItemContent>
-          <ItemActions>
-            <Select
-              onValueChange={(value) => {
-                if (value === 'none') {
-                  void handleSettingChange('browserForCookies', 'none')
-                  return
-                }
-                void applyBrowser(value as CookieBrowserId)
-              }}
-              value={selectedBrowserValue}
-            >
-              <SelectTrigger className="w-36">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">{t('settings.none')}</SelectItem>
-                {selectableBrowsers.map((browser) => (
-                  <SelectItem key={browser} value={browser}>
-                    {browserLabel(browser, t)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </ItemActions>
-        </Item>
-
-        {showProfileField ? (
-          <>
-            <ItemSeparator />
-            <Item variant="muted">
-              <ItemContent className="basis-full">
-                <ItemTitle>{t('settings.browserForCookiesProfile')}</ItemTitle>
-                <ItemDescription>
-                  {t('settings.browserForCookiesProfileDescription')}
-                </ItemDescription>
-              </ItemContent>
-              <ItemActions className="basis-full">
-                <div className="relative w-full">
-                  <Input
-                    className="w-full pr-10"
-                    onChange={(event) => {
-                      void handleSettingChange(
-                        'browserForCookies',
-                        buildBrowserCookiesSetting(browserForCookiesValue, event.target.value)
-                      )
-                    }}
-                    placeholder={t('settings.browserForCookiesProfilePlaceholder')}
-                    value={browserCookiesProfileValue}
-                  />
-                  {showBrowserProfileWarning ? (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span className="absolute top-1/2 right-3 inline-flex h-4 w-4 -translate-y-1/2 items-center justify-center text-amber-500">
-                          <AlertTriangle aria-hidden className="h-4 w-4" />
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {getBrowserProfileWarningMessage(profileValidation.reason)}
-                      </TooltipContent>
-                    </Tooltip>
-                  ) : null}
-                </div>
-              </ItemActions>
-            </Item>
-          </>
-        ) : null}
-      </ItemGroup>
-
-      <ItemGroup>
-        <Item className="flex-col items-stretch" variant="muted">
-          <ItemContent>
-            <div className="flex flex-wrap items-center gap-2">
-              <ItemTitle>{t('settings.cookiesFile')}</ItemTitle>
-              {fileActive ? (
-                <Badge variant={health.status === 'ok' ? 'secondary' : 'outline'}>
-                  {healthBadge}
-                </Badge>
-              ) : null}
-            </div>
-            <ItemDescription>
-              {t('settings.cookiesSetup.recommendedImportFileHint')}
-            </ItemDescription>
-            <div className="flex flex-wrap gap-3 pt-1">
-              <Button
-                className="px-0"
-                onClick={() => void handleOpenLink(COOKIES_CHROME_EXTENSION_URL)}
-                variant="link"
-              >
-                {t('settings.cookiesSetup.fileExportExtension')}
-              </Button>
-              <Button
-                className="px-0"
-                onClick={() => void handleOpenLink(COOKIES_FIREFOX_EXTENSION_URL)}
-                variant="link"
-              >
-                {t('settings.browserOptions.firefox')}
-              </Button>
-            </div>
-            <div className="flex w-full max-w-md gap-2 pt-2">
-              <Input className="flex-1" readOnly value={cookiesPathValue} />
-              <Button onClick={() => void handleSelectCookiesFile()}>
-                {t('settings.selectPath')}
-              </Button>
-              {cookiesPathValue ? (
-                <Button
-                  onClick={() => void handleSettingChange('cookiesPath', '')}
-                  variant="secondary"
-                >
-                  {t('settings.clearCookiesFile')}
-                </Button>
-              ) : null}
-            </div>
-          </ItemContent>
-        </Item>
-      </ItemGroup>
-
-      <ItemGroup>
-        <Item variant="muted">
-          <ItemContent>
-            <ItemTitle>{t('settings.cookiesGuideTitle')}</ItemTitle>
-            <ItemDescription>{t('settings.cookiesGuideDescription')}</ItemDescription>
-          </ItemContent>
           <ItemActions>
             <Button
-              className="px-0"
-              onClick={() => void handleOpenLink(COOKIES_GUIDE_URL)}
-              variant="link"
+              disabled={healthLoading}
+              onClick={() => void refreshHealth()}
+              size="sm"
+              variant="outline"
             >
-              {t('settings.cookiesGuideLink')}
+              {t('settings.cookiesSetup.checkStatus')}
             </Button>
           </ItemActions>
         </Item>
       </ItemGroup>
+
+      <section className="space-y-2">
+        <h3 className="px-1 font-medium text-sm">{t('settings.cookiesSetup.sourceHeading')}</h3>
+        <ItemGroup>
+          <Item className="flex-col items-stretch sm:flex-row sm:items-center" variant="muted">
+            <ItemContent>
+              <div className="flex flex-wrap items-center gap-2">
+                <ItemTitle>{t('settings.cookiesSetup.extensionTitle')}</ItemTitle>
+                <Badge>{t('settings.cookiesSetup.modeAuto')}</Badge>
+                {sourceBadge(extensionActive, false)}
+              </div>
+              <ItemDescription>
+                {connection.connected
+                  ? t('settings.cookiesSetup.extensionConnectedShort', {
+                      browser: browserLabel(connection.browser ?? health.browser ?? '', t)
+                    })
+                  : t('settings.cookiesSetup.extensionShortHint')}
+              </ItemDescription>
+            </ItemContent>
+            {connection.connected ? null : (
+              <ItemActions>
+                <Button onClick={() => void handleOpenLink(VIDBEE_EXTENSION_CHROME_URL)} size="sm">
+                  {t('settings.cookiesSetup.extensionInstallChrome')}
+                </Button>
+              </ItemActions>
+            )}
+            <ExtensionCookieSources
+              connection={connection}
+              onOrderChange={() => void refreshHealth()}
+            />
+          </Item>
+          <ItemSeparator />
+          <Item className="flex-col items-stretch sm:flex-row sm:items-center" variant="muted">
+            <ItemContent>
+              <div className="flex flex-wrap items-center gap-2">
+                <ItemTitle>{t('settings.cookiesSetup.browserTitle')}</ItemTitle>
+                <Badge variant="outline">{t('settings.cookiesSetup.modeSemiAuto')}</Badge>
+                {sourceBadge(browserActive, browserConfigured)}
+              </div>
+              <ItemDescription>{t('settings.cookiesSetup.browserShortHint')}</ItemDescription>
+              {currentBrowserUnsupported ? (
+                <ItemDescription className="text-destructive">
+                  {t('settings.cookiesSetup.windowsUnsupportedCurrent', {
+                    browser: browserLabel(browserForCookiesValue, t)
+                  })}
+                </ItemDescription>
+              ) : null}
+            </ItemContent>
+            <ItemActions>
+              <Select
+                onValueChange={(value) => {
+                  if (value === 'none') {
+                    void handleSettingChange('browserForCookies', 'none')
+                    return
+                  }
+                  void applyBrowser(value as CookieBrowserId)
+                }}
+                value={selectedBrowserValue}
+              >
+                <SelectTrigger
+                  aria-label={t('settings.cookiesSetup.browserTitle')}
+                  className="w-36"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">{t('settings.none')}</SelectItem>
+                  {selectableBrowsers.map((browser) => (
+                    <SelectItem key={browser} value={browser}>
+                      {browserLabel(browser, t)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </ItemActions>
+            {showProfileField ? (
+              <div className="relative basis-full">
+                <Input
+                  aria-label={t('settings.browserForCookiesProfile')}
+                  className="w-full pr-10"
+                  onChange={(event) => {
+                    void handleSettingChange(
+                      'browserForCookies',
+                      buildBrowserCookiesSetting(browserForCookiesValue, event.target.value)
+                    )
+                  }}
+                  placeholder={t('settings.browserForCookiesProfilePlaceholder')}
+                  value={browserCookiesProfileValue}
+                />
+                {showBrowserProfileWarning ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="absolute top-1/2 right-3 inline-flex h-4 w-4 -translate-y-1/2 items-center justify-center text-amber-500">
+                        <AlertTriangle aria-hidden className="h-4 w-4" />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {getBrowserProfileWarningMessage(profileValidation.reason)}
+                    </TooltipContent>
+                  </Tooltip>
+                ) : null}
+              </div>
+            ) : null}
+          </Item>
+          <ItemSeparator />
+          <Item className="flex-col items-stretch sm:flex-row sm:items-center" variant="muted">
+            <ItemContent className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <ItemTitle>{t('settings.cookiesFile')}</ItemTitle>
+                <Badge variant="outline">{t('settings.cookiesSetup.modeManual')}</Badge>
+                {sourceBadge(fileActive, fileConfigured)}
+              </div>
+              <ItemDescription className="truncate">
+                {fileConfigured ? cookiesPathValue : t('settings.cookiesSetup.fileShortHint')}
+              </ItemDescription>
+            </ItemContent>
+            <ItemActions>
+              {fileConfigured ? (
+                <Button
+                  onClick={() => void handleSettingChange('cookiesPath', '')}
+                  size="sm"
+                  variant="ghost"
+                >
+                  {t('settings.clearCookiesFile')}
+                </Button>
+              ) : null}
+              <Button onClick={() => void handleSelectCookiesFile()} size="sm" variant="outline">
+                {t('settings.selectPath')}
+              </Button>
+            </ItemActions>
+          </Item>
+        </ItemGroup>
+        <Button
+          className="h-auto px-1"
+          onClick={() => void handleOpenLink(COOKIES_GUIDE_URL)}
+          variant="link"
+        >
+          {t('settings.cookiesGuideLink')}
+        </Button>
+      </section>
     </div>
   )
 }

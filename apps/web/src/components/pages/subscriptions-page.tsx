@@ -40,6 +40,7 @@ import {
 import { RemoteImage } from "@vidbee/ui/components/ui/remote-image";
 import { ScrollArea } from "@vidbee/ui/components/ui/scroll-area";
 import { SubscriptionAllTab } from "@vidbee/ui/components/ui/subscription-all-tab";
+import { SubscriptionVirtualGrid } from "@vidbee/ui/components/ui/subscription-virtual-grid";
 import {
 	Tooltip,
 	TooltipContent,
@@ -128,6 +129,7 @@ export const SubscriptionsPage = () => {
 	>(new Map());
 	const [addDialogOpen, setAddDialogOpen] = useState(false);
 	const [selectedTab, setSelectedTab] = useState<string | null>(null);
+	const [viewport, setViewport] = useState<HTMLDivElement | null>(null);
 	const [directoryDialogOpen, setDirectoryDialogOpen] = useState(false);
 	const directoryPickerRef = useRef<((path: string | null) => void) | null>(
 		null,
@@ -349,8 +351,8 @@ export const SubscriptionsPage = () => {
 
 	return (
 		<AppShell page="subscriptions">
-			<div className="relative flex h-full w-full flex-col">
-				<div className="flex flex-row pr-6 pb-6 pl-6">
+			<div className="relative flex h-full min-h-0 w-full flex-col">
+				<div className="flex shrink-0 flex-row pr-6 pb-6 pl-6">
 					<ScrollArea
 						className="min-w-0 flex-1"
 						orientation="horizontal"
@@ -405,7 +407,7 @@ export const SubscriptionsPage = () => {
 					</Button>
 				</div>
 
-				<ScrollArea className="overflow-y-auto">
+				<ScrollArea className="min-h-0 flex-1" viewportRef={setViewport}>
 					<div className="relative space-y-8 p-6 pt-0">
 						<section className="space-y-4">
 							{sortedSubscriptions.length === 0 ? (
@@ -416,7 +418,9 @@ export const SubscriptionsPage = () => {
 								<SubscriptionItems
 									downloadById={downloadById}
 									entries={displayedItems}
+									key={selectedTab ?? "all"}
 									onQueueItem={handleQueueItem}
+									viewport={viewport}
 								/>
 							)}
 						</section>
@@ -635,6 +639,7 @@ const SubscriptionItems = ({
 	downloadById,
 	entries,
 	onQueueItem,
+	viewport,
 }: {
 	downloadById: ReadonlyMap<string, { status: string }>;
 	entries: SubscriptionFeedEntry<SubscriptionWithItems>[];
@@ -642,6 +647,7 @@ const SubscriptionItems = ({
 		subscriptionId: string,
 		item: SubscriptionFeedItem,
 	) => Promise<void>;
+	viewport: HTMLDivElement | null;
 }) => {
 	const { t } = useTranslation();
 
@@ -669,8 +675,9 @@ const SubscriptionItems = ({
 	}
 
 	return (
-		<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-			{entries.map(({ subscription, item }) => {
+		<SubscriptionVirtualGrid
+			entries={entries}
+			renderEntry={({ subscription, item }) => {
 				const itemStatus = resolveSubscriptionItemStatus(item, downloadById);
 				const hasResolvedDownloadStatus =
 					item.addedToQueue &&
@@ -782,7 +789,8 @@ const SubscriptionItems = ({
 						</ContextMenuContent>
 					</ContextMenu>
 				);
-			})}
-		</div>
+			}}
+			viewport={viewport}
+		/>
 	);
 };

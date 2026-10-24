@@ -1,6 +1,6 @@
-import { readdir, stat, writeFile } from 'node:fs/promises'
+import { open, readdir, rm, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import { nativeImage } from 'electron'
+import { nativeImage, nativeTheme } from 'electron'
 import { z } from 'zod'
 import { selectedAgentMessages } from '../../shared/agent-chat'
 import { artifactsForMessage } from '../../shared/agent-markdown'
@@ -16,10 +16,16 @@ import { historyManager } from '../lib/history-manager'
 import { libraryExportPath } from '../lib/library-export'
 import { markdownWithEmbeddedImages, writeMarkdownPdf } from '../lib/markdown-export'
 import { withVidBeeExportAttribution, withVideoSourceLink } from '../lib/markdown-pdf'
-import { captureShareCardPages, captureShareCardPng } from '../lib/share-capture-window'
+import { extractMermaidDiagrams } from '../lib/mermaid-diagrams'
+import {
+  captureShareCardPages,
+  captureShareCardPng,
+  exportMermaidDiagram
+} from '../lib/share-capture-window'
 import { saveSplitShareImageFiles } from '../lib/share-image-split'
 import { getDesktopTaskQueue } from '../lib/task-queue-host'
 import { readTranscriptDetail } from '../lib/transcript-host'
+import { settingsManager } from '../settings'
 import { defineMcpTool, mcpId, mcpLimit, mcpOffset, mcpPage } from './tool'
 
 const imageOptions = {
@@ -245,6 +251,69 @@ export function createMcpExportTools() {
           await writeFile(outputPath, markdown, { encoding: 'utf8', flag: 'wx' })
         }
         return { format: input.format, path: outputPath, bytes: (await stat(outputPath)).size }
+      }
+    ),
+    defineMcpTool(
+      'export_mermaid_diagram',
+      "Export one Mermaid diagram from a completed assistant reply as PNG (default), JPG, SVG or MMD source. Requires threadId; messageId defaults to the latest non-empty reply in the selected branch. diagramIndex is zero-based in Markdown display order, including lists and blockquotes. theme defaults to Desktop's current light/dark theme. Renders with the same Pele plugin and raster exporter as Streamdown; raster edges are capped at 4096 pixels. Returns the saved path, bytes, diagram count and image dimensions. Writes a unique file under library/Exports using a private hidden window, with cancellation and no dialogs or clipboard access.",
+      resultSelector.extend({
+        diagramIndex: z.number().int().nonnegative().default(0),
+        format: z.enum(['png', 'jpg', 'svg', 'mmd']).default('png'),
+        theme: z.enum(['light', 'dark']).optional()
+      }),
+      async (input, signal) => {
+        const result = resolveSkillResult(input)
+        const diagrams = extractMermaidDiagrams(result.markdown)
+        const source = diagrams[input.diagramIndex]
+        if (source === undefined) {
+          throw new Error(
+            diagrams.length
+              ? `diagramIndex ${input.diagramIndex} is out of range; this reply contains ${diagrams.length} Mermaid diagrams (zero-based)`
+              : 'This assistant reply contains no Mermaid diagrams'
+          )
+        }
+        if (!source.trim() || source.length > 100_000) {
+          throw new Error('A Mermaid diagram must contain between 1 and 100000 characters')
+        }
+        signal.throwIfAborted()
+        const savedTheme = settingsManager.get('theme')
+        const theme =
+          input.theme ??
+          (savedTheme === 'dark' || (savedTheme !== 'light' && nativeTheme.shouldUseDarkColors)
+            ? 'dark'
+            : 'light')
+        const image =
+          input.format === 'mmd'
+            ? undefined
+            : await exportMermaidDiagram({ source, format: input.format, theme }, signal)
+        signal.throwIfAborted()
+        const outputPath = await libraryExportPath(
+          `${result.title} diagram ${input.diagramIndex + 1}`,
+          input.format
+        )
+        const file = await open(outputPath, 'wx')
+        let complete = false
+        try {
+          await file.writeFile(image ? image.data : source)
+          const bytes = (await file.stat()).size
+          signal.throwIfAborted()
+          complete = true
+          return {
+            threadId: result.threadId,
+            messageId: result.messageId,
+            diagramIndex: input.diagramIndex,
+            diagramCount: diagrams.length,
+            format: input.format,
+            path: outputPath,
+            bytes,
+            ...(image ? { width: image.width, height: image.height, theme } : {})
+          }
+        } finally {
+          await file.close()
+          if (!complete) {
+            await rm(outputPath, { force: true })
+          }
+        }
       }
     ),
     defineMcpTool(

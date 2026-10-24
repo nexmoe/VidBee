@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { safeStorage } from 'electron'
+import { BrowserWindow, safeStorage } from 'electron'
 import {
   AGENT_THINKING_LEVELS,
   type AgentThinkingLevel,
@@ -147,6 +147,18 @@ class AiStore {
       } satisfies StoredAiState
     })
     this.ensurePrompts()
+    this.store.onDidAnyChange(() => {
+      for (const window of BrowserWindow.getAllWindows()) {
+        if (!window.isDestroyed()) {
+          window.webContents.send('ai:settings-changed')
+        }
+      }
+    })
+  }
+
+  /** Observe settings revisions without exposing credentials to any transport. */
+  subscribe(listener: () => void): () => void {
+    return this.store.onDidAnyChange(listener)
   }
 
   /**

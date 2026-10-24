@@ -9,6 +9,7 @@
 export type TaskKind =
   | 'video'
   | 'audio'
+  | 'subtitles'
   | 'playlist'
   | 'subscription-item'
   | 'yt-dlp-forward'
@@ -43,7 +44,11 @@ export const canAdmitTranscription = (
 
 /** Media-producing tasks share file, playback and history surfaces. */
 export const isMediaTaskKind = (kind: TaskKind): boolean =>
-  isDownloadTaskKind(kind) || kind === 'conversion'
+  (isDownloadTaskKind(kind) && kind !== 'subtitles') || kind === 'conversion'
+
+/** Library entries include subtitle sources that have no playable audio or video. */
+export const isLibraryTaskKind = (kind: TaskKind): boolean =>
+  isMediaTaskKind(kind) || kind === 'subtitles'
 
 export type TaskStatus =
   | 'queued'
@@ -156,9 +161,8 @@ export interface TaskOutput {
   /** Actual yt-dlp subtitle language tags selected for download. */
   subtitleLanguages?: string[]
   /**
-   * Set by the transcription executor after the transcript or explicit
-   * no-speech result has been committed to SQLite. Download tasks leave
-   * this unset.
+   * Set after ASR or downloaded website captions have been committed to SQLite.
+   * ASR may also commit an explicit no-speech result.
    */
   transcript?: TranscriptTaskResult
 }

@@ -1,5 +1,10 @@
 import { type IpcContext, IpcMethod, IpcService } from 'electron-ipc-decorator'
-import type { AgentChatInput, AgentThread, AgentThreadSummary } from '../../../shared/agent-chat'
+import type {
+  AgentChatInput,
+  AgentThinkingLevel,
+  AgentThread,
+  AgentThreadSummary
+} from '../../../shared/agent-chat'
 import { AI_PROVIDER_PRESETS } from '../../../shared/ai-presets'
 import type {
   AiPrompt,
@@ -24,11 +29,12 @@ import {
   selectAgentBranch,
   selectAgentImages,
   sendAgentMessage,
+  setAgentThinkingLevel,
   createAgentThread as startBlankAgentThread,
   stopAgentRun
 } from '../../lib/agent-chat-runner'
-import { getAgentChatStore } from '../../lib/agent-chat-store'
-import { agentDirectorySummary } from '../../lib/agent-run-event'
+import { getAgentComposerOptions, selectAgentComposerModel } from '../../lib/agent-composer'
+import { listAgentConversations } from '../../lib/agent-conversations'
 import {
   type CatalogModelCapabilities,
   type CatalogModelOption,
@@ -43,21 +49,34 @@ import { dislikeCloudResult } from '../../lib/cloud-device'
 import { loadCloudModels } from '../../lib/cloud-models'
 import { settingsManager } from '../../settings'
 
-/** Public history row that omits messages, runs and artifact paths. */
-function toHistorySummary(thread: AgentThread): AgentThreadSummary {
-  return agentDirectorySummary(thread)
-}
-
 /** Conversations with messages, newest first. */
 function listHistorySummaries(): AgentThreadSummary[] {
-  return getAgentChatStore()
-    .listHistory()
-    .map(toHistorySummary)
-    .sort((left, right) => right.updatedAt - left.updatedAt)
+  return listAgentConversations()
 }
 
 class AiService extends IpcService {
   static readonly groupName = 'ai'
+
+  /** Read credential-free model menu options shared with the extension. */
+  @IpcMethod()
+  async getAgentComposerOptions() {
+    return await getAgentComposerOptions()
+  }
+
+  /** Apply a Composer model selection through the common Desktop settings service. */
+  @IpcMethod()
+  async selectAgentComposerModel(_context: IpcContext, value: string) {
+    await selectAgentComposerModel(value)
+  }
+
+  /** Synchronize the next-message effort without altering a reply already running. */
+  @IpcMethod()
+  setAgentThinkingLevel(
+    _context: IpcContext,
+    input: { threadId: string; level: AgentThinkingLevel }
+  ): AgentThread {
+    return setAgentThinkingLevel(input.threadId, input.level)
+  }
 
   /** Load supported thinking levels without exposing provider credentials. */
   @IpcMethod()
@@ -140,7 +159,7 @@ class AiService extends IpcService {
   /** List every conversation on one video, including unused blank chats. */
   @IpcMethod()
   listAgentThreads(_context: IpcContext, input: { downloadId: string }): AgentThreadSummary[] {
-    return getAgentChatStore().listVideoThreads(input.downloadId).map(toHistorySummary)
+    return listAgentConversations(input.downloadId)
   }
 
   /** Rename a conversation tab without changing its messages. */

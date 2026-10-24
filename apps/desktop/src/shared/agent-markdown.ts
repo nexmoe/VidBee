@@ -35,7 +35,7 @@ export function artifactIdFromUrl(
     const id = item.id.toLowerCase()
     return id.startsWith(needle) || id.replace(/-/g, '').startsWith(needle)
   })
-  return matches.length === 1 ? matches[0].id.toLowerCase() : undefined
+  return matches.length === 1 ? matches[0]?.id.toLowerCase() : undefined
 }
 
 /** Read a screenshot's clock or the midpoint of a cited subtitle range in seconds. */
@@ -135,8 +135,8 @@ function claimArticleImages(
   const used = new Set<string>()
   const claims: ArticleImageClaim[] = []
   for (const match of text.matchAll(/!\[([^\]]*)\]\(([^)]*)\)/g)) {
-    const alt = match[1]
-    const url = match[2]
+    const alt = match[1] ?? ''
+    const url = match[2] ?? ''
     const { artifact, time } = claimArticleArtifact(
       artifacts,
       used,
@@ -200,7 +200,7 @@ export function unboundArticleImageTimes(
 export function citedArtifactIds(text: string, artifacts: AgentArtifact[] = []): string[] {
   const ids: string[] = []
   for (const match of text.matchAll(AGENT_MARKDOWN_MEDIA)) {
-    const id = artifactIdFromUrl(match[3], artifacts)
+    const id = artifactIdFromUrl(match[3] ?? '', artifacts)
     if (id) {
       ids.push(id)
     }
@@ -306,7 +306,7 @@ export function splitAgentResponseMedia(
   const used = new Set<string>()
   let position = 0
   for (const match of text.matchAll(AGENT_MARKDOWN_MEDIA)) {
-    const [raw, bang, alt, url] = match
+    const [raw = '', bang = '', alt = '', url = ''] = match
     const index = match.index
     const image = bang === '!'
     const { artifact } = claimArticleArtifact(artifacts, used, alt, url, ownRunId, image)

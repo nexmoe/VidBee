@@ -70,6 +70,7 @@ interface SubscriptionFormDialogProps {
   downloadPath: string
   downloadDefaults?: SubscriptionDownloadPreferences
   onlyLatestDefault: boolean
+  supportsSubtitleDownloads?: boolean
   onSave: (data: SubscriptionFormData) => Promise<void>
   onClose: () => void
   onResolveFeed: (url: string) => Promise<unknown>
@@ -87,6 +88,7 @@ export function SubscriptionFormDialog({
   downloadPath,
   downloadDefaults,
   onlyLatestDefault,
+  supportsSubtitleDownloads = false,
   onSave,
   onClose,
   onResolveFeed,
@@ -420,7 +422,11 @@ export function SubscriptionFormDialog({
                         </Label>
                       </ItemTitle>
                       <ItemDescription className="line-clamp-none">
-                        {t('subscriptions.downloadOptions.typeDescription')}
+                        {t(
+                          downloadType === 'subtitles'
+                            ? 'subscriptions.downloadOptions.subtitlesDescription'
+                            : 'subscriptions.downloadOptions.typeDescription'
+                        )}
                       </ItemDescription>
                     </ItemContent>
                     <ItemActions className="ml-auto">
@@ -434,46 +440,57 @@ export function SubscriptionFormDialog({
                         <SelectContent>
                           <SelectItem value="video">{t('download.video')}</SelectItem>
                           <SelectItem value="audio">{t('download.audio')}</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </ItemActions>
-                  </Item>
-                  <ItemSeparator />
-                  <Item variant="muted">
-                    <ItemContent className="min-w-48">
-                      <ItemTitle>
-                        <Label htmlFor={downloadQualityId}>
-                          {t('subscriptions.downloadOptions.quality')}
-                        </Label>
-                      </ItemTitle>
-                      <ItemDescription className="line-clamp-none">
-                        {t('subscriptions.downloadOptions.qualityDescription')}
-                      </ItemDescription>
-                    </ItemContent>
-                    <ItemActions className="ml-auto">
-                      <Select
-                        onValueChange={(value) =>
-                          setDownloadQuality(value as typeof downloadQuality)
-                        }
-                        value={downloadQuality}
-                      >
-                        <SelectTrigger className="w-44" id={downloadQualityId}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {(['best', 'good', 'normal', 'bad', 'worst'] as const).map((quality) => (
-                            <SelectItem key={quality} value={quality}>
-                              {t(
-                                downloadType === 'audio'
-                                  ? `subscriptions.downloadOptions.audioQualityOptions.${quality}`
-                                  : `settings.oneClickQualityOptions.${quality}`
-                              )}
+                          {supportsSubtitleDownloads && (
+                            <SelectItem value="subtitles">
+                              {t('advancedOptions.subtitles')}
                             </SelectItem>
-                          ))}
+                          )}
                         </SelectContent>
                       </Select>
                     </ItemActions>
                   </Item>
+                  {downloadType !== 'subtitles' && (
+                    <>
+                      <ItemSeparator />
+                      <Item variant="muted">
+                        <ItemContent className="min-w-48">
+                          <ItemTitle>
+                            <Label htmlFor={downloadQualityId}>
+                              {t('subscriptions.downloadOptions.quality')}
+                            </Label>
+                          </ItemTitle>
+                          <ItemDescription className="line-clamp-none">
+                            {t('subscriptions.downloadOptions.qualityDescription')}
+                          </ItemDescription>
+                        </ItemContent>
+                        <ItemActions className="ml-auto">
+                          <Select
+                            onValueChange={(value) =>
+                              setDownloadQuality(value as typeof downloadQuality)
+                            }
+                            value={downloadQuality}
+                          >
+                            <SelectTrigger className="w-44" id={downloadQualityId}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {(['best', 'good', 'normal', 'bad', 'worst'] as const).map(
+                                (quality) => (
+                                  <SelectItem key={quality} value={quality}>
+                                    {t(
+                                      downloadType === 'audio'
+                                        ? `subscriptions.downloadOptions.audioQualityOptions.${quality}`
+                                        : `settings.oneClickQualityOptions.${quality}`
+                                    )}
+                                  </SelectItem>
+                                )
+                              )}
+                            </SelectContent>
+                          </Select>
+                        </ItemActions>
+                      </Item>
+                    </>
+                  )}
                   {downloadType === 'video' && (
                     <>
                       <ItemSeparator />
@@ -522,15 +539,17 @@ export function SubscriptionFormDialog({
                   <Label>{t('subscriptions.fields.tags')}</Label>
                   <Input onChange={(event) => setTags(event.target.value)} value={tags} />
                 </div>
-                <div className="space-y-2">
-                  <Label>{t('subscriptions.fields.namingTemplate')}</Label>
-                  <Input
-                    onChange={(event) =>
-                      setNamingTemplate(sanitizeTemplateInput(event.target.value))
-                    }
-                    value={namingTemplate}
-                  />
-                </div>
+                {downloadType !== 'subtitles' && (
+                  <div className="space-y-2">
+                    <Label>{t('subscriptions.fields.namingTemplate')}</Label>
+                    <Input
+                      onChange={(event) =>
+                        setNamingTemplate(sanitizeTemplateInput(event.target.value))
+                      }
+                      value={namingTemplate}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </div>

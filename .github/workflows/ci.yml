@@ -5,6 +5,28 @@ on:
     branches: [ main ]
 
 jobs:
+  i18n:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.1.2
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check locale completeness
+        run: node apps/desktop/scripts/check-locales.js
+
   build:
     uses: ./.github/workflows/build.yml
     with:

@@ -2,6 +2,7 @@ import { SHARE_CARD_LOGO_SRC } from '@renderer/components/transcript/share-card-
 import { RemoteImage } from '@renderer/components/ui/remote-image'
 import { SHARE_CARD_WASH, useCoverFillColor } from '@renderer/lib/share-card-fill'
 import { SHARE_CARD_WIDTH } from '@shared/types/share-card'
+import { EXPORT_BRAND } from '@vidbee/ui/lib/export-brand'
 import type { CSSProperties, ReactNode, Ref } from 'react'
 
 export { SHARE_CARD_WASH, SHARE_CARD_WIDTH }
@@ -151,18 +152,30 @@ export function TranscriptShareCardChrome({
           </div>
         ) : null}
         <footer
-          className="relative flex items-center justify-center gap-2 whitespace-nowrap pt-5 text-[20px] leading-none before:absolute before:top-0 before:left-1/2 before:h-px before:w-12 before:-translate-x-1/2 before:bg-white/30"
+          className="relative flex items-center justify-center whitespace-nowrap leading-none"
           data-testid="transcript-share-card-footer"
+          style={{
+            gap: EXPORT_BRAND.gap,
+            paddingTop: EXPORT_BRAND.dividerGap,
+            fontSize: EXPORT_BRAND.fontSize
+          }}
         >
-          <span className="text-white/65">Made with</span>
+          <span
+            aria-hidden
+            className="absolute top-0 left-1/2 h-px -translate-x-1/2 bg-current"
+            style={{ width: EXPORT_BRAND.dividerWidth, opacity: EXPORT_BRAND.dividerOpacity }}
+          />
+          <span style={{ opacity: EXPORT_BRAND.prefixOpacity }}>{EXPORT_BRAND.prefix}</span>
           <img
             alt=""
-            className="block size-7 shrink-0 rounded"
-            height={28}
+            className="block shrink-0 rounded"
+            height={EXPORT_BRAND.logoSize}
             src={SHARE_CARD_LOGO_SRC}
-            width={28}
+            width={EXPORT_BRAND.logoSize}
           />
-          <span className="font-semibold text-white/85">VidBee</span>
+          <span style={{ fontWeight: EXPORT_BRAND.fontWeight, opacity: EXPORT_BRAND.nameOpacity }}>
+            {EXPORT_BRAND.name}
+          </span>
         </footer>
       </div>
     </div>

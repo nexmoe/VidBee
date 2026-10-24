@@ -40,6 +40,7 @@ import { applyExtensionCookieSettings } from './extension-cookies'
 import { ffmpegManager } from './ffmpeg-manager'
 import { MediaTransformExecutor } from './media-transform-executor'
 import { setDesktopTaskQueueRef } from './queue-ref'
+import { SubtitleDownloadExecutor } from './subtitle-download-executor'
 import {
   broadcastTranscript,
   broadcastTranscriptPartials,
@@ -177,6 +178,7 @@ export const getDesktopTaskQueue = (): TaskQueueAPI => {
     byKind: {
       transcription: buildTranscriptionExecutor(),
       conversion: new MediaTransformExecutor(),
+      subtitles: new SubtitleDownloadExecutor(),
       'model-download': new AsrModelExecutor()
     }
   })

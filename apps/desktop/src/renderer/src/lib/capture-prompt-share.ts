@@ -1,6 +1,8 @@
 import { ipcServices } from '@renderer/lib/ipc'
 import type { ShareCardPayload } from '@shared/types/share-card'
-import { applyViaVidBeeFilename } from '@vidbee/downloader-core/filename-style'
+
+// biome-ignore lint/performance/noBarrelFile: Preserve existing imports while sharing native and browser export naming.
+export { exportBaseFileName, exportFileName, shareImageFileName } from '@shared/agent-export'
 
 /**
  * Wait for the next two animation frames so layout and paint can settle.
@@ -127,42 +129,6 @@ export const waitForShareCard = async (element: HTMLElement): Promise<void> => {
   }
   await nextPaint()
 }
-
-/**
- * Build a filesystem-safe base name from a media title.
- *
- * @param title Source title shown on the share card or export dialog.
- */
-export const exportBaseFileName = (title?: string | null): string => {
-  const cleaned = (title?.trim() || 'VidBee')
-    .replace(/[<>:"/\\|?*]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .replace(/[. ]+$/g, '')
-    .slice(0, 80)
-  return cleaned || 'VidBee'
-}
-
-/**
- * Build a filesystem-safe PNG name from a media title.
- *
- * The name ends with `via VidBee` before the extension.
- *
- * @param title Source title shown on the share card.
- */
-export const shareImageFileName = (title?: string | null): string =>
-  applyViaVidBeeFilename(`${exportBaseFileName(title)}.png`)
-
-/**
- * Build a filesystem-safe export name with the given extension.
- *
- * The name ends with `via VidBee` before the extension.
- *
- * @param title Source title used as the default file name.
- * @param extension File extension without a leading dot.
- */
-export const exportFileName = (title: string | null | undefined, extension: string): string =>
-  applyViaVidBeeFilename(`${exportBaseFileName(title)}.${extension.replace(/^\./, '')}`)
 
 /**
  * Render the share card in the hidden window and return a PNG blob.

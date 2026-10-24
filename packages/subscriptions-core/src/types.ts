@@ -17,7 +17,7 @@ export type SubscriptionPlatform = 'youtube' | 'bilibili' | 'custom'
 
 /** Per-subscription overrides; omitted values follow the host's download defaults. */
 export interface SubscriptionDownloadPreferences {
-  downloadType?: 'video' | 'audio'
+  downloadType?: 'video' | 'audio' | 'subtitles'
   downloadQuality?: OneClickQualityPreset
   downloadContainer?: OneClickContainerOption
 }

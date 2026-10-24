@@ -1,4 +1,4 @@
-import type { AgentThread, AgentThreadSummary } from './agent-chat'
+import type { AgentChatRun, AgentThread, AgentThreadSummary } from './agent-chat'
 import { AI_CHAT_PROMPT_ID } from './ai-prompts'
 
 const DAY_MS = 86_400_000
@@ -88,6 +88,24 @@ export function agentConversationTitle(thread: AgentThread, videoTitle: string):
  */
 export function agentThreadIsRunning(thread: AgentThread): boolean {
   return thread.runs.some((run) => run.status === 'running')
+}
+
+/**
+ * The run the download list reports: a live run first, otherwise the most recently updated.
+ *
+ * @param thread Persisted agent thread.
+ */
+export function agentThreadLatestRun(thread: AgentThread): AgentChatRun | undefined {
+  let latest: AgentChatRun | undefined
+  for (const run of thread.runs) {
+    if (run.status === 'running') {
+      return run
+    }
+    if (!latest || run.updatedAt > latest.updatedAt) {
+      latest = run
+    }
+  }
+  return latest
 }
 
 /**

@@ -2,7 +2,7 @@ import { writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { ASR_TIER_IDS } from '@vidbee/transcription/asr'
 import { z } from 'zod'
-import { buildAssDocument, buildSrtDocument, formatSrtClock } from '../../shared/subtitle-export'
+import { buildAssDocument, buildSrtDocument, buildVttDocument } from '../../shared/subtitle-export'
 import {
   buildExportUnits,
   buildTranscriptExportText,
@@ -87,12 +87,7 @@ function exportText(
     return buildSrtDocument(buildExportUnits(segments, options.grouping))
   }
   if (format === 'vtt') {
-    return `WEBVTT\n\n${buildExportUnits(segments, options.grouping)
-      .map(
-        (segment) =>
-          `${formatSrtClock(segment.startMs).replace(',', '.')} --> ${formatSrtClock(segment.endMs).replace(',', '.')}\n${segment.text}`
-      )
-      .join('\n\n')}`
+    return buildVttDocument(buildExportUnits(segments, options.grouping))
   }
   return buildTranscriptExportText({
     ...options,

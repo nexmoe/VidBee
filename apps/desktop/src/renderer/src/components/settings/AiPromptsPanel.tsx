@@ -9,6 +9,7 @@ import {
   ItemTitle
 } from '@renderer/components/ui/item'
 import { Switch } from '@renderer/components/ui/switch'
+import { aiPromptLabel } from '@renderer/lib/ai-prompt-label'
 import { ipcServices } from '@renderer/lib/ipc'
 import { logger } from '@renderer/lib/logger'
 import { resolveAiPromptContent } from '@shared/ai-prompts'
@@ -18,15 +19,6 @@ import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { AiPromptDialog } from './AiPromptDialog'
-
-/**
- * Translate a built-in prompt title, falling back to the stored English title.
- *
- * @param prompt Prompt record.
- * @param t i18n function.
- */
-const promptTitle = (prompt: AiPrompt, t: (key: string) => string): string =>
-  prompt.isPreset ? t(`settings.ai.presetPrompts.${prompt.id}.title`) : prompt.title
 
 /**
  * Settings page for transcript prompts.
@@ -164,7 +156,7 @@ export function AiPromptsPanel() {
             {index > 0 ? <ItemSeparator /> : null}
             <Item variant="muted">
               <ItemContent>
-                <ItemTitle>{promptTitle(prompt, t)}</ItemTitle>
+                <ItemTitle>{aiPromptLabel(prompt, t)}</ItemTitle>
                 <ItemDescription className="line-clamp-2">
                   {resolveAiPromptContent(prompt.content, i18n.language)}
                 </ItemDescription>

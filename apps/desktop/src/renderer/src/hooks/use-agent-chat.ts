@@ -2,6 +2,7 @@ import { ipcEvents, ipcServices } from '@renderer/lib/ipc'
 import type {
   AgentChatInput,
   AgentRunEvent,
+  AgentThinkingLevel,
   AgentThinkingOptions,
   AgentThread
 } from '@shared/agent-chat'
@@ -326,6 +327,26 @@ export function useAgentChat(downloadId: string, promptId: string, threadId?: st
     },
     [identity]
   )
+  /** Save next-message effort in the shared thread so both clients display the same choice. */
+  const setThinkingLevel = useCallback(
+    async (level: AgentThinkingLevel): Promise<void> => {
+      const current = snapshotRef.current
+      if (!current) {
+        return
+      }
+      try {
+        const incoming = await ipcServices.ai.setAgentThinkingLevel({ threadId: current.id, level })
+        if (currentIdentity.current === identity) {
+          acceptRef.current(incoming)
+        }
+      } catch (failure) {
+        if (currentIdentity.current === identity) {
+          setError(String(failure))
+        }
+      }
+    },
+    [identity]
+  )
   return {
     thread:
       thread?.downloadId === downloadId &&
@@ -338,6 +359,7 @@ export function useAgentChat(downloadId: string, promptId: string, threadId?: st
     attaching,
     thinkingOptions,
     reloadThinkingOptions,
+    setThinkingLevel,
     send,
     decideTool,
     selectImages: () => updateImages(),

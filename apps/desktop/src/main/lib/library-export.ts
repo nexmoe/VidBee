@@ -4,8 +4,11 @@ import path from 'node:path'
 import { settingsManager } from '../settings'
 
 /** Allocate a filesystem-safe unique export name without overwriting existing library files. */
-export async function libraryExportPath(title: string, extension: string): Promise<string> {
-  const directory = path.join(settingsManager.get('downloadPath'), 'Exports')
+export async function libraryExportPath(
+  title: string,
+  extension: string,
+  directory = path.join(settingsManager.get('downloadPath'), 'Exports')
+): Promise<string> {
   await mkdir(directory, { recursive: true })
   const name =
     path

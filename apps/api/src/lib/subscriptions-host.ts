@@ -59,15 +59,16 @@ export const getApiSubscriptions = (): SubscriptionsApi => {
       const tags = Array.from(new Set([subscription.platform, ...subscription.tags]))
       const defaults = await webSettingsStore.get()
       const settings = toWebDownloadRuntimeSettings(defaults)
+      const downloadOptions = buildSubscriptionDownloadOptions(subscription, defaults)
       const result = await taskQueue.add({
         input: {
           url: item.url,
-          kind: 'subscription-item',
+          kind: downloadOptions.type === 'subtitles' ? 'subtitles' : 'subscription-item',
           title: item.title,
           ...(item.thumbnail === undefined ? {} : { thumbnail: item.thumbnail }),
           subscriptionId: subscription.id,
           options: {
-            ...buildSubscriptionDownloadOptions(subscription, defaults),
+            ...downloadOptions,
             origin: 'subscription',
             subscriptionId: subscription.id,
             itemId: item.id,

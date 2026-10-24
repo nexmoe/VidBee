@@ -67,7 +67,7 @@ overrides:
   ws: '>=8.21.0'
 
 patchedDependencies:
-  streamdown@2.5.0: cc9113e88b643c530c1368b5754a850926661bf3b6a0f0684a68d9db972e665c
+  streamdown@2.5.0: 8e16ae0039854151c2221348a47d508670f99919c0e123fa365bca6d5544b2eb
 
 importers:
 
@@ -376,6 +376,9 @@ importers:
       lucide-react:
         specifier: ^0.545.0
         version: 0.545.0(react@19.2.8)
+      marked:
+        specifier: ^17.0.1
+        version: 17.0.6
       next-themes:
         specifier: ^0.4.6
         version: 0.4.6(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -402,7 +405,7 @@ importers:
         version: 2.0.8(@types/react@19.2.14)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       streamdown:
         specifier: ^2.5.0
-        version: 2.5.0(patch_hash=cc9113e88b643c530c1368b5754a850926661bf3b6a0f0684a68d9db972e665c)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+        version: 2.5.0(patch_hash=8e16ae0039854151c2221348a47d508670f99919c0e123fa365bca6d5544b2eb)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       tailwind-merge:
         specifier: ^3.3.1
         version: 3.5.0
@@ -867,6 +870,18 @@ importers:
       '@shadcn/react':
         specifier: ^0.3.0
         version: 0.3.0(@types/react@19.2.14)(react@19.2.8)
+      '@streamdown/cjk':
+        specifier: ^1.0.3
+        version: 1.0.3(@types/mdast@4.0.4)(micromark-util-types@2.0.2)(micromark@4.0.2)(react@19.2.8)(unified@11.0.5)
+      '@streamdown/code':
+        specifier: ^1.1.1
+        version: 1.1.1(react@19.2.8)
+      '@streamdown/math':
+        specifier: ^1.0.2
+        version: 1.0.2(react@19.2.8)
+      '@tanstack/react-virtual':
+        specifier: ^3.14.9
+        version: 3.14.9(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@vidbee/subscriptions-core':
         specifier: workspace:*
         version: link:../subscriptions-core
@@ -882,12 +897,18 @@ importers:
       i18next:
         specifier: ^25.6.0
         version: 25.10.10(typescript@7.0.2)
+      katex:
+        specifier: ^0.16.47
+        version: 0.16.47
       lucide-react:
         specifier: ^0.545.0
         version: 0.545.0(react@19.2.8)
       next-themes:
         specifier: ^0.4.6
         version: 0.4.6(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      pele:
+        specifier: ^1.6.0
+        version: 1.6.0
       react:
         specifier: 19.2.8
         version: 19.2.8
@@ -903,6 +924,9 @@ importers:
       sonner:
         specifier: ^2.0.7
         version: 2.0.8(@types/react@19.2.14)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      streamdown:
+        specifier: ^2.5.0
+        version: 2.5.0(patch_hash=8e16ae0039854151c2221348a47d508670f99919c0e123fa365bca6d5544b2eb)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       tailwind-merge:
         specifier: ^3.3.1
         version: 3.5.0
@@ -16112,7 +16136,7 @@ snapshots:
 
   stdin-discarder@0.3.1: {}
 
-  streamdown@2.5.0(patch_hash=cc9113e88b643c530c1368b5754a850926661bf3b6a0f0684a68d9db972e665c)(react-dom@19.2.8(react@19.2.8))(react@19.2.8):
+  streamdown@2.5.0(patch_hash=8e16ae0039854151c2221348a47d508670f99919c0e123fa365bca6d5544b2eb)(react-dom@19.2.8(react@19.2.8))(react@19.2.8):
     dependencies:
       clsx: 2.1.1
       hast-util-to-jsx-runtime: 2.3.6

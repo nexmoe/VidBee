@@ -291,6 +291,17 @@
     "createdByAgent": "AI-created",
     "createdBySubscription": "Subscription",
     "openSourceConversation": "Open source conversation",
+    "agentTasks": {
+      "title": "Agent tasks",
+      "count": "{{count}} Agent tasks",
+      "summary": "Agent tasks: {{tasks}}",
+      "status": {
+        "running": "Running",
+        "completed": "Done",
+        "failed": "Failed",
+        "stopped": "Stopped"
+      }
+    },
     "sourceFile": "Source file"
   },
   "error": {
@@ -640,7 +651,25 @@
       "extensionInstallFirefox": "Add to Firefox",
       "extensionInstallStep1": "Install the VidBee Transcript extension in Chrome, Edge, or Firefox",
       "extensionInstallStep2": "Keep VidBee Desktop running so the extension can connect",
-      "extensionInstallStep3": "Open a video and click the VidBee toolbar icon to read its transcript. Sign in on that site if a download needs cookies."
+      "extensionInstallStep3": "Open a video and click the VidBee toolbar icon to read its transcript. Sign in on that site if a download needs cookies.",
+      "sourceHeading": "Cookie source",
+      "sourceInUse": "In use",
+      "sourceFallback": "Fallback",
+      "modeAuto": "Automatic",
+      "modeSemiAuto": "Semi-automatic",
+      "modeManual": "Manual",
+      "browserTitle": "Read from browser",
+      "extensionShortHint": "Install once. Every download gets fresh login cookies",
+      "extensionConnectedShort": "Connected to {{browser}}",
+      "browserShortHint": "Pick a browser you are signed in to",
+      "fileShortHint": "Export a cookies.txt and choose it. Redo it when it expires",
+      "whyTitle": "Set up cookies for more reliable downloads",
+      "whyDescription": "VidBee downloads as your signed-in account, so downloads are more stable and succeed more often",
+      "extensionPriority": "Cookie browser priority",
+      "extensionPriorityHint": "Use the first online browser in this order. Offline browsers are skipped automatically.",
+      "extensionUse": "Use",
+      "extensionMoveUp": "Move {{browser}} up",
+      "extensionMoveDown": "Move {{browser}} down"
     },
     "openLinkError": "Failed to open link",
     "browserOptions": {
@@ -660,6 +689,7 @@
     "dark": "Dark",
     "description": "Configure your download preferences and application settings",
     "directorySelectError": "Failed to select directory",
+    "saveError": "Could not save the setting.",
     "downloadPath": "Download location",
     "downloadPathDescription": "Choose where to save downloaded files",
     "fileSelectError": "Failed to select file",
@@ -1063,7 +1093,7 @@
         "get_task": "Read task progress, errors and logs",
         "get_queue_stats": "Queue status and concurrency",
         "create_task": "Download, convert, trim, resize or transcribe media",
-        "download_media": "Download video or audio with custom options",
+        "download_media": "Download video, audio or subtitles with custom options",
         "download_batch": "Download multiple links",
         "manage_task": "Pause, resume, cancel, retry, remove or rename tasks",
         "configure_queue_group": "Set queue group concurrency",
@@ -1102,6 +1132,7 @@
         "stop_ai_prompt": "Stop a running skill",
         "list_skill_results": "Browse saved skill results and Agent replies",
         "export_skill_result": "Export skill results as Markdown, PDF or share images",
+        "export_mermaid_diagram": "Export individual Mermaid diagrams as PNG, JPG, SVG or source",
         "export_caption_share_image": "Export selected captions as share images",
         "summarize_media": "Summarize media with timestamp evidence",
         "download_and_transcribe": "Download media and create a local transcript",
@@ -1112,7 +1143,8 @@
   "subscriptions": {
     "downloadOptions": {
       "type": "Download type",
-      "typeDescription": "Choose video or audio for downloads from this subscription.",
+      "typeDescription": "Choose what to download from this subscription.",
+      "subtitlesDescription": "Download subtitles without video or audio",
       "quality": "Preferred quality",
       "qualityDescription": "Choose the quality preset for downloads from this subscription.",
       "container": "Container",
@@ -1346,7 +1378,6 @@
     "modelsPreparing": "Preparing transcript models…",
     "preparingSpeakerModels": "Preparing speaker models…",
     "modelsProgressLabel": "Transcript model download progress",
-    "view": "View transcript",
     "sourceCaptions": "Video captions",
     "sourceAi": "AI transcript",
     "sourceSwitch": "Transcript source",
@@ -1400,16 +1431,13 @@
     "listLabel": {
       "subtitles": "Subtitles",
       "transcribed": "Transcribed",
-      "downloaded": "Downloaded"
+      "downloaded": "Downloaded",
+      "fromExtension": "From browser extension"
     },
     "listHint": {
       "queued": "Waiting to transcribe. It starts when a slot is free.",
       "retrySoon": "Transcription failed and will retry shortly.",
-      "ready": "Transcribed subtitles are ready. Click the row to open them.",
-      "captions": "Taken from the video’s subtitle track. Click the row to open them.",
       "cancelled": "Transcription was cancelled.",
-      "subtitlesDownloaded": "Subtitle file saved ({{languages}}).",
-      "subtitlesDownloadedUnknown": "Subtitle file saved.",
       "subtitlesUnavailable": "This video has no subtitle track to download.",
       "subtitlesAuth": "Sign in, then retry, to download subtitles.",
       "subtitlesFailed": "The subtitle download failed."

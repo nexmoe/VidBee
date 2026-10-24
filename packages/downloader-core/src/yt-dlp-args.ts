@@ -69,15 +69,15 @@ const DEFAULT_SOCKET_TIMEOUT = '30'
  * so `--write-auto-subs` alone cannot select them. Common extractor aliases are
  * always included; Bilibili AI aliases are added only while automatic captions are on.
  */
-const resolveDownloadSubtitleLanguages = (
+export const resolveDownloadSubtitleLanguages = (
   languages: readonly string[],
-  isBilibili: boolean,
+  url: string,
   writeAutoSubs: boolean
 ): string[] => {
   const resolved = new Map(
     expandSubtitleLanguageAliases(languages).map((language) => [language.toLowerCase(), language])
   )
-  if (isBilibili && writeAutoSubs) {
+  if (isBilibiliUrl(url) && writeAutoSubs) {
     for (const language of languages) {
       if (language.toLowerCase().startsWith(BILIBILI_AUTO_SUBTITLE_PREFIX)) {
         continue
@@ -91,6 +91,20 @@ const resolveDownloadSubtitleLanguages = (
   }
 
   return [...resolved.values()]
+}
+
+/** Share subtitle language, automatic-caption and sidecar flags between media and caption downloads. */
+const appendSubtitleDownloadArgs = (
+  args: string[],
+  url: string,
+  languages: readonly string[],
+  writeAutoSubs: boolean,
+  embedSubs: boolean
+): void => {
+  const resolved = resolveDownloadSubtitleLanguages(languages, url, writeAutoSubs)
+  args.push('--sub-langs', resolved.join(',') || 'all', '--sleep-subtitles', '1')
+  args.push(writeAutoSubs ? '--write-auto-subs' : '--no-write-auto-subs')
+  args.push('--write-subs', embedSubs ? '--embed-subs' : '--no-embed-subs')
 }
 
 const appendNetworkResilienceArgs = (args: string[]): void => {
@@ -604,11 +618,6 @@ export const buildDownloadArgs = (
   const browserForCookies = normalizeBrowserCookiesSettingForYtDlp(settings.browserForCookies)
   const cookiesPath = trim(settings.cookiesPath)
   const isBilibili = isBilibiliUrl(options.url)
-  const subtitleLanguages = resolveDownloadSubtitleLanguages(
-    selectedSubtitleLanguages,
-    isBilibili,
-    writeAutoSubs
-  )
   // GitHub issue #370: Twitch `rechat` 404s abort the VOD. GitHub issue #196:
   // Bilibili subtitle fetch without cookies can fail and abort the video. TikTok
   // exposes its generated captions as normal subtitles, so the automatic-captions
@@ -623,20 +632,16 @@ export const buildDownloadArgs = (
   const shouldEmbedSubs = embedSubs && shouldAttemptSubtitles && !isBilibili
 
   if (shouldAttemptSubtitles) {
-    args.push('--sub-langs', subtitleLanguages.join(','))
-    args.push('--sleep-subtitles', '1')
-    // `--embed-subs` does not request YouTube automatic captions. Ask for them
-    // only when that setting is on, or the embed step has nothing to mux.
-    if (writeAutoSubs) {
-      args.push('--write-auto-subs')
-    } else {
-      args.push('--no-write-auto-subs')
-    }
     // yt-dlp deletes the subtitle file after `--embed-subs` unless `--write-subs`
     // is also set. Downloading subtitles means keep that sidecar; embedding is
     // additional. GitHub issue #475.
-    args.push('--write-subs')
-    args.push(shouldEmbedSubs ? '--embed-subs' : '--no-embed-subs')
+    appendSubtitleDownloadArgs(
+      args,
+      options.url,
+      selectedSubtitleLanguages,
+      writeAutoSubs,
+      shouldEmbedSubs
+    )
   } else {
     args.push('--no-write-subs', '--no-write-auto-subs', '--no-embed-subs')
   }
@@ -757,27 +762,21 @@ export const buildVideoInfoArgs = (
  * @param outputTemplate yt-dlp `-o` template without an extension.
  * @param settings Host cookies, proxy, and config.
  * @param jsRuntimeArgs Active Desktop JS runtime flags.
- * @param subtitleLanguages yt-dlp `--sub-langs` value.
+ * @param subtitleLanguages Canonical subtitle languages; an empty list requests all tracks.
  */
 export const buildCaptionExtractArgs = (
   url: string,
   outputTemplate: string,
   settings: YtDlpDownloadSettings,
   jsRuntimeArgs: string[] = [],
-  subtitleLanguages = 'all'
+  subtitleLanguages: readonly string[] = []
 ): string[] => {
   assertDownloadSourceUrl(url)
   const args = [
     '--skip-download',
-    '--write-subs',
-    '--write-auto-subs',
     '--write-info-json',
-    '--sub-langs',
-    subtitleLanguages || 'all',
     '--sub-format',
     'vtt/srt/ttml/best',
-    '--sleep-subtitles',
-    '1',
     '--no-playlist',
     '--no-warnings',
     '--encoding',
@@ -785,6 +784,7 @@ export const buildCaptionExtractArgs = (
     '-o',
     outputTemplate
   ]
+  appendSubtitleDownloadArgs(args, url, subtitleLanguages, settings.writeAutoSubs ?? true, false)
 
   const proxy = trim(settings.proxy)
   if (proxy) {

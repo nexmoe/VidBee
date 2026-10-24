@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import path from 'node:path'
+import { resolveSubtitleLanguages } from '@vidbee/downloader-core/subtitle-languages'
 import { ListInputSchema, sanitizeOutput, type Task } from '@vidbee/task-queue'
 import { z } from 'zod'
 import { agentSettingsSchema } from '../../shared/agent-settings'
@@ -13,13 +14,17 @@ import { inspectAgentEngine } from '../lib/agent-capability-host'
 import { createAgentTask, getAgentTask, manageAgentTask } from '../lib/agent-management-host'
 import { prepareDownloadTaskInput } from '../lib/download-facade'
 import { historyManager } from '../lib/history-manager'
+import { subtitleDownloadSchema } from '../lib/subtitle-download'
 import { getDesktopTaskQueue } from '../lib/task-queue-host'
 import { settingsManager } from '../settings'
 import { defineMcpTool, mcpId, mcpLimit, mcpOffset, mcpPage, mcpWebUrl } from './tool'
 
 const downloadSchema = z.object({
   url: mcpWebUrl,
-  type: z.enum(['video', 'audio']).default('video'),
+  type: z.enum(['video', 'audio', 'subtitles']).default('video'),
+  language: subtitleDownloadSchema.shape.language.describe(
+    'Select one caption language when type is subtitles.'
+  ),
   title: z.string().min(1).max(200).optional(),
   format: z.string().min(1).max(500).optional(),
   audioFormat: z.enum(['mp3', 'm4a', 'wav', 'flac', 'opus', 'vorbis', 'aac', 'best']).optional(),
@@ -75,9 +80,41 @@ async function downloadMedia(input: z.output<typeof downloadSchema>, signal: Abo
     throw new Error('customDownloadPath must be an absolute path')
   }
   const settings = settingsManager.getAll()
-  const { subtitles, ...values } = input
+  const queue = getDesktopTaskQueue()
+  if (input.type === 'subtitles') {
+    const { url, type, title, language, format, customDownloadPath, ...mediaOptions } = input
+    if (Object.values(mediaOptions).some((value) => value !== undefined)) {
+      throw new Error(
+        'Subtitle-only downloads accept url, type, title, language, format and customDownloadPath'
+      )
+    }
+    const options = subtitleDownloadSchema.parse({ language, format })
+    const prepared = {
+      url,
+      kind: type,
+      title,
+      options: {
+        ...options,
+        origin: 'agent',
+        customDownloadPath,
+        languages: options.language
+          ? [options.language]
+          : resolveSubtitleLanguages(settings.subtitleLanguages, settings.language)
+      }
+    }
+    signal.throwIfAborted()
+    const id = randomUUID()
+    const admitted = await queue.add({ id, input: prepared })
+    const task = queue.get(admitted.id)
+    return { created: admitted.id === id, task: task ? mcpTask(task) : null }
+  }
+  if (input.language !== undefined) {
+    throw new Error('language requires type: subtitles')
+  }
+  const { subtitles, language: _language, ...values } = input
   const options: DownloadOptions = {
     ...values,
+    type: input.type,
     origin: 'agent',
     format:
       input.format ??
@@ -86,7 +123,6 @@ async function downloadMedia(input: z.output<typeof downloadSchema>, signal: Abo
         : buildVideoFormatPreference(settings)),
     containerFormat: input.containerFormat ?? settings.oneClickContainer
   }
-  const queue = getDesktopTaskQueue()
   const duplicate = queue.findDuplicateDownload({
     url: input.url,
     kind: input.type,
@@ -148,7 +184,7 @@ export function createMcpTaskTools() {
     ),
     defineMcpTool(
       'download_media',
-      'Queue a video or audio download with format selection, audio tracks, time clipping, filename template, output folder, tags and per-download subtitle settings. Saved credentials and preferences are reused. Returns admission, not completion.',
+      'Queue video, audio, or subtitles only. Use type: subtitles with optional language and format: srt (default) or vtt to fetch existing website captions without media or ASR. Captions appear in the library and transcript detail; use the returned task ID as get_transcript.downloadId. Subtitle mode also accepts title and customDownloadPath. Video/audio support format selection, audio tracks, clipping, filenames, folders, tags and subtitle settings. Saved preferences and credentials are reused. Returns admission; poll get_task for completion and output.filePath.',
       downloadSchema,
       downloadMedia,
       { openWorldHint: true }

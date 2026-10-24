@@ -3,6 +3,7 @@ import { SHARE_CARD_WASH } from '@renderer/components/transcript/TranscriptShare
 import { RemoteImageProvider } from '@renderer/components/ui/remote-image'
 import { waitForShareCard } from '@renderer/lib/capture-prompt-share'
 import { measureShareImageLayout } from '@renderer/lib/share-image-layout'
+import { MERMAID_EXPORT_CHANNEL, type MermaidExportPayload } from '@shared/types/mermaid-export'
 import {
   SHARE_CAPTURE_READY_CHANNEL,
   SHARE_CAPTURE_RENDER_CHANNEL,
@@ -40,8 +41,33 @@ export function ShareCapturePage() {
       setPayload(message.payload)
     }
     window.api.on(SHARE_CAPTURE_RENDER_CHANNEL, onRender)
+    /** Export diagram bytes through the same private window without creating a share card. */
+    const onMermaidExport = (...args: unknown[]): void => {
+      const message = args[0] as { payload: MermaidExportPayload; requestId: number }
+      void import('@renderer/lib/mermaid-export')
+        .then(({ renderMermaidExport }) => renderMermaidExport(message.payload))
+        .then((diagram) => {
+          window.api.send(SHARE_CAPTURE_READY_CHANNEL, {
+            requestId: message.requestId,
+            width: diagram.width,
+            height: diagram.height,
+            diagram
+          } satisfies ShareCaptureReadyMessage)
+        })
+        .catch((error: unknown) => {
+          window.api.send(SHARE_CAPTURE_READY_CHANNEL, {
+            requestId: message.requestId,
+            width: 0,
+            height: 0,
+            error: error instanceof Error ? error.message : String(error)
+          } satisfies ShareCaptureReadyMessage)
+        })
+    }
+    const mermaidSubscription = window.api.on(MERMAID_EXPORT_CHANNEL, onMermaidExport)
+    window.api.send(SHARE_CAPTURE_READY_CHANNEL, { requestId: 0, width: 0, height: 0 })
     return () => {
       window.api.removeListener(SHARE_CAPTURE_RENDER_CHANNEL, onRender)
+      window.api.removeListener(MERMAID_EXPORT_CHANNEL, mermaidSubscription)
     }
   }, [])
 

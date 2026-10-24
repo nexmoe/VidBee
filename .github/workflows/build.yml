@@ -67,7 +67,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Lint and format check
-        run: pnpm run check && pnpm run typecheck
+        run: pnpm --filter ./apps/desktop exec ultracite check && pnpm run typecheck
 
       - name: Setup macOS signing
         if: matrix.platform == 'macos'

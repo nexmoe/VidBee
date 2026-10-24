@@ -1,4 +1,5 @@
 import type { AgentArtifact } from '../agent-chat'
+import type { MermaidExportImage } from './mermaid-export'
 /** CSS width of the branded share poster. */
 export const SHARE_CARD_WIDTH = 540
 
@@ -117,6 +118,8 @@ export interface ShareImageLayout {
 }
 
 export interface ShareCaptureReadyMessage {
+  diagram?: MermaidExportImage
+  error?: string
   layout?: ShareImageLayout
   height: number
   requestId: number

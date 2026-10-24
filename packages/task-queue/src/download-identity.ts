@@ -45,7 +45,7 @@ function mediaUrlIdentity(value: string): string {
 
 /** Match media requests independently of their client id, playlist, destination and display metadata. */
 export function downloadIdentity(input: TaskInput): string | null {
-  if (!['video', 'audio', 'subscription-item'].includes(input.kind)) {
+  if (!['video', 'audio', 'subtitles', 'subscription-item'].includes(input.kind)) {
     return null
   }
   try {
@@ -54,6 +54,15 @@ export function downloadIdentity(input: TaskInput): string | null {
       return null
     }
     const options = input.options ?? {}
+    if (input.kind === 'subtitles') {
+      return JSON.stringify([
+        mediaUrlIdentity(input.url),
+        input.kind,
+        options.format ?? 'srt',
+        options.language ?? '',
+        options.languages ?? []
+      ])
+    }
     const type =
       input.kind === 'subscription-item'
         ? options.type === 'audio'

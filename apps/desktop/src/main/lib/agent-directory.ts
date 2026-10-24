@@ -7,7 +7,11 @@ import {
   type AgentThread,
   selectedAgentMessages
 } from '../../shared/agent-chat'
-import { agentThreadIsRunning, agentThreadUpdatedAt } from '../../shared/agent-history'
+import {
+  agentThreadIsRunning,
+  agentThreadLatestRun,
+  agentThreadUpdatedAt
+} from '../../shared/agent-history'
 
 /** Small header stored on the thread row so directory lists do not parse runs. */
 interface AgentDirectoryMeta {
@@ -15,6 +19,9 @@ interface AgentDirectoryMeta {
   running: boolean
   updatedAt: number
   userText: string
+  /** Latest run status and model, so lists can label finished results. Absent on older rows. */
+  status?: AgentRunStatus
+  model?: string
 }
 
 interface HeaderRow {
@@ -38,11 +45,13 @@ const RUN_STATUSES = new Set<AgentRunStatus>([
  * @param thread Conversation being committed.
  */
 export function agentDirectoryMeta(thread: AgentThread): AgentDirectoryMeta {
+  const latest = agentThreadLatestRun(thread)
   return {
     hasHistory: thread.messages.length > 0 || Boolean(thread.images?.length),
     running: agentThreadIsRunning(thread),
     updatedAt: agentThreadUpdatedAt(thread),
-    userText: firstUserLine(thread)
+    userText: firstUserLine(thread),
+    ...(latest ? { status: latest.status, model: latest.model } : {})
   }
 }
 
@@ -164,7 +173,10 @@ function threadFromHeader(db: Database, row: HeaderRow): AgentThread {
     images?: AgentImageAttachment[]
     directory?: unknown
   }
-  const meta = metaFrom(data.directory) ?? legacyMeta(db, row.id, data.images)
+  const stored = metaFrom(data.directory)
+  const meta = stored
+    ? { ...latestRunMeta(db, row.id, stored), ...stored }
+    : legacyMeta(db, row.id, data.images)
   return directoryThread(row, data, meta)
 }
 
@@ -235,11 +247,44 @@ function legacyMeta(
     break
   }
   const imageAt = Math.max(0, ...(images ?? []).map((image) => image.createdAt))
-  return {
+  const meta = {
     hasHistory: asNumber(messages.n) > 0 || Boolean(images?.length),
     running: Boolean(running),
     updatedAt: Math.max(asNumber(messageAt.n), asNumber(runAt.n), imageAt),
     userText
+  }
+  return { ...meta, ...latestRunMeta(db, threadId, meta) }
+}
+
+/**
+ * Status and model of the latest run for headers saved before the directory stored them.
+ *
+ * @param db Open desktop database.
+ * @param threadId Thread whose runs supply the fallback.
+ * @param meta Directory fields already known; returned unchanged when they include a status.
+ */
+function latestRunMeta(
+  db: Database,
+  threadId: string,
+  meta: Pick<AgentDirectoryMeta, 'running' | 'status'>
+): Pick<AgentDirectoryMeta, 'model' | 'status'> {
+  if (meta.status) {
+    return {}
+  }
+  const row = db
+    .prepare(
+      `SELECT json_extract(data, '$.status') AS status, json_extract(data, '$.model') AS model
+       FROM agent_runs WHERE thread_id = ?
+       ORDER BY json_extract(data, '$.status') = 'running' DESC, json_extract(data, '$.updatedAt') DESC
+       LIMIT 1`
+    )
+    .get(threadId) as { status: unknown; model: unknown } | undefined
+  if (typeof row?.status !== 'string' || !RUN_STATUSES.has(row.status as AgentRunStatus)) {
+    return {}
+  }
+  return {
+    status: row.status as AgentRunStatus,
+    model: typeof row.model === 'string' ? row.model : ''
   }
 }
 
@@ -309,9 +354,9 @@ function directoryRun(meta: AgentDirectoryMeta): AgentChatRun {
   return {
     id: 'directory',
     messageId: '',
-    status: meta.running ? 'running' : 'completed',
+    status: meta.running ? 'running' : (meta.status ?? 'completed'),
     error: null,
-    model: '',
+    model: meta.model ?? '',
     instruction: '',
     createdAt: meta.updatedAt,
     updatedAt: meta.updatedAt,

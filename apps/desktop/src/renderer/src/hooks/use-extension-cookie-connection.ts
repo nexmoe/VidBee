@@ -16,8 +16,10 @@ function sameExtensionCookieConnection(
   return (
     current.connected === next.connected &&
     current.browser === next.browser &&
+    current.activeSourceId === next.activeSourceId &&
     current.lastSeenAt === next.lastSeenAt &&
-    JSON.stringify(current.sites) === JSON.stringify(next.sites)
+    JSON.stringify(current.sites) === JSON.stringify(next.sites) &&
+    JSON.stringify(current.sources) === JSON.stringify(next.sources)
   )
 }
 
@@ -30,13 +32,14 @@ export function useExtensionCookieConnection(
 ): ExtensionCookieConnection {
   const [connection, setConnection] = useState<ExtensionCookieConnection>({
     connected: false,
-    sites: []
+    sites: [],
+    sources: []
   })
   const connectionRef = useRef(connection)
 
   useEffect(() => {
     let active = true
-    let previousConnected: boolean | undefined
+    let previous: ExtensionCookieConnection | undefined
 
     /** Read the bridge status while this consumer remains mounted. */
     const tick = async (): Promise<void> => {
@@ -49,10 +52,16 @@ export function useExtensionCookieConnection(
           connectionRef.current = next
           setConnection(next)
         }
-        if (previousConnected !== undefined && previousConnected !== next.connected) {
+        if (
+          previous &&
+          (previous.connected !== next.connected ||
+            previous.activeSourceId !== next.activeSourceId ||
+            previous.browser !== next.browser ||
+            JSON.stringify(previous.sites) !== JSON.stringify(next.sites))
+        ) {
           onConnectionChange?.()
         }
-        previousConnected = next.connected
+        previous = next
       } catch (error) {
         logger.error('[Cookies] Failed to read extension connection:', error)
       }

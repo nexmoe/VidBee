@@ -18,6 +18,7 @@ interface DownloadDialogLayoutProps {
   contentRef?: Ref<HTMLDivElement>
   open: boolean
   lockDialogHeight: boolean
+  tabsDisabled?: boolean
   activeTab: 'single' | 'playlist'
   dialogTitle: string
   dialogSubtitle: string
@@ -38,6 +39,7 @@ export const DownloadDialogLayout = ({
   contentRef,
   open,
   lockDialogHeight,
+  tabsDisabled,
   activeTab,
   dialogTitle,
   dialogSubtitle,
@@ -74,8 +76,13 @@ export const DownloadDialogLayout = ({
         >
           <div className="mt-3 border-border/60 border-t pt-3">
             <TabsList className={cn('w-fit', downloadDialogRadius, '[&>div]:rounded-md')}>
-              <TabItem icon={Video} label={singleTabLabel} value="single" />
-              <TabItem icon={List} label={playlistTabLabel} value="playlist" />
+              <TabItem disabled={tabsDisabled} icon={Video} label={singleTabLabel} value="single" />
+              <TabItem
+                disabled={tabsDisabled}
+                icon={List}
+                label={playlistTabLabel}
+                value="playlist"
+              />
             </TabsList>
           </div>
           <TabPanel className="min-h-0 pt-3 [&[hidden]]:hidden" value="single">

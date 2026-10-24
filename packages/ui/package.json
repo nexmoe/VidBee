@@ -19,11 +19,35 @@
     "./lib/url-kind": "./src/lib/url-kind.ts",
     "./lib/use-add-url-interaction": "./src/lib/use-add-url-interaction.ts",
     "./lib/use-add-url-shortcut": "./src/lib/use-add-url-shortcut.ts",
-    "./lib/use-home-ingest": "./src/lib/use-home-ingest.ts"
+    "./lib/use-home-ingest": "./src/lib/use-home-ingest.ts",
+    "./components/agent-workspace": "./src/components/agent-workspace.tsx",
+    "./components/agent-overview": "./src/components/agent-overview.tsx",
+    "./components/agent-thinking-content": "./src/components/agent-thinking-content.tsx",
+    "./components/agent-event-stream": "./src/components/agent-event-stream.tsx",
+    "./components/agent-chat-scroll-state": "./src/components/agent-chat-scroll-state.tsx",
+    "./lib/agent-activity": "./src/lib/agent-activity.ts",
+    "./lib/thinking-header": "./src/lib/thinking-header.ts",
+    "./components/agent-clock-text": "./src/components/agent-clock-text.tsx",
+    "./components/agent-response": "./src/components/agent-response.tsx",
+    "./lib/prompt-text": "./src/lib/prompt-text.ts",
+    "./lib/prompt-markdown": "./src/lib/prompt-markdown.ts",
+    "./agent-response.css": "./src/agent-response.css",
+    "./agent-mermaid.css": "./src/agent-mermaid.css",
+    "./lib/pele-mermaid-plugin": "./src/lib/pele-mermaid-plugin.ts",
+    "./lib/mermaid-export": "./src/lib/mermaid-export.ts",
+    "./lib/export-brand": "./src/lib/export-brand.ts",
+    "./lib/agent-response-plugins": "./src/lib/agent-response-plugins.ts",
+    "./components/agent-model-select": "./src/components/agent-model-select.tsx",
+    "./components/ai-provider-icon": "./src/components/ai-provider-icon.tsx",
+    "./components/agent-tab-underline": "./src/components/agent-tab-underline.tsx",
+    "./lib/ai-model-icon": "./src/lib/ai-model-icon.ts",
+    "./components/agent-share-image-dialog": "./src/components/agent-share-image-dialog.tsx",
+    "./components/agent-reply-actions": "./src/components/agent-reply-actions.tsx"
   },
   "peerDependencies": {
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "streamdown": "^2.5.0"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
@@ -44,6 +68,7 @@
     "@radix-ui/react-tabs": "^1.1.21",
     "@radix-ui/react-tooltip": "^1.2.16",
     "@shadcn/react": "^0.3.0",
+    "@tanstack/react-virtual": "^3.14.9",
     "@vidbee/subscriptions-core": "workspace:*",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -54,7 +79,12 @@
     "react-i18next": "^16.1.2",
     "react-resizable-panels": "^4.12.3",
     "sonner": "^2.0.7",
-    "tailwind-merge": "^3.3.1"
+    "tailwind-merge": "^3.3.1",
+    "@streamdown/cjk": "^1.0.3",
+    "@streamdown/code": "^1.1.1",
+    "@streamdown/math": "^1.0.2",
+    "katex": "^0.16.47",
+    "pele": "^1.6.0"
   },
   "devDependencies": {
     "@types/react": "^19.2.0",

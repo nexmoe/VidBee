@@ -705,6 +705,7 @@ export function TranscriptPage() {
     [cachedThumbnail, download, downloadId, snapshot, t]
   )
   const { filePath: mediaPath, isAudio, subtitle, thumbnail, title } = playbackInput
+  const isSubtitleOnly = download?.taskKind === 'subtitles'
   const currentTime = session?.downloadId === downloadId ? clock.currentTime : 0
   const duration = session?.downloadId === downloadId ? clock.duration : 0
   const durationMs = useMemo(
@@ -717,6 +718,9 @@ export function TranscriptPage() {
     [currentTimeMs, segments]
   )
   useEffect(() => {
+    if (isSubtitleOnly) {
+      return
+    }
     ensureSession({
       downloadId,
       filePath: mediaPath,
@@ -728,12 +732,25 @@ export function TranscriptPage() {
     return () => {
       releaseIdle(downloadId)
     }
-  }, [downloadId, ensureSession, isAudio, mediaPath, releaseIdle, subtitle, thumbnail, title])
+  }, [
+    downloadId,
+    ensureSession,
+    isAudio,
+    isSubtitleOnly,
+    mediaPath,
+    releaseIdle,
+    subtitle,
+    thumbnail,
+    title
+  ])
 
   const sessionInput = playbackInput
   const ownsPlayer = session?.downloadId === downloadId
   const seek = useCallback(
     (seconds: number) => {
+      if (!sessionInput.filePath) {
+        return
+      }
       if (ownsPlayer) {
         controls?.seek(seconds)
         return
@@ -946,30 +963,34 @@ export function TranscriptPage() {
 
   const mediaPane = (
     <div className="flex h-full min-h-0 flex-col bg-background">
-      <div
-        className={
-          isAudio
-            ? isWide
-              ? 'min-h-0 w-full min-w-0 shrink-0'
-              : 'min-h-0 min-w-0 flex-1'
-            : 'min-h-0 w-full min-w-0 shrink overflow-hidden'
-        }
-      >
-        {ownsPlayer || !session?.started ? (
-          <TranscriptPlaybackSlot className="contents" slot="page" />
-        ) : (
-          <TranscriptPlaybackStandby
-            isAudio={isAudio}
-            onPlay={handlePlayThis}
-            subtitle={subtitle}
-            thumbnail={thumbnail}
-            title={title}
-          />
-        )}
-      </div>
+      {isSubtitleOnly ? null : (
+        <div
+          className={
+            isAudio
+              ? isWide
+                ? 'min-h-0 w-full min-w-0 shrink-0'
+                : 'min-h-0 min-w-0 flex-1'
+              : 'min-h-0 w-full min-w-0 shrink overflow-hidden'
+          }
+        >
+          {ownsPlayer || !session?.started ? (
+            <TranscriptPlaybackSlot className="contents" slot="page" />
+          ) : (
+            <TranscriptPlaybackStandby
+              isAudio={isAudio}
+              onPlay={handlePlayThis}
+              subtitle={subtitle}
+              thumbnail={thumbnail}
+              title={title}
+            />
+          )}
+        </div>
+      )}
       <TranscriptSpeakersPane
-        canAdjustSpeakers={Boolean(ready && !isInProgressTranscript(snapshot?.listState ?? 'none'))}
-        compact={!isWide}
+        canAdjustSpeakers={Boolean(
+          mediaPath && ready && !isInProgressTranscript(snapshot?.listState ?? 'none')
+        )}
+        compact={!(isWide || isSubtitleOnly)}
         currentSpeakerId={currentSegment?.speakerId ?? null}
         currentTimeMs={currentTimeMs}
         durationMs={durationMs}

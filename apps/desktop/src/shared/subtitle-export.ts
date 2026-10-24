@@ -24,6 +24,16 @@ export function buildSrtDocument(units: SubtitleCue[]): string {
     .join('\n\n')
 }
 
+/** Build a WebVTT document shared by transcript exports and subtitle-only downloads. */
+export function buildVttDocument(units: SubtitleCue[]): string {
+  return `WEBVTT\n\n${units
+    .map(
+      (unit) =>
+        `${formatSrtClock(unit.startMs).replace(',', '.')} --> ${formatSrtClock(unit.endMs).replace(',', '.')}\n${unit.text}`
+    )
+    .join('\n\n')}`
+}
+
 /** Format an ASS timestamp using centisecond precision. */
 export function formatAssClock(ms: number): string {
   const total = Math.max(0, Math.floor(ms))

@@ -73,6 +73,7 @@ export function SubscriptionFormDialog({
       onSelectDirectory={handleSelectDirectory}
       open={open}
       subscription={subscription}
+      supportsSubtitleDownloads
     />
   )
 }

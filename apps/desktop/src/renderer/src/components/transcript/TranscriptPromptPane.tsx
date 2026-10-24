@@ -1,19 +1,11 @@
 import { Button } from '@renderer/components/ui/button'
-import {
-  MessageScroller,
-  MessageScrollerButton,
-  MessageScrollerContent,
-  MessageScrollerItem,
-  MessageScrollerProvider,
-  MessageScrollerViewport
-} from '@renderer/components/ui/message-scroller'
+import { MessageScrollerItem } from '@renderer/components/ui/message-scroller'
 import { useAgentChat } from '@renderer/hooks/use-agent-chat'
 import { shareImageFileName } from '@renderer/lib/capture-prompt-share'
 import { trackDesktopEvent } from '@renderer/lib/rybbit-client'
 import { thinkingDurationHeader } from '@renderer/lib/thinking-header'
 import {
   AGENT_MAX_MESSAGE_IMAGES,
-  type AgentThinkingLevel,
   draftAgentImages,
   selectedAgentMessages
 } from '@shared/agent-chat'
@@ -22,8 +14,9 @@ import { AI_CHAT_PROMPT_ID, AI_OVERVIEW_PROMPT_ID } from '@shared/ai-prompts'
 import type { AiPrompt } from '@shared/ai-types'
 import { sharePromptUserText } from '@shared/types/share-card'
 import { AgentChatComposer } from '@vidbee/ui/components/agent-chat-composer'
-import { ArrowDown, Loader2 } from 'lucide-react'
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { AgentConversationLayout } from '@vidbee/ui/components/agent-workspace'
+import { Loader2 } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { AgentChatScrollState } from './AgentChatScrollState'
@@ -141,11 +134,6 @@ function TranscriptPromptWaiting({ armed, onArm }: { armed: boolean; onArm: () =
   )
 }
 
-/** Keep list padding in step with the floating composer height. */
-function syncComposerDockHeight(pane: HTMLElement, composer: HTMLElement): void {
-  pane.style.setProperty('--agent-composer-height', `${composer.getBoundingClientRect().height}px`)
-}
-
 /** Persistent per-video agent conversation; navigation never owns the runtime lifetime. */
 export function TranscriptPromptPane({
   downloadId,
@@ -178,6 +166,7 @@ export function TranscriptPromptPane({
     selectBranch,
     thinkingOptions,
     reloadThinkingOptions,
+    setThinkingLevel,
     selectImages,
     removeImage
   } = useAgentChat(downloadId, prompt.id, threadId)
@@ -186,8 +175,7 @@ export function TranscriptPromptPane({
   const autoStarted = useRef(new Set<string>())
   const [, setArmedTick] = useState(0)
   const armed = armedPromptIdentities.has(identity)
-  const [thinkingLevels, setThinkingLevels] = useState<Record<string, AgentThinkingLevel>>({})
-  const preferredThinkingLevel = thinkingLevels[identity]
+  const preferredThinkingLevel = thread?.thinkingLevel
   const thinkingLevel =
     preferredThinkingLevel && thinkingOptions?.levels.includes(preferredThinkingLevel)
       ? preferredThinkingLevel
@@ -195,8 +183,6 @@ export function TranscriptPromptPane({
   const [drafts, setDrafts] = useState<Record<string, string>>({})
   const [shareMessageId, setShareMessageId] = useState<string | null>(null)
   const viewport = useRef<HTMLDivElement>(null)
-  const paneRef = useRef<HTMLDivElement>(null)
-  const composerRef = useRef<HTMLDivElement>(null)
   const [selecting, setSelecting] = useState(false)
   const draft = drafts[identity] ?? ''
   const messages = thread ? selectedAgentMessages(thread) : []
@@ -258,27 +244,6 @@ export function TranscriptPromptPane({
     transcriptText
   ])
 
-  useLayoutEffect(() => {
-    const pane = paneRef.current
-    const composer = composerRef.current
-    if (!(pane && composer)) {
-      return
-    }
-    const sync = (): void => {
-      syncComposerDockHeight(pane, composer)
-    }
-    sync()
-    if (typeof ResizeObserver === 'undefined') {
-      return
-    }
-    const observer = new ResizeObserver(sync)
-    observer.observe(composer)
-    return () => {
-      observer.disconnect()
-      pane.style.removeProperty('--agent-composer-height')
-    }
-  }, [])
-
   useEffect(() => {
     if (
       !hasProvider &&
@@ -337,74 +302,10 @@ export function TranscriptPromptPane({
     )
   }
   return (
-    <div
-      className="relative flex h-full min-h-0 flex-col [--agent-composer-inset:0.75rem]"
-      ref={paneRef}
-    >
-      {/* last-anchor + user scrollAnchor pins the turn start; long streamed
-          replies often already overflow, so live-edge follow never starts. */}
-      <MessageScrollerProvider
+    <>
+      <AgentConversationLayout
         autoScroll={!selecting}
-        defaultScrollPosition="end"
-        key={thread?.id ?? identity}
-        scrollEdgeThreshold={32}
-      >
-        <MessageScroller className="min-h-0 flex-1" data-testid="transcript-prompt-output">
-          <MessageScrollerViewport aria-label={t('transcript.promptOutput')} ref={viewport}>
-            <MessageScrollerContent className="gap-6 px-5 pt-5 pb-[calc(var(--agent-composer-height,44px)+var(--agent-composer-inset)+1rem)] text-sm leading-relaxed">
-              {thread ? (
-                <TranscriptAgentMessages
-                  busy={busy || !ready || !transcriptReady}
-                  currentTimeMs={currentTimeMs}
-                  durationMs={sourceDurationMs}
-                  messages={messages}
-                  onBranch={(id) => void selectBranch(id)}
-                  onDecideTool={(input) => void decideTool(input)}
-                  onRetry={(id) => void send({ ...context, retryMessageId: id })}
-                  onSeek={onSeek}
-                  onShare={setShareMessageId}
-                  overviewPrompt={prompt.id === AI_OVERVIEW_PROMPT_ID}
-                  sourceTitle={sourceTitle}
-                  sourceUrl={sourceUrl}
-                  thread={thread}
-                />
-              ) : null}
-              {messages.length || isChat ? null : (
-                <MessageScrollerItem messageId="empty">
-                  <p className="text-muted-foreground">{t('transcript.promptEmpty')}</p>
-                </MessageScrollerItem>
-              )}
-            </MessageScrollerContent>
-          </MessageScrollerViewport>
-          <MessageScrollerButton className="data-[direction=end]:bottom-[calc(var(--agent-composer-height,44px)+var(--agent-composer-inset)+0.25rem)]">
-            <ArrowDown />
-            <span className="sr-only">{t('transcript.promptScrollToEnd')}</span>
-          </MessageScrollerButton>
-        </MessageScroller>
-        {thread ? (
-          <AgentChatScrollState
-            leafId={thread.leafId}
-            onSelecting={setSelecting}
-            threadId={thread.id}
-            viewport={viewport}
-          />
-        ) : null}
-      </MessageScrollerProvider>
-      <div
-        className="pointer-events-none absolute inset-x-[var(--agent-composer-inset)] bottom-[var(--agent-composer-inset)] z-20"
-        data-testid="agent-chat-composer-dock"
-      >
-        {error ? (
-          <p className="pointer-events-auto pb-2 text-destructive text-sm" role="alert">
-            {error}
-          </p>
-        ) : null}
-        {imagesUnsupported ? (
-          <p className="pointer-events-auto pb-2 text-muted-foreground text-sm" role="status">
-            {t('agentChat.imagesNotSupported')}
-          </p>
-        ) : null}
-        <div className="pointer-events-auto" ref={composerRef}>
+        composer={
           <AgentChatComposer
             attachImagesLabel={t('agentChat.attachImages')}
             attachments={images.map((image) => ({
@@ -427,9 +328,7 @@ export function TranscriptPromptPane({
               thinkingOptions && thinkingLevel ? (
                 <AgentReasoningSelect
                   levels={thinkingOptions.levels}
-                  onChange={(level) =>
-                    setThinkingLevels((current) => ({ ...current, [identity]: level }))
-                  }
+                  onChange={(level) => void setThinkingLevel(level)}
                   onProviderChange={() => void reloadThinkingOptions()}
                   value={thinkingLevel}
                 />
@@ -442,8 +341,59 @@ export function TranscriptPromptPane({
             stopLabel={t('transcript.promptStop')}
             value={draft}
           />
-        </div>
-      </div>
+        }
+        identity={thread?.id ?? identity}
+        notice={
+          <>
+            {error ? (
+              <p className="text-destructive text-sm" role="alert">
+                {error}
+              </p>
+            ) : null}
+            {imagesUnsupported ? (
+              <p className="text-muted-foreground text-sm" role="status">
+                {t('agentChat.imagesNotSupported')}
+              </p>
+            ) : null}
+          </>
+        }
+        outputLabel={t('transcript.promptOutput')}
+        scrollLabel={t('transcript.promptScrollToEnd')}
+        scrollState={
+          thread ? (
+            <AgentChatScrollState
+              leafId={thread.leafId}
+              onSelecting={setSelecting}
+              threadId={thread.id}
+              viewport={viewport}
+            />
+          ) : null
+        }
+        viewportRef={viewport}
+      >
+        {thread ? (
+          <TranscriptAgentMessages
+            busy={busy || !ready || !transcriptReady}
+            currentTimeMs={currentTimeMs}
+            durationMs={sourceDurationMs}
+            messages={messages}
+            onBranch={(id) => void selectBranch(id)}
+            onDecideTool={(input) => void decideTool(input)}
+            onRetry={(id) => void send({ ...context, retryMessageId: id })}
+            onSeek={onSeek}
+            onShare={setShareMessageId}
+            overviewPrompt={prompt.id === AI_OVERVIEW_PROMPT_ID}
+            sourceTitle={sourceTitle}
+            sourceUrl={sourceUrl}
+            thread={thread}
+          />
+        ) : null}
+        {messages.length || isChat ? null : (
+          <MessageScrollerItem messageId="empty">
+            <p className="text-muted-foreground">{t('transcript.promptEmpty')}</p>
+          </MessageScrollerItem>
+        )}
+      </AgentConversationLayout>
       <TranscriptShareImageDialog
         fileName={shareImageFileName(sourceTitle)}
         onOpenChange={(open) => {
@@ -484,6 +434,6 @@ export function TranscriptPromptPane({
             : null
         }
       />
-    </div>
+    </>
   )
 }

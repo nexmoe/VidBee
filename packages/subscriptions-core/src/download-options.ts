@@ -16,8 +16,13 @@ interface SubscriptionDownloadDefaults {
 export const buildSubscriptionDownloadOptions = (
   subscription: SubscriptionDownloadPreferences,
   defaults: SubscriptionDownloadDefaults
-): { type: 'video' | 'audio'; format: string; containerFormat?: OneClickContainerOption } => {
+):
+  | { type: 'subtitles'; format: 'srt' }
+  | { type: 'video' | 'audio'; format: string; containerFormat?: OneClickContainerOption } => {
   const type = subscription.downloadType ?? defaults.oneClickDownloadType ?? 'video'
+  if (type === 'subtitles') {
+    return { type, format: 'srt' }
+  }
   const settings = {
     oneClickQuality: subscription.downloadQuality ?? defaults.oneClickQuality ?? 'best'
   }

@@ -47,10 +47,11 @@ import {
   resolveSubscriptionItemStatus
 } from '@vidbee/subscriptions-core/status'
 import { SubscriptionAllTab } from '@vidbee/ui/components/ui/subscription-all-tab'
+import { SubscriptionVirtualGrid } from '@vidbee/ui/components/ui/subscription-virtual-grid'
 import dayjs from 'dayjs'
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import { Copy, Download, Edit, ExternalLink, Plus, Power, RefreshCw, Trash2 } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { logger } from '../lib/logger'
@@ -241,6 +242,7 @@ export function Subscriptions() {
 
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [selectedTab, setSelectedTab] = useState<string | null>(null)
+  const [viewport, setViewport] = useState<HTMLDivElement | null>(null)
 
   useEffect(() => {
     // Another host can update the shared database without a local IPC event.
@@ -373,9 +375,9 @@ export function Subscriptions() {
   }, [selectedTab, sortedSubscriptions])
 
   return (
-    <div className="relative flex h-full w-full flex-col">
+    <div className="relative flex h-full min-h-0 w-full flex-col">
       {/* Channel Tabs Header */}
-      <div className="flex flex-row pr-6 pb-6 pl-6">
+      <div className="flex shrink-0 flex-row pr-6 pb-6 pl-6">
         <ScrollArea className="min-w-0 flex-1" orientation="horizontal" viewportClassName="h-auto">
           <div className="flex h-auto w-auto justify-start">
             <SubscriptionAllTab
@@ -413,7 +415,7 @@ export function Subscriptions() {
         </Button>
       </div>
 
-      <ScrollArea className="overflow-y-auto">
+      <ScrollArea className="min-h-0 flex-1" viewportRef={setViewport}>
         {/* Content Area */}
         <div className="relative space-y-8 p-6 pt-0">
           <section className="space-y-4">
@@ -422,7 +424,11 @@ export function Subscriptions() {
                 {t('subscriptions.empty')}
               </div>
             ) : (
-              <SubscriptionItems entries={displayedItems} />
+              <SubscriptionItems
+                entries={displayedItems}
+                key={selectedTab ?? 'all'}
+                viewport={viewport}
+              />
             )}
           </section>
 
@@ -470,12 +476,25 @@ interface SubscriptionTabProps {
 type SubscriptionRuleUpdateForm = SubscriptionFormData
 
 /** Render a mixed feed while resolving download status and actions per source. */
-function SubscriptionItems({ entries }: { entries: SubscriptionFeedEntry<SubscriptionRule>[] }) {
+function SubscriptionItems({
+  entries,
+  viewport
+}: {
+  entries: SubscriptionFeedEntry<SubscriptionRule>[]
+  viewport: HTMLDivElement | null
+}) {
   const { t } = useTranslation()
-  const feedItems = useMemo(() => entries.map((entry) => entry.item), [entries])
+  const [visibleRange, setVisibleRange] = useState({ startIndex: 0, endIndex: 0 })
+  const feedItems = useMemo(
+    () => entries.slice(visibleRange.startIndex, visibleRange.endIndex).map((entry) => entry.item),
+    [entries, visibleRange]
+  )
   const downloads = useAtomValue(downloadsArrayAtom)
   const [historyStatusMap, setHistoryStatusMap] = useState<Record<string, DownloadStatus | null>>(
     {}
+  )
+  const historyRequests = useRef(
+    new Map<string, Promise<{ downloadId: string; status: DownloadStatus | null }>>()
   )
   const downloadLookup = useMemo(() => {
     const map = new Map<string, DownloadRecord>()
@@ -507,14 +526,23 @@ function SubscriptionItems({ entries }: { entries: SubscriptionFeedEntry<Subscri
     const fetchHistoryStatuses = async () => {
       try {
         const results = await Promise.all(
-          missingIds.map(async (downloadId) => {
-            try {
-              const historyItem = await ipcServices.history.getHistoryById(downloadId)
-              return { downloadId, status: historyItem?.status ?? null }
-            } catch (error) {
-              logger.error('Failed to fetch download history entry:', error)
-              return { downloadId, status: null }
+          missingIds.map((downloadId) => {
+            let request = historyRequests.current.get(downloadId)
+            if (!request) {
+              /** Share lookups when scrolling or a download update replaces the visible window. */
+              const fetchStatus = async () => {
+                try {
+                  const historyItem = await ipcServices.history.getHistoryById(downloadId)
+                  return { downloadId, status: historyItem?.status ?? null }
+                } catch (error) {
+                  logger.error('Failed to fetch download history entry:', error)
+                  return { downloadId, status: null }
+                }
+              }
+              request = fetchStatus()
+              historyRequests.current.set(downloadId, request)
             }
+            return request
           })
         )
 
@@ -606,7 +634,7 @@ function SubscriptionItems({ entries }: { entries: SubscriptionFeedEntry<Subscri
     [t]
   )
 
-  if (feedItems.length === 0) {
+  if (entries.length === 0) {
     return (
       <div className="py-12 text-center text-muted-foreground text-sm">
         {t('subscriptions.items.empty')}
@@ -615,8 +643,10 @@ function SubscriptionItems({ entries }: { entries: SubscriptionFeedEntry<Subscri
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {entries.map(({ subscription, item }) => {
+    <SubscriptionVirtualGrid
+      entries={entries}
+      onVisibleRangeChange={setVisibleRange}
+      renderEntry={({ subscription, item }) => {
         const itemStatus = resolveSubscriptionItemStatus(item, itemStatusLookup)
         const hasResolvedDownloadStatus =
           item.addedToQueue && itemStatus !== 'queued' && itemStatus !== 'notQueued'
@@ -716,7 +746,8 @@ function SubscriptionItems({ entries }: { entries: SubscriptionFeedEntry<Subscri
             </ContextMenuContent>
           </ContextMenu>
         )
-      })}
-    </div>
+      }}
+      viewport={viewport}
+    />
   )
 }

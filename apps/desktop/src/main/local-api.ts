@@ -13,6 +13,7 @@ import {
   updateAutomationDescriptorToken
 } from './lib/automation-descriptor'
 import { downloadEngine } from './lib/download-facade'
+import { clearExtensionChats, handleExtensionChat, isExtensionChatPath } from './lib/extension-chat'
 import {
   clearExtensionCookies,
   getExtensionCookieConnection,
@@ -454,6 +455,16 @@ const handleRequest = async (
       applyExtensionCors(res, caller.origin)
     }
 
+    if (req.url && isExtensionChatPath(new URL(req.url, 'http://127.0.0.1').pathname)) {
+      await handleExtensionChat(
+        req,
+        res,
+        new URL(req.url, 'http://127.0.0.1').pathname,
+        extensionTokens.consume
+      )
+      return
+    }
+
     if (req.url && isExtensionOverviewPath(new URL(req.url, 'http://127.0.0.1').pathname)) {
       await handleExtensionOverview(
         req,
@@ -577,6 +588,8 @@ const handleRequest = async (
           extensionSecurity: 1,
           extensionCookies: 1,
           extensionOverview: 1,
+          extensionChat: 1,
+          extensionChatSidebar: 1,
           extensionTranscript: 1
         },
         extension: {
@@ -609,7 +622,7 @@ const startServerOnPort = (port: number): Promise<http.Server> =>
     httpServer.listen(port, '127.0.0.1', () => resolve(httpServer))
   })
 
-/** Start the loopback API with production trust rules unless development origins are explicit. */
+/** Start the loopback API with the fixed development identity enabled only when unpackaged. */
 export async function startExtensionApiServer(): Promise<number | null> {
   if (server && serverPort) {
     return serverPort
@@ -685,6 +698,7 @@ export async function stopExtensionApiServer(): Promise<void> {
   server = null
   serverPort = null
   clearExtensionOverviews()
+  clearExtensionChats()
   clearExtensionTranscripts()
   clearExtensionCookies()
   extensionTokens.clear()

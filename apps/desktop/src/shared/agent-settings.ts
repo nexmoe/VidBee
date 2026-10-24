@@ -49,7 +49,10 @@ export const agentSettingsSchema = z
     asrTier: z.enum(ASR_TIER_IDS),
     downloadMirror: z.enum(['auto', 'cn', 'global'])
   } satisfies Record<
-    Exclude<keyof AppSettings, 'autoUpdate' | 'lastSeenWhatsNew' | 'agentManagementTools'>,
+    Exclude<
+      keyof AppSettings,
+      'autoUpdate' | 'lastSeenWhatsNew' | 'agentManagementTools' | 'extensionCookieSources'
+    >,
     z.ZodType
   >)
   .partial()

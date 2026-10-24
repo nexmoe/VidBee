@@ -10,7 +10,9 @@ import {
   type AgentCatalogNotice,
   type AgentChatInput,
   type AgentChatRun,
+  type AgentImageAttachment,
   type AgentRunEvent,
+  type AgentThinkingLevel,
   type AgentThinkingOptions,
   type AgentThread,
   agentThinkingElapsedMs,
@@ -41,6 +43,7 @@ import { AgentCloudSlots, bindCloudSlotStream, CLOUD_AGENT_CONCURRENCY } from '.
 import { AgentSummaryUnavailableError } from './agent-compaction'
 import { buildAgentHistory, buildAgentSystemPrompt } from './agent-context'
 import { prepareAgentDocument } from './agent-document'
+import { publishAgentEvent } from './agent-events'
 import { AgentEvidence } from './agent-evidence'
 import {
   pickAgentImages,
@@ -166,6 +169,7 @@ function broadcastSaved(event: AgentRunEvent, thread: AgentThread, type: string)
 
 /** Broadcast only committed product payloads, never provider-private messages or secrets. */
 function broadcast(event: AgentRunEvent): void {
+  publishAgentEvent(event)
   for (const window of BrowserWindow.getAllWindows()) {
     if (!window.isDestroyed()) {
       window.webContents.send('ai:agent-event', event)
@@ -622,6 +626,14 @@ export async function deleteAgentThread(threadId: string): Promise<void> {
 
 /** Save selected images against the live thread so an in-flight reply cannot overwrite them. */
 export async function selectAgentImages(threadId: string): Promise<AgentThread> {
+  return await attachAgentImages(threadId, (remaining) => pickAgentImages(threadId, remaining))
+}
+
+/** Commit browser and native attachments against the latest live conversation copy. */
+export async function attachAgentImages(
+  threadId: string,
+  select: (remaining: number) => Promise<AgentImageAttachment[]>
+): Promise<AgentThread> {
   const store = getAgentChatStore()
   const original = active.get(threadId)?.thread ?? store.get(threadId)
   if (!original) {
@@ -631,7 +643,7 @@ export async function selectAgentImages(threadId: string): Promise<AgentThread> 
   if (remaining <= 0) {
     throw new Error('Too many images selected')
   }
-  const images = await pickAgentImages(threadId, remaining)
+  const images = await select(remaining)
   const thread = active.get(threadId)?.thread ?? store.get(threadId)
   if (!thread || draftAgentImages(thread).length + images.length > AGENT_MAX_MESSAGE_IMAGES) {
     await removeAgentImageFiles(images)
@@ -648,6 +660,31 @@ export async function selectAgentImages(threadId: string): Promise<AgentThread> 
       await removeAgentImageFiles(images)
       throw error
     }
+  }
+  return publicAgentThread(thread)
+}
+
+/** Persist next-message effort on the live thread without changing any active run. */
+export function setAgentThinkingLevel(threadId: string, level: AgentThinkingLevel): AgentThread {
+  if (!AGENT_THINKING_LEVELS.includes(level)) {
+    throw new Error('Invalid thinking level')
+  }
+  const store = getAgentChatStore()
+  const thread = active.get(threadId)?.thread ?? store.get(threadId)
+  if (!thread) {
+    throw new Error('Unknown conversation')
+  }
+  const previous = thread.thinkingLevel
+  thread.thinkingLevel = level
+  try {
+    broadcastSaved(
+      store.save(thread, 'thread.thinking-selected', null, { thread: true }),
+      thread,
+      'thread.thinking-selected'
+    )
+  } catch (error) {
+    thread.thinkingLevel = previous
+    throw error
   }
   return publicAgentThread(thread)
 }

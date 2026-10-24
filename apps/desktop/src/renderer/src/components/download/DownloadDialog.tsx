@@ -396,6 +396,7 @@ export function DownloadDialog({
     addUrlValue,
     batchRequiresOneClick,
     canConfirmAddUrl,
+    handleActiveTabChange,
     handleConfirmAddUrl,
     handleOpenAddUrlPopover,
     hasAddUrlValue,
@@ -405,8 +406,10 @@ export function DownloadDialog({
     submitUrl
   } = useAddUrlInteraction({
     activeTab,
+    sourceUrl: activeTab === 'playlist' ? playlistUrl : url,
     isOneClickDownloadEnabled: settings.oneClickDownload,
     isPlaylistBusy: playlistBusy,
+    onActiveTabChange: setActiveTab,
     onEmptyUrl: () => {
       toast.error(t('errors.emptyUrl'))
     },
@@ -969,7 +972,7 @@ export function DownloadDialog({
           </div>
         }
         lockDialogHeight={lockDialogHeight}
-        onActiveTabChange={setActiveTab}
+        onActiveTabChange={handleActiveTabChange}
         onOpenChange={setOpen}
         open={open}
         playlistTabContent={
@@ -1025,6 +1028,7 @@ export function DownloadDialog({
           />
         }
         singleTabLabel={t('download.singleVideo')}
+        tabsDisabled={playlistBusy}
       />
       <IngestDropOverlay
         description={t('download.ingestDropDescription')}

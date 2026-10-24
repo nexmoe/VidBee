@@ -129,6 +129,7 @@ export {
   METADATA_NETWORK_ATTEMPTS,
   parseDownloadTimecode,
   resolveAudioFormatSelector,
+  resolveDownloadSubtitleLanguages,
   resolveFfmpegLocationFromPath,
   resolvePathWithHome,
   resolveSubtitleDownloadSkipReason,

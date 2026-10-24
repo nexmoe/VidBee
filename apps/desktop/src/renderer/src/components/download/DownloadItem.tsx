@@ -18,6 +18,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui
 import { useNavigate } from '@tanstack/react-router'
 import { getCookieSetupFailureKind } from '@vidbee/downloader-core/cookie-setup'
 import type { TaskCreationMetadata } from '@vidbee/task-queue'
+import { DownloadContentStack } from '@vidbee/ui/components/ui/download-content-stack'
 import { DownloadPlatformIcon } from '@vidbee/ui/components/ui/download-platform-icon'
 import {
   DOWNLOAD_FEEDBACK_ISSUE_TITLE,
@@ -34,7 +35,6 @@ import {
   AlertCircle,
   AudioLines,
   Captions,
-  CheckCircle2,
   FileAudio,
   Loader2,
   MoreHorizontal,
@@ -55,13 +55,10 @@ import { getDownloadErrorGuidance } from '../../lib/download-error-guidance'
 import { ipcServices } from '../../lib/ipc'
 import { logger } from '../../lib/logger'
 import { openContextMenuFromClick } from '../../lib/open-context-menu'
-import {
-  transcriptLibraryStatusKey,
-  transcriptProgressLabelKey
-} from '../../lib/transcript-library'
 import { isNowPlayingLibraryItem } from '../../lib/transcript-playback'
 import { buildTranscriptPlaybackInput } from '../../lib/transcript-playback-source'
 import { flyCoverToPlaylistButton } from '../../lib/transcript-playlist-fly'
+import { agentTaskAiSnapshotAtom, agentTasksByDownloadAtom } from '../../store/agent-tasks'
 import { cookieSetupRequestAtom } from '../../store/cookie-setup'
 import {
   addDownloadAtom,
@@ -75,10 +72,12 @@ import {
   playbackSessionAtom,
   takePlaybackSessionAtom
 } from '../../store/transcript-playback'
-import { type TranscriptListState, transcriptMapAtom } from '../../store/transcripts'
+import { transcriptMapAtom } from '../../store/transcripts'
 import { useAppInfo } from '../feedback/FeedbackLinks'
 import { TranscriptAudioEqualizer } from '../transcript/TranscriptAudioEqualizer'
+import { AgentTaskIndicator } from './AgentTaskIndicator'
 import { DownloadRecordContextMenuItems } from './DownloadRecordContextMenuItems'
+import { resolveDownloadContents } from './download-contents'
 import { canRetryDownload, getQualityLabel } from './download-item-utils'
 
 const tryFileOperation = async (
@@ -179,6 +178,8 @@ export function DownloadItem({
   const navigate = useNavigate()
   const transcriptMap = useAtomValue(transcriptMapAtom)
   const transcript = transcriptMap[download.id]
+  const agentTasks = useAtomValue(agentTasksByDownloadAtom)[download.id]
+  const agentTaskAiSnapshot = useAtomValue(agentTaskAiSnapshotAtom)
   const playbackSession = useAtomValue(playbackSessionAtom)
   const takePlaybackSession = useSetAtom(takePlaybackSessionAtom)
   const playbackPlaying = useAtomValue(playbackPlayingAtom)
@@ -190,23 +191,7 @@ export function DownloadItem({
   const timestamp = download.completedAt ?? download.downloadedAt ?? download.createdAt
   const resolvedExtension = resolveDownloadExtension(download)
   const selectionEnabled = isHistory && Boolean(onToggleSelect)
-  let subtitleStatusLabel: string | undefined
-  switch (download.subtitleStatus) {
-    case 'downloaded':
-      subtitleStatusLabel = t('download.completed')
-      break
-    case 'unavailable':
-      subtitleStatusLabel = t('about.downloadEngine.status.unavailable')
-      break
-    case 'skipped-auth':
-      subtitleStatusLabel = t('download.cookiesSetupNeeded')
-      break
-    case 'failed':
-      subtitleStatusLabel = t('download.error')
-      break
-    default:
-      break
-  }
+  const contents = resolveDownloadContents({ download, t, transcript })
   // Track if the file exists
   const [fileExists, setFileExists] = useState(false)
   const [existingFilePath, setExistingFilePath] = useState<string | null>(null)
@@ -499,7 +484,7 @@ export function DownloadItem({
 
   const playableInput = {
     ...playbackInput,
-    filePath: playbackInput.filePath ?? existingFilePath
+    filePath: contents.media ? (playbackInput.filePath ?? existingFilePath) : null
   }
 
   /**
@@ -599,24 +584,13 @@ export function DownloadItem({
   const isLocalMedia = platform.key === LOCAL_DOWNLOAD_PLATFORM_KEY
   const transcriptListState = transcript?.listState ?? 'none'
   const canRetry = !isLocalMedia && canRetryDownload(download.status)
-  const subtitleLanguageLabel = download.subtitleLanguages?.filter(Boolean).join(', ')
-  const subtitleRow = resolveDownloadSubtitleRow({
-    languages: subtitleLanguageLabel,
-    sourceKind: transcript?.sourceKind,
-    stage: transcript?.stage,
-    subtitleStatus: download.subtitleStatus,
-    subtitleStatusLabel,
-    t,
-    transcriptError: transcript?.error,
-    transcriptListState
-  })
   const canPlayMedia = isCompletedStatus && Boolean(playableInput.filePath)
   const actionsAlwaysVisible = isInProgressStatus
   const hoverActionsClass = `flex items-center justify-end gap-0.5 transition-opacity ${
     actionsAlwaysVisible ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
   }`
   const showOpenFolderAction = Boolean(
-    download.title && (download.downloadPath || settings.downloadPath)
+    contents.media && download.title && (download.downloadPath || settings.downloadPath)
   )
   const showInlineProgress = Boolean(
     progressInfo && download.status !== 'completed' && download.status !== 'error'
@@ -734,6 +708,12 @@ export function DownloadItem({
       )
     })
   }
+  if (agentTasks?.length) {
+    metaItems.push({
+      key: 'agent-tasks',
+      node: <AgentTaskIndicator aiSnapshot={agentTaskAiSnapshot} tasks={agentTasks} />
+    })
+  }
   if (isNowPlaying) {
     metaItems.push({
       key: 'now-playing',
@@ -762,25 +742,6 @@ export function DownloadItem({
       )
     })
   }
-  if (subtitleRow) {
-    metaItems.push({
-      key: 'subtitle',
-      node: (
-        <DownloadMetaTip hint={subtitleRow.hint}>
-          <span
-            className={`inline-flex items-center gap-1 ${
-              subtitleRow.tone === 'danger' ? 'text-destructive' : ''
-            }`}
-            data-testid="download-subtitle-status"
-          >
-            {subtitleRow.icon}
-            {subtitleRow.label}
-          </span>
-        </DownloadMetaTip>
-      )
-    })
-  }
-
   const sameCreationSource =
     transcript?.creation?.origin === download.origin &&
     transcript?.creation?.agentConversation?.downloadId ===
@@ -788,7 +749,7 @@ export function DownloadItem({
     transcript?.creation?.agentConversation?.threadId === download.agentConversation?.threadId &&
     transcript?.creation?.agentConversation?.promptId === download.agentConversation?.promptId
   if (
-    subtitleRow &&
+    transcriptListState !== 'none' &&
     transcript?.creation &&
     transcript.creation.origin !== 'manual' &&
     !sameCreationSource
@@ -844,7 +805,9 @@ export function DownloadItem({
                 alt={download.title}
                 className="h-full w-full object-cover"
                 fallbackIcon={
-                  download.type === 'audio' ? (
+                  contents.media === null ? (
+                    <Captions className="h-4 w-4" />
+                  ) : contents.media === 'audio' ? (
                     <FileAudio className="h-4 w-4" />
                   ) : (
                     <Play className="h-4 w-4" />
@@ -883,7 +846,15 @@ export function DownloadItem({
                     </span>
                     <p className="min-w-0 truncate font-medium text-sm">{download.title}</p>
                   </div>
-                  <DownloadItemMeta accented={isNowPlaying} items={metaItems} />
+                  <DownloadItemMeta
+                    accented={isNowPlaying}
+                    items={metaItems}
+                    leading={
+                      contents.parts.length > 0 ? (
+                        <DownloadContentStack notes={contents.notes} parts={contents.parts} />
+                      ) : undefined
+                    }
+                  />
                 </div>
                 <div className="pointer-events-auto relative z-20 flex shrink-0 items-center justify-end gap-0.5 text-muted-foreground">
                   {transcriptListState === 'failed' ? (
@@ -1219,221 +1190,35 @@ export function DownloadItem({
 }
 
 /**
- * Hover hint for a compact download-row status fragment.
- *
- * @param children Visible status.
- * @param hint Progress or explanation shown in the tooltip.
- */
-function DownloadMetaTip({ children, hint }: { children: ReactNode; hint: string }): ReactNode {
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <span className="pointer-events-auto inline-flex h-4 min-w-0 cursor-help items-center">
-          {children}
-        </span>
-      </TooltipTrigger>
-      <TooltipContent className="max-w-xs text-left" side="bottom" sideOffset={6}>
-        <p>{hint}</p>
-      </TooltipContent>
-    </Tooltip>
-  )
-}
-
-/**
- * Hover copy for the compact transcript status on a download row.
- *
- * @param t i18n translate.
- * @param listState Compact transcript status.
- * @param sourceKind Caption vs ASR origin.
- * @param stage Live transcription stage.
- * @param error Failed-task message, if any.
- */
-function transcriptRowHint(
-  t: (key: string, options?: Record<string, unknown>) => string,
-  listState: TranscriptListState,
-  sourceKind?: 'asr' | 'captions' | null,
-  stage?: string | null,
-  error?: string | null
-): string {
-  switch (listState) {
-    case 'queued':
-      return t('transcript.listHint.queued')
-    case 'retry-scheduled':
-      return t('transcript.listHint.retrySoon')
-    case 'running':
-      return t(transcriptProgressLabelKey('running', stage))
-    case 'completed':
-      return sourceKind === 'captions'
-        ? t('transcript.listHint.captions')
-        : t('transcript.listHint.ready')
-    case 'no-speech':
-      return t('transcript.noSpeechDetail')
-    case 'failed':
-      return error?.trim() || t('transcript.errorHint')
-    case 'cancelled':
-      return t('transcript.listHint.cancelled')
-    default:
-      return t('transcript.view')
-  }
-}
-
-/**
- * Hover copy for the compact subtitle-download status on a download row.
- *
- * @param t i18n translate.
- * @param status Persisted subtitle outcome.
- * @param languages Downloaded language tags, when present.
- */
-function subtitleRowHint(
-  t: (key: string, options?: Record<string, unknown>) => string,
-  status: 'downloaded' | 'unavailable' | 'skipped-auth' | 'failed',
-  languages?: string
-): string {
-  if (status === 'downloaded') {
-    return languages
-      ? t('transcript.listHint.subtitlesDownloaded', { languages })
-      : t('transcript.listHint.subtitlesDownloadedUnknown')
-  }
-  if (status === 'unavailable') {
-    return t('transcript.listHint.subtitlesUnavailable')
-  }
-  if (status === 'skipped-auth') {
-    return t('transcript.listHint.subtitlesAuth')
-  }
-  return t('transcript.listHint.subtitlesFailed')
-}
-
-type TranslateFn = (key: string, options?: Record<string, unknown>) => string
-
-interface DownloadSubtitleRow {
-  hint: string
-  icon: ReactNode
-  label: string
-  tone: 'danger' | 'default'
-}
-
-/**
- * Build the single subtitles fragment for a download row.
- *
- * Transcription and a downloaded track are both subtitles. Show only the source
- * mark (transcribed, downloaded, queued) beside the captions icon.
- *
- * @param input Row transcript snapshot and subtitle-download outcome.
- */
-function resolveDownloadSubtitleRow(input: {
-  languages?: string
-  sourceKind?: 'asr' | 'captions' | null
-  stage?: string | null
-  subtitleStatus?: 'downloaded' | 'unavailable' | 'skipped-auth' | 'failed'
-  subtitleStatusLabel?: string
-  t: TranslateFn
-  transcriptError?: string | null
-  transcriptListState: TranscriptListState
-}): DownloadSubtitleRow | null {
-  const {
-    languages,
-    sourceKind,
-    stage,
-    subtitleStatus,
-    subtitleStatusLabel,
-    t,
-    transcriptError,
-    transcriptListState
-  } = input
-  const transcribedReady = transcriptListState === 'completed' && sourceKind !== 'captions'
-  const downloadedReady =
-    subtitleStatus === 'downloaded' ||
-    (transcriptListState === 'completed' && sourceKind === 'captions')
-  const transcribing =
-    transcriptListState === 'queued' ||
-    transcriptListState === 'running' ||
-    transcriptListState === 'retry-scheduled'
-  const join = (...marks: string[]) => marks.join(' · ')
-
-  if (transcribedReady) {
-    return {
-      hint: transcriptRowHint(t, 'completed', sourceKind, stage, transcriptError),
-      icon: transcriptStatusIcon('completed'),
-      label: join(t('transcript.listLabel.transcribed')),
-      tone: 'default'
-    }
-  }
-  if (transcribing) {
-    return {
-      hint: transcriptRowHint(t, transcriptListState, sourceKind, stage, transcriptError),
-      icon: transcriptStatusIcon(transcriptListState),
-      label: join(t(transcriptLibraryStatusKey(transcriptListState, sourceKind))),
-      tone: 'default'
-    }
-  }
-  if (downloadedReady) {
-    const marks = [t('transcript.listLabel.downloaded')]
-    if (languages) {
-      marks.push(languages)
-    }
-    return {
-      hint:
-        subtitleStatus === 'downloaded'
-          ? subtitleRowHint(t, 'downloaded', languages)
-          : t('transcript.listHint.captions'),
-      icon: <Captions className="h-3.5 w-3.5" />,
-      label: join(...marks),
-      tone: 'default'
-    }
-  }
-  if (transcriptListState === 'failed' || transcriptListState === 'cancelled') {
-    return {
-      hint: transcriptRowHint(t, transcriptListState, sourceKind, stage, transcriptError),
-      icon: transcriptStatusIcon(transcriptListState),
-      label: join(t(transcriptLibraryStatusKey(transcriptListState, sourceKind))),
-      tone: transcriptListState === 'failed' ? 'danger' : 'default'
-    }
-  }
-  if (transcriptListState === 'no-speech') {
-    return {
-      hint: t('transcript.noSpeechDetail'),
-      icon: transcriptStatusIcon('no-speech'),
-      label: join(t('transcript.noSpeech')),
-      tone: 'default'
-    }
-  }
-  if (subtitleStatus && subtitleStatusLabel) {
-    return {
-      hint: subtitleRowHint(t, subtitleStatus, languages),
-      icon: <Captions className="h-3.5 w-3.5" />,
-      label: join(subtitleStatusLabel),
-      tone: 'default'
-    }
-  }
-  return null
-}
-
-/**
  * One metadata line, with dots between the parts that are present.
  *
  * @param accented Use the now-playing primary tone instead of muted gray.
  * @param items Metadata fragments to join.
+ * @param leading Fixed-width part shown first, separated by the same dot.
  */
 function DownloadItemMeta({
   accented,
-  items
+  items,
+  leading
 }: {
   accented?: boolean
   items: { key: string; node: ReactNode }[]
+  leading?: ReactNode
 }) {
-  if (items.length === 0) {
+  if (items.length === 0 && !leading) {
     return null
   }
   return (
     <div
-      className={`flex h-4 min-w-0 items-center overflow-hidden text-[12px] leading-none [&_img]:block [&_svg]:block ${
+      className={`flex h-5 min-w-0 items-center overflow-hidden text-[12px] leading-none [&_img]:block [&_svg]:block ${
         accented ? 'text-primary' : 'text-muted-foreground'
       }`}
       data-testid="download-item-meta"
     >
+      {leading}
       {items.map((item, index) => (
         <span className="inline-flex h-4 min-w-0 items-center" key={item.key}>
-          {index > 0 ? (
+          {index > 0 || leading ? (
             <span
               aria-hidden="true"
               className={`mx-1.5 shrink-0 leading-none ${
@@ -1448,31 +1233,6 @@ function DownloadItemMeta({
       ))}
     </div>
   )
-}
-
-/**
- * Compact icon for a transcript's listed status on a download row.
- *
- * @param listState Compact transcript status.
- */
-const transcriptStatusIcon = (listState: TranscriptListState): ReactNode => {
-  switch (listState) {
-    case 'completed':
-      return <Captions className="h-3.5 w-3.5" />
-    case 'no-speech':
-      return <CheckCircle2 className="h-3.5 w-3.5" />
-    case 'failed':
-      return <AlertCircle className="h-3.5 w-3.5 text-destructive" />
-    case 'running':
-      return <Loader2 className="h-3.5 w-3.5 animate-spin" />
-    case 'queued':
-    case 'retry-scheduled':
-      return <Loader2 className="h-3.5 w-3.5 animate-spin" />
-    case 'cancelled':
-      return <X className="h-3.5 w-3.5" />
-    default:
-      return null
-  }
 }
 
 /** Label task provenance and link to the exact conversation that admitted it. */

@@ -7,6 +7,7 @@ import type {
 import {
   agentConversationTitle,
   agentThreadIsRunning,
+  agentThreadLatestRun,
   agentThreadUpdatedAt
 } from '../../shared/agent-history'
 import {
@@ -25,6 +26,7 @@ export const AGENT_SNAPSHOT_TYPES = new Set([
   'run.aborted',
   'run.error',
   'run.interrupted',
+  'thread.thinking-selected',
   'thread.renamed',
   'thread.grants-updated',
   'thread.branch-selected',
@@ -59,6 +61,11 @@ export const AGENT_CATALOG_TYPES = new Set([
 ])
 
 let catalogRevision = 0
+
+/** Stamp snapshots so a late HTTP response cannot overwrite a newer catalog notice. */
+export function getAgentCatalogRevision(): number {
+  return catalogRevision
+}
 
 /**
  * Choose snapshot versus patch delivery without dropping an explicit dirty scope.
@@ -102,13 +109,16 @@ export function publicAgentPatch(thread: AgentThread, scope: AgentPersistScope):
  */
 export function agentDirectorySummary(thread: AgentThread): AgentThreadSummary {
   const videoTitle = peekDesktopTaskQueueRef()?.get(thread.downloadId)?.input?.title?.trim() ?? ''
+  const latest = agentThreadLatestRun(thread)
   return {
     id: thread.id,
     downloadId: thread.downloadId,
     promptId: thread.promptId,
     title: agentConversationTitle(thread, videoTitle),
     updatedAt: agentThreadUpdatedAt(thread),
-    running: agentThreadIsRunning(thread)
+    running: agentThreadIsRunning(thread),
+    status: latest?.status ?? 'idle',
+    model: latest?.model ?? ''
   }
 }
 

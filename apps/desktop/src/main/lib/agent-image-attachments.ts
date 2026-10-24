@@ -25,14 +25,33 @@ export async function importAgentImageFiles(
   if (!files.length || files.length > AGENT_MAX_MESSAGE_IMAGES) {
     throw new Error('Invalid image selection')
   }
-  const images: AgentImageAttachment[] = []
-  try {
-    for (const file of files) {
+  const sources = await Promise.all(
+    files.map(async (file) => {
       const info = await stat(file)
       if (!(info.isFile() && info.size) || info.size > MAX_SOURCE_BYTES) {
         throw new Error('Image must be no larger than 20 MB')
       }
-      let image = nativeImage.createFromBuffer(await readFile(file))
+      return { name: path.basename(file), data: await readFile(file) }
+    })
+  )
+  return await importAgentImageData(threadId, sources)
+}
+
+/** Normalize browser uploads with the same decoder, dimensions and limits as native files. */
+export async function importAgentImageData(
+  threadId: string,
+  files: { name: string; data: Buffer }[]
+): Promise<AgentImageAttachment[]> {
+  if (!files.length || files.length > AGENT_MAX_MESSAGE_IMAGES) {
+    throw new Error('Invalid image selection')
+  }
+  const images: AgentImageAttachment[] = []
+  try {
+    for (const file of files) {
+      if (!file.data.byteLength || file.data.byteLength > MAX_SOURCE_BYTES) {
+        throw new Error('Image must be no larger than 20 MB')
+      }
+      let image = nativeImage.createFromBuffer(file.data)
       if (image.isEmpty()) {
         throw new Error('Cannot read this image')
       }
@@ -60,7 +79,7 @@ export async function importAgentImageFiles(
       const attachment: AgentImageAttachment = {
         id,
         threadId,
-        name: path.basename(file).slice(0, 255),
+        name: path.basename(file.name).slice(0, 255),
         path: path.join(directory, `${id}.${mimeType === 'image/png' ? 'png' : 'jpg'}`),
         mimeType,
         createdAt: Date.now(),

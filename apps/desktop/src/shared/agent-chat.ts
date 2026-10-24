@@ -1,3 +1,7 @@
+import type { AgentActivity } from '@vidbee/ui/lib/agent-activity'
+
+export type { AgentActivity } from '@vidbee/ui/lib/agent-activity'
+
 import type { AgentMessage } from '@earendil-works/pi-agent-core'
 import type { AgentErrorCode } from './agent-errors'
 
@@ -88,17 +92,6 @@ export interface AgentChatMessage {
   createdAt: number
   legacy?: boolean
 }
-export type AgentActivity =
-  | { id: string; kind: 'thinking' | 'commentary'; text: string }
-  | { id: string; kind: 'status'; status: 'retrying' | 'compacting' | 'recovering' }
-  | {
-      id: string
-      kind: 'tool'
-      toolId: string
-      name: string
-      count?: number
-      artifactIds: string[]
-    }
 
 export interface AgentContextCheckpoint {
   coveredCount: number
@@ -166,6 +159,8 @@ export interface AgentThread {
   seq: number
   /** User or Agent-chosen tab title; empty means derive from messages. */
   title?: string
+  /** Effort selected for the next message; synchronized between conversation clients. */
+  thinkingLevel?: AgentThinkingLevel
   messages: AgentChatMessage[]
   runs: AgentChatRun[]
   artifacts: AgentArtifact[]
@@ -181,6 +176,10 @@ export interface AgentThreadSummary {
   title: string
   updatedAt: number
   running: boolean
+  /** Latest run: the live one, otherwise the most recently updated. `idle` when none ran. */
+  status?: AgentRunStatus | 'idle'
+  /** Model id of that run; empty until the run resolves its model. `vidbee-cloud` for Cloud. */
+  model?: string
 }
 /**
  * Entities changed by one streaming commit.

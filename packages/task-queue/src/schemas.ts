@@ -3,6 +3,7 @@ import { z } from 'zod'
 export const TaskKindSchema = z.enum([
   'video',
   'audio',
+  'subtitles',
   'playlist',
   'subscription-item',
   'yt-dlp-forward',

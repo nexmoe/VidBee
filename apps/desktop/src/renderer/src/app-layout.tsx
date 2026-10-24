@@ -23,6 +23,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { DesktopChromeContext } from './desktop-chrome'
+import { useAgentTaskEvents } from './hooks/use-agent-task-events'
 import { useAppIconPlaybackMenu } from './hooks/use-app-icon-playback-menu'
 import { useDownloadEvents } from './hooks/use-download-events'
 import { useHistorySync } from './hooks/use-history-sync'
@@ -144,6 +145,7 @@ export function AppLayout() {
   const isRybbitReady = useRybbitScript(analyticsEnabled)
 
   useDownloadEvents()
+  useAgentTaskEvents()
   useAppIconPlaybackMenu()
   useHistorySync()
   const { applyImportResult } = useImportLocalMedia()

@@ -2,15 +2,8 @@ import { TabUnderline } from '@renderer/components/transcript/TabUnderline'
 import { TranscriptCaptionsPane } from '@renderer/components/transcript/TranscriptCaptionsPane'
 import { TranscriptPromptHistory } from '@renderer/components/transcript/TranscriptPromptHistory'
 import { TranscriptPromptPane } from '@renderer/components/transcript/TranscriptPromptPane'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from '@renderer/components/ui/dropdown-menu'
-import { ScrollArea } from '@renderer/components/ui/scroll-area'
 import { usePromptRunStatuses } from '@renderer/hooks/use-prompt-run'
+import { aiPromptLabel } from '@renderer/lib/ai-prompt-label'
 import { ipcEvents, ipcServices } from '@renderer/lib/ipc'
 import { logger } from '@renderer/lib/logger'
 import { prefersReducedMotion } from '@renderer/lib/transcript-follow'
@@ -19,7 +12,6 @@ import {
   startTypedViewTransition,
   TRANSCRIPT_VT_TAB
 } from '@renderer/lib/transcript-view-transition'
-import { cn } from '@renderer/lib/utils'
 import { pendingPromptTabAtom } from '@renderer/store/transcript-prompt-tab'
 import type { TranscriptSegmentView, TranscriptSpeakerView } from '@renderer/store/transcripts'
 import type { AgentRunEvent, AgentThreadSummary } from '@shared/agent-chat'
@@ -35,11 +27,11 @@ import {
   agentChatPrompt,
   partitionTranscriptPromptTabs
 } from '@shared/ai-prompts'
-import { promptTabIndicator } from '@shared/ai-run'
-import type { AiPrompt, AiPromptRunStatus, AiSettingsSnapshot } from '@shared/ai-types'
+import type { AiSettingsSnapshot } from '@shared/ai-types'
+import { AgentWorkspaceTabs } from '@vidbee/ui/components/agent-workspace'
 import { useAtom } from 'jotai'
-import { Captions, Check, ChevronDown, History, MessageCircle, Plus, X } from 'lucide-react'
-import { type ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { Captions } from 'lucide-react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 interface TranscriptSidePanelProps {
@@ -110,73 +102,7 @@ interface TranscriptSidePanelProps {
   hasStoredTranscript?: boolean
 }
 
-/**
- * Translate a built-in prompt title, falling back to the stored English title.
- *
- * @param prompt Prompt record.
- * @param t i18n function.
- */
-const promptLabel = (prompt: AiPrompt, t: (key: string) => string): string =>
-  prompt.isPreset ? t(`settings.ai.presetPrompts.${prompt.id}.title`) : prompt.title
-
-const PROMPT_MENU_ITEM_CLASS =
-  'flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm transition-colors duration-200 hover:bg-accent hover:text-accent-foreground'
-
-const TAB_STATUS_DOT_CLASS = {
-  completed: 'bg-emerald-500',
-  error: 'bg-red-500',
-  running: 'bg-primary'
-} as const
-
-const TAB_STATUS_LABEL_KEY = {
-  completed: 'transcript.promptTabCompleted',
-  error: 'transcript.promptTabError',
-  running: 'transcript.promptRunning'
-} as const
-
-const TAB_BUTTON_CLASS =
-  'inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap border-transparent border-b-2 px-2 py-2.5 font-medium text-sm transition-colors duration-200'
-
 const MENU_HOVER_CLOSE_MS = 120
-
-/**
- * Colored status mark for a prompt tab. Running uses a ping so live work stays visible.
- *
- * @param props.promptId Prompt id used in test ids.
- * @param props.status Latest run status, or undefined before the first fetch.
- * @param props.viewed True when the current completed/error result has been opened.
- */
-function PromptTabStatus({
-  promptId,
-  status,
-  viewed = false
-}: {
-  promptId: string
-  status: AiPromptRunStatus | undefined
-  viewed?: boolean
-}) {
-  const { t } = useTranslation()
-  const indicator = status ? promptTabIndicator(status, viewed) : null
-  if (!indicator) {
-    return null
-  }
-  return (
-    <span
-      aria-hidden
-      className="relative inline-flex size-1.5 shrink-0"
-      data-status={indicator}
-      data-testid={`prompt-tab-status-${promptId}`}
-      title={t(TAB_STATUS_LABEL_KEY[indicator])}
-    >
-      {indicator === 'running' ? (
-        <span className="absolute inset-0 animate-ping rounded-full bg-primary opacity-60 motion-reduce:hidden" />
-      ) : null}
-      <span
-        className={cn('relative block size-1.5 rounded-full', TAB_STATUS_DOT_CLASS[indicator])}
-      />
-    </span>
-  )
-}
 
 /**
  * Whether a completed or failed prompt result has already been opened.
@@ -195,107 +121,6 @@ function isPromptTabViewed(
   viewedAt: Record<string, number>
 ): boolean {
   return tab === promptId || viewedAt[`${downloadId}:${promptId}`] === updatedAt
-}
-
-/**
- * One prompt chip in the transcript tab bar.
- *
- * @param props.active Whether this chip is the current tab.
- * @param props.label Visible tab label.
- * @param props.onSelect Activate this tab.
- * @param props.promptId Prompt id used as `data-tab-id`.
- * @param props.status Latest run status for that prompt.
- * @param props.viewed True when the current completed/error result has been opened.
- */
-function PromptTabButton({
-  active,
-  label,
-  onClose,
-  onSelect,
-  promptId,
-  status,
-  viewed
-}: {
-  active: boolean
-  label: string
-  onClose?: () => void
-  onSelect: () => void
-  promptId: string
-  status?: AiPromptRunStatus
-  viewed: boolean
-}) {
-  const { t } = useTranslation()
-  return (
-    <div className="relative inline-flex items-end" data-tab-id={promptId}>
-      <button
-        className={cn(
-          TAB_BUTTON_CLASS,
-          onClose && 'pr-6',
-          active ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
-        )}
-        onClick={onSelect}
-        type="button"
-      >
-        <span className="max-w-40 truncate">{label}</span>
-        <PromptTabStatus promptId={promptId} status={status} viewed={viewed} />
-      </button>
-      {onClose ? (
-        <button
-          aria-label={t('transcript.promptTabClose')}
-          className="absolute top-1/2 right-0.5 inline-flex size-5 -translate-y-1/2 cursor-pointer items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          data-testid={`transcript-prompt-tab-close-${promptId}`}
-          onClick={(event) => {
-            event.preventDefault()
-            event.stopPropagation()
-            onClose()
-          }}
-          type="button"
-        >
-          <X className="size-3" />
-        </button>
-      ) : null}
-    </div>
-  )
-}
-
-/**
- * One row in the overflow prompt menu.
- *
- * @param props.active Whether this row is the current tab.
- * @param props.icon Optional leading icon for transcript and chat entries.
- * @param props.label Visible label.
- * @param props.onSelect Activate this tab.
- * @param props.promptId Prompt id when this row is a prompt tab.
- * @param props.status Latest run status for that prompt.
- * @param props.viewed True when the current completed/error result has been opened.
- */
-function PromptMenuItem({
-  active,
-  icon,
-  label,
-  onSelect,
-  promptId,
-  status,
-  viewed = false
-}: {
-  active: boolean
-  icon?: ReactNode
-  label: string
-  onSelect: () => void
-  promptId?: string
-  status?: AiPromptRunStatus
-  viewed?: boolean
-}) {
-  return (
-    <DropdownMenuItem className={PROMPT_MENU_ITEM_CLASS} onSelect={onSelect}>
-      {icon}
-      <span className="min-w-0 flex-1 truncate">{label}</span>
-      {promptId ? (
-        <PromptTabStatus promptId={`menu-${promptId}`} status={status} viewed={viewed} />
-      ) : null}
-      {active ? <Check className="size-3.5 shrink-0" /> : null}
-    </DropdownMenuItem>
-  )
 }
 
 /**
@@ -376,6 +201,8 @@ export function TranscriptSidePanel({
 
   useEffect(() => {
     void refresh()
+    const listener = ipcEvents.on('ai:settings-changed', () => void refresh())
+    return () => ipcEvents.removeListener('ai:settings-changed', listener)
   }, [refresh])
 
   /**
@@ -726,208 +553,74 @@ export function TranscriptSidePanel({
       : transcriptText
   return (
     <div className="relative flex h-full min-h-0 flex-col border-border/60 border-t bg-background lg:border-t-0 lg:border-l">
-      <div className="relative z-20 shrink-0 border-border/60 border-b">
-        <ScrollArea
-          className={cn(
-            'w-full px-4',
-            prompts.length > 0 || chatThreads.length > 0 ? 'pr-28' : 'pr-20'
-          )}
-          orientation="horizontal"
-          viewportClassName="h-auto overflow-y-hidden"
-          viewportRef={tabsViewportRef}
-        >
-          <div
-            className="relative flex min-w-max items-end"
-            data-testid="transcript-prompt-tabs"
-            ref={tabsRef}
-          >
-            <TabUnderline activeId={threadId ?? tab} />
-            <button
-              className={cn(
-                TAB_BUTTON_CLASS,
-                tab === 'transcript'
-                  ? 'text-foreground'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-              data-tab-id="transcript"
-              onClick={() => selectTab('transcript')}
-              type="button"
-            >
-              <Captions aria-hidden className="size-4" />
-              {t('transcript.title')}
-            </button>
-            {overview ? (
-              <PromptTabButton
-                active={tab === overview.id}
-                label={promptLabel(overview, t)}
-                onSelect={() => selectTab(overview.id)}
-                promptId={overview.id}
-                status={runStatuses[overview.id]?.status}
-                viewed={isPromptTabViewed(
-                  downloadId,
-                  overview.id,
-                  tab,
-                  runStatuses[overview.id]?.updatedAt,
-                  viewedAt
-                )}
-              />
-            ) : null}
-            {otherPrompts.length > 0 ? (
-              <span aria-hidden className="mx-1.5 mb-3 h-3.5 w-px shrink-0 bg-border" />
-            ) : null}
-            {otherPrompts.map((prompt) => (
-              <PromptTabButton
-                active={tab === prompt.id}
-                key={prompt.id}
-                label={promptLabel(prompt, t)}
-                onSelect={() => selectTab(prompt.id)}
-                promptId={prompt.id}
-                status={runStatuses[prompt.id]?.status}
-                viewed={isPromptTabViewed(
-                  downloadId,
-                  prompt.id,
-                  tab,
-                  runStatuses[prompt.id]?.updatedAt,
-                  viewedAt
-                )}
-              />
-            ))}
-            {chatThreads.map((thread) => (
-              <PromptTabButton
-                active={threadId === thread.id}
-                key={thread.id}
-                label={thread.title.trim() || t('transcript.promptHistoryChat')}
-                onClose={() => closeChatTab(thread.id)}
-                onSelect={() => selectConversation(AI_CHAT_PROMPT_ID, thread.id)}
-                promptId={thread.id}
-                status={thread.running ? 'running' : undefined}
-                viewed
-              />
-            ))}
-          </div>
-        </ScrollArea>
-        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 flex items-stretch bg-gradient-to-l from-40% from-background to-transparent pl-6">
-          <button
-            aria-label={t('transcript.promptHistoryNew')}
-            className="pointer-events-auto inline-flex h-full w-9 cursor-pointer items-center justify-center text-muted-foreground transition-colors duration-200 hover:bg-muted/70 hover:text-foreground"
-            data-testid="transcript-prompt-new-chat"
-            onClick={() => {
-              closeMenu()
-              void startNewChat()
-            }}
-            type="button"
-          >
-            <Plus className="size-4" />
-          </button>
-          <button
-            aria-expanded={historyOpen}
-            aria-label={
-              historyOpen ? t('transcript.promptHistoryClose') : t('transcript.promptHistory')
-            }
-            className={cn(
-              'pointer-events-auto inline-flex h-full w-9 cursor-pointer items-center justify-center transition-colors duration-200 hover:bg-muted/70 hover:text-foreground',
-              historyOpen ? 'bg-muted/70 text-foreground' : 'text-muted-foreground'
-            )}
-            data-testid="transcript-prompt-history"
-            onClick={() => {
-              closeMenu()
-              setHistoryOpen((current) => !current)
-            }}
-            type="button"
-          >
-            <History className="size-4" />
-          </button>
-          {prompts.length > 0 || chatThreads.length > 0 ? (
-            <div className="pointer-events-auto flex h-full items-stretch">
-              <DropdownMenu modal={false} onOpenChange={onMenuOpenChange} open={menuOpen}>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    aria-label={t('transcript.promptMenu')}
-                    className="inline-flex h-full w-9 cursor-pointer items-center justify-center text-muted-foreground transition-colors duration-200 hover:bg-muted/70 hover:text-foreground"
-                    data-testid="transcript-prompt-menu"
-                    onFocus={openMenu}
-                    onMouseEnter={openMenu}
-                    onMouseLeave={scheduleCloseMenu}
-                    onPointerDown={(event) => event.preventDefault()}
-                    type="button"
-                  >
-                    <ChevronDown
-                      className={cn(
-                        'size-4 transition-transform duration-200',
-                        menuOpen && 'rotate-180'
-                      )}
-                    />
-                  </button>
-                </DropdownMenuTrigger>
-                {/* Portaled: in-pane z-index is trapped by the view-transition stacking context. */}
-                <DropdownMenuContent
-                  align="end"
-                  className="z-[80] max-h-72 min-w-52"
-                  data-testid="transcript-prompt-menu-list"
-                  onCloseAutoFocus={(event) => event.preventDefault()}
-                  onMouseEnter={openMenu}
-                  onMouseLeave={scheduleCloseMenu}
-                  sideOffset={4}
-                >
-                  <PromptMenuItem
-                    active={tab === 'transcript'}
-                    icon={<Captions aria-hidden className="size-4 shrink-0" />}
-                    label={t('transcript.title')}
-                    onSelect={() => selectTab('transcript')}
-                  />
-                  {overview ? (
-                    <PromptMenuItem
-                      active={tab === overview.id}
-                      label={promptLabel(overview, t)}
-                      onSelect={() => selectTab(overview.id)}
-                      promptId={overview.id}
-                      status={runStatuses[overview.id]?.status}
-                      viewed={isPromptTabViewed(
-                        downloadId,
-                        overview.id,
-                        tab,
-                        runStatuses[overview.id]?.updatedAt,
-                        viewedAt
-                      )}
-                    />
-                  ) : null}
-                  {otherPrompts.length > 0 ? <DropdownMenuSeparator /> : null}
-                  {otherPrompts.map((prompt) => (
-                    <PromptMenuItem
-                      active={tab === prompt.id}
-                      key={prompt.id}
-                      label={promptLabel(prompt, t)}
-                      onSelect={() => selectTab(prompt.id)}
-                      promptId={prompt.id}
-                      status={runStatuses[prompt.id]?.status}
-                      viewed={isPromptTabViewed(
-                        downloadId,
-                        prompt.id,
-                        tab,
-                        runStatuses[prompt.id]?.updatedAt,
-                        viewedAt
-                      )}
-                    />
-                  ))}
-                  {chatThreads.length > 0 ? <DropdownMenuSeparator /> : null}
-                  {chatThreads.map((thread) => (
-                    <PromptMenuItem
-                      active={threadId === thread.id}
-                      icon={<MessageCircle aria-hidden className="size-4 shrink-0" />}
-                      key={thread.id}
-                      label={thread.title.trim() || t('transcript.promptHistoryChat')}
-                      onSelect={() => selectConversation(AI_CHAT_PROMPT_ID, thread.id)}
-                      promptId={thread.id}
-                      status={thread.running ? 'running' : undefined}
-                      viewed
-                    />
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          ) : null}
-        </div>
-      </div>
+      <AgentWorkspaceTabs
+        activeId={threadId ?? tab}
+        historyOpen={historyOpen}
+        labels={{
+          newChat: t('transcript.promptHistoryNew'),
+          history: t('transcript.promptHistory'),
+          closeHistory: t('transcript.promptHistoryClose'),
+          menu: t('transcript.promptMenu'),
+          closeTab: t('transcript.promptTabClose')
+        }}
+        menuOpen={menuOpen}
+        onHistory={() => {
+          closeMenu()
+          setHistoryOpen((current) => !current)
+        }}
+        onMenuEnter={openMenu}
+        onMenuLeave={scheduleCloseMenu}
+        onMenuOpenChange={onMenuOpenChange}
+        onNewChat={() => {
+          closeMenu()
+          void startNewChat()
+        }}
+        onSelect={(id) => {
+          const chat = chatThreads.find((item) => item.id === id)
+          if (chat) {
+            selectConversation(AI_CHAT_PROMPT_ID, chat.id)
+          } else {
+            selectTab(id)
+          }
+        }}
+        tabs={[
+          {
+            id: 'transcript',
+            label: t('transcript.title'),
+            icon: <Captions aria-hidden className="size-4" />
+          },
+          ...[...(overview ? [overview] : []), ...otherPrompts].map((prompt, index) => ({
+            id: prompt.id,
+            label: aiPromptLabel(prompt, t),
+            separate: prompt.id !== AI_OVERVIEW_PROMPT_ID && index === (overview ? 1 : 0),
+            status: runStatuses[prompt.id]?.status,
+            statusLabel: t(
+              runStatuses[prompt.id]?.status === 'running'
+                ? 'transcript.promptRunning'
+                : runStatuses[prompt.id]?.status === 'error'
+                  ? 'transcript.promptTabError'
+                  : 'transcript.promptTabCompleted'
+            ),
+            viewed: isPromptTabViewed(
+              downloadId,
+              prompt.id,
+              tab,
+              runStatuses[prompt.id]?.updatedAt,
+              viewedAt
+            )
+          })),
+          ...chatThreads.map((thread) => ({
+            id: thread.id,
+            label: thread.title.trim() || t('transcript.promptHistoryChat'),
+            status: thread.running ? 'running' : undefined,
+            viewed: true,
+            onClose: () => closeChatTab(thread.id)
+          }))
+        ]}
+        tabsRef={tabsRef}
+        underline={<TabUnderline activeId={threadId ?? tab} />}
+        viewportRef={tabsViewportRef}
+      />
       <div className="relative flex min-h-0 flex-1 flex-col" data-vt="transcript-tab">
         {activePrompt ? (
           <TranscriptPromptPane
@@ -994,7 +687,7 @@ export function TranscriptSidePanel({
               return t('transcript.promptHistoryChat')
             }
             const prompt = allPrompts.find((entry) => entry.id === promptId)
-            return prompt ? promptLabel(prompt, t) : promptId
+            return prompt ? aiPromptLabel(prompt, t) : promptId
           }}
         />
       </div>
