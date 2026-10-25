@@ -12,6 +12,7 @@ on:
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
       - 'package.json'
+      - 'patches/**'
       - '.github/workflows/docker-publish.yml'
   workflow_dispatch:
 
