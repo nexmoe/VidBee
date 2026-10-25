@@ -3,6 +3,39 @@
 Cette page ne présente que les évolutions visibles par les utilisateurs, sans détails techniques.
 Pour les notes de version complètes, consultez [GitHub Releases](https://github.com/nexmoe/VidBee/releases).
 
+## [Unreleased]
+
+## [v2.2.4](https://github.com/nexmoe/VidBee/releases/tag/v2.2.4) - 2026-10-24
+
+### Nouveautés
+- Connectez des assistants IA externes à VidBee pour gérer les téléchargements, abonnements, transcriptions et exports.
+- Poursuivez la même conversation Agent dans VidBee Desktop et dans l’extension du navigateur.
+- Téléchargez uniquement les sous-titres, sans télécharger la vidéo.
+- Enregistrez les diagrammes IA en JPG, en plus des formats SVG, PNG et du texte source Mermaid.
+
+### Améliorations
+- Les grandes bibliothèques de téléchargements et de transcriptions restent réactives ; les fichiers convertis sont plus faciles à retrouver.
+- Les titres et les couvertures apparaissent dès l’ajout à la file de téléchargement.
+- Chaque profil de navigateur conserve sa propre session de connexion lorsque l’extension utilise Desktop.
+- Les diagrammes IA et leurs commandes sont plus cohérents dans les thèmes clair et sombre.
+- Les téléchargements peuvent à nouveau démarrer dans les versions pour Mac Intel qui ne contenaient pas tous les outils nécessaires.
+
+## [v2.2.3](https://github.com/nexmoe/VidBee/releases/tag/v2.2.3) - 2026-10-11
+
+### Améliorations
+- Les modèles d’un même fournisseur IA restent groupés lorsque vous modifiez ou supprimez ce fournisseur.
+- Les réponses illustrées d’Agent n’ajoutent plus de captures d’écran inutilisées à la fin.
+
+## [v2.2.2](https://github.com/nexmoe/VidBee/releases/tag/v2.2.2) - 2026-10-11
+
+### Améliorations
+- Les conversations Agent et les demandes portant sur une transcription fonctionnent à nouveau dans l’application installée, sans échouer dès le démarrage.
+
+## [v2.2.1](https://github.com/nexmoe/VidBee/releases/tag/v2.2.1) - 2026-10-11
+
+### Améliorations
+- Les réglages du compte sont de nouveau accessibles dans la version publiée de l’application de bureau.
+
 ## [v2.2.0](https://github.com/nexmoe/VidBee/releases/tag/v2.2.0) - 2026-10-11
 
 ### Nouveautés
@@ -107,6 +140,41 @@ En 1.x, VidBee enregistrait le fichier et s'arrêtait là. 2.0 continue : transc
 - La transcription fonctionne aussi sur les Mac Intel.
 - Téléchargements et installations auto-hébergées plus fiables.
 
+## [v1.3.14](https://github.com/nexmoe/VidBee/releases/tag/v1.3.14) - 2026-07-05
+
+### Améliorations
+- La prise en charge des téléchargements est actualisée pour suivre les changements récents des sites compatibles.
+
+## [v1.3.13](https://github.com/nexmoe/VidBee/releases/tag/v1.3.13) - 2026-06-20
+
+### Nouveautés
+- Utilisez VidBee sous Windows sans installation, avec la possibilité de conserver les données et les téléchargements à côté de l’application. (by @jabrailkhalil, [#403](https://github.com/nexmoe/VidBee/pull/403))
+- Consultez les journaux d’un téléchargement en cours et retrouvez-les dans l’historique.
+
+### Améliorations
+- Coller un lien de playlist ou de chaîne YouTube ouvre automatiquement les options de playlist.
+- Changer de lien ne lance plus le téléchargement de la vidéo précédemment sélectionnée.
+- Annuler un téléchargement sous Windows l’arrête complètement ; les cookies de Firefox sont reconnus plus sûrement.
+- Un sous-titre facultatif indisponible ne bloque plus les téléchargements Twitch ; un autre format est essayé si la combinaison souhaitée est absente.
+- L’application peut à nouveau démarrer après son installation avec le paquet Debian pour Linux.
+
+## [v1.3.12](https://github.com/nexmoe/VidBee/releases/tag/v1.3.12) - 2026-06-20
+
+### Nouveautés
+- Choisissez les mises à jour stables ou de préversion dans À propos et continuez à recevoir celles du canal sélectionné.
+
+## [v1.3.11](https://github.com/nexmoe/VidBee/releases/tag/v1.3.11) - 2026-06-19
+
+### Nouveautés
+- Choisissez MP4, MKV, WebM ou le format d’origine pour les téléchargements en un clic.
+- Appuyez sur Ctrl+V ou Cmd+V pour ouvrir l’ajout de téléchargement avec le lien copié.
+
+### Améliorations
+- Les indications sont plus claires lorsqu’un téléchargement nécessite des cookies, une connexion au site ou un accès réseau fonctionnel.
+- Les téléchargements longs et les grandes playlists ne font plus planter l’application.
+- Certaines anciennes installations 1.3 peuvent à nouveau démarrer ; la détection des outils de téléchargement sur macOS est améliorée.
+- La prise en charge des téléchargements est actualisée pour suivre les changements récents des sites compatibles.
+
 ## [v1.3.10](https://github.com/nexmoe/VidBee/releases/tag/v1.3.10) - 2026-04-11
 ### Ameliorations
 - Telechargement en un clic active par defaut pour demarrer plus vite des la premiere utilisation.
@@ -142,6 +210,11 @@ En 1.x, VidBee enregistrait le fichier et s'arrêtait là. 2.0 continue : transc
 - Ajout d'une notification de mise à jour lorsque la version est obsolète
 - Intégration de l'analytique Rybbit
 - Amélioration des détails de l'interface de téléchargement
+
+## [v1.3.5](https://github.com/nexmoe/VidBee/releases/tag/v1.3.5) - 2026-03-18
+
+### Améliorations
+- La prise en charge des téléchargements est actualisée pour suivre les changements récents des sites compatibles.
 
 ## [v1.3.4](https://github.com/nexmoe/VidBee/releases/tag/v1.3.4) - 2026-03-14
 ### Corrections de bugs

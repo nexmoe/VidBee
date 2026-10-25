@@ -3,6 +3,39 @@
 本页只记录你能直接感知到的更新，不展开技术实现细节。
 完整发布记录请查看 [GitHub Releases](https://github.com/nexmoe/VidBee/releases)。
 
+## [Unreleased]
+
+## [v2.2.4](https://github.com/nexmoe/VidBee/releases/tag/v2.2.4) - 2026-10-24
+
+### 新增功能
+- 可以让外部 AI 助手连接 VidBee，管理下载、订阅、转录和导出。
+- 可以在 VidBee Desktop 和浏览器扩展中继续同一段 Agent 对话。
+- 可以只下载字幕，无需下载视频。
+- AI 图表新增 JPG 下载，并保留 SVG、PNG 和 Mermaid 源文件格式。
+
+### 改进与修复
+- 下载和转录资料库较大时保持流畅，转换后的音视频也更容易查找和切换。
+- 视频加入下载队列后即可看到标题和封面。
+- 扩展连接 Desktop 时，不同浏览器配置使用各自独立的登录会话。
+- AI 图表在明暗主题下显示更一致，下载和查看操作保持统一。
+- 修复 Intel Mac 安装包中下载工具缺失导致无法开始下载的问题。
+
+## [v2.2.3](https://github.com/nexmoe/VidBee/releases/tag/v2.2.3) - 2026-10-11
+
+### 改进与修复
+- 编辑或移除 AI 服务商时，属于同一服务商的模型会保持分组。
+- Agent 的图文回答不再在末尾附加未使用的截图。
+
+## [v2.2.2](https://github.com/nexmoe/VidBee/releases/tag/v2.2.2) - 2026-10-11
+
+### 改进与修复
+- 修复安装版中 Agent 对话和转录提示词一开始就失败的问题。
+
+## [v2.2.1](https://github.com/nexmoe/VidBee/releases/tag/v2.2.1) - 2026-10-11
+
+### 改进与修复
+- 恢复已发布桌面版中的账号设置。
+
 ## [v2.2.0](https://github.com/nexmoe/VidBee/releases/tag/v2.2.0) - 2026-10-11
 
 ### 新增功能
@@ -107,6 +140,41 @@
 - Intel Mac 上的转写功能现在可以正常使用。
 - 下载与自建部署更稳定。
 
+## [v1.3.14](https://github.com/nexmoe/VidBee/releases/tag/v1.3.14) - 2026-07-05
+
+### 改进与修复
+- 更新下载支持，适应受支持网站的近期变化。
+
+## [v1.3.13](https://github.com/nexmoe/VidBee/releases/tag/v1.3.13) - 2026-06-20
+
+### 新增功能
+- Windows 新增免安装版，可选择将应用数据和下载文件保存在应用旁边。(by @jabrailkhalil, [#403](https://github.com/nexmoe/VidBee/pull/403))
+- 可以查看实时下载日志，并从下载历史中重新打开日志。
+
+### 改进与修复
+- 粘贴播放列表或 YouTube 频道链接时，会自动打开播放列表下载选项。
+- 更换链接后，不再误下载此前选中的视频。
+- 在 Windows 上取消下载时会彻底停止任务，Firefox 浏览器 Cookie 的识别也更可靠。
+- Twitch 的可选字幕不可用时仍会继续下载；首选音视频组合缺失时，会尝试可用格式。
+- 修复 Linux Debian 安装包安装后无法启动的问题。
+
+## [v1.3.12](https://github.com/nexmoe/VidBee/releases/tag/v1.3.12) - 2026-06-20
+
+### 新增功能
+- 可以在“关于”中选择稳定版或预览版更新，并持续接收所选通道的更新。
+
+## [v1.3.11](https://github.com/nexmoe/VidBee/releases/tag/v1.3.11) - 2026-06-19
+
+### 新增功能
+- 一键下载可选择 MP4、MKV、WebM 或原始格式。
+- 按 Ctrl+V 或 Cmd+V 可用复制的链接打开添加下载窗口。
+
+### 改进与修复
+- 下载需要浏览器 Cookie、登录或可用网络时，会提供更清楚的操作指引。
+- 修复长时间下载或大型播放列表导致应用崩溃的问题。
+- 恢复部分旧版 1.3 安装的正常启动，改善 macOS 上下载工具的识别。
+- 更新下载支持，适应受支持网站的近期变化。
+
 ## [v1.3.10](https://github.com/nexmoe/VidBee/releases/tag/v1.3.10) - 2026-04-11
 ### 改进
 - 首次使用默认开启一键下载，开始下载更快。
@@ -142,6 +210,11 @@
 - 新增版本过期更新提醒通知
 - 集成 Rybbit 分析
 - 优化下载界面细节
+
+## [v1.3.5](https://github.com/nexmoe/VidBee/releases/tag/v1.3.5) - 2026-03-18
+
+### 改进与修复
+- 更新下载支持，适应受支持网站的近期变化。
 
 ## [v1.3.4](https://github.com/nexmoe/VidBee/releases/tag/v1.3.4) - 2026-03-14
 ### Bug 修复
