@@ -5,6 +5,7 @@ export type AiProviderPresetId =
   | 'alibaba'
   | 'anthropic'
   | 'azure'
+  | 'cheaperinference'
   | 'custom'
   | 'deepseek'
   | 'fireworks'
