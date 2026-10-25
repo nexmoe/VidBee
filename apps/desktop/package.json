@@ -1,6 +1,6 @@
 {
   "name": "vidbee",
-  "version": "2.2.4",
+  "version": "2.3.0",
   "description": "Free, open-source desktop app to download media, create local transcripts, and ask AI",
   "main": "./out/main/index.js",
   "author": "VidBee",

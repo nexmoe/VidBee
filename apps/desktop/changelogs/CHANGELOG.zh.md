@@ -5,6 +5,12 @@
 
 ## [Unreleased]
 
+## [v2.3.0](https://github.com/nexmoe/VidBee/releases/tag/v2.3.0) - 2026-10-25
+
+### 改进与修复
+- 全新安装默认开启登录时启动，并在 macOS 上隐藏 Dock 图标；两项设置均可在设置中调整。
+- 略微缩小转录和 AI 回答分享图片中的文字比例，让排版更紧凑。
+
 ## [v2.2.4](https://github.com/nexmoe/VidBee/releases/tag/v2.2.4) - 2026-10-24
 
 ### 新增功能

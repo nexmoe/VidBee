@@ -5,6 +5,12 @@ Pour les notes de version complètes, consultez [GitHub Releases](https://github
 
 ## [Unreleased]
 
+## [v2.3.0](https://github.com/nexmoe/VidBee/releases/tag/v2.3.0) - 2026-10-25
+
+### Améliorations
+- Les nouvelles installations activent par défaut le lancement à l’ouverture de session et masquent l’icône du Dock sur macOS ; ces deux options restent modifiables dans les réglages.
+- Les images de partage des transcriptions et des réponses IA sont plus compactes grâce à un texte légèrement réduit.
+
 ## [v2.2.4](https://github.com/nexmoe/VidBee/releases/tag/v2.2.4) - 2026-10-24
 
 ### Nouveautés
