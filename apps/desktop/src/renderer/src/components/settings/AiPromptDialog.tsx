@@ -16,12 +16,14 @@ import { Textarea } from '@renderer/components/ui/textarea'
 import { usePromptRun } from '@renderer/hooks/use-prompt-run'
 import { AI_PROMPT_SAMPLE_TRANSCRIPT, resolveAiPromptContent } from '@shared/ai-prompts'
 import { isThinkingSameAsAnswer } from '@shared/ai-thinking'
-import type { AiPrompt, AiPromptWriteInput } from '@shared/ai-types'
+import {
+  AI_PROMPT_TEST_DOWNLOAD_ID,
+  type AiPrompt,
+  type AiPromptWriteInput
+} from '@shared/ai-types'
 import { Square } from 'lucide-react'
 import { useEffect, useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-
-const SETTINGS_TEST_DOWNLOAD_ID = '__settings-prompt-test__'
 
 interface AiPromptDialogProps {
   onDelete?: () => Promise<void>
@@ -52,7 +54,7 @@ export function AiPromptDialog({
   const [autoRun, setAutoRun] = useState(false)
   const [sample, setSample] = useState(AI_PROMPT_SAMPLE_TRANSCRIPT)
   const testPromptId = prompt?.id ?? null
-  const { run, start, stop } = usePromptRun(SETTINGS_TEST_DOWNLOAD_ID, open ? testPromptId : null)
+  const { run, start, stop } = usePromptRun(AI_PROMPT_TEST_DOWNLOAD_ID, open ? testPromptId : null)
   const running = run.status === 'running'
   const thinking = run.thinking?.trim() ?? ''
   const showThinking =

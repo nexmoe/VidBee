@@ -25,6 +25,7 @@ import { toast } from 'sonner'
 import { DesktopChromeContext } from './desktop-chrome'
 import { useAgentTaskEvents } from './hooks/use-agent-task-events'
 import { useAppIconPlaybackMenu } from './hooks/use-app-icon-playback-menu'
+import { useDesktopValueEvents } from './hooks/use-desktop-value-events'
 import { useDownloadEvents } from './hooks/use-download-events'
 import { useHistorySync } from './hooks/use-history-sync'
 import { useImportLocalMedia } from './hooks/use-import-local-media'
@@ -144,6 +145,7 @@ export function AppLayout() {
   const analyticsEnabled = settingsLoaded && settings.enableAnalytics !== false
 
   useDownloadEvents()
+  useDesktopValueEvents()
   useAgentTaskEvents()
   useAppIconPlaybackMenu()
   useHistorySync()

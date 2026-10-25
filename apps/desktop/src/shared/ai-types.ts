@@ -138,8 +138,13 @@ export interface AiProviderTestResult {
   errorCode: AiPromptErrorCode | null
 }
 
+// Settings samples are diagnostics and must never count as product value.
+export const AI_PROMPT_TEST_DOWNLOAD_ID = '__settings-prompt-test__'
+
 /** Snapshot a renderer can restore after navigating away. */
 export interface AiPromptRunSnapshot {
+  /** Provider category only; no provider credentials or model identifiers. */
+  providerType?: 'cloud' | 'byok'
   cloudResultId?: string
   /** Latest transient failure, visible until fresh model output arrives. */
   recovery?: { attempt: number; maxAttempts: number; error: string }

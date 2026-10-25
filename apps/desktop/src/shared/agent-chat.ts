@@ -217,6 +217,11 @@ export type AgentCatalogNotice =
       revision: number
     }
 export interface AgentRunEvent {
+  /** Ephemeral live-run categories; omitted from persisted events and history repair. */
+  analytics?: {
+    taskOrigin: 'manual' | 'automatic'
+    providerType: 'cloud' | 'byok' | 'unknown'
+  }
   threadId: string
   runId: string | null
   messageId: string | null

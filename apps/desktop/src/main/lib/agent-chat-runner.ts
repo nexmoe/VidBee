@@ -90,6 +90,8 @@ import { loadCloudCapabilities } from './cloud-capabilities'
 import { getDesktopTaskQueueRef, peekDesktopTaskQueueRef } from './queue-ref'
 
 interface ActiveAgentRun {
+  analyticsOrigin: 'manual' | 'automatic'
+  analyticsProviderType?: 'cloud' | 'byok'
   thread: AgentThread
   run: AgentChatRun
   controller: AbortController
@@ -169,10 +171,21 @@ function broadcastSaved(event: AgentRunEvent, thread: AgentThread, type: string)
 
 /** Broadcast only committed product payloads, never provider-private messages or secrets. */
 function broadcast(event: AgentRunEvent): void {
-  publishAgentEvent(event)
+  const entry = active.get(event.threadId)
+  const delivery: AgentRunEvent =
+    entry && entry.run.id === event.runId
+      ? {
+          ...event,
+          analytics: {
+            taskOrigin: entry.analyticsOrigin,
+            providerType: entry.analyticsProviderType ?? 'unknown'
+          }
+        }
+      : event
+  publishAgentEvent(delivery)
   for (const window of BrowserWindow.getAllWindows()) {
     if (!window.isDestroyed()) {
-      window.webContents.send('ai:agent-event', event)
+      window.webContents.send('ai:agent-event', delivery)
     }
   }
 }
@@ -338,7 +351,10 @@ export function readAgentEvents(
 }
 
 /** Start one product run; the synchronous admission path prevents duplicate sends and automatic starts. */
-export function sendAgentMessage(input: AgentChatInput): AgentThread {
+export function sendAgentMessage(
+  input: AgentChatInput,
+  origin: 'manual' | 'automatic' = 'manual'
+): AgentThread {
   if (
     (input.thinkingLevel !== undefined && !AGENT_THINKING_LEVELS.includes(input.thinkingLevel)) ||
     (input.transcriptText !== undefined &&
@@ -450,7 +466,12 @@ export function sendAgentMessage(input: AgentChatInput): AgentThread {
   })
   thread.runs.push(run)
   thread.leafId = messageId
-  const entry: ActiveAgentRun = { thread, run, controller: new AbortController() }
+  const entry: ActiveAgentRun = {
+    thread,
+    run,
+    controller: new AbortController(),
+    analyticsOrigin: origin
+  }
   active.set(thread.id, entry)
   if (!persist(entry, 'run.started', true)) {
     active.delete(thread.id)
@@ -1494,6 +1515,7 @@ async function prepareRun(ctx: AgentRunContext): Promise<void> {
   }
   ctx.message = message
   const provider = aiStore.getActiveProviderSecret()
+  entry.analyticsProviderType = provider ? 'byok' : 'cloud'
   ctx.provider = provider
   ctx.transport = provider
     ? { model: resolvePiModel(provider.provider), fetch: undefined, profile: undefined }

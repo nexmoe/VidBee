@@ -640,6 +640,7 @@ const startAgentPromptRun = (
   }
   const startedAt = deps.now()
   const snapshot: AiPromptRunSnapshot = {
+    providerType: viaCloud ? 'cloud' : 'byok',
     downloadId: input.downloadId,
     promptId: input.promptId,
     status: 'running',
@@ -668,6 +669,7 @@ const startAgentPromptRun = (
    * @param force Skip the throttle window.
    */
   const emit = (next: AiPromptRunSnapshot, force: boolean): void => {
+    next.providerType = viaCloud ? 'cloud' : 'byok'
     run.snapshot = next
     if (next.status !== 'running') {
       savePersistedPromptRun(next)

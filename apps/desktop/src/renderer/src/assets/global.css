@@ -47,7 +47,7 @@
 /* Scale the in-app markdown as a whole so code, tables, and headings stay in proportion. */
 .transcript-prompt-share-scale {
   width: 100%;
-  zoom: 1.5;
+  zoom: 1.4;
 }
 
 /* Share posters are a static fill. Drop Streamdown's nested table card and wrap cells. */

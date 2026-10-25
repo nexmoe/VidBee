@@ -28,13 +28,16 @@ export function runAutoSkillsForTranscript(snapshot: TranscriptSnapshot): void {
       if (thread.messages.length) {
         continue
       }
-      sendAgentMessage({
-        downloadId: download.id,
-        promptId: prompt.id,
-        threadId: thread.id,
-        uiLanguage: String(settingsManager.get('language') || 'en'),
-        sourceTitle: snapshot.title ?? undefined
-      })
+      sendAgentMessage(
+        {
+          downloadId: download.id,
+          promptId: prompt.id,
+          threadId: thread.id,
+          uiLanguage: String(settingsManager.get('language') || 'en'),
+          sourceTitle: snapshot.title ?? undefined
+        },
+        'automatic'
+      )
     } catch (error) {
       scopedLoggers.ai.warn(
         `Automatic skill run failed: ${JSON.stringify({ downloadId: download.id, promptId: prompt.id, error: error instanceof Error ? error.message : String(error) })}`
