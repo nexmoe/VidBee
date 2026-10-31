@@ -12,6 +12,7 @@
     },
     "appName": "VidBee",
     "autoUpdateDescription": "在后台自动下载并安装新版本。",
+    "microsoftStoreUpdateDescription": "应用更新由 Microsoft Store 管理。请打开商店检查更新。",
     "autoUpdateTitle": "自动更新",
     "description": "从 1000+ 个网站下载媒体，在本机生成可搜索的文稿，再用你选择的 AI 服务商进行总结、翻译或提问——全部集中在一个免费开源的桌面应用中。",
     "downloadEngine": {

@@ -15,6 +15,7 @@
     },
     "appName": "VidBee",
     "autoUpdateDescription": "Automatic updates are always enabled and new releases download in the background.",
+    "microsoftStoreUpdateDescription": "Application updates are managed by Microsoft Store. Open the Store to check for updates.",
     "autoUpdateTitle": "Auto updates",
     "description": "Download media from 1000+ sites, create searchable transcripts on your computer, and summarize, translate, or ask questions with the AI provider you choose—all in one free, open-source desktop app.",
     "downloadEngine": {

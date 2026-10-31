@@ -12,6 +12,7 @@
     },
     "appName": "VidBee",
     "autoUpdateDescription": "Descargar e instalar nuevas versiones automáticamente en segundo plano.",
+    "microsoftStoreUpdateDescription": "Microsoft Store gestiona las actualizaciones de la aplicación. Abre la tienda para buscar actualizaciones.",
     "autoUpdateTitle": "Actualizaciones automáticas",
     "description": "Descarga contenido multimedia de más de 1000 sitios, crea transcripciones consultables en tu ordenador y usa el proveedor de IA que elijas para resumirlas, traducirlas o hacer preguntas, todo en una aplicación de escritorio gratuita y de código abierto.",
     "downloadEngine": {

@@ -12,6 +12,7 @@
     },
     "appName": "VidBee",
     "autoUpdateDescription": "Unduh dan instal rilis baru secara otomatis di latar belakang.",
+    "microsoftStoreUpdateDescription": "Pembaruan aplikasi dikelola oleh Microsoft Store. Buka Store untuk memeriksa pembaruan.",
     "autoUpdateTitle": "Pembaruan otomatis",
     "description": "Unduh media dari 1000+ situs, buat transkrip yang dapat dicari di komputer Anda, lalu gunakan penyedia AI pilihan Anda untuk merangkum, menerjemahkan, atau mengajukan pertanyaan—semuanya dalam satu aplikasi desktop gratis dan sumber terbuka.",
     "downloadEngine": {
