@@ -1,0 +1,43 @@
+name: Microsoft Store package
+
+on:
+  push:
+    branches:
+      - build/microsoft-store-v2.3.0
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.1.2
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Check desktop source
+        run: pnpm run check
+      - name: Prepare Windows runtime binaries
+        run: pnpm --filter ./apps/desktop run setup
+      - name: Build desktop application
+        run: pnpm --filter ./apps/desktop run build
+      - name: Package for Microsoft Store
+        working-directory: apps/desktop
+        run: pnpm exec electron-builder --config electron-builder.store.yml --win appx --x64 --publish never
+      - name: Verify packaged native dependencies
+        run: node apps/desktop/scripts/check-packaged-sherpa.cjs windows
+      - name: Upload Store package
+        uses: actions/upload-artifact@v4
+        with:
+          name: vidbee-2.3.0-microsoft-store
+          path: apps/desktop/dist/*-store-*.appx
+          if-no-files-found: error
+          retention-days: 14
