@@ -23,6 +23,7 @@ import { configureLogger } from './config/logger-config'
 import { services } from './ipc'
 import { registerAgentArtifactProtocol } from './lib/agent-artifacts'
 import { isAppQuitPrepared, isAppQuitting, prepareAppQuit } from './lib/app-quit'
+import { canUseAppAutoUpdater } from './lib/app-update-policy'
 import {
   AUTH_PROTOCOL,
   handleDesktopAuthCallback,
@@ -1107,8 +1108,8 @@ function registerVidbeeProtocol(): void {
 
 /** Initialize stable automatic updates for installed desktop apps. */
 function initAutoUpdater(): void {
-  if (isPortableMode) {
-    log.info('Portable mode is active, skipping auto-updater initialization')
+  if (!canUseAppAutoUpdater) {
+    log.info('App auto-updates are disabled for portable and Microsoft Store distributions')
     return
   }
 

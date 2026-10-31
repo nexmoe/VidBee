@@ -134,6 +134,48 @@ jobs:
       - name: Verify packaged sherpa natives
         run: node apps/desktop/scripts/check-packaged-sherpa.cjs ${{ matrix.platform }}
 
+      - name: Package Microsoft Store application
+        if: matrix.platform == 'windows'
+        working-directory: apps/desktop
+        run: pnpm exec electron-builder --config electron-builder.store.yml --win appx --x64 --publish never
+
+      - name: Verify Microsoft Store package
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $packages = @(Get-ChildItem apps/desktop/dist/*-store-*.msix -File)
+          if ($packages.Count -ne 1) { throw 'Expected exactly one Microsoft Store package.' }
+          $archive = [System.IO.Compression.ZipFile]::OpenRead($packages[0].FullName)
+          try {
+            $reader = [System.IO.StreamReader]::new($archive.GetEntry('AppxManifest.xml').Open())
+            try { [xml]$manifest = $reader.ReadToEnd() } finally { $reader.Dispose() }
+            $version = (Get-Content apps/desktop/package.json -Raw | ConvertFrom-Json).version + '.0'
+            if ($manifest.Package.Identity.Name -ne 'Nexmoe.VidBee' -or
+                $manifest.Package.Identity.Publisher -ne 'CN=D23BB833-5C9D-4C6D-80C1-B479A01E5645' -or
+                $manifest.Package.Identity.Version -ne $version -or
+                $manifest.Package.Identity.ProcessorArchitecture -ne 'x64' -or
+                $manifest.Package.Properties.PublisherDisplayName -ne 'Nexmoe' -or
+                $manifest.Package.Dependencies.TargetDeviceFamily.Name -ne 'Windows.Desktop' -or
+                $null -eq $archive.GetEntry('app/vidbee.exe')) {
+              throw 'Microsoft Store package identity, version, platform or executable is invalid.'
+            }
+          } finally { $archive.Dispose() }
+          Write-Host "Validated Microsoft Store package: $($packages[0].Name)"
+
+      - name: Verify Store packaged sherpa natives
+        if: matrix.platform == 'windows'
+        run: node apps/desktop/scripts/check-packaged-sherpa.cjs windows
+
+      - name: Upload Microsoft Store package
+        if: matrix.platform == 'windows' && inputs.upload_artifacts == true
+        uses: actions/upload-artifact@v4
+        with:
+          name: microsoft-store-package
+          path: apps/desktop/dist/*-store-*.msix
+          retention-days: 14
+          if-no-files-found: error
+
       - name: Verify Windows release artifacts
         if: matrix.platform == 'windows'
         shell: pwsh

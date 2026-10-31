@@ -54,7 +54,7 @@ jobs:
           path: dist/
 
       - name: Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3.0.3
         with:
           body: |
             View the full changelog at [vidbee.org/changelog](https://vidbee.org/changelog/).
@@ -79,3 +79,81 @@ jobs:
           CLOUDFLARE_WEBHOOK_URL: ${{ secrets.CLOUDFLARE_WEBHOOK_URL }}
         run: |
           curl -X POST "$CLOUDFLARE_WEBHOOK_URL"
+
+  microsoft-store:
+    needs: [release]
+    if: github.ref_type == 'tag' && vars.MSSTORE_PUBLISH_ENABLED == 'true'
+    runs-on: windows-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    concurrency:
+      group: microsoft-store-9MVHDX4ZBPHS
+      cancel-in-progress: false
+    env:
+      MSSTORE_APP_ID: 9MVHDX4ZBPHS
+      MSSTORE_TENANT_ID: ${{ secrets.MSSTORE_TENANT_ID }}
+      MSSTORE_SELLER_ID: ${{ secrets.MSSTORE_SELLER_ID }}
+      MSSTORE_CLIENT_ID: ${{ secrets.MSSTORE_CLIENT_ID }}
+      MSSTORE_CLIENT_SECRET: ${{ secrets.MSSTORE_CLIENT_SECRET }}
+    steps:
+      - name: Require Store credentials
+        shell: pwsh
+        run: |
+          foreach ($name in @('MSSTORE_TENANT_ID', 'MSSTORE_SELLER_ID', 'MSSTORE_CLIENT_ID', 'MSSTORE_CLIENT_SECRET')) {
+            if ([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($name))) {
+              throw "Missing GitHub Actions secret: $name"
+            }
+          }
+
+      - name: Download verified Store package
+        uses: actions/download-artifact@v4
+        with:
+          name: microsoft-store-package
+          path: store-package
+
+      - name: Set up Microsoft Store CLI
+        uses: microsoft/microsoft-store-apppublisher@cc9910a8d59f2eb55cbb83df0a3800cf3b5300e0 # v1.4
+        with:
+          version: v0.4.3
+
+      - name: Configure Microsoft Store credentials
+        shell: pwsh
+        run: |
+          msstore reconfigure --tenantId "$env:MSSTORE_TENANT_ID" --sellerId "$env:MSSTORE_SELLER_ID" --clientId "$env:MSSTORE_CLIENT_ID" --clientSecret "$env:MSSTORE_CLIENT_SECRET"
+          if ($LASTEXITCODE -ne 0) { throw 'Microsoft Store authentication configuration failed.' }
+
+      - name: Require a published app without a pending submission
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $result = msstore apps get "$env:MSSTORE_APP_ID"
+          if ($LASTEXITCODE -ne 0) { throw 'Could not read the Microsoft Store application.' }
+          $app = $result | ConvertFrom-Json
+          if ($app.Id -ne $env:MSSTORE_APP_ID -or $app.PackageIdentityName -ne 'Nexmoe.VidBee') {
+            throw 'The credentials resolved an unexpected Microsoft Store application.'
+          }
+          if (-not $app.LastPublishedApplicationSubmission.Id) {
+            throw 'Complete the first publication in Partner Center before enabling automatic updates.'
+          }
+          if ($app.PendingApplicationSubmission.Id) {
+            throw 'A Store draft or certification is already pending. Resolve it in Partner Center before retrying; it will not be deleted automatically.'
+          }
+
+      - name: Submit the package for certification
+        shell: pwsh
+        run: |
+          $packages = @(Get-ChildItem store-package/*-store-*.msix -File)
+          if ($packages.Count -ne 1) { throw 'Expected exactly one verified Microsoft Store package.' }
+          msstore publish "$($packages[0].FullName)" --appId "$env:MSSTORE_APP_ID" --priceId Free
+          if ($LASTEXITCODE -ne 0) { throw 'Microsoft Store submission failed. Check Partner Center before retrying.' }
+          Add-Content $env:GITHUB_STEP_SUMMARY 'Microsoft Store update submitted for certification. Publication follows Microsoft approval: https://partner.microsoft.com/dashboard/products/9MVHDX4ZBPHS/overview'
+
+      - name: Clear Store credentials
+        if: always()
+        shell: pwsh
+        run: |
+          if (Get-Command msstore -ErrorAction SilentlyContinue) {
+            msstore reconfigure --reset
+            if ($LASTEXITCODE -ne 0) { throw 'Could not clear Microsoft Store CLI credentials.' }
+          }
