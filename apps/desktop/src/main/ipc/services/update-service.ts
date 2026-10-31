@@ -2,7 +2,7 @@ import { app } from 'electron'
 import { type IpcContext, IpcMethod, IpcService } from 'electron-ipc-decorator'
 import { autoUpdater } from 'electron-updater'
 import { prepareAppQuit } from '../../lib/app-quit'
-import { canUseAppAutoUpdater } from '../../lib/app-update-policy'
+import { canUseAppAutoUpdater, isMicrosoftStore } from '../../lib/app-update-policy'
 
 const isNewerVersion = (latest: string, current: string): boolean => {
   const toSegments = (version: string) =>
@@ -103,6 +103,12 @@ class UpdateService extends IpcService {
   @IpcMethod()
   getCurrentVersion(_context: IpcContext): string {
     return app.getVersion()
+  }
+
+  /** Identify installations whose application updates are managed by Microsoft Store. */
+  @IpcMethod()
+  isStoreManaged(_context: IpcContext): boolean {
+    return isMicrosoftStore
   }
 
   @IpcMethod()

@@ -1,3 +1,4 @@
 import { isPortableMode } from '../portable'
 
-export const canUseAppAutoUpdater = !(isPortableMode || process.windowsStore)
+export const isMicrosoftStore = process.windowsStore === true
+export const canUseAppAutoUpdater = !(isPortableMode || isMicrosoftStore)

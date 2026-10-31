@@ -12,6 +12,7 @@
     },
     "appName": "VidBee",
     "autoUpdateDescription": "Télécharger et installer automatiquement les nouvelles versions en arrière-plan.",
+    "microsoftStoreUpdateDescription": "Les mises à jour de l’application sont gérées par Microsoft Store. Ouvrez le Store pour rechercher des mises à jour.",
     "autoUpdateTitle": "Mises à jour automatiques",
     "description": "Téléchargez des médias depuis plus de 1 000 sites, créez des transcriptions consultables sur votre ordinateur, puis utilisez le fournisseur d’IA de votre choix pour les résumer, les traduire ou poser vos questions, le tout dans une application de bureau gratuite et open source.",
     "downloadEngine": {

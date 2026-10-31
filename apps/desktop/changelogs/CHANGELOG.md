@@ -6,7 +6,7 @@ For full release notes, see [GitHub Releases](https://github.com/nexmoe/VidBee/r
 ## [Unreleased]
 
 ### Added
-- Support Microsoft Store distribution with updates delivered through the Store.
+- Support Microsoft Store distribution with updates and update settings managed through the Store.
 
 ## [v2.3.0](https://github.com/nexmoe/VidBee/releases/tag/v2.3.0) - 2026-10-25
 

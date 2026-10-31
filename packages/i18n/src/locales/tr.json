@@ -12,6 +12,7 @@
     },
     "appName": "VidBee",
     "autoUpdateDescription": "Yeni sürümleri arka planda otomatik olarak indir ve yükleyin.",
+    "microsoftStoreUpdateDescription": "Uygulama güncellemeleri Microsoft Store tarafından yönetilir. Güncellemeleri denetlemek için Store’u açın.",
     "autoUpdateTitle": "Otomatik güncellemeler",
     "description": "1000'den fazla siteden medya indirin, bilgisayarınızda aranabilir deşifreler oluşturun; seçtiğiniz yapay zekâ sağlayıcısıyla özetleyin, çevirin veya sorular sorun—hepsi ücretsiz ve açık kaynaklı tek bir masaüstü uygulamasında.",
     "downloadEngine": {

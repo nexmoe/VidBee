@@ -12,6 +12,7 @@
     },
     "appName": "VidBee",
     "autoUpdateDescription": "バックグラウンドで新しいリリースを自動的にダウンロードしてインストールします。",
+    "microsoftStoreUpdateDescription": "アプリの更新は Microsoft Store で管理されます。ストアを開いて更新を確認してください。",
     "autoUpdateTitle": "自動アップデート",
     "description": "1000以上のサイトからメディアをダウンロードし、パソコン上で検索可能な文字起こしを作成。選んだAIプロバイダーで要約、翻訳、質問までできる、無料のオープンソース・デスクトップアプリです。",
     "downloadEngine": {

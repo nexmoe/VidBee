@@ -12,6 +12,7 @@
     },
     "appName": "VidBee",
     "autoUpdateDescription": "Scarica e installa automaticamente le nuove versioni in background.",
+    "microsoftStoreUpdateDescription": "Gli aggiornamenti dell’app sono gestiti da Microsoft Store. Apri lo Store per verificare la disponibilità di aggiornamenti.",
     "autoUpdateTitle": "Aggiornamenti automatici",
     "description": "Scarica contenuti multimediali da oltre 1000 siti, crea trascrizioni ricercabili sul tuo computer e usa il provider IA che preferisci per riassumerle, tradurle o fare domande, tutto in un’app desktop gratuita e open source.",
     "downloadEngine": {
