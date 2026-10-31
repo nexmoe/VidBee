@@ -1,0 +1,74 @@
+name: Transfer Microsoft Store package
+
+on:
+  push:
+    branches:
+      - build/microsoft-store-transfer-v2.3.0
+    paths:
+      - .github/workflows/microsoft-store-artifact.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  transfer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: vidbee-2.3.0-microsoft-store
+          run-id: 41174944777
+          github-token: ${{ github.token }}
+          path: package
+      - name: Split existing package for transfer
+        run: |
+          python3 - <<'PY'
+          import hashlib
+          import itertools
+          from pathlib import Path
+          from zipfile import ZipFile
+
+          package = next(Path('package').glob('*.appx'))
+          output = Path('parts')
+          output.mkdir()
+          digest = hashlib.sha256()
+          with package.open('rb') as source:
+              for index in itertools.count():
+                  chunk = source.read(256 * 1024 * 1024)
+                  if not chunk:
+                      break
+                  digest.update(chunk)
+                  (output / f'vidbee.appx.part{index}').write_bytes(chunk)
+          (output / 'package.sha256').write_text(digest.hexdigest() + '\n')
+          with ZipFile(package) as archive:
+              (output / 'AppxManifest.xml').write_bytes(archive.read('AppxManifest.xml'))
+          print(f'Package SHA-256: {digest.hexdigest()}')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vidbee-store-part0
+          path: parts/vidbee.appx.part0
+          compression-level: 0
+          retention-days: 3
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vidbee-store-part1
+          path: parts/vidbee.appx.part1
+          compression-level: 0
+          retention-days: 3
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vidbee-store-part2
+          path: parts/vidbee.appx.part2
+          compression-level: 0
+          retention-days: 3
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vidbee-store-manifest
+          path: |
+            parts/AppxManifest.xml
+            parts/package.sha256
+          retention-days: 3
