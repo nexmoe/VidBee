@@ -19,6 +19,5 @@ appx:
   showNameOnTiles: false
   capabilities:
     - internetClient
-  restrictedCapabilities:
     - runFullTrust
   electronUpdaterAware: false
