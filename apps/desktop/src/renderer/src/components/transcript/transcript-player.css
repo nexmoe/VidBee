@@ -188,13 +188,21 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: color-mix(in oklch, black 42%, transparent);
+  background: color-mix(in oklch, black 40%, transparent);
 }
 
 .transcript-library-now-playing .transcript-audio-eq {
   position: static;
-  height: 14px;
-  padding: 2px 4px;
+  gap: 3px;
+  height: 18px;
+  padding: 0;
+  background: transparent;
+  filter: drop-shadow(0 1px 2px rgb(0 0 0 / 45%));
+}
+
+.transcript-library-now-playing .transcript-audio-eq span {
+  background: white;
+  border-radius: 1.5px;
 }
 
 .transcript-player .media-error,

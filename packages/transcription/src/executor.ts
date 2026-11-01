@@ -3,7 +3,6 @@ import { mkdirSync } from 'node:fs'
 import { rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, sep } from 'node:path'
-import { backgroundChildSpawnOptions, lowerChildPriority } from '@vidbee/task-queue/process'
 import type {
   ClassifiedError,
   Executor,
@@ -12,6 +11,7 @@ import type {
   ExecutorRun,
   TaskOutput
 } from '@vidbee/task-queue'
+import { backgroundChildSpawnOptions, lowerChildPriority } from '@vidbee/task-queue/process'
 import type { GpuKind } from './asr-recommend'
 import { type AsrTierId, DEFAULT_ASR_TIER, parseAsrTier } from './asr-tiers'
 import {
@@ -93,6 +93,14 @@ export interface TranscriptionExecutorOptions {
   maxWorkerRestarts?: number
   skipProbe?: boolean
   resolveGpuKinds?: () => Promise<readonly GpuKind[]>
+  runCloud?: (input: {
+    taskId: string
+    sourceFilePath: string
+    modelId: string
+    signal: AbortSignal
+    onProgress: (stage: TranscriptionStage, percent: number | null) => void
+    onPartial: (segment: PipelineSegment) => void
+  }) => Promise<{ result: PipelineResult; durationMs: number; cleanup?: () => Promise<void> }>
   /**
    * Test seam: run the pipeline in-process instead of forking a worker.
    */
@@ -272,7 +280,7 @@ export class TranscriptionExecutor implements Executor {
       })
     }
 
-    let pipelineOut: { result: PipelineResult; durationMs: number }
+    let pipelineOut: { result: PipelineResult; durationMs: number; cleanup?: () => Promise<void> }
     const tails = { stdout: '', stderr: '' }
 
     const asrTier = parseAsrTier(parsed.asrTier, DEFAULT_ASR_TIER)
@@ -289,7 +297,20 @@ export class TranscriptionExecutor implements Executor {
       })
     }
 
-    if (this.opts.runInProcess) {
+    if (parsed.provider === 'cloud' && !parsed.rediarize) {
+      transcriptionPartials.clear(ctx.taskId)
+      if (!this.opts.runCloud) {
+        throw new Error('Cloud transcription is unavailable in this application')
+      }
+      pipelineOut = await this.opts.runCloud({
+        taskId: ctx.taskId,
+        sourceFilePath: parsed.sourceFilePath,
+        modelId: parsed.cloudModelId ?? '',
+        signal: abort.signal,
+        onProgress: (stage, percent) => emitProgress(stage, percent, Date.now()),
+        onPartial: emitPartial
+      })
+    } else if (this.opts.runInProcess) {
       pipelineOut = await this.opts.runInProcess({
         sourceFilePath: parsed.sourceFilePath,
         skipVad: parsed.skipVad === true,
@@ -398,6 +419,10 @@ export class TranscriptionExecutor implements Executor {
       sourceFilePath: parsed.sourceFilePath,
       result: pipelineOut.result
     })
+    if (pipelineOut.cleanup) {
+      await pipelineOut.cleanup()
+      transcriptionPartials.clear(ctx.taskId)
+    }
 
     return {
       result: {

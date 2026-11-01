@@ -13,7 +13,6 @@
 import { existsSync, statSync } from 'node:fs'
 import type {
   ClassifiedError,
-  DownloadCookieSource,
   Executor,
   ExecutorContext,
   ExecutorEvents,
@@ -32,6 +31,7 @@ import type { OneClickContainerOption } from './format-preferences'
 import type { DownloadRuntimeSettings } from './types'
 import {
   buildDownloadArgs,
+  cookieSourcesFromArgs,
   formatYtDlpCommand,
   isUnsupportedThumbnailEmbedOnlyFailure,
   resolveSubtitleDownloadSkipReason,
@@ -951,45 +951,6 @@ function extractSavedFilePath(rawLog: string): string | undefined {
 /** Use the queue's canonical classifier for both process errors and non-zero exits. */
 function classifyYtDlpExit(exitCode: number | null, stderr: string): ClassifiedError {
   return classify({ exitCode, stderr: stderr || `yt-dlp exited with code ${exitCode ?? -1}` })
-}
-
-/** Capture explicit cookie sources from the executed arguments without retaining credentials. */
-function cookieSourcesFromArgs(
-  args: readonly string[],
-  settings: DownloadRuntimeSettings
-): DownloadCookieSource[] | undefined {
-  let browser: string | undefined
-  let cookieFile: string | undefined
-  let hasConfig = false
-  const argumentsIterator = args.values()
-  for (const argument of argumentsIterator) {
-    const [flag, inlineValue] = argument.split(/[=](.*)/s)
-    if (flag === '--cookies-from-browser') {
-      browser = inlineValue ?? argumentsIterator.next().value
-    } else if (flag === '--cookies') {
-      cookieFile = inlineValue ?? argumentsIterator.next().value
-    } else if (flag === '--no-cookies-from-browser') {
-      browser = undefined
-    } else if (flag === '--no-cookies') {
-      cookieFile = undefined
-    } else if (flag === '--config-location' || flag === '--config-locations') {
-      hasConfig = true
-    }
-  }
-  const sources: DownloadCookieSource[] = []
-  if (browser) {
-    sources.push({ type: 'browser', browser: browser.split(/[:+]/, 1)[0] })
-  }
-  if (cookieFile) {
-    sources.push(
-      cookieFile === settings.cookiesPath && settings.cookieSource
-        ? { ...settings.cookieSource }
-        : { type: 'file' }
-    )
-  }
-  return sources.length > 0 || (args.includes('--ignore-config') && !hasConfig)
-    ? sources
-    : undefined
 }
 
 interface TailBuffer {

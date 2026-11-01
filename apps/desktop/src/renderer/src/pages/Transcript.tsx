@@ -132,6 +132,7 @@ const downloadFieldsForInfo = (
     codec: getCodecLabel(download) ?? null,
     completedAt: download.completedAt ?? null,
     cookieSources: download.cookieSources ?? null,
+    configuredCookieSources: download.configuredCookieSources,
     description: download.description ?? null,
     downloadPath: download.downloadPath ?? null,
     downloadedAt: download.createdAt ?? download.downloadedAt ?? null,
@@ -354,17 +355,15 @@ function TranscriptHeader({
       </div>
       <NoDrag className="flex shrink-0 items-center gap-1.5">
         {sourceSwitch}
+        {canUpgrade ? (
+          <Button onClick={onUpgrade} size="sm" variant="ghost">
+            {upgradeLabel}
+          </Button>
+        ) : null}
         {canExport ? (
-          <>
-            {canUpgrade ? (
-              <Button onClick={onUpgrade} size="sm" variant="ghost">
-                {upgradeLabel}
-              </Button>
-            ) : null}
-            <Button onClick={onExport} size="sm" variant="outline">
-              {exportLabel}
-            </Button>
-          </>
+          <Button onClick={onExport} size="sm" variant="outline">
+            {exportLabel}
+          </Button>
         ) : null}
         <Button
           aria-label={captionsCollapsed ? expandLabel : collapseLabel}
@@ -895,7 +894,7 @@ export function TranscriptPage() {
         backLabel={t('transcript.back')}
         canExport={Boolean(ready && segments.length > 0)}
         canForce={noSpeech}
-        canUpgrade={Boolean(ready && segments.length > 0 && !fromCaptions && !running)}
+        canUpgrade={Boolean(mediaPath && !fromCaptions)}
         captionsCollapsed={captionsCollapsed}
         collapseLabel={t('transcript.collapsePanel')}
         expandLabel={t('transcript.expandPanel')}
@@ -919,7 +918,7 @@ export function TranscriptPage() {
         sourceSwitch={sourceSwitch}
         stillTranscribeLabel={t('transcript.stillTranscribe')}
         title={title}
-        upgradeLabel={t('transcript.qualityHint')}
+        upgradeLabel={t('transcript.changeModel')}
       />
     ),
     [
@@ -930,9 +929,9 @@ export function TranscriptPage() {
       handleExport,
       handleForce,
       handleRetry,
+      mediaPath,
       noSpeech,
       ready,
-      running,
       segments.length,
       snapshot?.sourceKind,
       sourceSwitch,
@@ -996,7 +995,7 @@ export function TranscriptPage() {
         durationMs={durationMs}
         info={{
           ...downloadFieldsForInfo(download, t),
-          asrTier: snapshot?.asrTier ?? snapshot?.record?.asrTier,
+          asrTier: snapshot?.record?.asrTier ?? snapshot?.asrTier,
           channel: download?.channel || download?.uploader || null,
           createdAt: snapshot?.record?.createdAt ?? snapshot?.updatedAt ?? null,
           durationMs: durationMs > 0 ? durationMs : (download?.duration ?? 0) * 1000,
@@ -1016,6 +1015,7 @@ export function TranscriptPage() {
         onSeek={seek}
         resolveSpeaker={speakerName}
         segments={segments}
+        showTopBorder={!isSubtitleOnly}
         speakers={speakers}
       />
     </div>
@@ -1068,6 +1068,7 @@ export function TranscriptPage() {
             sourceByline={sourceByline}
             sourceCover={thumbnail}
             sourceDurationMs={durationMs}
+            sources={sources}
             sourceTitle={download?.title ?? title}
             sourceUrl={download?.url ?? null}
             speakers={speakers}

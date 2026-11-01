@@ -1,7 +1,11 @@
 import { mkdtemp, readdir, readFile, rm } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
-import { resolveDownloadSubtitleLanguages } from '@vidbee/downloader-core/yt-dlp-args'
+import {
+  cookieSourcesFromArgs,
+  resolveDownloadSubtitleLanguages
+} from '@vidbee/downloader-core/yt-dlp-args'
+import type { DownloadCookieSource } from '@vidbee/task-queue'
 import { lowerChildPriority } from '@vidbee/task-queue/process'
 import type {
   ExtensionTranscriptSnapshot,
@@ -22,6 +26,11 @@ import { ytdlpManager } from './ytdlp-manager'
 const EXTRACT_TIMEOUT_MS = 90_000
 const MAX_RUNNING = 2
 let running = 0
+
+/** Desktop caption metadata captured from the actual extractor invocation. */
+export interface RemoteCaptionSnapshot extends ExtensionTranscriptSnapshot {
+  cookieSources?: DownloadCookieSource[]
+}
 
 interface CaptionExtractOptions {
   language?: string
@@ -177,7 +186,7 @@ async function readSidecarTracks(
 export async function extractRemoteCaptions(
   sourceUrl: string,
   options: CaptionExtractOptions = {}
-): Promise<ExtensionTranscriptSnapshot> {
+): Promise<RemoteCaptionSnapshot> {
   const { language = '', signal } = options
   signal?.throwIfAborted()
   if (running >= MAX_RUNNING) {
@@ -230,6 +239,7 @@ export async function extractRemoteCaptions(
     }
     return {
       author: info.author,
+      cookieSources: cookieSourcesFromArgs(args, settings),
       duration: info.duration,
       error: null,
       errorCode: null,

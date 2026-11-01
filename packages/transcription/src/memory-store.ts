@@ -54,20 +54,53 @@ export class MemoryTranscriptStore {
       .sort((a, b) => b.updatedAt - a.updatedAt)
   }
 
+  /** Persist a transcript, optionally keeping it as a secondary track without changing the current row. */
   commit(input: CommitInput): TranscriptRecord {
     const existing = this.getByTranscriptionTaskId(input.transcriptionTaskId)
-    if (existing && existing.supersededAt == null) {
+    if (existing && (input.activate === false || existing.supersededAt == null)) {
       return existing
     }
     const now = this.clock()
     for (const row of this.rows.values()) {
-      if (row.downloadTaskId === input.downloadTaskId && row.supersededAt == null) {
+      if (
+        input.activate !== false &&
+        row.downloadTaskId === input.downloadTaskId &&
+        row.supersededAt == null
+      ) {
         row.supersededAt = now
         row.updatedAt = now
       }
     }
     const record = hydrateRecord(input, now)
+    if (input.activate === false) {
+      record.supersededAt = now
+    }
     this.rows.set(record.id, record)
+    return record
+  }
+
+  /** Mirror the persistent store's additive caption writes without replacing existing cue IDs. */
+  appendCaptionCues(
+    transcriptId: string,
+    cues: ReadonlyArray<{ startMs: number; endMs: number; text: string }>
+  ): TranscriptRecord {
+    const record = this.rows.get(transcriptId)
+    if (record?.sourceKind !== 'captions') {
+      throw new Error('Caption transcript is unavailable')
+    }
+    const firstIndex =
+      record.segments.reduce((max, segment) => Math.max(max, segment.sortIndex), -1) + 1
+    this.writeSegments(record, [
+      ...record.segments,
+      ...cues.map((cue, index) => ({
+        ...cue,
+        id: randomUUID(),
+        speakerId: null,
+        confidence: null,
+        words: [],
+        sortIndex: firstIndex + index
+      }))
+    ])
     return record
   }
 

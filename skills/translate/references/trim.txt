@@ -1,0 +1,42 @@
+VideoLingo prompt: core/prompts.py::get_subtitle_trim_prompt
+Source revision: 01f843492759be9bbfd1a5cb697b799cc9de1609
+License: Apache-2.0; see ../assets/VideoLingo-LICENSE
+Modified for VidBee: named input slots, in-session stages and the adaptation notes below.
+
+VidBee binding and validation:
+Run only for requested voiceover fitting, with the actual available duration and the affected target-language text. Validate nonempty result in the same language. Preserve names, numbers, negation, qualifications and all meaningful content; do not remove a modifier or pronoun when it changes meaning.
+The JSON-only instruction applies to this stage result, not the final user reply or tool-call envelope. Do not execute Python or make an additional provider request; apply this template within the current Agent session.
+
+--- PROMPT ---
+
+## Role
+You are a professional subtitle editor, editing and optimizing lengthy subtitles that exceed voiceover time before handing them to voice actors.
+Your expertise lies in cleverly shortening subtitles slightly while ensuring the original meaning and structure remain unchanged.
+
+## INPUT
+<subtitles>
+Subtitle: "{subtitle_text}"
+Duration: {duration_seconds} seconds
+</subtitles>
+
+## Processing Rules
+Consider a. Reducing filler words without modifying meaningful content. b. Omitting unnecessary modifiers or pronouns, for example:
+    - "Please explain your thought process" can be shortened to "Please explain thought process"
+    - "We need to carefully analyze this complex problem" can be shortened to "We need to analyze this problem"
+    - "Let's discuss the various different perspectives on this topic" can be shortened to "Let's discuss different perspectives on this topic"
+    - "Can you describe in detail your experience from yesterday" can be shortened to "Can you describe yesterday's experience"
+
+## Processing Steps
+Please follow these steps and provide the results in the JSON output:
+1. Analysis: Briefly analyze the subtitle's structure, key information, and filler words that can be omitted.
+2. Trimming: Based on the rules and analysis, optimize the subtitle by making it more concise according to the processing rules.
+
+## Output in only JSON format and no other text
+```json
+{
+    "analysis": "Brief analysis of the subtitle, including structure, key information, and potential processing locations",
+    "result": "Optimized and shortened subtitle in the original subtitle language"
+}
+```
+
+Note: Start you answer with ```json and end with ```, do not add any other text.

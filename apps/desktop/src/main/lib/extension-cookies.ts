@@ -11,9 +11,14 @@ import {
   looksLikeNetscapeCookies,
   matchCookieSites,
   type NetscapeCookieInput,
-  serializeNetscapeCookies
+  serializeNetscapeCookies,
+  VIDBEE_EXTENSION_ORIGIN
 } from '@vidbee/downloader-core/cookie-setup'
-import type { ExtensionCookieConnection } from '../../shared/extension-cookies'
+import type {
+  ExtensionCookieConnection,
+  ExtensionCookieSourcePreference
+} from '../../shared/extension-cookies'
+import { VIDBEE_DEV_EXTENSION_ORIGIN } from '../../shared/extension-identity'
 import { settingsManager } from '../settings'
 import { scopedLoggers } from '../utils/logger'
 import { applyExtensionCors, extensionRequestOrigin, replyExtensionJson } from './extension-origin'
@@ -86,8 +91,11 @@ export function getExtensionCookieConnection(): ExtensionCookieConnection {
   const live = new Map([...sessions.values()].map((session) => [session.sourceId, session]))
   const sources = sourcePreferences().map((source) => {
     const session = live.get(source.id)
+    const legacyVariant = legacySourceVariant(source)
     return {
       ...source,
+      variant: source.variant ?? legacyVariant,
+      legacy: !!legacyVariant,
       connected: !!session,
       lastSeenAt: session?.lastSeenAt,
       sites: session?.sites ?? []
@@ -124,6 +132,23 @@ export function setExtensionCookieSourceOrder(sourceIds: string[]): ExtensionCoo
     ...ordered,
     ...sources.filter((source) => !sourceIds.includes(source.id))
   ])
+  return getExtensionCookieConnection()
+}
+
+/** Forget an offline source, rechecking live sessions before changing saved preferences. */
+export function removeExtensionCookieSource(sourceId: string): ExtensionCookieConnection {
+  pruneSessions()
+  const sources = sourcePreferences()
+  if (typeof sourceId !== 'string' || !sources.some((source) => source.id === sourceId)) {
+    throw new Error('Invalid extension cookie source')
+  }
+  if ([...sessions.values()].some((session) => session.sourceId === sourceId)) {
+    throw new Error('Cannot remove a connected extension cookie source')
+  }
+  settingsManager.set(
+    'extensionCookieSources',
+    sources.filter((source) => source.id !== sourceId)
+  )
   return getExtensionCookieConnection()
 }
 
@@ -218,16 +243,36 @@ export async function handleExtensionCookies(
       replyExtensionJson(res, 400, { error: 'Invalid connect payload' })
       return
     }
-    const sourceId = createHash('sha256')
-      .update(`${origin}\0${body.clientId ?? body.browser}`)
-      .digest('hex')
+    const sourceId = extensionCookieSourceId(origin, body.clientId ?? body.browser)
     const previous = [...sessions.values()].find((candidate) => candidate.sourceId === sourceId)
     if (!previous && sessions.size >= MAX_SESSIONS) {
       replyExtensionJson(res, 429, { error: 'Too many extension sessions' })
       return
     }
     const sources = sourcePreferences()
-    if (!sources.some((source) => source.id === sourceId)) {
+    const variant = origin === VIDBEE_EXTENSION_ORIGIN ? 'store' : 'dev'
+    const connectedAt = Date.now()
+    const preference: ExtensionCookieSourcePreference = {
+      id: sourceId,
+      browser: body.browser,
+      variant,
+      lastConnectedAt: connectedAt
+    }
+    const existing = sources.find((source) => source.id === sourceId)
+    const legacyId = extensionCookieSourceId(origin, body.browser)
+    const legacyIndex = body.clientId ? sources.findIndex((source) => source.id === legacyId) : -1
+    const legacyConnected = [...sessions.values()].some((session) => session.sourceId === legacyId)
+    if (legacyIndex >= 0 && !legacyConnected) {
+      const index = existing ? Math.min(legacyIndex, sources.indexOf(existing)) : legacyIndex
+      const merged = sources.filter((source) => source.id !== legacyId && source.id !== sourceId)
+      merged.splice(index, 0, preference)
+      settingsManager.set('extensionCookieSources', merged)
+    } else if (existing) {
+      settingsManager.set(
+        'extensionCookieSources',
+        sources.map((source) => (source.id === sourceId ? { ...source, ...preference } : source))
+      )
+    } else {
       if (sources.length >= MAX_SOURCES) {
         const inactive = sources.findLastIndex(
           (source) => ![...sessions.values()].some((candidate) => candidate.sourceId === source.id)
@@ -236,10 +281,7 @@ export async function handleExtensionCookies(
           sources.splice(inactive, 1)
         }
       }
-      settingsManager.set('extensionCookieSources', [
-        ...sources,
-        { id: sourceId, browser: body.browser }
-      ])
+      settingsManager.set('extensionCookieSources', [...sources, preference])
     }
     if (previous) {
       dropSession(previous.token)
@@ -248,7 +290,7 @@ export async function handleExtensionCookies(
     const session: Session = {
       browser: body.browser,
       sourceId,
-      lastSeenAt: Date.now(),
+      lastSeenAt: connectedAt,
       origin,
       sites: body.sites,
       token
@@ -386,6 +428,27 @@ async function writeCookiesFile(netscape: string): Promise<string> {
 /** Read a copy so reordering never mutates electron-store's cached settings value. */
 function sourcePreferences() {
   return [...(settingsManager.get('extensionCookieSources') ?? [])]
+}
+
+/** Keep legacy browser identities and current installation identities in the same origin namespace. */
+function extensionCookieSourceId(origin: string, identity: string): string {
+  return createHash('sha256').update(`${origin}\0${identity}`).digest('hex')
+}
+
+/** Recognize browser-based identities from old clients without guessing an installation's origin. */
+function legacySourceVariant(
+  source: ExtensionCookieSourcePreference
+): ExtensionCookieSourcePreference['variant'] {
+  for (const [variant, origin] of [
+    ['store', VIDBEE_EXTENSION_ORIGIN],
+    ['dev', VIDBEE_DEV_EXTENSION_ORIGIN]
+  ] as const) {
+    const id = extensionCookieSourceId(origin, source.browser)
+    if (id === source.id) {
+      return variant
+    }
+  }
+  return undefined
 }
 
 /** Resolve live sessions in saved priority order, skipping every offline profile. */

@@ -4,6 +4,7 @@ import { nativeImage, nativeTheme } from 'electron'
 import { z } from 'zod'
 import { selectedAgentMessages } from '../../shared/agent-chat'
 import { artifactsForMessage } from '../../shared/agent-markdown'
+import { aiPromptLabel } from '../../shared/ai-prompts'
 import {
   type ShareCardPayload,
   shareCardSourceByline,
@@ -89,7 +90,7 @@ function resolveSkillResult(input: z.output<typeof resultSelector>) {
   if (run && run.status !== 'completed') {
     throw new Error('Wait for this assistant reply to complete before exporting')
   }
-  const prompt = aiStore.getSnapshot().prompts.find((item) => item.id === thread.promptId)
+  const prompt = aiStore.getSnapshot().prompts.find((item) => item.name === thread.promptId)
   const artifacts = artifactsForMessage(
     thread.artifacts,
     message.text,
@@ -98,7 +99,7 @@ function resolveSkillResult(input: z.output<typeof resultSelector>) {
   return {
     ...sourceMetadata(thread.downloadId),
     markdown: message.text,
-    promptTitle: prompt?.title ?? 'Agent',
+    promptTitle: prompt ? aiPromptLabel(prompt) : 'Agent',
     threadId: thread.id,
     messageId: message.id,
     runId: run?.id,
@@ -106,7 +107,7 @@ function resolveSkillResult(input: z.output<typeof resultSelector>) {
     thinkingLabel: message.thinkingMs
       ? `Thought for ${Math.round(message.thinkingMs / 1000)} seconds`
       : undefined,
-    userText: sharePromptUserText(thread.messages, message.id, prompt?.title)
+    userText: sharePromptUserText(thread.messages, message.id, prompt?.name)
   }
 }
 
@@ -161,14 +162,14 @@ export function createMcpExportTools() {
         sourceMetadata(downloadId)
         const results: SkillResultSummary[] = []
         for (const prompt of aiStore.getSnapshot().prompts) {
-          const run = getPromptRunSnapshot(downloadId, prompt.id)
+          const run = getPromptRunSnapshot(downloadId, prompt.name)
           if (run.status === 'idle') {
             continue
           }
           results.push({
             kind: 'skill',
-            title: prompt.title,
-            selector: { downloadId, promptId: prompt.id },
+            title: aiPromptLabel(prompt),
+            selector: { downloadId, promptId: prompt.name },
             status: run.status,
             characters: run.text.length,
             updatedAt: run.updatedAt,

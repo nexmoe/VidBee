@@ -22,6 +22,7 @@ import { inspectBrowserCookieAccess } from '../../lib/browser-cookie-access'
 import {
   extensionCookieHealth,
   getExtensionCookieConnection,
+  removeExtensionCookieSource,
   setExtensionCookieSourceOrder
 } from '../../lib/extension-cookies'
 import { resolvePathWithHome } from '../../utils/path-helpers'
@@ -137,6 +138,12 @@ class BrowserCookiesService extends IpcService {
   @IpcMethod()
   setExtensionSourceOrder(_context: IpcContext, sourceIds: string[]): ExtensionCookieConnection {
     return setExtensionCookieSourceOrder(sourceIds)
+  }
+
+  /** Remove one remembered offline source without affecting other extension sessions. */
+  @IpcMethod()
+  removeExtensionSource(_context: IpcContext, sourceId: string): ExtensionCookieConnection {
+    return removeExtensionCookieSource(sourceId)
   }
 
   /**

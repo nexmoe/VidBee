@@ -1,5 +1,5 @@
 import type { AgentRunEvent } from '@shared/agent-chat'
-import { AI_PROMPT_TEST_DOWNLOAD_ID, type AiPromptRunSnapshot } from '@shared/ai-types'
+import type { AiPromptRunSnapshot } from '@shared/ai-types'
 
 type ValueKind = 'download' | 'transcript' | 'ai'
 type TaskState =
@@ -128,10 +128,7 @@ export function createDesktopValueTracker(send: EventSink, now: () => number = D
     },
     /** Observe legacy one-shot prompts for either provider; empty answers never deliver value. */
     prompt(snapshot: AiPromptRunSnapshot): void {
-      if (
-        !(snapshot?.downloadId && snapshot.promptId) ||
-        snapshot.downloadId === AI_PROMPT_TEST_DOWNLOAD_ID
-      ) {
+      if (!(snapshot?.downloadId && snapshot.promptId)) {
         return
       }
       const state =

@@ -303,7 +303,10 @@
         "stopped": "أُوقفت"
       }
     },
-    "sourceFile": "الملف المصدر"
+    "sourceFile": "الملف المصدر",
+    "troubleshoot": "استكشاف المشكلة",
+    "troubleshootPrompt": "ساعدني في تشخيص مشكلة مهمة التنزيل {{taskId}}. افحص حالتها الحالية وتفاصيل الخطأ والسجلات، واشرح السبب المحتمل واقترح الخطوات التالية قبل اتخاذ أي إجراء.",
+    "troubleshootFailed": "تعذّر بدء استكشاف المشكلة. يُرجى المحاولة مرة أخرى."
   },
   "error": {
     "title": "حدث خطأ ما",
@@ -507,7 +510,7 @@
       "invitedListTitle": "الأشخاص الذين دعوتهم",
       "invitedUsers": "عدد المدعوين",
       "loadMore": "تحميل المزيد",
-      "creditsDescription": "يُستخدم للتفريغ والأوامر على VidBee Cloud.",
+      "creditsDescription": "يُستخدم للتفريغ وAI Skills على VidBee Cloud.",
       "creditsError": "تعذر تحميل رصيد الذكاء الاصطناعي.",
       "creditsLoading": "جارٍ تحميل رصيد الذكاء الاصطناعي…",
       "creditsRemaining": "متبقٍ {{remaining}}",
@@ -531,7 +534,7 @@
       "creditsReservedAmount": "{{credits}} محجوزة",
       "creditsReservedHelp": "محجوزة للمهام الجارية أو مراجعة الاستخدام. يُحرر الرصيد غير المستخدم بعد التسوية.",
       "creditsInterruptedAmount": "{{credits}} خُصمت للمهام المتوقفة",
-      "creditsInterruptedHelp": "مشمولة في الرصيد المستخدم وليست خصمًا إضافيًا. هذه رسوم تمت تسويتها لطلبات الذكاء الاصطناعي الفاشلة أو الملغاة أو التي انتهت مهلتها.",
+      "creditsInterruptedHelp": "مشمولة في الرصيد المستخدم وليست خصمًا إضافيًا. هذه تكاليف AI Skills التي فشلت أو أُلغيت أو انتهت مهلتها.",
       "creditsRefresh": "تحديث الرصيد",
       "creditsTopUp": "شحن الرصيد",
       "creditsTopUpError": "تعذر فتح صفحة الأسعار. حاول مرة أخرى.",
@@ -539,7 +542,7 @@
       "creditsReviewAmount": "تجري مراجعة {{credits}} من الرصيد المحجوز",
       "reservationTitle": "المهام ذات الرصيد المحجوز",
       "reservationHelp": "تُفحص الحجوزات المنتهية كل دقيقة. بعد انتهاء فترة المراجعة البالغة خمس دقائق، يُحرر المبلغ غير المؤكد في الفحص التالي.",
-      "reservationTask": "طلب ذكاء اصطناعي",
+      "reservationTask": "AI Skill",
       "reservationElapsed": "بدأت قبل {{minutes}} دقيقة",
       "reservationActivity": "آخر تقدم: {{time}}",
       "reservationHeartbeat": "آخر اتصال: {{time}}",
@@ -732,6 +735,22 @@
     "autoTranscribeAfterDownloadDescription": "When a download finishes, start a local transcript in the background. This uses your computer and skips files with no speech. Already queued jobs are not cancelled if you turn this off",
     "maxConcurrentTranscriptions": "الحد الأقصى لعمليات التفريغ النشطة",
     "maxConcurrentTranscriptionsDescription": "عدد عمليات التفريغ التي يمكن تشغيلها في الوقت نفسه. كل مهمة تستخدم هذا الجهاز. خفض القيمة لا يوقف المهام الجارية",
+    "cloudTranscription": {
+      "title": "النسخ الصوتي عبر VidBee Cloud",
+      "description": "احصل على نصوص متعددة اللغات عالية الجودة باستخدام نماذج صوتية سحابية قوية، دون تنزيل نماذج أو تشغيل عمليات تعرّف مرهقة على جهازك.",
+      "billing": "تستخدم Cloud رصيدك من نقاط الذكاء الاصطناعي وتحاسب حسب ثواني الصوت. النسخ المحلي مجاني ويحتفظ بالصوت على جهازك.",
+      "provider": "خدمة النسخ الصوتي",
+      "local": "محلي · مجاني",
+      "cloud": "VidBee Cloud · مدفوع",
+      "model": "النموذج الصوتي السحابي",
+      "price": "{{credits}} نقطة لكل دقيقة صوت. تُقرّب مدة كل مقطع إلى الثانية الصحيحة التالية، وتُستخدم المقاطع المكتملة مجددًا عند إعادة المحاولة.",
+      "balance": "{{credits}} نقطة متاحة",
+      "signInDescription": "سجّل الدخول لعرض النماذج المتاحة والأسعار الحالية.",
+      "automatic": "عند تفعيل النسخ التلقائي، تستخدم التنزيلات الجديدة أيضًا هذا النموذج السحابي المدفوع. يُرسل الصوت إلى Cloud للتعرّف عليه.",
+      "timing": "توفّر Cloud التوقيت على مستوى المقاطع. استخدم نموذجًا محليًا للطوابع الزمنية للكلمات والتعرّف على المتحدثين.",
+      "unavailable": "تعذّر تحميل النماذج السحابية. أعد المحاولة.",
+      "modelUnavailable": "النموذج السحابي المحدد غير متاح. اختر نموذجًا متاحًا قبل بدء النسخ."
+    },
     "transcriptModelsTitle": "Transcript models",
     "transcriptModelsReady": "Models ready on disk ({{size}})",
     "transcriptModelsMissing": "Models are not downloaded yet. The first transcript will fetch them",
@@ -855,7 +874,7 @@
       "unknown": "بطاقة غير معروفة"
     },
     "providersTab": "المزوّدون",
-    "promptsTab": "الأوامر",
+    "promptsTab": "Skills",
     "transcriptionTab": "التفريغ",
     "ai": {
       "ownProvider": "استخدام موفّر الخدمة الخاص بك",
@@ -889,20 +908,63 @@
       "testingConnection": "جارٍ الاختبار…",
       "testSuccess": "تم الاتصال. الرد: {{reply}}",
       "testFailed": "تعذر الوصول إلى هذا النموذج.",
-      "addPrompt": "إضافة أمر",
-      "editPrompt": "تعديل الأمر",
-      "deletePrompt": "حذف الأمر",
-      "promptTitle": "العنوان",
-      "promptBody": "الأمر",
-      "promptDialogDescription": "يُشغَّل هذا الأمر على النص المفرَّغ باستخدام المزوّد المفعّل",
-      "promptAutoRun": "تشغيل تلقائي",
-      "promptAutoRunDescription": "تشغيل هذه المهارة تلقائيًا عند اكتمال التنزيل وجاهزية النص.",
+      "searchSkills": "البحث عن Skill",
+      "allSkills": "الكل",
+      "personalSkills": "شخصية",
+      "builtInSkills": "مدمجة",
+      "customizeSkill": "إنشاء نسخة مخصصة",
+      "noSkillsFound": "لم يتم العثور على أي Skill.",
+      "skillUpdatedAt": "آخر تحديث {{date}}",
+      "trySkill": "جرّبه",
+      "skillShowInTranscript": "إظهار في الشريط الجانبي للنص",
+      "skillShowInTranscriptDescription": "اعرض هذه المهارة كاختصار في الشريط الجانبي للنص. يُضبط استخدامها في الدردشة وتشغيلها التلقائي بشكل منفصل.",
+      "skillAutoRun": "تشغيل تلقائي",
+      "skillAutoRunDescription": "شغّل هذا Skill تلقائيًا بعد اكتمال التنزيل وتجهيز النص. يمكنك استخدامه يدويًا في المحادثة في أي وقت.",
+      "suggestedUsage": "اقتراحات الاستخدام",
+      "skillUsage": {
+        "summary": {
+          "first": "لخّص نص فيديو مكتمل مع الأفكار الرئيسية والطوابع الزمنية المهمة.",
+          "second": "حوّل شرحًا تعليميًا طويلًا إلى نقاط موجزة أستطيع مراجعتها لاحقًا.",
+          "third": "لخّص مقابلة وأبرز أكثر اقتباسات المتحدث فائدة."
+        },
+        "rewrite": {
+          "first": "أعد كتابة نص فيديو كمقال واضح مع الحفاظ على المعنى الأصلي.",
+          "second": "صحّح القواعد وأزل الكلمات الزائدة من النص دون إضافة حقائق جديدة.",
+          "third": "أعد صياغة شرح تقني بحيث يفهمه القراء غير المتخصصين."
+        },
+        "faq": {
+          "first": "أنشئ أسئلة شائعة من نص فيديو وأجب عن كل سؤال بالاعتماد على المصدر.",
+          "second": "حوّل شرح منتج إلى أسئلة وأجوبة للمستخدمين الجدد.",
+          "third": "استخرج الأسئلة الشائعة من مقابلة ورتّب الإجابات حسب الموضوع."
+        },
+        "translate": {
+          "first": "ترجم نص فيديو إلى لغتي مع الحفاظ على معناه.",
+          "second": "ترجم شرحًا تقنيًا مع توحيد المصطلحات في جميع أجزائه.",
+          "third": "ترجم مقابلة مع الحفاظ على المتحدثين والانتقالات بين المواضيع."
+        },
+        "statistics": {
+          "first": "استخرج الأرقام والنسب المئوية والتواريخ المذكورة في نص فيديو.",
+          "second": "اجمع إحصاءات عرض تقديمي مع سياقها والطوابع الزمنية لمصادرها.",
+          "third": "اعثر على القياسات والمقارنات في النص دون اختلاق القيم المفقودة."
+        },
+        "mindmap": {
+          "first": "أنشئ خريطة ذهنية لأفكار الفيديو الرئيسية والعلاقات بينها.",
+          "second": "نظّم نص دورة تعليمية في تسلسل هرمي للمواضيع يساعدني على المراجعة.",
+          "third": "ارسم خريطة لمفاهيم محاضرة تقنية مع تجميع الأفكار المترابطة."
+        },
+        "diagnose": {
+          "first": "ساعدني على فهم سبب فشل التنزيل واقترح الخطوة المفيدة التالية.",
+          "second": "افحص مهمة متوقفة وساعدني على معرفة ما إذا كانت لا تزال تتقدم.",
+          "third": "ساعدني على إعداد تقرير خلل باستخدام الأدلة من مهمة فاشلة."
+        },
+        "custom": {
+          "first": "ساعدني على استخدام هذا Skill لمهمتي. اسألني عن هدفي قبل البدء.",
+          "second": "أرشدني عبر مثال عملي واطلب المواد المصدرية التي تحتاج إليها.",
+          "third": "ساعدني على تكييف هذا Skill مع حالتي وأكّد تنسيق المخرجات أولًا."
+        }
+      },
+      "deletePrompt": "حذف Skill",
       "restorePresets": "استعادة الافتراضي",
-      "testTitle": "اختبار بنص تفريغ عيّنة",
-      "testRun": "تشغيل",
-      "testStop": "إيقاف",
-      "testOutput": "الناتج",
-      "testPlaceholder": "سيظهر ناتج الأمر هنا",
       "presets": {
         "anthropic": "Anthropic",
         "azure": "Azure",
@@ -929,36 +991,80 @@
         "volcengine": "Volcengine",
         "zhipu": "Zhipu"
       },
-      "presetPrompts": {
-        "overview": {
-          "title": "نظرة عامة"
-        },
-        "bullet-points": {
-          "title": "نقاط"
-        },
-        "improve-grammar": {
-          "title": "تحسين النحو وعلامات الترقيم"
-        },
-        "generate-faq": {
-          "title": "إنشاء أسئلة شائعة"
-        },
-        "extract-statistics": {
-          "title": "استخراج الإحصاءات"
-        },
-        "paraphrase-content": {
-          "title": "إعادة صياغة المحتوى"
-        },
-        "create-mindmap": {
-          "title": "إنشاء خريطة ذهنية"
-        },
-        "translate": {
-          "title": "ترجمة"
-        }
-      },
       "createModel": "Create “{{query}}”",
       "noModelFound": "No model found.",
       "allModelsSelected": "كل النماذج المدرجة مضافة بالفعل.",
-      "loadingModels": "جارٍ تحميل النماذج من المزوّد…"
+      "loadingModels": "جارٍ تحميل النماذج من المزوّد…",
+      "skillHelp": "تستخدم Skills ملفات SKILL.md. يكتشفها الوكيل من وصفها ويقرأ تعليماتها عند الحاجة. استخدم $skill-name في المحادثة لطلب Skill محدد.",
+      "addSkill": "إضافة Skill",
+      "createSkillWithVidbee": "إنشاء Skill باستخدام VidBee",
+      "createSkillRequest": "ساعدني في إنشاء Skill قابل لإعادة الاستخدام. اسألني عن مهمته ومتى يُستخدم والنتيجة المطلوبة. بعد توضيح المتطلبات، أنشئ Skill واحفظه في VidBee.",
+      "uploadSkill": "رفع Skill",
+      "importGitHubSkill": "استيراد Skill من GitHub",
+      "githubSkillDescription": "ألصق رابط مستودع GitHub عام أو مجلد Skill، ثم اختر Skill لتثبيته مع ملفاته المساعدة.",
+      "githubSkillUrl": "رابط GitHub",
+      "selectSkill": "اختيار Skill",
+      "installSkill": "تثبيت Skill",
+      "findSkills": "البحث عن Skills",
+      "skillInstalling": "يرجى الانتظار…",
+      "skillInstallError": "تعذر تثبيت Skill. تحقق من المصدر وحاول مجددًا.",
+      "skillUploadTooLarge": "ارفع ملف SKILL.md أو ZIP بحجم لا يتجاوز 10 ميغابايت.",
+      "importSkill": "استيراد SKILL.md",
+      "exportSkill": "تصدير SKILL.md",
+      "openSkillFolder": "فتح مجلد Skills",
+      "skillLoading": "جارٍ تحميل Skill",
+      "skillLoaded": "تم تحميل Skill",
+      "skillFailed": "فشل تحميل Skill",
+      "presetSkills": {
+        "overview": {
+          "name": "نظرة عامة",
+          "description": "ينشئ نظرة عامة على النص المفرغ مع فصول مؤقتة واقتباسات مهمة. لفهم التسجيل أو العثور على موضوع لمراجعته."
+        },
+        "bullet-points": {
+          "name": "نقاط",
+          "description": "يلخص النص المفرغ في نقاط موجزة مجمعة حسب الموضوع. لمراجعة مقطع فيديو أو بودكاست أو اجتماع بسرعة."
+        },
+        "improve-grammar": {
+          "name": "تحسين النحو وعلامات الترقيم",
+          "description": "يصحح القواعد والإملاء والترقيم مع الحفاظ على المتحدثين والمعنى. لإعداد نصوص مفرغة سهلة القراءة."
+        },
+        "generate-faq": {
+          "name": "إنشاء أسئلة شائعة",
+          "description": "يحول النص المفرغ إلى أسئلة شائعة منظمة بإجابات موجزة مستندة إلى المصدر. لإنشاء مرجع من التسجيل."
+        },
+        "extract-statistics": {
+          "name": "استخراج الإحصاءات",
+          "description": "يستخرج الأرقام والتواريخ والنسب والمبالغ مع سياقها. لمراجعة الادعاءات الكمية في النص المفرغ."
+        },
+        "paraphrase-content": {
+          "name": "إعادة صياغة المحتوى",
+          "description": "يعيد صياغة النص المفرغ بلغة واضحة وطبيعية دون إضافة ادعاءات. لتحسين التعبير مع الحفاظ على المعنى الأصلي."
+        },
+        "create-mindmap": {
+          "name": "إنشاء خريطة ذهنية",
+          "description": "ينظم موضوعات النص المفرغ وعلاقاتها في خريطة ذهنية بصيغة Mermaid. لتوضيح بنية التسجيل بصريًا."
+        },
+        "translate": {
+          "name": "ترجمة",
+          "description": "يترجم النص المفرغ إلى لغة الواجهة مع الحفاظ على المتحدثين والمعنى والتفاصيل. لقراءة تسجيلات بلغات أخرى."
+        },
+        "article-rewrite": {
+          "name": "إعادة الصياغة كمقال",
+          "description": "يعيد كتابة المادة كمقال مكتمل مع إضافة لقطات فيديو مناسبة عند توفرها. لتحويل التسجيل إلى نص جاهز للنشر."
+        },
+        "faq": {
+          "name": "الأسئلة الشائعة عن الفيديو",
+          "description": "ينشئ أسئلة شائعة حول الفيديو الحالي مع قراءة المقاطع ذات الصلة من النص المفرغ عند الحاجة. لإعداد أسئلة وأجوبة تستند إلى الفيديو المفتوح."
+        },
+        "diagnose-task": {
+          "name": "تشخيص مشكلات المهمة",
+          "description": "يفحص المهام الفاشلة أو المتوقفة باستخدام الحالة والأخطاء والسجلات. لاقتراح خطوات استعادة أو إعداد ملاحظات حول خلل محتمل في VidBee."
+        },
+        "video-localization": {
+          "name": "توطين الفيديو",
+          "description": "ترجم الترجمات وصدّرها، أو أنشئ دبلجة متزامنة."
+        }
+      }
     },
     "cookiesSetup": {
       "statusNotConfigured": "غير معدّ",
@@ -1036,15 +1142,24 @@
       "extensionPriority": "أولوية المتصفحات لملفات تعريف الارتباط",
       "extensionPriorityHint": "يُستخدم أول متصفح متصل حسب هذا الترتيب. تُتخطى المتصفحات غير المتصلة تلقائيًا.",
       "extensionUse": "استخدام",
+      "extensionLegacy": "قديم",
+      "extensionLastConnected": "آخر اتصال: {{time}}",
+      "extensionLastConnectedUnknown": "وقت آخر اتصال غير متاح",
+      "extensionRemove": "إزالة",
+      "extensionRemoveLabel": "إزالة {{browser}}",
+      "extensionVariants": {
+        "dev": "نسخة التطوير",
+        "store": "نسخة المتجر"
+      },
       "extensionMoveUp": "نقل {{browser}} للأعلى",
       "extensionMoveDown": "نقل {{browser}} للأسفل"
     },
-    "agentManagementTools": "أدوات إدارة الوكيل",
-    "agentManagementToolsDescription": "ما إذا كان الوكيل يستطيع تغيير المهام والاشتراكات وهل يجب أن يسأل أولاً",
+    "agentManagementTools": "أذونات الوكيل",
+    "agentManagementToolsDescription": "تطلب الموافقة اليدوية إذنك عند الحاجة. تستخدم المراجعة التلقائية النموذج الحالي وتطلب موافقتك عندما لا تتمكن من اتخاذ قرار؛ وتظل المسارات خارج مجلد التنزيل بحاجة إلى موافقتك. يتيح الوصول الكامل تشغيل الأدوات وأوامر الصدفة دون موافقة أو مراجعة تلقائية، بما في ذلك الوصول خارج مجلد التنزيل. تسري التغييرات على الردود الجديدة.",
     "agentManagementToolsOptions": {
-      "off": "إيقاف",
-      "ask": "اسأل أولاً",
-      "auto": "السماح تلقائيًا"
+      "full": "وصول كامل",
+      "ask": "موافقة يدوية",
+      "auto": "مراجعة تلقائية"
     },
     "mcp": {
       "tab": "MCP",
@@ -1057,20 +1172,14 @@
       "copied": "تم نسخ إعدادات MCP",
       "rotate": "تجديد رمز الوصول",
       "error": "تعذر تحديث إعدادات MCP",
-      "transport": "طريقة الاتصال",
-      "transportDescription": "اختر طريقة واحدة. توفر الطريقتان الإمكانات نفسها.",
-      "httpRecommended": "HTTP (موصى به)",
       "configuration": "إعدادات الوكيل",
       "httpDescription": "اتصل مباشرة بتطبيق سطح المكتب قيد التشغيل باستخدام عنوان URL ورمز وصول.",
-      "stdioDescription": "جسر محلي للوكلاء الذين يتصلون عبر أمر تشغيل.",
       "viewConfig": "عرض الإعدادات",
       "configDescription": "الصق هذه الإعدادات في إعدادات MCP الخاصة بالوكيل.",
-      "endpoint": "عنوان الخادم",
-      "endpointDescription": "متاح على هذا الكمبيوتر فقط أثناء تشغيل VidBee.",
       "accessToken": "رمز الوصول",
       "rotateDescription": "ألغِ إعدادات HTTP الحالية. انسخ إعدادات جديدة بعد تجديد الرمز.",
       "capabilitiesTitle": "الإمكانات المتاحة",
-      "capabilitiesDescription": "{{tools}} أداة و{{resources}} موردًا وقالبًا و{{prompts}} سير عمل. متاحة عبر طريقتي الاتصال.",
+      "capabilitiesDescription": "{{tools}} أداة و{{resources}} موردًا وقالبًا و{{prompts}} سير عمل.",
       "searchCapabilities": "البحث في الإمكانات…",
       "noCapabilities": "لا توجد إمكانات مطابقة",
       "loading": "جارٍ تحميل الإمكانات…",
@@ -1079,17 +1188,17 @@
         "tasks": "التنزيلات وقائمة الانتظار",
         "subscriptions": "الاشتراكات",
         "transcripts": "النصوص والنماذج",
-        "ai": "محادثات الذكاء الاصطناعي والمهارات",
+        "ai": "محادثات الذكاء الاصطناعي وSkills",
         "exports": "المستندات وصور المشاركة",
         "resources": "الموارد والقوالب",
-        "prompts": "مطالبات سير العمل"
+        "prompts": "Skills"
       },
       "capabilities": {
         "get_app_status": "حالة التطبيق وجاهزية المحرك",
         "get_settings": "قراءة تفضيلات التطبيق",
         "update_settings": "تحديث تفضيلات التطبيق",
-        "get_ai_settings": "قراءة مزودي الذكاء الاصطناعي والمهارات",
-        "manage_ai_settings": "إدارة المزودين والنماذج والمهارات المحفوظة",
+        "get_ai_settings": "قراءة مزودي الذكاء الاصطناعي وSkills",
+        "manage_ai_settings": "إدارة المزودين والنماذج وSkills المحفوظة",
         "list_tasks": "استعراض مهام التنزيل والتحويل والتفريغ",
         "get_task": "قراءة تقدم المهام والأخطاء والسجلات",
         "get_queue_stats": "حالة قائمة الانتظار وعدد المهام المتزامنة",
@@ -1128,11 +1237,11 @@
         "manage_agent_thread": "إيقاف المحادثات أو إعادة تسميتها أو حذفها أو تبديل فروعها",
         "decide_agent_tool": "الموافقة على استدعاءات أدوات الوكيل أو رفضها",
         "get_agent_events": "قراءة نشاط المحادثة وأحداثها",
-        "start_ai_prompt": "تشغيل مهارة ذكاء اصطناعي محفوظة",
-        "get_ai_prompt_run": "قراءة نتائج المهارات وحالة التنفيذ",
-        "stop_ai_prompt": "إيقاف مهارة قيد التشغيل",
-        "list_skill_results": "استعراض نتائج المهارات المحفوظة وردود الوكيل",
-        "export_skill_result": "تصدير نتائج المهارات بصيغة Markdown أو PDF أو صور للمشاركة",
+        "start_ai_prompt": "تشغيل AI Skill محفوظ",
+        "get_ai_prompt_run": "قراءة نتائج Skills وحالة التنفيذ",
+        "stop_ai_prompt": "إيقاف Skill قيد التشغيل",
+        "list_skill_results": "استعراض نتائج Skills المحفوظة وردود الوكيل",
+        "export_skill_result": "تصدير نتائج Skills بصيغة Markdown أو PDF أو صور للمشاركة",
         "export_mermaid_diagram": "تصدير مخططات Mermaid منفردة بصيغة PNG أو JPG أو SVG أو المصدر",
         "export_caption_share_image": "تصدير الترجمة المحددة كصور للمشاركة",
         "summarize_media": "تلخيص الوسائط مع أدلة الطوابع الزمنية",
@@ -1521,18 +1630,29 @@
       "cookiesBrowser": "القراءة من المتصفح",
       "cookiesNone": "لم تُستخدم ملفات تعريف الارتباط",
       "cookiesUnrecorded": "غير مسجّل",
+      "cookiesUnavailable": "المصدر غير متاح — لا يوجد سجل لطريقة الحصول على ملفات تعريف الارتباط",
+      "cookiesNotConfigured": "لم يتم إعداد ملفات تعريف الارتباط",
       "empty": "لا توجد تفاصيل بعد.",
       "openUrl": "فتح رابط المصدر",
       "group": {
         "media": "الوسائط",
         "file": "الملف",
         "transcript": "النص"
-      }
+      },
+      "cookiesConfigured": "الإعدادات عند إضافة المهمة: {{sources}} (لم يُسجّل المصدر الفعلي)",
+      "cookiesConfig": "إعدادات yt-dlp (استخدام ملفات تعريف الارتباط غير معروف)"
     },
     "speakingShare": "{{percent}}%",
     "seekSpeaker": "الانتقال إلى {{name}}",
     "seekAt": "الانتقال إلى {{time}}",
     "searchPlaceholder": "ابحث في النص",
+    "bilingual": "نص ثنائي اللغة",
+    "secondarySubtitle": "الترجمة الثانوية",
+    "noSecondarySubtitles": "لا توجد ترجمة ثانوية بعد",
+    "translateSubtitles": "الترجمة في محادثة جديدة…",
+    "translateSubtitlesPrompt": "ترجم نصوص ترجمة هذا الفيديو إلى لغة أخرى للقراءة بلغتين. اسألني عن اللغة التي أريد استخدامها.",
+    "subtitleLoading": "جارٍ تحميل الترجمة…",
+    "subtitleLoadFailed": "تعذرت قراءة مسار الترجمة هذا.",
     "searchMatches": "{{count}} نتيجة",
     "searchNoMatches": "لا توجد نتائج",
     "searchNext": "التالي",
@@ -1581,6 +1701,7 @@
         "more": "إجراءات عنصر قائمة التشغيل"
       }
     },
+    "changeModel": "تغيير النموذج",
     "qualityHint": "Not happy with this transcript?",
     "qualityHintDetail": "Download a higher-quality model and transcribe again. The current transcript is kept as history.",
     "qualityHintMax": "استُخدم بالفعل أعلى نموذج جودة. جرّب ضبط عدد المتحدثين إذا اختلطت التسميات. قد تربك الموسيقى الخلفية والكلام المتداخل المتحدثين.",
@@ -1592,7 +1713,7 @@
       "apply": "أعد التفريغ",
       "detail": "سنعيد التفريغ بهذا العدد من المتحدثين. التلقائي هو الافتراضي. يمكنك مغادرة الصفحة. يُحفظ التفريغ الحالي في السجل."
     },
-    "promptMenu": "كل المطالبات",
+    "promptMenu": "كل Skills",
     "promptStop": "إيقاف",
     "promptRerun": "تشغيل مجددًا",
     "promptCopy": "نسخ",
@@ -1611,11 +1732,11 @@
     "promptShareFooter": "صنع باستخدام VidBee",
     "promptShareTagline": "نزّل. فرّغ محليًا. اسأل الذكاء الاصطناعي.",
     "captionShareSaid": "{{name}} قال",
-    "promptOutput": "نتيجة المطالبة",
+    "promptOutput": "نتيجة Skill",
     "promptScrollToEnd": "الانتقال إلى الأحدث",
     "promptCopied": "تم النسخ",
     "promptCloudGenerated": "تم الإنشاء باستخدام VidBee Cloud",
-    "promptNoProvider": "اضبط مزوّد ذكاء اصطناعي في الإعدادات لتشغيل هذا الأمر.",
+    "promptNoProvider": "اضبط مزوّد ذكاء اصطناعي في الإعدادات لتشغيل هذا Skill.",
     "promptOpenSettings": "فتح إعدادات المزوّد",
     "promptEmpty": "سيظهر الناتج هنا.",
     "overviewChapters": "الفصول",
@@ -1629,8 +1750,8 @@
     "promptAborted": "تم الإيقاف",
     "promptTabCompleted": "مكتمل",
     "promptTabError": "فشل",
-    "promptNoTranscript": "يلزم وجود نص مفرَّغ قبل تشغيل هذا الأمر.",
-    "promptWaitForTranscript": "سيُشغَّل هذا الأمر بعد انتهاء التفريغ.",
+    "promptNoTranscript": "يلزم وجود نص مفرَّغ قبل تشغيل هذا Skill.",
+    "promptWaitForTranscript": "سيُشغَّل هذا Skill بعد انتهاء التفريغ.",
     "promptRunWhenReady": "تشغيل عند الجاهزية",
     "promptWaitingToRun": "بانتظار النص المفرَّغ…",
     "promptTryAgain": "حاول مرة أخرى",
@@ -1639,19 +1760,19 @@
       "interrupted": "توقفت استجابة الذكاء الاصطناعي قبل اكتمالها.",
       "creditsExhausted": "لا يملك هذا الحساب رصيد ذكاء اصطناعي كافيًا.",
       "signInRequired": "سجّل الدخول إلى VidBee Cloud لاستخدام Ask AI فورًا مجانًا.",
-      "noProvider": "لا يوجد مزوّد ذكاء اصطناعي مفعّل، لذلك لا يمكن تشغيل هذا الأمر.",
+      "noProvider": "لا يوجد مزوّد ذكاء اصطناعي مفعّل، لذلك لا يمكن تشغيل هذا Skill.",
       "missingApiKey": "المزوّد المفعّل بلا مفتاح API.",
       "missingModel": "المزوّد المفعّل بلا معرّف نموذج.",
-      "unknownPrompt": "هذا الأمر لم يعد متاحًا.",
-      "emptyTranscript": "يحتاج هذا الأمر إلى نص مفرَّغ جاهز.",
+      "unknownPrompt": "هذا Skill لم يعد متاحًا.",
+      "emptyTranscript": "يحتاج هذا Skill إلى نص مفرَّغ جاهز.",
       "auth": "رفض المزوّد الطلب. مفتاح API أو الحساب غير صالح على الأرجح.",
       "authCloud": "رفض VidBee Cloud الطلب. ربما انتهت صلاحية جلستك.",
       "network": "تعذر الوصول إلى المزوّد.",
       "networkCloud": "تعذّر الوصول إلى VidBee Cloud.",
       "emptyOutput": "أنهى المزوّد الطلب دون إرجاع أي نص.",
       "emptyOutputCloud": "أنهى VidBee Cloud الطلب دون إرجاع أي نص.",
-      "unknown": "تعذر تشغيل الأمر.",
-      "unknownCloud": "تعذر على VidBee Cloud إكمال هذا الأمر.",
+      "unknown": "تعذر تشغيل Skill.",
+      "unknownCloud": "تعذر على VidBee Cloud إكمال هذا Skill.",
       "serviceErrorCloud": "VidBee Cloud's AI service rejected this request."
     },
     "promptErrorDetails": "تفاصيل الخطأ",
@@ -1662,31 +1783,31 @@
       "creditsExhausted": {
         "s1": "افتح الحساب لمراجعة الرصيد المتبقي.",
         "s2": "ادعُ مستخدمًا جديدًا لكسب المزيد من الرصيد.",
-        "s3": "أعد تشغيل المطالبة بعد إضافة الرصيد."
+        "s3": "أعد تشغيل Skill بعد إضافة الرصيد."
       },
       "signInRequired": {
         "s1": "افتح الإعدادات ← Providers.",
         "s2": "سجّل الدخول باستخدام GitHub ضمن VidBee Cloud.",
-        "s3": "أعد تشغيل المطالبة."
+        "s3": "أعد تشغيل Skill."
       },
       "noProvider": {
         "s1": "افتح الإعدادات ← المزوّدون.",
         "s2": "أضف خدمة واحفظ مفتاح API ومعرّف النموذج ثم اضغط استخدام.",
-        "s3": "ارجع إلى هنا وشغّل الأمر مرة أخرى."
+        "s3": "ارجع إلى هنا وشغّل Skill مرة أخرى."
       },
       "missingApiKey": {
         "s1": "افتح الإعدادات ← المزوّدون وعدّل المزوّد المفعّل.",
         "s2": "الصق مفتاح API صالحًا ثم احفظ.",
-        "s3": "شغّل الأمر مرة أخرى."
+        "s3": "شغّل Skill مرة أخرى."
       },
       "missingModel": {
         "s1": "افتح الإعدادات ← المزوّدون وعدّل المزوّد المفعّل.",
         "s2": "أدخل معرّف نموذج يدعمه هذا الخدمة فعليًا.",
-        "s3": "شغّل الأمر مرة أخرى."
+        "s3": "شغّل Skill مرة أخرى."
       },
       "unknownPrompt": {
-        "s1": "افتح الإعدادات ← الأوامر.",
-        "s2": "استعد الافتراضي أو أعد إضافة هذا الأمر."
+        "s1": "افتح الإعدادات ← Skills.",
+        "s2": "استعد الافتراضي أو أعد إضافة هذا Skill."
       },
       "emptyTranscript": {
         "s1": "انتظر حتى ينتهي التفريغ.",
@@ -1700,7 +1821,7 @@
       "authCloud": {
         "s1": "افتح الحساب وتأكد أنك ما زلت مسجّل الدخول.",
         "s2": "سجّل الدخول مجددًا إذا انتهت الجلسة.",
-        "s3": "شغّل الأمر مرة أخرى."
+        "s3": "شغّل Skill مرة أخرى."
       },
       "network": {
         "s1": "تحقق من الإنترنت والوكيل.",
@@ -1785,7 +1906,7 @@
       },
       "summary": {
         "title": "اسأل الذكاء الاصطناعي عن أي نص",
-        "description": "لخّص وترجم وأنشئ أسئلة شائعة أو خرائط ذهنية، وشغّل أوامرك الخاصة باستخدام مزوّد الذكاء الاصطناعي الذي تختاره."
+        "description": "لخّص وترجم وأنشئ أسئلة شائعة أو خرائط ذهنية، وشغّل Skills الخاصة بك باستخدام مزوّد الذكاء الاصطناعي الذي تختاره."
       },
       "localFiles": {
         "title": "فرّغ أي ملف",
@@ -1806,14 +1927,103 @@
     "all": "كل الوقت"
   },
   "agentChat": {
+    "progress": {
+      "title": "تقدم التنفيذ",
+      "running": "جارٍ العمل…",
+      "waiting": "في انتظار مهمة في الخلفية",
+      "approval": "في انتظار موافقتك",
+      "input": "في انتظار إدخالك",
+      "completed": "انتهى التنفيذ",
+      "aborted": "توقف الوكيل",
+      "interrupted": "انقطع التنفيذ",
+      "error": "فشل التنفيذ",
+      "steps": "خطوات المهمة",
+      "tasks": "مهام الخلفية",
+      "results": "الملفات المُنشأة",
+      "continueAfterWait": "سيتابع الوكيل تلقائيًا عند انتهاء المهمة في الخلفية.",
+      "stop": "إيقاف الوكيل",
+      "stopHint": "إيقاف تشغيل الوكيل الحالي. تستمر مهام الخلفية بشكل مستقل.",
+      "showingTasks": "عرض {{count}} من أصل {{total}} مهمة.",
+      "pending": "لم يبدأ بعد"
+    },
+    "ui": {
+      "continue": "متابعة",
+      "sent": "تم الإرسال",
+      "sendFailed": "تعذّر إرسال اختيارك. يرجى المحاولة مجددًا.",
+      "inactive": "يمكنك الإجابة عن بطاقات الرد الأخير عندما ينتهي الوكيل.",
+      "loading": "جارٍ تحميل المهام…",
+      "loadFailed": "تعذّر تحميل المهام. أعد فتح المحادثة للمحاولة مجددًا.",
+      "taskUnavailable": "لم تعد هذه المهمة متاحة.",
+      "fileUnavailable": "هذا الملف غير جاهز بعد أو لم يعد متاحًا.",
+      "taskFailed": "فشلت هذه المهمة. يمكنك أن تطلب مني فحص التفاصيل.",
+      "invalid": "تعذّر عرض هذه البطاقة. يمكنك المتابعة في مربع الرسالة.",
+      "progress": "تقدّم المهمة",
+      "format": "صيغة الإخراج",
+      "resolution": "الدقة",
+      "kinds": {
+        "video": "تنزيل فيديو",
+        "audio": "تنزيل صوت",
+        "subtitles": "ترجمة نصية",
+        "playlist": "قائمة تشغيل",
+        "subscription-item": "تنزيل اشتراك",
+        "yt-dlp-forward": "تنزيل",
+        "transcription": "تفريغ نصي",
+        "conversion": "تحويل الصيغة",
+        "model-download": "تنزيل نموذج"
+      },
+      "status": {
+        "queued": "في قائمة الانتظار",
+        "running": "قيد التشغيل",
+        "processing": "قيد المعالجة",
+        "paused": "متوقف مؤقتًا",
+        "retry-scheduled": "إعادة المحاولة مجدولة",
+        "completed": "مكتمل",
+        "failed": "فشل",
+        "cancelled": "ملغى"
+      }
+    },
+    "suggestions": {
+      "title": "أفضل مساعد لك لمعالجة الصوت والفيديو",
+      "description": "أنا VidBee. أخبرني بما تريد فعله، أو اختر أحد الخيارات أدناه للبدء.",
+      "download": {
+        "label": "تنزيل فيديو",
+        "prompt": "ساعدني في تنزيل فيديو باستخدام VidBee. اسألني أولًا عن رابط الفيديو والجودة التي أفضلها، ثم أنشئ مهمة تنزيل."
+      },
+      "audio": {
+        "label": "استخراج الصوت",
+        "prompt": "ساعدني في حفظ الصوت من فيديو باستخدام VidBee. اسألني أولًا عن رابط الفيديو وتنسيق الصوت الذي أفضله، ثم أنشئ مهمة لتنزيل الصوت."
+      },
+      "transcribe": {
+        "label": "تفريغ وسيط تم تنزيله",
+        "prompt": "ساعدني في تحويل فيديو أو صوت تم تنزيله إلى نص باستخدام VidBee. اعرض التنزيلات المكتملة واسألني عن العنصر الذي أريد تفريغه، ثم ابدأ مهمة تفريغ محلية."
+      },
+      "subscribe": {
+        "label": "إنشاء اشتراك",
+        "prompt": "ساعدني في إنشاء اشتراك في VidBee. اسألني عن رابط قناة أو موقع أو موجز RSS، وتحقق من الموجز، ثم اسألني إن كنت أريد تنزيل الفيديوهات الجديدة تلقائيًا قبل حفظ الاشتراك."
+      },
+      "compress": {
+        "label": "ضغط فيديو",
+        "prompt": "ساعدني في تقليل حجم ملف فيديو في VidBee. اعرض تنزيلات الفيديو المكتملة، واسألني عن الفيديو المراد ضغطه والدقة الأقل التي أريدها، ثم أنشئ نسخة محوّلة مع الاحتفاظ بالملف الأصلي."
+      },
+      "convert": {
+        "label": "تحويل الصيغة",
+        "prompt": "ساعدني في تحويل ملف وسائط إلى صيغة أخرى في VidBee. اعرض التنزيلات المكتملة، واسألني عن الملف المراد تحويله وصيغة الإخراج المطلوبة، ثم أنشئ نسخة محوّلة مع الاحتفاظ بالملف الأصلي."
+      }
+    },
     "eventStream": "Event Stream",
     "eventStatus": {
-      "running": "Running",
-      "completed": "Completed",
-      "error": "Failed",
+      "running": "جارٍ التنفيذ",
+      "completed": "مكتمل",
+      "error": "فشل",
       "pendingApproval": "بانتظار الموافقة",
       "denied": "مرفوض"
     },
+    "notifications": {
+      "approval": "يحتاج وكيل VidBee إلى إذنك",
+      "response": "يحتاج وكيل VidBee إلى ردك",
+      "body": "افتح المحادثة للمراجعة والرد."
+    },
+    "newChatPlaceholder": "اسأل عن أي شيء…",
     "placeholder": "Ask a follow-up about this video…",
     "send": "Send message",
     "attachImages": "Attach images",
@@ -1855,11 +2065,16 @@
     "catalogMatched": "Matched {{name}}. Context window and capabilities were filled in.",
     "catalogBadge": "Catalog",
     "tools": {
+      "show_ui": "جارٍ عرض البطاقات",
+      "create_task": "جارٍ إنشاء مهمة",
+      "wait_for_task": "في انتظار مهمة",
+      "select_video": "جارٍ اختيار الوسائط المصدر",
       "list_transcripts": "جارٍ التحقق من الترجمات المتاحة",
       "select_transcript": "جارٍ اختيار مصدر الترجمة",
+      "add_subtitles": "إضافة ترجمات",
       "load_tools": "البحث عن الإمكانات المتاحة",
       "get_video_info": "Reading video information",
-      "read_transcript": "Reading transcript",
+      "read_transcript": "قراءة النص",
       "search_transcript": "Searching transcript",
       "capture_frames": "Capturing video frames",
       "create_clip": "Creating video clip",
@@ -1870,7 +2085,11 @@
       "read_artifact": "Reviewing saved image",
       "rename_conversation": "Renaming conversation",
       "write_article": "Writing article",
-      "review_article": "Reviewing article"
+      "review_article": "Reviewing article",
+      "export_subtitles": "تصدير الترجمات",
+      "create_dubbed_video": "إنشاء دبلجة متزامنة",
+      "list_tasks": "البحث عن المهام",
+      "get_task": "التحقق من تفاصيل المهمة"
     },
     "modelCapabilities": "Model capabilities",
     "runDurationRunning": "Working · {{duration}}",

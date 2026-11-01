@@ -1,0 +1,23 @@
+VidBee contextual number pronunciation
+Policy informed by VideoLingoPro core/prompts.py::get_number_to_text_prompt and core/tts_backend/tts_main.py at dcb707f10978b0f088b1c334985155b531f32c8a. This is a VidBee-authored adaptation; see SOURCE.txt.
+
+Use only for dubbing cues with numbers or numeric notation. Bind language to the verified saved track's language, subtitle_text to its exact display text, and context to surrounding cues and relevant terminology. Do not normalize audience subtitles or install another TTS/provider client. The local Chinese voice already has date/number/phone rules; contextual normalization supplements them when the intended reading needs context.
+
+Prepare an equivalent spoken version in {language} of:
+<subtitle_data>
+{subtitle_text}
+</subtitle_data>
+<context_data>
+{context}
+</context_data>
+
+Convert quantities, ordinals, decimals, percentages, dates, times, currency and measurements to natural spoken forms when their interpretation is clear. Read identifiers, telephone numbers, postal codes and version components according to their context, preserving every significant digit, leading zero, sign, unit and decimal precision. For example, English "Version 2.1" can become "Version two point one", while an identifier "007" must retain both leading zeros. Keep the surrounding nonnumeric wording unchanged except for the minimal grammatical agreement needed by the spoken form.
+
+Do not guess an ambiguous date order, expand an abbreviation speculatively, change a value, invent a unit or omit a qualification. When context does not settle the reading, retain that numeric expression and record the ambiguity for the caller. No pronunciation change is preferable to a wrong meaning.
+
+Return only this intermediate JSON object:
+{
+  "converted": "The complete equivalent spoken cue in the same language"
+}
+
+Validate nonempty converted text, unchanged meaning, all numeric values/digit sequences and unchanged nonnumeric information. A conversion is not a display-text rewrite. If the result differs from the display text, send it through create_dubbed_video.speechOverrides with the saved cue's one-based cueIndex and exact originalText. Reuse the saved sourceKey and cue timing. Do not add_subtitles, overwrite the track or create a fake language revision for pronunciation.

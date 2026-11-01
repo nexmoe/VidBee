@@ -1,6 +1,6 @@
 ---
 name: article-rewrite
-description: Rewrite the current source. Illustrate only when video frames are available. Cite screenshots with the full artifact UUID from the tool result.
+description: "Rewrite source material as a complete article, adding relevant video stills when available. Use to turn a recording into publishable prose."
 ---
 
 # Article rewriting

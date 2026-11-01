@@ -1,10 +1,16 @@
+import { AgentUiCards } from '@renderer/components/agent/AgentUiCards'
 import { exportFileName } from '@renderer/lib/capture-prompt-share'
 import { ipcServices } from '@renderer/lib/ipc'
 import { thinkingDurationHeader } from '@renderer/lib/thinking-header'
+import { agentTaskAiSnapshotAtom } from '@renderer/store/agent-tasks'
 import { type AgentChatMessage, type AgentThread, selectedAgentMessages } from '@shared/agent-chat'
 import { artifactsForMessage } from '@shared/agent-markdown'
+import { agentUiHasProgressSteps } from '@shared/agent-ui'
 import { AgentReplyActions } from '@vidbee/ui/components/agent-reply-actions'
+import { AgentUserPrompt } from '@vidbee/ui/components/agent-user-prompt'
 import { AgentMessageLayout } from '@vidbee/ui/components/agent-workspace'
+import { cn } from '@vidbee/ui/lib/cn'
+import { useAtomValue } from 'jotai'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -12,6 +18,8 @@ import { AgentChatRunFeedback } from './AgentChatRunFeedback'
 import { AgentEventStream } from './AgentEventStream'
 import { AgentResponseContent, agentArtifactUrl } from './AgentResponseContent'
 import { TranscriptOverviewResult } from './TranscriptOverviewResult'
+
+const MESSAGE_IMAGE_MAX_EDGE = 320
 
 /** Render one user or agent reply with its own tools, branch controls and actions. */
 export function AgentChatMessageView({
@@ -46,10 +54,21 @@ export function AgentChatMessageView({
   onBranch: (id: string) => void
 }) {
   const { t } = useTranslation()
+  const aiSnapshot = useAtomValue(agentTaskAiSnapshotAtom)
   const run = thread.runs.find((item) => item.id === message.runId)
   const images = (message.imageIds ?? []).flatMap(
     (id) => thread.images?.find((image) => image.id === id) ?? []
   )
+  const singleImage = images.length === 1 ? images[0] : undefined
+  const singleImageWidth = singleImage
+    ? singleImage.width *
+      Math.min(
+        1,
+        MESSAGE_IMAGE_MAX_EDGE / singleImage.width,
+        MESSAGE_IMAGE_MAX_EDGE / singleImage.height
+      )
+    : undefined
+  const initialSkill = !message.parentId && thread.promptId !== 'chat' ? thread.promptId : undefined
   const sourceOffset = run?.sourceOffset ?? 0
   /** Translate source timestamps back into the locally downloaded excerpt. */
   const seekSource = useMemo(
@@ -58,6 +77,10 @@ export function AgentChatMessageView({
     [onSeek, sourceOffset]
   )
   const running = run?.status === 'running'
+  const hasProgress = run?.tools.some(
+    (tool) =>
+      tool.ui && ['running', 'completed'].includes(tool.status) && agentUiHasProgressSteps(tool.ui)
+  )
   const versions = thread.messages.filter(
     (item) => item.role === 'assistant' && item.parentId === message.parentId
   )
@@ -171,13 +194,41 @@ export function AgentChatMessageView({
         ) : null
       }
       feedback={
-        message.role === 'assistant' ? (
+        message.role === 'assistant' && !(running && hasProgress) ? (
           <AgentChatRunFeedback busy={busy} onRetry={() => onRetry(message.id)} run={run} />
         ) : null
       }
       id={message.id}
+      media={
+        message.role === 'user' && images.length ? (
+          <div
+            className={cn(
+              'max-w-full overflow-hidden rounded-3xl bg-muted/30 ring-1 ring-border/50',
+              !singleImage && 'grid w-80 grid-cols-2 gap-0.5'
+            )}
+            data-slot="message-images"
+            style={singleImage ? { width: singleImageWidth } : undefined}
+          >
+            {images.map((image) => (
+              <img
+                alt={image.name}
+                className={
+                  singleImage
+                    ? 'block h-auto w-full'
+                    : 'block aspect-square w-full min-w-0 object-cover last:odd:col-span-2 last:odd:aspect-2/1'
+                }
+                height={image.height}
+                key={image.id}
+                src={agentArtifactUrl(image)}
+                width={image.width}
+              />
+            ))}
+          </div>
+        ) : null
+      }
       thinking={
-        message.role === 'assistant' && (run || message.thinking || message.legacy) ? (
+        message.role === 'assistant' &&
+        (run || message.thinking || message.legacy || (message.thinkingMs ?? 0) > 0) ? (
           <AgentEventStream
             artifacts={artifacts}
             message={message}
@@ -189,48 +240,40 @@ export function AgentChatMessageView({
       }
       user={message.role === 'user'}
     >
-      {showAnswer ? (
-        message.role === 'user' ? (
-          <div className="flex flex-col gap-2">
-            {images.length ? (
-              <div className="flex max-w-sm flex-wrap justify-end gap-2">
-                {images.map((image) => (
-                  <img
-                    alt={image.name}
-                    className="h-auto max-h-60 w-auto max-w-full rounded-lg object-contain"
-                    height={image.height}
-                    key={image.id}
-                    src={agentArtifactUrl(image)}
-                    width={image.width}
-                  />
-                ))}
-              </div>
-            ) : null}
-            {message.text ? (
-              <p className="whitespace-pre-wrap" dir="auto">
-                {message.text}
-              </p>
-            ) : null}
-          </div>
-        ) : overview && message.text ? (
-          <TranscriptOverviewResult
-            artifacts={artifacts}
-            currentTimeMs={currentTimeMs + sourceOffset * 1000}
-            durationMs={durationMs + sourceOffset * 1000}
-            markdown={message.text}
-            onSeek={seekSource}
-            ownRunId={message.runId ?? undefined}
-          />
-        ) : (
-          <AgentResponseContent
-            artifacts={artifacts}
-            onSeek={seekSource}
-            ownRunId={message.runId ?? undefined}
-            running={running}
+      {message.role === 'user' ? (
+        message.text.trim() || initialSkill ? (
+          <AgentUserPrompt
+            initialSkill={initialSkill}
+            skills={aiSnapshot?.prompts}
+            t={t}
             text={message.text}
           />
-        )
-      ) : null}
+        ) : null
+      ) : (
+        <>
+          {showAnswer ? (
+            overview && message.text ? (
+              <TranscriptOverviewResult
+                artifacts={artifacts}
+                currentTimeMs={currentTimeMs + sourceOffset * 1000}
+                durationMs={durationMs + sourceOffset * 1000}
+                markdown={message.text}
+                onSeek={seekSource}
+                ownRunId={message.runId ?? undefined}
+              />
+            ) : (
+              <AgentResponseContent
+                artifacts={artifacts}
+                onSeek={seekSource}
+                ownRunId={message.runId ?? undefined}
+                running={running}
+                text={message.text}
+              />
+            )
+          ) : null}
+          <AgentUiCards artifacts={artifacts} messageId={message.id} run={run} />
+        </>
+      )}
     </AgentMessageLayout>
   )
 }

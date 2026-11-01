@@ -270,9 +270,11 @@ export const buildTranscriptListSnapshot = (
   const selectedOption = view.sources.find((item) => item.selected)
   const asrSource = view.selected
   return {
-    asrTier: isAsrTierId(asrSource?.asrTier)
-      ? asrSource.asrTier
-      : parseAsrTier(view.task?.input.options?.asrTier, DEFAULT_ASR_TIER),
+    asrTier: view.active
+      ? parseAsrTier(view.active.input.options?.asrTier, DEFAULT_ASR_TIER)
+      : isAsrTierId(asrSource?.asrTier)
+        ? asrSource.asrTier
+        : parseAsrTier(view.task?.input.options?.asrTier, DEFAULT_ASR_TIER),
     creation: view.task ? readTaskCreation(view.task) : undefined,
     downloadTaskId: view.downloadTaskId,
     error: view.task?.lastError?.rawMessage ?? null,

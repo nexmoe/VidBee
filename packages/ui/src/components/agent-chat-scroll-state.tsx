@@ -27,11 +27,11 @@ export function AgentChatScrollState({
     const bookmark = bookmarks.get(key)
     const frame = requestAnimationFrame(() => {
       const element = viewport.current
-      if (!(bookmark && element)) {
+      if (!element) {
         return
       }
-      if (bookmark.atEnd) {
-        scrollToEnd({ behavior: 'auto' })
+      if (!bookmark || bookmark.atEnd) {
+        scrollToEnd({ behavior: 'instant' })
         return
       }
       const content = element.querySelector<HTMLElement>('[data-slot="message-scroller-content"]')

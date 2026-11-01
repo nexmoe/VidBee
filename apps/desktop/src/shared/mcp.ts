@@ -6,7 +6,6 @@ export interface DesktopMcpStatus {
   configPath: string
   toolCount: number
   httpConfig: string
-  stdioConfig: string
 }
 
 /** A registered capability and its human-readable label for the Settings inventory. */

@@ -1,3 +1,4 @@
+import { AGENT_SUBTITLE_MODEL_VERSION } from '../../shared/agent-subtitles'
 import { getDesktopTaskQueueRef } from './queue-ref'
 import { getTranscriptSnapshot } from './transcript-host'
 
@@ -23,7 +24,9 @@ export const buildCloudSubtitleEvidence = (
     .map((segment) => segment.text)
     .join('\n')
     .trim()
-  const unedited = record.updatedAt === record.createdAt && actual === text.trim()
+  const agentGenerated = record.modelVersion === AGENT_SUBTITLE_MODEL_VERSION
+  const unedited =
+    !agentGenerated && record.updatedAt === record.createdAt && actual === text.trim()
   return {
     sourceId: task?.input.url,
     acquisition: task?.output?.subtitleStatus === 'downloaded' ? 'success' : undefined,
@@ -36,7 +39,7 @@ export const buildCloudSubtitleEvidence = (
     track: selected ? (selected.auto ? 'automatic' : 'human') : 'unknown',
     language: record.language?.replace(/^ai[-_]/i, '') ?? undefined,
     duration: task?.output?.durationMs ? task.output.durationMs / 1000 : undefined,
-    privateContext: false,
+    privateContext: agentGenerated,
     externalDependencies: false,
     ...(actual === text.trim() ? { segments } : {})
   }

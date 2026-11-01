@@ -10,6 +10,7 @@
     "./components/subscription/subscription-form-dialog": "./src/components/subscription/subscription-form-dialog.tsx",
     "./components/ui/*": "./src/components/ui/*.tsx",
     "./lib/cn": "./src/lib/cn.ts",
+    "./lib/feedback-diagnostics": "./src/lib/feedback-diagnostics.ts",
     "./lib/download-platform": "./src/lib/download-platform.ts",
     "./lib/download-transfer-target": "./src/lib/download-transfer-target.ts",
     "./lib/list-marquee": "./src/lib/list-marquee.ts",
@@ -26,6 +27,7 @@
     "./components/agent-event-stream": "./src/components/agent-event-stream.tsx",
     "./components/agent-chat-scroll-state": "./src/components/agent-chat-scroll-state.tsx",
     "./lib/agent-activity": "./src/lib/agent-activity.ts",
+    "./lib/agent-skill-text": "./src/lib/agent-skill-text.ts",
     "./lib/thinking-header": "./src/lib/thinking-header.ts",
     "./components/agent-clock-text": "./src/components/agent-clock-text.tsx",
     "./components/agent-response": "./src/components/agent-response.tsx",
@@ -42,7 +44,8 @@
     "./components/agent-tab-underline": "./src/components/agent-tab-underline.tsx",
     "./lib/ai-model-icon": "./src/lib/ai-model-icon.ts",
     "./components/agent-share-image-dialog": "./src/components/agent-share-image-dialog.tsx",
-    "./components/agent-reply-actions": "./src/components/agent-reply-actions.tsx"
+    "./components/agent-reply-actions": "./src/components/agent-reply-actions.tsx",
+    "./components/agent-user-prompt": "./src/components/agent-user-prompt.tsx"
   },
   "peerDependencies": {
     "react": "^19.0.0",

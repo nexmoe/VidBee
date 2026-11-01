@@ -6,6 +6,8 @@ import { Sidebar } from '@renderer/components/ui/sidebar'
 import { Toaster } from '@renderer/components/ui/sonner'
 import { TitleBar } from '@renderer/components/ui/title-bar'
 import { WhatsNewHost } from '@renderer/components/whats-new/WhatsNewDialog'
+import { AGENT_WORKSPACE_ID } from '@shared/agent-chat'
+import { AGENT_NOTIFICATION_OPEN_CHANNEL } from '@shared/agent-notifications'
 import { APP_ICON_SHOW_HOME_CHANNEL } from '@shared/app-icon-menu'
 import type { SubscriptionRule } from '@shared/types'
 import { Outlet, useNavigate, useRouteContext, useRouterState } from '@tanstack/react-router'
@@ -55,10 +57,11 @@ import {
 } from './store/transcripts'
 import { updateAvailableAtom, updateReadyAtom } from './store/update'
 
-type Page = 'about' | 'home' | 'settings' | 'subscriptions'
+type Page = 'about' | 'chat' | 'home' | 'settings' | 'subscriptions'
 
 const pageToPath: Record<Page, string> = {
   about: '/about',
+  chat: '/chat',
   home: '/',
   settings: '/settings',
   subscriptions: '/subscriptions'
@@ -87,6 +90,8 @@ const pathToPage = (pathname: string): Page => {
     return 'home'
   }
   switch (normalized) {
+    case '/chat':
+      return 'chat'
     case '/about':
       return 'about'
     case '/settings':
@@ -184,6 +189,36 @@ export function AppLayout() {
   const handleOpenSupportedSites = useCallback(() => {
     window.open(supportedSitesUrl, '_blank')
   }, [supportedSitesUrl])
+
+  useEffect(() => {
+    /** Consume pending clicks after mounting so window recreation cannot lose navigation. */
+    const openNotification = async (): Promise<void> => {
+      const target = await ipcServices.ai.takeAgentNotificationTarget()
+      if (!target) {
+        return
+      }
+      if (target.downloadId === AGENT_WORKSPACE_ID) {
+        await navigate({ to: '/chat', search: { thread: target.threadId } })
+        return
+      }
+      await navigate({
+        to: '/downloads/$downloadId/transcript',
+        params: { downloadId: target.downloadId },
+        search: { tab: target.promptId, thread: target.threadId }
+      })
+    }
+    /** Keep a failed navigation from breaking the global notification listener. */
+    const handleNotification = (): void => {
+      void openNotification().catch((error: unknown) => {
+        logger.error('Failed to open Agent notification:', error)
+      })
+    }
+    const unsubscribe = ipcEvents.on(AGENT_NOTIFICATION_OPEN_CHANNEL, handleNotification)
+    handleNotification()
+    return () => {
+      ipcEvents.removeListener(AGENT_NOTIFICATION_OPEN_CHANNEL, unsubscribe)
+    }
+  }, [navigate])
 
   const handleOpenTools = useCallback(() => {
     window.open(toolsUrl, '_blank')
@@ -409,16 +444,32 @@ export function AppLayout() {
         />
 
         <main className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden" data-vt="main">
+          <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden" data-vt="main">
             {currentPage === 'settings' ? null : (
-              <TitleBar platform={platform}>{titleBarContent}</TitleBar>
+              <TitleBar
+                className={
+                  currentPage === 'chat'
+                    ? 'absolute inset-x-0 top-0 z-40 h-10 bg-transparent pt-0'
+                    : undefined
+                }
+                platform={platform}
+              >
+                {currentPage === 'chat' ? null : titleBarContent}
+              </TitleBar>
             )}
 
             <div
               className={
-                currentPage === 'settings'
+                currentPage === 'chat' || currentPage === 'settings'
                   ? 'min-h-0 flex-1 overflow-hidden'
                   : 'min-h-0 flex-1 overflow-y-auto overflow-x-hidden'
+              }
+              style={
+                currentPage === 'chat'
+                  ? ({
+                      '--agent-toolbar-top': platform === 'darwin' ? '1rem' : '3.5rem'
+                    } as CSSProperties)
+                  : undefined
               }
             >
               <Outlet />

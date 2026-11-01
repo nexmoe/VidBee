@@ -20,18 +20,18 @@ export function runAutoSkillsForTranscript(snapshot: TranscriptSnapshot): void {
     return
   }
   for (const prompt of aiStore.getSnapshot().prompts) {
-    if (!(prompt.enabled && prompt.autoRun) || prompt.id === AI_CHAT_PROMPT_ID) {
+    if (!prompt.autoRun || prompt.skillError || prompt.name === AI_CHAT_PROMPT_ID) {
       continue
     }
     try {
-      const thread = openAgentThread(download.id, prompt.id)
+      const thread = openAgentThread(download.id, prompt.name)
       if (thread.messages.length) {
         continue
       }
       sendAgentMessage(
         {
           downloadId: download.id,
-          promptId: prompt.id,
+          promptId: prompt.name,
           threadId: thread.id,
           uiLanguage: String(settingsManager.get('language') || 'en'),
           sourceTitle: snapshot.title ?? undefined
@@ -40,7 +40,7 @@ export function runAutoSkillsForTranscript(snapshot: TranscriptSnapshot): void {
       )
     } catch (error) {
       scopedLoggers.ai.warn(
-        `Automatic skill run failed: ${JSON.stringify({ downloadId: download.id, promptId: prompt.id, error: error instanceof Error ? error.message : String(error) })}`
+        `Automatic skill run failed: ${JSON.stringify({ downloadId: download.id, promptId: prompt.name, error: error instanceof Error ? error.message : String(error) })}`
       )
     }
   }

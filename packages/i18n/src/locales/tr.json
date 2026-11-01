@@ -303,7 +303,10 @@
         "stopped": "Durduruldu"
       }
     },
-    "sourceFile": "Kaynak dosya"
+    "sourceFile": "Kaynak dosya",
+    "troubleshoot": "Sorunu incele",
+    "troubleshootPrompt": "{{taskId}} indirme görevinin sorununu incelememe yardımcı ol. Mevcut durumunu, hata ayrıntılarını ve günlüklerini kontrol et, olası nedeni açıkla ve herhangi bir işlem yapmadan önce sonraki adımları öner.",
+    "troubleshootFailed": "Sorun incelemesi başlatılamadı. Lütfen tekrar deneyin."
   },
   "error": {
     "title": "Bir sorun oluştu",
@@ -507,7 +510,7 @@
       "invitedListTitle": "Davet ettiğin kişiler",
       "invitedUsers": "Davet edilen kişi",
       "loadMore": "Daha fazla yükle",
-      "creditsDescription": "VidBee Cloud üzerindeki transkripsiyon ve yapay zekâ komutları için kullanılır.",
+      "creditsDescription": "VidBee Cloud üzerindeki transkripsiyon ve AI Skills için kullanılır.",
       "creditsError": "Yapay zekâ kredileri yüklenemedi.",
       "creditsLoading": "Yapay zekâ kredileri yükleniyor…",
       "creditsRemaining": "{{remaining}} kaldı",
@@ -531,7 +534,7 @@
       "creditsReservedAmount": "{{credits}} rezerve edildi",
       "creditsReservedHelp": "Devam eden görevler veya kullanım incelemesi için ayrılmıştır. Kullanılmayan krediler hesaplaşmadan sonra serbest bırakılır.",
       "creditsInterruptedAmount": "Kesintiye uğrayan görevler için {{credits}} harcandı",
-      "creditsInterruptedHelp": "Kullanılan kredilere dahildir, ek bir kesinti değildir. Başarısız, iptal edilmiş veya zaman aşımına uğramış yapay zekâ istemleri için hesaplanan kullanımdır.",
+      "creditsInterruptedHelp": "Kullanılan kredilere dahildir, ek bir kesinti değildir. Başarısız, iptal edilmiş veya zaman aşımına uğramış AI Skills için hesaplanan kullanımdır.",
       "creditsRefresh": "Bakiyeyi yenile",
       "creditsTopUp": "Kredi yükle",
       "creditsTopUpError": "Fiyatlandırma sayfası açılamadı. Lütfen tekrar deneyin.",
@@ -539,7 +542,7 @@
       "creditsReviewAmount": "Ayrılmış kredilerin {{credits}} tutarındaki kısmı inceleniyor",
       "reservationTitle": "Kredi ayrılan görevler",
       "reservationHelp": "Süresi dolan rezervasyonlar her dakika kontrol edilir. Beş dakikalık inceleme süresinden sonraki ilk kontrolde doğrulanamayan tutar serbest bırakılır.",
-      "reservationTask": "Yapay zekâ istemi",
+      "reservationTask": "AI Skill",
       "reservationElapsed": "{{minutes}} dk önce başladı",
       "reservationActivity": "Son ilerleme: {{time}}",
       "reservationHeartbeat": "Son bağlantı: {{time}}",
@@ -732,6 +735,22 @@
     "autoTranscribeAfterDownloadDescription": "When a download finishes, start a local transcript in the background. This uses your computer and skips files with no speech. Already queued jobs are not cancelled if you turn this off",
     "maxConcurrentTranscriptions": "En fazla eşzamanlı transkript",
     "maxConcurrentTranscriptionsDescription": "Aynı anda kaç transkriptin çalışabileceğini belirler. Her iş bu bilgisayarı kullanır. Değeri düşürmek çalışan işleri durdurmaz",
+    "cloudTranscription": {
+      "title": "VidBee Cloud transkripsiyonu",
+      "description": "Model indirmeden veya bilgisayarınızda ağır tanıma işlemleri çalıştırmadan güçlü bulut konuşma modelleriyle yüksek kaliteli çok dilli dökümler oluşturun.",
+      "billing": "Cloud, yapay zekâ kredi bakiyenizi kullanır ve ses saniyesi başına ücretlendirir. Yerel transkripsiyon ücretsizdir ve ses bilgisayarınızda kalır.",
+      "provider": "Transkripsiyon hizmeti",
+      "local": "Yerel · Ücretsiz",
+      "cloud": "VidBee Cloud · Ücretli",
+      "model": "Bulut konuşma modeli",
+      "price": "Ses dakikası başına {{credits}} kredi. Her klibin süresi bir sonraki tam saniyeye yuvarlanır; yeniden denemelerde tamamlanan klipler tekrar kullanılır.",
+      "balance": "{{credits}} kredi kullanılabilir",
+      "signInDescription": "Kullanılabilir modelleri ve güncel fiyatları görmek için giriş yapın.",
+      "automatic": "Otomatik transkripsiyon etkinse yeni indirmeler de bu ücretli bulut modelini kullanır. Ses, tanıma için Cloud’a gönderilir.",
+      "timing": "Cloud klip düzeyinde zaman bilgisi sağlar. Kelime zaman damgaları ve konuşmacı tanıma için yerel model kullanın.",
+      "unavailable": "Bulut modelleri yüklenemedi. Yeniden deneyin.",
+      "modelUnavailable": "Seçilen bulut modeli kullanılamıyor. Transkripsiyondan önce kullanılabilir bir model seçin."
+    },
     "transcriptModelsTitle": "Transcript models",
     "transcriptModelsReady": "Models ready on disk ({{size}})",
     "transcriptModelsMissing": "Models are not downloaded yet. The first transcript will fetch them",
@@ -855,7 +874,7 @@
       "unknown": "bilinmeyen GPU"
     },
     "providersTab": "Sağlayıcılar",
-    "promptsTab": "Komutlar",
+    "promptsTab": "Skills",
     "transcriptionTab": "Transkripsiyon",
     "ai": {
       "ownProvider": "Kendi sağlayıcınızı kullanın",
@@ -889,20 +908,63 @@
       "testingConnection": "Deneniyor…",
       "testSuccess": "Bağlandı. Yanıt: {{reply}}",
       "testFailed": "Bu modele ulaşılamadı.",
-      "addPrompt": "Komut ekle",
-      "editPrompt": "Komutu düzenle",
-      "deletePrompt": "Komutu sil",
-      "promptTitle": "Başlık",
-      "promptBody": "Komut",
-      "promptDialogDescription": "Bu komut, etkin sağlayıcıyla bir transkript üzerinde çalışır",
-      "promptAutoRun": "Otomatik çalıştır",
-      "promptAutoRunDescription": "İndirme tamamlandığında ve transkript hazır olduğunda bu beceriyi otomatik olarak çalıştır.",
+      "searchSkills": "Skill ara",
+      "allSkills": "Tümü",
+      "personalSkills": "Kişisel",
+      "builtInSkills": "Yerleşik",
+      "customizeSkill": "Özel kopya oluştur",
+      "noSkillsFound": "Skill bulunamadı.",
+      "skillUpdatedAt": "Güncellendi: {{date}}",
+      "trySkill": "Dene",
+      "skillShowInTranscript": "Transkript kenar çubuğunda göster",
+      "skillShowInTranscriptDescription": "Bu beceriyi transkript kenar çubuğunda kısayol olarak göster. Sohbette kullanım ve otomatik çalıştırma ayrı ayrı ayarlanır.",
+      "skillAutoRun": "Otomatik çalıştır",
+      "skillAutoRunDescription": "İndirme tamamlanıp döküm hazır olduğunda otomatik çalıştır. Bu Skill sohbet içinde her zaman elle kullanılabilir.",
+      "suggestedUsage": "Önerilen kullanımlar",
+      "skillUsage": {
+        "summary": {
+          "first": "Tamamlanmış bir videonun dökümünü ana fikirler ve önemli zaman damgalarıyla özetle.",
+          "second": "Uzun bir öğreticiyi daha sonra gözden geçirebileceğim kısa notlara dönüştür.",
+          "third": "Bir röportajı özetle ve konuşmacının en yararlı alıntılarını vurgula."
+        },
+        "rewrite": {
+          "first": "Bir video dökümünü asıl anlamını koruyarak anlaşılır bir makale olarak yeniden yaz.",
+          "second": "Yeni bilgi eklemeden dökümdeki dil bilgisi hatalarını ve dolgu sözcüklerini düzelt.",
+          "third": "Teknik bir açıklamayı herkesin anlayabileceği şekilde yeniden yaz."
+        },
+        "faq": {
+          "first": "Bir video dökümünden sık sorulan sorular oluştur ve yanıtları kaynağa dayandır.",
+          "second": "Bir ürün öğreticisini yeni kullanıcılar için soru ve yanıtlara dönüştür.",
+          "third": "Bir röportajdaki yaygın soruları çıkar ve yanıtları konuya göre düzenle."
+        },
+        "translate": {
+          "first": "Bir video dökümünü anlamını koruyarak benim dilime çevir.",
+          "second": "Teknik bir öğreticiyi terimleri tutarlı kullanarak çevir.",
+          "third": "Bir röportajı konuşmacıları ve konu değişikliklerini koruyarak çevir."
+        },
+        "statistics": {
+          "first": "Bir video dökümünde geçen sayıları, yüzdeleri ve tarihleri çıkar.",
+          "second": "Bir sunumdaki istatistikleri bağlamları ve kaynak zaman damgalarıyla derle.",
+          "third": "Eksik değerler uydurmadan dökümdeki ölçümleri ve karşılaştırmaları bul."
+        },
+        "mindmap": {
+          "first": "Bir videonun ana fikirlerini ve aralarındaki bağlantıları gösteren zihin haritası oluştur.",
+          "second": "Bir ders dökümünü tekrar yapabileceğim konu hiyerarşisine dönüştür.",
+          "third": "Teknik bir konuşmadaki kavramları ilgili fikirleri bir arada tutarak haritala."
+        },
+        "diagnose": {
+          "first": "Bir indirmenin neden başarısız olduğunu anlamama yardım et ve sonraki yararlı adımı öner.",
+          "second": "Takılmış bir görevi incele ve hâlâ ilerleyip ilerlemediğini anlamama yardım et.",
+          "third": "Başarısız bir görevdeki kanıtlardan yararlanarak hata raporu hazırlamama yardım et."
+        },
+        "custom": {
+          "first": "Bu Skill’i görevim için kullanmama yardım et. Başlamadan önce hedefimi sor.",
+          "second": "Beni uygulamalı bir örnekle yönlendir ve gereken kaynak materyalleri iste.",
+          "third": "Bu Skill’i durumuma uyarlamama yardım et ve önce çıktı biçimini doğrula."
+        }
+      },
+      "deletePrompt": "Skill’i sil",
       "restorePresets": "Varsayılanları geri yükle",
-      "testTitle": "Örnek transkriptle dene",
-      "testRun": "Çalıştır",
-      "testStop": "Durdur",
-      "testOutput": "Çıktı",
-      "testPlaceholder": "Komut çıktısı burada görünür",
       "presets": {
         "anthropic": "Anthropic",
         "azure": "Azure",
@@ -929,36 +991,80 @@
         "volcengine": "Volcengine",
         "zhipu": "Zhipu"
       },
-      "presetPrompts": {
-        "overview": {
-          "title": "Genel bakış"
-        },
-        "bullet-points": {
-          "title": "Madde işaretleri"
-        },
-        "improve-grammar": {
-          "title": "Dil bilgisi ve noktalama"
-        },
-        "generate-faq": {
-          "title": "SSS oluştur"
-        },
-        "extract-statistics": {
-          "title": "İstatistikleri çıkar"
-        },
-        "paraphrase-content": {
-          "title": "İçeriği yeniden yaz"
-        },
-        "create-mindmap": {
-          "title": "Zihin haritası oluştur"
-        },
-        "translate": {
-          "title": "Çevir"
-        }
-      },
       "createModel": "Create “{{query}}”",
       "noModelFound": "No model found.",
       "allModelsSelected": "Listedeki modellerin tümü zaten eklendi.",
-      "loadingModels": "Sağlayıcıdan modeller yükleniyor…"
+      "loadingModels": "Sağlayıcıdan modeller yükleniyor…",
+      "skillHelp": "Skills, SKILL.md dosyalarını kullanır. Aracı, açıklamalarından Skill’leri bulur ve gerektiğinde talimatlarını okur. Belirli bir Skill kullanmak için sohbette $skill-name yazın.",
+      "addSkill": "Skill ekle",
+      "createSkillWithVidbee": "VidBee ile Skill oluştur",
+      "createSkillRequest": "Yeniden kullanılabilir bir Skill oluşturmama yardım et. Görevini, ne zaman kullanılacağını ve beklenen çıktıyı sor. Gereksinimler netleşince Skill’i VidBee’de oluştur ve kaydet.",
+      "uploadSkill": "Skill yükle",
+      "importGitHubSkill": "GitHub’dan Skill içe aktar",
+      "githubSkillDescription": "Herkese açık bir GitHub deposunun veya Skill klasörünün bağlantısını yapıştırın, ardından destek dosyalarıyla kurulacak Skill’i seçin.",
+      "githubSkillUrl": "GitHub URL’si",
+      "selectSkill": "Skill seç",
+      "installSkill": "Skill kur",
+      "findSkills": "Skill ara",
+      "skillInstalling": "Lütfen bekleyin…",
+      "skillInstallError": "Skill kurulamadı. Kaynağı kontrol edip tekrar deneyin.",
+      "skillUploadTooLarge": "En fazla 10 MB boyutunda bir SKILL.md veya ZIP dosyası yükleyin.",
+      "importSkill": "SKILL.md içe aktar",
+      "exportSkill": "SKILL.md dışa aktar",
+      "openSkillFolder": "Skill klasörünü aç",
+      "skillLoading": "Skill yükleniyor",
+      "skillLoaded": "Skill yüklendi",
+      "skillFailed": "Skill yüklenemedi",
+      "presetSkills": {
+        "overview": {
+          "name": "Genel bakış",
+          "description": "Zaman damgalı bölümler ve önemli alıntılarla dökümün genel bakışını oluşturur. Bir kaydı anlamak veya yeniden bakılacak konuları bulmak için kullanılır."
+        },
+        "bullet-points": {
+          "name": "Madde işaretleri",
+          "description": "Dökümü konulara göre gruplanmış kısa maddelerle özetler. Video, podcast veya toplantıları hızlıca gözden geçirmek için kullanılır."
+        },
+        "improve-grammar": {
+          "name": "Dil bilgisi ve noktalama",
+          "description": "Konuşmacıları ve anlamı koruyarak dil bilgisi, yazım ve noktalama hatalarını düzeltir. Okunabilir dökümler hazırlamak için kullanılır."
+        },
+        "generate-faq": {
+          "name": "SSS oluştur",
+          "description": "Dökümü, kaynağa dayalı kısa yanıtlar içeren düzenli bir SSS belgesine dönüştürür. Kayıtlardan başvuru kaynağı oluşturmak için kullanılır."
+        },
+        "extract-statistics": {
+          "name": "İstatistikleri çıkar",
+          "description": "Sayıları, tarihleri, yüzdeleri ve tutarları bağlamlarıyla birlikte çıkarır. Dökümdeki nicel iddiaları incelemek için kullanılır."
+        },
+        "paraphrase-content": {
+          "name": "İçeriği yeniden yaz",
+          "description": "Yeni iddialar eklemeden dökümü açık ve doğal bir dille yeniden ifade eder. Kaynak anlamını koruyarak anlatımı iyileştirmek için kullanılır."
+        },
+        "create-mindmap": {
+          "name": "Zihin haritası oluştur",
+          "description": "Dökümdeki konuları ve ilişkilerini Mermaid zihin haritasında düzenler. Bir kaydın yapısını görselleştirmek için kullanılır."
+        },
+        "translate": {
+          "name": "Çevir",
+          "description": "Konuşmacıları, anlamı ve ayrıntıları koruyarak dökümü arayüz diline çevirir. Başka dillerdeki kayıtları okumak için kullanılır."
+        },
+        "article-rewrite": {
+          "name": "Makaleye dönüştür",
+          "description": "Kaynak içeriği tam bir makaleye dönüştürür ve varsa ilgili video karelerini ekler. Kayıtlardan yayımlanabilir metin oluşturmak için kullanılır."
+        },
+        "faq": {
+          "name": "Video SSS",
+          "description": "Gerektiğinde ilgili döküm bölümlerini okuyarak geçerli video hakkında SSS oluşturur. Açık videoya dayalı soru-cevap içeriği hazırlamak için kullanılır."
+        },
+        "diagnose-task": {
+          "name": "Görev sorunlarını incele",
+          "description": "Başarısız veya takılmış görevleri durum, hata ve günlüklerle inceler. Kurtarma adımları önermek veya olası VidBee kusurları için geri bildirim hazırlamak üzere kullanılır."
+        },
+        "video-localization": {
+          "name": "Video yerelleştirme",
+          "description": "Altyazıları çevirip dışa aktarın veya eşzamanlı dublaj oluşturun."
+        }
+      }
     },
     "cookiesSetup": {
       "statusNotConfigured": "Ayarlanmadı",
@@ -1036,15 +1142,24 @@
       "extensionPriority": "Çerezler için tarayıcı önceliği",
       "extensionPriorityHint": "Bu sıradaki ilk bağlı tarayıcı kullanılır. Bağlantısı kesilen tarayıcılar otomatik olarak atlanır.",
       "extensionUse": "Kullan",
+      "extensionLegacy": "Eski kayıt",
+      "extensionLastConnected": "Son bağlantı: {{time}}",
+      "extensionLastConnectedUnknown": "Son bağlantı zamanı bilinmiyor",
+      "extensionRemove": "Kaldır",
+      "extensionRemoveLabel": "{{browser}} kaynağını kaldır",
+      "extensionVariants": {
+        "dev": "Geliştirme",
+        "store": "Mağaza"
+      },
       "extensionMoveUp": "{{browser}} tarayıcısını yukarı taşı",
       "extensionMoveDown": "{{browser}} tarayıcısını aşağı taşı"
     },
-    "agentManagementTools": "Ajan yönetim araçları",
-    "agentManagementToolsDescription": "Ajanın görevleri ve abonelikleri değiştirip değiştiremeyeceği ve önce sorup sormayacağı",
+    "agentManagementTools": "Ajan izinleri",
+    "agentManagementToolsDescription": "Manuel onay, izin gerektiğinde onayınızı ister. Otomatik inceleme mevcut modeli kullanır ve karar veremediğinde size sorar; indirme klasörü dışındaki yollar için yine onayınız gerekir. Tam erişim, indirme klasörü dışına erişim de dahil olmak üzere araçları ve kabuk komutlarını onay veya otomatik inceleme olmadan çalıştırır. Değişiklikler yeni yanıtlarda geçerli olur.",
     "agentManagementToolsOptions": {
-      "off": "Kapalı",
-      "ask": "Önce sor",
-      "auto": "Otomatik izin ver"
+      "full": "Tam erişim",
+      "ask": "Manuel onay",
+      "auto": "Otomatik inceleme"
     },
     "mcp": {
       "tab": "MCP",
@@ -1057,20 +1172,14 @@
       "copied": "MCP yapılandırması kopyalandı",
       "rotate": "Erişim tokenini yenile",
       "error": "MCP ayarları güncellenemedi",
-      "transport": "Bağlantı yöntemi",
-      "transportDescription": "Bir yöntem seçin. İkisi de aynı yetenekleri sunar.",
-      "httpRecommended": "HTTP (önerilen)",
       "configuration": "Agent yapılandırması",
       "httpDescription": "Çalışan masaüstü uygulamasına URL ve belirteç ile doğrudan bağlanın.",
-      "stdioDescription": "Başlatma komutuyla bağlanan agent’lar için yerel köprü.",
       "viewConfig": "Yapılandırmayı görüntüle",
       "configDescription": "Bu yapılandırmayı agent’ınızın MCP ayarlarına yapıştırın.",
-      "endpoint": "Sunucu adresi",
-      "endpointDescription": "Yalnızca VidBee çalışırken bu bilgisayardan erişilebilir.",
       "accessToken": "Erişim belirteci",
       "rotateDescription": "Mevcut HTTP yapılandırmalarını geçersiz kılın. Yenilemeden sonra yenisini kopyalayın.",
       "capabilitiesTitle": "Kullanılabilir yetenekler",
-      "capabilitiesDescription": "{{tools}} araç, {{resources}} kaynak ve şablon, {{prompts}} iş akışı. Her iki bağlantı yöntemiyle kullanılabilir.",
+      "capabilitiesDescription": "{{tools}} araç, {{resources}} kaynak ve şablon, {{prompts}} iş akışı.",
       "searchCapabilities": "Yeteneklerde ara…",
       "noCapabilities": "Eşleşen yetenek yok",
       "loading": "Yetenekler yükleniyor…",
@@ -1079,17 +1188,17 @@
         "tasks": "İndirmeler ve kuyruk",
         "subscriptions": "Abonelikler",
         "transcripts": "Transkriptler ve modeller",
-        "ai": "Yapay zekâ sohbetleri ve beceriler",
+        "ai": "Yapay zekâ sohbetleri ve Skills",
         "exports": "Belgeler ve paylaşım görselleri",
         "resources": "Kaynaklar ve şablonlar",
-        "prompts": "İş akışı istemleri"
+        "prompts": "Skills"
       },
       "capabilities": {
         "get_app_status": "Uygulama durumu ve motorun hazır olma durumu",
         "get_settings": "Uygulama tercihlerini oku",
         "update_settings": "Uygulama tercihlerini güncelle",
-        "get_ai_settings": "Yapay zekâ sağlayıcılarını ve becerileri oku",
-        "manage_ai_settings": "Sağlayıcıları, modelleri ve kayıtlı becerileri yönet",
+        "get_ai_settings": "Yapay zekâ sağlayıcılarını ve Skill’leri oku",
+        "manage_ai_settings": "Sağlayıcıları, modelleri ve kayıtlı Skill’leri yönet",
         "list_tasks": "İndirme, dönüştürme ve transkripsiyon görevlerini görüntüle",
         "get_task": "Görev ilerlemesini, hataları ve günlükleri oku",
         "get_queue_stats": "Kuyruk durumu ve eşzamanlılık",
@@ -1128,11 +1237,11 @@
         "manage_agent_thread": "Sohbeti durdur, yeniden adlandır, sil veya dallar arasında geçiş yap",
         "decide_agent_tool": "Agent araç çağrılarını onayla veya reddet",
         "get_agent_events": "Sohbet etkinliklerini ve olaylarını oku",
-        "start_ai_prompt": "Kayıtlı yapay zekâ becerisini çalıştır",
-        "get_ai_prompt_run": "Beceri sonuçlarını ve çalışma durumunu oku",
-        "stop_ai_prompt": "Çalışan beceriyi durdur",
-        "list_skill_results": "Kayıtlı beceri sonuçlarını ve Agent yanıtlarını görüntüle",
-        "export_skill_result": "Beceri sonuçlarını Markdown, PDF veya paylaşım görselleri olarak dışa aktar",
+        "start_ai_prompt": "Kayıtlı yapay zekâ Skill’ini çalıştır",
+        "get_ai_prompt_run": "Skill sonuçlarını ve çalışma durumunu oku",
+        "stop_ai_prompt": "Çalışan Skill’i durdur",
+        "list_skill_results": "Kayıtlı Skill sonuçlarını ve Agent yanıtlarını görüntüle",
+        "export_skill_result": "Skill sonuçlarını Markdown, PDF veya paylaşım görselleri olarak dışa aktar",
         "export_mermaid_diagram": "Mermaid diyagramlarını tek tek PNG, JPG, SVG veya kaynak kodu olarak dışa aktar",
         "export_caption_share_image": "Seçili altyazıları paylaşım görselleri olarak dışa aktar",
         "summarize_media": "Zaman damgalı kanıtlarla medyayı özetle",
@@ -1521,18 +1630,29 @@
       "cookiesBrowser": "Tarayıcıdan okundu",
       "cookiesNone": "Çerez kullanılmadı",
       "cookiesUnrecorded": "Kaydedilmedi",
+      "cookiesUnavailable": "Kaynak belirlenemiyor — edinme kaydı yok",
+      "cookiesNotConfigured": "Çerez yapılandırılmamış",
       "empty": "Henüz ayrıntı yok.",
       "openUrl": "Kaynak URL'yi aç",
       "group": {
         "media": "Medya",
         "file": "Dosya",
         "transcript": "Transkript"
-      }
+      },
+      "cookiesConfigured": "Kuyruğa eklenirken kullanılan ayarlar: {{sources}} (gerçek kaynak kaydedilmedi)",
+      "cookiesConfig": "yt-dlp yapılandırması (çerez kullanımı bilinmiyor)"
     },
     "speakingShare": "%{{percent}}",
     "seekSpeaker": "{{name}} konumuna git",
     "seekAt": "{{time}} konumuna git",
     "searchPlaceholder": "Transkriptte ara",
+    "bilingual": "İki dilli döküm",
+    "secondarySubtitle": "İkincil altyazılar",
+    "noSecondarySubtitles": "Henüz ikinci altyazı yok",
+    "translateSubtitles": "Yeni bir sohbette çevir…",
+    "translateSubtitlesPrompt": "Bu videonun altyazılarını iki dilde okunabilmesi için başka bir dile çevir. Hangi dili kullanmak istediğimi sor.",
+    "subtitleLoading": "Altyazılar yükleniyor…",
+    "subtitleLoadFailed": "Bu altyazı parçası okunamadı.",
     "searchMatches": "{{count}} eşleşme",
     "searchNoMatches": "Eşleşme yok",
     "searchNext": "Sonraki",
@@ -1581,6 +1701,7 @@
         "more": "Oynatma listesi öğesi işlemleri"
       }
     },
+    "changeModel": "Modeli değiştir",
     "qualityHint": "Not happy with this transcript?",
     "qualityHintDetail": "Download a higher-quality model and transcribe again. The current transcript is kept as history.",
     "qualityHintMax": "Zaten en yüksek kaliteli model kullanıldı. Etiketler karıştıysa konuşmacı sayısını ayarlayın. Arka plan müziği ve örtüşen konuşmalar konuşmacıları hâlâ karıştırabilir.",
@@ -1592,7 +1713,7 @@
       "apply": "Yeniden yazıya dök",
       "detail": "Bu konuşmacı sayısıyla yeniden yazıya dökeceğiz. Varsayılan otomatiktir. Bu sayfadan ayrılabilirsiniz. Mevcut döküm geçmiş olarak kalır."
     },
-    "promptMenu": "Tüm istemler",
+    "promptMenu": "Tüm Skills",
     "promptStop": "Durdur",
     "promptRerun": "Yeniden çalıştır",
     "promptCopy": "Kopyala",
@@ -1611,11 +1732,11 @@
     "promptShareFooter": "VidBee ile oluşturuldu",
     "promptShareTagline": "İndir. Yerel olarak deşifre et. Yapay zekâya sor.",
     "captionShareSaid": "{{name}} dedi",
-    "promptOutput": "İstem sonucu",
+    "promptOutput": "Skill sonucu",
     "promptScrollToEnd": "En sona git",
     "promptCopied": "Kopyalandı",
     "promptCloudGenerated": "VidBee Cloud ile oluşturuldu",
-    "promptNoProvider": "Bu komutu çalıştırmak için Ayarlar’da bir yapay zeka sağlayıcısı kurun.",
+    "promptNoProvider": "Bu Skill’i çalıştırmak için Ayarlar’da bir yapay zeka sağlayıcısı kurun.",
     "promptOpenSettings": "Sağlayıcı ayarlarını aç",
     "promptEmpty": "Sonuç burada görünecek.",
     "overviewChapters": "Bölümler",
@@ -1629,8 +1750,8 @@
     "promptAborted": "Durduruldu",
     "promptTabCompleted": "Tamamlandı",
     "promptTabError": "Başarısız",
-    "promptNoTranscript": "Bu komutu çalıştırmadan önce bir transkript gerekir.",
-    "promptWaitForTranscript": "Bu komut, transkripsiyon bitince çalışacak.",
+    "promptNoTranscript": "Bu Skill’i çalıştırmadan önce bir transkript gerekir.",
+    "promptWaitForTranscript": "Bu Skill, transkripsiyon bitince çalışacak.",
     "promptRunWhenReady": "Hazır olunca çalıştır",
     "promptWaitingToRun": "Transkript bekleniyor…",
     "promptTryAgain": "Yeniden dene",
@@ -1639,19 +1760,19 @@
       "interrupted": "Yapay zekâ yanıtı tamamlanmadan kesildi.",
       "creditsExhausted": "Bu hesapta yeterli AI kredisi yok.",
       "signInRequired": "VidBee Cloud’da oturum açın, Ask AI’yi hemen ücretsiz kullanın.",
-      "noProvider": "Etkin bir yapay zeka sağlayıcısı yok, bu komut çalıştırılamaz.",
+      "noProvider": "Etkin bir yapay zeka sağlayıcısı yok, bu Skill çalıştırılamaz.",
       "missingApiKey": "Etkin sağlayıcıda API anahtarı yok.",
       "missingModel": "Etkin sağlayıcıda model kimliği yok.",
-      "unknownPrompt": "Bu komut artık yok.",
-      "emptyTranscript": "Bu komut bitmiş bir transkript ister.",
+      "unknownPrompt": "Bu Skill artık yok.",
+      "emptyTranscript": "Bu Skill bitmiş bir transkript ister.",
       "auth": "Sağlayıcı isteği reddetti. API anahtarı veya hesap geçersiz olabilir.",
       "authCloud": "VidBee Cloud isteği reddetti. Oturumunuzun süresi dolmuş olabilir.",
       "network": "Sağlayıcıya ulaşılamadı.",
       "networkCloud": "VidBee Cloud’a ulaşılamadı.",
       "emptyOutput": "Sağlayıcı bitti ama metin döndürmedi.",
       "emptyOutputCloud": "VidBee Cloud bitti ama metin döndürmedi.",
-      "unknown": "Komut çalıştırılamadı.",
-      "unknownCloud": "VidBee Cloud bu komutu tamamlayamadı.",
+      "unknown": "Skill çalıştırılamadı.",
+      "unknownCloud": "VidBee Cloud bu Skill’i tamamlayamadı.",
       "serviceErrorCloud": "VidBee Cloud's AI service rejected this request."
     },
     "promptErrorDetails": "Hata ayrıntıları",
@@ -1662,31 +1783,31 @@
       "creditsExhausted": {
         "s1": "Kalan kredileri görmek için Hesap'ı aç.",
         "s2": "Yeni bir kullanıcı davet ederek kredi kazan.",
-        "s3": "Krediler eklendikten sonra istemi yeniden çalıştır."
+        "s3": "Krediler eklendikten sonra Skill’i yeniden çalıştır."
       },
       "signInRequired": {
         "s1": "Ayarlar → Providers bölümünü aç.",
         "s2": "VidBee Cloud altında GitHub ile oturum aç.",
-        "s3": "İstemi yeniden çalıştır."
+        "s3": "Skill’i yeniden çalıştır."
       },
       "noProvider": {
         "s1": "Ayarlar → Sağlayıcılar’ı açın.",
         "s2": "Bir hizmet ekleyin, API anahtarı ve model kimliğini kaydedin, sonra Kullan’a tıklayın.",
-        "s3": "Buraya dönüp komutu yeniden çalıştırın."
+        "s3": "Buraya dönüp Skill’i yeniden çalıştırın."
       },
       "missingApiKey": {
         "s1": "Ayarlar → Sağlayıcılar’da etkin sağlayıcıyı düzenleyin.",
         "s2": "Geçerli bir API anahtarı yapıştırıp kaydedin.",
-        "s3": "Komutu yeniden çalıştırın."
+        "s3": "Skill’i yeniden çalıştırın."
       },
       "missingModel": {
         "s1": "Ayarlar → Sağlayıcılar’da etkin sağlayıcıyı düzenleyin.",
         "s2": "Bu hizmetin gerçekten sunduğu bir model kimliği girin.",
-        "s3": "Komutu yeniden çalıştırın."
+        "s3": "Skill’i yeniden çalıştırın."
       },
       "unknownPrompt": {
-        "s1": "Ayarlar → Komutlar’ı açın.",
-        "s2": "Varsayılanları geri yükleyin veya bu komutu yeniden ekleyin."
+        "s1": "Ayarlar → Skills bölümünü açın.",
+        "s2": "Varsayılanları geri yükleyin veya bu Skill’i yeniden ekleyin."
       },
       "emptyTranscript": {
         "s1": "Transkripsiyon bitsin.",
@@ -1700,7 +1821,7 @@
       "authCloud": {
         "s1": "Hesap’ı açın ve hâlâ oturum açık olduğunu doğrulayın.",
         "s2": "Oturumun süresi dolduysa yeniden giriş yapın.",
-        "s3": "Komutu yeniden çalıştırın."
+        "s3": "Skill’i yeniden çalıştırın."
       },
       "network": {
         "s1": "İnterneti ve vekil sunucuyu kontrol edin.",
@@ -1785,7 +1906,7 @@
       },
       "summary": {
         "title": "Her deşifre hakkında yapay zekâya sorun",
-        "description": "Özetleyin, çevirin, SSS veya zihin haritaları oluşturun ve seçtiğiniz yapay zekâ sağlayıcısıyla kendi komutlarınızı çalıştırın."
+        "description": "Özetleyin, çevirin, SSS veya zihin haritaları oluşturun ve seçtiğiniz yapay zekâ sağlayıcısıyla kendi Skill’lerinizi çalıştırın."
       },
       "localFiles": {
         "title": "Her dosyayı yazıya dökün",
@@ -1806,14 +1927,103 @@
     "all": "Tüm zamanlar"
   },
   "agentChat": {
+    "progress": {
+      "title": "Yürütme ilerlemesi",
+      "running": "İşleniyor…",
+      "waiting": "Arka plan görevi bekleniyor",
+      "approval": "Onayınız bekleniyor",
+      "input": "Yanıtınız bekleniyor",
+      "completed": "Yürütme sona erdi",
+      "aborted": "Ajan durduruldu",
+      "interrupted": "Yürütme kesintiye uğradı",
+      "error": "Yürütme başarısız",
+      "steps": "Görev adımları",
+      "tasks": "Arka plan görevleri",
+      "results": "Oluşturulan dosyalar",
+      "continueAfterWait": "Arka plan görevi sona erdiğinde ajan otomatik olarak devam edecek.",
+      "stop": "Ajanı durdur",
+      "stopHint": "Bu ajan çalışmasını durdur. Arka plan görevleri bağımsız olarak devam eder.",
+      "showingTasks": "{{total}} görevin {{count}} tanesi gösteriliyor.",
+      "pending": "Henüz başlamadı"
+    },
+    "ui": {
+      "continue": "Devam et",
+      "sent": "Gönderildi",
+      "sendFailed": "Seçiminiz gönderilemedi. Lütfen tekrar deneyin.",
+      "inactive": "Ajanın yanıtı tamamlandığında en son yanıttaki kartları yanıtlayabilirsiniz.",
+      "loading": "Görevler yükleniyor…",
+      "loadFailed": "Görevler yüklenemedi. Tekrar denemek için konuşmayı yeniden açın.",
+      "taskUnavailable": "Bu görev artık kullanılamıyor.",
+      "fileUnavailable": "Bu dosya henüz hazır değil veya artık kullanılamıyor.",
+      "taskFailed": "Bu görev başarısız oldu. Ayrıntıları kontrol etmemi isteyebilirsiniz.",
+      "invalid": "Bu kart gösterilemedi. Mesaj kutusundan devam edebilirsiniz.",
+      "progress": "Görev ilerlemesi",
+      "format": "Çıktı biçimi",
+      "resolution": "Çözünürlük",
+      "kinds": {
+        "video": "Video indirme",
+        "audio": "Ses indirme",
+        "subtitles": "Altyazılar",
+        "playlist": "Oynatma listesi",
+        "subscription-item": "Abonelik indirmesi",
+        "yt-dlp-forward": "İndirme",
+        "transcription": "Transkripsiyon",
+        "conversion": "Dönüştürme",
+        "model-download": "Model indirme"
+      },
+      "status": {
+        "queued": "Sırada",
+        "running": "Çalışıyor",
+        "processing": "İşleniyor",
+        "paused": "Duraklatıldı",
+        "retry-scheduled": "Yeniden deneme planlandı",
+        "completed": "Tamamlandı",
+        "failed": "Başarısız",
+        "cancelled": "İptal edildi"
+      }
+    },
+    "suggestions": {
+      "title": "Ses ve video işlemek için en iyi yardımcın",
+      "description": "Ben VidBee. Ne yapmak istediğini söyle ya da başlamak için aşağıdan bir seçenek seç.",
+      "download": {
+        "label": "Video indir",
+        "prompt": "VidBee ile bir video indirmeme yardım et. Önce videonun URL’sini ve istediğim kaliteyi sor, ardından bir indirme görevi oluştur."
+      },
+      "audio": {
+        "label": "Ses çıkar",
+        "prompt": "VidBee ile bir videonun sesini kaydetmeme yardım et. Önce videonun URL’sini ve istediğim ses biçimini sor, ardından bir ses indirme görevi oluştur."
+      },
+      "transcribe": {
+        "label": "İndirilen medyayı yazıya dök",
+        "prompt": "VidBee ile indirdiğim bir video veya sesi metne dönüştürmeme yardım et. Tamamlanan indirmelerimi göster, hangisini yazıya dökmek istediğimi sor, ardından yerel bir yazıya dökme görevi başlat."
+      },
+      "subscribe": {
+        "label": "Abonelik oluştur",
+        "prompt": "VidBee’de bir abonelik oluşturmama yardım et. Kanal, web sitesi veya RSS URL’sini sor, akışı doğrula ve kaydetmeden önce yeni videoları otomatik indirmek isteyip istemediğimi sor."
+      },
+      "compress": {
+        "label": "Videoyu sıkıştır",
+        "prompt": "VidBee’de bir videonun dosya boyutunu küçültmeme yardım et. Tamamlanan video indirmelerimi göster, hangi videoyu sıkıştıracağımı ve hangi daha düşük çözünürlüğü istediğimi sor, ardından orijinali koruyarak dönüştürülmüş bir kopya oluştur."
+      },
+      "convert": {
+        "label": "Biçimi dönüştür",
+        "prompt": "VidBee’de bir medya dosyasını başka bir biçime dönüştürmeme yardım et. Tamamlanan indirmelerimi göster, hangi dosyayı dönüştüreceğimi ve istediğim çıktı biçimini sor, ardından orijinali koruyarak dönüştürülmüş bir kopya oluştur."
+      }
+    },
     "eventStream": "Event Stream",
     "eventStatus": {
-      "running": "Running",
-      "completed": "Completed",
-      "error": "Failed",
+      "running": "Çalışıyor",
+      "completed": "Tamamlandı",
+      "error": "Başarısız",
       "pendingApproval": "Onay bekleniyor",
       "denied": "Reddedildi"
     },
+    "notifications": {
+      "approval": "VidBee Agent izninizi bekliyor",
+      "response": "VidBee Agent yanıtınızı bekliyor",
+      "body": "İsteği incelemek ve yanıtlamak için konuşmayı açın."
+    },
+    "newChatPlaceholder": "İstediğinizi sorun…",
     "placeholder": "Ask a follow-up about this video…",
     "send": "Send message",
     "attachImages": "Attach images",
@@ -1855,11 +2065,16 @@
     "catalogMatched": "Matched {{name}}. Context window and capabilities were filled in.",
     "catalogBadge": "Catalog",
     "tools": {
+      "show_ui": "Kartlar gösteriliyor",
+      "create_task": "Görev oluşturuluyor",
+      "wait_for_task": "Görev bekleniyor",
+      "select_video": "Kaynak medya seçiliyor",
       "list_transcripts": "Kullanılabilir altyazılar kontrol ediliyor",
       "select_transcript": "Altyazı kaynağı seçiliyor",
+      "add_subtitles": "Altyazılar ekleniyor",
       "load_tools": "Kullanılabilir özellikler aranıyor",
       "get_video_info": "Reading video information",
-      "read_transcript": "Reading transcript",
+      "read_transcript": "Transkript okunuyor",
       "search_transcript": "Searching transcript",
       "capture_frames": "Capturing video frames",
       "create_clip": "Creating video clip",
@@ -1870,7 +2085,11 @@
       "read_artifact": "Reviewing saved image",
       "rename_conversation": "Renaming conversation",
       "write_article": "Writing article",
-      "review_article": "Reviewing article"
+      "review_article": "Reviewing article",
+      "export_subtitles": "Altyazılar dışa aktarılıyor",
+      "create_dubbed_video": "Eşzamanlı dublaj oluşturuluyor",
+      "list_tasks": "Görevler aranıyor",
+      "get_task": "Görev ayrıntıları kontrol ediliyor"
     },
     "modelCapabilities": "Model capabilities",
     "runDurationRunning": "Working · {{duration}}",

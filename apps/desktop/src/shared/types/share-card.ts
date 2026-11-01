@@ -1,3 +1,4 @@
+import type { AgentSkillLabel } from '@vidbee/ui/lib/agent-skill-text'
 import type { AgentArtifact } from '../agent-chat'
 import type { MermaidExportImage } from './mermaid-export'
 /** CSS width of the branded share poster. */
@@ -34,6 +35,8 @@ export interface SharePromptCardPayload {
   thinkingLabel?: string
   /** User-visible instruction that produced this reply, when it is not the prompt name. */
   userText?: string | null
+  /** Skill names and localized labels used to render references in the hidden capture window. */
+  userSkills?: AgentSkillLabel[]
 }
 
 export interface ShareCaptionCardPayload {

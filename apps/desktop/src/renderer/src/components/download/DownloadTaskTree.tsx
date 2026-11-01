@@ -1,8 +1,9 @@
 import { useNavigate } from '@tanstack/react-router'
 import { useAtomValue } from 'jotai'
 import { selectAtom } from 'jotai/utils'
-import { useMemo } from 'react'
+import { type ReactNode, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+import type { DownloadSelectionModifiers } from '../../hooks/use-download-selection'
 import { downloadLivePatchesAtom } from '../../store/download-live-patch'
 import type { DownloadRecord } from '../../store/downloads'
 import { DownloadItem } from './DownloadItem'
@@ -11,10 +12,12 @@ interface DownloadTaskTreeProps {
   contextIds?: Set<string>
   depth?: number
   download: DownloadRecord
+  isTabStop?: boolean
   matchingIds: Set<string>
-  onToggleSelect?: (id: string) => void
+  onToggleSelect?: (id: string, modifiers?: DownloadSelectionModifiers) => void
   selectedIds?: Set<string>
   selectionActive?: boolean
+  selectionContextMenu?: ReactNode
 }
 
 /**
@@ -24,10 +27,12 @@ export function DownloadTaskTree({
   contextIds,
   depth = 0,
   download,
+  isTabStop,
   matchingIds,
   onToggleSelect,
   selectedIds,
-  selectionActive
+  selectionActive,
+  selectionContextMenu
 }: DownloadTaskTreeProps) {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -47,8 +52,10 @@ export function DownloadTaskTree({
         <DownloadItem
           download={view}
           isSelected={selectedIds?.has(download.id)}
+          isTabStop={isTabStop}
           onToggleSelect={matchingIds.has(download.id) ? onToggleSelect : undefined}
           selectionActive={selectionActive}
+          selectionContextMenu={selectionContextMenu}
         />
       ) : (
         <button

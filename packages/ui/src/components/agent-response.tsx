@@ -12,6 +12,7 @@ const UNORDERED_LIST_CLASS =
   'list-outside list-disc whitespace-normal ps-[1.15em] [li_&]:ps-[1.15em]'
 const LIST_ITEM_CLASS = '[&>:first-child]:mt-0 [&>p]:my-0 [&>p+p]:mt-1.5'
 const DIAGRAM_ICONS = { ZoomInIcon: PlusIcon, ZoomOutIcon: MinusIcon }
+const RESPONSE_CONTROLS = { code: { copy: true, download: false } }
 
 export type ResponseProps = StreamdownProps & {
   /** Seek the player when a prompt clock token is clicked. */
@@ -136,8 +137,10 @@ export const AgentResponse = memo(function AgentResponse({
   children,
   className,
   components,
+  controls = true,
   dir = 'auto',
   icons,
+  lineNumbers = false,
   mermaid,
   onSeek,
   plugins,
@@ -152,8 +155,11 @@ export const AgentResponse = memo(function AgentResponse({
     <Streamdown
       className={cn('w-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0', className)}
       components={{ ...LIST_COMPONENTS, ...clockComponents, ...components }}
+      controls={controls === true ? RESPONSE_CONTROLS : controls}
       dir={dir}
       icons={{ ...DIAGRAM_ICONS, ...icons }}
+      lineNumbers={lineNumbers}
+      linkSafety={{ enabled: false }}
       mermaid={mermaid ?? { config: { theme: mermaidThemeForApp(theme) } }}
       plugins={{ ...promptStreamdownPlugins, ...plugins }}
       shikiTheme={shikiTheme}

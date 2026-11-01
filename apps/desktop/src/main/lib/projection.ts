@@ -13,6 +13,8 @@
  * new component contract.
  */
 
+import type { DownloadRuntimeSettings } from '@vidbee/downloader-core'
+import { cookieSourcesFromArgs } from '@vidbee/downloader-core/yt-dlp-args'
 import type { Task, TaskCreationMetadata } from '@vidbee/task-queue'
 import { projectTaskToLegacy } from '@vidbee/task-queue'
 
@@ -79,6 +81,30 @@ const readRendererOptions = (task: Readonly<Task>): RendererTaskOptions => {
   }
 }
 
+/** Describe saved admission settings only when execution provenance is missing. */
+const readConfiguredCookieSources = (
+  task: Readonly<Task>
+): DownloadItem['configuredCookieSources'] => {
+  if (task.output?.cookieSources !== undefined || task.input.rawArgs?.length) {
+    return undefined
+  }
+  const settings = task.input.options?.settings as DownloadRuntimeSettings | undefined
+  if (!settings || typeof settings !== 'object') {
+    return undefined
+  }
+  const args = ['--ignore-config']
+  if (settings.browserForCookies && settings.browserForCookies !== 'none') {
+    args.push('--cookies-from-browser', settings.browserForCookies)
+  }
+  if (settings.cookiesPath) {
+    args.push('--cookies', settings.cookiesPath)
+  }
+  if (settings.configPath) {
+    args.push('--config-location', settings.configPath)
+  }
+  return cookieSourcesFromArgs(args, settings)
+}
+
 const buildProgress = (
   proj: ReturnType<typeof projectTaskToLegacy>
 ): DownloadProgress | undefined => {
@@ -103,6 +129,7 @@ export const projectTaskForRenderer = (task: Readonly<Task>): DownloadItem => {
   const proj = projectTaskToLegacy(task)
   const renderer = readRendererOptions(task)
   const item: DownloadItem = {
+    configuredCookieSources: readConfiguredCookieSources(task),
     id: proj.id,
     url: proj.url,
     title: proj.title ?? proj.url,
@@ -227,6 +254,7 @@ export const projectTaskForRendererHistory = (task: Readonly<Task>): DownloadHis
   }
   const renderer = readRendererOptions(task)
   const item: DownloadHistoryItem = {
+    configuredCookieSources: readConfiguredCookieSources(task),
     id: proj.id,
     url: proj.url,
     title: proj.title ?? proj.url,

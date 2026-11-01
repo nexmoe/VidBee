@@ -1,0 +1,49 @@
+VideoLingo prompt: core/prompts.py::get_align_prompt
+Source revision: 01f843492759be9bbfd1a5cb697b799cc9de1609
+License: Apache-2.0; see ../assets/VideoLingo-LICENSE
+Modified for VidBee: named input slots, in-session stages, and two-candidate selection informed by VideoLingoPro dcb707f10978b0f088b1c334985155b531f32c8a. See SOURCE.txt for provenance.
+
+VidBee binding and validation:
+Build alignment_items_json with exactly num_parts objects, using src_part_1/target_part_1 through src_part_N/target_part_N. Use this shape independently for align1 and align2. Every source part must equal the selected source split; reconstruct the exact original using its original boundary separators to check for additions, omissions, repetition or reordered text. Every target part must contain a letter or number, not just punctuation, whitespace or a break marker.
+Evaluate both candidates for complete meaning, names/numbers/negation, natural target-language phrasing, semantic correspondence, line budgets and balanced length, in that order. Treat a changed source part or lost meaning as invalid, not a tradeoff for prettier lines. Follow the model's choice only if valid; otherwise try the other candidate before repairing the stage. If neither works after the workflow's bounded attempts, keep the last valid translation and report the layout exception. An explicit length requirement still needs its own pass.
+Bind split_source_subtitle with [br] separators. Follow subtitle-constraints.txt to recheck both sides after alignment and join target parts with target-language spacing. Matching part counts alone do not prove that the result fits, and display rows do not establish new cue times. analysis and assess contain brief editorial findings, not private reasoning.
+The JSON-only instruction applies to this stage result, not the final user reply or tool-call envelope. Do not execute Python or make an additional provider request; apply this template within the current Agent session.
+
+--- PROMPT ---
+
+## Role
+You are a Netflix subtitle alignment expert fluent in both {source_language} and {target_language}.
+
+## Task
+We have {source_language} and {target_language} original subtitles for a Netflix program, as well as a pre-processed split version of {source_language} subtitles.
+Your task is to create the best splitting scheme for the {target_language} subtitles based on this information.
+
+1. Analyze the word order and structural correspondence between {source_language} and {target_language} subtitles
+2. Produce two alternative ways to align the {target_language} subtitles with the fixed {source_language} parts
+3. Compare their semantic correspondence, phrasing and subtitle layout, then select the better valid candidate
+4. Keep every part meaningful and nonempty. Rephrase the translation when necessary while preserving all information and the exact source parts
+5. Do not put comments or explanations into audience subtitles
+
+## INPUT
+<subtitles>
+{source_language} Original: "{source_subtitle}"
+{target_language} Original: "{translated_subtitle}"
+Pre-processed {source_language} Subtitles ([br] indicates split points): {split_source_subtitle}
+</subtitles>
+
+## Output in only JSON format and no other text
+```json
+{
+    "analysis": "Brief analysis of word order, structure, and semantic correspondence between two subtitles",
+    "align1": [
+        {alignment_items_json}
+    ],
+    "align2": [
+        {alignment_items_json}
+    ],
+    "assess": "Brief editorial comparison of the candidates and any failed checks",
+    "choice": "1 or 2"
+}
+```
+
+Note: Start you answer with ```json and end with ```, do not add any other text.

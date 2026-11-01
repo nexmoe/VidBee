@@ -20,6 +20,12 @@ export const agentTaskSchema = z.union([
 /** Expose a flat object for providers that cannot generate root-union tool arguments. */
 export const agentTaskParameters = mediaTransformSchema.partial().extend({
   ...agentTaskSchema.options[0].partial().shape,
+  background: z
+    .boolean()
+    .optional()
+    .describe(
+      'Skip automatic completion waiting only when the user explicitly requests admission-only background work.'
+    ),
   kind: z.enum(['video', 'audio', 'conversion', 'transcription', 'model-download']).optional(),
   asrTier: agentTaskSchema.options[3].shape.asrTier.optional()
 })

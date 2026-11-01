@@ -4,6 +4,7 @@ export type { AgentActivity } from '@vidbee/ui/lib/agent-activity'
 
 import type { AgentMessage } from '@earendil-works/pi-agent-core'
 import type { AgentErrorCode } from './agent-errors'
+import type { AgentUiResponse, AgentUiSpec } from './agent-ui'
 
 export const AGENT_THINKING_LEVELS = [
   'off',
@@ -29,6 +30,15 @@ export interface AgentThinkingOptions {
 
 // Leave room for the text part in Cloud's multimodal message envelope.
 export const AGENT_MAX_MESSAGE_IMAGES = 10
+
+/** Reserved conversation scope for chats without an attached library video. */
+export const AGENT_WORKSPACE_ID = 'agent-workspace'
+
+/** Image bytes supplied by the renderer for the shared attachment importer. */
+export interface AgentImageUpload {
+  name: string
+  data: Uint8Array
+}
 
 /** A user-selected image copied into its conversation's local media directory. */
 export interface AgentImageAttachment {
@@ -62,7 +72,11 @@ export type AgentApprovalAction =
   | 'ai.delete_prompt'
   | 'asr.delete'
   | 'ytdlp.update'
+  | 'shell.execute'
+  | 'tool.execute'
 export interface AgentApprovalRequest {
+  /** Exact, versioned grant for this tool input and permission surface. */
+  grantKey?: string
   action: AgentApprovalAction
   summary: string
   risk: 'destructive' | 'config' | 'network'
@@ -71,6 +85,8 @@ export interface AgentArtifact {
   id: string
   threadId: string
   runId: string
+  /** Source selected inside an independent chat; absent on older video-scoped artifacts. */
+  sourceDownloadId?: string
   kind: 'image' | 'video'
   name: string
   path: string
@@ -86,6 +102,7 @@ export interface AgentChatMessage {
   runId: string | null
   role: 'user' | 'assistant'
   text: string
+  uiResponse?: AgentUiResponse
   imageIds?: string[]
   thinking: string
   thinkingMs?: number
@@ -113,6 +130,10 @@ export interface AgentChatRun {
   sessionEntries?: unknown[]
   evidenceCoverage?: Record<string, [number, number][]>
   evidenceSource?: string
+  /** Selected media is independent of the conversation's storage scope. */
+  sourceDownloadId?: string
+  /** Real tasks admitted or explicitly awaited by this run, retained for live progress cards. */
+  taskIds?: string[]
   fullSourceReview?: boolean
   /** Lines of source the application supplied before the first turn, shown as a read in the activity. */
   preloadedSourceLines?: number
@@ -134,7 +155,13 @@ export interface AgentChatRun {
     name: string
     status: AgentToolCallStatus
     detail?: string
+    /** Queue task linked by wait_for_task; display facts come from the task queue. */
+    taskId?: string
     approval?: AgentApprovalRequest
+    /** Validated json-render presentation, persisted with the tool that produced it. */
+    ui?: AgentUiSpec
+    /** Snapshot of actual skill reads, retained across branches, reloads and later edits. */
+    skills?: { name: string; description: string; resource: string }[]
   }[]
   usage?: {
     input: number
@@ -176,6 +203,8 @@ export interface AgentThreadSummary {
   title: string
   updatedAt: number
   running: boolean
+  /** A live run has a tool waiting for the user's permission. */
+  approvalPending?: boolean
   /** Latest run: the live one, otherwise the most recently updated. `idle` when none ran. */
   status?: AgentRunStatus | 'idle'
   /** Model id of that run; empty until the run resolves its model. `vidbee-cloud` for Cloud. */
@@ -236,6 +265,8 @@ export interface AgentRunEvent {
   catalog?: AgentCatalogNotice
 }
 export interface AgentChatInput {
+  /** Confirmed card values; validated against the latest reply before admission. */
+  uiResponse?: AgentUiResponse
   thinkingLevel?: AgentThinkingLevel
   downloadId: string
   promptId: string

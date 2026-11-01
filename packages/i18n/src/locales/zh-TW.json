@@ -303,7 +303,10 @@
         "stopped": "已停止"
       }
     },
-    "sourceFile": "來源檔案"
+    "sourceFile": "來源檔案",
+    "troubleshoot": "協助排查",
+    "troubleshootPrompt": "幫我排查下載任務 {{taskId}} 的問題。請查看目前狀態、錯誤詳情和日誌，分析可能的原因，並在採取任何操作前先給出解決建議。",
+    "troubleshootFailed": "無法開始排查，請重試。"
   },
   "error": {
     "title": "發生錯誤",
@@ -507,7 +510,7 @@
       "invitedListTitle": "已邀請使用者",
       "invitedUsers": "邀請人數",
       "loadMore": "載入更多",
-      "creditsDescription": "用於 VidBee Cloud 的轉寫與提示詞。",
+      "creditsDescription": "用於 VidBee Cloud 的轉寫與 Skill。",
       "creditsError": "無法載入 AI 點數。",
       "creditsLoading": "正在載入 AI 點數…",
       "creditsRemaining": "剩餘 {{remaining}}",
@@ -531,7 +534,7 @@
       "creditsReservedAmount": "預占 {{credits}}",
       "creditsReservedHelp": "為執行中的任務或用量核對暫時預占，結算後釋放未使用的積分。",
       "creditsInterruptedAmount": "中斷任務已扣 {{credits}}",
-      "creditsInterruptedHelp": "已包含在已用積分中，並非額外扣費。這是失敗、取消或逾時的 AI 提示詞任務已結算的用量。",
+      "creditsInterruptedHelp": "已包含在已用積分中，並非額外扣費。這是失敗、取消或逾時的 AI Skill 任務已結算的用量。",
       "creditsRefresh": "重新整理餘額",
       "creditsTopUp": "儲值點數",
       "creditsTopUpError": "無法開啟價格頁面，請重試。",
@@ -539,7 +542,7 @@
       "creditsReviewAmount": "預占積分中有 {{credits}} 正在核對",
       "reservationTitle": "預占任務",
       "reservationHelp": "系統每分鐘檢查過期預占。5 分鐘核對期結束後，於下一次檢查時釋放無法確認的部分。",
-      "reservationTask": "AI 提示詞任務",
+      "reservationTask": "AI Skill 任務",
       "reservationElapsed": "{{minutes}} 分鐘前開始",
       "reservationActivity": "最近進展：{{time}}",
       "reservationHeartbeat": "最近連線：{{time}}",
@@ -732,6 +735,22 @@
     "autoTranscribeAfterDownloadDescription": "下載成功後在本機背景轉寫。處理會占用電腦資源，無語音內容會自動略過。關閉開關不會取消已排隊或執行中的任務",
     "maxConcurrentTranscriptions": "轉稿並發數",
     "maxConcurrentTranscriptionsDescription": "同時進行的轉稿任務數量。每個任務會占用本機運算資源。調低不會中斷已經在執行的任務",
+    "cloudTranscription": {
+      "title": "VidBee Cloud 雲端轉寫",
+      "description": "使用強大的雲端語音模型，取得高品質多語言文稿，無須下載模型，也不占用電腦進行繁重的辨識運算。",
+      "billing": "雲端轉寫使用 AI 點數餘額，依音訊秒數計費。本機轉寫免費，音訊保留在你的電腦上。",
+      "provider": "轉寫服務",
+      "local": "本機 · 免費",
+      "cloud": "VidBee Cloud · 付費",
+      "model": "雲端語音模型",
+      "price": "每分鐘音訊 {{credits}} 點。每個片段的時長無條件進位至整秒，重試時重用已完成的片段。",
+      "balance": "可用點數：{{credits}}",
+      "signInDescription": "登入後查看可用模型和目前價格。",
+      "automatic": "啟用自動轉寫後，新下載也會使用此付費雲端模型。音訊會傳送到 Cloud 進行辨識。",
+      "timing": "雲端提供片段層級的時間定位。如需逐字時間戳記和說話者辨識，請使用本機模型。",
+      "unavailable": "無法載入雲端模型，請重試。",
+      "modelUnavailable": "所選雲端模型無法使用，請先選擇可用模型再開始轉寫。"
+    },
     "transcriptModelsTitle": "轉稿模型",
     "transcriptModelsReady": "模型已就緒（{{size}}）",
     "transcriptModelsMissing": "模型尚未下載，首次轉稿時會自動取得",
@@ -855,7 +874,7 @@
       "unknown": "未知顯示卡"
     },
     "providersTab": "服務商",
-    "promptsTab": "提示詞",
+    "promptsTab": "Skill",
     "transcriptionTab": "轉寫",
     "ai": {
       "ownProvider": "使用自己的供應商",
@@ -889,20 +908,63 @@
       "testingConnection": "測試中…",
       "testSuccess": "已連通。回覆：{{reply}}",
       "testFailed": "無法連通此模型。",
-      "addPrompt": "新增提示詞",
-      "editPrompt": "編輯提示詞",
-      "deletePrompt": "刪除提示詞",
-      "promptTitle": "標題",
-      "promptBody": "提示詞",
-      "promptDialogDescription": "此提示詞會使用已啟用的服務商對文稿執行",
-      "promptAutoRun": "自動執行",
-      "promptAutoRunDescription": "下載完成且字幕就緒後，自動執行此技能。",
+      "searchSkills": "搜尋 Skill",
+      "allSkills": "全部",
+      "personalSkills": "個人",
+      "builtInSkills": "內建",
+      "customizeSkill": "建立自訂副本",
+      "noSkillsFound": "找不到 Skill。",
+      "skillUpdatedAt": "更新於 {{date}}",
+      "trySkill": "試用",
+      "skillShowInTranscript": "在字幕側邊欄顯示",
+      "skillShowInTranscriptDescription": "在字幕側邊欄顯示此 Skill 的快捷入口。聊天使用和自動執行分別設定。",
+      "skillAutoRun": "自動執行",
+      "skillAutoRunDescription": "下載完成且字幕準備就緒後自動執行此 Skill。不論是否自動執行，都可以在聊天中手動使用。",
+      "suggestedUsage": "建議用法",
+      "skillUsage": {
+        "summary": {
+          "first": "摘要已完成影片的字幕，保留主要觀點和關鍵時間點。",
+          "second": "將較長的教學整理成方便日後回顧的簡明重點。",
+          "third": "摘要一場訪談，並挑選受訪者最有價值的原話。"
+        },
+        "rewrite": {
+          "first": "將影片字幕改寫為清楚易讀的文章，保留原意。",
+          "second": "修正字幕中的文法並去除贅詞，不加入新的事實。",
+          "third": "將一段技術講解改寫成一般讀者也能理解的內容。"
+        },
+        "faq": {
+          "first": "根據影片字幕整理常見問題，並使用原文回答每個問題。",
+          "second": "將產品教學整理成適合新使用者的問答。",
+          "third": "擷取訪談中的常見問題，並依主題整理答案。"
+        },
+        "translate": {
+          "first": "將影片字幕翻譯成我的語言，並保留原意。",
+          "second": "翻譯一段技術教學，保持全文術語一致。",
+          "third": "翻譯一場訪談，保留說話者和主題轉換。"
+        },
+        "statistics": {
+          "first": "擷取影片字幕中提到的數字、百分比和日期。",
+          "second": "整理簡報中的統計數據，附上上下文和來源時間點。",
+          "third": "找出字幕中的測量值和比較，不虛構缺少的數據。"
+        },
+        "mindmap": {
+          "first": "根據影片的主要觀點及其關聯產生心智圖。",
+          "second": "將課程字幕整理成方便複習的主題層級。",
+          "third": "梳理技術演講中的概念，將相關觀點歸在一起。"
+        },
+        "diagnose": {
+          "first": "幫我了解下載失敗的原因，並建議下一步怎麼做。",
+          "second": "檢查一個停滯的任務，幫我判斷是否仍有進展。",
+          "third": "根據失敗任務的證據，幫我整理一份錯誤報告。"
+        },
+        "custom": {
+          "first": "幫我使用這個 Skill 完成任務，開始前先詢問我的目標。",
+          "second": "帶我完成一個實際範例，並詢問需要哪些原始素材。",
+          "third": "幫我將這個 Skill 用於我的情境，先確認輸出格式。"
+        }
+      },
+      "deletePrompt": "刪除 Skill",
       "restorePresets": "還原預設",
-      "testTitle": "用範例文稿測試",
-      "testRun": "執行",
-      "testStop": "停止",
-      "testOutput": "輸出",
-      "testPlaceholder": "提示詞結果會顯示在這裡",
       "presets": {
         "anthropic": "Anthropic",
         "azure": "Azure",
@@ -929,36 +991,80 @@
         "volcengine": "Volcengine",
         "zhipu": "Zhipu"
       },
-      "presetPrompts": {
-        "overview": {
-          "title": "概覽"
-        },
-        "bullet-points": {
-          "title": "重點列表"
-        },
-        "improve-grammar": {
-          "title": "修正文法與標點"
-        },
-        "generate-faq": {
-          "title": "產生 FAQ"
-        },
-        "extract-statistics": {
-          "title": "擷取統計資料"
-        },
-        "paraphrase-content": {
-          "title": "改寫內容"
-        },
-        "create-mindmap": {
-          "title": "產生心智圖"
-        },
-        "translate": {
-          "title": "翻譯"
-        }
-      },
       "createModel": "Create “{{query}}”",
       "noModelFound": "No model found.",
       "allModelsSelected": "列出的模型都已新增。",
-      "loadingModels": "正在從服務商載入模型…"
+      "loadingModels": "正在從服務商載入模型…",
+      "skillHelp": "Skill 使用 SKILL.md 檔案。Agent 會根據描述發現 Skill，並在需要時讀取指令。在聊天中輸入 $skill-name 可指定使用某個 Skill。",
+      "addSkill": "新增 Skill",
+      "createSkillWithVidbee": "用 VidBee 建立 Skill",
+      "createSkillRequest": "幫我建立可重複使用的 Skill。先詢問任務目標、使用時機和期望的輸出。需求明確後，在 VidBee 中建立並儲存 Skill。",
+      "uploadSkill": "上傳 Skill",
+      "importGitHubSkill": "從 GitHub 匯入 Skill",
+      "githubSkillDescription": "貼上公開 GitHub 儲存庫或 Skill 目錄連結，選擇要安裝的 Skill，附帶資源會一併匯入。",
+      "githubSkillUrl": "GitHub 連結",
+      "selectSkill": "選擇 Skill",
+      "installSkill": "安裝 Skill",
+      "findSkills": "尋找 Skill",
+      "skillInstalling": "請稍候…",
+      "skillInstallError": "無法安裝 Skill，請檢查來源後重試。",
+      "skillUploadTooLarge": "請上傳不超過 10 MB 的 SKILL.md 或 ZIP 檔案。",
+      "importSkill": "匯入 SKILL.md",
+      "exportSkill": "匯出 SKILL.md",
+      "openSkillFolder": "開啟 Skill 資料夾",
+      "skillLoading": "正在載入 Skill",
+      "skillLoaded": "Skill 已載入",
+      "skillFailed": "Skill 載入失敗",
+      "presetSkills": {
+        "overview": {
+          "name": "概覽",
+          "description": "將轉寫內容整理為附時間戳記的章節概覽與關鍵引述，適合快速瞭解影音內容，或定位想要重看的主題。"
+        },
+        "bullet-points": {
+          "name": "重點列表",
+          "description": "依主題提煉轉寫內容，以精簡的重點清單呈現，適合快速回顧影片、Podcast 或會議的核心資訊。"
+        },
+        "improve-grammar": {
+          "name": "修正文法與標點",
+          "description": "修正轉寫中的文法、拼字與標點，保留原有講者、含義和細節，適合整理成可直接閱讀的逐字稿。"
+        },
+        "generate-faq": {
+          "name": "產生 FAQ",
+          "description": "將轉寫內容整理為結構清楚的常見問答，回答僅依據原文，適合把影音內容製作成方便查閱的資料。"
+        },
+        "extract-statistics": {
+          "name": "擷取統計資料",
+          "description": "擷取轉寫中的數字、日期、百分比與金額，並保留對應語境，適合整理與核對內容中的量化資訊。"
+        },
+        "paraphrase-content": {
+          "name": "改寫內容",
+          "description": "用清楚自然的語言重新表述轉寫內容，不加入原文沒有的觀點，適合在保留原意的基礎上改善表達。"
+        },
+        "create-mindmap": {
+          "name": "產生心智圖",
+          "description": "將轉寫中的主題與關聯整理為 Mermaid 心智圖，適合直觀梳理影音內容的知識結構。"
+        },
+        "translate": {
+          "name": "翻譯",
+          "description": "將轉寫內容翻譯為介面語言，保留講者、原意和細節，適合閱讀其他語言的影音內容。"
+        },
+        "article-rewrite": {
+          "name": "改寫為文章",
+          "description": "將素材改寫為完整文章，並在有影片畫面時加入相關擷圖，適合將影音內容整理為可發表的文稿。"
+        },
+        "faq": {
+          "name": "影片問答",
+          "description": "視需要讀取目前影片的相關轉寫片段，整理成有原文依據的常見問答，適合針對正在觀看的影片製作問答資料。"
+        },
+        "diagnose-task": {
+          "name": "工作排查",
+          "description": "根據任務狀態、錯誤與記錄排查失敗或停滯的任務，提供恢復建議；疑似 VidBee 缺陷時協助整理回報。"
+        },
+        "video-localization": {
+          "name": "影片在地化",
+          "description": "翻譯並匯出字幕，或產生與影片同步的配音。"
+        }
+      }
     },
     "cookiesSetup": {
       "statusNotConfigured": "尚未設定",
@@ -1036,15 +1142,24 @@
       "extensionPriority": "Cookie 瀏覽器優先順序",
       "extensionPriorityHint": "依此順序使用第一個已連線的瀏覽器，離線的瀏覽器會自動略過。",
       "extensionUse": "使用",
+      "extensionLegacy": "舊版記錄",
+      "extensionLastConnected": "最近連線：{{time}}",
+      "extensionLastConnectedUnknown": "最近連線時間未知",
+      "extensionRemove": "移除",
+      "extensionRemoveLabel": "移除 {{browser}}",
+      "extensionVariants": {
+        "dev": "開發版",
+        "store": "商店版"
+      },
       "extensionMoveUp": "將 {{browser}} 上移",
       "extensionMoveDown": "將 {{browser}} 下移"
     },
-    "agentManagementTools": "智慧體管理工具",
-    "agentManagementToolsDescription": "智慧體能否變更任務和訂閱，以及是否必須先詢問你",
+    "agentManagementTools": "智慧體權限",
+    "agentManagementToolsDescription": "人工核准會在需要權限時請你確認。自動審核使用目前的模型，無法判斷時會請你確認；下載資料夾以外的路徑仍需你的核准。完整存取權會直接執行工具和 Shell 指令，不經人工核准或自動審核，也允許存取下載資料夾以外的路徑。變更從下一次回覆起生效。",
     "agentManagementToolsOptions": {
-      "off": "關閉",
-      "ask": "先詢問",
-      "auto": "自動允許"
+      "full": "完整存取權",
+      "ask": "人工核准",
+      "auto": "自動審核"
     },
     "mcp": {
       "tab": "MCP",
@@ -1057,20 +1172,14 @@
       "copied": "已複製 MCP 設定",
       "rotate": "輪替存取權杖",
       "error": "無法更新 MCP 設定",
-      "transport": "連線方式",
-      "transportDescription": "選擇一種即可，兩種方式提供相同能力。",
-      "httpRecommended": "HTTP（建議）",
       "configuration": "Agent 設定",
       "httpDescription": "透過位址和權杖直接連線至執行中的桌面應用程式。",
-      "stdioDescription": "為透過啟動指令連線的 Agent 提供本機橋接。",
       "viewConfig": "檢視設定",
       "configDescription": "將此設定貼到 Agent 的 MCP 設定中。",
-      "endpoint": "伺服器位址",
-      "endpointDescription": "僅在 VidBee 執行時供本機存取。",
       "accessToken": "存取權杖",
       "rotateDescription": "使現有 HTTP 設定失效。更換後請複製新設定。",
       "capabilitiesTitle": "可用能力",
-      "capabilitiesDescription": "{{tools}} 個工具、{{resources}} 個資源及範本、{{prompts}} 個工作流程。兩種連線方式皆可使用。",
+      "capabilitiesDescription": "{{tools}} 個工具、{{resources}} 個資源及範本、{{prompts}} 個工作流程。",
       "searchCapabilities": "搜尋能力…",
       "noCapabilities": "沒有符合的能力",
       "loading": "正在載入能力…",
@@ -1079,17 +1188,17 @@
         "tasks": "下載與佇列",
         "subscriptions": "訂閱",
         "transcripts": "字幕與模型",
-        "ai": "AI 對話與技能",
+        "ai": "AI 對話與 Skill",
         "exports": "文件與分享圖片",
         "resources": "資源與範本",
-        "prompts": "工作流程提示詞"
+        "prompts": "Skill"
       },
       "capabilities": {
         "get_app_status": "應用程式狀態與下載引擎就緒狀態",
         "get_settings": "讀取應用程式偏好設定",
         "update_settings": "更新應用程式偏好設定",
-        "get_ai_settings": "讀取 AI 供應商與技能",
-        "manage_ai_settings": "管理供應商、模型與已儲存技能",
+        "get_ai_settings": "讀取 AI 供應商與 Skill",
+        "manage_ai_settings": "管理供應商、模型與已儲存 Skill",
         "list_tasks": "瀏覽下載、轉換與轉錄工作",
         "get_task": "讀取工作進度、錯誤與記錄",
         "get_queue_stats": "佇列狀態與並行數",
@@ -1128,11 +1237,11 @@
         "manage_agent_thread": "停止、重新命名、刪除或切換對話分支",
         "decide_agent_tool": "核准或拒絕 Agent 工具呼叫",
         "get_agent_events": "讀取對話活動與事件",
-        "start_ai_prompt": "執行已儲存的 AI 技能",
-        "get_ai_prompt_run": "讀取技能結果與執行狀態",
-        "stop_ai_prompt": "停止執行中的技能",
-        "list_skill_results": "瀏覽已儲存的技能結果與 Agent 回覆",
-        "export_skill_result": "將技能結果匯出為 Markdown、PDF 或分享圖片",
+        "start_ai_prompt": "執行已儲存的 AI Skill",
+        "get_ai_prompt_run": "讀取 Skill 結果與執行狀態",
+        "stop_ai_prompt": "停止執行中的 Skill",
+        "list_skill_results": "瀏覽已儲存的 Skill 結果與 Agent 回覆",
+        "export_skill_result": "將 Skill 結果匯出為 Markdown、PDF 或分享圖片",
         "export_mermaid_diagram": "將單張 Mermaid 圖匯出為 PNG、JPG、SVG 或原始碼",
         "export_caption_share_image": "將選取字幕匯出為分享圖片",
         "summarize_media": "結合時間戳記證據摘要媒體",
@@ -1521,18 +1630,29 @@
       "cookiesBrowser": "直接讀取瀏覽器",
       "cookiesNone": "未使用 Cookies",
       "cookiesUnrecorded": "未記錄",
+      "cookiesUnavailable": "無法確認來源（缺少取得紀錄）",
+      "cookiesNotConfigured": "未設定 Cookies",
       "empty": "尚無詳細資訊。",
       "openUrl": "開啟來源網址",
       "group": {
         "media": "媒體",
         "file": "檔案",
         "transcript": "文稿"
-      }
+      },
+      "cookiesConfigured": "加入佇列時的設定：{{sources}}（未記錄實際來源）",
+      "cookiesConfig": "yt-dlp 設定（是否使用 Cookie 未知）"
     },
     "speakingShare": "{{percent}}%",
     "seekSpeaker": "跳轉到 {{name}}",
     "seekAt": "跳轉到 {{time}}",
     "searchPlaceholder": "搜尋文稿",
+    "bilingual": "雙語顯示",
+    "secondarySubtitle": "第二字幕",
+    "noSecondarySubtitles": "還沒有第二份字幕",
+    "translateSubtitles": "在新聊天中翻譯…",
+    "translateSubtitlesPrompt": "請將這部影片的字幕翻譯成另一種語言，方便雙語閱讀。先問我要翻譯成哪種語言。",
+    "subtitleLoading": "正在讀取字幕…",
+    "subtitleLoadFailed": "無法讀取這條字幕。",
     "searchMatches": "{{count}} 筆符合",
     "searchNoMatches": "沒有符合的內容",
     "searchNext": "下一筆",
@@ -1581,6 +1701,7 @@
         "more": "播放列表項目操作"
       }
     },
+    "changeModel": "更換模型",
     "qualityHint": "效果不佳？",
     "qualityHintDetail": "將切換到該模型（如需會自動下載）並重新轉寫。可以離開此頁。當前文稿會保留為歷史。",
     "qualityHintMax": "已經是最高檔。可在詳情頁調整說話人數後重新劃分。背景音樂和多人重疊仍可能影響說話人劃分。",
@@ -1592,7 +1713,7 @@
       "apply": "重新劃分",
       "detail": "將依這個人數重新劃分說話人，文稿內容保持不變。預設是自動辨識。你可以離開此頁，目前文稿會保留為歷史。"
     },
-    "promptMenu": "全部提示詞",
+    "promptMenu": "全部 Skill",
     "promptStop": "停止",
     "promptRerun": "再次執行",
     "promptCopy": "複製",
@@ -1611,11 +1732,11 @@
     "promptShareFooter": "由 VidBee 產生",
     "promptShareTagline": "下載。在本機轉寫。問 AI。",
     "captionShareSaid": "{{name}} 說到",
-    "promptOutput": "提示詞結果",
+    "promptOutput": "Skill 結果",
     "promptScrollToEnd": "跳到最新",
     "promptCopied": "已複製",
     "promptCloudGenerated": "由 VidBee Cloud 產生",
-    "promptNoProvider": "請先在設定中設定 AI 服務商，才能執行此提示詞。",
+    "promptNoProvider": "請先在設定中設定 AI 服務商，才能執行此 Skill。",
     "promptOpenSettings": "開啟服務商設定",
     "promptEmpty": "結果會顯示在這裡。",
     "overviewChapters": "章節",
@@ -1629,8 +1750,8 @@
     "promptAborted": "已停止",
     "promptTabCompleted": "已完成",
     "promptTabError": "異常",
-    "promptNoTranscript": "需要先有文稿才能執行此提示詞。",
-    "promptWaitForTranscript": "轉寫完成後即可執行此提示。",
+    "promptNoTranscript": "需要先有文稿才能執行此 Skill。",
+    "promptWaitForTranscript": "轉寫完成後即可執行此 Skill。",
     "promptRunWhenReady": "完成後執行",
     "promptWaitingToRun": "正在等待轉寫…",
     "promptTryAgain": "再試一次",
@@ -1639,19 +1760,19 @@
       "interrupted": "AI 回覆在完成前中斷了。",
       "creditsExhausted": "此帳戶的 AI 點數不足。",
       "signInRequired": "登入 VidBee Cloud 即可立刻免費使用問 AI。",
-      "noProvider": "尚未啟用 AI 服務商，因此無法執行這個提示詞。",
+      "noProvider": "尚未啟用 AI 服務商，因此無法執行這個 Skill。",
       "missingApiKey": "目前服務商尚未填寫 API 金鑰。",
       "missingModel": "目前服務商尚未填寫模型 ID。",
-      "unknownPrompt": "這個提示詞已無法使用。",
-      "emptyTranscript": "需要先有完整文稿才能執行這個提示詞。",
+      "unknownPrompt": "這個 Skill 已無法使用。",
+      "emptyTranscript": "需要先有完整文稿才能執行這個 Skill。",
       "auth": "服務商拒絕了請求。API 金鑰或帳號很可能無效。",
       "authCloud": "VidBee Cloud 拒絕了請求。登入狀態可能已過期。",
       "network": "無法連接到服務商。",
       "networkCloud": "無法連線到 VidBee Cloud。",
       "emptyOutput": "服務商結束了請求，但沒有回傳任何文字。",
       "emptyOutputCloud": "VidBee Cloud 結束了請求，但沒有回傳任何文字。",
-      "unknown": "提示詞未能執行。",
-      "unknownCloud": "VidBee Cloud 未能完成這個提示。",
+      "unknown": "Skill 未能執行。",
+      "unknownCloud": "VidBee Cloud 未能完成這個 Skill。",
       "serviceErrorCloud": "VidBee Cloud's AI service rejected this request."
     },
     "promptErrorDetails": "錯誤詳情",
@@ -1662,31 +1783,31 @@
       "creditsExhausted": {
         "s1": "開啟「帳戶」查看剩餘點數。",
         "s2": "邀請新使用者以獲得更多點數。",
-        "s3": "點數加入後再次執行提示。"
+        "s3": "點數加入後再次執行 Skill。"
       },
       "signInRequired": {
         "s1": "開啟「設定」→「Providers」。",
         "s2": "在 VidBee Cloud 下使用 GitHub 登入。",
-        "s3": "再次執行提示。"
+        "s3": "再次執行 Skill。"
       },
       "noProvider": {
         "s1": "打開設定 → 服務商。",
         "s2": "新增一個服務，儲存 API 金鑰和模型 ID，然後點「使用」。",
-        "s3": "回到這裡再執行一次提示詞。"
+        "s3": "回到這裡再執行一次 Skill。"
       },
       "missingApiKey": {
         "s1": "打開設定 → 服務商，編輯目前啟用的服務。",
         "s2": "貼上有效的 API 金鑰並儲存。",
-        "s3": "再執行一次提示詞。"
+        "s3": "再執行一次 Skill。"
       },
       "missingModel": {
         "s1": "打開設定 → 服務商，編輯目前啟用的服務。",
         "s2": "填入這個服務實際支援的模型 ID。",
-        "s3": "再執行一次提示詞。"
+        "s3": "再執行一次 Skill。"
       },
       "unknownPrompt": {
-        "s1": "打開設定 → 提示詞。",
-        "s2": "點「還原預設」，或重新新增這個提示詞。"
+        "s1": "打開設定 → Skill。",
+        "s2": "點「還原預設」，或重新新增這個 Skill。"
       },
       "emptyTranscript": {
         "s1": "等轉寫完成後再試。",
@@ -1700,7 +1821,7 @@
       "authCloud": {
         "s1": "開啟「帳戶」，確認仍然處於登入狀態。",
         "s2": "如果登入已過期，請重新登入。",
-        "s3": "然後再執行一次提示。"
+        "s3": "然後再執行一次 Skill。"
       },
       "network": {
         "s1": "檢查網路連線，以及是否設定了代理。",
@@ -1785,7 +1906,7 @@
       },
       "summary": {
         "title": "針對任何文稿向 AI 提問",
-        "description": "用你選擇的 AI 服務商進行摘要、翻譯、產生 FAQ 或心智圖，還能執行自己的提示詞。"
+        "description": "用你選擇的 AI 服務商進行摘要、翻譯、產生 FAQ 或心智圖，還能執行自己的 Skill。"
       },
       "localFiles": {
         "title": "轉寫本機檔案",
@@ -1806,14 +1927,103 @@
     "all": "累計"
   },
   "agentChat": {
+    "progress": {
+      "title": "執行進度",
+      "running": "正在處理…",
+      "waiting": "等待背景任務",
+      "approval": "等待你的授權",
+      "input": "等待你的輸入",
+      "completed": "本輪執行已結束",
+      "aborted": "Agent 已停止",
+      "interrupted": "執行已中斷",
+      "error": "執行失敗",
+      "steps": "任務步驟",
+      "tasks": "背景任務",
+      "results": "已產生檔案",
+      "continueAfterWait": "背景任務結束後，Agent 會自動繼續。",
+      "stop": "停止 Agent",
+      "stopHint": "停止本輪 Agent 執行，背景任務會獨立繼續。",
+      "showingTasks": "顯示 {{total}} 個任務中的 {{count}} 個。",
+      "pending": "尚未開始"
+    },
+    "ui": {
+      "continue": "繼續",
+      "sent": "已傳送",
+      "sendFailed": "無法傳送你的選擇，請重試。",
+      "inactive": "Agent 回覆完成後，可以回答最新回覆中的卡片。",
+      "loading": "正在載入任務…",
+      "loadFailed": "無法載入任務，請重新開啟對話後重試。",
+      "taskUnavailable": "此任務已不存在。",
+      "fileUnavailable": "檔案尚未就緒或已不存在。",
+      "taskFailed": "任務失敗了，可以讓我查看具體原因。",
+      "invalid": "暫時無法顯示這張卡片，你可以在輸入框中繼續。",
+      "progress": "任務進度",
+      "format": "輸出格式",
+      "resolution": "解析度",
+      "kinds": {
+        "video": "影片下載",
+        "audio": "音訊下載",
+        "subtitles": "字幕",
+        "playlist": "播放清單",
+        "subscription-item": "訂閱下載",
+        "yt-dlp-forward": "下載",
+        "transcription": "轉寫",
+        "conversion": "格式轉換",
+        "model-download": "模型下載"
+      },
+      "status": {
+        "queued": "排隊中",
+        "running": "進行中",
+        "processing": "處理中",
+        "paused": "已暫停",
+        "retry-scheduled": "等待重試",
+        "completed": "已完成",
+        "failed": "失敗",
+        "cancelled": "已取消"
+      }
+    },
+    "suggestions": {
+      "title": "你最佳的影音處理助手",
+      "description": "我是 VidBee。告訴我你想做什麼，也可以從下面選一項開始。",
+      "download": {
+        "label": "下載影片",
+        "prompt": "幫我用 VidBee 下載一部影片。先詢問影片連結和我想要的畫質，再建立下載工作。"
+      },
+      "audio": {
+        "label": "擷取音訊",
+        "prompt": "幫我用 VidBee 儲存影片中的音訊。先詢問影片連結和我想要的音訊格式，再建立音訊下載工作。"
+      },
+      "transcribe": {
+        "label": "轉寫已下載媒體",
+        "prompt": "幫我用 VidBee 將已下載的影片或音訊轉成文字。先列出已完成的下載，詢問我要轉寫哪一項，再啟動本機轉寫工作。"
+      },
+      "subscribe": {
+        "label": "建立訂閱",
+        "prompt": "幫我在 VidBee 中建立訂閱。先詢問頻道、網站或 RSS 連結並驗證訂閱來源，儲存前詢問是否自動下載新影片。"
+      },
+      "compress": {
+        "label": "壓縮影片",
+        "prompt": "幫我用 VidBee 縮小影片檔案。先列出已完成的影片下載，詢問我要壓縮哪一項以及降低到什麼解析度，再產生轉換後的副本並保留原始檔案。"
+      },
+      "convert": {
+        "label": "轉換格式",
+        "prompt": "幫我用 VidBee 轉換媒體格式。先列出已完成的下載，詢問要轉換的檔案和目標格式，再產生轉換後的副本並保留原始檔案。"
+      }
+    },
     "eventStream": "Event Stream",
     "eventStatus": {
-      "running": "Running",
-      "completed": "Completed",
-      "error": "Failed",
+      "running": "正在執行",
+      "completed": "已完成",
+      "error": "失敗",
       "pendingApproval": "等待核准",
       "denied": "已拒絕"
     },
+    "notifications": {
+      "approval": "VidBee Agent 需要你的授權",
+      "response": "VidBee Agent 等待你的回覆",
+      "body": "開啟對話以檢視請求並回覆。"
+    },
+    "newChatPlaceholder": "有什麼想聊的…",
     "placeholder": "Ask a follow-up about this video…",
     "send": "Send message",
     "attachImages": "Attach images",
@@ -1855,11 +2065,16 @@
     "catalogMatched": "Matched {{name}}. Context window and capabilities were filled in.",
     "catalogBadge": "Catalog",
     "tools": {
+      "show_ui": "正在顯示卡片",
+      "create_task": "正在建立任務",
+      "wait_for_task": "等待任務完成",
+      "select_video": "正在選擇來源媒體",
       "list_transcripts": "正在查看可用字幕",
       "select_transcript": "正在選擇字幕來源",
+      "add_subtitles": "正在新增字幕",
       "load_tools": "正在查找可用功能",
       "get_video_info": "Reading video information",
-      "read_transcript": "Reading transcript",
+      "read_transcript": "正在讀取字幕",
       "search_transcript": "Searching transcript",
       "capture_frames": "Capturing video frames",
       "create_clip": "Creating video clip",
@@ -1870,7 +2085,11 @@
       "read_artifact": "Reviewing saved image",
       "rename_conversation": "Renaming conversation",
       "write_article": "Writing article",
-      "review_article": "Reviewing article"
+      "review_article": "Reviewing article",
+      "export_subtitles": "正在匯出字幕",
+      "create_dubbed_video": "正在產生同步配音",
+      "list_tasks": "正在尋找任務",
+      "get_task": "正在查看任務詳情"
     },
     "modelCapabilities": "Model capabilities",
     "runDurationRunning": "Working · {{duration}}",

@@ -126,13 +126,14 @@ export function useDownloadEvents() {
       updateDownload({ id, changes: { ytDlpLog: appendCappedLog(current, chunk) } })
     }
 
+    /** Update a completed download and reuse its shared completion toast. */
     const handleCompleted = (rawId: unknown) => {
       const id = typeof rawId === 'string' ? rawId : ''
       if (!id) {
         return
       }
       updateDownload({ id, changes: { status: 'completed', completedAt: Date.now() } })
-      toast.success(t('notifications.downloadCompleted'))
+      toast.success(t('notifications.downloadCompleted'), { id: 'download-completed' })
       void (async () => {
         const historyItem = await syncHistoryItem(id)
         if (!(historyItem?.downloadPath && historyItem.title)) {

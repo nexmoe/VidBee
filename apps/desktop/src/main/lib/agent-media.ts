@@ -73,6 +73,9 @@ export async function runAgentMediaProcess(
     timeoutMs: number
     maxBytes?: number
     onProgress?: (text: string) => void
+    onStdout?: (text: string) => void
+    idleTimeoutMs?: number
+    env?: NodeJS.ProcessEnv
   }
 ): Promise<string> {
   input.signal.throwIfAborted()
@@ -81,7 +84,8 @@ export async function runAgentMediaProcess(
       shell: false,
       detached: process.platform !== 'win32',
       windowsHide: true,
-      stdio: ['ignore', 'pipe', 'pipe']
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: input.env
     })
     lowerChildPriority(child.pid)
     let output = ''
@@ -116,6 +120,12 @@ export async function runAgentMediaProcess(
       failure = new Error('Media operation timed out')
       kill()
     }, input.timeoutMs)
+    const idleTimeout = input.idleTimeoutMs
+      ? setTimeout(() => {
+          failure = new Error('Media operation made no progress before its deadline')
+          kill()
+        }, input.idleTimeoutMs)
+      : undefined
     const budget = setInterval(() => {
       if (checking) {
         return
@@ -139,14 +149,21 @@ export async function runAgentMediaProcess(
     /** Release timers and abort listeners when the child settles. */
     const cleanup = (): void => {
       clearTimeout(timeout)
+      clearTimeout(idleTimeout)
       clearInterval(budget)
       input.signal.removeEventListener('abort', abort)
     }
     child.stdout.on('data', (chunk: Buffer) => {
+      idleTimeout?.refresh()
+      input.onStdout?.(chunk.toString())
       output = (output + chunk.toString()).slice(-64_000)
       const percent = chunk.toString().match(/\[download\]\s+([\d.]+)%/)
       if (percent) {
         input.onProgress?.(`${percent[1]}%`)
+      }
+      const mediaTime = chunk.toString().match(/out_time=(\d+:\d+:\d+(?:\.\d+)?)/)
+      if (mediaTime) {
+        input.onProgress?.(`Processed media ${mediaTime[1]}`)
       }
     })
     child.stderr.on('data', (chunk: Buffer) => {

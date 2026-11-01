@@ -8,7 +8,6 @@ import {
   DialogHeader,
   DialogTitle
 } from '@renderer/components/ui/dialog'
-import { Input } from '@renderer/components/ui/input'
 import {
   Item,
   ItemActions,
@@ -18,13 +17,6 @@ import {
   ItemSeparator,
   ItemTitle
 } from '@renderer/components/ui/item'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@renderer/components/ui/select'
 import { Switch } from '@renderer/components/ui/switch'
 import { ipcServices } from '@renderer/lib/ipc'
 import { logger } from '@renderer/lib/logger'
@@ -40,7 +32,6 @@ export function McpPanel() {
   const { t } = useTranslation()
   const [status, setStatus] = useState<DesktopMcpStatus | null>(null)
   const [capabilities, setCapabilities] = useState<DesktopMcpCapabilityGroup[]>([])
-  const [transport, setTransport] = useState('http')
   const [configOpen, setConfigOpen] = useState(false)
   const [busy, setBusy] = useState(false)
 
@@ -81,10 +72,9 @@ export function McpPanel() {
     }
   }
 
-  const config = (transport === 'http' ? status?.httpConfig : status?.stdioConfig) ?? ''
-  const transportLabel = transport === 'http' ? 'Streamable HTTP' : 'stdio'
+  const config = status?.httpConfig ?? ''
 
-  /** Copy the selected connection configuration only after an explicit user action. */
+  /** Copy the HTTP connection configuration only after an explicit user action. */
   async function copy() {
     try {
       await navigator.clipboard.writeText(config)
@@ -125,26 +115,8 @@ export function McpPanel() {
         <ItemSeparator />
         <Item variant="muted">
           <ItemContent>
-            <ItemTitle>{t('settings.mcp.transport')}</ItemTitle>
-            <ItemDescription>{t('settings.mcp.transportDescription')}</ItemDescription>
-          </ItemContent>
-          <ItemActions>
-            <Select onValueChange={setTransport} value={transport}>
-              <SelectTrigger aria-label={t('settings.mcp.transport')} className="w-52">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="http">{t('settings.mcp.httpRecommended')}</SelectItem>
-                <SelectItem value="stdio">stdio</SelectItem>
-              </SelectContent>
-            </Select>
-          </ItemActions>
-        </Item>
-        <ItemSeparator />
-        <Item variant="muted">
-          <ItemContent>
             <ItemTitle>{t('settings.mcp.configuration')}</ItemTitle>
-            <ItemDescription>{t(`settings.mcp.${transport}Description`)}</ItemDescription>
+            <ItemDescription>{t('settings.mcp.httpDescription')}</ItemDescription>
           </ItemContent>
           <ItemActions>
             <Button
@@ -155,28 +127,13 @@ export function McpPanel() {
               {t('settings.mcp.viewConfig')}
             </Button>
             <Button
-              aria-label={t('settings.mcp.copy', { transport: transportLabel })}
+              aria-label={t('settings.mcp.copy', { transport: 'Streamable HTTP' })}
               disabled={!status?.running || busy}
               onClick={() => void copy()}
             >
               <Copy aria-hidden className="size-4" />
-              {t('settings.mcp.copy', { transport: transportLabel })}
+              {t('settings.mcp.copy', { transport: 'Streamable HTTP' })}
             </Button>
-          </ItemActions>
-        </Item>
-        <ItemSeparator />
-        <Item variant="muted">
-          <ItemContent>
-            <ItemTitle>{t('settings.mcp.endpoint')}</ItemTitle>
-            <ItemDescription>{t('settings.mcp.endpointDescription')}</ItemDescription>
-          </ItemContent>
-          <ItemActions className="w-full sm:w-auto">
-            <Input
-              aria-label={t('settings.mcp.endpoint')}
-              className="sm:w-72"
-              readOnly
-              value={status?.url ?? ''}
-            />
           </ItemActions>
         </Item>
         <ItemSeparator />
@@ -201,7 +158,7 @@ export function McpPanel() {
           </DialogHeader>
           <pre
             className="max-h-[50vh] overflow-auto rounded-md bg-muted/40 p-4 font-mono text-xs leading-relaxed"
-            data-testid={`mcp-${transport}-config`}
+            data-testid="mcp-http-config"
           >
             {config}
           </pre>
@@ -209,7 +166,7 @@ export function McpPanel() {
           <DialogFooter>
             <Button disabled={!status?.running || busy} onClick={() => void copy()}>
               <Copy aria-hidden className="size-4" />
-              {t('settings.mcp.copy', { transport: transportLabel })}
+              {t('settings.mcp.copy', { transport: 'Streamable HTTP' })}
             </Button>
           </DialogFooter>
         </DialogContent>

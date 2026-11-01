@@ -10,6 +10,8 @@ export interface AgentTaskActivity {
   /** Conversation title from the directory. */
   title: string
   status: AgentRunStatus
+  /** A live tool in this conversation needs the user's permission. */
+  approvalPending?: boolean
   /** Model id that produced the result; empty while a run is still resolving it. */
   model: string
   updatedAt: number
@@ -49,6 +51,7 @@ function rowActivity(row: AgentThreadSummary): AgentTaskActivity | null {
     promptId: row.promptId,
     title: row.title,
     status,
+    approvalPending: row.running && row.approvalPending === true,
     model: row.model ?? '',
     updatedAt: row.updatedAt
   }
@@ -129,6 +132,10 @@ export function groupAgentTasksByDownload(map: AgentTaskMap): Record<string, Age
 }
 
 export const agentTaskMapAtom = atom<AgentTaskMap>({})
+
+export const agentApprovalPendingAtom = atom((get) =>
+  Object.values(get(agentTaskMapAtom)).some((task) => task.approvalPending)
+)
 
 export const agentTasksByDownloadAtom = atom((get) =>
   groupAgentTasksByDownload(get(agentTaskMapAtom))

@@ -1,7 +1,6 @@
 import { randomBytes, timingSafeEqual } from 'node:crypto'
 import { chmodSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import { app } from 'electron'
 import { z } from 'zod'
 import type { DesktopMcpStatus } from '../../shared/mcp'
 import { getAutomationDescriptorPath } from '../lib/automation-descriptor'
@@ -94,17 +93,9 @@ export function isMcpAvailable(): boolean {
   return readCredentials().enabled && endpoint !== null
 }
 
-/** Build ready-to-copy configurations for HTTP clients and clients that launch a stdio command. */
+/** Build the ready-to-copy Streamable HTTP client configuration. */
 export function getMcpStatus(toolCount: number): DesktopMcpStatus {
   const current = readCredentials()
-  const bridge = app.isPackaged
-    ? path.join(process.resourcesPath, 'resources', 'mcp-bridge.mjs')
-    : path.join(app.getAppPath(), 'resources', 'mcp-bridge.mjs')
-  const bundledNode = path.join(
-    path.dirname(bridge),
-    'node',
-    process.platform === 'win32' ? 'node.exe' : 'node'
-  )
   return {
     enabled: current.enabled,
     running: current.enabled && endpoint !== null,
@@ -115,19 +106,6 @@ export function getMcpStatus(toolCount: number): DesktopMcpStatus {
       {
         mcpServers: {
           vidbee: { url: endpoint, headers: { Authorization: `Bearer ${current.token}` } }
-        }
-      },
-      null,
-      2
-    ),
-    stdioConfig: JSON.stringify(
-      {
-        mcpServers: {
-          vidbee: {
-            command: existsSync(bundledNode) ? bundledNode : 'node',
-            args: [bridge],
-            env: { VIDBEE_MCP_CONFIG: getMcpConfigPath() }
-          }
         }
       },
       null,

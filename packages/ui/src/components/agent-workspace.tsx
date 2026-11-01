@@ -1,3 +1,4 @@
+import { useVirtualizer } from '@tanstack/react-virtual'
 import {
   ArrowDown,
   Check,
@@ -8,7 +9,15 @@ import {
   Sparkles,
   X
 } from 'lucide-react'
-import { type ReactNode, type RefObject, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import {
+  type ReactNode,
+  type RefObject,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState
+} from 'react'
 import { cn } from '../lib/cn'
 import { TabUnderline } from './agent-tab-underline'
 import { Bubble, BubbleContent } from './ui/bubble'
@@ -102,9 +111,7 @@ export function AgentWorkspaceTabs({
   tabsRef,
   viewportRef,
   menuOpen,
-  onMenuOpenChange,
-  onMenuEnter,
-  onMenuLeave
+  onMenuOpenChange
 }: {
   tabs: AgentWorkspaceTab[]
   activeId: string
@@ -119,8 +126,6 @@ export function AgentWorkspaceTabs({
   viewportRef?: RefObject<HTMLDivElement | null>
   menuOpen?: boolean
   onMenuOpenChange?: (open: boolean) => void
-  onMenuEnter?: () => void
-  onMenuLeave?: () => void
 }) {
   const localTabs = useRef<HTMLDivElement>(null)
   const localViewport = useRef<HTMLDivElement>(null)
@@ -128,16 +133,21 @@ export function AgentWorkspaceTabs({
   const [localMenuOpen, setLocalMenuOpen] = useState(false)
   const effectiveTabsRef = tabsRef ?? localTabs
   const effectiveViewportRef = viewportRef ?? localViewport
-  /** Keep the same hover handoff between the trigger and portalled overflow menu. */
-  function setMenu(open: boolean): void {
+  /** Cancel hover dismissal without reopening a menu that is already closing. */
+  function cancelMenuClose(): void {
     clearTimeout(timer.current)
+    timer.current = undefined
+  }
+  /** Keep controlled and local menu state in sync through one hover timer. */
+  function setMenu(open: boolean): void {
+    cancelMenuClose()
     setLocalMenuOpen(open)
     onMenuOpenChange?.(open)
   }
   /** Allow the pointer to cross the gap before dismissing the overflow menu. */
   function leaveMenu(): void {
+    cancelMenuClose()
     timer.current = setTimeout(() => setMenu(false), 160)
-    onMenuLeave?.()
   }
   useEffect(() => () => clearTimeout(timer.current), [])
   useLayoutEffect(() => {
@@ -203,7 +213,9 @@ export function AgentWorkspaceTabs({
                   type="button"
                 >
                   <TabIcon tab={tab} />
-                  <span className="max-w-40 truncate">{tab.label}</span>
+                  <span className="max-w-40 truncate" title={tab.label}>
+                    {tab.label}
+                  </span>
                   <TabStatus tab={tab} />
                 </button>
                 {tab.onClose ? (
@@ -253,13 +265,8 @@ export function AgentWorkspaceTabs({
                 aria-label={labels.menu}
                 className="inline-flex h-full w-9 cursor-pointer items-center justify-center text-muted-foreground hover:bg-muted/70 hover:text-foreground"
                 data-testid="transcript-prompt-menu"
-                onFocus={() => {
-                  setMenu(true)
-                  onMenuEnter?.()
-                }}
                 onMouseEnter={() => {
                   setMenu(true)
-                  onMenuEnter?.()
                 }}
                 onMouseLeave={leaveMenu}
                 type="button"
@@ -269,12 +276,10 @@ export function AgentWorkspaceTabs({
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="end"
-              className="z-[80] max-h-72 min-w-52"
+              className="z-[80] max-h-72 w-64 min-w-0 max-w-[calc(100vw-1rem)]"
+              collisionPadding={8}
               data-testid="transcript-prompt-menu-list"
-              onMouseEnter={() => {
-                setMenu(true)
-                onMenuEnter?.()
-              }}
+              onMouseEnter={cancelMenuClose}
               onMouseLeave={leaveMenu}
               sideOffset={4}
             >
@@ -289,8 +294,12 @@ export function AgentWorkspaceTabs({
                       onSelect(tab.id)
                     }}
                   >
-                    <TabIcon tab={tab} />
-                    <span className="min-w-0 flex-1 truncate">{tab.label}</span>
+                    <span aria-hidden className="flex size-4 shrink-0 items-center justify-center">
+                      <TabIcon tab={tab} />
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-left" title={tab.label}>
+                      {tab.label}
+                    </span>
                     <TabStatus menu tab={tab} />
                     {activeId === tab.id ? <Check className="size-3.5 shrink-0" /> : null}
                   </DropdownMenuItem>
@@ -308,6 +317,7 @@ export function AgentWorkspaceTabs({
 export function AgentMessageLayout({
   id,
   user,
+  media,
   thinking,
   children,
   feedback,
@@ -315,27 +325,43 @@ export function AgentMessageLayout({
 }: {
   id: string
   user: boolean
+  /** Unpadded attachments grouped above their text bubble. */
+  media?: ReactNode
   thinking?: ReactNode
   children?: ReactNode
   feedback?: ReactNode
   actions?: ReactNode
 }) {
+  const bubble = children ? (
+    <Bubble
+      className={user ? 'max-w-full' : 'w-full max-w-full'}
+      variant={user ? 'default' : 'ghost'}
+    >
+      <BubbleContent
+        className={user ? 'w-full max-w-none' : 'w-full max-w-none overflow-visible p-0'}
+      >
+        {children}
+      </BubbleContent>
+    </Bubble>
+  ) : null
   return (
     <Message align={user ? 'end' : 'start'} data-message-id={id}>
       <MessageContent className="gap-2">
         {thinking}
-        {children ? (
-          <Bubble
-            className={user ? 'max-w-full' : 'w-full max-w-full'}
-            variant={user ? 'default' : 'ghost'}
+        {media ? (
+          <div
+            className={cn(
+              'flex min-w-0 flex-col gap-1.5',
+              user ? 'max-w-[85%] items-end self-end' : 'w-full'
+            )}
+            data-slot="message-media-group"
           >
-            <BubbleContent
-              className={user ? 'w-full max-w-none' : 'w-full max-w-none overflow-visible p-0'}
-            >
-              {children}
-            </BubbleContent>
-          </Bubble>
-        ) : null}
+            {media}
+            {bubble}
+          </div>
+        ) : (
+          bubble
+        )}
         {feedback}
         {actions ? <MessageFooter className="gap-0 px-0">{actions}</MessageFooter> : null}
       </MessageContent>
@@ -378,6 +404,9 @@ export function AgentMessageAction({
   )
 }
 
+const AGENT_COMPOSER_CLEARANCE =
+  'var(--agent-composer-clearance, calc(44px + var(--agent-composer-bottom, var(--agent-composer-inset, 0.75rem))))'
+
 /** Shared scroll and floating-composer geometry; runtimes provide messages and composer controls. */
 export function AgentConversationLayout({
   identity,
@@ -408,11 +437,12 @@ export function AgentConversationLayout({
     if (!(element && control)) {
       return
     }
-    /** Reserve exactly the visible composer's height so the final reply stays readable. */
-    function sync(): void {
-      element?.style.setProperty(
-        '--agent-composer-height',
-        `${control?.getBoundingClientRect().height ?? 0}px`
+    /** Reserve the complete floating dock, its notices and its distance from the pane's bottom. */
+    const sync = (): void => {
+      const bottom = Number.parseFloat(getComputedStyle(control).bottom) || 0
+      element.style.setProperty(
+        '--agent-composer-clearance',
+        `${Math.ceil(control.offsetHeight + bottom)}px`
       )
     }
     sync()
@@ -421,14 +451,16 @@ export function AgentConversationLayout({
     }
     const observer = new ResizeObserver(sync)
     observer.observe(control)
+    observer.observe(element)
     return () => {
       observer.disconnect()
-      element.style.removeProperty('--agent-composer-height')
+      element.style.removeProperty('--agent-composer-clearance')
     }
   }, [])
   return (
     <div
       className="relative flex h-full min-h-0 flex-col [--agent-composer-inset:0.75rem]"
+      data-slot="agent-conversation"
       ref={pane}
     >
       <MessageScrollerProvider
@@ -439,11 +471,14 @@ export function AgentConversationLayout({
       >
         <MessageScroller className="min-h-0 flex-1" data-testid="transcript-prompt-output">
           <MessageScrollerViewport aria-label={outputLabel} ref={viewportRef}>
-            <MessageScrollerContent className="gap-6 px-5 pt-5 pb-[calc(var(--agent-composer-height,44px)+var(--agent-composer-inset)+1rem)] text-sm leading-relaxed">
+            <MessageScrollerContent
+              className="mx-auto w-full max-w-[var(--agent-content-max-width,none)] gap-6 px-[22px] pt-[var(--agent-content-top-padding,1.25rem)] text-sm leading-relaxed"
+              style={{ paddingBottom: `calc(${AGENT_COMPOSER_CLEARANCE} + 1rem)` }}
+            >
               {children}
             </MessageScrollerContent>
           </MessageScrollerViewport>
-          <MessageScrollerButton className="data-[direction=end]:bottom-[calc(var(--agent-composer-height,44px)+var(--agent-composer-inset)+0.25rem)]">
+          <MessageScrollerButton style={{ bottom: `calc(${AGENT_COMPOSER_CLEARANCE} + 0.25rem)` }}>
             <ArrowDown />
             <span className="sr-only">{scrollLabel}</span>
           </MessageScrollerButton>
@@ -451,19 +486,27 @@ export function AgentConversationLayout({
         {scrollState}
       </MessageScrollerProvider>
       <div
-        className="pointer-events-none absolute inset-x-[var(--agent-composer-inset)] bottom-[var(--agent-composer-inset)] z-20"
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 z-10 overflow-hidden"
+        data-slot="message-send-layer"
+      />
+      <div
+        className="pointer-events-none absolute inset-x-0 bottom-[var(--agent-composer-bottom,var(--agent-composer-inset))] z-20 mx-auto w-full max-w-[var(--agent-content-max-width,none)] px-[var(--agent-composer-inset)]"
         data-testid="agent-chat-composer-dock"
+        ref={dock}
       >
         {notice ? <div className="pointer-events-auto pb-2">{notice}</div> : null}
-        <div className="pointer-events-auto" ref={dock}>
-          {composer}
-        </div>
+        <div className="pointer-events-auto">{composer}</div>
       </div>
     </div>
   )
 }
 
-/** Date-grouped history rows. Data loading and mutations remain in the transport adapters. */
+type AgentHistoryRow<T> =
+  | { kind: 'heading'; key: string; label: string; first: boolean }
+  | { kind: 'item'; key: string; item: T }
+
+/** Virtualize measured, date-grouped history rows shared by both clients. */
 export function AgentHistoryList<T extends { id: string; running: boolean }>({
   groups,
   currentId,
@@ -487,74 +530,117 @@ export function AgentHistoryList<T extends { id: string; running: boolean }>({
   onDelete: (item: T) => void
   labels: { running: string; more: string; rename: string; delete: string }
 }) {
+  const viewportRef = useRef<HTMLDivElement>(null)
+  const rows = useMemo(() => {
+    const result: AgentHistoryRow<T>[] = []
+    for (const [index, group] of groups.entries()) {
+      result.push({
+        kind: 'heading',
+        key: `heading:${group.key}`,
+        label: group.label,
+        first: index === 0
+      })
+      for (const item of group.items) {
+        result.push({ kind: 'item', key: `item:${item.id}`, item })
+      }
+    }
+    return result
+  }, [groups])
+  const virtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => viewportRef.current,
+    getItemKey: (index) => rows[index]?.key ?? index,
+    estimateSize: (index) => {
+      const row = rows[index]
+      return row?.kind === 'heading' ? (row.first ? 40 : 52) : 66
+    },
+    overscan: 8,
+    useFlushSync: false
+  })
+
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-4">
+    <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-4" ref={viewportRef}>
       {loaded && !groups.length ? (
         <p className="px-3 py-8 text-center text-muted-foreground text-sm">{emptyLabel}</p>
       ) : (
-        groups.map((group, index) => (
-          <section key={group.key}>
-            <h3
-              className={cn(
-                'px-3 pb-2 font-semibold text-muted-foreground text-sm',
-                index === 0 ? 'pt-3' : 'pt-6'
-              )}
-            >
-              {group.label}
-            </h3>
-            {group.items.map((item) => (
+        <div className="relative w-full" style={{ height: virtualizer.getTotalSize() }}>
+          {virtualizer.getVirtualItems().map((virtualRow) => {
+            const row = rows[virtualRow.index]
+            if (!row) {
+              return null
+            }
+            const item = row.kind === 'item' ? row.item : null
+            return (
               <div
-                className={cn(
-                  'flex items-center gap-1 rounded-2xl px-3 py-3',
-                  item.id === currentId ? 'bg-muted' : 'hover:bg-muted/50'
-                )}
-                data-testid={`transcript-prompt-history-item-${item.id}`}
-                key={item.id}
+                className="absolute top-0 left-0 w-full"
+                data-index={virtualRow.index}
+                key={virtualRow.key}
+                ref={virtualizer.measureElement}
+                style={{ transform: `translateY(${virtualRow.start}px)` }}
               >
-                <button
-                  className="min-w-0 flex-1 cursor-pointer text-left font-normal text-[15px] text-foreground leading-snug [overflow-wrap:anywhere]"
-                  onClick={() => onSelect(item)}
-                  type="button"
-                >
-                  <span className="line-clamp-2">{title(item)}</span>
-                </button>
-                {item.running ? (
-                  <span
-                    aria-hidden
-                    className="relative inline-flex size-2 shrink-0"
-                    data-status="running"
-                    data-testid={`transcript-prompt-history-running-${item.id}`}
-                    title={labels.running}
+                {row.kind === 'heading' ? (
+                  <h3
+                    className={cn(
+                      'px-3 pb-2 font-semibold text-muted-foreground text-sm',
+                      row.first ? 'pt-3' : 'pt-6'
+                    )}
                   >
-                    <span className="absolute inset-0 animate-ping rounded-full bg-primary opacity-60 motion-reduce:hidden" />
-                    <span className="relative block size-2 rounded-full bg-primary" />
-                  </span>
-                ) : null}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
+                    {row.label}
+                  </h3>
+                ) : item ? (
+                  <div
+                    className={cn(
+                      'flex items-center gap-1 rounded-2xl px-3 py-3',
+                      item.id === currentId ? 'bg-muted' : 'hover:bg-muted/50'
+                    )}
+                    data-testid={`transcript-prompt-history-item-${item.id}`}
+                  >
                     <button
-                      aria-label={labels.more}
-                      className="inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground hover:bg-background/80 hover:text-foreground"
+                      className="min-w-0 flex-1 cursor-pointer text-left font-normal text-[15px] text-foreground leading-snug [overflow-wrap:anywhere]"
+                      onClick={() => onSelect(item)}
                       type="button"
                     >
-                      <MoreHorizontal className="size-4" />
+                      <span className="line-clamp-2">{title(item)}</span>
                     </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    {onRename && (!canRename || canRename(item)) ? (
-                      <DropdownMenuItem onSelect={() => onRename(item)}>
-                        {labels.rename}
-                      </DropdownMenuItem>
+                    {item.running ? (
+                      <span
+                        aria-hidden
+                        className="relative inline-flex size-2 shrink-0"
+                        data-status="running"
+                        data-testid={`transcript-prompt-history-running-${item.id}`}
+                        title={labels.running}
+                      >
+                        <span className="absolute inset-0 animate-ping rounded-full bg-primary opacity-60 motion-reduce:hidden" />
+                        <span className="relative block size-2 rounded-full bg-primary" />
+                      </span>
                     ) : null}
-                    <DropdownMenuItem onSelect={() => onDelete(item)} variant="destructive">
-                      {labels.delete}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          aria-label={labels.more}
+                          className="inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground hover:bg-background/80 hover:text-foreground"
+                          type="button"
+                        >
+                          <MoreHorizontal className="size-4" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {onRename && (!canRename || canRename(item)) ? (
+                          <DropdownMenuItem onSelect={() => onRename(item)}>
+                            {labels.rename}
+                          </DropdownMenuItem>
+                        ) : null}
+                        <DropdownMenuItem onSelect={() => onDelete(item)} variant="destructive">
+                          {labels.delete}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                ) : null}
               </div>
-            ))}
-          </section>
-        ))
+            )
+          })}
+        </div>
       )}
     </div>
   )

@@ -5,9 +5,11 @@ import {
   useMessageScrollerVisibility
 } from '@shadcn/react/message-scroller'
 import { ArrowDownIcon } from 'lucide-react'
-import type * as React from 'react'
+import * as React from 'react'
 import { cn } from '../../lib/cn'
 import { Button } from './button'
+
+const SCROLL_KEYS = new Set(['ArrowDown', 'ArrowUp', 'End', 'Home', 'PageDown', 'PageUp', ' '])
 
 /**
  * Headless owner of transcript scroll state, auto-follow, and anchoring.
@@ -43,8 +45,69 @@ function MessageScroller({
  */
 function MessageScrollerViewport({
   className,
+  onKeyDown,
+  onTouchMove,
+  onTouchStart,
+  onWheel,
   ...props
 }: React.ComponentProps<typeof MessageScrollerPrimitive.Viewport>) {
+  const { scrollToEnd } = useMessageScroller()
+  const touchY = React.useRef<number | null>(null)
+
+  /** Keep following when downward input reaches an edge without producing a scroll event. */
+  function resumeFollowing(event: React.SyntheticEvent<HTMLDivElement>): void {
+    const element = event.currentTarget
+    if (
+      !event.defaultPrevented &&
+      element.scrollHeight - element.scrollTop - element.clientHeight <= 1
+    ) {
+      scrollToEnd({ behavior: 'instant' })
+    }
+  }
+
+  /** Wheel input belongs to this viewport, including when it is nested inside another scroller. */
+  function handleWheel(event: React.WheelEvent<HTMLDivElement>): void {
+    event.stopPropagation()
+    onWheel?.(event)
+    if (event.deltaY >= 0) {
+      resumeFollowing(event)
+    }
+  }
+
+  /** Keep navigation within nested viewports while allowing other keyboard shortcuts to bubble. */
+  function handleKeyDown(event: React.KeyboardEvent<HTMLDivElement>): void {
+    if (SCROLL_KEYS.has(event.key)) {
+      event.stopPropagation()
+    }
+    onKeyDown?.(event)
+    if (
+      event.key === 'ArrowDown' ||
+      event.key === 'End' ||
+      event.key === 'PageDown' ||
+      (event.key === ' ' && !event.shiftKey)
+    ) {
+      resumeFollowing(event)
+    }
+  }
+
+  /** Remember the initial finger position before the primitive receives a scroll intent. */
+  function handleTouchStart(event: React.TouchEvent<HTMLDivElement>): void {
+    touchY.current = event.touches[0]?.clientY ?? null
+    onTouchStart?.(event)
+  }
+
+  /** Isolate nested touch scrolling and preserve following for gestures toward the live edge. */
+  function handleTouchMove(event: React.TouchEvent<HTMLDivElement>): void {
+    event.stopPropagation()
+    const nextY = event.touches[0]?.clientY ?? null
+    const towardEnd = nextY !== null && touchY.current !== null && nextY < touchY.current
+    touchY.current = nextY
+    onTouchMove?.(event)
+    if (towardEnd) {
+      resumeFollowing(event)
+    }
+  }
+
   return (
     <MessageScrollerPrimitive.Viewport
       className={cn(
@@ -52,6 +115,10 @@ function MessageScrollerViewport({
         className
       )}
       data-slot="message-scroller-viewport"
+      onKeyDown={handleKeyDown}
+      onTouchMove={handleTouchMove}
+      onTouchStart={handleTouchStart}
+      onWheel={handleWheel}
       {...props}
     />
   )

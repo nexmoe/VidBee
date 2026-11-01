@@ -5,8 +5,6 @@ import type { AgentApprovalAction, AgentApprovalRequest } from '../../shared/age
 export type ApprovalAction = AgentApprovalAction
 export type ApprovalRequest = AgentApprovalRequest
 
-export type AgentManagementMode = 'off' | 'ask' | 'auto'
-
 const TASK_ACTIONS: Record<string, ApprovalAction | null> = {
   pause: null,
   resume: null,
@@ -198,31 +196,6 @@ function engineApproval(record: Record<string, unknown>): ApprovalRequest | null
     summary: 'Download and activate the stable yt-dlp release',
     risk: 'network'
   }
-}
-
-/**
- * True when the gate can skip the interactive card.
- *
- * Path targets outside the library always require a click, including auto mode.
- *
- * @param input.request Classified action.
- * @param input.mode User setting for management tools.
- * @param input.grants Actions this thread already remembered.
- * @param input.pathRequiresInteractive Hard filesystem rule.
- */
-export function autoApprove(input: {
-  request: ApprovalRequest
-  mode: AgentManagementMode
-  grants: Iterable<string>
-  pathRequiresInteractive: boolean
-}): boolean {
-  if (input.mode === 'off' || input.pathRequiresInteractive) {
-    return false
-  }
-  if (input.mode === 'auto') {
-    return true
-  }
-  return [...input.grants].includes(input.request.action)
 }
 
 /**

@@ -1,0 +1,32 @@
+.agent-skill-badge {
+  display: inline-block;
+  max-width: 100%;
+  padding: 0 8px;
+  overflow: hidden;
+  font: inherit;
+  vertical-align: top;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: rgb(0 0 0 / 7%);
+  border-radius: 999px;
+}
+
+.agent-skill-badge::before {
+  display: inline-block;
+  width: 0.9em;
+  height: 0.9em;
+  margin-inline-end: 4px;
+  vertical-align: -0.1em;
+  content: "";
+  background: currentColor;
+  mask: url("../assets/skill.svg") center / contain no-repeat;
+  opacity: 0.7;
+}
+
+.dark .agent-skill-badge {
+  background: rgb(255 255 255 / 12%);
+}
+
+.agent-video-badge::before {
+  mask-image: url("../assets/video.svg");
+}

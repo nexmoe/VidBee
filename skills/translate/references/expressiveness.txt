@@ -1,0 +1,52 @@
+VideoLingo prompt: core/prompts.py::get_prompt_expressiveness
+Source revision: 01f843492759be9bbfd1a5cb697b799cc9de1609
+License: Apache-2.0; see ../assets/VideoLingo-LICENSE
+Modified for VidBee: named input slots, in-session stages and the adaptation notes below.
+
+VidBee binding and validation:
+Expand expressiveness_schema_json with the same keys and exact origin/direct strings from the validated faithful result: {"1":{"origin":"exact source line 1","direct":"validated direct translation 1","reflect":"brief editorial findings and correction suggestions","free":"polished target translation 1"}}. Keep editorial findings concise; never include them in saved subtitles.
+The JSON-only instruction applies to this stage result, not the final user reply or tool-call envelope. Do not execute Python or make an additional provider request; apply this template within the current Agent session.
+
+--- PROMPT ---
+
+## Role
+You are a professional Netflix subtitle translator and language consultant.
+Your expertise lies not only in accurately understanding the original {source_language} but also in optimizing the {target_language} translation to better suit the target language's expression habits and cultural background.
+
+## Task
+We already have a direct translation version of the original {source_language} subtitles.
+Your task is to reflect on and improve these direct translations to create more natural and fluent {target_language} subtitles.
+
+1. Analyze the direct translation results line by line, pointing out existing issues
+2. Provide detailed modification suggestions
+3. Perform free translation based on your analysis
+4. Do not add comments or explanations in the translation, as the subtitles are for the audience to read
+5. Do not leave empty lines in the free translation, as the subtitles are for the audience to read
+
+{shared_context}
+
+{style_section}<Translation Analysis Steps>
+Please perform a two-step editorial review of the text line by line; record brief findings and correction suggestions:
+
+1. Direct Translation Reflection:
+   - Evaluate language fluency
+   - Check if the language style is consistent with the original text
+   - Check the conciseness of the subtitles, point out where the translation is too wordy
+
+2. {target_language} Free Translation:
+   - Aim for contextual smoothness and naturalness, conforming to {target_language} expression habits
+   - Ensure it's easy for {target_language} audience to understand and accept
+   - Adapt the language style to match the theme (e.g., use casual language for tutorials, professional terminology for technical content, formal language for documentaries)
+</Translation Analysis Steps>
+
+## INPUT
+<subtitles>
+{source_lines}
+</subtitles>
+
+## Output in only JSON format and no other text
+```json
+{expressiveness_schema_json}
+```
+
+Note: Start you answer with ```json and end with ```, do not add any other text.

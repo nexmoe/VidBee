@@ -44,11 +44,18 @@ export function initializeDesktopAnalytics(
         },
         config: {
           app_name: 'VidBee',
+          // Also keep event-default params; user_properties alone is not enough for
+          // event-scoped custom dimensions already registered in GA4 Admin.
           app_version: appVersion,
           client_channel: 'desktop',
           client_platform: process.platform,
           allow_google_signals: false,
-          allow_ad_personalization_signals: false
+          allow_ad_personalization_signals: false,
+          user_properties: {
+            app_version: appVersion,
+            client_channel: 'desktop',
+            client_platform: process.platform
+          }
         }
       }),
       /** Keep collector and persistence failures outside application business flows. */

@@ -99,7 +99,7 @@ export async function getAgentTask(id: string): Promise<Record<string, unknown>>
   }
 }
 
-/** Enqueue media using saved download preferences, or use the existing transcription workflow. */
+/** Enqueue media with extracted source metadata and saved preferences, or use the transcription workflow. */
 export async function createAgentTask(
   raw: unknown,
   signal?: AbortSignal,
@@ -146,7 +146,6 @@ export async function createAgentTask(
   const options = {
     url,
     type: kind === 'audio' ? ('audio' as const) : ('video' as const),
-    title: input.title,
     format:
       input.format ??
       (kind === 'audio'

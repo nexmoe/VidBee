@@ -6,12 +6,11 @@ import {
 } from '@vidbee/ui/components/ui/traveling-highlight'
 import { useShape } from '@vidbee/ui/lib/shape-context'
 import {
-  Cable,
   Captions,
   Cookie,
   FileText,
   KeyRound,
-  MessageSquareText,
+  Puzzle,
   Settings2,
   SlidersHorizontal,
   UserRound
@@ -26,9 +25,8 @@ export const SETTINGS_NAV_ITEMS = [
   { icon: FileText, labelKey: 'settings.metadataTab', value: 'metadata' },
   { icon: Cookie, labelKey: 'settings.cookiesTab', value: 'cookies' },
   { icon: KeyRound, labelKey: 'settings.providersTab', value: 'providers' },
-  { icon: MessageSquareText, labelKey: 'settings.promptsTab', value: 'prompts' },
+  { icon: Puzzle, labelKey: 'settings.promptsTab', value: 'prompts' },
   { icon: Captions, labelKey: 'settings.transcriptionTab', value: 'transcribe' },
-  { icon: Cable, labelKey: 'settings.mcp.tab', value: 'mcp' },
   { icon: SlidersHorizontal, labelKey: 'settings.advanced', value: 'advanced' }
 ] as const
 
@@ -40,7 +38,7 @@ const SETTINGS_NAV_GROUPS = [
   { id: 'app', labelKey: 'settings.navGroup.app', values: ['account', 'general'] },
   { id: 'download', labelKey: 'settings.navGroup.download', values: ['metadata', 'cookies'] },
   { id: 'ai', labelKey: 'settings.navGroup.ai', values: ['providers', 'prompts', 'transcribe'] },
-  { id: 'system', labelKey: 'settings.navGroup.system', values: ['mcp', 'advanced'] }
+  { id: 'system', labelKey: 'settings.navGroup.system', values: ['advanced'] }
 ] as const
 
 /**

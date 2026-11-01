@@ -4,6 +4,43 @@ export interface SubtitleCue {
   text: string
 }
 
+/** Assign secondary cues to their strongest primary overlap, shared by bilingual reading and exports. */
+export function alignSubtitleCues(
+  primary: readonly SubtitleCue[],
+  secondary: readonly SubtitleCue[]
+): string[] {
+  const rows = primary
+    .map((cue, index) => ({ ...cue, index }))
+    .sort((left, right) => left.startMs - right.startMs)
+  const result = primary.map(() => [] as string[])
+  let first = 0
+  for (const cue of [...secondary].sort((left, right) => left.startMs - right.startMs)) {
+    if (!cue.text.trim()) {
+      continue
+    }
+    while (first < rows.length && rows[first].endMs <= cue.startMs) {
+      first++
+    }
+    let best = -1
+    let overlap = 0
+    for (let index = first; index < rows.length; index++) {
+      const row = rows[index]
+      if (row.startMs >= cue.endMs) {
+        break
+      }
+      const shared = Math.min(row.endMs, cue.endMs) - Math.max(row.startMs, cue.startMs)
+      if (shared > overlap) {
+        best = row.index
+        overlap = shared
+      }
+    }
+    if (best >= 0 && result[best].at(-1) !== cue.text.trim()) {
+      result[best].push(cue.text.trim())
+    }
+  }
+  return result.map((lines) => lines.join('\n'))
+}
+
 /** Format a cue timestamp as HH:MM:SS,mmm for SubRip and video exports. */
 export function formatSrtClock(ms: number): string {
   const total = Math.max(0, Math.floor(ms))

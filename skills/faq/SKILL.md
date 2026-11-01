@@ -1,6 +1,6 @@
 ---
 name: faq
-description: Build a FAQ from the current video transcript without turning it into an essay.
+description: "Build a FAQ from the current video, reading relevant transcript passages as needed. Use to create source-grounded Q&A about the active video."
 ---
 
 # FAQ

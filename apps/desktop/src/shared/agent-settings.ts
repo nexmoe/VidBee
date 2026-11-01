@@ -4,6 +4,7 @@ import { languages } from '@vidbee/i18n/languages'
 import { ASR_TIER_IDS } from '@vidbee/transcription/asr'
 import { z } from 'zod'
 import { AGENT_THINKING_LEVELS } from './agent-chat'
+import { TTS_FAMILIES, ttsModelIdSchema } from './tts-models'
 import type { AppSettings } from './types'
 
 const text = z.string().max(4096)
@@ -47,6 +48,9 @@ export const agentSettingsSchema = z
     autoTranscribeAfterDownload: z.boolean(),
     maxConcurrentTranscriptions: z.number().int().min(1).max(4),
     asrTier: z.enum(ASR_TIER_IDS),
+    ttsModelId: ttsModelIdSchema,
+    transcriptionProvider: z.enum(['local', 'cloud']),
+    cloudTranscriptionModelId: z.string().min(1).max(200),
     downloadMirror: z.enum(['auto', 'cn', 'global'])
   } satisfies Record<
     Exclude<
@@ -56,6 +60,20 @@ export const agentSettingsSchema = z
     z.ZodType
   >)
   .partial()
+  .strict()
+
+/** Inspect available speech models or persist a validated default without downloading it. */
+export const agentTtsModelSchema = z
+  .object({
+    action: z.enum(['status', 'select', 'prepare']),
+    modelId: ttsModelIdSchema.optional(),
+    query: z.string().max(200).optional(),
+    language: z.string().max(30).optional(),
+    family: z.enum(TTS_FAMILIES).optional(),
+    offset: z.number().int().min(0).optional(),
+    limit: z.number().int().min(1).max(30).optional(),
+    refresh: z.boolean().optional()
+  })
   .strict()
 
 /** AI writes reuse existing secrets and expose only model and prompt configuration. */
@@ -92,8 +110,8 @@ export const agentAiSettingsSchema = z
       .max(AGENT_THINKING_LEVELS.length)
       .optional(),
     defaultThinkingLevel: z.enum(['auto', ...AGENT_THINKING_LEVELS]).optional(),
-    title: z.string().min(1).max(200).optional(),
+    description: z.string().min(1).max(1024).optional(),
     content: z.string().min(1).max(50_000).optional(),
-    enabled: z.boolean().optional()
+    autoRun: z.boolean().optional()
   })
   .strict()

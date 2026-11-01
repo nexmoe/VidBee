@@ -7,6 +7,11 @@ For full release notes, see [GitHub Releases](https://github.com/nexmoe/VidBee/r
 
 ### Added
 - Support Microsoft Store distribution with updates and update settings managed through the Store.
+- Follow long Agent requests with a concise plan, real background task progress, and generated media in a dedicated progress card.
+
+### Fixed
+- Keep Agent requests running while downloads and other queued tasks finish, then continue the requested work automatically.
+- Translate subtitles, export, and dub downloaded media in the same independent Agent conversation.
 
 ## [v2.3.0](https://github.com/nexmoe/VidBee/releases/tag/v2.3.0) - 2026-10-25
 

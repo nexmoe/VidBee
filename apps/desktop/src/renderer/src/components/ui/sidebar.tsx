@@ -3,9 +3,10 @@ import { appSidebarIcons } from '@vidbee/ui/components/ui/app-sidebar-icons'
 import { useAtomValue } from 'jotai'
 import { useTranslation } from 'react-i18next'
 import '../../assets/title-bar.css'
+import { agentApprovalPendingAtom } from '@renderer/store/agent-tasks'
 import { updateAvailableAtom } from '@renderer/store/update'
 
-type Page = 'about' | 'home' | 'settings' | 'subscriptions'
+type Page = 'about' | 'chat' | 'home' | 'settings' | 'subscriptions'
 
 interface SidebarProps {
   currentPage: Page
@@ -25,6 +26,7 @@ export function Sidebar({
 }: SidebarProps) {
   const { t } = useTranslation()
   const updateAvailable = useAtomValue(updateAvailableAtom)
+  const approvalPending = useAtomValue(agentApprovalPendingAtom)
 
   const items: AppSidebarItem[] = [
     {
@@ -34,6 +36,14 @@ export function Sidebar({
       indicator: transcriptsActive,
       label: t('menu.home'),
       onClick: () => onPageChange('home')
+    },
+    {
+      id: 'chat',
+      active: currentPage === 'chat',
+      icon: appSidebarIcons.chat,
+      indicator: approvalPending,
+      label: t('transcript.promptHistoryChat'),
+      onClick: () => onPageChange('chat')
     },
     {
       id: 'subscriptions',

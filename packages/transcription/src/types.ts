@@ -1,5 +1,6 @@
 import type { GpuKind, OsKind } from './asr-recommend'
 import type { AsrFamily, AsrTierId, MachineClass } from './asr-tiers'
+import type { TranscriptionProvider } from './cloud'
 import type { SpeakerCount } from './speaker-count'
 
 export type TranscriptResultKind = 'transcript' | 'no-speech'
@@ -84,6 +85,8 @@ export interface TranscriptSummary {
 }
 
 export interface TranscriptionTaskOptions {
+  provider?: TranscriptionProvider
+  cloudModelId?: string
   downloadTaskId: string
   sourceFilePath: string
   trigger: TranscriptionTrigger
@@ -140,8 +143,9 @@ export type ModelRole =
   | 'asr-joiner'
   | 'asr-extra'
   | 'punctuation'
+  | 'speech'
 
-export type ModelGroup = 'vad' | 'speaker' | 'asr' | 'punct'
+export type ModelGroup = 'vad' | 'speaker' | 'asr' | 'punct' | 'speech'
 
 /** One file that must exist inside a directory-shaped catalog entry. */
 export interface DirectoryMemberRequirement {

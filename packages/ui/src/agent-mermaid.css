@@ -1,68 +1,19 @@
-/* Keep the diagram and its controls on one quiet, theme-aware surface. */
+@import "./agent-block.css";
+
 @media (prefers-reduced-motion: reduce) {
   [data-streamdown="mermaid"] [role="application"] {
     transition: none;
   }
 }
 
+/* Let the zoom viewport reach the block edges instead of clipping inside padding. */
 div[data-streamdown="mermaid-block"] {
-  --mermaid-control-width: 2rem;
-  --mermaid-control-height: 1.75rem;
-  min-width: 0;
-  gap: 0.5rem;
-  border: 0;
-  border-radius: 0.75rem;
-  background: var(--surface-1);
-  padding: 0.75rem 1rem;
+  overflow: hidden;
+  padding: 0.75rem 0 0;
 }
 
 div[data-streamdown="mermaid-block"] > div:first-child {
-  height: var(--mermaid-control-height);
-  color: var(--muted-foreground);
-  font-size: 0.875rem;
-}
-
-div[data-streamdown="mermaid-block"] > div:first-child > span {
-  margin: 0;
-}
-
-div[data-streamdown="mermaid-block"]
-  > div:has(> [data-streamdown="mermaid-block-actions"]) {
-  position: absolute;
-  inset-block-start: 0.75rem;
-  inset-inline-end: 1rem;
-  height: var(--mermaid-control-height);
-  margin: 0;
-}
-
-[data-streamdown="mermaid-block-actions"] {
-  gap: 0.125rem;
-  border: 0;
-  background: transparent;
-  padding: 0;
-  backdrop-filter: none;
-}
-
-[data-streamdown="mermaid-block-actions"] > button,
-[data-streamdown="mermaid-block-actions"] > div > button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--mermaid-control-width);
-  height: var(--mermaid-control-height);
-  border-radius: 0.25rem;
-  padding: 0.25rem 0.375rem;
-}
-
-[data-streamdown="mermaid-block-actions"] > button:hover,
-[data-streamdown="mermaid-block-actions"] > div > button:hover {
-  background: var(--hover);
-}
-
-div[data-streamdown="mermaid-block"] > div:last-child {
-  border: 0;
-  border-radius: 0;
-  background: transparent;
+  padding-inline: 1rem;
 }
 
 [data-streamdown="mermaid-block"] [data-streamdown="mermaid"] > div {
@@ -74,7 +25,7 @@ div[data-streamdown="mermaid-block"] > div:last-child {
   [data-streamdown="mermaid"]
   [role="application"] {
   flex: none;
-  padding: 0.75rem 2.75rem;
+  padding: 0;
 }
 
 [data-streamdown="mermaid-block"] [data-streamdown="mermaid"] [role="img"] {
@@ -89,7 +40,7 @@ div[data-streamdown="mermaid-block"] > div:last-child {
   > div:has(> button[title="Zoom in"]) {
   inset-block-start: auto;
   inset-block-end: 0.5rem;
-  inset-inline-start: 0;
+  inset-inline-start: 0.5rem;
   inset-inline-end: auto;
   gap: 0;
   border-color: color-mix(in oklab, var(--foreground) 14%, transparent);
@@ -100,8 +51,8 @@ div[data-streamdown="mermaid-block"] > div:last-child {
 }
 
 [data-streamdown="mermaid-block"] [data-streamdown="mermaid"] button {
-  width: var(--mermaid-control-width);
-  height: var(--mermaid-control-height);
+  width: var(--agent-block-control-width);
+  height: var(--agent-block-control-height);
   border-radius: 0.25rem;
   padding: 0.25rem 0.375rem;
   color: var(--muted-foreground);
@@ -130,11 +81,5 @@ div[data-streamdown="mermaid-block"] > div:last-child {
 @media (width < 640px) {
   [data-streamdown="mermaid-block"] [data-streamdown="mermaid"] > div {
     min-height: 12rem;
-  }
-
-  [data-streamdown="mermaid-block"]
-    [data-streamdown="mermaid"]
-    [role="application"] {
-    padding: 0.75rem 1.5rem;
   }
 }

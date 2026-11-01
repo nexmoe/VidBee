@@ -97,12 +97,21 @@ function artifactIdsFromCapture(result: unknown): string[] {
 export async function materializeAgentArticleImages(input: {
   text: string
   artifacts: AgentArtifact[]
+  sourceDownloadId?: string
   runId: string
   tools: AgentTool[]
   signal: AbortSignal
   onCapture?: (status: 'running' | 'completed' | 'error') => void
 }): Promise<MaterializedArticleImages> {
-  const timestamps = unboundArticleImageTimes(input.text, input.artifacts, input.runId)
+  /** Re-read after capture so newly created attachments participate without mixing source videos. */
+  const artifacts = () =>
+    input.sourceDownloadId
+      ? input.artifacts.filter(
+          (artifact) =>
+            !artifact.sourceDownloadId || artifact.sourceDownloadId === input.sourceDownloadId
+        )
+      : input.artifacts
+  const timestamps = unboundArticleImageTimes(input.text, artifacts(), input.runId)
   const capture = input.tools.find((tool) => tool.name === 'capture_frames')
   let captureError: string | undefined
   const returnedIds = new Set<string>()
@@ -128,8 +137,8 @@ export async function materializeAgentArticleImages(input: {
       captureError = error instanceof Error ? error.message : String(error)
     }
   }
-  const text = bindArticleImageArtifacts(input.text, input.artifacts, input.runId, returnedIds)
-  const unresolved = unboundArticleImageTimes(text, input.artifacts, input.runId, returnedIds)
+  const text = bindArticleImageArtifacts(input.text, artifacts(), input.runId, returnedIds)
+  const unresolved = unboundArticleImageTimes(text, artifacts(), input.runId, returnedIds)
   if (timestamps.length && capture) {
     input.onCapture?.(unresolved.length ? 'error' : 'completed')
   } else if (unresolved.length) {

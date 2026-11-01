@@ -8,6 +8,7 @@ import {
   agentConversationTitle,
   agentThreadIsRunning,
   agentThreadLatestRun,
+  agentThreadNeedsApproval,
   agentThreadUpdatedAt
 } from '../../shared/agent-history'
 import {
@@ -47,13 +48,16 @@ export const AGENT_WRITE_ALL_TYPES = new Set([
   'thread.renamed'
 ])
 
-/** Directory changes: title, membership, or the selected run's status. */
+/** Directory changes: title, membership, approval requests, or the selected run's status. */
 export const AGENT_CATALOG_TYPES = new Set([
   'run.started',
   'run.completed',
   'run.aborted',
   'run.error',
   'run.interrupted',
+  'tool.approval-requested',
+  'tool.approved',
+  'tool.denied',
   'thread.renamed',
   'thread.branch-selected',
   'images.selected',
@@ -117,6 +121,7 @@ export function agentDirectorySummary(thread: AgentThread): AgentThreadSummary {
     title: agentConversationTitle(thread, videoTitle),
     updatedAt: agentThreadUpdatedAt(thread),
     running: agentThreadIsRunning(thread),
+    approvalPending: agentThreadNeedsApproval(thread),
     status: latest?.status ?? 'idle',
     model: latest?.model ?? ''
   }

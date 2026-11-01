@@ -2,8 +2,21 @@ import { cn } from '@renderer/lib/utils'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { ListMarqueeBox } from '@vidbee/ui/components/ui/list-marquee-box'
 import { registerDownloadTransferLocator } from '@vidbee/ui/lib/download-transfer-target'
+import { isListIgnoreTarget } from '@vidbee/ui/lib/list-marquee'
 import { useListMarqueeSelection } from '@vidbee/ui/lib/use-list-marquee'
-import { type RefObject, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import {
+  type KeyboardEvent,
+  type MouseEvent,
+  type ReactNode,
+  type RefObject,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState
+} from 'react'
+import type { DownloadSelectionModifiers } from '../../hooks/use-download-selection'
 import { downloadListGeometryRows, downloadListRowOffset } from '../../lib/download-list-geometry'
 import type { DownloadListModel } from '../../lib/download-list-rows'
 import { readDownloadListScrollMargin } from '../../lib/download-list-scroll-margin'
@@ -20,13 +33,15 @@ interface DownloadHistoryVirtualListProps {
   isPlaylistExpanded: (groupId: string) => boolean
   listRef: RefObject<HTMLDivElement | null>
   model: DownloadListModel
+  onContextMenuSelect?: (id: string) => void
   onDeletePlaylist?: (playlistId: string, title: string, ids: string[]) => void
   onSelectIds: (ids: string[]) => void
   onTogglePlaylist: (groupId: string) => void
-  onToggleSelect: (id: string) => void
+  onToggleSelect: (id: string, modifiers?: DownloadSelectionModifiers) => void
   prefixRef: RefObject<HTMLDivElement | null>
   selectedIds: Set<string>
   selectionActive: boolean
+  selectionContextMenu?: ReactNode
   viewport: HTMLDivElement | null
 }
 
@@ -51,6 +66,7 @@ export function DownloadHistoryVirtualList({
   isPlaylistExpanded,
   listRef,
   model,
+  onContextMenuSelect,
   onDeletePlaylist,
   onSelectIds,
   onTogglePlaylist,
@@ -58,9 +74,12 @@ export function DownloadHistoryVirtualList({
   prefixRef,
   selectedIds,
   selectionActive,
+  selectionContextMenu,
   viewport
 }: DownloadHistoryVirtualListProps) {
   const [scrollMargin, setScrollMargin] = useState(0)
+  const [focusedId, setFocusedId] = useState<string | null>(null)
+  const pendingFocusRef = useRef<string | null>(null)
   const { contextIds, locations, matchingIds, rowIndexById, rows } = model
   const locationsRef = useRef(locations)
   const rowIndexRef = useRef(rowIndexById)
@@ -144,24 +163,158 @@ export function DownloadHistoryVirtualList({
     })
   }, [listRef, matchingIds, rows, scrollMargin, virtualizer])
 
-  const { finishPointer, marquee, onPointerDown, onPointerMove } = useListMarqueeSelection({
+  const {
+    finishPointer,
+    marquee,
+    onClickCapture,
+    onContextMenuCapture: handleMarqueeContextMenu,
+    onPointerDown,
+    onPointerMove
+  } = useListMarqueeSelection({
     containerRef: listRef,
     geometryRows,
     onSelectIds,
-    selectedIds
+    selectedIds,
+    scrollElement: viewport
   })
   const virtualRows = virtualizer.getVirtualItems()
+  const navigationIds = useMemo(
+    () =>
+      rows.flatMap((row) =>
+        row.kind === 'task' && row.record.entryType === 'history' && matchingIds.has(row.record.id)
+          ? [row.record.id]
+          : []
+      ),
+    [matchingIds, rows]
+  )
+  const mountedIds = virtualRows.flatMap(({ index }) => {
+    const row = rows[index]
+    return row?.kind === 'task' && navigationIds.includes(row.record.id) ? [row.record.id] : []
+  })
+  const tabStopId =
+    focusedId && mountedIds.includes(focusedId)
+      ? focusedId
+      : (mountedIds.find((id) => selectedIds.has(id)) ?? mountedIds[0])
+
+  useLayoutEffect(() => {
+    const id = pendingFocusRef.current
+    if (!id) {
+      return
+    }
+    const row = listRef.current?.querySelector<HTMLElement>(
+      `[data-download-id="${CSS.escape(id)}"]`
+    )
+    if (row) {
+      row.focus({ preventScroll: true })
+      pendingFocusRef.current = null
+    }
+  })
+
+  /** Navigate the visual row order and extend selection without entering nested controls. */
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
+    if (event.defaultPrevented || event.altKey || !(event.target instanceof HTMLElement)) {
+      return
+    }
+    if (event.key === 'Escape') {
+      finishPointer()
+      return
+    }
+    const row = event.target.closest<HTMLElement>('[data-download-id]')
+    if (event.target !== row && event.target !== event.currentTarget) {
+      return
+    }
+    const id = row?.dataset.downloadId ?? tabStopId
+    if (!id || navigationIds.length === 0) {
+      return
+    }
+    if (event.key === ' ') {
+      event.preventDefault()
+      onToggleSelect(id, {
+        range: event.shiftKey,
+        toggle: !event.shiftKey || event.metaKey || event.ctrlKey
+      })
+      return
+    }
+    const currentIndex = navigationIds.indexOf(id)
+    let index: number
+    switch (event.key) {
+      case 'ArrowDown':
+        index = Math.min(currentIndex + 1, navigationIds.length - 1)
+        break
+      case 'ArrowUp':
+        index = Math.max(currentIndex - 1, 0)
+        break
+      case 'Home':
+        index = 0
+        break
+      case 'End':
+        index = navigationIds.length - 1
+        break
+      default:
+        return
+    }
+    event.preventDefault()
+    const nextId = navigationIds[index]
+    setFocusedId(nextId)
+    pendingFocusRef.current = nextId
+    const rowIndex = rowIndexById.get(nextId)
+    if (rowIndex !== undefined) {
+      virtualizer.scrollToIndex(rowIndex, { align: 'auto' })
+    }
+    if (event.shiftKey || !(event.metaKey || event.ctrlKey)) {
+      onToggleSelect(nextId, {
+        anchorId: id,
+        range: event.shiftKey,
+        toggle: event.metaKey || event.ctrlKey
+      })
+    }
+  }
+
+  /** Update the selection before a row opens its right-click or overflow menu. */
+  const handleContextMenuCapture = (event: MouseEvent<HTMLDivElement>): void => {
+    handleMarqueeContextMenu(event)
+    if (event.defaultPrevented) {
+      return
+    }
+    if (!(event.target instanceof Element)) {
+      return
+    }
+    const row = event.target.closest<HTMLElement>('[data-download-id]')
+    const id = row?.dataset.downloadId
+    if (id) {
+      onContextMenuSelect?.(id)
+    }
+  }
 
   return (
+    // biome-ignore lint/a11y/useSemanticElements: virtual list group contains rows and independent controls, not form fields
     <div
-      className={cn('relative w-full pb-4', marquee && 'select-none')}
+      className={cn('relative w-full select-none pb-4 outline-none')}
       data-download-scroll-margin={scrollMargin}
+      onClickCapture={onClickCapture}
+      onContextMenuCapture={handleContextMenuCapture}
+      onDragStartCapture={(event) => {
+        if (!isListIgnoreTarget(event.target)) {
+          event.preventDefault()
+        }
+      }}
+      onFocusCapture={(event) => {
+        if (event.target instanceof Element) {
+          const id = event.target.closest<HTMLElement>('[data-download-id]')?.dataset.downloadId
+          if (id && navigationIds.includes(id)) {
+            setFocusedId(id)
+          }
+        }
+      }}
+      onKeyDown={handleKeyDown}
       onPointerCancel={finishPointer}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={finishPointer}
       ref={listRef}
+      role="group"
       style={{ height: virtualizer.getTotalSize() }}
+      tabIndex={-1}
     >
       {marquee ? <ListMarqueeBox marquee={marquee} /> : null}
       {virtualRows.map((virtualRow) => {
@@ -197,10 +350,12 @@ export function DownloadHistoryVirtualList({
                 contextIds={contextIds}
                 depth={row.depth}
                 download={row.record}
+                isTabStop={row.record.id === tabStopId}
                 matchingIds={matchingIds}
                 onToggleSelect={onToggleSelect}
                 selectedIds={selectedIds}
                 selectionActive={selectionActive}
+                selectionContextMenu={selectionContextMenu}
               />
             )}
           </div>

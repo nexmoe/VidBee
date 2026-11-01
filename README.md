@@ -67,7 +67,7 @@ Run AI prompts against the transcript without leaving VidBee. Built-in prompts c
 
 - Connect OpenAI, Anthropic, Google, DeepSeek, Groq, Azure, Hugging Face, OpenRouter, xAI, Ollama, or LM Studio.
 - Add a custom provider with your own name, Base URL, model ID, and API key, then test the connection before using it.
-- Create your own prompts with a title, icon, and instructions. Edit the built-in prompts, test them with a sample transcript, or restore the defaults.
+- Import SKILL.md files, manage installed skills, try suggested requests in chat, or restore the defaults.
 - Switch the active provider without changing your prompt library. API keys are stored on your computer.
 
 ![VidBee AI-generated transcript summary](screenshots/ai-summary-framed.webp)

@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import {
   buildFeedbackMail,
   buildFeedbackReport,
+  FEEDBACK_GITHUB_URL,
   FEEDBACK_REPORT_FILENAME,
   type FeedbackDiagnostics
 } from '../../lib/feedback-diagnostics'
@@ -137,7 +138,7 @@ export const FeedbackLinkButtons = ({
 
     let githubUrl: string
     if (useSimpleGithubUrl) {
-      githubUrl = 'https://github.com/nexmoe/VidBee/issues/new/choose'
+      githubUrl = FEEDBACK_GITHUB_URL
     } else {
       const issueParams = new URLSearchParams({
         template: 'bug_report.yml',

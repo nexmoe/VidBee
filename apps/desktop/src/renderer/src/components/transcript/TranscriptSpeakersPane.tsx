@@ -32,6 +32,7 @@ interface TranscriptSpeakersPaneProps {
   onSeek: (seconds: number) => void
   resolveSpeaker: (speakerId: string | null) => string
   segments: TranscriptSegmentView[]
+  showTopBorder?: boolean
   speakers: TranscriptSpeakerView[]
 }
 
@@ -51,6 +52,7 @@ export function TranscriptSpeakersPane({
   onSeek,
   resolveSpeaker,
   segments,
+  showTopBorder = true,
   speakers
 }: TranscriptSpeakersPaneProps) {
   const { t } = useTranslation()
@@ -81,7 +83,10 @@ export function TranscriptSpeakersPane({
 
   return (
     <section
-      className="min-h-48 flex-1 overflow-y-auto border-border/60 border-t bg-background"
+      className={cn(
+        'min-h-48 flex-1 overflow-y-auto border-border/60 bg-background',
+        showTopBorder && 'border-t'
+      )}
       data-testid="transcript-speakers"
     >
       <div className="sticky top-0 z-10 border-border/60 border-b bg-background px-4">

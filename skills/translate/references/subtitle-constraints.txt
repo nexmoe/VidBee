@@ -1,0 +1,64 @@
+VideoLingo subtitle constraints adapted for VidBee
+Source revision: 01f843492759be9bbfd1a5cb697b799cc9de1609
+Sources and file hashes: SOURCE.txt. License: Apache-2.0; see ../assets/VideoLingo-LICENSE.
+
+Read this policy before translating or reusing a track for subtitle delivery. It defines the length checks that trigger split.txt and align.txt; loading those prompts alone does not check subtitle length. Apply these checks in this Agent session. They are not an additional backend validator or a guarantee of a platform's subtitle certification.
+
+1. Length budgets
+
+Use the following defaults unless the user explicitly supplies different display limits. Keep the chosen limits in the working checkpoint and use them for every batch and final verification.
+
+- max_split_length = 20 source words/tokens: preferred semantic unit size before translation. This is separate from the display character budget and from the 10-cue/600-character translation batch size. For a longer source cue, plan natural semantic parts while keeping its exact origin and one numbered translation result per original cue. Do not install a tokenizer or count a whole unspaced sentence as one word; where segmentation is unavailable, use natural clauses and the character budget.
+- subtitle.max_length = 75: a source display line passes when its Unicode code point count is at most 75, including its spaces and punctuation.
+- subtitle.target_multiplier = 1.2: a translated display line passes when weighted_length(line) * 1.2 is at most 75. Check the target even when the source is short. Do not round down before comparison.
+
+weighted_length is the sum of these per-code-point weights from core/_5_split_sub.py::calc_len, using the implementation rather than its outdated comment:
+
+| Characters / inclusive Unicode ranges | Weight |
+| Chinese U+4E00–U+9FFF; Japanese U+3040–U+30FF | 1.75 |
+| Korean U+AC00–U+D7A3 and U+1100–U+11FF | 1.5 |
+| Thai U+0E00–U+0E7F | 1 |
+| Full-width forms U+FF01–U+FF5E | 1.75 |
+| All other characters, including ordinary spaces and punctuation | 1 |
+
+Count code points, not UTF-8 bytes or UTF-16 code units. Evaluate each nonempty display line separately after wrapping; a newline is a boundary, not a printable character. These are layout estimates, not measured font widths or speech durations. Do not delete meaningful punctuation or spaces to make the count pass.
+
+Boundary examples with the default target multiplier: 62 ordinary Latin characters pass (74.4), 63 fail (75.6); 35 characters from the Chinese/Japanese ranges pass (73.5), 36 fail (75.6); 41 Hangul characters pass (73.8), 42 fail (75.6). A 75-code-point source line passes; a 76-code-point source line needs a split or a recorded exception.
+
+2. Natural splitting and bilingual alignment
+
+Keep source text, punctuation, names, numbers and order intact. Prefer sentence endings, then clause punctuation, then grammatical conjunctions; do not split every comma or every occurrence of "and"/"that". VideoLingo's comma heuristic requires more than 3 non-punctuation words on each side and a grammatical clause on the right; its connector heuristic requires at least 5 surrounding words on each side and excludes contractions and noun/determiner uses. Apply these as language-aware guidance without pretending to run spaCy. Keep word groups and attached punctuation together; do not create blank or punctuation-only parts.
+
+For any source or target line over its budget, load split.txt and propose 2 roughly balanced source parts with the default 20-word limit. Check split1 and split2, trying the other candidate if the selected one is unusable. The 3-word minimum applies only when meaningful parts in a word-spaced language permit it. Never pad text or force a short source into invalid parts merely because its translation is long. Normalize variant [br]/<br> markers to the intermediate [br] form, and validate the chosen cuts against the exact original text. Formatting whitespace at a boundary may change; words, punctuation and their order may not.
+
+If both candidates fail, try a text-preserving fallback near the midpoint: punctuation first, then a word boundary. For an unspaced language, use a natural character/phrase boundary without breaking a grapheme. If no useful cut exists, retain the validated unsplit translation and record the unresolved line. Do not loop indefinitely or let a layout failure discard a valid translation.
+
+Before alignment, reconstruct the source from the proposed cuts and the original separators, then compare it with the exact original cue. Check every character, including case, punctuation, digits and diacritics; do not hide a change by lowercasing or stripping punctuation. Check for omissions, inserted text, duplicate spans and reordered spans. Run the same check on each alignment's returned source parts. A failing candidate is rejected before saving; keep the unchanged source and try the alternate or the bounded fallback. This is an Agent validation step, not a backend text-conservation guarantee.
+
+Load align.txt for the selected source parts. Generate align1 and align2, each with exactly N indexed src_part_N/target_part_N pairs, identical source parts and a target containing a letter or number for every part. Compare complete meaning and source correspondence first, then natural target phrasing, display budgets and balanced lengths. Try the other valid candidate if the chosen one fails validation; do not accept an attractive line break that loses information. Record the chosen candidate and concise conservation/coverage findings in the current checkpoint. Translate in the target language's natural word order; do not mechanically match word positions. Rephrasing is allowed before saving only when all meaningful information survives. Join target parts using target-language spacing, never the source language's joiner. Preserve the existing spaces in spaced languages and do not inject spaces between Chinese/Japanese characters to reconstruct text.
+
+Recheck every source and target part after alignment or rephrasing. Split only the remaining over-budget parts, for at most 3 split-and-recheck rounds in total. This round limit is distinct from the workflow's at most 3 attempts to validate each prompt result. Two parts is the initial proposal, not proof that the result fits. After the round limit or an invalid alignment, keep the last complete, semantically valid result and record any remaining overflow.
+
+3. Display rows and real timed cues
+
+Default to storing the target parts as actual newlines within the existing cue, with its exact start/end. [br] is never saved as audience text. Do not turn every display row into a timed cue or estimate timing by character count, translation length or evenly dividing the interval.
+
+Separate timed cues are possible only when read_transcript supplies real source word timings that match the full original cue and every proposed boundary. Reconstruct paginated text before making that check. Null, omitted, partial or mismatched word data is not timing evidence. Keep a complete, chronological source-to-output mapping; every spoken source word must occur once, and each new interval must have positive duration within the original cue. Preserve explicit user-supplied cue boundaries even when word data exists.
+
+add_subtitles writes only the new language track. Virtual source splits used for alignment do not reflow the existing original track. For bilingual output, check its actual source rows too: an unchanged overlong source row remains a source-layout exception even if the target rows fit. Do not claim that both sides were reformatted by saving the target.
+
+4. Time and voiceover adaptations
+
+VideoLingo's display generator fills positive gaps shorter than 1 second. Its audio preparation merges or extends cues shorter than min_subtitle_duration = 2.5 seconds; later chunking uses tolerance = 1.5 seconds and up to 5 merged rows. VidBee preserves the supplied cue intervals and does not implement these retiming/chunking operations. Do not fill gaps, extend short cues, merge adjacent cues, borrow another cue's time or alter the source track as a side effect of translation. A short cue is not automatically invalid.
+
+VideoLingo also considers voiceover shortening during translation only for cues longer than min_trim_duration = 3.5 seconds, then trims if its estimated speech duration divided by speed_factor.max = 1.4 still exceeds the available time. Its configured speeds are min = 1, accept = 1.2, max = 1.4. These are upstream audio defaults, not subtitle reading-speed limits or VidBee parameters. The 3.5-second gate is not a minimum subtitle duration or a ban on display wrapping.
+
+For VidBee dubbing, follow the actual create_dubbed_video contract and its default maxSpeed; actual generated audio determines fit. Use number-to-text.txt for contextual numeric readings and trim.txt only for a requested concise voiceover or a real fitting problem, following section 6 of SKILL.md. Send validated spoken variants through speechOverrides, bound to the one-based saved cue index and exact display text. Keep all earlier valid overrides when retrying an affected cue; retries use the same sourceKey and leave display subtitles, burned captions and source timing unchanged. Do not automatically strip parentheses/hyphens/diacritics or substitute speech estimates for audio verification. A line that passes the width budget can still fail dubbing. Meaning preservation and same-language pronunciation remain Agent checks; the tool checks exact cue binding and real audio fit.
+
+5. Save and handoff checks
+
+Before each save and after reading the saved track back, check the final display rows, nonempty aligned parts, absence of intermediate break markers, unchanged source correspondence and permitted timing. Keep compact subtitleLayout state in write_notes: chosen limits, checked coverage and unresolved items identified by source cue index, side (source/target) and reason. Respect the existing notes byte limit; summarize repeated issues instead of copying full subtitles.
+
+Inspect reused tracks under the same requested limits. Reuse does not mean that width was checked, and append=true cannot repair occupied intervals. When the available tools cannot correct an existing track, preserve it and report the specific unresolved layout requirement.
+
+Return subtitleLayout exceptions with the verified sourceKey to video-localization. Distinguish complete translation coverage from complete layout compliance. Default-budget exceptions may accompany a usable saved track or export with a concise qualification; when the user requires a strict limit, an unresolved violation means that requirement remains incomplete. Never claim all constraints passed merely because the save or export tool succeeded.

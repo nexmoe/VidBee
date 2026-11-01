@@ -1,0 +1,111 @@
+/* Code and diagrams share one quiet, theme-aware surface and toolbar. */
+div:is([data-streamdown="code-block"], [data-streamdown="mermaid-block"]) {
+  --agent-block-control-width: 2rem;
+  --agent-block-control-height: 1.75rem;
+  position: relative;
+  min-width: 0;
+  gap: 0.5rem;
+  border: 0;
+  border-radius: 0.75rem;
+  background: var(--surface-1);
+  padding: 0.75rem 1rem;
+}
+
+div:is([data-streamdown="code-block"], [data-streamdown="mermaid-block"])
+  > div:first-child {
+  height: var(--agent-block-control-height);
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+}
+
+div:is([data-streamdown="code-block"], [data-streamdown="mermaid-block"])
+  > div:first-child
+  > span {
+  margin: 0;
+}
+
+div:is([data-streamdown="code-block"], [data-streamdown="mermaid-block"])
+  > div:has(
+    > :is(
+      [data-streamdown="code-block-actions"],
+      [data-streamdown="mermaid-block-actions"]
+    )
+  ) {
+  position: absolute;
+  inset-block-start: 0.75rem;
+  inset-inline-end: 1rem;
+  height: var(--agent-block-control-height);
+  margin: 0;
+}
+
+:is(
+  [data-streamdown="code-block-actions"],
+  [data-streamdown="mermaid-block-actions"]
+) {
+  gap: 0.125rem;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  backdrop-filter: none;
+}
+
+:is(
+  [data-streamdown="code-block-actions"],
+  [data-streamdown="mermaid-block-actions"]
+)
+  > button,
+:is(
+  [data-streamdown="code-block-actions"],
+  [data-streamdown="mermaid-block-actions"]
+)
+  > div
+  > button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--agent-block-control-width);
+  height: var(--agent-block-control-height);
+  border-radius: 0.25rem;
+  padding: 0.25rem 0.375rem;
+}
+
+:is(
+  [data-streamdown="code-block-actions"],
+  [data-streamdown="mermaid-block-actions"]
+)
+  > button:hover,
+:is(
+  [data-streamdown="code-block-actions"],
+  [data-streamdown="mermaid-block-actions"]
+)
+  > div
+  > button:hover {
+  background: var(--hover);
+}
+
+div:is([data-streamdown="code-block"], [data-streamdown="mermaid-block"])
+  > div:last-child {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+/* Keep code headerless and leave room for the corner copy button. */
+div[data-streamdown="code-block-header"] {
+  display: none;
+}
+
+div[data-streamdown="code-block"]:has([data-streamdown="code-block-actions"]) {
+  padding-inline-end: calc(1.5rem + var(--agent-block-control-width));
+}
+
+/* Keep highlighted code on the block surface without a second padded card. */
+div[data-streamdown="code-block-body"] {
+  padding: 0;
+}
+
+[data-streamdown="code-block-body"] pre {
+  margin: 0;
+  background: transparent;
+  line-height: 1.75;
+}

@@ -31,7 +31,16 @@ import {
 } from '@vidbee/ui/lib/download-platform'
 import { useAtomValue, useSetAtom, useStore } from 'jotai'
 import { ChevronDown, Layers, ListFilter } from 'lucide-react'
-import { type ReactNode, useEffect, useId, useMemo, useRef, useState } from 'react'
+import {
+  type KeyboardEvent,
+  type MouseEvent,
+  type ReactNode,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState
+} from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import {
@@ -39,6 +48,7 @@ import {
   normalizeSavedFileName
 } from '../../../../shared/utils/download-file'
 import { useDownloadOriginContexts } from '../../hooks/use-download-origin-contexts'
+import { useDownloadSelection } from '../../hooks/use-download-selection'
 import { useExtensionCookieConnection } from '../../hooks/use-extension-cookie-connection'
 import { buildDownloadListModel } from '../../lib/download-list-rows'
 import { ipcServices } from '../../lib/ipc'
@@ -58,6 +68,7 @@ import { transcriptMapAtom } from '../../store/transcripts'
 import { ScrollArea } from '../ui/scroll-area'
 import { DownloadDialog } from './DownloadDialog'
 import { DownloadHistoryVirtualList } from './DownloadHistoryVirtualList'
+import { DownloadSelectionContextMenuItems } from './DownloadSelectionContextMenuItems'
 import { usePlaylistExpanded } from './playlist-expanded-state'
 
 const SOURCE_FILTER_OPTIONS = [
@@ -108,6 +119,7 @@ const resolveDownloadExtension = (download: DownloadRecord): string => {
   return download.type === 'audio' ? 'mp3' : 'mp4'
 }
 
+/** Ignore native text selection and editable controls when handling list shortcuts. */
 const isEditableTarget = (target: EventTarget | null): boolean => {
   if (!(target && target instanceof HTMLElement)) {
     return false
@@ -143,7 +155,6 @@ export function UnifiedDownloadHistory({
   const extensionConnection = useExtensionCookieConnection()
   const [platformFilter, setPlatformFilter] = useState(ALL_DOWNLOAD_PLATFORM_FILTER)
   const [originFilter, setOriginFilter] = useState('all')
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const listRef = useRef<HTMLDivElement>(null)
   const [viewport, setViewport] = useState<HTMLDivElement | null>(null)
   const prefixRef = useRef<HTMLDivElement>(null)
@@ -166,7 +177,6 @@ export function UnifiedDownloadHistory({
     () => allRecords.filter((record) => record.entryType === 'history'),
     [allRecords]
   )
-  const selectedCount = selectedIds.size
 
   const platformCounts = useMemo(
     () => listDownloadPlatformCounts(allRecords.map((record) => record.url)),
@@ -233,80 +243,53 @@ export function UnifiedDownloadHistory({
   }, [platformCounts, platformFilter])
 
   const selectableIds = useMemo(() => {
-    if (originFilter !== 'all') {
-      return visibleHistoryIds
-    }
-    if (visibleHistoryIds.length === 0) {
-      return []
-    }
-    const ids = new Set(visibleHistoryIds)
-    const playlistIds = new Set(
-      filteredRecords
-        .filter((record) => record.entryType === 'history' && record.playlistId)
-        .map((record) => record.playlistId as string)
+    const matchingHistory = new Set(visibleHistoryIds)
+    return [...listModel.locations.keys()].filter((id) => matchingHistory.has(id))
+  }, [listModel.locations, visibleHistoryIds])
+  const rangeIds = useMemo(() => {
+    const selectable = new Set(selectableIds)
+    return listModel.rows.flatMap((row) =>
+      row.kind === 'task' && selectable.has(row.record.id) ? [row.record.id] : []
     )
-    if (playlistIds.size === 0) {
-      return Array.from(ids)
-    }
-    for (const record of historyRecords) {
-      if (record.playlistId && playlistIds.has(record.playlistId)) {
-        ids.add(record.id)
-      }
-    }
-    return Array.from(ids)
-  }, [filteredRecords, historyRecords, visibleHistoryIds, originFilter])
-  const allSelected = selectableIds.length > 0 && selectableIds.every((id) => selectedIds.has(id))
+  }, [listModel.rows, selectableIds])
+  const {
+    allSelected,
+    clearSelection,
+    selectAll,
+    selectedIds,
+    selectIds,
+    selectItem,
+    setSelectedIds,
+    toggleSelectAll
+  } = useDownloadSelection(selectableIds, rangeIds)
+  const selectedCount = selectedIds.size
+  const selectedRecords = useMemo(() => {
+    const byId = new Map(historyRecords.map((record) => [record.id, record]))
+    return selectableIds.flatMap((id) => {
+      const record = byId.get(id)
+      return record && selectedIds.has(id) ? [record] : []
+    })
+  }, [historyRecords, selectableIds, selectedIds])
   const selectionSummary = t('history.selectedCount', { count: selectedCount })
 
-  useEffect(() => {
-    if (selectedIds.size === 0) {
+  /** Keep the selection on selected rows and retarget it when opening another row's menu. */
+  const handleContextMenuSelect = (id: string): void => {
+    if (selectedIds.has(id)) {
       return
     }
-    const historyIdSet = new Set(historyRecords.map((record) => record.id))
-    setSelectedIds((prev) => {
-      let changed = false
-      const next = new Set<string>()
-      for (const id of prev) {
-        if (historyIdSet.has(id)) {
-          next.add(id)
-        } else {
-          changed = true
-        }
-      }
-      return changed ? next : prev
-    })
-  }, [historyRecords, selectedIds.size])
-
-  const handleToggleSelect = (id: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) {
-        next.delete(id)
-      } else {
-        next.add(id)
-      }
-      return next
-    })
+    if (selectableIds.includes(id)) {
+      selectItem(id, { toggle: false })
+    } else {
+      clearSelection()
+    }
   }
 
-  /**
-   * Select every selectable row, or clear the selection when already complete.
-   */
-  const handleToggleSelectAll = () => {
-    if (allSelected) {
-      setSelectedIds(new Set())
-      return
-    }
-    if (selectableIds.length === 0) {
-      return
-    }
-    setSelectedIds(new Set(selectableIds))
-  }
-
+  /** Confirm removal of the same selection used by the toolbar and context menu. */
   const handleRequestDeleteSelected = () => {
     if (selectedIds.size === 0) {
       return
     }
+    setAlsoDeleteFiles(false)
     setConfirmAction({ type: 'delete-selected', ids: Array.from(selectedIds) })
   }
 
@@ -314,7 +297,7 @@ export function UnifiedDownloadHistory({
    * Queue the selected downloads and start the first playable item.
    */
   const handleAddSelectedToPlaylist = (): void => {
-    const selectedInOrder = selectableIds.filter((id) => selectedIds.has(id))
+    const selectedInOrder = selectedRecords.map((record) => record.id)
     if (selectedInOrder.length === 0) {
       return
     }
@@ -352,7 +335,7 @@ export function UnifiedDownloadHistory({
       })
     }
     toast.success(t('transcript.player.playlist.addedCount', { count: selectedInOrder.length }))
-    setSelectedIds(new Set())
+    clearSelection()
   }
 
   const handleRequestDeletePlaylist = (playlistId: string, title: string, ids: string[]) => {
@@ -480,43 +463,63 @@ export function UnifiedDownloadHistory({
     }
   }
 
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.defaultPrevented) {
-        return
-      }
-      if (isEditableTarget(event.target)) {
-        return
-      }
-      if (event.key === 'Escape') {
-        if (confirmAction) {
-          return
-        }
-        if (selectedIds.size === 0) {
-          return
-        }
-        setSelectedIds(new Set())
-        return
-      }
-      if (!(event.metaKey || event.ctrlKey)) {
-        return
-      }
-      if (event.key.toLowerCase() !== 'a') {
-        return
-      }
-      if (selectableIds.length === 0) {
-        return
-      }
-      event.preventDefault()
-      setSelectedIds(new Set(selectableIds))
+  /** Handle selection shortcuts only while focus belongs to the list or its toolbar. */
+  const handleSelectionKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
+    if (event.defaultPrevented || confirmAction || isEditableTarget(event.target)) {
+      return
     }
+    const target = event.target
+    if (!(target instanceof HTMLElement)) {
+      return
+    }
+    if (
+      !(
+        listRef.current?.contains(target) ||
+        target === viewport ||
+        target.closest('[data-download-selection-toolbar]')
+      )
+    ) {
+      return
+    }
+    if (target.closest('[role="dialog"], [role="alertdialog"], [role="menu"]')) {
+      return
+    }
+    if (event.key === 'Escape' && selectedCount > 0) {
+      event.preventDefault()
+      clearSelection()
+      listRef.current?.focus({ preventScroll: true })
+    } else if (
+      (event.metaKey || event.ctrlKey) &&
+      event.key.toLowerCase() === 'a' &&
+      selectableIds.length > 0
+    ) {
+      event.preventDefault()
+      selectAll()
+    }
+  }
 
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [confirmAction, selectableIds, selectedIds])
+  /** Clear the selection when clicking unused scrollport space rather than rows or controls. */
+  const handleBackgroundClick = (event: MouseEvent<HTMLDivElement>): void => {
+    if (!(event.target instanceof Node && event.currentTarget.contains(event.target))) {
+      return
+    }
+    if (
+      event.target instanceof Element &&
+      event.target.closest(
+        '[data-download-id], button, a, input, [role="checkbox"], [data-download-list-prefix]'
+      )
+    ) {
+      return
+    }
+    if (!(event.metaKey || event.ctrlKey || event.shiftKey)) {
+      clearSelection()
+      listRef.current?.focus({ preventScroll: true })
+    }
+  }
 
   return (
-    <div className={cn('flex h-full flex-col')}>
+    // biome-ignore lint/a11y/useSemanticElements: library group scopes keyboard events for the list and floating toolbar
+    <div className={cn('flex h-full flex-col')} onKeyDown={handleSelectionKeyDown} role="group">
       <CardHeader className="z-50 gap-4 bg-background p-0 px-6 py-4 backdrop-blur">
         <DownloadFilterBar
           actions={
@@ -549,7 +552,7 @@ export function UnifiedDownloadHistory({
                   <DropdownMenuRadioGroup
                     onValueChange={(value) => {
                       setOriginFilter(value)
-                      setSelectedIds(new Set())
+                      clearSelection()
                     }}
                     value={originFilter}
                   >
@@ -574,11 +577,18 @@ export function UnifiedDownloadHistory({
           }
           activeFilter={platformFilter}
           filters={filters}
-          onFilterChange={setPlatformFilter}
+          onFilterChange={(value) => {
+            setPlatformFilter(value)
+            clearSelection()
+          }}
           overflowLabel={t('download.morePlatforms')}
         />
       </CardHeader>
-      <ScrollArea className="flex-1 overflow-y-auto" viewportRef={setViewport}>
+      <ScrollArea
+        className="flex-1 overflow-y-auto"
+        viewportProps={{ onClick: handleBackgroundClick }}
+        viewportRef={setViewport}
+      >
         <CardContent
           className="w-full space-y-3 overflow-x-hidden p-0"
           data-download-transfer-list=""
@@ -634,22 +644,33 @@ export function UnifiedDownloadHistory({
               isPlaylistExpanded={isExpanded}
               listRef={listRef}
               model={listModel}
+              onContextMenuSelect={handleContextMenuSelect}
               onDeletePlaylist={originFilter === 'all' ? handleRequestDeletePlaylist : undefined}
-              onSelectIds={(ids) => {
-                setSelectedIds(new Set(ids))
-              }}
+              onSelectIds={selectIds}
               onTogglePlaylist={toggle}
-              onToggleSelect={handleToggleSelect}
+              onToggleSelect={selectItem}
               prefixRef={prefixRef}
               selectedIds={selectedIds}
               selectionActive={selectedCount > 0}
+              selectionContextMenu={
+                selectedRecords.length > 1 ? (
+                  <DownloadSelectionContextMenuItems
+                    onAddToPlaylist={handleAddSelectedToPlaylist}
+                    onDelete={handleRequestDeleteSelected}
+                    records={selectedRecords}
+                  />
+                ) : undefined
+              }
               viewport={viewport}
             />
           )}
         </CardContent>
       </ScrollArea>
       {selectedCount > 0 && (
-        <div className="fixed bottom-[calc(1rem+var(--playback-bar-height,0px))] left-1/2 z-40 -translate-x-1/2 sm:right-6 sm:left-auto sm:translate-x-0">
+        <div
+          className="fixed bottom-[calc(1rem+var(--playback-bar-height,0px))] left-1/2 z-40 -translate-x-1/2 sm:right-6 sm:left-auto sm:translate-x-0"
+          data-download-selection-toolbar=""
+        >
           <DownloadSelectionToolbar
             addToPlaylistLabel={t('transcript.player.playlist.add')}
             allSelected={allSelected}
@@ -658,7 +679,7 @@ export function UnifiedDownloadHistory({
             deleteLabel={t('history.deleteSelected')}
             onAddToPlaylist={handleAddSelectedToPlaylist}
             onDelete={handleRequestDeleteSelected}
-            onToggleSelectAll={handleToggleSelectAll}
+            onToggleSelectAll={toggleSelectAll}
             selectAllLabel={t('history.selectAll')}
           />
         </div>

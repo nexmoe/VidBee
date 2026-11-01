@@ -1,5 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { AgentRunEvent, AgentThread } from '../../shared/agent-chat'
+import { AGENT_WORKSPACE_ID } from '../../shared/agent-chat'
 import type {
   ExtensionChatEvent,
   ExtensionChatState,
@@ -83,6 +84,13 @@ export function streamExtensionChatEvents(
     res.write(frame)
   }
   const offAgent = subscribeAgentEvents((event) => {
+    const scope =
+      event.catalog?.kind === 'upsert'
+        ? event.catalog.summary.downloadId
+        : event.catalog?.downloadId
+    if (scope === AGENT_WORKSPACE_ID) {
+      return
+    }
     if (event.catalog || event.threadId === threadId()) {
       const downloadId =
         event.catalog?.kind === 'upsert' ? event.catalog.summary.downloadId : undefined

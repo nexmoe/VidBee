@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
-import { BrowserWindow, safeStorage } from 'electron'
+import { join, resolve } from 'node:path'
+import { app, BrowserWindow, safeStorage } from 'electron'
 import {
   AGENT_THINKING_LEVELS,
   type AgentThinkingLevel,
@@ -11,11 +12,7 @@ import {
   getAiProviderPreset,
   resolveAiProviderBaseUrl
 } from '../../shared/ai-presets'
-import {
-  canonicalizeAiPromptContent,
-  createDefaultAiPrompts,
-  mergeDefaultAiPrompts
-} from '../../shared/ai-prompts'
+import { createDefaultAiPrompts, mergeDefaultAiPrompts } from '../../shared/ai-prompts'
 import type {
   AiPrompt,
   AiPromptWriteInput,
@@ -25,7 +22,18 @@ import type {
   AiSettingsSnapshot
 } from '../../shared/ai-types'
 import { scopedLoggers } from '../utils/logger'
+import { formatAgentSkillDocument, parseAgentSkill } from './agent-skill-document'
+import { AgentSkillFiles } from './agent-skill-files'
+import { installSkillFiles } from './agent-skill-install'
+import {
+  type LegacySkill,
+  migrateSkillReferences,
+  migrateStoredSkills,
+  separateBuiltinSkills
+} from './agent-skill-migration'
+import { AGENT_SKILLS } from './agent-skills'
 import { openAiSecret, sealAiSecret } from './ai-secrets'
+import { getDatabaseConnection } from './database'
 
 const ElectronStore = require('electron-store')
 const Store = ElectronStore.default || ElectronStore
@@ -133,43 +141,138 @@ const toPublicProvider = (provider: StoredProvider): AiProviderConfig => ({
 })
 
 class AiStore {
+  private readonly listeners = new Set<() => void>()
+  private readonly skillFiles = new AgentSkillFiles(
+    join(app.getPath('userData'), 'skills'),
+    app.isPackaged
+      ? join(process.resourcesPath, 'skills')
+      : process.env.VIDBEE_E2E === '1' && process.env.VIDBEE_TEST_SKILLS_ROOT
+        ? process.env.VIDBEE_TEST_SKILLS_ROOT
+        : resolve(process.cwd(), '../../skills')
+  )
   // biome-ignore lint/suspicious/noExplicitAny: electron-store is a CJS default export
   private readonly store: any
 
   constructor() {
-    const now = Date.now()
     this.store = new Store({
       name: 'ai',
       defaults: {
         activeProviderId: null,
         providers: [],
-        prompts: createDefaultAiPrompts(now)
+        prompts: []
       } satisfies StoredAiState
     })
     this.ensurePrompts()
     this.store.onDidAnyChange(() => {
-      for (const window of BrowserWindow.getAllWindows()) {
-        if (!window.isDestroyed()) {
-          window.webContents.send('ai:settings-changed')
-        }
-      }
+      this.notifySettingsChanged()
     })
+    try {
+      const stopWatching = this.skillFiles.watch(
+        () => this.notifySettingsChanged(),
+        (error) => log.warn('Failed to watch the skill library:', error)
+      )
+      app.once('will-quit', stopWatching)
+    } catch (error) {
+      log.warn('Failed to watch the skill library:', error)
+    }
+  }
+
+  /** Refresh all settings consumers for both saved preferences and external skill edits. */
+  private notifySettingsChanged(): void {
+    for (const window of BrowserWindow.getAllWindows()) {
+      if (!window.isDestroyed()) {
+        window.webContents.send('ai:settings-changed')
+      }
+    }
+    for (const listener of this.listeners) {
+      listener()
+    }
   }
 
   /** Observe settings revisions without exposing credentials to any transport. */
   subscribe(listener: () => void): () => void {
-    return this.store.onDidAnyChange(listener)
+    this.listeners.add(listener)
+    return () => {
+      this.listeners.delete(listener)
+    }
+  }
+
+  /** Persist preferences and identity while source files remain the only instruction authority. */
+  private savePrompts(prompts: AiPrompt[]): void {
+    this.store.set(
+      'prompts',
+      prompts.map((prompt) => ({
+        name: prompt.name,
+        directoryName: prompt.directoryName,
+        isPreset: prompt.isPreset,
+        userCreated: prompt.userCreated,
+        autoRun: prompt.autoRun,
+        showInTranscript: prompt.showInTranscript,
+        workflowOnly: prompt.workflowOnly,
+        sortOrder: prompt.sortOrder,
+        createdAt: prompt.createdAt,
+        updatedAt: prompt.updatedAt,
+        content: ''
+      }))
+    )
   }
 
   /**
    * Re-insert missing built-in prompts and drop retired fields and preset ids.
    */
   private ensurePrompts(): void {
-    const stored = this.readState()
-    const merged = mergeDefaultAiPrompts(stored.prompts)
-    if (merged !== stored.prompts) {
-      this.store.set('prompts', merged)
+    const legacy = this.store.get('prompts') as LegacySkill[]
+    const { skills: stored, renamed } = migrateStoredSkills(legacy, this.skillFiles)
+    if (renamed.size) {
+      migrateSkillReferences(getDatabaseConnection().sqlite, renamed)
     }
+    const separated = separateBuiltinSkills(stored, this.skillFiles)
+    if (separated.renamed.size) {
+      migrateSkillReferences(getDatabaseConnection().sqlite, separated.renamed)
+    }
+    const merged = [...mergeDefaultAiPrompts(separated.skills)]
+    for (const skill of [
+      AGENT_SKILLS.articleRewrite,
+      AGENT_SKILLS.faq,
+      AGENT_SKILLS.videoLocalization,
+      AGENT_SKILLS.diagnoseTask
+    ]) {
+      if (!merged.some((prompt) => prompt.name === skill.name)) {
+        const prompt: AiPrompt = {
+          name: skill.name,
+          description: skill.description,
+          content: skill.body,
+          workflowOnly: true,
+          isPreset: true,
+          autoRun: false,
+          sortOrder: merged.length,
+          createdAt: Date.now(),
+          updatedAt: Date.now()
+        }
+        merged.push(prompt)
+      }
+    }
+    const migrated = this.synchronizePrompts(merged)
+    this.savePrompts(migrated)
+  }
+
+  /** Persist external name and folder changes and migrate conversation references once. */
+  private synchronizePrompts(prompts: AiPrompt[]): AiPrompt[] {
+    const { skills, renamed } = this.skillFiles.synchronize(prompts)
+    if (renamed.size) {
+      migrateSkillReferences(getDatabaseConnection().sqlite, renamed)
+    }
+    if (
+      skills.length !== prompts.length ||
+      skills.some(
+        (skill, index) =>
+          skill.name !== prompts[index]?.name ||
+          skill.directoryName !== prompts[index]?.directoryName
+      )
+    ) {
+      this.savePrompts(skills)
+    }
+    return skills
   }
 
   /**
@@ -180,9 +283,10 @@ class AiStore {
     const providers = Array.isArray(this.store.get('providers'))
       ? (this.store.get('providers') as StoredProvider[])
       : []
-    const prompts = Array.isArray(this.store.get('prompts'))
+    const stored = Array.isArray(this.store.get('prompts'))
       ? (this.store.get('prompts') as AiPrompt[])
       : createDefaultAiPrompts(now)
+    const prompts = this.synchronizePrompts(stored)
     const activeProviderId = this.store.get('activeProviderId')
     return {
       activeProviderId: typeof activeProviderId === 'string' ? activeProviderId : null,
@@ -214,7 +318,9 @@ class AiStore {
       activeProviderId: activeExists ? state.activeProviderId : null,
       cloudModelId: this.getCloudModelId(),
       providers: state.providers.map(toPublicProvider),
-      prompts: [...state.prompts].sort((left, right) => left.sortOrder - right.sortOrder)
+      prompts: this.skillFiles
+        .installed(state.prompts)
+        .sort((left, right) => left.sortOrder - right.sortOrder)
     }
   }
 
@@ -378,62 +484,172 @@ class AiStore {
    * @param input Dialog payload from the renderer.
    */
   upsertPrompt(input: AiPromptWriteInput): AiPrompt {
-    const title = input.title.trim()
     const content = input.content.trim()
-    if (!(title && content)) {
-      throw new Error('Prompt title and body are required')
+    if (!content) {
+      throw new Error('Skill instructions are required')
     }
     const state = this.readState()
     const now = Date.now()
-    const existing = input.id ? state.prompts.find((prompt) => prompt.id === input.id) : undefined
+    let name = input.name
+    const existing = state.prompts.find((prompt) => prompt.name === (input.previousName ?? name))
+    if (input.previousName && !existing) {
+      throw new Error('Unknown skill')
+    }
+    if (existing?.isPreset && name === existing.name) {
+      name = this.skillFiles.availableName(
+        name,
+        state.prompts.map((prompt) => prompt.name)
+      )
+    }
+    if (
+      this.skillFiles.isBuiltin(name) ||
+      state.prompts.some((prompt) => prompt.name === name && prompt !== existing)
+    ) {
+      throw new Error('A skill with this name already exists')
+    }
     const nextSort = state.prompts.reduce((max, prompt) => Math.max(max, prompt.sortOrder), -1) + 1
     const record: AiPrompt = {
-      id: existing?.id ?? randomUUID(),
-      title,
-      content: existing?.isPreset ? canonicalizeAiPromptContent(existing.id, content) : content,
-      enabled: input.enabled ?? existing?.enabled ?? true,
-      autoRun: input.autoRun ?? existing?.autoRun ?? false,
-      isPreset: existing?.isPreset ?? false,
-      sortOrder: existing?.sortOrder ?? nextSort,
-      createdAt: existing?.createdAt ?? now,
+      name,
+      directoryName:
+        existing && !existing.isPreset && name === existing.name
+          ? existing.directoryName
+          : undefined,
+      description:
+        input.description?.trim() ?? existing?.description ?? `Use when the user requests ${name}.`,
+      workflowOnly: existing?.isPreset ? undefined : existing?.workflowOnly,
+      content,
+      autoRun: input.autoRun ?? (existing?.isPreset ? false : existing?.autoRun) ?? false,
+      showInTranscript:
+        input.showInTranscript ?? (existing?.isPreset ? true : existing?.showInTranscript),
+      isPreset: false,
+      userCreated: true,
+      sortOrder: existing?.isPreset ? nextSort : (existing?.sortOrder ?? nextSort),
+      createdAt: existing?.isPreset ? now : (existing?.createdAt ?? now),
       updatedAt: now
     }
-    const prompts = existing
-      ? state.prompts.map((prompt) => (prompt.id === record.id ? record : prompt))
-      : [...state.prompts, record]
-    this.store.set('prompts', prompts)
+    if (existing?.isPreset) {
+      formatAgentSkillDocument({
+        name,
+        description: record.description ?? name,
+        body: content,
+        frontmatter: input.frontmatter
+      })
+      this.skillFiles.copy(existing, name)
+    }
+    this.skillFiles.write(
+      record,
+      existing?.isPreset ? undefined : (existing?.directoryName ?? existing?.name),
+      input.frontmatter
+    )
+    if (existing && !existing.isPreset && existing.name !== name) {
+      migrateSkillReferences(getDatabaseConnection().sqlite, new Map([[existing.name, name]]))
+    }
+    const prompts =
+      existing && !existing.isPreset
+        ? state.prompts.map((prompt) => (prompt.name === existing.name ? record : prompt))
+        : [...state.prompts, record]
+    this.savePrompts(prompts)
     return record
   }
 
   /**
-   * Remove a prompt. Built-in prompts can be deleted; restoreDefaults puts them back.
+   * Remove a personal skill; official skills remain read-only.
    *
    * @param id Prompt id.
    */
-  deletePrompt(id: string): AiSettingsSnapshot {
+  deletePrompt(name: string): AiSettingsSnapshot {
     const state = this.readState()
-    this.store.set(
-      'prompts',
-      state.prompts.filter((prompt) => prompt.id !== id)
-    )
+    const prompt = state.prompts.find((item) => item.name === name)
+    if (prompt) {
+      this.skillFiles.remove(prompt.name, prompt.directoryName)
+    }
+    this.savePrompts(state.prompts.filter((prompt) => prompt.name !== name))
     return this.getSnapshot()
   }
 
   /**
-   * Look up a prompt by id.
+   * Look up a prompt by name.
    *
-   * @param id Prompt id.
+   * @param name Standard skill name.
    */
-  getPrompt(id: string): AiPrompt | undefined {
-    return this.readState().prompts.find((prompt) => prompt.id === id)
+  getPrompt(name: string): AiPrompt | undefined {
+    return this.readState().prompts.find((prompt) => prompt.name === name)
+  }
+
+  /** Toggle transcript auto-run without changing manual skill availability or instructions. */
+  setSkillAutoRun(name: string, autoRun: boolean): AiSettingsSnapshot {
+    const state = this.readState()
+    const skill = state.prompts.find((prompt) => prompt.name === name)
+    if (!skill || typeof autoRun !== 'boolean') {
+      throw new Error('Unknown skill or invalid transcript auto-run preference')
+    }
+    this.savePrompts(
+      state.prompts.map((prompt) =>
+        prompt.name === name ? { ...prompt, autoRun, updatedAt: Date.now() } : prompt
+      )
+    )
+    return this.getSnapshot()
+  }
+
+  /** Save only the transcript sidebar shortcut preference without modifying the skill file. */
+  setSkillTranscriptVisibility(name: string, showInTranscript: boolean): AiSettingsSnapshot {
+    const state = this.readState()
+    if (
+      !state.prompts.some((prompt) => prompt.name === name) ||
+      typeof showInTranscript !== 'boolean'
+    ) {
+      throw new Error('Unknown skill or invalid transcript visibility preference')
+    }
+    this.savePrompts(
+      state.prompts.map((prompt) =>
+        prompt.name === name ? { ...prompt, showInTranscript, updatedAt: Date.now() } : prompt
+      )
+    )
+    return this.getSnapshot()
+  }
+
+  /** Install and discover a complete skill without replacing registered names or resources. */
+  installSkill(files: Parameters<typeof installSkillFiles>[1]): AiPrompt {
+    const document = files.find((file) => file.path === 'SKILL.md')
+    const skill = parseAgentSkill(document?.data.toString('utf8') ?? '')
+    const state = this.readState()
+    if (state.prompts.some((prompt) => prompt.name === skill.name)) {
+      throw new Error('A skill with this name already exists')
+    }
+    installSkillFiles(this.skillFiles, files)
+    const installed = this.readState().prompts.find((prompt) => prompt.name === skill.name)
+    if (!installed) {
+      throw new Error('The installed skill could not be registered')
+    }
+    return installed
+  }
+
+  /** Resolve a registered skill folder without accepting renderer-supplied paths. */
+  getSkillDirectory(name?: string): string {
+    if (!name) {
+      return this.skillFiles.root
+    }
+    const prompt = this.getPrompt(name)
+    if (!prompt) {
+      throw new Error('Unknown skill')
+    }
+    return this.skillFiles.sourceDirectory(prompt)
+  }
+
+  /** Export the actual file independently of invocation enablement. */
+  exportSkillDocument(name: string): string {
+    const prompt = this.getPrompt(name)
+    if (!prompt) {
+      throw new Error('Unknown skill')
+    }
+    return this.skillFiles.readSource(prompt)
   }
 
   /**
    * Re-add any missing built-in prompts.
    */
   restoreDefaultPrompts(): AiSettingsSnapshot {
-    const state = this.readState()
-    this.store.set('prompts', mergeDefaultAiPrompts(state.prompts))
+    this.ensurePrompts()
     return this.getSnapshot()
   }
 }

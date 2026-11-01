@@ -26,6 +26,8 @@ const bundledWorkspacePackages = [
   '@vidbee/subscriptions-core',
   '@vidbee/transcription',
   '@earendil-works/pi-ai',
+  '@earendil-works/pi-durable',
+  '@earendil-works/chord',
   '@earendil-works/pi-agent-core',
   '@earendil-works/pi-telemetry',
   'zod'
@@ -34,7 +36,9 @@ const nativeRuntimeExternals = ['electron', 'better-sqlite3', 'sherpa-onnx-node'
 const nativeRuntimeExternalMatchers: Array<string | RegExp> = [
   ...nativeRuntimeExternals,
   /^electron\//,
-  /^@earendil-works\/pi-coding-agent(?:\/|$)/,
+  /^@gotgenes\/pi-permission-system(?:\/|$)/,
+  /^@mzwing\/pi-permission-auto-review(?:\/|$)/,
+  /^jiti(?:\/|$)/,
   /^sherpa-onnx-/
 ]
 
@@ -91,7 +95,8 @@ export default defineConfig(({ mode }) => {
             'transcription-worker': resolve(
               import.meta.dirname,
               '../../packages/transcription/src/worker/entry.ts'
-            )
+            ),
+            'speech-worker': resolve(import.meta.dirname, 'src/main/lib/local-speech-worker.ts')
           },
           output: {
             format: 'cjs',
@@ -118,7 +123,7 @@ export default defineConfig(({ mode }) => {
           }
         },
         {
-          name: 'assert-transcription-worker-isolation',
+          name: 'assert-native-worker-isolation',
           generateBundle(_options, bundle) {
             const main = Object.values(bundle).find(
               (item) => item.type === 'chunk' && item.fileName === 'index.js'
@@ -136,23 +141,24 @@ export default defineConfig(({ mode }) => {
                 'main process must not bundle electron or better-sqlite3; keep them on rollupOptions.external'
               )
             }
-            const worker = Object.values(bundle).find(
-              (item) =>
-                item.type === 'chunk' &&
-                (item.fileName === 'transcription-worker.js' ||
-                  item.fileName === 'transcription-worker.mjs')
-            )
-            const code = worker && 'code' in worker ? worker.code : ''
-            if (!code) {
-              throw new Error('transcription-worker bundle is missing')
-            }
-            if (
-              code.includes('require("./index.js")') ||
-              code.includes('@electron-toolkit/utils')
-            ) {
-              throw new Error(
-                'transcription-worker must not load Electron main; keep it on rollupOptions.input, not lib.entry'
+            for (const name of ['transcription-worker', 'speech-worker']) {
+              const worker = Object.values(bundle).find(
+                (item) =>
+                  item.type === 'chunk' &&
+                  (item.fileName === `${name}.js` || item.fileName === `${name}.mjs`)
               )
+              const code = worker && 'code' in worker ? worker.code : ''
+              if (!code) {
+                throw new Error(`${name} bundle is missing`)
+              }
+              if (
+                code.includes('require("./index.js")') ||
+                code.includes('@electron-toolkit/utils')
+              ) {
+                throw new Error(
+                  `${name} must not load Electron main; keep it on rollupOptions.input, not lib.entry`
+                )
+              }
             }
           }
         }

@@ -6,6 +6,7 @@ import type {
   AgentThinkingOptions,
   AgentThread
 } from '@shared/agent-chat'
+import { AGENT_WORKSPACE_ID } from '@shared/agent-chat'
 import {
   type AgentGapRecovery,
   acceptAgentThread,
@@ -65,8 +66,8 @@ export function useAgentChat(downloadId: string, promptId: string, threadId?: st
       if (incoming.downloadId !== downloadId) {
         return false
       }
-      if (threadId) {
-        return incoming.id === threadId
+      if (threadId || knownThreadId) {
+        return incoming.id === (threadId || knownThreadId)
       }
       return incoming.promptId === promptId
     }
@@ -102,17 +103,20 @@ export function useAgentChat(downloadId: string, promptId: string, threadId?: st
           ? ipcServices.ai
               .getAgentEvents({ threadId: local.id, after: local.seq })
               .then((result) => result.snapshot)
-          : ipcServices.ai.getAgentThread({
-              downloadId,
-              promptId,
-              ...(threadId ? { threadId } : knownThreadId ? { threadId: knownThreadId } : {})
-            })
+          : downloadId === AGENT_WORKSPACE_ID && !(threadId || knownThreadId)
+            ? ipcServices.ai.createAgentThread({ downloadId })
+            : ipcServices.ai.getAgentThread({
+                downloadId,
+                promptId,
+                ...(threadId ? { threadId } : knownThreadId ? { threadId: knownThreadId } : {})
+              })
       void pending
         .then((incoming) => {
           if (disposed) {
             return
           }
           if (incoming) {
+            knownThreadId ??= incoming.id
             accept(incoming)
           } else {
             setHydrated(true)
@@ -154,11 +158,17 @@ export function useAgentChat(downloadId: string, promptId: string, threadId?: st
     }
     const listener = ipcEvents.on('ai:agent-event', (...args: unknown[]) => {
       const agentEvent = args[0] as AgentRunEvent
-      if (disposed || !agentEvent || !agentEventMatches(agentEvent, route)) {
+      const currentRoute = { ...route, threadId: threadId || knownThreadId }
+      if (
+        disposed ||
+        !agentEvent ||
+        (downloadId === AGENT_WORKSPACE_ID && !currentRoute.threadId) ||
+        !agentEventMatches(agentEvent, currentRoute)
+      ) {
         return
       }
       recovery = observeAgentSeq(recovery, agentEvent.seq)
-      const result = applyAgentRunEvent(snapshotRef.current, agentEvent, route)
+      const result = applyAgentRunEvent(snapshotRef.current, agentEvent, currentRoute)
       if (result.kind === 'applied') {
         accept(result.thread)
         return
@@ -218,7 +228,7 @@ export function useAgentChat(downloadId: string, promptId: string, threadId?: st
     []
   )
 
-  /** Send returns success so the composer only clears text after durable admission. */
+  /** Report durable admission so callers can settle or restore their local send presentation. */
   const send = useCallback(
     async (input: Omit<AgentChatInput, 'downloadId' | 'promptId'>): Promise<boolean> => {
       if (sending) {
@@ -251,9 +261,9 @@ export function useAgentChat(downloadId: string, promptId: string, threadId?: st
     [downloadId, promptId, identity, sending]
   )
 
-  /** Persist image drafts through main-process selection or removal before updating the composer. */
+  /** Persist picked, pasted or removed image drafts before updating the composer. */
   const updateImages = useCallback(
-    async (imageId?: string): Promise<void> => {
+    async (imageId?: string, files?: File[]): Promise<void> => {
       const current = snapshotRef.current
       if (!current || attaching || sending) {
         return
@@ -261,9 +271,17 @@ export function useAgentChat(downloadId: string, promptId: string, threadId?: st
       setAttaching(true)
       setError(null)
       try {
+        const uploads = files
+          ? await Promise.all(
+              files.map(async (file) => ({
+                name: file.name,
+                data: new Uint8Array(await file.arrayBuffer())
+              }))
+            )
+          : undefined
         const incoming = imageId
           ? await ipcServices.ai.removeAgentImage({ threadId: current.id, imageId })
-          : await ipcServices.ai.selectAgentImages(current.id)
+          : await ipcServices.ai.selectAgentImages(current.id, uploads)
         if (currentIdentity.current === identity) {
           acceptRef.current(incoming)
         }
@@ -362,7 +380,7 @@ export function useAgentChat(downloadId: string, promptId: string, threadId?: st
     setThinkingLevel,
     send,
     decideTool,
-    selectImages: () => updateImages(),
+    selectImages: (files?: File[]) => updateImages(undefined, files),
     removeImage: updateImages,
     stop,
     selectBranch

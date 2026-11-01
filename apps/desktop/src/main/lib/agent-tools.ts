@@ -1,7 +1,11 @@
 import type { AgentMessage, AgentTool, AgentToolResult } from '@earendil-works/pi-agent-core'
 import { type Static, type TSchema, Type } from 'typebox'
+import { z } from 'zod'
 import type { AgentArtifact } from '../../shared/agent-chat'
 import { sanitizeAgentConversationTitle } from '../../shared/agent-history'
+import { type AgentSubtitleInput, agentSubtitleInputSchema } from '../../shared/agent-subtitles'
+import type { AgentUiSpec } from '../../shared/agent-ui'
+import { dubbingInputSchema, subtitleExportInputSchema } from '../../shared/video-localization'
 import { OVERHEAD } from './agent-budget'
 import { documentPageBudget, MIN_DOCUMENT_RESULT_BYTES, readAgentDocument } from './agent-document'
 import type { AgentEvidence } from './agent-evidence'
@@ -20,6 +24,7 @@ import {
   requiredApproval,
   requiresInteractivePathApproval
 } from './agent-tool-approval'
+import { createAgentUiTool } from './agent-ui-tool'
 
 export interface AgentTranscriptLine {
   start: number
@@ -38,6 +43,8 @@ export interface AgentTranscriptPageLine extends AgentTranscriptLine {
 
 export interface AgentToolContext {
   downloadId: string
+  /** Keep task provenance attached to the chat even when its selected media changes. */
+  conversationDownloadId?: string
   threadId: string
   promptId?: string
   runId: string
@@ -47,6 +54,15 @@ export interface AgentToolContext {
   timingLines?: AgentTranscriptLine[]
   listTranscripts?: () => AgentTranscriptSource[]
   selectTranscript?: (key: string) => AgentTranscriptSource
+  addSubtitles?: (input: AgentSubtitleInput) => { source: AgentTranscriptSource; added: number }
+  selectVideo?: (id: string) => Promise<Record<string, unknown>>
+  waitForTask?: (
+    id: string,
+    callId: string,
+    signal: AbortSignal
+  ) => Promise<Record<string, unknown>>
+  /** Associate real tasks with this run, optionally leaving completion entirely in the background. */
+  trackTasks?: (result: Record<string, unknown>, waitForCompletion?: boolean) => void
   artifacts?: AgentArtifact[]
   history?: () => AgentMessage[]
   evidence?: AgentEvidence
@@ -60,19 +76,39 @@ export interface AgentToolContext {
   writeArticle?: () => void
   vision: boolean
   mediaEnabled?: boolean
+  hasSource?: boolean
   managementEnabled?: boolean
   mediaKind?: 'audio' | 'video'
   signal: AbortSignal
   onArtifact: (artifact: AgentArtifact) => void
   onProgress: (toolCallId: string, text: string) => void
+  /** Save a presentation in the current run; never execute an application operation. */
+  onUi?: (toolCallId: string, spec: AgentUiSpec) => void
   requestApproval?: (
     toolCallId: string,
     request: import('../../shared/agent-chat').AgentApprovalRequest,
     options?: { path?: boolean }
   ) => Promise<{ approved: boolean; approvedPath: boolean }>
+  /** True only after the unified Pi permission gates authorized this exact tool call. */
+  permissionApproved?: (toolCallId: string) => boolean
   downloadPath?: string
   pathApproved?: (toolCallId: string) => boolean
 }
+
+const SOURCE_TOOLS = new Set([
+  'get_video_info',
+  'read_transcript',
+  'search_transcript',
+  'list_transcripts',
+  'select_transcript',
+  'add_subtitles',
+  'export_subtitles',
+  'create_dubbed_video',
+  'capture_frames',
+  'create_clip',
+  'review_article',
+  'write_article'
+])
 
 /** Prefer the interior of a precise subtitle cue without guessing inside merged paragraphs. */
 export function agentFrameTimestamp(
@@ -164,9 +200,18 @@ export function defineAgentTool<T extends TSchema>(
     execute: async (id, params, signal) => {
       const executionSignal = signal ? AbortSignal.any([context.signal, signal]) : context.signal
       executionSignal.throwIfAborted()
+      if (SOURCE_TOOLS.has(name) && context.hasSource === false) {
+        throw new Error('Select a completed video with select_video before using source tools')
+      }
+      if (['capture_frames', 'create_clip'].includes(name) && context.mediaKind === 'audio') {
+        throw new Error('The selected source is audio-only and has no video frames')
+      }
       const gate = requiredApproval(name, params)
       const pathGate = requiresInteractivePathApproval(name, params, context.downloadPath ?? '')
-      if (gate || pathGate) {
+      if (context.permissionApproved && (gate || pathGate) && !context.permissionApproved(id)) {
+        return APPROVAL_DENIED_RESULT
+      }
+      if (!context.permissionApproved && (gate || pathGate)) {
         if (!context.requestApproval) {
           return APPROVAL_DENIED_RESULT
         }
@@ -213,6 +258,7 @@ export function defineAgentTool<T extends TSchema>(
 
 /** Expose video-scoped evidence and media capabilities for content-driven tool use. */
 export function createAgentTools(context: AgentToolContext): AgentTool[] {
+  const addSubtitles = context.addSubtitles
   const reviewArticle = context.reviewArticle
   const writeArticle = context.writeArticle
   let historySnapshot: string | undefined
@@ -230,11 +276,13 @@ export function createAgentTools(context: AgentToolContext): AgentTool[] {
     signal: AbortSignal
   ): Promise<AgentArtifact> {
     const { createAgentMedia } = await import('./agent-media')
-    const key = `${kind}:${start}:${end}`
+    const key = `${context.downloadId}:${kind}:${start}:${end}`
     const cached =
       completed.get(key) ??
       context.artifacts?.find(
         (artifact) =>
+          (artifact.sourceDownloadId ?? context.conversationDownloadId ?? context.downloadId) ===
+            context.downloadId &&
           artifact.kind === kind &&
           artifact.start === start &&
           (kind === 'image' || artifact.end === end)
@@ -258,6 +306,49 @@ export function createAgentTools(context: AgentToolContext): AgentTool[] {
     return artifact
   }
   const tools: AgentTool[] = [
+    ...(context.hasSource === false && !context.selectVideo
+      ? []
+      : [
+          defineAgentTool(
+            context,
+            'export_subtitles',
+            'Export a named subtitle source without switching the UI. sourceKey comes from list_transcripts or add_subtitles. srt/vtt save subtitle files, mkv muxes selectable subtitles, mp4 burns captions. bilingual=true includes the currently viewed original. Files are saved under library/Exports without dialogs or overwrites.',
+            Type.Unsafe<z.input<typeof subtitleExportInputSchema>>(
+              z.toJSONSchema(subtitleExportInputSchema, { io: 'input' })
+            ),
+            async (params, _id, signal) => {
+              const { exportLocalizedSubtitles } = await import('./video-localization')
+              return textResult(await exportLocalizedSubtitles(context.downloadId, params, signal))
+            }
+          ),
+          defineAgentTool(
+            context,
+            'create_dubbed_video',
+            'Generate synchronized local dubbing from a complete named subtitle track using any compatible model in the official sherpa-onnx catalog. Inspect manage_tts_model for models and languages; prepare a model to inspect its actual speaker range and bundled references. Optional modelId overrides the saved ttsModelId preference for this call only. Optional voice is that model speaker ID; omit it for its language default. Known incompatible choices fail before downloads; otherwise the native worker validates actual speaker bounds. Models and dependencies are prepared automatically on first use. Pocket and ZipVoice use reference.file from the selected model bundled WAV names; ZipVoice also requires reference.text to match that audio exactly. sourceKey comes from list_transcripts/add_subtitles. Optional speechOverrides change only spoken wording: cueIndex is the one-based complete saved track position (read_transcript globalLineOffset + 1), originalText is the exact display cue, and text is nonempty speech in the same language. Use them for contextual numeric readings, TTS cleanup or meaning-preserving shortening after a fitting error; display subtitles stay unchanged. Clip filtering never renumbers indices; stale text, duplicates and cues outside the clip fail before model preparation. background=separate removes original vocals and retains accompaniment; remove keeps only dubbed voice. Fits speech up to maxSpeed and rejects overflow; retain valid overrides when retrying an affected cue. Returns actual modelId and voice with a new MP4 or audio-only M4A in library/Exports. Never call before translation is complete.',
+            Type.Unsafe<z.input<typeof dubbingInputSchema>>(
+              z.toJSONSchema(dubbingInputSchema, { io: 'input' })
+            ),
+            async (params, id, signal) => {
+              const { createDubbedVideo } = await import('./video-dubbing')
+              return textResult(
+                await createDubbedVideo(context.downloadId, params, signal, (text) =>
+                  context.onProgress(id, text)
+                )
+              )
+            }
+          )
+        ]),
+    ...(addSubtitles
+      ? [
+          defineAgentTool(
+            context,
+            'add_subtitles',
+            'Save user-requested subtitles on the current video, including your translation, as a new automatic-caption language visible in the transcript and bilingual menus. First list_transcripts and reuse existing suitable subtitles. language is a BCP-47 tag such as zh or en. cues must contain chronological start/end in original source SECONDS and text; preserve read_transcript timing. Send at most 500 cues / 100000 bytes per call; use append=true for later batches. Identical repeats are safe; conflicting text, earlier new cues and overwriting existing tracks are rejected. No other video or local path can be written. Saving does not switch the UI or this run source; call select_transcript with the returned source.key to read the saved track.',
+            Type.Unsafe<AgentSubtitleInput>(z.toJSONSchema(agentSubtitleInputSchema)),
+            async (params) => textResult(addSubtitles(params))
+          )
+        ]
+      : []),
     ...(context.listTranscripts && context.selectTranscript
       ? [
           defineAgentTool(
@@ -732,7 +823,7 @@ export function createAgentTools(context: AgentToolContext): AgentTool[] {
           defineAgentTool(
             context,
             'rename_conversation',
-            'Set a short title for this chat tab (a few words, same language as the user). Call once the topic is clear. Do not mention the rename in your reply.',
+            'Change this chat title when the user asks to rename it. Titles are otherwise derived automatically; do not call this tool just to name a new conversation.',
             Type.Object(
               { title: Type.String({ minLength: 1, maxLength: 80 }) },
               { additionalProperties: false }
@@ -803,7 +894,26 @@ export function createAgentTools(context: AgentToolContext): AgentTool[] {
       }
     )
   ]
-  if (context.mediaEnabled === false) {
+  if (context.onUi) {
+    tools.push(createAgentUiTool(context))
+  }
+  if (context.hasSource === false && !context.selectVideo) {
+    return [
+      ...(context.managementEnabled ? createAgentManagementTools(context) : []),
+      ...tools.filter((tool) =>
+        [
+          'read_history',
+          'search_history',
+          'read_notes',
+          'write_notes',
+          'rename_conversation',
+          'show_ui',
+          'read_artifact'
+        ].includes(tool.name)
+      )
+    ]
+  }
+  if (context.mediaEnabled === false && !context.selectVideo) {
     return [
       ...(context.managementEnabled ? createAgentManagementTools(context) : []),
       ...tools.filter((tool) =>
@@ -811,19 +921,23 @@ export function createAgentTools(context: AgentToolContext): AgentTool[] {
           'list_transcripts',
           'select_transcript',
           'get_video_info',
+          'add_subtitles',
+          'export_subtitles',
+          'create_dubbed_video',
           'read_transcript',
           'search_transcript',
           'read_history',
           'search_history',
           'read_notes',
           'write_notes',
-          'rename_conversation'
+          'rename_conversation',
+          'show_ui'
         ].includes(tool.name)
       )
     ]
   }
   tools.push(...(context.managementEnabled ? createAgentManagementTools(context) : []))
-  return context.mediaKind === 'audio'
+  return context.mediaKind === 'audio' && !context.selectVideo
     ? tools.filter(
         (tool) => !['capture_frames', 'create_clip', 'read_artifact'].includes(tool.name)
       )

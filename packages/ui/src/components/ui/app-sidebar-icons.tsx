@@ -1,3 +1,5 @@
+import MingcuteChatFill from '~icons/mingcute/chat-3-fill'
+import MingcuteChatLine from '~icons/mingcute/chat-3-line'
 import MingcuteCheckCircleFill from '~icons/mingcute/check-circle-fill'
 import MingcuteCheckCircleLine from '~icons/mingcute/check-circle-line'
 import MingcuteDocumentsFill from '~icons/mingcute/documents-fill'
@@ -15,6 +17,7 @@ import MingcuteToolLine from '~icons/mingcute/tool-line'
 import type { AppSidebarIcon } from './app-sidebar'
 
 interface AppSidebarIcons {
+  chat: AppSidebarIcon
   home: AppSidebarIcon
   transcripts: AppSidebarIcon
   subscriptions: AppSidebarIcon
@@ -25,6 +28,10 @@ interface AppSidebarIcons {
 }
 
 const appSidebarIcons: AppSidebarIcons = {
+  chat: {
+    active: MingcuteChatFill,
+    inactive: MingcuteChatLine
+  },
   home: {
     active: MingcuteHome4Fill,
     inactive: MingcuteHome4Line

@@ -2,6 +2,7 @@ import { AccountPanel } from '@renderer/components/settings/AccountPanel'
 import { AiPromptsPanel } from '@renderer/components/settings/AiPromptsPanel'
 import { AiProvidersPanel } from '@renderer/components/settings/AiProvidersPanel'
 import { AsrModelPicker } from '@renderer/components/settings/AsrModelPicker'
+import { CloudTranscriptionSettings } from '@renderer/components/settings/CloudTranscriptionSettings'
 import { CookiesSetupPanel } from '@renderer/components/settings/CookiesSetupPanel'
 import { McpPanel } from '@renderer/components/settings/McpPanel'
 import {
@@ -31,6 +32,7 @@ import {
 import { Switch } from '@renderer/components/ui/switch'
 import { TabItem, TabPanel, Tabs, TabsList } from '@renderer/components/ui/tabs'
 import { TitleBar } from '@renderer/components/ui/title-bar'
+import { AGENT_PERMISSION_MODES, parseAgentPermissionMode } from '@shared/agent-permissions'
 import {
   type DownloadMirror,
   defaultSettings,
@@ -692,28 +694,37 @@ export function Settings() {
               <TabPanel className="space-y-4" value="providers">
                 <AiProvidersPanel />
                 <ItemGroup>
-                  <Item variant="muted">
-                    <ItemContent>
-                      <ItemTitle>{t('settings.agentManagementTools')}</ItemTitle>
-                      <ItemDescription>
+                  <Item className="items-start" variant="muted">
+                    <ItemContent className="min-w-0 basis-64">
+                      <ItemTitle id="agent-permissions-label">
+                        {t('settings.agentManagementTools')}
+                      </ItemTitle>
+                      <ItemDescription
+                        className="line-clamp-none text-pretty"
+                        id="agent-permissions-description"
+                      >
                         {t('settings.agentManagementToolsDescription')}
                       </ItemDescription>
                     </ItemContent>
-                    <ItemActions>
+                    <ItemActions className="w-full sm:w-auto">
                       <Select
                         onValueChange={(value) => {
                           handleSettingChange(
                             'agentManagementTools',
-                            value as 'off' | 'ask' | 'auto'
+                            parseAgentPermissionMode(value)
                           )
                         }}
-                        value={settings.agentManagementTools ?? 'ask'}
+                        value={parseAgentPermissionMode(settings.agentManagementTools)}
                       >
-                        <SelectTrigger className="w-36">
+                        <SelectTrigger
+                          aria-describedby="agent-permissions-description"
+                          aria-labelledby="agent-permissions-label"
+                          className="w-full sm:w-48"
+                        >
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {(['off', 'ask', 'auto'] as const).map((mode) => (
+                          {AGENT_PERMISSION_MODES.map((mode) => (
                             <SelectItem key={mode} value={mode}>
                               {t(`settings.agentManagementToolsOptions.${mode}`)}
                             </SelectItem>
@@ -730,6 +741,11 @@ export function Settings() {
               </TabPanel>
 
               <TabPanel className="space-y-4" value="transcribe">
+                <CloudTranscriptionSettings
+                  onChange={handleSettingChange}
+                  onOpenAccount={() => handleTabChange('account')}
+                  settings={settings}
+                />
                 <AsrModelPicker
                   activeTier={settings.asrTier ?? 'minimal'}
                   autoTranscribe={
@@ -750,11 +766,8 @@ export function Settings() {
                       )
                     )
                   }
+                  showModels={settings.transcriptionProvider !== 'cloud'}
                 />
-              </TabPanel>
-
-              <TabPanel className="space-y-4" value="mcp">
-                <McpPanel />
               </TabPanel>
 
               <TabPanel className="space-y-4" value="advanced">
@@ -1027,6 +1040,13 @@ export function Settings() {
                     </ItemActions>
                   </Item>
                 </ItemGroup>
+
+                <section aria-labelledby="mcp-settings-heading" className="space-y-3 pt-2">
+                  <h3 className="font-medium text-sm" id="mcp-settings-heading">
+                    {t('settings.mcp.tab')}
+                  </h3>
+                  <McpPanel />
+                </section>
               </TabPanel>
 
               <TabPanel className="mt-2 space-y-4" value="cookies">

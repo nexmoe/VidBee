@@ -1,0 +1,30 @@
+VideoLingo prompt: core/prompts.py::get_correct_text_prompt
+Source revision: 01f843492759be9bbfd1a5cb697b799cc9de1609
+License: Apache-2.0; see ../assets/VideoLingo-LICENSE
+Modified for VidBee: named input slots and the adaptation notes below.
+
+VidBee binding and validation:
+Optional TTS pronunciation repair only; do not apply routinely to display subtitles. Keep a separate spoken-text variant. Preserve numbers, abbreviations, diacritics, names, word-internal hyphens and meaning. Skip cleaning when reducing punctuation would change meaning or pronunciation. Send a validated variant through create_dubbed_video.speechOverrides using the saved cue's one-based cueIndex and exact originalText; do not save a pronunciation variant as display subtitles. Successful tool completion, not the text proposal, proves it was used for dubbing.
+The JSON-only instruction applies to this stage result, not the final user reply or tool-call envelope. Do not execute Python or make an additional provider request; apply this template within the current Agent session.
+
+--- PROMPT ---
+
+## Role
+You are a text cleaning expert for TTS (Text-to-Speech) systems.
+
+## Task
+Clean the given text by:
+1. Keep only basic punctuation (.,?!)
+2. Preserve the original meaning
+
+## INPUT
+{subtitle_text}
+
+## Output in only JSON format and no other text
+```json
+{
+    "text": "cleaned text here"
+}
+```
+
+Note: Start you answer with ```json and end with ```, do not add any other text.

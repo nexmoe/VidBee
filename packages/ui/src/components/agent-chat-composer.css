@@ -1,17 +1,21 @@
 /* Compact Clipii chat-panel composer (apps/app/src/styles.css). */
 .clipii-quick-capture {
+  --clipii-capture-shadow:
+    0 2px 4px rgb(0 0 0 / 2%), 0 6px 16px rgb(0 0 0 / 4%);
   min-height: 44px;
   overflow: hidden;
-  background: rgb(255 255 255 / 80%);
+  background: rgb(255 255 255);
   border: 0;
   border-radius: 28px;
-  box-shadow: inset 0 0 0 0.5px rgb(60 59 65 / 10%);
-  -webkit-backdrop-filter: blur(20px);
-  backdrop-filter: blur(20px);
+  box-shadow:
+    inset 0 0 0 0.5px rgb(60 59 65 / 10%),
+    var(--clipii-capture-shadow);
 }
 
 .clipii-quick-capture:focus-within {
-  box-shadow: inset 0 0 0 0.5px rgb(60 59 65 / 20%);
+  box-shadow:
+    inset 0 0 0 0.5px rgb(60 59 65 / 20%),
+    var(--clipii-capture-shadow);
 }
 
 .clipii-quick-capture[data-expanded="true"] {
@@ -50,7 +54,7 @@
   overflow: hidden;
   color: rgb(0 0 0 / 55%);
   font-size: 13px;
-  line-height: 1;
+  line-height: 20px;
   white-space: nowrap;
   cursor: pointer;
   background: transparent;
@@ -146,18 +150,51 @@
   box-shadow: none;
 }
 
+.clipii-capture-input[data-empty="true"]::before {
+  float: left;
+  height: 0;
+  color: var(--muted-foreground);
+  pointer-events: none;
+  content: attr(data-placeholder);
+}
+
 .clipii-quick-capture[data-expanded="false"] .clipii-capture-input {
   padding-block: 4px;
   line-height: 20px;
 }
 
 .dark .clipii-quick-capture {
-  background: rgb(40 42 48 / 80%);
-  box-shadow: inset 0 0 0 0.5px rgb(255 255 255 / 15%);
+  --clipii-capture-shadow:
+    0 2px 4px rgb(0 0 0 / 6%), 0 6px 16px rgb(0 0 0 / 10%);
+  background: rgb(40 42 48);
+  box-shadow:
+    inset 0 0 0 0.5px rgb(255 255 255 / 15%),
+    var(--clipii-capture-shadow);
 }
 
 .dark .clipii-quick-capture:focus-within {
-  box-shadow: inset 0 0 0 0.5px rgb(255 255 255 / 25%);
+  box-shadow:
+    inset 0 0 0 0.5px rgb(255 255 255 / 25%),
+    var(--clipii-capture-shadow);
+}
+
+/* Keep the outgoing bubble visible behind the restored input during its flight. */
+.clipii-quick-capture[data-message-sending] {
+  background: rgb(255 255 255 / 12%);
+}
+
+.dark .clipii-quick-capture[data-message-sending] {
+  background: rgb(40 42 48 / 20%);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .clipii-quick-capture[data-message-sending] {
+    background: rgb(255 255 255);
+  }
+
+  .dark .clipii-quick-capture[data-message-sending] {
+    background: rgb(40 42 48);
+  }
 }
 
 .dark .clipii-capture-kind-button {
@@ -174,14 +211,6 @@
 .dark .clipii-capture-menu[data-state="open"] {
   color: rgb(255 255 255 / 90%);
   background: rgb(255 255 255 / 8%);
-}
-
-@media (prefers-reduced-transparency: reduce) {
-  .clipii-quick-capture {
-    background: var(--card);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

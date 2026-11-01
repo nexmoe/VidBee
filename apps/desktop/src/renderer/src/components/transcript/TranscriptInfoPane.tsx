@@ -13,6 +13,7 @@ export interface TranscriptInfoFields {
   codec?: string | null
   completedAt?: number | null
   cookieSources?: DownloadCookieSource[] | null
+  configuredCookieSources?: DownloadCookieSource[]
   createdAt?: number | null
   description?: string | null
   downloadPath?: string | null
@@ -151,7 +152,15 @@ export function TranscriptInfoPane(info: TranscriptInfoFields) {
             row={{
               key: 'cookieSources',
               label: t('transcript.info.cookieSource'),
-              value: cookieSourcesLabel(info.cookieSources, t)
+              value:
+                info.cookieSources === null && info.configuredCookieSources !== undefined
+                  ? t('transcript.info.cookiesConfigured', {
+                      sources:
+                        info.configuredCookieSources.length === 0
+                          ? t('transcript.info.cookiesNotConfigured')
+                          : cookieSourcesLabel(info.configuredCookieSources, t)
+                    })
+                  : cookieSourcesLabel(info.cookieSources, t)
             }}
           />
         </dl>
@@ -166,7 +175,7 @@ function cookieSourcesLabel(
   t: (key: string, options?: Record<string, unknown>) => string
 ): string {
   if (sources === null) {
-    return t('transcript.info.cookiesUnrecorded')
+    return t('transcript.info.cookiesUnavailable')
   }
   if (sources.length === 0) {
     return t('transcript.info.cookiesNone')
@@ -178,7 +187,9 @@ function cookieSourcesLabel(
           ? t('settings.cookiesSetup.extensionTitle')
           : source.type === 'browser'
             ? t('transcript.info.cookiesBrowser')
-            : t('settings.cookiesFile')
+            : source.type === 'config'
+              ? t('transcript.info.cookiesConfig')
+              : t('settings.cookiesFile')
       const browser = source.browser?.toLowerCase()
       const browserLabel = browser
         ? t(`settings.browserOptions.${browser}`, { defaultValue: source.browser })

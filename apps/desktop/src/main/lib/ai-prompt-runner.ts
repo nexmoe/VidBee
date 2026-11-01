@@ -111,7 +111,7 @@ const runs = new Map<string, ActiveRun>()
 /**
  * Build the map key for a prompt run so leaving a page does not lose the stream.
  *
- * @param downloadId Download or settings-test id.
+ * @param downloadId Download id.
  * @param promptId Prompt id.
  */
 export const promptRunKey = (downloadId: string, promptId: string): string =>
@@ -460,7 +460,7 @@ const hydratePersistedRun = (snapshot: AiPromptRunSnapshot): void => {
 /**
  * Return the live snapshot, then the last SQLite result, then idle.
  *
- * @param downloadId Download or settings-test id.
+ * @param downloadId Download id.
  * @param promptId Prompt id.
  */
 export const getPromptRunSnapshot = (downloadId: string, promptId: string): AiPromptRunSnapshot => {
@@ -494,7 +494,7 @@ export const getPromptRunSnapshot = (downloadId: string, promptId: string): AiPr
 /**
  * Stop an in-flight prompt. Navigating away does not call this.
  *
- * @param downloadId Download or settings-test id.
+ * @param downloadId Download id.
  * @param promptId Prompt id.
  */
 export const stopPromptRun = (downloadId: string, promptId: string): AiPromptRunSnapshot => {

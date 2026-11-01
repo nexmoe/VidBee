@@ -84,3 +84,33 @@
 .transcript-prompt-share-scale [data-streamdown="code-block"] {
   content-visibility: visible !important;
 }
+
+/* Posters fit the entire diagram to the content width without an interactive viewport. */
+.transcript-prompt-share-scale [data-streamdown="mermaid-block"] {
+  padding: 0;
+}
+
+.transcript-prompt-share-scale
+  [data-streamdown="mermaid-block"]
+  > div:first-child {
+  display: none;
+}
+
+.transcript-prompt-share-scale [data-streamdown="mermaid"] > div {
+  min-height: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.transcript-prompt-share-scale
+  [data-streamdown="mermaid"]
+  [role="application"] {
+  transform: none !important;
+  will-change: auto;
+}
+
+.transcript-prompt-share-scale [data-streamdown="mermaid"] [role="img"] > svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}

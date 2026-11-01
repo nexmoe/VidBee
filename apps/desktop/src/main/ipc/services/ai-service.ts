@@ -1,6 +1,8 @@
+import { shell } from 'electron'
 import { type IpcContext, IpcMethod, IpcService } from 'electron-ipc-decorator'
 import type {
   AgentChatInput,
+  AgentImageUpload,
   AgentThinkingLevel,
   AgentThread,
   AgentThreadSummary
@@ -17,6 +19,7 @@ import type {
   AiProviderWriteInput,
   AiSettingsSnapshot
 } from '../../../shared/ai-types'
+import type { GitHubSkillInstallInput, GitHubSkillSource } from '../../../shared/skill-install'
 import { saveAgentArtifact } from '../../lib/agent-artifacts'
 import {
   renameAgentThread as commitAgentThreadTitle,
@@ -35,6 +38,14 @@ import {
 } from '../../lib/agent-chat-runner'
 import { getAgentComposerOptions, selectAgentComposerModel } from '../../lib/agent-composer'
 import { listAgentConversations } from '../../lib/agent-conversations'
+import { takeAgentNotificationTarget } from '../../lib/agent-notifications'
+import { parseAgentSkill } from '../../lib/agent-skill-document'
+import {
+  inspectGitHubSkills,
+  readGitHubSkill,
+  readSkillUpload
+} from '../../lib/agent-skill-install'
+import { readAgentUiTasks } from '../../lib/agent-ui-tasks'
 import {
   type CatalogModelCapabilities,
   type CatalogModelOption,
@@ -56,6 +67,18 @@ function listHistorySummaries(): AgentThreadSummary[] {
 
 class AiService extends IpcService {
   static readonly groupName = 'ai'
+
+  /** Read live public task facts for a bounded set of Agent card IDs. */
+  @IpcMethod()
+  getAgentUiTasks(_context: IpcContext, ids: string[]) {
+    return readAgentUiTasks(ids)
+  }
+
+  /** Consume the pending system notification click after the renderer mounts. */
+  @IpcMethod()
+  takeAgentNotificationTarget() {
+    return takeAgentNotificationTarget()
+  }
 
   /** Read credential-free model menu options shared with the extension. */
   @IpcMethod()
@@ -93,7 +116,7 @@ class AiService extends IpcService {
     return openAgentThread(input.downloadId, input.promptId, input.threadId)
   }
 
-  /** Start a blank Agent conversation on this video. */
+  /** Start a blank Agent conversation in the workspace or on a library video. */
   @IpcMethod()
   createAgentThread(_context: IpcContext, input: { downloadId: string }): AgentThread {
     return startBlankAgentThread(input.downloadId)
@@ -114,10 +137,14 @@ class AiService extends IpcService {
     resolveAgentToolDecision(input)
   }
 
-  /** Copy explicitly selected images into the conversation before admitting a message. */
+  /** Import picked or pasted images before admitting a message. */
   @IpcMethod()
-  async selectAgentImages(_context: IpcContext, threadId: string): Promise<AgentThread> {
-    return await selectAgentImages(threadId)
+  async selectAgentImages(
+    _context: IpcContext,
+    threadId: string,
+    files?: AgentImageUpload[]
+  ): Promise<AgentThread> {
+    return await selectAgentImages(threadId, files)
   }
 
   /** Remove only an attachment that has not been sent in a user message. */
@@ -290,11 +317,95 @@ class AiService extends IpcService {
   /**
    * Create or update a prompt.
    *
-   * @param input Dialog values.
+   * @param input Skill metadata and instructions.
    */
   @IpcMethod()
   upsertPrompt(_context: IpcContext, input: AiPromptWriteInput): AiPrompt {
     return aiStore.upsertPrompt(input)
+  }
+
+  /** Create a personal copy of an official skill, retaining its complete supporting resources. */
+  @IpcMethod()
+  customizeSkill(_context: IpcContext, name: string): AiPrompt {
+    const skill = aiStore.getPrompt(name)
+    if (!skill?.isPreset) {
+      throw new Error('Unknown built-in skill')
+    }
+    return aiStore.upsertPrompt({
+      previousName: name,
+      name,
+      description: skill.description,
+      content: skill.content
+    })
+  }
+
+  /** Import a portable SKILL.md as a new general skill, without overwriting existing names. */
+  @IpcMethod()
+  importSkillDocument(_context: IpcContext, document: string): AiPrompt {
+    const skill = parseAgentSkill(document)
+    if (aiStore.getPrompt(skill.name)) {
+      throw new Error('A skill with this name already exists')
+    }
+    return aiStore.upsertPrompt({
+      name: skill.name,
+      description: skill.description,
+      content: skill.body,
+      frontmatter: skill.frontmatter
+    })
+  }
+
+  /** Import a document or ZIP with the same validated, atomic directory installation. */
+  @IpcMethod()
+  importSkillUpload(_context: IpcContext, input: { name: string; bytes: Uint8Array }): AiPrompt {
+    return aiStore.installSkill(readSkillUpload(input.name, input.bytes))
+  }
+
+  /** Find selectable skills in a public GitHub repository at a fixed commit. */
+  @IpcMethod()
+  async inspectGitHubSkills(_context: IpcContext, url: string): Promise<GitHubSkillSource> {
+    return await inspectGitHubSkills(url)
+  }
+
+  /** Install one selected GitHub skill with its scripts, references and assets. */
+  @IpcMethod()
+  async importGitHubSkill(_context: IpcContext, input: GitHubSkillInstallInput): Promise<AiPrompt> {
+    return aiStore.installSkill(await readGitHubSkill(input))
+  }
+
+  /** Change transcript auto-run without modifying skill availability or on-disk instructions. */
+  @IpcMethod()
+  setSkillAutoRun(
+    _context: IpcContext,
+    input: { name: string; autoRun: boolean }
+  ): AiSettingsSnapshot {
+    return aiStore.setSkillAutoRun(input.name, input.autoRun)
+  }
+
+  /** Change only whether a skill has a shortcut in the transcript sidebar. */
+  @IpcMethod()
+  setSkillTranscriptVisibility(
+    _context: IpcContext,
+    input: { name: string; showInTranscript: boolean }
+  ): AiSettingsSnapshot {
+    return aiStore.setSkillTranscriptVisibility(input.name, input.showInTranscript)
+  }
+
+  /** Export the selected document independently of transcript auto-run. */
+  @IpcMethod()
+  exportSkillDocument(_context: IpcContext, id: string): string {
+    return aiStore.exportSkillDocument(id)
+  }
+
+  /** Reveal only a registered skill folder or the managed skill library. */
+  @IpcMethod()
+  async openSkillDirectory(_context: IpcContext, id?: string): Promise<void> {
+    if (id && aiStore.getPrompt(id)?.isPreset) {
+      throw new Error('Built-in skills are read-only; create a custom copy first')
+    }
+    const error = await shell.openPath(aiStore.getSkillDirectory(id))
+    if (error) {
+      throw new Error(error)
+    }
   }
 
   /**

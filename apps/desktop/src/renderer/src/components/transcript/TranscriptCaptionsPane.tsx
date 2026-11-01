@@ -1,6 +1,7 @@
 import { SpeakerAvatar } from '@renderer/components/transcript/SpeakerAvatar'
 import { TranscriptProgressThinking } from '@renderer/components/transcript/TranscriptProgressThinking'
 import { TranscriptShareImageDialog } from '@renderer/components/transcript/TranscriptShareImageDialog'
+import { transcriptSourceLabel } from '@renderer/components/transcript/TranscriptSourceSwitch'
 import { Button } from '@renderer/components/ui/button'
 import {
   ContextMenu,
@@ -22,12 +23,28 @@ import {
   DialogHeader,
   DialogTitle
 } from '@renderer/components/ui/dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@renderer/components/ui/dropdown-menu'
 import { Input } from '@renderer/components/ui/input'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
+import { useBilingualCaptions } from '@renderer/hooks/use-bilingual-captions'
 import { useStreamingTranscript } from '@renderer/hooks/use-streaming-transcript'
 import { shareImageFileName } from '@renderer/lib/capture-prompt-share'
 import { formatClock } from '@renderer/lib/format-clock'
 import { ipcServices } from '@renderer/lib/ipc'
+import {
+  bilingualCaptionSources,
+  type CaptionSource,
+  captionLanguageFamily
+} from '@renderer/lib/transcript-bilingual'
 import {
   buildCaptionQuoteBlocks,
   buildCaptionShareQuote,
@@ -78,12 +95,18 @@ import {
   observeCaptionListRect
 } from '@renderer/lib/transcript-virtual'
 import { cn } from '@renderer/lib/utils'
+import {
+  type TranscriptBilingualPreference,
+  transcriptBilingualPreferencesAtom
+} from '@renderer/store/transcript-reading'
 import type { TranscriptSegmentView, TranscriptSpeakerView } from '@renderer/store/transcripts'
 import { useVirtualizer } from '@tanstack/react-virtual'
+import { useAtom } from 'jotai'
 import {
   ChevronDown,
   ChevronUp,
   Copy,
+  Languages,
   Loader2,
   Pencil,
   Plus,
@@ -113,6 +136,7 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
 const EMPTY_SPEAKERS: TranscriptSpeakerView[] = []
+const EMPTY_SOURCES: CaptionSource[] = []
 
 /**
  * True when local ASR failed because the media has no audio track.
@@ -198,6 +222,8 @@ interface TranscriptCaptionsPaneProps {
   onSeek: (seconds: number) => void
   /** Start local ASR from the idle empty state. */
   onStart?: () => void
+  /** Open a new video chat with an editable translation request, without submitting it. */
+  onTranslate?: () => void
   ready: boolean
   resolveColorIndex: (speakerId: string | null) => number | null
   resolveSpeaker: (speakerId: string | null) => string
@@ -220,6 +246,8 @@ interface TranscriptCaptionsPaneProps {
   speakers?: TranscriptSpeakerView[]
   /** Typewriter incoming ASR lines. Off when viewing a finished caption track. */
   streamLive?: boolean
+  /** Subtitle sources and the currently selected original source. */
+  sources?: CaptionSource[]
 }
 
 /**
@@ -239,6 +267,7 @@ export function TranscriptCaptionsPane({
   onRetry,
   onSeek,
   onStart,
+  onTranslate,
   ready,
   resolveColorIndex,
   resolveSpeaker,
@@ -252,9 +281,43 @@ export function TranscriptCaptionsPane({
   sourceByline,
   sourceTitle,
   speakers = EMPTY_SPEAKERS,
-  streamLive = running
+  streamLive = running,
+  sources = EMPTY_SOURCES
 }: TranscriptCaptionsPaneProps) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const [bilingualPreferences, setBilingualPreferences] = useAtom(
+    transcriptBilingualPreferencesAtom
+  )
+  const bilingualPreference = downloadId ? bilingualPreferences[downloadId] : undefined
+  const bilingual = bilingualPreference?.enabled ?? false
+  const secondaryKey = bilingualPreference?.secondaryKey ?? ''
+  const [bilingualMenuOpen, setBilingualMenuOpen] = useState(false)
+  const secondarySources = useMemo(() => bilingualCaptionSources(sources), [sources])
+  const secondarySource =
+    secondarySources.find((source) => source.key === secondaryKey) ??
+    secondarySources.find(
+      (source) =>
+        captionLanguageFamily(source.languageCode || source.language) ===
+        captionLanguageFamily(i18n.resolvedLanguage ?? i18n.language)
+    ) ??
+    secondarySources[0]
+  const secondaryLanguage = secondarySource?.languageCode ?? undefined
+  const showBilingual = bilingual && Boolean(secondarySource)
+  const bilingualButtonClass = showBilingual
+    ? 'border-primary/40 bg-primary/10 text-foreground hover:bg-primary/15 hover:text-foreground'
+    : 'text-muted-foreground'
+  const secondary = useBilingualCaptions(downloadId, segments, secondarySource?.key, showBilingual)
+
+  /** Remember both reading choices for this video before the current view unmounts. */
+  const rememberBilingual = useCallback(
+    (preference: TranscriptBilingualPreference): void => {
+      if (downloadId) {
+        setBilingualPreferences((current) => ({ ...current, [downloadId]: preference }))
+      }
+    },
+    [downloadId, setBilingualPreferences]
+  )
+
   const listRef = useRef<HTMLDivElement | null>(null)
   const wheelAccumulatedRef = useRef({ value: 0 })
   const lastFollowedSegmentRef = useRef<string | null>(null)
@@ -308,9 +371,13 @@ export function TranscriptCaptionsPane({
   const matches = useMemo(
     () =>
       displaySegments.filter((segment) =>
-        matchesTranscriptQuery(deferredQuery, segment.text, resolveSpeaker(segment.speakerId))
+        matchesTranscriptQuery(
+          deferredQuery,
+          `${segment.text}\n${secondary.captions[segment.id] ?? ''}`,
+          resolveSpeaker(segment.speakerId)
+        )
       ),
-    [deferredQuery, displaySegments, resolveSpeaker]
+    [deferredQuery, displaySegments, resolveSpeaker, secondary.captions]
   )
   const hasQuery = deferredQuery.trim().length > 0
   const visibleSegments = hasQuery ? matches : displaySegments
@@ -328,8 +395,13 @@ export function TranscriptCaptionsPane({
     return map
   }, [visibleSegments])
   const rowTextLengths = useMemo(
-    () => visibleSegments.map((segment) => segment.text.length),
-    [visibleSegments]
+    () =>
+      visibleSegments.map(
+        (segment) =>
+          segment.text.length +
+          (showBilingual ? (secondary.captions[segment.id]?.length ?? 0) + 40 : 0)
+      ),
+    [showBilingual, secondary.captions, visibleSegments]
   )
   /**
    * Keep the row-height guess in sync with the actual captions pane width.
@@ -351,7 +423,7 @@ export function TranscriptCaptionsPane({
   const rowVirtualizer = useVirtualizer({
     count: visibleSegments.length,
     estimateSize: (index) =>
-      estimateCaptionRowHeight(visibleSegments[index]?.text.length ?? 0, listWidthRef.current),
+      estimateCaptionRowHeight(rowTextLengths[index] ?? 0, listWidthRef.current),
     getItemKey: (index) => visibleSegments[index]?.id ?? index,
     getScrollElement: () => listRef.current,
     initialOffset: () => {
@@ -378,6 +450,16 @@ export function TranscriptCaptionsPane({
     // React 19 warns if flushSync runs from measureElement refs during commit.
     useFlushSync: false
   })
+
+  const captionLayout = showBilingual ? secondarySource?.key : 'original'
+  const previousCaptionLayoutRef = useRef(captionLayout)
+  // Reset single-language measurements when the caption layout changes.
+  useLayoutEffect(() => {
+    if (previousCaptionLayoutRef.current !== captionLayout) {
+      previousCaptionLayoutRef.current = captionLayout
+      rowVirtualizer.measure()
+    }
+  }, [captionLayout, rowVirtualizer])
 
   const playingIndex = currentSegmentId ? indexById.get(currentSegmentId) : undefined
   // Hide estimated rows until the playing line is in the virtual window so
@@ -1257,17 +1339,17 @@ export function TranscriptCaptionsPane({
           : 'flex h-full min-h-0 flex-col border-border/60 border-t bg-background lg:border-t-0 lg:border-l'
       }
     >
-      {showAsrIdle ? null : (
-        <div className={embedded ? 'px-4' : 'border-border/60 border-b px-4'}>
-          {embedded ? null : (
-            <div className="flex items-end">
-              <p className="border-primary border-b-2 py-3 font-medium text-sm">
-                {t('transcript.title')}
-              </p>
-            </div>
-          )}
+      <div className={embedded ? 'px-4' : 'border-border/60 border-b px-4'}>
+        {embedded ? null : (
+          <div className="flex items-end">
+            <p className="border-primary border-b-2 py-3 font-medium text-sm">
+              {t('transcript.title')}
+            </p>
+          </div>
+        )}
+        <div className="flex items-center gap-1.5 py-3">
           {running ? (
-            <div className="flex items-center gap-1.5 py-3">
+            <>
               <div
                 aria-live="polite"
                 className="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-md border bg-background px-3 text-sm"
@@ -1290,9 +1372,9 @@ export function TranscriptCaptionsPane({
                   {t('transcript.stop')}
                 </Button>
               ) : null}
-            </div>
+            </>
           ) : showSearch ? (
-            <div className="flex items-center gap-1.5 py-3">
+            <>
               <div className="relative min-w-0 flex-1">
                 <Search className="pointer-events-none absolute top-2.5 left-2.5 h-3.5 w-3.5 text-muted-foreground" />
                 <Input
@@ -1308,21 +1390,6 @@ export function TranscriptCaptionsPane({
                   value={query}
                 />
               </div>
-              {canEditCaptions && !hasQuery ? (
-                <Button
-                  aria-label={t('transcript.captionAdd')}
-                  className="h-9 w-9 shrink-0"
-                  data-testid="transcript-caption-add"
-                  onClick={() =>
-                    void insertCaption({ afterId: displaySegments.at(-1)?.id ?? null })
-                  }
-                  size="icon"
-                  type="button"
-                  variant="outline"
-                >
-                  <Plus />
-                </Button>
-              ) : null}
               {hasQuery ? (
                 <>
                   <p className="shrink-0 text-muted-foreground text-xs">
@@ -1354,10 +1421,87 @@ export function TranscriptCaptionsPane({
                   </Button>
                 </>
               ) : null}
-            </div>
-          ) : null}
+            </>
+          ) : (
+            <div className="min-w-0 flex-1" />
+          )}
+          <fieldset
+            aria-label={t('transcript.bilingual')}
+            className="inline-flex shrink-0 -space-x-px"
+          >
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  aria-busy={secondary.loading}
+                  aria-label={t('transcript.bilingual')}
+                  aria-pressed={showBilingual}
+                  className={cn('h-9 w-9 rounded-r-none focus-visible:z-10', bilingualButtonClass)}
+                  data-testid="transcript-bilingual-toggle"
+                  onClick={() => {
+                    if (secondarySource) {
+                      rememberBilingual({ enabled: !bilingual, secondaryKey: secondarySource.key })
+                    } else {
+                      setBilingualMenuOpen(true)
+                    }
+                  }}
+                  size="icon"
+                  type="button"
+                  variant="outline"
+                >
+                  {secondary.loading ? <Loader2 className="animate-spin" /> : <Languages />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {t(secondary.loading ? 'transcript.subtitleLoading' : 'transcript.bilingual')}
+              </TooltipContent>
+            </Tooltip>
+            <DropdownMenu onOpenChange={setBilingualMenuOpen} open={bilingualMenuOpen}>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  aria-label={t('transcript.secondarySubtitle')}
+                  className={cn(
+                    'h-9 w-7 rounded-l-none px-0 focus-visible:z-10',
+                    bilingualButtonClass
+                  )}
+                  data-testid="transcript-secondary-subtitle"
+                  size="icon"
+                  type="button"
+                  variant="outline"
+                >
+                  <ChevronDown className="size-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>
+                  {t(
+                    secondarySources.length
+                      ? 'transcript.secondarySubtitle'
+                      : 'transcript.noSecondarySubtitles'
+                  )}
+                </DropdownMenuLabel>
+                <DropdownMenuRadioGroup value={secondarySource?.key}>
+                  {secondarySources.map((source) => (
+                    <DropdownMenuRadioItem
+                      key={source.key}
+                      onSelect={() =>
+                        rememberBilingual({ enabled: true, secondaryKey: source.key })
+                      }
+                      value={source.key}
+                    >
+                      {transcriptSourceLabel(source, t, i18n.language)}
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
+                {secondarySources.length > 0 ? <DropdownMenuSeparator /> : null}
+                <DropdownMenuItem disabled={!onTranslate} onSelect={onTranslate}>
+                  <Sparkles />
+                  {t('transcript.translateSubtitles')}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </fieldset>
         </div>
-      )}
+      </div>
       <div className="relative min-h-0 flex-1">
         <div
           className="h-full select-none overflow-y-auto contain-strict"
@@ -1369,6 +1513,17 @@ export function TranscriptCaptionsPane({
           onWheel={onListWheel}
           ref={listRef}
         >
+          {secondary.failed ? (
+            <div
+              className="flex items-center gap-2 px-4 py-2 text-muted-foreground text-xs"
+              role="alert"
+            >
+              <span>{t('transcript.subtitleLoadFailed')}</span>
+              <Button onClick={secondary.retry} size="sm" type="button" variant="ghost">
+                {t('transcript.retry')}
+              </Button>
+            </div>
+          ) : null}
           {running ? (
             <TranscriptProgressThinking
               downloadId={downloadId}
@@ -1505,6 +1660,8 @@ export function TranscriptCaptionsPane({
                       query={deferredQuery}
                       resolveColorIndex={resolveColorIndex}
                       resolveSpeaker={resolveSpeaker}
+                      secondaryLanguage={secondaryLanguage}
+                      secondaryText={secondary.captions[segment.id]}
                       segment={segment}
                       selected={selected}
                       speakers={speakers}
@@ -1787,6 +1944,8 @@ interface CaptionRowProps {
   speakers: TranscriptSpeakerView[]
   streaming: boolean
   streamingLine: boolean
+  secondaryText?: string
+  secondaryLanguage?: string
 }
 
 /**
@@ -1814,7 +1973,9 @@ const CaptionRow = memo(function CaptionRow({
   selected,
   speakers,
   streaming,
-  streamingLine
+  streamingLine,
+  secondaryText,
+  secondaryLanguage
 }: CaptionRowProps) {
   const { t } = useTranslation()
   const speakerName = resolveSpeaker(segment.speakerId)
@@ -1912,6 +2073,27 @@ const CaptionRow = memo(function CaptionRow({
           />
         )}
       </p>
+      {secondaryText ? (
+        <p
+          className="col-start-2 whitespace-pre-line text-muted-foreground text-sm leading-relaxed [overflow-wrap:anywhere]"
+          data-testid="transcript-secondary-caption"
+          dir="auto"
+          lang={secondaryLanguage}
+        >
+          <button
+            className="w-full cursor-pointer text-start"
+            onClick={openCaption}
+            title={
+              hasQuery
+                ? t('transcript.searchJumpTo')
+                : t('transcript.seekAt', { time: formatClock(segment.startMs / 1000) })
+            }
+            type="button"
+          >
+            <HighlightedText query={query} text={secondaryText} />
+          </button>
+        </p>
+      ) : null}
     </article>
   )
   if (!canEdit) {

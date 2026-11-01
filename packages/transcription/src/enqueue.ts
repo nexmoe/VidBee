@@ -9,6 +9,12 @@ import {
   TERMINAL_STATUSES,
   TRANSCRIPTION_GROUP_KEY
 } from '@vidbee/task-queue'
+import { parseAsrTier } from './asr-tiers'
+import {
+  DEFAULT_CLOUD_TRANSCRIPTION_MODEL,
+  parseTranscriptionProvider,
+  type TranscriptionProvider
+} from './cloud'
 import type { MemoryTranscriptStore } from './memory-store'
 import { buildTranscriptionInput } from './options'
 import type { SpeakerCount } from './speaker-count'
@@ -18,6 +24,8 @@ import type { TranscriptionTrigger } from './types'
 const ACTIVE = new Set(['queued', 'running', 'processing', 'paused', 'retry-scheduled'])
 
 export interface EnqueueTranscriptionInput {
+  provider?: TranscriptionProvider
+  cloudModelId?: string
   queue: TaskQueueAPI
   creation?: TaskCreationMetadata
   store: TranscriptStore | MemoryTranscriptStore
@@ -89,11 +97,19 @@ export async function enqueueTranscription(
     latestRecord?.resultKind === 'no-speech' ||
     latest?.output?.transcript?.resultKind === 'no-speech'
 
-  if (latest && latest.status === 'failed' && !force) {
-    await input.queue.retryManual(latest.id)
-    return { id: latest.id, created: false, reused: true }
-  }
-  if (latest && latest.status === 'cancelled' && !force) {
+  const sameProvider =
+    parseTranscriptionProvider(input.provider) ===
+    parseTranscriptionProvider(latest?.input?.options?.provider)
+  const sameCloudModel =
+    (input.cloudModelId ?? DEFAULT_CLOUD_TRANSCRIPTION_MODEL) ===
+    (latest?.input?.options?.cloudModelId ?? DEFAULT_CLOUD_TRANSCRIPTION_MODEL)
+  const sameModel =
+    sameProvider &&
+    (input.provider === 'cloud'
+      ? sameCloudModel
+      : input.asrTier === undefined ||
+        parseAsrTier(input.asrTier) === parseAsrTier(latest?.input?.options?.asrTier))
+  if (latest && ['failed', 'cancelled'].includes(latest.status) && !force && sameModel) {
     await input.queue.retryManual(latest.id)
     return { id: latest.id, created: false, reused: true }
   }
@@ -103,6 +119,8 @@ export async function enqueueTranscription(
 
   const added = await input.queue.add({
     input: buildTranscriptionInput({
+      provider: input.provider,
+      cloudModelId: input.cloudModelId,
       creation: input.creation,
       downloadTaskId: input.downloadTaskId,
       sourceFilePath: input.sourceFilePath,

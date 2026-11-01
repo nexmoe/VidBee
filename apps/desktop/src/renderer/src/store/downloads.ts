@@ -93,6 +93,7 @@ const toHistoryRecord = (item: DownloadHistoryItem): DownloadRecord => ({
   subtitleStatus: item.subtitleStatus,
   subtitleLanguages: item.subtitleLanguages,
   cookieSources: item.cookieSources,
+  configuredCookieSources: item.configuredCookieSources,
   entryType: 'history',
   downloadedAt: item.downloadedAt
 })

@@ -58,7 +58,7 @@ function agentTaskName(
   if (task.promptId === AI_CHAT_PROMPT_ID) {
     return task.title || t('transcript.promptHistoryChat')
   }
-  const prompt = aiSnapshot?.prompts.find((item) => item.id === task.promptId)
+  const prompt = aiSnapshot?.prompts.find((item) => item.name === task.promptId)
   return prompt ? aiPromptLabel(prompt, t) : task.title || t('transcript.promptHistoryChat')
 }
 

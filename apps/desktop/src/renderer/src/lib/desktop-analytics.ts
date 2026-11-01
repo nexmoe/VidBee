@@ -51,6 +51,7 @@ export async function syncDesktopAnalytics(
   try {
     initialization ??= prepareDesktopAnalytics()
     await initialization
+    await loadReleaseContext()
     if (generation !== synchronization) {
       return
     }
@@ -95,6 +96,32 @@ export function trackDesktopEvent(
     : dispatchDesktopEvent(eventName, properties)
 }
 
+/** Cached release identity for every Desktop GA4 event. */
+let appVersion = ''
+let clientPlatform = ''
+
+/** Load app version/platform once so events carry reportable custom dimensions. */
+async function loadReleaseContext(): Promise<void> {
+  if (appVersion && clientPlatform) {
+    return
+  }
+  try {
+    const { ipcServices } = await import('./ipc')
+    const [version, platform] = await Promise.all([
+      ipcServices.app.getVersion(),
+      ipcServices.app.getPlatform()
+    ])
+    if (typeof version === 'string' && version.trim()) {
+      appVersion = version.trim()
+    }
+    if (typeof platform === 'string' && platform.trim()) {
+      clientPlatform = platform.trim()
+    }
+  } catch (error) {
+    logger.warn('[Analytics] Failed to load release context:', error)
+  }
+}
+
 /** Send safe payloads through the SDK without recursively entering cohort logic. */
 function dispatchDesktopEvent(eventName: string, properties?: Record<string, unknown>): boolean {
   if (!(enabled && client)) {
@@ -105,7 +132,9 @@ function dispatchDesktopEvent(eventName: string, properties?: Record<string, unk
       ...properties,
       ...currentPage,
       event_schema_version: '2',
-      client_channel: 'desktop'
+      client_channel: 'desktop',
+      ...(appVersion ? { app_version: appVersion } : {}),
+      ...(clientPlatform ? { client_platform: clientPlatform } : {})
     })
     return true
   } catch (error) {

@@ -1,0 +1,45 @@
+VideoLingo prompt: core/prompts.py::get_split_prompt
+Source revision: 01f843492759be9bbfd1a5cb697b799cc9de1609
+License: Apache-2.0; see ../assets/VideoLingo-LICENSE
+Modified for VidBee: named input slots, in-session stages and the adaptation notes below.
+
+VidBee binding and validation:
+Use the length budgets and split/recheck policy in subtitle-constraints.txt; default num_parts=2 and word_limit=20. Treat the three-word minimum as applicable to languages with word spacing, not as a requirement to invent words. Validate chosen boundaries against the exact source, preserving words, punctuation and order. Try the alternate candidate if the chosen split is invalid, then the policy's text-preserving fallback. These markers are text boundaries, never timestamps; a valid split still needs alignment and length rechecks.
+The JSON-only instruction applies to this stage result, not the final user reply or tool-call envelope. Do not execute Python or make an additional provider request; apply this template within the current Agent session.
+
+--- PROMPT ---
+
+## Role
+You are a professional Netflix subtitle splitter in **{source_language}**.
+
+## Task
+Split the given subtitle text into **{num_parts}** parts, each less than **{word_limit}** words.
+
+1. Maintain sentence meaning coherence according to Netflix subtitle standards
+2. MOST IMPORTANT: Keep parts roughly equal in length (minimum 3 words each)
+3. Split at natural points like punctuation marks or conjunctions
+4. If provided text is repeated words, simply split at the middle of the repeated words.
+
+## Steps
+1. Analyze the sentence structure, complexity, and key splitting challenges
+2. Generate two alternative splitting approaches with [br] tags at split positions
+3. Compare both approaches highlighting their strengths and weaknesses
+4. Choose the best splitting approach
+
+## Given Text
+<split_this_sentence>
+{source_text}
+</split_this_sentence>
+
+## Output in only JSON format and no other text
+```json
+{
+    "analysis": "Brief description of sentence structure, complexity, and key splitting challenges",
+    "split1": "First splitting approach with [br] tags at split positions",
+    "split2": "Alternative splitting approach with [br] tags at split positions",
+    "assess": "Comparison of both approaches highlighting their strengths and weaknesses",
+    "choice": "1 or 2"
+}
+```
+
+Note: Start you answer with ```json and end with ```, do not add any other text.

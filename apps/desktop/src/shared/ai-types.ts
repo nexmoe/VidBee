@@ -92,25 +92,41 @@ export interface AiProviderWriteInput {
 
 /** User-editable prompt used with a transcript. */
 export interface AiPrompt {
-  id: string
-  title: string
+  /** The standard SKILL.md name is the sole skill identifier. */
+  name: string
+  /** Personal storage folder when it differs from the authored invocation name. */
+  directoryName?: string
+  description?: string
+  /** Legacy workflow marker, also used as the sidebar visibility default for custom skills. */
+  workflowOnly?: boolean
+  /** Invalid files stay visible in Settings but cannot be invoked. */
+  skillError?: string
   content: string
-  enabled: boolean
   /** Run once for each completed download when a transcript is available. Defaults to false. */
   autoRun?: boolean
+  /** Override sidebar visibility; built-ins default to Overview, Generate FAQ and Mindmap. */
+  showInTranscript?: boolean
   isPreset: boolean
+  /** Explicitly created or imported personal skills are excluded from legacy duplicate repair. */
+  userCreated?: boolean
   sortOrder: number
   createdAt: number
   updatedAt: number
 }
 
-/** Payload used to create or update a prompt from the renderer. */
+/** Payload used to create or update a managed skill. */
 export interface AiPromptWriteInput {
-  id?: string
-  title: string
+  /** A rename operation refers to the previous standard name, never an opaque ID. */
+  previousName?: string
+  name: string
+  description?: string
   content: string
+  /** Ignored legacy field; installed skills are always available for manual use. */
   enabled?: boolean
   autoRun?: boolean
+  showInTranscript?: boolean
+  /** Original YAML metadata when importing a portable skill document. */
+  frontmatter?: Record<string, unknown>
 }
 
 /** Lifecycle of a prompt run that lives in the main process. */
@@ -137,9 +153,6 @@ export interface AiProviderTestResult {
   error: string | null
   errorCode: AiPromptErrorCode | null
 }
-
-// Settings samples are diagnostics and must never count as product value.
-export const AI_PROMPT_TEST_DOWNLOAD_ID = '__settings-prompt-test__'
 
 /** Snapshot a renderer can restore after navigating away. */
 export interface AiPromptRunSnapshot {

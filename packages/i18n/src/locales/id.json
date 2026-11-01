@@ -303,7 +303,10 @@
         "stopped": "Dihentikan"
       }
     },
-    "sourceFile": "Berkas sumber"
+    "sourceFile": "Berkas sumber",
+    "troubleshoot": "Periksa masalah",
+    "troubleshootPrompt": "Bantu saya memeriksa masalah pada tugas unduhan {{taskId}}. Periksa status saat ini, detail kesalahan, dan log, jelaskan kemungkinan penyebabnya, lalu sarankan langkah berikutnya sebelum melakukan tindakan apa pun.",
+    "troubleshootFailed": "Tidak dapat memulai pemeriksaan masalah. Silakan coba lagi."
   },
   "error": {
     "title": "Terjadi kesalahan",
@@ -507,7 +510,7 @@
       "invitedListTitle": "Pengguna yang diundang",
       "invitedUsers": "Jumlah undangan",
       "loadMore": "Muat lagi",
-      "creditsDescription": "Digunakan untuk transkripsi dan prompt AI di VidBee Cloud.",
+      "creditsDescription": "Digunakan untuk transkripsi dan Skill AI di VidBee Cloud.",
       "creditsError": "Kredit AI tidak dapat dimuat.",
       "creditsLoading": "Memuat kredit AI…",
       "creditsRemaining": "Tersisa {{remaining}}",
@@ -531,7 +534,7 @@
       "creditsReservedAmount": "{{credits}} dicadangkan",
       "creditsReservedHelp": "Dicadangkan untuk tugas berjalan atau pemeriksaan penggunaan. Kredit yang tidak terpakai dilepas setelah perhitungan selesai.",
       "creditsInterruptedAmount": "{{credits}} dibebankan untuk tugas terhenti",
-      "creditsInterruptedHelp": "Sudah termasuk dalam kredit terpakai, bukan potongan tambahan. Ini adalah biaya yang telah dihitung untuk prompt AI yang gagal, dibatalkan, atau kehabisan waktu.",
+      "creditsInterruptedHelp": "Sudah termasuk dalam kredit terpakai, bukan potongan tambahan. Ini adalah biaya yang telah dihitung untuk Skill AI yang gagal, dibatalkan, atau kehabisan waktu.",
       "creditsRefresh": "Perbarui saldo",
       "creditsTopUp": "Isi ulang kredit",
       "creditsTopUpError": "Halaman harga tidak dapat dibuka. Silakan coba lagi.",
@@ -539,7 +542,7 @@
       "creditsReviewAmount": "{{credits}} dari kredit yang dicadangkan sedang diperiksa",
       "reservationTitle": "Tugas dengan cadangan",
       "reservationHelp": "Reservasi kedaluwarsa diperiksa setiap menit. Setelah masa peninjauan lima menit berakhir, bagian yang belum terkonfirmasi dilepas pada pemeriksaan berikutnya.",
-      "reservationTask": "Prompt AI",
+      "reservationTask": "Skill AI",
       "reservationElapsed": "Dimulai {{minutes}} menit lalu",
       "reservationActivity": "Kemajuan terakhir: {{time}}",
       "reservationHeartbeat": "Koneksi terakhir: {{time}}",
@@ -732,6 +735,22 @@
     "autoTranscribeAfterDownloadDescription": "When a download finishes, start a local transcript in the background. This uses your computer and skips files with no speech. Already queued jobs are not cancelled if you turn this off",
     "maxConcurrentTranscriptions": "Jumlah transkripsi aktif maksimum",
     "maxConcurrentTranscriptionsDescription": "Berapa banyak transkripsi yang dapat berjalan bersamaan. Setiap tugas memakai komputer ini. Menurunkan nilai tidak menghentikan tugas yang sedang berjalan",
+    "cloudTranscription": {
+      "title": "Transkripsi VidBee Cloud",
+      "description": "Dapatkan transkrip multibahasa berkualitas tinggi dengan model suara cloud yang andal, tanpa mengunduh model atau menjalankan pengenalan berat di komputer.",
+      "billing": "Cloud menggunakan saldo kredit AI Anda dan mengenakan biaya per detik audio. Transkripsi lokal gratis dan audio tetap di komputer Anda.",
+      "provider": "Layanan transkripsi",
+      "local": "Lokal · Gratis",
+      "cloud": "VidBee Cloud · Berbayar",
+      "model": "Model suara cloud",
+      "price": "{{credits}} kredit per menit audio. Durasi setiap klip dibulatkan ke atas ke detik berikutnya; klip yang selesai digunakan kembali saat mencoba ulang.",
+      "balance": "{{credits}} kredit tersedia",
+      "signInDescription": "Masuk untuk melihat model yang tersedia dan harga saat ini.",
+      "automatic": "Jika transkripsi otomatis diaktifkan, unduhan baru juga menggunakan model cloud berbayar ini. Audio dikirim ke Cloud untuk pengenalan.",
+      "timing": "Cloud menyediakan waktu per klip. Gunakan model lokal untuk stempel waktu per kata dan pengenalan pembicara.",
+      "unavailable": "Model cloud tidak dapat dimuat. Coba lagi.",
+      "modelUnavailable": "Model cloud yang dipilih tidak tersedia. Pilih model yang tersedia sebelum melakukan transkripsi."
+    },
     "transcriptModelsTitle": "Transcript models",
     "transcriptModelsReady": "Models ready on disk ({{size}})",
     "transcriptModelsMissing": "Models are not downloaded yet. The first transcript will fetch them",
@@ -855,7 +874,7 @@
       "unknown": "GPU tidak diketahui"
     },
     "providersTab": "Penyedia",
-    "promptsTab": "Prompt",
+    "promptsTab": "Skill",
     "transcriptionTab": "Transkripsi",
     "ai": {
       "ownProvider": "Gunakan penyedia Anda sendiri",
@@ -889,20 +908,63 @@
       "testingConnection": "Menguji…",
       "testSuccess": "Terhubung. Balasan: {{reply}}",
       "testFailed": "Tidak dapat menjangkau model ini.",
-      "addPrompt": "Tambah prompt",
-      "editPrompt": "Edit prompt",
-      "deletePrompt": "Hapus prompt",
-      "promptTitle": "Judul",
-      "promptBody": "Prompt",
-      "promptDialogDescription": "Prompt ini dijalankan pada transkrip dengan penyedia yang diaktifkan",
-      "promptAutoRun": "Jalankan otomatis",
-      "promptAutoRunDescription": "Jalankan keterampilan ini secara otomatis setelah unduhan selesai dan transkrip tersedia.",
+      "searchSkills": "Cari Skill",
+      "allSkills": "Semua",
+      "personalSkills": "Pribadi",
+      "builtInSkills": "Bawaan",
+      "customizeSkill": "Buat salinan khusus",
+      "noSkillsFound": "Tidak ada Skill yang ditemukan.",
+      "skillUpdatedAt": "Diperbarui {{date}}",
+      "trySkill": "Coba",
+      "skillShowInTranscript": "Tampilkan di bilah samping transkrip",
+      "skillShowInTranscriptDescription": "Tampilkan skill ini sebagai pintasan di bilah samping transkrip. Penggunaan dalam chat dan eksekusi otomatis diatur secara terpisah.",
+      "skillAutoRun": "Jalankan otomatis",
+      "skillAutoRunDescription": "Jalankan otomatis setelah unduhan selesai dan transkripnya siap. Skill ini selalu dapat digunakan secara manual di chat.",
+      "suggestedUsage": "Saran penggunaan",
+      "skillUsage": {
+        "summary": {
+          "first": "Ringkas transkrip video yang sudah selesai dengan ide utama dan penanda waktu penting.",
+          "second": "Ubah tutorial panjang menjadi poin singkat yang bisa saya tinjau lagi nanti.",
+          "third": "Ringkas wawancara dan soroti kutipan pembicara yang paling berguna."
+        },
+        "rewrite": {
+          "first": "Tulis ulang transkrip video menjadi artikel yang jelas tanpa mengubah makna aslinya.",
+          "second": "Perbaiki tata bahasa dan kata pengisi pada transkrip tanpa menambahkan fakta baru.",
+          "third": "Tulis ulang penjelasan teknis agar mudah dipahami oleh pembaca umum."
+        },
+        "faq": {
+          "first": "Buat pertanyaan umum dari transkrip video dan jawab setiap pertanyaan berdasarkan sumbernya.",
+          "second": "Ubah tutorial produk menjadi tanya jawab untuk pengguna baru.",
+          "third": "Ambil pertanyaan umum dari wawancara dan kelompokkan jawabannya berdasarkan topik."
+        },
+        "translate": {
+          "first": "Terjemahkan transkrip video ke bahasa saya dengan mempertahankan maknanya.",
+          "second": "Terjemahkan tutorial teknis dengan istilah yang konsisten.",
+          "third": "Terjemahkan wawancara dengan mempertahankan pembicara dan pergantian topik."
+        },
+        "statistics": {
+          "first": "Ambil angka, persentase, dan tanggal yang disebutkan dalam transkrip video.",
+          "second": "Kumpulkan statistik dari presentasi beserta konteks dan penanda waktu sumbernya.",
+          "third": "Temukan pengukuran dan perbandingan dalam transkrip tanpa mengarang nilai yang tidak tersedia."
+        },
+        "mindmap": {
+          "first": "Buat peta pikiran dari ide utama video beserta hubungan antaridenya.",
+          "second": "Susun transkrip kursus menjadi hierarki topik untuk belajar ulang.",
+          "third": "Petakan konsep dalam ceramah teknis dengan mengelompokkan ide yang berkaitan."
+        },
+        "diagnose": {
+          "first": "Bantu saya memahami mengapa unduhan gagal dan sarankan langkah selanjutnya.",
+          "second": "Periksa tugas yang macet dan bantu saya mengetahui apakah masih ada kemajuan.",
+          "third": "Bantu saya menyiapkan laporan bug berdasarkan bukti dari tugas yang gagal."
+        },
+        "custom": {
+          "first": "Bantu saya memakai Skill ini untuk tugas saya. Tanyakan tujuan saya sebelum memulai.",
+          "second": "Pandu saya melalui contoh praktis dan minta bahan sumber yang diperlukan.",
+          "third": "Bantu saya menyesuaikan Skill ini dengan situasi saya dan konfirmasikan format hasil terlebih dahulu."
+        }
+      },
+      "deletePrompt": "Hapus Skill",
       "restorePresets": "Pulihkan bawaan",
-      "testTitle": "Uji dengan contoh transkrip",
-      "testRun": "Jalankan",
-      "testStop": "Hentikan",
-      "testOutput": "Hasil",
-      "testPlaceholder": "Hasil prompt akan muncul di sini",
       "presets": {
         "anthropic": "Anthropic",
         "azure": "Azure",
@@ -929,36 +991,80 @@
         "volcengine": "Volcengine",
         "zhipu": "Zhipu"
       },
-      "presetPrompts": {
-        "overview": {
-          "title": "Ringkasan"
-        },
-        "bullet-points": {
-          "title": "Poin-poin"
-        },
-        "improve-grammar": {
-          "title": "Perbaiki tata bahasa dan tanda baca"
-        },
-        "generate-faq": {
-          "title": "Buat FAQ"
-        },
-        "extract-statistics": {
-          "title": "Ekstrak statistik"
-        },
-        "paraphrase-content": {
-          "title": "Parafrase konten"
-        },
-        "create-mindmap": {
-          "title": "Buat peta pikiran"
-        },
-        "translate": {
-          "title": "Terjemahkan"
-        }
-      },
       "createModel": "Create “{{query}}”",
       "noModelFound": "No model found.",
       "allModelsSelected": "Semua model dalam daftar sudah ditambahkan.",
-      "loadingModels": "Memuat model dari penyedia…"
+      "loadingModels": "Memuat model dari penyedia…",
+      "skillHelp": "Skill menggunakan berkas SKILL.md. Agen menemukannya melalui deskripsi dan membaca instruksinya saat diperlukan. Gunakan $skill-name dalam obrolan untuk meminta Skill.",
+      "addSkill": "Tambah Skill",
+      "createSkillWithVidbee": "Buat Skill dengan VidBee",
+      "createSkillRequest": "Bantu saya membuat Skill yang dapat digunakan kembali. Tanyakan tugas, waktu penggunaan, dan hasil yang diharapkan. Setelah kebutuhannya jelas, buat dan simpan Skill di VidBee.",
+      "uploadSkill": "Unggah Skill",
+      "importGitHubSkill": "Impor Skill dari GitHub",
+      "githubSkillDescription": "Tempel tautan repositori GitHub publik atau folder Skill, lalu pilih Skill untuk dipasang beserta file pendukungnya.",
+      "githubSkillUrl": "URL GitHub",
+      "selectSkill": "Pilih Skill",
+      "installSkill": "Pasang Skill",
+      "findSkills": "Cari Skill",
+      "skillInstalling": "Harap tunggu…",
+      "skillInstallError": "Skill tidak dapat dipasang. Periksa sumbernya dan coba lagi.",
+      "skillUploadTooLarge": "Unggah file SKILL.md atau ZIP berukuran maksimal 10 MB.",
+      "importSkill": "Impor SKILL.md",
+      "exportSkill": "Ekspor SKILL.md",
+      "openSkillFolder": "Buka folder Skill",
+      "skillLoading": "Memuat Skill",
+      "skillLoaded": "Skill dimuat",
+      "skillFailed": "Skill gagal",
+      "presetSkills": {
+        "overview": {
+          "name": "Ringkasan",
+          "description": "Membuat ikhtisar transkrip dengan bab bertanda waktu dan kutipan penting. Untuk memahami rekaman atau menemukan topik yang ingin ditinjau kembali."
+        },
+        "bullet-points": {
+          "name": "Poin-poin",
+          "description": "Merangkum transkrip dalam poin singkat yang dikelompokkan menurut topik. Untuk meninjau video, podcast, atau rapat dengan cepat."
+        },
+        "improve-grammar": {
+          "name": "Perbaiki tata bahasa dan tanda baca",
+          "description": "Memperbaiki tata bahasa, ejaan, dan tanda baca sambil mempertahankan pembicara dan makna. Untuk menyiapkan transkrip yang mudah dibaca."
+        },
+        "generate-faq": {
+          "name": "Buat FAQ",
+          "description": "Mengubah transkrip menjadi FAQ terstruktur dengan jawaban singkat berdasarkan sumber. Untuk membuat bahan rujukan dari rekaman."
+        },
+        "extract-statistics": {
+          "name": "Ekstrak statistik",
+          "description": "Mengekstrak angka, tanggal, persentase, dan jumlah uang beserta konteksnya. Untuk meninjau pernyataan kuantitatif dalam transkrip."
+        },
+        "paraphrase-content": {
+          "name": "Parafrase konten",
+          "description": "Mengungkapkan ulang transkrip dengan bahasa yang jelas dan alami tanpa menambahkan klaim. Untuk memperbaiki redaksi sambil mempertahankan makna sumber."
+        },
+        "create-mindmap": {
+          "name": "Buat peta pikiran",
+          "description": "Menyusun topik transkrip dan hubungannya dalam peta pikiran Mermaid. Untuk memvisualisasikan struktur rekaman."
+        },
+        "translate": {
+          "name": "Terjemahkan",
+          "description": "Menerjemahkan transkrip ke bahasa antarmuka sambil mempertahankan pembicara, makna, dan detail. Untuk membaca rekaman dalam bahasa lain."
+        },
+        "article-rewrite": {
+          "name": "Tulis ulang sebagai artikel",
+          "description": "Menulis ulang materi menjadi artikel utuh dengan gambar video yang relevan jika tersedia. Untuk mengubah rekaman menjadi naskah siap terbit."
+        },
+        "faq": {
+          "name": "FAQ video",
+          "description": "Membuat FAQ tentang video saat ini dengan membaca bagian transkrip yang relevan sesuai kebutuhan. Untuk menyusun tanya jawab berdasarkan video yang sedang dibuka."
+        },
+        "diagnose-task": {
+          "name": "Diagnosis tugas",
+          "description": "Menyelidiki tugas gagal atau macet melalui status, kesalahan, dan log. Untuk menyarankan pemulihan atau menyiapkan umpan balik atas dugaan cacat VidBee."
+        },
+        "video-localization": {
+          "name": "Lokalisasi video",
+          "description": "Terjemahkan dan ekspor subtitel, atau buat sulih suara tersinkron."
+        }
+      }
     },
     "cookiesSetup": {
       "statusNotConfigured": "Belum diatur",
@@ -1036,15 +1142,24 @@
       "extensionPriority": "Prioritas browser untuk cookie",
       "extensionPriorityHint": "Gunakan browser pertama yang terhubung sesuai urutan ini. Browser yang terputus akan dilewati secara otomatis.",
       "extensionUse": "Gunakan",
+      "extensionLegacy": "Lama",
+      "extensionLastConnected": "Terakhir terhubung: {{time}}",
+      "extensionLastConnectedUnknown": "Waktu koneksi terakhir tidak tersedia",
+      "extensionRemove": "Hapus",
+      "extensionRemoveLabel": "Hapus {{browser}}",
+      "extensionVariants": {
+        "dev": "Pengembangan",
+        "store": "Toko"
+      },
       "extensionMoveUp": "Pindahkan {{browser}} ke atas",
       "extensionMoveDown": "Pindahkan {{browser}} ke bawah"
     },
-    "agentManagementTools": "Alat manajemen agen",
-    "agentManagementToolsDescription": "Apakah agen boleh mengubah tugas dan langganan, dan apakah harus bertanya dulu",
+    "agentManagementTools": "Izin agen",
+    "agentManagementToolsDescription": "Persetujuan manual meminta izin Anda saat diperlukan. Peninjauan otomatis menggunakan model saat ini dan meminta persetujuan Anda jika tidak dapat memutuskan; jalur di luar folder unduhan tetap memerlukan persetujuan Anda. Akses penuh menjalankan alat dan perintah shell tanpa persetujuan atau peninjauan otomatis, termasuk akses di luar folder unduhan. Perubahan berlaku untuk balasan baru.",
     "agentManagementToolsOptions": {
-      "off": "Mati",
-      "ask": "Tanya dulu",
-      "auto": "Izinkan otomatis"
+      "full": "Akses penuh",
+      "ask": "Persetujuan manual",
+      "auto": "Peninjauan otomatis"
     },
     "mcp": {
       "tab": "MCP",
@@ -1057,20 +1172,14 @@
       "copied": "Konfigurasi MCP disalin",
       "rotate": "Ganti token akses",
       "error": "Tidak dapat memperbarui pengaturan MCP",
-      "transport": "Metode koneksi",
-      "transportDescription": "Pilih satu metode. Keduanya menyediakan kemampuan yang sama.",
-      "httpRecommended": "HTTP (disarankan)",
       "configuration": "Konfigurasi agen",
       "httpDescription": "Hubungkan langsung ke aplikasi Desktop yang berjalan dengan URL dan token.",
-      "stdioDescription": "Jembatan lokal untuk agen yang terhubung melalui perintah awal.",
       "viewConfig": "Lihat konfigurasi",
       "configDescription": "Tempel konfigurasi ini ke pengaturan MCP agen Anda.",
-      "endpoint": "Alamat server",
-      "endpointDescription": "Hanya tersedia di komputer ini selama VidBee berjalan.",
       "accessToken": "Token akses",
       "rotateDescription": "Cabut konfigurasi HTTP yang ada. Salin konfigurasi baru setelah token diperbarui.",
       "capabilitiesTitle": "Kemampuan yang tersedia",
-      "capabilitiesDescription": "{{tools}} alat, {{resources}} sumber daya dan templat, {{prompts}} alur kerja. Tersedia melalui kedua metode koneksi.",
+      "capabilitiesDescription": "{{tools}} alat, {{resources}} sumber daya dan templat, {{prompts}} alur kerja.",
       "searchCapabilities": "Cari kemampuan…",
       "noCapabilities": "Tidak ada kemampuan yang cocok",
       "loading": "Memuat kemampuan…",
@@ -1079,17 +1188,17 @@
         "tasks": "Unduhan dan antrean",
         "subscriptions": "Langganan",
         "transcripts": "Transkrip dan model",
-        "ai": "Percakapan AI dan skill",
+        "ai": "Percakapan AI dan Skill",
         "exports": "Dokumen dan gambar untuk dibagikan",
         "resources": "Sumber daya dan templat",
-        "prompts": "Prompt alur kerja"
+        "prompts": "Skill"
       },
       "capabilities": {
         "get_app_status": "Status aplikasi dan kesiapan mesin",
         "get_settings": "Baca preferensi aplikasi",
         "update_settings": "Perbarui preferensi aplikasi",
-        "get_ai_settings": "Baca penyedia AI dan skill",
-        "manage_ai_settings": "Kelola penyedia, model, dan skill tersimpan",
+        "get_ai_settings": "Baca penyedia AI dan Skill",
+        "manage_ai_settings": "Kelola penyedia, model, dan Skill tersimpan",
         "list_tasks": "Jelajahi tugas unduhan, konversi, dan transkripsi",
         "get_task": "Baca progres, kesalahan, dan log tugas",
         "get_queue_stats": "Status antrean dan jumlah tugas bersamaan",
@@ -1128,11 +1237,11 @@
         "manage_agent_thread": "Hentikan, ganti nama, hapus, atau ganti cabang percakapan",
         "decide_agent_tool": "Setujui atau tolak pemanggilan alat agen",
         "get_agent_events": "Baca aktivitas dan peristiwa percakapan",
-        "start_ai_prompt": "Jalankan skill AI tersimpan",
-        "get_ai_prompt_run": "Baca hasil skill dan status eksekusi",
-        "stop_ai_prompt": "Hentikan skill yang berjalan",
-        "list_skill_results": "Jelajahi hasil skill tersimpan dan balasan agen",
-        "export_skill_result": "Ekspor hasil skill sebagai Markdown, PDF, atau gambar untuk dibagikan",
+        "start_ai_prompt": "Jalankan Skill AI tersimpan",
+        "get_ai_prompt_run": "Baca hasil Skill dan status eksekusi",
+        "stop_ai_prompt": "Hentikan Skill yang berjalan",
+        "list_skill_results": "Jelajahi hasil Skill tersimpan dan balasan agen",
+        "export_skill_result": "Ekspor hasil Skill sebagai Markdown, PDF, atau gambar untuk dibagikan",
         "export_mermaid_diagram": "Ekspor diagram Mermaid satu per satu sebagai PNG, JPG, SVG, atau kode sumber",
         "export_caption_share_image": "Ekspor subtitle pilihan sebagai gambar untuk dibagikan",
         "summarize_media": "Ringkas media dengan bukti penanda waktu",
@@ -1521,18 +1630,29 @@
       "cookiesBrowser": "Dibaca dari browser",
       "cookiesNone": "Tidak menggunakan cookie",
       "cookiesUnrecorded": "Tidak tercatat",
+      "cookiesUnavailable": "Sumber tidak tersedia — tidak ada catatan perolehan",
+      "cookiesNotConfigured": "Cookie belum dikonfigurasi",
       "empty": "Belum ada detail.",
       "openUrl": "Buka URL sumber",
       "group": {
         "media": "Media",
         "file": "Berkas",
         "transcript": "Transkrip"
-      }
+      },
+      "cookiesConfigured": "Pengaturan saat masuk antrean: {{sources}} (sumber sebenarnya tidak tercatat)",
+      "cookiesConfig": "Konfigurasi yt-dlp (penggunaan cookie tidak diketahui)"
     },
     "speakingShare": "{{percent}}%",
     "seekSpeaker": "Lompat ke {{name}}",
     "seekAt": "Lompat ke {{time}}",
     "searchPlaceholder": "Cari transkrip",
+    "bilingual": "Transkrip dwibahasa",
+    "secondarySubtitle": "Subtitle kedua",
+    "noSecondarySubtitles": "Belum ada subtitel kedua",
+    "translateSubtitles": "Terjemahkan di chat baru…",
+    "translateSubtitlesPrompt": "Terjemahkan subtitel video ini ke bahasa lain agar dapat dibaca dalam dua bahasa. Tanyakan bahasa yang ingin saya gunakan.",
+    "subtitleLoading": "Memuat subtitle…",
+    "subtitleLoadFailed": "Trek subtitle ini tidak dapat dibaca.",
     "searchMatches": "{{count}} kecocokan",
     "searchNoMatches": "Tidak ada kecocokan",
     "searchNext": "Berikutnya",
@@ -1581,6 +1701,7 @@
         "more": "Tindakan item daftar putar"
       }
     },
+    "changeModel": "Ganti model",
     "qualityHint": "Not happy with this transcript?",
     "qualityHintDetail": "Download a higher-quality model and transcribe again. The current transcript is kept as history.",
     "qualityHintMax": "Model kualitas tertinggi sudah digunakan. Coba sesuaikan jumlah pembicara jika label tercampur. Musik latar dan suara yang tumpang tindih masih bisa membingungkan pembicara.",
@@ -1592,7 +1713,7 @@
       "apply": "Transkrip ulang",
       "detail": "Kami akan mentranskrip ulang dengan jumlah pembicara ini. Otomatis adalah default. Anda boleh meninggalkan halaman ini. Transkrip saat ini disimpan sebagai riwayat."
     },
-    "promptMenu": "Semua prompt",
+    "promptMenu": "Semua Skill",
     "promptStop": "Hentikan",
     "promptRerun": "Jalankan lagi",
     "promptCopy": "Salin",
@@ -1611,11 +1732,11 @@
     "promptShareFooter": "Dibuat dengan VidBee",
     "promptShareTagline": "Unduh. Transkripsikan secara lokal. Tanya AI.",
     "captionShareSaid": "{{name}} berkata",
-    "promptOutput": "Hasil prompt",
+    "promptOutput": "Hasil Skill",
     "promptScrollToEnd": "Gulir ke terbaru",
     "promptCopied": "Disalin",
     "promptCloudGenerated": "Dibuat dengan VidBee Cloud",
-    "promptNoProvider": "Siapkan penyedia AI di Pengaturan untuk menjalankan prompt ini.",
+    "promptNoProvider": "Siapkan penyedia AI di Pengaturan untuk menjalankan Skill ini.",
     "promptOpenSettings": "Buka pengaturan penyedia",
     "promptEmpty": "Hasil akan muncul di sini.",
     "overviewChapters": "Bab",
@@ -1629,8 +1750,8 @@
     "promptAborted": "Dihentikan",
     "promptTabCompleted": "Selesai",
     "promptTabError": "Gagal",
-    "promptNoTranscript": "Transkrip diperlukan sebelum prompt ini dapat dijalankan.",
-    "promptWaitForTranscript": "Prompt ini akan dijalankan setelah transkripsi selesai.",
+    "promptNoTranscript": "Transkrip diperlukan sebelum Skill ini dapat dijalankan.",
+    "promptWaitForTranscript": "Skill ini akan dijalankan setelah transkripsi selesai.",
     "promptRunWhenReady": "Jalankan saat siap",
     "promptWaitingToRun": "Menunggu transkrip…",
     "promptTryAgain": "Coba lagi",
@@ -1639,19 +1760,19 @@
       "interrupted": "Respons AI terhenti sebelum selesai.",
       "creditsExhausted": "Akun ini tidak memiliki cukup kredit AI.",
       "signInRequired": "Masuk ke VidBee Cloud untuk memakai Ask AI sekarang juga, gratis.",
-      "noProvider": "Belum ada penyedia AI yang diaktifkan, jadi prompt ini tidak bisa dijalankan.",
+      "noProvider": "Belum ada penyedia AI yang diaktifkan, jadi Skill ini tidak bisa dijalankan.",
       "missingApiKey": "Penyedia yang aktif belum punya kunci API.",
       "missingModel": "Penyedia yang aktif belum punya ID model.",
-      "unknownPrompt": "Prompt ini sudah tidak tersedia.",
-      "emptyTranscript": "Prompt ini memerlukan transkrip yang sudah selesai.",
+      "unknownPrompt": "Skill ini sudah tidak tersedia.",
+      "emptyTranscript": "Skill ini memerlukan transkrip yang sudah selesai.",
       "auth": "Penyedia menolak permintaan. Kunci API atau akun kemungkinan tidak valid.",
       "authCloud": "VidBee Cloud menolak permintaan. Sesi Anda mungkin sudah berakhir.",
       "network": "Tidak dapat menjangkau penyedia.",
       "networkCloud": "VidBee Cloud tidak dapat dijangkau.",
       "emptyOutput": "Penyedia selesai tanpa mengembalikan teks.",
       "emptyOutputCloud": "VidBee Cloud selesai tanpa mengembalikan teks.",
-      "unknown": "Prompt tidak dapat dijalankan.",
-      "unknownCloud": "VidBee Cloud tidak dapat menyelesaikan prompt ini.",
+      "unknown": "Skill tidak dapat dijalankan.",
+      "unknownCloud": "VidBee Cloud tidak dapat menyelesaikan Skill ini.",
       "serviceErrorCloud": "VidBee Cloud's AI service rejected this request."
     },
     "promptErrorDetails": "Detail kesalahan",
@@ -1662,31 +1783,31 @@
       "creditsExhausted": {
         "s1": "Buka Akun untuk melihat sisa kredit.",
         "s2": "Undang pengguna baru untuk memperoleh kredit.",
-        "s3": "Jalankan prompt lagi setelah kredit ditambahkan."
+        "s3": "Jalankan Skill lagi setelah kredit ditambahkan."
       },
       "signInRequired": {
         "s1": "Buka Pengaturan → Providers.",
         "s2": "Masuk dengan GitHub di VidBee Cloud.",
-        "s3": "Jalankan prompt lagi."
+        "s3": "Jalankan Skill lagi."
       },
       "noProvider": {
         "s1": "Buka Pengaturan → Penyedia.",
         "s2": "Tambah layanan, simpan kunci API dan ID model, lalu klik Gunakan.",
-        "s3": "Kembali ke sini dan jalankan prompt lagi."
+        "s3": "Kembali ke sini dan jalankan Skill lagi."
       },
       "missingApiKey": {
         "s1": "Buka Pengaturan → Penyedia dan sunting penyedia yang aktif.",
         "s2": "Tempel kunci API yang valid lalu simpan.",
-        "s3": "Jalankan prompt lagi."
+        "s3": "Jalankan Skill lagi."
       },
       "missingModel": {
         "s1": "Buka Pengaturan → Penyedia dan sunting penyedia yang aktif.",
         "s2": "Masukkan ID model yang benar-benar didukung layanan ini.",
-        "s3": "Jalankan prompt lagi."
+        "s3": "Jalankan Skill lagi."
       },
       "unknownPrompt": {
-        "s1": "Buka Pengaturan → Prompt.",
-        "s2": "Pulihkan bawaan, atau buat ulang prompt ini."
+        "s1": "Buka Pengaturan → Skill.",
+        "s2": "Pulihkan bawaan, atau buat ulang Skill ini."
       },
       "emptyTranscript": {
         "s1": "Tunggu transkripsi selesai.",
@@ -1700,7 +1821,7 @@
       "authCloud": {
         "s1": "Buka Akun dan pastikan Anda masih masuk.",
         "s2": "Masuk lagi jika sesi sudah berakhir.",
-        "s3": "Jalankan prompt sekali lagi."
+        "s3": "Jalankan Skill sekali lagi."
       },
       "network": {
         "s1": "Periksa internet dan proxy.",
@@ -1785,7 +1906,7 @@
       },
       "summary": {
         "title": "Tanya AI tentang transkrip apa pun",
-        "description": "Rangkum, terjemahkan, buat FAQ atau peta pikiran, dan jalankan prompt Anda sendiri dengan penyedia AI pilihan Anda."
+        "description": "Rangkum, terjemahkan, buat FAQ atau peta pikiran, dan jalankan Skill Anda sendiri dengan penyedia AI pilihan Anda."
       },
       "localFiles": {
         "title": "Transkrip file apa pun",
@@ -1806,14 +1927,103 @@
     "all": "Sepanjang waktu"
   },
   "agentChat": {
+    "progress": {
+      "title": "Progres eksekusi",
+      "running": "Sedang memproses…",
+      "waiting": "Menunggu tugas latar belakang",
+      "approval": "Menunggu persetujuan Anda",
+      "input": "Menunggu masukan Anda",
+      "completed": "Eksekusi selesai",
+      "aborted": "Agen dihentikan",
+      "interrupted": "Eksekusi terputus",
+      "error": "Eksekusi gagal",
+      "steps": "Langkah tugas",
+      "tasks": "Tugas latar belakang",
+      "results": "File yang dibuat",
+      "continueAfterWait": "Agen akan melanjutkan secara otomatis setelah tugas latar belakang selesai.",
+      "stop": "Hentikan agen",
+      "stopHint": "Hentikan eksekusi agen ini. Tugas latar belakang tetap berjalan secara terpisah.",
+      "showingTasks": "Menampilkan {{count}} dari {{total}} tugas.",
+      "pending": "Belum dimulai"
+    },
+    "ui": {
+      "continue": "Lanjutkan",
+      "sent": "Terkirim",
+      "sendFailed": "Pilihan Anda tidak dapat dikirim. Silakan coba lagi.",
+      "inactive": "Anda dapat menjawab kartu pada balasan terbaru setelah agen selesai.",
+      "loading": "Memuat tugas…",
+      "loadFailed": "Tugas tidak dapat dimuat. Buka kembali percakapan untuk mencoba lagi.",
+      "taskUnavailable": "Tugas ini tidak lagi tersedia.",
+      "fileUnavailable": "File ini belum siap atau tidak lagi tersedia.",
+      "taskFailed": "Tugas ini gagal. Minta saya memeriksa detailnya.",
+      "invalid": "Kartu ini tidak dapat ditampilkan. Anda dapat melanjutkan melalui kotak pesan.",
+      "progress": "Progres tugas",
+      "format": "Format keluaran",
+      "resolution": "Resolusi",
+      "kinds": {
+        "video": "Unduhan video",
+        "audio": "Unduhan audio",
+        "subtitles": "Subtitel",
+        "playlist": "Playlist",
+        "subscription-item": "Unduhan langganan",
+        "yt-dlp-forward": "Unduhan",
+        "transcription": "Transkripsi",
+        "conversion": "Konversi",
+        "model-download": "Unduhan model"
+      },
+      "status": {
+        "queued": "Dalam antrean",
+        "running": "Berjalan",
+        "processing": "Memproses",
+        "paused": "Dijeda",
+        "retry-scheduled": "Percobaan ulang dijadwalkan",
+        "completed": "Selesai",
+        "failed": "Gagal",
+        "cancelled": "Dibatalkan"
+      }
+    },
+    "suggestions": {
+      "title": "Asisten terbaik Anda untuk mengolah audio dan video",
+      "description": "Saya VidBee. Beri tahu saya apa yang ingin Anda lakukan, atau pilih salah satu opsi di bawah untuk memulai.",
+      "download": {
+        "label": "Unduh video",
+        "prompt": "Bantu saya mengunduh video dengan VidBee. Tanyakan URL video dan kualitas yang saya inginkan terlebih dahulu, lalu buat tugas unduhan."
+      },
+      "audio": {
+        "label": "Ekstrak audio",
+        "prompt": "Bantu saya menyimpan audio dari video dengan VidBee. Tanyakan URL video dan format audio yang saya inginkan terlebih dahulu, lalu buat tugas unduhan audio."
+      },
+      "transcribe": {
+        "label": "Transkripsikan media unduhan",
+        "prompt": "Bantu saya mengubah video atau audio yang sudah diunduh menjadi teks dengan VidBee. Tampilkan unduhan yang selesai, tanyakan item mana yang ingin ditranskripsikan, lalu mulai tugas transkripsi lokal."
+      },
+      "subscribe": {
+        "label": "Buat langganan",
+        "prompt": "Bantu saya membuat langganan di VidBee. Tanyakan URL kanal, situs web, atau RSS, verifikasi umpan, lalu tanyakan apakah video baru perlu diunduh otomatis sebelum menyimpannya."
+      },
+      "compress": {
+        "label": "Kompres video",
+        "prompt": "Bantu saya memperkecil ukuran video di VidBee. Tampilkan unduhan video yang sudah selesai, tanyakan video yang ingin dikompres dan resolusi lebih rendah yang diinginkan, lalu buat salinan hasil konversi dan pertahankan file aslinya."
+      },
+      "convert": {
+        "label": "Konversi format",
+        "prompt": "Bantu saya mengonversi media ke format lain di VidBee. Tampilkan unduhan yang sudah selesai, tanyakan file yang ingin dikonversi dan format keluaran yang diinginkan, lalu buat salinan hasil konversi dan pertahankan file aslinya."
+      }
+    },
     "eventStream": "Event Stream",
     "eventStatus": {
-      "running": "Running",
-      "completed": "Completed",
-      "error": "Failed",
+      "running": "Sedang berjalan",
+      "completed": "Selesai",
+      "error": "Gagal",
       "pendingApproval": "Menunggu persetujuan",
       "denied": "Ditolak"
     },
+    "notifications": {
+      "approval": "Agen VidBee memerlukan izin Anda",
+      "response": "Agen VidBee memerlukan tanggapan Anda",
+      "body": "Buka percakapan untuk meninjau dan menanggapi."
+    },
+    "newChatPlaceholder": "Tanyakan apa saja…",
     "placeholder": "Ask a follow-up about this video…",
     "send": "Send message",
     "attachImages": "Attach images",
@@ -1855,11 +2065,16 @@
     "catalogMatched": "Matched {{name}}. Context window and capabilities were filled in.",
     "catalogBadge": "Catalog",
     "tools": {
+      "show_ui": "Menampilkan kartu",
+      "create_task": "Membuat tugas",
+      "wait_for_task": "Menunggu tugas",
+      "select_video": "Memilih media sumber",
       "list_transcripts": "Memeriksa subtitle yang tersedia",
       "select_transcript": "Memilih sumber subtitle",
+      "add_subtitles": "Menambahkan subtitle",
       "load_tools": "Mencari kemampuan yang tersedia",
       "get_video_info": "Reading video information",
-      "read_transcript": "Reading transcript",
+      "read_transcript": "Membaca transkrip",
       "search_transcript": "Searching transcript",
       "capture_frames": "Capturing video frames",
       "create_clip": "Creating video clip",
@@ -1870,7 +2085,11 @@
       "read_artifact": "Reviewing saved image",
       "rename_conversation": "Renaming conversation",
       "write_article": "Writing article",
-      "review_article": "Reviewing article"
+      "review_article": "Reviewing article",
+      "export_subtitles": "Mengekspor subtitel",
+      "create_dubbed_video": "Membuat sulih suara tersinkron",
+      "list_tasks": "Mencari tugas",
+      "get_task": "Memeriksa detail tugas"
     },
     "modelCapabilities": "Model capabilities",
     "runDurationRunning": "Working · {{duration}}",

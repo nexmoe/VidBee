@@ -1,16 +1,13 @@
 import { languageList, languages, normalizeLanguageCode } from '@vidbee/i18n/languages'
 import type { AiPrompt } from './ai-types'
+import { BUILTIN_SKILLS } from './builtin-skills'
 
 /** Replaced with the current UI language name before a prompt is shown or sent. */
 export const AI_PROMPT_UI_LANGUAGE_TOKEN = '{{uiLanguage}}'
 
-/** Sample text used when testing a prompt from settings. */
-export const AI_PROMPT_SAMPLE_TRANSCRIPT =
-  'This is an example of some transcribed text. The speaker mentions a 23% increase in sign-ups last quarter, then asks how the team should follow up. People sound excited, but there is also some anxiety about the deadline.'
-
 interface AiPromptPresetSeed {
-  id: string
-  title: string
+  name: string
+  description: string
   content: string
 }
 
@@ -40,6 +37,13 @@ const LEGACY_OVERVIEW_CONTENT = [
 /** Built-in Overview prompt, pinned beside the transcript tab. */
 export const AI_OVERVIEW_PROMPT_ID = 'overview'
 
+/** Built-in skills shown in the transcript sidebar until the user chooses otherwise. */
+const DEFAULT_TRANSCRIPT_SIDEBAR_SKILLS = new Set([
+  AI_OVERVIEW_PROMPT_ID,
+  'generate-faq',
+  'create-mindmap'
+])
+
 /** Freeform Agent conversation started from New chat, not shown as a prompt tab. */
 export const AI_CHAT_PROMPT_ID = 'chat'
 
@@ -48,7 +52,7 @@ const AGENT_CHAT_CONTENT = [
   'Answer the user about this video.',
   'Use tools when you need transcript evidence, timestamps, screenshots, or clips.',
   'Do not invent quotes or timestamps.',
-  'Once the topic is clear, call rename_conversation with a short title (a few words, in the user language). Do not mention renaming in your reply. Skip if the current title already fits.',
+  'Conversation titles are derived automatically. Use rename_conversation only when the user asks to change the title.',
   'Follow the user’s requested output language; otherwise reply in the language of their latest message. Use {{uiLanguage}} only when the user’s language cannot be determined.'
 ].join('\n')
 
@@ -57,11 +61,16 @@ const AGENT_CHAT_CONTENT = [
  *
  * @param now Timestamp written onto createdAt and updatedAt.
  */
-export const agentChatPrompt = (now: number = Date.now()): AiPrompt => ({
-  id: AI_CHAT_PROMPT_ID,
-  title: 'Chat',
-  content: AGENT_CHAT_CONTENT,
-  enabled: true,
+export const agentChatPrompt = (now: number = Date.now(), hasSource = true): AiPrompt => ({
+  name: 'chat',
+  content: hasSource
+    ? AGENT_CHAT_CONTENT
+    : [
+        'Help the user with their request. No video or transcript is initially attached. Use select_video to attach completed library media; later application state identifies the selected source.',
+        'Use the available tools when helpful. Do not invent source evidence or tool results.',
+        'Conversation titles are derived automatically. Use rename_conversation only when the user asks to change the title.',
+        'Follow the user’s requested output language; otherwise reply in the language of their latest message. Use {{uiLanguage}} only when the user’s language cannot be determined.'
+      ].join('\n'),
   isPreset: true,
   sortOrder: -1,
   createdAt: now,
@@ -69,152 +78,23 @@ export const agentChatPrompt = (now: number = Date.now()): AiPrompt => ({
 })
 
 /**
- * Default transcript prompts. Titles are English seeds; the UI translates via
- * i18n keys under `settings.ai.presetPrompts`. `{{uiLanguage}}` is replaced
+ * Default transcript skills authored in the repository library. `{{uiLanguage}}` is replaced
  * with the current interface language name before a prompt is shown or sent.
  */
-export const AI_PROMPT_PRESETS: readonly AiPromptPresetSeed[] = [
-  {
-    id: AI_OVERVIEW_PROMPT_ID,
-    title: 'Overview',
-    content: [
-      'Write a navigable, topic-by-topic overview of this transcript with chapters and key quotes.',
-      '',
-      'Each transcript line starts with [m:ss] or [h:mm:ss]. Read the whole transcript before selecting chapter boundaries. Cover the full timeline through the final substantive discussion, not just the opening or highlights. Use only timestamps present in the transcript, in chronological order without duplicates. Start each chapter at the first transcript line introducing its topic; do not invent timestamps or infer chapter end times.',
-      '',
-      'Choose chapters by meaningful topic changes: a new question, distinct argument, case study, story, technical mechanism, or trade-off that a viewer might want to revisit. Give each chapter one clear main topic and a specific title. Do not bundle several independently useful discussions under a broad label such as career, technology, or the future. If a theme returns later, keep that later discussion in its chronological position.',
-      '',
-      'For long, topic-rich interviews or lectures, use roughly 3-6 minutes per chapter as a guide. Review any chapter spanning more than 8 minutes for overlooked topic changes, including the final chapter. Split at real transitions when supported by the transcript. A genuinely continuous explanation may stay longer; do not divide into equal time intervals, split every short exchange, invent topics, or force a chapter count. Let chapter count grow with duration and topic density.',
-      '',
-      "Include 3-5 key quotes that are surprising, contrarian, memorable, or statistically striking. Quotes must be the speaker's words. Clean filler and transcription errors, but keep their voice.",
-      '',
-      'Output format:',
-      '# {one-sentence takeaway}',
-      '## Chapters',
-      '- **{m:ss}** {specific topic title} — {what this section covers}',
-      '## Key quotes',
-      '- **{m:ss}** "{quote}"',
-      '',
-      'Use unordered lists only. Keep each bullet to one or two sentences. Skip empty sections. Output only the final overview; do not include planning, timestamp verification, checklists, or self-evaluation.',
-      PRESET_FORMAT_RULES
-    ].join('\n')
-  },
-  {
-    id: 'bullet-points',
-    title: 'Bullet Points',
-    content: [
-      'Turn this transcript into a scannable bullet summary.',
-      '',
-      'Output format:',
-      '# {theme}',
-      '- {point}',
-      '',
-      'Group related points under # headings. Use unordered lists only. Keep each bullet to one sentence. Skip empty sections.',
-      PRESET_FORMAT_RULES
-    ].join('\n')
-  },
-  {
-    id: 'improve-grammar',
-    title: 'Improve Grammar & Punctuation',
-    content: [
-      'Correct grammar, spelling, and punctuation so the transcript reads naturally and professionally. Keep the original meaning, speakers, and details. Do not add new facts.',
-      '',
-      'Output format:',
-      '# {speaker or topic}',
-      '{cleaned paragraphs}',
-      '',
-      'Use # headings for speaker changes or topic shifts. Write cleaned prose in paragraphs. Use an unordered or ordered list only when the original content is already a list.',
-      PRESET_FORMAT_RULES
-    ].join('\n')
-  },
-  {
-    id: 'generate-faq',
-    title: 'Generate FAQ',
-    content: [
-      'Generate a FAQ from this transcript. Write clear questions and concise answers grounded only in the transcript. If the transcript does not contain an answer, say so.',
-      '',
-      'Output format:',
-      '# {question}',
-      '{answer}',
-      '',
-      'Use one # heading per question. Put the answer as a short paragraph, or as an unordered list when there are several parts. Do not number the questions or add a FAQ title.',
-      PRESET_FORMAT_RULES
-    ].join('\n')
-  },
-  {
-    id: 'extract-statistics',
-    title: 'Extract Statistics',
-    content: [
-      'Extract numbers, percentages, amounts, dates, and growth rates from this transcript.',
-      '',
-      'Output format:',
-      '# Highlights',
-      '- {statistic} — {what it refers to}',
-      '# Details',
-      '| Statistic | Refers to | Context |',
-      '| --- | --- | --- |',
-      '| ... | ... | ... |',
-      '',
-      'Use an unordered list for highlights and a Markdown table for details. If none are found, say so in one short sentence. Do not add a Statistics title.',
-      PRESET_FORMAT_RULES
-    ].join('\n')
-  },
-  {
-    id: 'paraphrase-content',
-    title: 'Paraphrase Content',
-    content: [
-      'Paraphrase this transcript in a clear, natural style while keeping the original meaning. Do not add claims that are not in the source.',
-      '',
-      'Output format:',
-      '# {section}',
-      '{paraphrased paragraphs}',
-      '',
-      'Use # headings for topic shifts. Prefer short paragraphs. Use an unordered list for parallel takeaways and an ordered list for steps or ranked items.',
-      PRESET_FORMAT_RULES
-    ].join('\n')
-  },
-  {
-    id: 'create-mindmap',
-    title: 'Create a mindmap',
-    content: [
-      'Organize this transcript into a hierarchical mind map.',
-      '',
-      'Output format:',
-      '```mermaid',
-      'mindmap',
-      '  {root topic}',
-      '    {branch}',
-      '      {leaf}',
-      '      {leaf}',
-      '    {branch}',
-      '      {leaf}',
-      '```',
-      '',
-      'Reply with one mermaid code fence only. Start the diagram with mindmap. Indent two spaces per level. Keep labels short. Wrap a label in double quotes if it contains parentheses, brackets, or colons. Do not use flowchart or graph syntax. Do not add a heading, preamble, or extra text outside the fence. Use the same language as the transcript.'
-    ].join('\n')
-  },
-  {
-    id: 'translate',
-    title: 'Translate',
-    content: [
-      `Translate this transcript into ${AI_PROMPT_UI_LANGUAGE_TOKEN}. If it is already in ${AI_PROMPT_UI_LANGUAGE_TOKEN}, rewrite it clearly without changing the meaning.`,
-      '',
-      'Output format:',
-      '# {section}',
-      '{translated paragraphs}',
-      '',
-      'Use # headings for speaker changes or topic shifts. Write translated prose in paragraphs. Use an unordered or ordered list only when the original content is already a list. Keep the original speakers, meaning, and details. Do not add claims that are not in the source. Keep each list marker on the same line as the item text. Do not wrap the whole reply in a code fence. Do not add a preamble, closing remarks, or a heading that restates the task.'
-    ].join('\n')
-  }
-] as const
+export const AI_PROMPT_PRESETS: readonly AiPromptPresetSeed[] = BUILTIN_SKILLS.filter(
+  (skill) => !['article-rewrite', 'faq', 'diagnose-task', 'video-localization'].includes(skill.name)
+).sort(
+  (left, right) =>
+    Number(right.name === AI_OVERVIEW_PROMPT_ID) - Number(left.name === AI_OVERVIEW_PROMPT_ID)
+)
 
-const PRESET_IDS = new Set(AI_PROMPT_PRESETS.map((prompt) => prompt.id))
-const PRESET_SEED_BY_ID = new Map<string, AiPromptPresetSeed>(
-  AI_PROMPT_PRESETS.map((preset) => [preset.id, preset])
+const PRESET_NAMES = new Set(AI_PROMPT_PRESETS.map((prompt) => prompt.name))
+const PRESET_SEED_BY_NAME = new Map<string, AiPromptPresetSeed>(
+  AI_PROMPT_PRESETS.map((preset) => [preset.name, preset])
 )
 
 /** Built-in prompts that should no longer be seeded or restored. */
-const DEPRECATED_PRESET_IDS = new Set([
+const DEPRECATED_PRESET_NAMES = new Set([
   'extract-questions',
   'highlight-key-points',
   'identify-emotions',
@@ -360,7 +240,7 @@ export const resolveAiPromptContent = (content: string, languageCode: string): s
  * @param content Prompt body from the editor.
  */
 export const canonicalizeAiPromptContent = (promptId: string, content: string): string => {
-  const seed = PRESET_SEED_BY_ID.get(promptId)
+  const seed = PRESET_SEED_BY_NAME.get(promptId)
   if (!seed || content === seed.content) {
     return content
   }
@@ -371,11 +251,44 @@ export const canonicalizeAiPromptContent = (promptId: string, content: string): 
 }
 
 /**
- * True when a prompt id ships with VidBee.
+ * True when a skill name ships with VidBee.
  *
- * @param id Prompt id from storage or the UI.
+ * @param name Standard skill name from storage or the UI.
  */
-export const isAiPromptPresetId = (id: string): boolean => PRESET_IDS.has(id)
+export const isAiPromptPresetName = (name: string): boolean => PRESET_NAMES.has(name)
+
+/** Localize built-in metadata while keeping the standard name as the sole skill identifier. */
+function localizedSkillField(
+  prompt: Pick<AiPrompt, 'name' | 'isPreset' | 'description'>,
+  field: 'name' | 'description',
+  translate?: (key: string) => string
+): string {
+  const fallback = field === 'name' ? prompt.name : (prompt.description ?? '')
+  if (
+    !(prompt.isPreset && translate && BUILTIN_SKILLS.some((skill) => skill.name === prompt.name))
+  ) {
+    return fallback
+  }
+  const key = `settings.ai.presetSkills.${prompt.name}.${field}`
+  const translated = translate(key)
+  return translated === key ? fallback : translated
+}
+
+/** Show a localized built-in name without introducing another authored name or identifier. */
+export function aiPromptLabel(
+  prompt: Pick<AiPrompt, 'name' | 'isPreset' | 'description'>,
+  translate?: (key: string) => string
+): string {
+  return localizedSkillField(prompt, 'name', translate)
+}
+
+/** Show localized built-in discovery descriptions in the skill library and composer. */
+export function aiPromptDescription(
+  prompt: Pick<AiPrompt, 'name' | 'isPreset' | 'description'>,
+  translate?: (key: string) => string
+): string {
+  return localizedSkillField(prompt, 'description', translate)
+}
 
 /**
  * Build the default prompt list used on first launch.
@@ -384,10 +297,9 @@ export const isAiPromptPresetId = (id: string): boolean => PRESET_IDS.has(id)
  */
 export const createDefaultAiPrompts = (now: number = Date.now()): AiPrompt[] =>
   AI_PROMPT_PRESETS.map((preset, index) => ({
-    id: preset.id,
-    title: preset.title,
+    name: preset.name,
+    description: preset.description,
     content: preset.content,
-    enabled: true,
     autoRun: false,
     isPreset: true,
     sortOrder: index,
@@ -401,27 +313,43 @@ export const createDefaultAiPrompts = (now: number = Date.now()): AiPrompt[] =>
  * @param stored Prompt loaded from storage.
  * @param now Timestamp written onto updatedAt when the body changes.
  */
-const withCurrentPromptFields = (stored: AiPrompt & { icon?: unknown }, now: number): AiPrompt => {
+const withCurrentPromptFields = (
+  stored: AiPrompt & { icon?: unknown; enabled?: boolean },
+  now: number
+): AiPrompt => {
   let prompt: AiPrompt = stored
-  if ('icon' in stored) {
-    const { icon: _icon, ...current } = stored
+  if ('icon' in stored || 'enabled' in stored) {
+    const { icon: _icon, enabled: _enabled, ...current } = stored
     prompt = current
   }
   if (!prompt.isPreset) {
     return prompt
   }
-  const seed = PRESET_SEED_BY_ID.get(prompt.id)
-  const oldBodies = SUPERSEDED_PRESET_CONTENT[prompt.id]
+  const seed = PRESET_SEED_BY_NAME.get(prompt.name)
+  const oldBodies = SUPERSEDED_PRESET_CONTENT[prompt.name]
   if (!(seed && oldBodies?.includes(prompt.content)) || prompt.content === seed.content) {
     return prompt
   }
   return { ...prompt, content: seed.content, updatedAt: now }
 }
 
+/** Resolve saved sidebar preferences while keeping custom skills on their existing defaults. */
+export function isTranscriptSkillSidebarEnabled(prompt: AiPrompt): boolean {
+  return (
+    prompt.showInTranscript ??
+    (prompt.isPreset ? DEFAULT_TRANSCRIPT_SIDEBAR_SKILLS.has(prompt.name) : !prompt.workflowOnly)
+  )
+}
+
+/** Exclude invalid skills after resolving their transcript sidebar preference. */
+export function isTranscriptSkillVisible(prompt: AiPrompt): boolean {
+  return isTranscriptSkillSidebarEnabled(prompt) && !prompt.skillError
+}
+
 /**
- * Split the Overview prompt from the remaining prompt tabs.
+ * Split the Overview prompt from the remaining visible prompt tabs.
  *
- * @param prompts Enabled prompts shown in the transcript side panel.
+ * @param prompts Installed prompts shown in the transcript side panel.
  */
 export const partitionTranscriptPromptTabs = (
   prompts: readonly AiPrompt[]
@@ -429,7 +357,10 @@ export const partitionTranscriptPromptTabs = (
   let overview: AiPrompt | null = null
   const rest: AiPrompt[] = []
   for (const prompt of prompts) {
-    if (prompt.id === AI_OVERVIEW_PROMPT_ID && !overview) {
+    if (!isTranscriptSkillVisible(prompt)) {
+      continue
+    }
+    if (prompt.name === AI_OVERVIEW_PROMPT_ID && !overview) {
       overview = prompt
       continue
     }
@@ -450,16 +381,16 @@ export const mergeDefaultAiPrompts = (
   existing: AiPrompt[],
   now: number = Date.now()
 ): AiPrompt[] => {
-  const kept = existing.filter((prompt) => !DEPRECATED_PRESET_IDS.has(prompt.id))
-  const present = new Set(kept.map((prompt) => prompt.id))
-  const missing = createDefaultAiPrompts(now).filter((prompt) => !present.has(prompt.id))
+  const kept = existing.filter((prompt) => !DEPRECATED_PRESET_NAMES.has(prompt.name))
+  const present = new Set(kept.map((prompt) => prompt.name))
+  const missing = createDefaultAiPrompts(now).filter((prompt) => !present.has(prompt.name))
   const refreshed = kept.map((prompt) => withCurrentPromptFields(prompt, now))
   const fieldsChanged = refreshed.some((prompt, index) => prompt !== kept[index])
   if (missing.length === 0 && kept.length === existing.length && !fieldsChanged) {
     return existing
   }
-  const overviewMissing = missing.find((prompt) => prompt.id === AI_OVERVIEW_PROMPT_ID)
-  const otherMissing = missing.filter((prompt) => prompt.id !== AI_OVERVIEW_PROMPT_ID)
+  const overviewMissing = missing.find((prompt) => prompt.name === AI_OVERVIEW_PROMPT_ID)
+  const otherMissing = missing.filter((prompt) => prompt.name !== AI_OVERVIEW_PROMPT_ID)
   const nextSort = refreshed.reduce((max, prompt) => Math.max(max, prompt.sortOrder), -1) + 1
   const minSort = refreshed.reduce((min, prompt) => Math.min(min, prompt.sortOrder), 0)
   return [

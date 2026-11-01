@@ -5,8 +5,14 @@ import { defaultLanguageCode, type LanguageCode } from '@vidbee/i18n/languages'
 import type { SubscriptionDownloadPreferences } from '@vidbee/subscriptions-core/types'
 import type { DownloadCookieSource, TaskCreationMetadata, TaskKind } from '@vidbee/task-queue'
 import type { AsrTierId } from '@vidbee/transcription/asr'
+import {
+  DEFAULT_CLOUD_TRANSCRIPTION_MODEL,
+  type TranscriptionProvider
+} from '@vidbee/transcription/cloud'
 import type { DownloadMirror } from '@vidbee/transcription/download-mirrors'
+import { type AgentPermissionMode, DEFAULT_AGENT_PERMISSION_MODE } from '../agent-permissions'
 import type { ExtensionCookieSourcePreference } from '../extension-cookies'
+import { DEFAULT_TTS_MODEL_ID, type TtsModelId } from '../tts-models'
 
 export type {
   YtDlpKernelPreparationStep,
@@ -73,6 +79,8 @@ export type DownloadStatus =
 
 export interface DownloadItem {
   cookieSources?: DownloadCookieSource[]
+  /** Historical admission settings, never evidence of the actual executed source. */
+  configuredCookieSources?: DownloadCookieSource[]
   id: string
   url: string
   title: string
@@ -145,6 +153,8 @@ export interface SubscriptionFeedItem {
 
 export interface DownloadHistoryItem {
   cookieSources?: DownloadCookieSource[]
+  /** Historical admission settings, never evidence of the actual executed source. */
+  configuredCookieSources?: DownloadCookieSource[]
   id: string
   url: string
   title: string
@@ -373,11 +383,14 @@ export interface AppSettings {
   autoTranscribeAfterDownload: boolean
   maxConcurrentTranscriptions: number
   asrTier: AsrTierId
+  ttsModelId: TtsModelId
+  transcriptionProvider: TranscriptionProvider
+  cloudTranscriptionModelId: string
   /** Prefer ModelScope / GitHub proxies when GitHub is blocked or auto-detected as China. */
   downloadMirror: DownloadMirror
   lastSeenWhatsNew: string
-  /** How management tools run: hidden, ask first, or autonomous. */
-  agentManagementTools: 'off' | 'ask' | 'auto'
+  /** Whether tool operations use manual approval, model review, or full access. */
+  agentManagementTools: AgentPermissionMode
 }
 
 export const DEFAULT_SUBSCRIPTION_FILENAME_TEMPLATE = '%(uploader)s/%(title)s.%(ext)s'
@@ -419,7 +432,10 @@ export const defaultSettings: AppSettings = {
   autoTranscribeAfterDownload: true,
   maxConcurrentTranscriptions: 1,
   asrTier: 'minimal',
+  ttsModelId: DEFAULT_TTS_MODEL_ID,
+  transcriptionProvider: 'local',
+  cloudTranscriptionModelId: DEFAULT_CLOUD_TRANSCRIPTION_MODEL,
   downloadMirror: 'auto',
   lastSeenWhatsNew: '',
-  agentManagementTools: 'ask'
+  agentManagementTools: DEFAULT_AGENT_PERMISSION_MODE
 }

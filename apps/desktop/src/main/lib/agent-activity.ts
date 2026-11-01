@@ -154,7 +154,8 @@ export function agentActivity(run: AgentChatRun): AgentActivity[] {
     }
   }
   for (const tool of run.tools) {
-    if (!seen.has(tool.id)) {
+    // Skill snapshots decorate actual read calls; they cannot establish a new event or its order.
+    if (!seen.has(tool.id) && tool.name !== 'skill' && !(tool.skills?.length && messages.length)) {
       activity.push({
         id: tool.id,
         kind: 'tool',

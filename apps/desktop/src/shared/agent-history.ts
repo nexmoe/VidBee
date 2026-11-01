@@ -90,6 +90,14 @@ export function agentThreadIsRunning(thread: AgentThread): boolean {
   return thread.runs.some((run) => run.status === 'running')
 }
 
+/** True while any live run in the conversation is waiting for manual permission. */
+export function agentThreadNeedsApproval(thread: AgentThread): boolean {
+  return thread.runs.some(
+    (run) =>
+      run.status === 'running' && run.tools.some((tool) => tool.status === 'pending-approval')
+  )
+}
+
 /**
  * The run the download list reports: a live run first, otherwise the most recently updated.
  *

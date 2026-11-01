@@ -13,8 +13,12 @@ import {
   TRANSCRIPT_VT_TAB
 } from '@renderer/lib/transcript-view-transition'
 import { pendingPromptTabAtom } from '@renderer/store/transcript-prompt-tab'
-import type { TranscriptSegmentView, TranscriptSpeakerView } from '@renderer/store/transcripts'
-import type { AgentRunEvent, AgentThreadSummary } from '@shared/agent-chat'
+import type {
+  TranscriptSegmentView,
+  TranscriptSnapshotView,
+  TranscriptSpeakerView
+} from '@renderer/store/transcripts'
+import { AGENT_WORKSPACE_ID, type AgentRunEvent, type AgentThreadSummary } from '@shared/agent-chat'
 import {
   type CatalogMemoryEntry,
   mergeCatalogList,
@@ -25,9 +29,11 @@ import {
   AI_CHAT_PROMPT_ID,
   AI_OVERVIEW_PROMPT_ID,
   agentChatPrompt,
+  isTranscriptSkillVisible,
   partitionTranscriptPromptTabs
 } from '@shared/ai-prompts'
 import type { AiSettingsSnapshot } from '@shared/ai-types'
+import { useNavigate } from '@tanstack/react-router'
 import { AgentWorkspaceTabs } from '@vidbee/ui/components/agent-workspace'
 import { useAtom } from 'jotai'
 import { Captions } from 'lucide-react'
@@ -93,6 +99,8 @@ interface TranscriptSidePanelProps {
   sourceUrl?: string | null
   /** ISO 639 / BCP-47 language of the visible captions. */
   transcriptLanguage?: string | null
+  /** Available subtitle sources for bilingual reading. */
+  sources?: TranscriptSnapshotView['sources']
   /** Whether these captions came from ASR / platform-auto or a human track. */
   transcriptOrigin?: 'ai' | 'human'
   /** Typewriter incoming ASR lines. Off when viewing a finished caption track. */
@@ -101,8 +109,6 @@ interface TranscriptSidePanelProps {
   /** True when Desktop already has a stored transcript record. */
   hasStoredTranscript?: boolean
 }
-
-const MENU_HOVER_CLOSE_MS = 120
 
 /**
  * Whether a completed or failed prompt result has already been opened.
@@ -160,20 +166,25 @@ export function TranscriptSidePanel({
   sourceUrl,
   streamLive = running,
   transcriptLanguage,
+  sources,
   transcriptOrigin,
   transcriptText,
   hasStoredTranscript = false
 }: TranscriptSidePanelProps) {
+  const navigate = useNavigate()
   const { t } = useTranslation()
   const [pendingTab, setPendingTab] = useAtom(pendingPromptTabAtom)
   const tabsRef = useRef<HTMLDivElement>(null)
-  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [snapshot, setSnapshot] = useState<AiSettingsSnapshot | null>(null)
   const [tab, setTab] = useState(routeTab ?? 'transcript')
   const [threadId, setThreadId] = useState<string | null>(routeThreadId ?? null)
   const [menuOpen, setMenuOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
   const [videoThreads, setVideoThreads] = useState<AgentThreadSummary[]>([])
+  const [chatLaunchDraft, setChatLaunchDraft] = useState<{
+    threadId: string
+    text: string
+  } | null>(null)
   const [openChatIdsByVideo, setOpenChatIdsByVideo] = useState<Record<string, string[]>>(() =>
     routeTab === AI_CHAT_PROMPT_ID && routeThreadId ? { [downloadId]: [routeThreadId] } : {}
   )
@@ -189,7 +200,7 @@ export function TranscriptSidePanel({
   const canWaitForTranscript = !(canUsePrompts || noSpeech || failed)
 
   /**
-   * Load enabled prompts and the active provider.
+   * Load installed skills, sidebar preferences and the active provider.
    */
   const refresh = useCallback(async (): Promise<void> => {
     try {
@@ -206,42 +217,11 @@ export function TranscriptSidePanel({
   }, [refresh])
 
   /**
-   * Cancel a pending hover-close so the pointer can move onto the menu.
-   */
-  const cancelCloseMenu = useCallback((): void => {
-    if (closeTimerRef.current === null) {
-      return
-    }
-    clearTimeout(closeTimerRef.current)
-    closeTimerRef.current = null
-  }, [])
-
-  /**
-   * Open the overflow prompt menu.
-   */
-  const openMenu = useCallback((): void => {
-    cancelCloseMenu()
-    setMenuOpen(true)
-  }, [cancelCloseMenu])
-
-  /**
    * Close the overflow prompt menu.
    */
   const closeMenu = useCallback((): void => {
-    cancelCloseMenu()
     setMenuOpen(false)
-  }, [cancelCloseMenu])
-
-  /**
-   * Close shortly after leave so the pointer can cross into the menu.
-   */
-  const scheduleCloseMenu = useCallback((): void => {
-    cancelCloseMenu()
-    closeTimerRef.current = setTimeout(() => {
-      closeTimerRef.current = null
-      setMenuOpen(false)
-    }, MENU_HOVER_CLOSE_MS)
-  }, [cancelCloseMenu])
+  }, [])
 
   /**
    * Switch the visible conversation, close menus, and keep the chip in view.
@@ -324,6 +304,10 @@ export function TranscriptSidePanel({
   const openHistoryItem = useCallback(
     (item: AgentThreadSummary): void => {
       setHistoryOpen(false)
+      if (item.downloadId === AGENT_WORKSPACE_ID) {
+        void navigate({ to: '/chat', search: { thread: item.id } })
+        return
+      }
       if (item.promptId === AI_CHAT_PROMPT_ID) {
         openChatTab(item.id)
       }
@@ -338,7 +322,7 @@ export function TranscriptSidePanel({
       })
       onOpenDownload?.(item.downloadId, { promptId: item.promptId, threadId: item.id })
     },
-    [downloadId, onOpenDownload, openChatTab, selectConversation, setPendingTab]
+    [downloadId, navigate, onOpenDownload, openChatTab, selectConversation, setPendingTab]
   )
 
   /**
@@ -379,18 +363,27 @@ export function TranscriptSidePanel({
   }, [downloadId])
 
   /**
-   * Start a blank Agent chat on this video.
+   * Start a new Agent chat on this video, optionally seeding an unsent composer draft.
    */
-  const startNewChat = useCallback(async (): Promise<void> => {
-    try {
-      const thread = await ipcServices.ai.createAgentThread({ downloadId })
-      await refreshVideoThreads()
-      openChatTab(thread.id)
-      selectConversation(AI_CHAT_PROMPT_ID, thread.id)
-    } catch (error) {
-      logger.error('Failed to start a new chat', error)
-    }
-  }, [downloadId, openChatTab, refreshVideoThreads, selectConversation])
+  const startNewChat = useCallback(
+    async (initialDraft = ''): Promise<void> => {
+      try {
+        const thread = await ipcServices.ai.createAgentThread({ downloadId })
+        setChatLaunchDraft(initialDraft ? { threadId: thread.id, text: initialDraft } : null)
+        await refreshVideoThreads()
+        openChatTab(thread.id)
+        selectConversation(AI_CHAT_PROMPT_ID, thread.id)
+      } catch (error) {
+        logger.error('Failed to start a new chat', error)
+      }
+    },
+    [downloadId, openChatTab, refreshVideoThreads, selectConversation]
+  )
+
+  /** Consume the initial draft after the new chat has hydrated, so reopening it never refills it. */
+  const consumeChatLaunchDraft = useCallback((id: string): void => {
+    setChatLaunchDraft((current) => (current?.threadId === id ? null : current))
+  }, [])
 
   useEffect(() => {
     if (!onRouteTabChange) {
@@ -452,10 +445,22 @@ export function TranscriptSidePanel({
     }
   }, [downloadId, refreshVideoThreads])
 
+  const openChatIds = openChatIdsByVideo[downloadId] ?? []
+  const chatThreads = openChatIds
+    .map((id) =>
+      videoThreads.find((thread) => thread.id === id && thread.promptId === AI_CHAT_PROMPT_ID)
+    )
+    .filter((thread): thread is AgentThreadSummary => Boolean(thread))
+  const activeTabId = tab === AI_CHAT_PROMPT_ID ? (threadId ?? tab) : tab
   const activeTabPresent =
-    tab === 'transcript' ||
-    Boolean(snapshot?.prompts.some((prompt) => prompt.id === tab)) ||
-    Boolean(threadId && videoThreads.some((thread) => thread.id === threadId))
+    tab === AI_CHAT_PROMPT_ID
+      ? chatThreads.some((thread) => thread.id === activeTabId)
+      : tab === 'transcript' ||
+        Boolean(
+          snapshot?.prompts.some(
+            (prompt) => prompt.name === tab && isTranscriptSkillVisible(prompt)
+          )
+        )
 
   useLayoutEffect(() => {
     if (collapsed || !activeTabPresent) {
@@ -470,48 +475,53 @@ export function TranscriptSidePanel({
       scrolledDownloadIdRef.current = downloadId
       scrolledTabIdRef.current = null
     }
-    const activeId = threadId ?? tab
-    const activeTab = findTranscriptTab(list, activeId)
-    if (!activeTab) {
-      return
-    }
     const behavior =
       prefersReducedMotion() ||
       scrolledTabIdRef.current === null ||
-      scrolledTabIdRef.current === activeId
+      scrolledTabIdRef.current === activeTabId
         ? 'auto'
         : 'smooth'
-    scrolledTabIdRef.current = activeId
-    scrollTranscriptTabIntoView(viewport, activeTab, behavior)
-  }, [activeTabPresent, collapsed, downloadId, tab, threadId])
-
-  /**
-   * Keep hover and Radix dismiss (Escape, click-outside, item select) in sync.
-   */
-  const onMenuOpenChange = useCallback(
-    (open: boolean): void => {
-      if (open) {
-        openMenu()
+    let frame = 0
+    /** Reveal the selected chip after tab insertion and scroll-area layout have settled. */
+    const revealActiveTab = (): void => {
+      const activeTab = findTranscriptTab(list, activeTabId)
+      if (!activeTab) {
         return
       }
-      closeMenu()
-    },
-    [closeMenu, openMenu]
-  )
-
-  useEffect(() => {
-    return () => {
-      cancelCloseMenu()
+      scrolledTabIdRef.current = activeTabId
+      scrollTranscriptTabIntoView(viewport, activeTab, behavior)
     }
-  }, [cancelCloseMenu])
+    /** Coalesce layout updates so new and resized tabs use their final bounds. */
+    const scheduleReveal = (): void => {
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(revealActiveTab)
+    }
+    const observer = new ResizeObserver(scheduleReveal)
+    observer.observe(list)
+    observer.observe(viewport)
+    scheduleReveal()
+    return () => {
+      cancelAnimationFrame(frame)
+      observer.disconnect()
+    }
+  }, [activeTabId, activeTabPresent, collapsed, downloadId])
 
   const allPrompts = snapshot?.prompts ?? []
-  const prompts = allPrompts.filter((prompt) => prompt.enabled)
+  const prompts = allPrompts.filter(isTranscriptSkillVisible)
   const { overview, rest: otherPrompts } = partitionTranscriptPromptTabs(prompts)
   const runStatuses = usePromptRunStatuses(
     downloadId,
-    prompts.map((prompt) => prompt.id)
+    prompts.map((prompt) => prompt.name)
   )
+
+  useEffect(() => {
+    if (
+      !threadId &&
+      snapshot?.prompts.some((prompt) => prompt.name === tab && !isTranscriptSkillVisible(prompt))
+    ) {
+      selectTab('transcript')
+    }
+  }, [selectTab, snapshot, tab, threadId])
 
   useEffect(() => {
     if (tab === 'transcript') {
@@ -531,13 +541,10 @@ export function TranscriptSidePanel({
     return null
   }
 
-  const openChatIds = openChatIdsByVideo[downloadId] ?? []
-  const chatThreads = openChatIds
-    .map((id) =>
-      videoThreads.find((thread) => thread.id === id && thread.promptId === AI_CHAT_PROMPT_ID)
-    )
-    .filter((thread): thread is AgentThreadSummary => Boolean(thread))
-  const storedPrompt = allPrompts.find((prompt) => prompt.id === tab) ?? null
+  const storedPrompt =
+    allPrompts.find(
+      (prompt) => prompt.name === tab && (threadId || isTranscriptSkillVisible(prompt))
+    ) ?? null
   const activePrompt =
     tab === 'transcript'
       ? null
@@ -545,7 +552,7 @@ export function TranscriptSidePanel({
   const settingsReady = snapshot !== null
   const hasProvider = Boolean(snapshot?.activeProviderId)
   const promptTranscriptText =
-    activePrompt?.id === AI_OVERVIEW_PROMPT_ID
+    activePrompt?.name === AI_OVERVIEW_PROMPT_ID
       ? buildOverviewPromptTranscriptText(segments, resolveSpeaker, {
           durationMs: sourceDurationMs,
           title: sourceTitle
@@ -554,7 +561,7 @@ export function TranscriptSidePanel({
   return (
     <div className="relative flex h-full min-h-0 flex-col border-border/60 border-t bg-background lg:border-t-0 lg:border-l">
       <AgentWorkspaceTabs
-        activeId={threadId ?? tab}
+        activeId={activeTabId}
         historyOpen={historyOpen}
         labels={{
           newChat: t('transcript.promptHistoryNew'),
@@ -568,9 +575,7 @@ export function TranscriptSidePanel({
           closeMenu()
           setHistoryOpen((current) => !current)
         }}
-        onMenuEnter={openMenu}
-        onMenuLeave={scheduleCloseMenu}
-        onMenuOpenChange={onMenuOpenChange}
+        onMenuOpenChange={setMenuOpen}
         onNewChat={() => {
           closeMenu()
           void startNewChat()
@@ -590,22 +595,22 @@ export function TranscriptSidePanel({
             icon: <Captions aria-hidden className="size-4" />
           },
           ...[...(overview ? [overview] : []), ...otherPrompts].map((prompt, index) => ({
-            id: prompt.id,
+            id: prompt.name,
             label: aiPromptLabel(prompt, t),
-            separate: prompt.id !== AI_OVERVIEW_PROMPT_ID && index === (overview ? 1 : 0),
-            status: runStatuses[prompt.id]?.status,
+            separate: prompt.name !== AI_OVERVIEW_PROMPT_ID && index === (overview ? 1 : 0),
+            status: runStatuses[prompt.name]?.status,
             statusLabel: t(
-              runStatuses[prompt.id]?.status === 'running'
+              runStatuses[prompt.name]?.status === 'running'
                 ? 'transcript.promptRunning'
-                : runStatuses[prompt.id]?.status === 'error'
+                : runStatuses[prompt.name]?.status === 'error'
                   ? 'transcript.promptTabError'
                   : 'transcript.promptTabCompleted'
             ),
             viewed: isPromptTabViewed(
               downloadId,
-              prompt.id,
+              prompt.name,
               tab,
-              runStatuses[prompt.id]?.updatedAt,
+              runStatuses[prompt.name]?.updatedAt,
               viewedAt
             )
           })),
@@ -618,7 +623,7 @@ export function TranscriptSidePanel({
           }))
         ]}
         tabsRef={tabsRef}
-        underline={<TabUnderline activeId={threadId ?? tab} />}
+        underline={<TabUnderline activeId={activeTabId} />}
         viewportRef={tabsViewportRef}
       />
       <div className="relative flex min-h-0 flex-1 flex-col" data-vt="transcript-tab">
@@ -628,7 +633,9 @@ export function TranscriptSidePanel({
             downloadId={downloadId}
             hasProvider={hasProvider}
             hasStoredTranscript={hasStoredTranscript}
+            initialDraft={chatLaunchDraft?.threadId === threadId ? chatLaunchDraft.text : undefined}
             onSeek={onSeek}
+            onThreadChange={consumeChatLaunchDraft}
             prompt={activePrompt}
             ready={canUsePrompts}
             settingsReady={settingsReady}
@@ -658,6 +665,9 @@ export function TranscriptSidePanel({
             onRetry={onRetry}
             onSeek={onSeek}
             onStart={onStart}
+            onTranslate={() =>
+              void startNewChat(`$translate ${t('transcript.translateSubtitlesPrompt')}`)
+            }
             ready={ready}
             resolveColorIndex={resolveColorIndex}
             resolveSpeaker={resolveSpeaker}
@@ -667,6 +677,7 @@ export function TranscriptSidePanel({
             sourceByline={sourceByline}
             sourceCover={sourceCover}
             sourceDurationMs={sourceDurationMs}
+            sources={sources}
             sourceTitle={sourceTitle}
             speakers={speakers}
             stage={stage}
@@ -686,7 +697,7 @@ export function TranscriptSidePanel({
             if (promptId === AI_CHAT_PROMPT_ID) {
               return t('transcript.promptHistoryChat')
             }
-            const prompt = allPrompts.find((entry) => entry.id === promptId)
+            const prompt = allPrompts.find((entry) => entry.name === promptId)
             return prompt ? aiPromptLabel(prompt, t) : promptId
           }}
         />

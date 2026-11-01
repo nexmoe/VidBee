@@ -12,6 +12,7 @@ export type AgentActivity =
 
 /** Minimal public message fields needed by the shared reasoning rail. */
 export interface AgentThinkingMessage {
+  text?: string
   thinking: string
   thinkingMs?: number
   createdAt: number
@@ -28,6 +29,7 @@ export interface AgentThinkingRun {
     name: string
     status: string
     detail?: string
+    skills?: { name: string; description: string; resource: string }[]
     approval?: { summary: string }
   }[]
 }

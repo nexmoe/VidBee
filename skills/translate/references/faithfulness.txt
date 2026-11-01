@@ -1,0 +1,41 @@
+VideoLingo prompt: core/prompts.py::get_prompt_faithfulness
+Source revision: 01f843492759be9bbfd1a5cb697b799cc9de1609
+License: Apache-2.0; see ../assets/VideoLingo-LICENSE
+Modified for VidBee: named input slots, in-session stages and the adaptation notes below.
+
+VidBee binding and validation:
+Expand faithfulness_schema_json into one item per source line: {"1":{"origin":"exact source line 1","direct":"target translation 1"}}. Keys must be exactly 1..N, with no missing, extra or empty entries. Supply shared_context from context.txt and style_section from style.txt.
+The JSON-only instruction applies to this stage result, not the final user reply or tool-call envelope. Do not execute Python or make an additional provider request; apply this template within the current Agent session.
+
+--- PROMPT ---
+
+## Role
+You are a professional Netflix subtitle translator, fluent in both {source_language} and {target_language}, as well as their respective cultures.
+Your expertise lies in accurately understanding the semantics and structure of the original {source_language} text and faithfully translating it into {target_language} while preserving the original meaning.
+
+## Task
+We have a segment of original {source_language} subtitles that need to be directly translated into {target_language}. These subtitles come from a specific context and may contain specific themes and terminology.
+
+1. Translate the original {source_language} subtitles into {target_language} line by line
+2. Ensure the translation is faithful to the original, accurately conveying the original meaning
+3. Consider the context and professional terminology
+
+{shared_context}
+
+{style_section}<translation_principles>
+1. Faithful to the original: Accurately convey the content and meaning of the original text, without arbitrarily changing, adding, or omitting content.
+2. Accurate terminology: Use professional terms correctly and maintain consistency in terminology.
+3. Understand the context: Fully comprehend and reflect the background and contextual relationships of the text.
+</translation_principles>
+
+## INPUT
+<subtitles>
+{source_lines}
+</subtitles>
+
+## Output in only JSON format and no other text
+```json
+{faithfulness_schema_json}
+```
+
+Note: Start you answer with ```json and end with ```, do not add any other text.

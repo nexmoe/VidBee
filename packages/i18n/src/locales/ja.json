@@ -303,7 +303,10 @@
         "stopped": "停止"
       }
     },
-    "sourceFile": "元のファイル"
+    "sourceFile": "元のファイル",
+    "troubleshoot": "問題を調べる",
+    "troubleshootPrompt": "ダウンロードタスク {{taskId}} の問題を調べてください。現在の状態、エラーの詳細、ログを確認し、考えられる原因と対処方法を説明してください。操作を行う前に、まず次の手順を提案してください。",
+    "troubleshootFailed": "問題の調査を開始できませんでした。もう一度お試しください。"
   },
   "error": {
     "title": "問題が発生しました",
@@ -507,7 +510,7 @@
       "invitedListTitle": "招待したユーザー",
       "invitedUsers": "招待人数",
       "loadMore": "さらに読み込む",
-      "creditsDescription": "VidBee Cloud の文字起こしと AI プロンプトに使用されます。",
+      "creditsDescription": "VidBee Cloud の文字起こしと AI Skill に使用されます。",
       "creditsError": "AI クレジットを読み込めませんでした。",
       "creditsLoading": "AI クレジットを読み込み中…",
       "creditsRemaining": "残り {{remaining}}",
@@ -531,7 +534,7 @@
       "creditsReservedAmount": "予約済み：{{credits}}",
       "creditsReservedHelp": "実行中のタスクや使用量の確認用に確保されています。精算後、未使用分は解放されます。",
       "creditsInterruptedAmount": "中断タスクの消費分：{{credits}}",
-      "creditsInterruptedHelp": "使用済み残高に含まれており、追加の請求ではありません。失敗、キャンセル、タイムアウトした AI プロンプトの精算済み使用量です。",
+      "creditsInterruptedHelp": "使用済み残高に含まれており、追加の請求ではありません。失敗、キャンセル、タイムアウトした AI Skill の精算済み使用量です。",
       "creditsRefresh": "残高を更新",
       "creditsTopUp": "クレジットをチャージ",
       "creditsTopUpError": "料金ページを開けませんでした。もう一度お試しください。",
@@ -539,7 +542,7 @@
       "creditsReviewAmount": "予約済みクレジットのうち {{credits}} を確認中",
       "reservationTitle": "予約中のタスク",
       "reservationHelp": "期限切れの確保分を毎分確認します。5 分間の照合期間が終了した後、次の確認時に未確認分を解放します。",
-      "reservationTask": "AI プロンプト",
+      "reservationTask": "AI Skill",
       "reservationElapsed": "{{minutes}} 分前に開始",
       "reservationActivity": "最終進行：{{time}}",
       "reservationHeartbeat": "最終接続：{{time}}",
@@ -732,6 +735,22 @@
     "autoTranscribeAfterDownloadDescription": "When a download finishes, start a local transcript in the background. This uses your computer and skips files with no speech. Already queued jobs are not cancelled if you turn this off",
     "maxConcurrentTranscriptions": "同時文字起こし数",
     "maxConcurrentTranscriptionsDescription": "同時に実行できる文字起こしの数です。各ジョブはこのパソコンのCPUとメモリを使います。値を下げても実行中のジョブは止まりません",
+    "cloudTranscription": {
+      "title": "VidBee Cloud 文字起こし",
+      "description": "強力なクラウド音声モデルで高品質な多言語の文字起こしを。モデルのダウンロードや、パソコンでの重い認識処理は不要です。",
+      "billing": "クラウドでは AI クレジットを音声の秒数に応じて消費します。ローカルの文字起こしは無料で、音声はパソコン内に保存されます。",
+      "provider": "文字起こしサービス",
+      "local": "ローカル · 無料",
+      "cloud": "VidBee Cloud · 有料",
+      "model": "クラウド音声モデル",
+      "price": "音声1分あたり {{credits}} クレジット。各クリップの秒数は切り上げます。再試行では完了済みクリップを再利用します。",
+      "balance": "利用可能：{{credits}} クレジット",
+      "signInDescription": "ログインすると、利用可能なモデルと現在の料金を確認できます。",
+      "automatic": "自動文字起こしが有効な場合、新しいダウンロードにもこの有料クラウドモデルを使用します。音声は認識のため Cloud に送信されます。",
+      "timing": "クラウドの時刻情報はクリップ単位です。単語単位の時刻情報や話者認識にはローカルモデルを使用してください。",
+      "unavailable": "クラウドモデルを読み込めませんでした。再試行してください。",
+      "modelUnavailable": "選択したクラウドモデルは利用できません。利用可能なモデルを選択してください。"
+    },
     "transcriptModelsTitle": "Transcript models",
     "transcriptModelsReady": "Models ready on disk ({{size}})",
     "transcriptModelsMissing": "Models are not downloaded yet. The first transcript will fetch them",
@@ -855,7 +874,7 @@
       "unknown": "不明なGPU"
     },
     "providersTab": "プロバイダー",
-    "promptsTab": "プロンプト",
+    "promptsTab": "Skill",
     "transcriptionTab": "文字起こし",
     "ai": {
       "ownProvider": "独自のプロバイダーを使用",
@@ -889,20 +908,63 @@
       "testingConnection": "テスト中…",
       "testSuccess": "接続できました。応答: {{reply}}",
       "testFailed": "このモデルに接続できませんでした。",
-      "addPrompt": "プロンプトを追加",
-      "editPrompt": "プロンプトを編集",
-      "deletePrompt": "プロンプトを削除",
-      "promptTitle": "タイトル",
-      "promptBody": "プロンプト",
-      "promptDialogDescription": "有効なプロバイダーを使って文字起こしにこのプロンプトを実行します",
-      "promptAutoRun": "自動実行",
-      "promptAutoRunDescription": "ダウンロードが完了し、字幕の準備ができたら、このスキルを自動的に実行します。",
+      "searchSkills": "Skill を検索",
+      "allSkills": "すべて",
+      "personalSkills": "個人",
+      "builtInSkills": "組み込み",
+      "customizeSkill": "カスタムコピーを作成",
+      "noSkillsFound": "Skill が見つかりません。",
+      "skillUpdatedAt": "更新日：{{date}}",
+      "trySkill": "試してみる",
+      "skillShowInTranscript": "文字起こしのサイドバーに表示",
+      "skillShowInTranscriptDescription": "このスキルのショートカットを文字起こしのサイドバーに表示します。チャットでの利用と自動実行は個別に設定されます。",
+      "skillAutoRun": "自動実行",
+      "skillAutoRunDescription": "ダウンロードが完了し、文字起こしが準備できたら自動実行します。チャットではいつでもこの Skill を手動で使用できます。",
+      "suggestedUsage": "おすすめの使い方",
+      "skillUsage": {
+        "summary": {
+          "first": "完了済み動画の字幕を、主な論点と重要な時刻を残して要約してください。",
+          "second": "長いチュートリアルを、後で復習しやすい簡潔な要点にまとめてください。",
+          "third": "インタビューを要約し、話者の特に役立つ発言を抜き出してください。"
+        },
+        "rewrite": {
+          "first": "動画の字幕を、元の意味を保ちながら読みやすい記事に書き直してください。",
+          "second": "新しい事実を加えず、字幕の文法や冗長な表現を修正してください。",
+          "third": "専門的な説明を、一般の読者にも理解できる文章に書き直してください。"
+        },
+        "faq": {
+          "first": "動画の字幕から FAQ を作成し、各質問に元の内容に基づいて答えてください。",
+          "second": "製品のチュートリアルを、新規ユーザー向けの質問と回答にまとめてください。",
+          "third": "インタビューからよくある質問を抽出し、回答を話題別に整理してください。"
+        },
+        "translate": {
+          "first": "動画の字幕を、元の意味を保ちながら私の言語に翻訳してください。",
+          "second": "技術チュートリアルを、用語を統一して翻訳してください。",
+          "third": "話者と話題の切り替わりを保ちながらインタビューを翻訳してください。"
+        },
+        "statistics": {
+          "first": "動画の字幕に登場する数値、割合、日付を抽出してください。",
+          "second": "プレゼンテーションの統計を、文脈と出典の時刻とともにまとめてください。",
+          "third": "字幕の測定値と比較を、欠けている値を推測せずに抽出してください。"
+        },
+        "mindmap": {
+          "first": "動画の主な論点とそのつながりをマインドマップにしてください。",
+          "second": "講義の字幕を、復習に使える話題の階層に整理してください。",
+          "third": "技術講演の概念を、関連する内容ごとにまとめて図式化してください。"
+        },
+        "diagnose": {
+          "first": "ダウンロードが失敗した理由を調べ、次に行うべき操作を提案してください。",
+          "second": "停止しているように見えるタスクを調べ、まだ進行しているか確認してください。",
+          "third": "失敗したタスクの証拠に基づいて、不具合報告の作成を手伝ってください。"
+        },
+        "custom": {
+          "first": "この Skill でタスクを進めたいので、開始前に目的を確認してください。",
+          "second": "実例を通して手順を案内し、必要な元資料があれば尋ねてください。",
+          "third": "この Skill を私の状況に合わせるため、まず出力形式を確認してください。"
+        }
+      },
+      "deletePrompt": "Skill を削除",
       "restorePresets": "デフォルトに戻す",
-      "testTitle": "サンプル文字起こしでテスト",
-      "testRun": "実行",
-      "testStop": "停止",
-      "testOutput": "出力",
-      "testPlaceholder": "プロンプトの結果がここに表示されます",
       "presets": {
         "anthropic": "Anthropic",
         "azure": "Azure",
@@ -929,36 +991,80 @@
         "volcengine": "Volcengine",
         "zhipu": "Zhipu"
       },
-      "presetPrompts": {
-        "overview": {
-          "title": "概要"
-        },
-        "bullet-points": {
-          "title": "箇条書き"
-        },
-        "improve-grammar": {
-          "title": "文法と句読点を修正"
-        },
-        "generate-faq": {
-          "title": "FAQを生成"
-        },
-        "extract-statistics": {
-          "title": "統計を抽出"
-        },
-        "paraphrase-content": {
-          "title": "言い換え"
-        },
-        "create-mindmap": {
-          "title": "マインドマップを作成"
-        },
-        "translate": {
-          "title": "翻訳"
-        }
-      },
       "createModel": "Create “{{query}}”",
       "noModelFound": "No model found.",
       "allModelsSelected": "一覧のモデルはすべて追加済みです。",
-      "loadingModels": "プロバイダーからモデルを読み込んでいます…"
+      "loadingModels": "プロバイダーからモデルを読み込んでいます…",
+      "skillHelp": "Skill は SKILL.md ファイルで管理されます。Agent は説明から Skill を見つけ、必要なときに指示を読み込みます。チャットで $skill-name を入力すると Skill を指定できます。",
+      "addSkill": "Skill を追加",
+      "createSkillWithVidbee": "VidBee で Skill を作成",
+      "createSkillRequest": "再利用できる Skill の作成を手伝ってください。目的、使用場面、希望する出力を確認し、要件が明確になったら VidBee に作成して保存してください。",
+      "uploadSkill": "Skill をアップロード",
+      "importGitHubSkill": "GitHub から Skill をインポート",
+      "githubSkillDescription": "公開 GitHub リポジトリまたは Skill フォルダーのリンクを貼り付け、関連ファイルとともにインストールする Skill を選択します。",
+      "githubSkillUrl": "GitHub URL",
+      "selectSkill": "Skill を選択",
+      "installSkill": "Skill をインストール",
+      "findSkills": "Skill を検索",
+      "skillInstalling": "お待ちください…",
+      "skillInstallError": "Skill をインストールできませんでした。ソースを確認して再試行してください。",
+      "skillUploadTooLarge": "10 MB 以下の SKILL.md または ZIP ファイルをアップロードしてください。",
+      "importSkill": "SKILL.md をインポート",
+      "exportSkill": "SKILL.md をエクスポート",
+      "openSkillFolder": "Skill フォルダーを開く",
+      "skillLoading": "Skill を読み込み中",
+      "skillLoaded": "Skill 読み込み済み",
+      "skillFailed": "Skill 読み込み失敗",
+      "presetSkills": {
+        "overview": {
+          "name": "概要",
+          "description": "文字起こしをタイムスタンプ付きの章と重要な引用に整理します。録音内容の把握や、見直したい話題を探す際に使います。"
+        },
+        "bullet-points": {
+          "name": "箇条書き",
+          "description": "文字起こしの要点を話題別の簡潔な箇条書きにまとめます。動画、ポッドキャスト、会議の振り返りに使います。"
+        },
+        "improve-grammar": {
+          "name": "文法と句読点を修正",
+          "description": "話者と意味を保ちながら、文字起こしの文法、誤字、句読点を修正します。読みやすい原稿を整える際に使います。"
+        },
+        "generate-faq": {
+          "name": "FAQを生成",
+          "description": "文字起こしに基づく簡潔な回答で、構造化された FAQ を作成します。録音内容を参照用の資料にまとめる際に使います。"
+        },
+        "extract-statistics": {
+          "name": "統計を抽出",
+          "description": "文字起こしから数値、日付、割合、金額を文脈とともに抽出します。内容に含まれる定量的な情報を確認する際に使います。"
+        },
+        "paraphrase-content": {
+          "name": "言い換え",
+          "description": "新しい主張を加えず、文字起こしを明確で自然な言葉に言い換えます。原意を保ちつつ表現を改善する際に使います。"
+        },
+        "create-mindmap": {
+          "name": "マインドマップを作成",
+          "description": "文字起こしの話題と関係を Mermaid のマインドマップに整理します。録音内容の構造を可視化する際に使います。"
+        },
+        "translate": {
+          "name": "翻訳",
+          "description": "話者、意味、詳細を保ち、文字起こしを画面の表示言語に翻訳します。他の言語の録音内容を読む際に使います。"
+        },
+        "article-rewrite": {
+          "name": "記事に書き換え",
+          "description": "素材を完成した記事に書き換え、動画の映像があれば関連する静止画を添えます。録音内容を公開用の文章にする際に使います。"
+        },
+        "faq": {
+          "name": "動画のよくある質問",
+          "description": "必要に応じて現在の動画の文字起こしを読み、根拠のある FAQ を作成します。開いている動画の内容を問答形式で整理する際に使います。"
+        },
+        "diagnose-task": {
+          "name": "タスクの問題を調査",
+          "description": "状態、エラー、ログから失敗・停止したタスクを調査します。復旧方法の提案や、VidBee の不具合が疑われる場合の報告作成に使います。"
+        },
+        "video-localization": {
+          "name": "動画の多言語化",
+          "description": "字幕の翻訳と書き出し、または映像に同期した吹き替えを作成します。"
+        }
+      }
     },
     "cookiesSetup": {
       "statusNotConfigured": "未設定",
@@ -1036,15 +1142,24 @@
       "extensionPriority": "Cookie の取得元ブラウザーの優先順位",
       "extensionPriorityHint": "この順序で最初に接続中のブラウザーを使用します。未接続のブラウザーは自動的にスキップされます。",
       "extensionUse": "使用",
+      "extensionLegacy": "旧版の記録",
+      "extensionLastConnected": "最終接続: {{time}}",
+      "extensionLastConnectedUnknown": "最終接続日時の記録がありません",
+      "extensionRemove": "削除",
+      "extensionRemoveLabel": "{{browser}} を削除",
+      "extensionVariants": {
+        "dev": "開発版",
+        "store": "ストア版"
+      },
       "extensionMoveUp": "{{browser}} を上に移動",
       "extensionMoveDown": "{{browser}} を下に移動"
     },
-    "agentManagementTools": "エージェント管理ツール",
-    "agentManagementToolsDescription": "エージェントがタスクや定期購読を変更できるか、先に確認するか",
+    "agentManagementTools": "エージェントの権限",
+    "agentManagementToolsDescription": "手動承認では、権限が必要なときに確認を求めます。自動審査では現在のモデルで判断し、判断できない場合は確認を求めます。ダウンロードフォルダー外のパスには引き続き承認が必要です。フルアクセスでは、ダウンロードフォルダー外へのアクセスも含め、承認や自動審査なしでツールとシェルコマンドを実行します。変更は次の返信から適用されます。",
     "agentManagementToolsOptions": {
-      "off": "オフ",
-      "ask": "確認する",
-      "auto": "自動で許可"
+      "full": "フルアクセス",
+      "ask": "手動承認",
+      "auto": "自動審査"
     },
     "mcp": {
       "tab": "MCP",
@@ -1057,20 +1172,14 @@
       "copied": "MCP 設定をコピーしました",
       "rotate": "アクセストークンを更新",
       "error": "MCP 設定を更新できませんでした",
-      "transport": "接続方法",
-      "transportDescription": "どちらかを選択してください。利用できる機能は同じです。",
-      "httpRecommended": "HTTP（推奨）",
       "configuration": "Agent の設定",
       "httpDescription": "URL とトークンで起動中のデスクトップアプリに直接接続します。",
-      "stdioDescription": "起動コマンドで接続する Agent 用のローカルブリッジです。",
       "viewConfig": "設定を表示",
       "configDescription": "この設定を Agent の MCP 設定に貼り付けてください。",
-      "endpoint": "サーバーアドレス",
-      "endpointDescription": "VidBee の起動中、このコンピューターからのみアクセスできます。",
       "accessToken": "アクセストークン",
       "rotateDescription": "既存の HTTP 設定を無効にします。更新後に新しい設定をコピーしてください。",
       "capabilitiesTitle": "利用可能な機能",
-      "capabilitiesDescription": "ツール {{tools}} 件、リソースとテンプレート {{resources}} 件、ワークフロー {{prompts}} 件。どちらの接続方法でも利用できます。",
+      "capabilitiesDescription": "ツール {{tools}} 件、リソースとテンプレート {{resources}} 件、ワークフロー {{prompts}} 件。",
       "searchCapabilities": "機能を検索…",
       "noCapabilities": "一致する機能がありません",
       "loading": "機能を読み込み中…",
@@ -1079,17 +1188,17 @@
         "tasks": "ダウンロードとキュー",
         "subscriptions": "購読",
         "transcripts": "字幕とモデル",
-        "ai": "AI 会話とスキル",
+        "ai": "AI 会話と Skill",
         "exports": "ドキュメントと共有画像",
         "resources": "リソースとテンプレート",
-        "prompts": "ワークフロープロンプト"
+        "prompts": "Skill"
       },
       "capabilities": {
         "get_app_status": "アプリの状態とエンジンの準備状況",
         "get_settings": "アプリの環境設定を取得",
         "update_settings": "アプリの環境設定を更新",
-        "get_ai_settings": "AI プロバイダーとスキルを取得",
-        "manage_ai_settings": "プロバイダー、モデル、保存済みスキルを管理",
+        "get_ai_settings": "AI プロバイダーと Skill を取得",
+        "manage_ai_settings": "プロバイダー、モデル、保存済み Skill を管理",
         "list_tasks": "ダウンロード、変換、文字起こしタスクを一覧表示",
         "get_task": "タスクの進捗、エラー、ログを取得",
         "get_queue_stats": "キューの状態と同時実行数",
@@ -1128,11 +1237,11 @@
         "manage_agent_thread": "会話の停止、名前変更、削除、分岐の切替",
         "decide_agent_tool": "Agent のツール呼び出しを承認または拒否",
         "get_agent_events": "会話のアクティビティとイベントを取得",
-        "start_ai_prompt": "保存済みの AI スキルを実行",
-        "get_ai_prompt_run": "スキルの結果と実行状況を取得",
-        "stop_ai_prompt": "実行中のスキルを停止",
-        "list_skill_results": "保存済みスキルの結果と Agent の返信を一覧表示",
-        "export_skill_result": "スキルの結果を Markdown、PDF、共有画像で書き出す",
+        "start_ai_prompt": "保存済みの AI Skill を実行",
+        "get_ai_prompt_run": "Skill の結果と実行状況を取得",
+        "stop_ai_prompt": "実行中の Skill を停止",
+        "list_skill_results": "保存済み Skill の結果と Agent の返信を一覧表示",
+        "export_skill_result": "Skill の結果を Markdown、PDF、共有画像で書き出す",
         "export_mermaid_diagram": "個別の Mermaid 図を PNG・JPG・SVG またはソースで書き出す",
         "export_caption_share_image": "選択した字幕を共有画像で書き出す",
         "summarize_media": "タイムスタンプの根拠付きでメディアを要約",
@@ -1521,18 +1630,29 @@
       "cookiesBrowser": "ブラウザーから直接読み取り",
       "cookiesNone": "Cookie 未使用",
       "cookiesUnrecorded": "記録なし",
+      "cookiesUnavailable": "取得元を確認できません（取得記録なし）",
+      "cookiesNotConfigured": "Cookie の設定なし",
       "empty": "詳細はまだありません。",
       "openUrl": "元のURLを開く",
       "group": {
         "media": "メディア",
         "file": "ファイル",
         "transcript": "文字起こし"
-      }
+      },
+      "cookiesConfigured": "キュー追加時の設定: {{sources}}（実際の取得元は未記録）",
+      "cookiesConfig": "yt-dlp の設定（Cookie の使用有無は不明）"
     },
     "speakingShare": "{{percent}}%",
     "seekSpeaker": "{{name}} へ移動",
     "seekAt": "{{time}} へ移動",
     "searchPlaceholder": "文字起こしを検索",
+    "bilingual": "二言語表示",
+    "secondarySubtitle": "第二字幕",
+    "noSecondarySubtitles": "2つ目の字幕はまだありません",
+    "translateSubtitles": "新しいチャットで翻訳…",
+    "translateSubtitlesPrompt": "この動画の字幕を別の言語に翻訳して、二言語で読めるようにしてください。どの言語に翻訳するか私に確認してください。",
+    "subtitleLoading": "字幕を読み込み中…",
+    "subtitleLoadFailed": "この字幕トラックを読み込めませんでした。",
     "searchMatches": "{{count}} 件",
     "searchNoMatches": "一致なし",
     "searchNext": "次へ",
@@ -1581,6 +1701,7 @@
         "more": "プレイリスト項目の操作"
       }
     },
+    "changeModel": "モデルを変更",
     "qualityHint": "Not happy with this transcript?",
     "qualityHintDetail": "Download a higher-quality model and transcribe again. The current transcript is kept as history.",
     "qualityHintMax": "すでに最高品質のモデルです。話者ラベルが混ざる場合は人数を調整してください。BGM や同時発話は話者分離を乱すことがあります。",
@@ -1592,7 +1713,7 @@
       "apply": "もう一度文字起こし",
       "detail": "この人数で再文字起こしします。既定は自動検出です。このページを離れても構いません。現在の文字起こしは履歴として残ります。"
     },
-    "promptMenu": "すべてのプロンプト",
+    "promptMenu": "すべての Skill",
     "promptStop": "停止",
     "promptRerun": "再実行",
     "promptCopy": "コピー",
@@ -1611,11 +1732,11 @@
     "promptShareFooter": "VidBee で作成",
     "promptShareTagline": "ダウンロード。ローカルで文字起こし。AIに質問。",
     "captionShareSaid": "『{{name}}』より",
-    "promptOutput": "プロンプト結果",
+    "promptOutput": "Skill 結果",
     "promptScrollToEnd": "最新までスクロール",
     "promptCopied": "コピーしました",
     "promptCloudGenerated": "VidBee Cloudで生成しました",
-    "promptNoProvider": "このプロンプトを実行するには、設定でAIプロバイダーを追加してください。",
+    "promptNoProvider": "この Skill を実行するには、設定でAIプロバイダーを追加してください。",
     "promptOpenSettings": "プロバイダー設定を開く",
     "promptEmpty": "結果がここに表示されます。",
     "overviewChapters": "チャプター",
@@ -1629,8 +1750,8 @@
     "promptAborted": "停止しました",
     "promptTabCompleted": "完了",
     "promptTabError": "失敗",
-    "promptNoTranscript": "このプロンプトを実行するには文字起こしが必要です。",
-    "promptWaitForTranscript": "文字起こしが終わると、このプロンプトを実行できます。",
+    "promptNoTranscript": "この Skill を実行するには文字起こしが必要です。",
+    "promptWaitForTranscript": "文字起こしが終わると、この Skill を実行できます。",
     "promptRunWhenReady": "準備できたら実行",
     "promptWaitingToRun": "文字起こしを待っています…",
     "promptTryAgain": "再試行",
@@ -1639,19 +1760,19 @@
       "interrupted": "AI の応答が完了する前に中断されました。",
       "creditsExhausted": "このアカウントのAIクレジットが不足しています。",
       "signInRequired": "VidBee Cloud にログインすれば、すぐに無料で Ask AI を使えます。",
-      "noProvider": "AIプロバイダーが有効ではないため、このプロンプトを実行できません。",
+      "noProvider": "AIプロバイダーが有効ではないため、この Skill を実行できません。",
       "missingApiKey": "有効なプロバイダーにAPIキーがありません。",
       "missingModel": "有効なプロバイダーにモデルIDがありません。",
-      "unknownPrompt": "このプロンプトは利用できません。",
-      "emptyTranscript": "このプロンプトには完成した文字起こしが必要です。",
+      "unknownPrompt": "この Skill は利用できません。",
+      "emptyTranscript": "この Skill には完成した文字起こしが必要です。",
       "auth": "プロバイダーがリクエストを拒否しました。APIキーまたはアカウントが無効の可能性があります。",
       "authCloud": "VidBee Cloud がリクエストを拒否しました。セッションの期限が切れている可能性があります。",
       "network": "プロバイダーに接続できませんでした。",
       "networkCloud": "VidBee Cloud に接続できませんでした。",
       "emptyOutput": "プロバイダーは完了しましたが、テキストを返しませんでした。",
       "emptyOutputCloud": "VidBee Cloud は完了しましたが、テキストを返しませんでした。",
-      "unknown": "プロンプトを実行できませんでした。",
-      "unknownCloud": "VidBee Cloud はこのプロンプトを完了できませんでした。",
+      "unknown": "Skill を実行できませんでした。",
+      "unknownCloud": "VidBee Cloud はこの Skill を完了できませんでした。",
       "serviceErrorCloud": "VidBee Cloud's AI service rejected this request."
     },
     "promptErrorDetails": "エラー詳細",
@@ -1662,31 +1783,31 @@
       "creditsExhausted": {
         "s1": "アカウントで残りのクレジットを確認します。",
         "s2": "新しいユーザーを招待してクレジットを獲得します。",
-        "s3": "クレジット追加後にもう一度実行します。"
+        "s3": "クレジット追加後に Skill を再実行します。"
       },
       "signInRequired": {
         "s1": "設定→Providersを開きます。",
         "s2": "VidBee CloudでGitHubログインします。",
-        "s3": "もう一度プロンプトを実行します。"
+        "s3": "もう一度 Skill を実行します。"
       },
       "noProvider": {
         "s1": "設定 → プロバイダーを開きます。",
         "s2": "サービスを追加し、APIキーとモデルIDを保存して「使用する」を押します。",
-        "s3": "ここに戻ってプロンプトを再実行します。"
+        "s3": "ここに戻って Skill を再実行します。"
       },
       "missingApiKey": {
         "s1": "設定 → プロバイダーで、使用中のプロバイダーを編集します。",
         "s2": "有効なAPIキーを貼り付けて保存します。",
-        "s3": "プロンプトを再実行します。"
+        "s3": "Skill を再実行します。"
       },
       "missingModel": {
         "s1": "設定 → プロバイダーで、使用中のプロバイダーを編集します。",
         "s2": "このサービスが実際に扱うモデルIDを入力します。",
-        "s3": "プロンプトを再実行します。"
+        "s3": "Skill を再実行します。"
       },
       "unknownPrompt": {
-        "s1": "設定 → プロンプトを開きます。",
-        "s2": "デフォルトを復元するか、このプロンプトを追加し直します。"
+        "s1": "設定 → Skill を開きます。",
+        "s2": "デフォルトを復元するか、この Skill を追加し直します。"
       },
       "emptyTranscript": {
         "s1": "文字起こしが終わるまで待ちます。",
@@ -1700,7 +1821,7 @@
       "authCloud": {
         "s1": "「アカウント」を開き、ログイン状態が続いているか確認します。",
         "s2": "セッションの期限が切れている場合は、もう一度ログインします。",
-        "s3": "プロンプトを再実行します。"
+        "s3": "Skill を再実行します。"
       },
       "network": {
         "s1": "ネット接続とプロキシを確認します。",
@@ -1785,7 +1906,7 @@
       },
       "summary": {
         "title": "どの文字起こしでもAIに質問",
-        "description": "要約、翻訳、FAQやマインドマップの作成に加え、選んだAIプロバイダーで独自のプロンプトを実行できます。"
+        "description": "要約、翻訳、FAQやマインドマップの作成に加え、選んだAIプロバイダーで独自の Skill を実行できます。"
       },
       "localFiles": {
         "title": "任意のファイルを文字起こし",
@@ -1806,14 +1927,103 @@
     "all": "全期間"
   },
   "agentChat": {
+    "progress": {
+      "title": "実行状況",
+      "running": "処理中…",
+      "waiting": "バックグラウンドタスクの終了待ち",
+      "approval": "承認を待っています",
+      "input": "入力を待っています",
+      "completed": "実行が終了しました",
+      "aborted": "エージェントを停止しました",
+      "interrupted": "実行が中断されました",
+      "error": "実行に失敗しました",
+      "steps": "タスクの手順",
+      "tasks": "バックグラウンドタスク",
+      "results": "生成されたファイル",
+      "continueAfterWait": "バックグラウンドタスクが終了すると、エージェントは自動的に処理を続行します。",
+      "stop": "エージェントを停止",
+      "stopHint": "このエージェントの実行を停止します。バックグラウンドタスクは独立して続行されます。",
+      "showingTasks": "{{total}} 件のタスクのうち {{count}} 件を表示しています。",
+      "pending": "未着手"
+    },
+    "ui": {
+      "continue": "続ける",
+      "sent": "送信済み",
+      "sendFailed": "選択内容を送信できませんでした。もう一度お試しください。",
+      "inactive": "エージェントの応答が完了すると、最新の返信のカードに回答できます。",
+      "loading": "タスクを読み込み中…",
+      "loadFailed": "タスクを読み込めませんでした。会話を開き直してください。",
+      "taskUnavailable": "このタスクは利用できなくなりました。",
+      "fileUnavailable": "ファイルの準備ができていないか、利用できなくなりました。",
+      "taskFailed": "タスクが失敗しました。詳細の確認を依頼できます。",
+      "invalid": "このカードを表示できません。入力欄から会話を続けられます。",
+      "progress": "タスクの進捗",
+      "format": "出力形式",
+      "resolution": "解像度",
+      "kinds": {
+        "video": "動画ダウンロード",
+        "audio": "音声ダウンロード",
+        "subtitles": "字幕",
+        "playlist": "プレイリスト",
+        "subscription-item": "購読ダウンロード",
+        "yt-dlp-forward": "ダウンロード",
+        "transcription": "文字起こし",
+        "conversion": "形式変換",
+        "model-download": "モデルダウンロード"
+      },
+      "status": {
+        "queued": "待機中",
+        "running": "実行中",
+        "processing": "処理中",
+        "paused": "一時停止中",
+        "retry-scheduled": "再試行待ち",
+        "completed": "完了",
+        "failed": "失敗",
+        "cancelled": "キャンセル済み"
+      }
+    },
+    "suggestions": {
+      "title": "音声・動画処理の最高のアシスタント",
+      "description": "VidBee です。やりたいことを教えてください。下の項目から選んで始めることもできます。",
+      "download": {
+        "label": "動画をダウンロード",
+        "prompt": "VidBee で動画をダウンロードしたいです。まず動画の URL と希望する画質を確認してから、ダウンロードタスクを作成してください。"
+      },
+      "audio": {
+        "label": "音声を抽出",
+        "prompt": "VidBee で動画の音声を保存したいです。まず動画の URL と希望する音声形式を確認してから、音声のダウンロードタスクを作成してください。"
+      },
+      "transcribe": {
+        "label": "ダウンロード済みのメディアを文字起こし",
+        "prompt": "VidBee でダウンロード済みの動画や音声を文字にしたいです。完了したダウンロードを一覧で示し、文字起こしする項目を確認してから、ローカルの文字起こしタスクを開始してください。"
+      },
+      "subscribe": {
+        "label": "購読を作成",
+        "prompt": "VidBee で購読を作成したいです。まずチャンネル、ウェブサイト、または RSS の URL を確認してフィードを検証し、保存前に新しい動画を自動ダウンロードするか尋ねてください。"
+      },
+      "compress": {
+        "label": "動画を圧縮",
+        "prompt": "VidBeeで動画のファイルサイズを小さくしたいです。ダウンロード済みの動画を一覧表示し、圧縮する動画と変換先の低い解像度を確認してから、元のファイルを残して変換後のコピーを作成してください。"
+      },
+      "convert": {
+        "label": "形式を変換",
+        "prompt": "VidBeeでメディアの形式を変換したいです。ダウンロード済みのファイルを一覧表示し、変換するファイルと出力形式を確認してから、元のファイルを残して変換後のコピーを作成してください。"
+      }
+    },
     "eventStream": "Event Stream",
     "eventStatus": {
-      "running": "Running",
-      "completed": "Completed",
-      "error": "Failed",
+      "running": "実行中",
+      "completed": "完了",
+      "error": "失敗",
       "pendingApproval": "承認待ち",
       "denied": "拒否済み"
     },
+    "notifications": {
+      "approval": "VidBee Agent が許可を求めています",
+      "response": "VidBee Agent が入力を待っています",
+      "body": "会話を開いて内容を確認し、応答してください。"
+    },
+    "newChatPlaceholder": "何でも聞いてください…",
     "placeholder": "Ask a follow-up about this video…",
     "send": "Send message",
     "attachImages": "Attach images",
@@ -1855,11 +2065,16 @@
     "catalogMatched": "Matched {{name}}. Context window and capabilities were filled in.",
     "catalogBadge": "Catalog",
     "tools": {
+      "show_ui": "カードを表示中",
+      "create_task": "タスクを作成中",
+      "wait_for_task": "タスクの終了待ち",
+      "select_video": "ソースメディアを選択中",
       "list_transcripts": "利用可能な字幕を確認しています",
       "select_transcript": "字幕ソースを選択しています",
+      "add_subtitles": "字幕を追加中",
       "load_tools": "利用可能な機能を確認中",
       "get_video_info": "Reading video information",
-      "read_transcript": "Reading transcript",
+      "read_transcript": "文字起こしを読み取り中",
       "search_transcript": "Searching transcript",
       "capture_frames": "Capturing video frames",
       "create_clip": "Creating video clip",
@@ -1870,7 +2085,11 @@
       "read_artifact": "Reviewing saved image",
       "rename_conversation": "Renaming conversation",
       "write_article": "Writing article",
-      "review_article": "Reviewing article"
+      "review_article": "Reviewing article",
+      "export_subtitles": "字幕を書き出しています",
+      "create_dubbed_video": "同期した吹き替えを生成しています",
+      "list_tasks": "タスクを検索中",
+      "get_task": "タスクの詳細を確認中"
     },
     "modelCapabilities": "Model capabilities",
     "runDurationRunning": "Working · {{duration}}",

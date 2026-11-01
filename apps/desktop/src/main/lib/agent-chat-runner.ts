@@ -1,16 +1,19 @@
 import { randomUUID } from 'node:crypto'
-import { rm } from 'node:fs/promises'
-import type { Agent, AgentMessage, AgentTool } from '@earendil-works/pi-agent-core'
+import { access, rm } from 'node:fs/promises'
+import { join } from 'node:path'
+import type { AgentMessage, AgentTool } from '@earendil-works/pi-agent-core'
 import type { Api, Context, FetchFunction, ImageContent, Model } from '@earendil-works/pi-ai'
-import type { AgentSession, SessionEntry } from '@earendil-works/pi-coding-agent'
-import { BrowserWindow } from 'electron'
+import { isMediaTaskKind } from '@vidbee/task-queue'
+import { app, BrowserWindow } from 'electron'
 import {
   AGENT_MAX_MESSAGE_IMAGES,
   AGENT_THINKING_LEVELS,
+  AGENT_WORKSPACE_ID,
   type AgentCatalogNotice,
   type AgentChatInput,
   type AgentChatRun,
   type AgentImageAttachment,
+  type AgentImageUpload,
   type AgentRunEvent,
   type AgentThinkingLevel,
   type AgentThinkingOptions,
@@ -21,6 +24,13 @@ import {
 import { type AgentFailure, AgentUserError, parseAgentError } from '../../shared/agent-errors'
 import { isUuid, sanitizeAgentConversationTitle } from '../../shared/agent-history'
 import { unboundArticleImageTimes } from '../../shared/agent-markdown'
+import { type AgentPermissionMode, parseAgentPermissionMode } from '../../shared/agent-permissions'
+import {
+  agentUiHasProgress,
+  agentUiNeedsResponse,
+  agentUiResponseText,
+  updateAgentProgressSpec
+} from '../../shared/agent-ui'
 import { AI_CHAT_PROMPT_ID, agentChatPrompt, resolveAiPromptContent } from '../../shared/ai-prompts'
 import type { AiPrompt } from '../../shared/ai-types'
 import { settingsManager } from '../settings'
@@ -43,9 +53,11 @@ import { AgentCloudSlots, bindCloudSlotStream, CLOUD_AGENT_CONCURRENCY } from '.
 import { AgentSummaryUnavailableError } from './agent-compaction'
 import { buildAgentHistory, buildAgentSystemPrompt } from './agent-context'
 import { prepareAgentDocument } from './agent-document'
+import type { VideoAgentSession } from './agent-durable-session'
 import { publishAgentEvent } from './agent-events'
 import { AgentEvidence } from './agent-evidence'
 import {
+  importAgentImageData,
   pickAgentImages,
   readAgentMessageImages,
   removeAgentImageFiles
@@ -61,6 +73,7 @@ import {
   fallbackThinkingOptions,
   thinkingOptionsFromProfile
 } from './agent-model-profile'
+import { clearAgentNotifications, syncAgentNotifications } from './agent-notifications'
 import { agentAnswer, finalAgentAnswer } from './agent-output'
 import {
   AGENT_TRUNCATED_CONTINUATION,
@@ -79,10 +92,17 @@ import {
 } from './agent-run-event'
 import { nextRunPhase, type RunPhase, type RunSignals } from './agent-run-machine'
 import { AgentRunTimers } from './agent-run-timers'
-import { createVideoAgentSession, runUntilAborted, streamAgentCompletion } from './agent-session'
-import { type AgentManagementMode, autoApprove } from './agent-tool-approval'
-import { CORE_AGENT_TOOLS, createAgentToolLoading } from './agent-tool-loading'
-import { createAgentTools } from './agent-tools'
+import {
+  createVideoAgentSession,
+  disposeAgentSession,
+  runUntilAborted,
+  streamAgentCompletion
+} from './agent-session'
+import type { SessionEntry } from './agent-session-types'
+import { agentSkillRead, createAgentSkillTools } from './agent-skill-runtime'
+import { AgentTaskContinuation, waitForAgentTask } from './agent-task-wait'
+import { type AgentToolContext, createAgentTools } from './agent-tools'
+import { validateAgentUiResponse } from './agent-ui-response'
 import { addAgentUsage } from './agent-usage'
 import { createVidbeeCloudModel, resolvePiModel, thinkingOptionsFromProvider } from './ai-model'
 import { aiStore } from './ai-store'
@@ -95,17 +115,20 @@ interface ActiveAgentRun {
   thread: AgentThread
   run: AgentChatRun
   controller: AbortController
-  agent?: Agent
-  session?: AgentSession
+  agent?: VideoAgentSession['agent']
+  session?: VideoAgentSession
   flush?: ReturnType<typeof setTimeout>
   pendingType?: string
   dirty?: SaveScope
   /** True after settleRun has taken ownership, so a late completion cannot settle twice. */
   settled?: boolean
   done?: Promise<void>
+  cleanup?: Promise<void>
   timers?: AgentRunTimers
   approvals?: Map<string, (decision: { approved: boolean; remember: boolean }) => void>
   pathApproved?: Set<string>
+  permissionApproved?: Set<string>
+  permissionMode?: AgentPermissionMode
   calibration?: BudgetCalibration
   lastEstimate?: number
 }
@@ -143,6 +166,9 @@ export function peekAgentRunDirty(threadId: string): SaveScope | undefined {
  * @param catalog Upsert or removal ordered by revision.
  */
 function broadcastCatalog(thread: AgentThread, type: string, catalog: AgentCatalogNotice): void {
+  if (catalog.kind === 'remove') {
+    clearAgentNotifications(thread.id)
+  }
   broadcast({
     threadId: thread.id,
     runId: null,
@@ -267,6 +293,7 @@ function persist(
         plan.delivery
       )
       broadcastSaved(saved, entry.thread, eventType)
+      syncAgentNotifications(entry.thread, entry.run)
       if (entry.dirty === dirty) {
         entry.dirty = {}
       }
@@ -292,13 +319,16 @@ function persist(
 }
 
 /** Resolve a stored prompt or the virtual blank-chat prompt. */
-function resolveAgentPrompt(promptId: string): AiPrompt {
+function resolveAgentPrompt(promptId: string, hasSource = true): AiPrompt {
   if (promptId === AI_CHAT_PROMPT_ID) {
-    return agentChatPrompt()
+    return agentChatPrompt(Date.now(), hasSource)
   }
   const prompt = aiStore.getPrompt(promptId)
   if (!prompt) {
     throw new Error('Unknown agent')
+  }
+  if (prompt.skillError) {
+    throw new Error(prompt.skillError)
   }
   return prompt
 }
@@ -309,6 +339,9 @@ export function openAgentThread(
   promptId: string,
   threadId?: string
 ): AgentThread {
+  if (downloadId === AGENT_WORKSPACE_ID && promptId !== AI_CHAT_PROMPT_ID) {
+    throw new Error('Standalone conversations must use the chat agent')
+  }
   const store = getAgentChatStore()
   if (threadId) {
     const stored = store.get(threadId)
@@ -321,12 +354,12 @@ export function openAgentThread(
   return publicAgentThread(active.get(stored.id)?.thread ?? stored)
 }
 
-/** Start a blank Agent conversation on this video. */
+/** Start a blank conversation, with an optional library video as its source. */
 export function createAgentThread(downloadId: string): AgentThread {
   if (!downloadId || downloadId.length > 256) {
     throw new Error('Invalid thread identity')
   }
-  if (!peekDesktopTaskQueueRef()?.get(downloadId)) {
+  if (downloadId !== AGENT_WORKSPACE_ID && !peekDesktopTaskQueueRef()?.get(downloadId)) {
     throw new Error('Video no longer exists')
   }
   const thread = getAgentChatStore().create(downloadId, AI_CHAT_PROMPT_ID)
@@ -388,8 +421,12 @@ export function sendAgentMessage(
   if (active.has(thread.id)) {
     throw new Error('This agent is already responding')
   }
-  const prompt = resolveAgentPrompt(thread.promptId)
-  if (!getDesktopTaskQueueRef().get(input.downloadId)) {
+  const hasSource = input.downloadId !== AGENT_WORKSPACE_ID
+  if (!hasSource && thread.promptId !== AI_CHAT_PROMPT_ID) {
+    throw new Error('Standalone conversations must use the chat agent')
+  }
+  const prompt = resolveAgentPrompt(thread.promptId, hasSource)
+  if (input.downloadId !== AGENT_WORKSPACE_ID && !getDesktopTaskQueueRef().get(input.downloadId)) {
     throw new Error('Video no longer exists')
   }
   const instruction = resolveAiPromptContent(prompt.content, input.uiLanguage ?? 'en')
@@ -409,7 +446,7 @@ export function sendAgentMessage(
       imageIds = parent.imageIds ?? []
       text = originalUserText(
         thread.runs.find((run) => run.id === target.runId),
-        parent.text
+        agentUiResponseText(parent.text, parent.uiResponse)
       )
     } else {
       parentId = null
@@ -420,9 +457,14 @@ export function sendAgentMessage(
     if (thread.promptId === AI_CHAT_PROMPT_ID) {
       throw new Error('Message is empty')
     }
-    text = instruction
+    text = `Use $${prompt.name} with the attached transcript.`
   }
   text ??= ''
+  const uiResponse =
+    input.uiResponse && !input.retryMessageId
+      ? validateAgentUiResponse(thread, input.uiResponse)
+      : undefined
+  text = agentUiResponseText(text, uiResponse)
   const now = Date.now()
   if (!input.retryMessageId) {
     const id = randomUUID()
@@ -431,7 +473,8 @@ export function sendAgentMessage(
       parentId,
       role: 'user',
       runId: null,
-      text: input.text?.trim() || (imageIds.length ? '' : prompt.title),
+      text: input.text?.trim() || (imageIds.length ? '' : prompt.name),
+      ...(uiResponse ? { uiResponse } : {}),
       ...(imageIds.length ? { imageIds } : {}),
       thinking: '',
       createdAt: now
@@ -527,7 +570,13 @@ async function waitForAgentStop(entry: ActiveAgentRun): Promise<void> {
     timer = setTimeout(() => resolve('timeout'), AGENT_STOP_WAIT_MS)
   })
   try {
-    const result = await Promise.race([done.then(() => 'done' as const), timeout])
+    const result = await Promise.race([
+      done.then(async () => {
+        await entry.cleanup
+        return 'done' as const
+      }),
+      timeout
+    ])
     if (result === 'timeout') {
       log.error(
         `Agent stop timed out: ${JSON.stringify({ runId: entry.run.id, timeoutMs: AGENT_STOP_WAIT_MS })}`
@@ -606,6 +655,14 @@ export async function deleteAgentVideo(downloadId: string): Promise<void> {
   }
   for (const threadId of threadIds) {
     await rm(agentMediaDirectory(threadId), { recursive: true, force: true })
+    await rm(join(app.getPath('userData'), 'agent', 'tasks', threadId), {
+      recursive: true,
+      force: true
+    })
+    await rm(join(app.getPath('userData'), 'agent', 'sessions', threadId), {
+      recursive: true,
+      force: true
+    })
   }
   store.deleteVideo(downloadId)
   for (const threadId of threadIds) {
@@ -635,6 +692,14 @@ export async function deleteAgentThread(threadId: string): Promise<void> {
   const existing = store.get(threadId, { sessionEntries: false })
   await stopAgentRun(threadId)
   await rm(agentMediaDirectory(threadId), { recursive: true, force: true })
+  await rm(join(app.getPath('userData'), 'agent', 'tasks', threadId), {
+    recursive: true,
+    force: true
+  })
+  await rm(join(app.getPath('userData'), 'agent', 'sessions', threadId), {
+    recursive: true,
+    force: true
+  })
   store.deleteThread(threadId)
   if (existing) {
     broadcastCatalog(
@@ -645,9 +710,23 @@ export async function deleteAgentThread(threadId: string): Promise<void> {
   }
 }
 
-/** Save selected images against the live thread so an in-flight reply cannot overwrite them. */
-export async function selectAgentImages(threadId: string): Promise<AgentThread> {
-  return await attachAgentImages(threadId, (remaining) => pickAgentImages(threadId, remaining))
+/** Save picked or pasted images against the latest live conversation copy. */
+export async function selectAgentImages(
+  threadId: string,
+  files?: AgentImageUpload[]
+): Promise<AgentThread> {
+  return await attachAgentImages(threadId, async (remaining) => {
+    if (!files) {
+      return await pickAgentImages(threadId, remaining)
+    }
+    if (files.length > remaining) {
+      throw new Error('Too many images selected')
+    }
+    return await importAgentImageData(
+      threadId,
+      files.map((file) => ({ name: file.name, data: Buffer.from(file.data) }))
+    )
+  })
 }
 
 /** Commit browser and native attachments against the latest live conversation copy. */
@@ -1041,7 +1120,7 @@ export function decideAgentTool(input: {
   }
   if (input.approved && input.remember) {
     const tool = entry.run.tools.find((item) => item.id === input.toolCallId)
-    const action = tool?.approval?.action
+    const action = tool?.approval?.grantKey
     if (action) {
       entry.thread.toolGrants = [...new Set([...(entry.thread.toolGrants ?? []), action])]
     }
@@ -1127,7 +1206,9 @@ function settleRun(entry: ActiveAgentRun, failure?: AgentFailure): void {
   }
   if (entry.session) {
     entry.run.sessionEntries = entry.session.sessionManager.getBranch()
-    entry.session.dispose()
+    entry.cleanup = disposeAgentSession(entry.session).catch((error) => {
+      log.warn(`Agent session cleanup: ${String(error)}`)
+    })
   }
   entry.run.contextStatus = undefined
   entry.timers?.dispose()
@@ -1194,10 +1275,124 @@ interface AgentRunContext {
   history: AgentMessage[]
   progressGuard: AgentProgressGuard
   evidence: AgentEvidence
+  taskContinuation: AgentTaskContinuation
   prepared?: ReturnType<typeof prepareAgentDocument>
   appendAppState: (reason: 'start' | 'select' | 'tools') => Promise<void>
   recordCompleteSource: () => void
   updateOutput: (raw: AgentMessage[]) => void
+}
+
+/** Attach verified local media while retaining the independent conversation's identity. */
+async function selectRunVideo(ctx: AgentRunContext, id: string): Promise<Record<string, unknown>> {
+  const task = getDesktopTaskQueueRef().get(id)
+  if (
+    !(task && isMediaTaskKind(task.kind)) ||
+    task.status !== 'completed' ||
+    !task.output?.filePath
+  ) {
+    throw new Error('Select a completed local media task; use wait_for_task if it is still running')
+  }
+  await access(task.output.filePath)
+  ctx.entry.controller.signal.throwIfAborted()
+  const previous = ctx.source.evidenceSource
+  const previousId = ctx.source.downloadId
+  ctx.source = buildAgentRunSource(
+    { downloadId: id, promptId: ctx.entry.thread.promptId },
+    ctx.entry.thread.promptId
+  )
+  const { run } = ctx.entry
+  run.sourceDownloadId = id
+  run.sourceOffset = ctx.source.sourceOffset
+  run.evidenceSource = ctx.source.evidenceSource
+  if (previousId !== id || previous !== ctx.source.evidenceSource) {
+    for (const key of Object.keys(ctx.evidence.coverage)) {
+      Reflect.deleteProperty(ctx.evidence.coverage, key)
+    }
+  }
+  persist(ctx.entry, 'source.selected', true)
+  await ctx.appendAppState('select')
+  return { id, ...ctx.source.metadata, transcripts: ctx.source.transcripts }
+}
+
+/** Suspend model clocks while the queue owns a long operation and deliver its real outcome. */
+async function waitRunTask(
+  ctx: AgentRunContext,
+  id: string,
+  callId: string,
+  signal: AbortSignal
+): Promise<Record<string, unknown>> {
+  const { run } = ctx.entry
+  const tool = run.tools.find((item) => item.id === callId)
+  if (tool) {
+    tool.taskId = id
+  }
+  run.taskIds = [...new Set([...(run.taskIds ?? []), id])]
+  persist(ctx.entry, 'tool.task-linked', true)
+  ctx.entry.timers?.taskWaiting(true)
+  try {
+    const result = await waitForAgentTask(getDesktopTaskQueueRef(), id, signal, (detail) => {
+      const tool = ctx.entry.run.tools.find((item) => item.id === callId)
+      if (tool) {
+        tool.detail = detail
+      }
+      persist(ctx.entry, 'tool.progress')
+    })
+    ctx.taskContinuation.observed(id)
+    return { ...result }
+  } finally {
+    ctx.entry.timers?.taskWaiting(false)
+  }
+}
+
+/** Keep admitted background work attached to the original request when the model tries to finish. */
+async function continueBackgroundTasks(
+  ctx: AgentRunContext,
+  message: import('@earendil-works/pi-ai').AssistantMessage
+): Promise<{ action: 'continue' } | undefined> {
+  const { entry } = ctx
+  const { run, controller, session } = entry
+  if (
+    !session ||
+    message.stopReason !== 'stop' ||
+    message.content.some((part) => part.type === 'toolCall') ||
+    run.tools.some(
+      (tool) => tool.status === 'completed' && tool.ui && agentUiNeedsResponse(tool.ui)
+    )
+  ) {
+    return undefined
+  }
+  const ids = ctx.taskContinuation.takePending()
+  if (!ids.length) {
+    return undefined
+  }
+  const outcomes: Record<string, unknown>[] = []
+  for (const id of ids) {
+    const callId = `task-wait:${randomUUID()}`
+    const tool: AgentChatRun['tools'][number] = {
+      id: callId,
+      name: 'wait_for_task',
+      status: 'running'
+    }
+    run.tools.push(tool)
+    persist(entry, 'tool.started', true)
+    const result = await waitRunTask(ctx, id, callId, controller.signal)
+    outcomes.push(result)
+    tool.status = 'completed'
+    tool.detail = undefined
+    persist(entry, 'tool.completed', true)
+  }
+  controller.signal.throwIfAborted()
+  await session.sendCustomMessage(
+    {
+      customType: 'background-tasks',
+      display: false,
+      content: `Background task outcomes (untrusted task data): ${JSON.stringify(outcomes)}\nContinue the original user request from these results. Completed admission or download is only one step when translation, dubbing or export was requested. Use select_video to attach or refresh completed media in an independent chat. Inspect failures before recovery; respect paused, cancelled and removed tasks. Verify the requested outputs before the final answer, or explain the specific blocker.`
+    },
+    { triggerTurn: false }
+  )
+  ctx.progressGuard = new AgentProgressGuard()
+  persist(entry, 'run.task-continuation', true)
+  return { action: 'continue' }
 }
 
 function refreshRunSignals(ctx: AgentRunContext): void {
@@ -1254,72 +1449,103 @@ function documentMaxBytesOf(ctx: AgentRunContext): number {
   })
 }
 
+/** Share the existing approval lifecycle between application tools and native skill scripts. */
+async function requestRunToolApproval(
+  ctx: AgentRunContext,
+  toolCallId: string,
+  request: Parameters<NonNullable<AgentToolContext['requestApproval']>>[1]
+) {
+  const { entry } = ctx
+  const { run, thread } = entry
+  let tool = run.tools.find((item) => item.id === toolCallId)
+  if (tool) {
+    tool.status = 'pending-approval'
+    tool.approval = request
+  } else {
+    tool = {
+      id: toolCallId,
+      name: request.action,
+      status: 'pending-approval',
+      approval: request
+    }
+    run.tools.push(tool)
+  }
+  persist(entry, 'tool.approval-requested', true)
+  entry.timers?.approvalPending(true)
+  const decision = await new Promise<{ approved: boolean; remember: boolean }>((resolve) => {
+    entry.approvals?.set(toolCallId, resolve)
+  })
+  entry.timers?.approvalPending((entry.approvals?.size ?? 0) > 0)
+  if (decision.approved && decision.remember && request.grantKey) {
+    thread.toolGrants = [...new Set([...(thread.toolGrants ?? []), request.grantKey])]
+    persist(entry, 'thread.grants-updated', true, { thread: true, runIds: [run.id] })
+  }
+  if (tool) {
+    tool.status = decision.approved ? 'running' : 'denied'
+  }
+  persist(entry, decision.approved ? 'tool.approved' : 'tool.denied', true)
+  return {
+    approved: decision.approved,
+    approvedPath: decision.approved,
+    remember: decision.remember
+  }
+}
+
+/** Bind application tools to the active run and its existing approval lifecycle. */
 function registerRunTools(ctx: AgentRunContext): AgentTool[] {
-  const { entry, input, text, evidence, source, policy, transport, provider } = ctx
+  const { entry, input, text, evidence, policy, transport, provider } = ctx
   const { thread, run, controller } = entry
-  const { lines, timingLines, mediaEnabled, mediaKind, metadata: sourceMetadata } = source
-  const managementMode = (settingsManager.getAll().agentManagementTools ??
-    'ask') as AgentManagementMode
   if (provider?.provider.tools === false) {
     return []
   }
   return createAgentTools({
-    managementEnabled: managementMode !== 'off',
+    managementEnabled: true,
     downloadPath: settingsManager.getAll().downloadPath,
     pathApproved: (toolCallId) => entry.pathApproved?.has(toolCallId) === true,
-    requestApproval: async (toolCallId, request, options) => {
-      if (
-        autoApprove({
-          request,
-          mode: managementMode,
-          grants: thread.toolGrants ?? [],
-          pathRequiresInteractive: options?.path === true
-        })
-      ) {
-        return { approved: true, approvedPath: false }
-      }
-      let tool = run.tools.find((item) => item.id === toolCallId)
-      if (tool) {
-        tool.status = 'pending-approval'
-        tool.approval = request
-      } else {
-        tool = {
-          id: toolCallId,
-          name: request.action,
-          status: 'pending-approval',
-          approval: request
-        }
-        run.tools.push(tool)
-      }
-      persist(entry, 'tool.approval-requested', true)
-      entry.timers?.approvalPending(true)
-      const decision = await new Promise<{ approved: boolean; remember: boolean }>((resolve) => {
-        entry.approvals?.set(toolCallId, resolve)
-      })
-      entry.timers?.approvalPending((entry.approvals?.size ?? 0) > 0)
-      if (decision.approved && decision.remember) {
-        thread.toolGrants = [...new Set([...(thread.toolGrants ?? []), request.action])]
-        persist(entry, 'thread.grants-updated', true, { thread: true, runIds: [run.id] })
-      }
-      if (tool) {
-        tool.status = decision.approved ? 'running' : 'denied'
-      }
-      persist(entry, decision.approved ? 'tool.approved' : 'tool.denied', true)
-      return { approved: decision.approved, approvedPath: decision.approved }
+    permissionApproved: (id) => entry.permissionApproved?.has(id) === true,
+    get mediaEnabled() {
+      return ctx.source.mediaEnabled
     },
-    mediaEnabled,
-    mediaKind,
+    get hasSource() {
+      return ctx.source.hasSource
+    },
+    get mediaKind() {
+      return ctx.source.mediaKind
+    },
     evidence,
-    downloadId: input.downloadId,
+    get downloadId() {
+      return ctx.source.downloadId
+    },
+    conversationDownloadId: input.downloadId,
     threadId: thread.id,
     promptId: thread.promptId,
     runId: run.id,
-    title: sourceMetadata.title,
-    duration: sourceMetadata.durationSeconds,
-    lines,
-    timingLines,
-    listTranscripts: () => source.transcripts,
+    get title() {
+      return ctx.source.metadata.title
+    },
+    get duration() {
+      return ctx.source.metadata.durationSeconds
+    },
+    get lines() {
+      return ctx.source.lines
+    },
+    get timingLines() {
+      return ctx.source.timingLines
+    },
+    selectVideo:
+      input.downloadId === AGENT_WORKSPACE_ID ? (id) => selectRunVideo(ctx, id) : undefined,
+    waitForTask: (id, callId, signal) => waitRunTask(ctx, id, callId, signal),
+    trackTasks: (result, waitForCompletion) => {
+      const ids = ctx.taskContinuation.track(result, waitForCompletion)
+      if (ids.length) {
+        run.taskIds = [...new Set([...(run.taskIds ?? []), ...ids])]
+        persist(entry, 'run.tasks-linked', true)
+      }
+    },
+    listTranscripts: () => ctx.source.transcripts,
+    addSubtitles: (subtitles) => ctx.source.addSubtitles(subtitles),
     selectTranscript: (key) => {
+      const source = ctx.source
       const previous = source.evidenceSource
       const selected = source.selectTranscript(key)
       run.evidenceSource = source.evidenceSource
@@ -1333,6 +1559,43 @@ function registerRunTools(ctx: AgentRunContext): AgentTool[] {
       return selected
     },
     artifacts: thread.artifacts,
+    onUi: (toolCallId, spec) => {
+      const tool = run.tools.find((item) => item.id === toolCallId)
+      if (!tool) {
+        throw new Error('The UI presentation must belong to the active tool call')
+      }
+      const progress = run.tools.find((item) => item.ui && agentUiHasProgress(item.ui))
+      if (agentUiHasProgress(spec) && progress?.ui) {
+        const previous = progress.ui
+        progress.ui = updateAgentProgressSpec(previous, spec)
+        if (!persist(entry, 'tool.ui-updated', true)) {
+          progress.ui = previous
+          throw new Error('The progress update could not be saved')
+        }
+        return
+      }
+      for (const element of Object.values(spec.elements)) {
+        if (element.type === 'AgentProgress' && !Array.isArray(element.props.steps)) {
+          throw new Error(
+            'Include task steps when creating AgentProgress so they can be reviewed after the run finishes'
+          )
+        }
+      }
+      if (run.tools.filter((tool) => tool.ui).length >= 3) {
+        throw new Error('At most 3 UI presentations are allowed per reply')
+      }
+      if (
+        agentUiNeedsResponse(spec) &&
+        run.tools.some((item) => item.ui && agentUiNeedsResponse(item.ui))
+      ) {
+        throw new Error('Ask one interactive question per reply, then wait for the user')
+      }
+      tool.ui = spec
+      if (!persist(entry, 'tool.ui-presented', true)) {
+        tool.ui = undefined
+        throw new Error('The UI presentation could not be saved')
+      }
+    },
     history: () => [
       ...ctx.history,
       ...ctx.archived,
@@ -1364,9 +1627,9 @@ function registerRunTools(ctx: AgentRunContext): AgentTool[] {
       run.contextStatus = 'reviewing'
       persist(entry, 'article.review-started', true)
       const review = await tryReviewAgentArticle({
-        lines,
+        lines: ctx.source.lines,
         article,
-        metadata: sourceMetadata,
+        metadata: ctx.source.metadata,
         task: `${run.instruction}\nLatest user request: ${text}`,
         inputMaxBytes: policy.reviewInputMaxBytes,
         sectionMaxBytes: TOKEN_BYTES * policy.reviewOutputTokens,
@@ -1404,6 +1667,7 @@ function registerRunTools(ctx: AgentRunContext): AgentTool[] {
     vision: transport.model.input.includes('image'),
     signal: controller.signal,
     onArtifact: (artifact) => {
+      artifact.sourceDownloadId = ctx.source.downloadId
       thread.artifacts.push(artifact)
       persist(entry, 'artifact.created', true, {
         artifactIds: [artifact.id],
@@ -1472,12 +1736,30 @@ function subscribeRunSession(ctx: AgentRunContext): () => void {
       persist(entry, 'message.completed', true)
     } else if (event.type === 'tool_execution_start') {
       if (!run.tools.some((item) => item.id === event.toolCallId)) {
-        run.tools.push({ id: event.toolCallId, name: event.toolName, status: 'running' })
+        const args = event.args as { path?: string } | undefined
+        const skill =
+          event.toolName === 'read' && typeof args?.path === 'string'
+            ? agentSkillRead(
+                session.resourceLoader.getSkills().skills,
+                aiStore.getSkillDirectory(),
+                args.path
+              )
+            : undefined
+        run.tools.push({
+          id: event.toolCallId,
+          name: event.toolName,
+          status: 'running',
+          ...(skill ? { skills: [skill] } : {})
+        })
       }
-      entry.timers?.toolStarted(AgentRunTimers.categoryForTool(event.toolName))
+      if (!event.parentToolCallId) {
+        entry.timers?.toolStarted(AgentRunTimers.categoryForTool(event.toolName))
+      }
       persist(entry, 'tool.started', true)
     } else if (event.type === 'tool_execution_end') {
-      entry.timers?.toolFinished()
+      if (!event.parentToolCallId) {
+        entry.timers?.toolFinished()
+      }
       ctx.toolsSinceSnapshot += 1
       const tool = run.tools.find((item) => item.id === event.toolCallId)
       if (tool && tool.status !== 'denied') {
@@ -1530,18 +1812,37 @@ async function prepareRun(ctx: AgentRunContext): Promise<void> {
     `Agent runtime: ${JSON.stringify({ runId: run.id, modelRelease: ctx.transport.profile?.modelRelease, contextWindow: model.contextWindow, modelMaxOutputTokens: model.maxTokens, ...ctx.policy })}`
   )
   run.model = model.id
-  ctx.source = buildAgentRunSource(input, thread.promptId)
+  const inheritedMemory = selectedAgentMemory({ ...thread, leafId: contextLeafId })
+  const selectedId =
+    input.downloadId === AGENT_WORKSPACE_ID ? inheritedMemory.sourceDownloadId : undefined
+  if (selectedId) {
+    const { waitForDesktopTaskQueueReady } = await import('./task-queue-host')
+    await waitForDesktopTaskQueueReady(controller.signal)
+  }
+  const selectedTask = selectedId ? peekDesktopTaskQueueRef()?.get(selectedId) : undefined
+  ctx.source = buildAgentRunSource(
+    selectedTask?.status === 'completed' && isMediaTaskKind(selectedTask.kind)
+      ? { downloadId: selectedTask.id, promptId: thread.promptId }
+      : input,
+    thread.promptId
+  )
+  run.sourceDownloadId = ctx.source.hasSource ? ctx.source.downloadId : undefined
   const { lines, mediaEnabled, mediaKind, metadata: sourceMetadata } = ctx.source
   run.sourceOffset = ctx.source.sourceOffset
   run.evidenceSource = ctx.source.evidenceSource
   const chooseSource = ctx.source.transcripts.length > 1 && provider?.provider.tools !== false
   const toolsMode = provider?.provider.tools === false ? 'none' : 'tiered'
+  const selectedSkill = aiStore.getPrompt(thread.promptId)
   ctx.systemPrompt = buildAgentSystemPrompt({
     configuredModelId: provider ? model.id : undefined,
+    hasSource: ctx.source.hasSource,
     mediaEnabled,
     mediaKind,
     promptId: thread.promptId,
-    instruction: run.instruction,
+    instruction:
+      toolsMode === 'none' || !selectedSkill
+        ? run.instruction
+        : 'Follow the selected skill for the initial request; explicit follow-up requests may change the format.',
     title: sourceMetadata.title,
     language: input.uiLanguage ?? 'en',
     duration: sourceMetadata.durationSeconds,
@@ -1552,14 +1853,13 @@ async function prepareRun(ctx: AgentRunContext): Promise<void> {
   })
   ctx.history = buildAgentHistory({ ...thread, leafId: contextLeafId }, model)
   ctx.progressGuard = new AgentProgressGuard()
-  const inheritedMemory = selectedAgentMemory({ ...thread, leafId: contextLeafId })
   run.workingNotes = inheritedMemory.notes
   ctx.evidence = new AgentEvidence(
     inheritedMemory.source === run.evidenceSource ? inheritedMemory.coverage : undefined
   )
   run.evidenceCoverage = ctx.evidence.coverage
   ctx.recordCompleteSource = () => {
-    for (const [index, line] of lines.entries()) {
+    for (const [index, line] of ctx.source.lines.entries()) {
       ctx.evidence.record('edited', index, 0, line.text.length)
     }
   }
@@ -1570,7 +1870,7 @@ async function prepareRun(ctx: AgentRunContext): Promise<void> {
     }
     const built = buildAppStateMessage({
       evidence: ctx.evidence,
-      lines,
+      lines: ctx.source.lines,
       source: ctx.source,
       artifacts: thread.artifacts,
       notes: run.workingNotes ?? ''
@@ -1621,21 +1921,68 @@ async function prepareRun(ctx: AgentRunContext): Promise<void> {
   if (!chooseSource && (ctx.prepared || !needsSource)) {
     ctx.tools = ctx.tools.filter((tool) => tool.name !== 'write_article')
   }
-  const toolLoading =
-    toolsMode === 'none'
-      ? { initial: [] as AgentTool[], all: [] as AgentTool[], bind: () => undefined }
-      : createAgentToolLoading(ctx.tools, controller.signal, {
-          initialActive: [...CORE_AGENT_TOOLS]
-        })
+  const cwd = aiStore.getSkillDirectory()
+  const skills =
+    toolsMode === 'none' ? [] : aiStore.getSnapshot().prompts.filter((skill) => !skill.skillError)
+  if (toolsMode !== 'none') {
+    ctx.tools.push(
+      ...(await createAgentSkillTools({
+        cwd,
+        signal: controller.signal,
+        shellEnabled: true,
+        permissionApproved: (id) => entry.permissionApproved?.has(id) === true
+      }))
+    )
+  }
   const compactionContext = (): string =>
     buildAppStateMessage({
       evidence: ctx.evidence,
-      lines,
+      lines: ctx.source.lines,
       source: ctx.source,
       artifacts: thread.artifacts,
       notes: run.workingNotes ?? ''
     }).content
+  entry.permissionApproved = new Set()
   const session = await createVideoAgentSession({
+    storageDirectory: join(app.getPath('userData'), 'agent', 'sessions', thread.id, run.id),
+    durableTasks:
+      toolsMode === 'none'
+        ? undefined
+        : {
+            directory: join(app.getPath('userData'), 'agent', 'tasks', thread.id),
+            runId: run.id,
+            contextKey: () =>
+              JSON.stringify({
+                downloadId: ctx.source.hasSource ? ctx.source.downloadId : null,
+                source: ctx.source.evidenceSource
+              })
+          },
+    webAccess: {
+      agentDir: join(app.getPath('userData'), 'agent'),
+      packageRoot: app.getAppPath()
+    },
+    permissions: {
+      agentDir: join(app.getPath('userData'), 'agent'),
+      packageRoot: app.getAppPath(),
+      downloadPath: settingsManager.getAll().downloadPath,
+      mode: parseAgentPermissionMode(entry.permissionMode),
+      grants: thread.toolGrants ?? [],
+      skillReadDirectories: skills
+        .filter((skill) => skill.isPreset)
+        .map((skill) => aiStore.getSkillDirectory(skill.name)),
+      signal: controller.signal,
+      requestApproval: (id, request) => requestRunToolApproval(ctx, id, request),
+      onApproved: (id) => {
+        entry.permissionApproved?.add(id)
+        if (entry.permissionMode === 'full') {
+          entry.pathApproved?.add(id)
+        }
+      },
+      onUsage: (result) => {
+        run.usage = addAgentUsage(run.usage, result.usage)
+        persist(entry, 'tool.review-usage', true)
+      }
+    },
     tuning: ctx.transport.profile?.harness,
     thinkingLevel: input.thinkingLevel,
     thread: { ...thread, leafId: contextLeafId },
@@ -1644,16 +1991,20 @@ async function prepareRun(ctx: AgentRunContext): Promise<void> {
     apiKey: provider?.apiKey || 'vidbee-cloud',
     fetch: ctx.transport.fetch,
     systemPrompt: ctx.systemPrompt,
+    cwd,
+    skillPaths: skills.map((skill) => join(aiStore.getSkillDirectory(skill.name), 'SKILL.md')),
     task: `${run.instruction}\nLatest user request: ${text}`,
-    tools: toolLoading.all,
-    initialActiveToolNames: toolLoading.initial.map((tool) => tool.name),
+    tools: ctx.tools,
+    deferTools: toolsMode !== 'none',
     signal: controller.signal,
     memory: compactionContext,
     calibration: () => calibrationOf(ctx),
     onBeforeStream: (context: Context) => {
       entry.lastEstimate = estimateTokens({
         messages: context.messages,
-        systemPrompt: context.systemPrompt ?? ctx.systemPrompt,
+        systemPrompt:
+          context.systemPrompt ??
+          (context.messages.some((message) => message.role === 'system') ? '' : ctx.systemPrompt),
         tools: entry.agent?.state.tools ?? ctx.tools,
         calibration: calibrationOf(ctx)
       })
@@ -1668,6 +2019,13 @@ async function prepareRun(ctx: AgentRunContext): Promise<void> {
       }
     },
     shouldStop: (turn) => {
+      if (
+        run.tools.some(
+          (tool) => tool.status === 'completed' && tool.ui && agentUiNeedsResponse(tool.ui)
+        )
+      ) {
+        return true
+      }
       if (assistantDeliveredArticle(turn?.message ?? {})) {
         return true
       }
@@ -1688,9 +2046,9 @@ async function prepareRun(ctx: AgentRunContext): Promise<void> {
       }
       return false
     },
+    onFinishTurn: ({ message }) => continueBackgroundTasks(ctx, message),
     outputTokens: () => ctx.outputBudget.tokens
   })
-  toolLoading.bind((names) => session.setActiveToolsByName(names))
   entry.session = session
   entry.agent = session.agent
   controller.signal.throwIfAborted()
@@ -1745,14 +2103,24 @@ async function prepareRun(ctx: AgentRunContext): Promise<void> {
   }
 }
 
+/** Let Pi expand explicit commands and the selected skill's initial invocation. */
 async function streamPhase(ctx: AgentRunContext): Promise<void> {
   const session = ctx.entry.session
   if (!session) {
     throw new AgentUserError('Missing agent session', 'INTERNAL')
   }
+  const { thread } = ctx.entry
+  const selectedSkill =
+    ctx.tools.some((tool) => tool.name === 'read') &&
+    thread.promptId !== AI_CHAT_PROMPT_ID &&
+    thread.messages.filter((message) => message.role === 'user').length === 1
+      ? aiStore.getPrompt(thread.promptId)
+      : undefined
   await runUntilAborted(
     ctx.entry.controller.signal,
-    session.prompt(ctx.text, { expandPromptTemplates: false, images: ctx.images })
+    session.prompt(selectedSkill?.name ? `/skill:${selectedSkill.name} ${ctx.text}` : ctx.text, {
+      images: ctx.images
+    })
   )
 }
 
@@ -1901,10 +2269,14 @@ async function finalizePhase(ctx: AgentRunContext): Promise<void> {
   run.rawMessages = [...archived]
   run.sessionEntries = session.sessionManager.getBranch()
   controller.signal.throwIfAborted()
+  const hasUi = run.tools.some((tool) => tool.status === 'completed' && tool.ui)
+  const awaitingSelection = run.tools.some(
+    (tool) => tool.status === 'completed' && tool.ui && agentUiNeedsResponse(tool.ui)
+  )
   if (!signals.handoffRequested && ctx.previousPhase !== 'sectioned-write') {
     ctx.updateOutput(run.rawMessages)
     const last = entry.agent?.state.messages.at(-1)
-    if (last?.role !== 'assistant' || last.stopReason !== 'stop') {
+    if (!awaitingSelection && (last?.role !== 'assistant' || last.stopReason !== 'stop')) {
       const failed = archived.findLast(
         (item) => item.role === 'assistant' && item.stopReason === 'error'
       )
@@ -1924,7 +2296,11 @@ async function finalizePhase(ctx: AgentRunContext): Promise<void> {
     ctx.message.text = finalAgentAnswer(run.rawMessages)
   }
   if (
-    !(ctx.message.text.trim() || thread.artifacts.some((artifact) => artifact.runId === run.id))
+    !(
+      ctx.message.text.trim() ||
+      hasUi ||
+      thread.artifacts.some((artifact) => artifact.runId === run.id)
+    )
   ) {
     const failure = parseAgentError(run.error || 'The model returned no answer')
     throw new AgentUserError(
@@ -1938,6 +2314,7 @@ async function finalizePhase(ctx: AgentRunContext): Promise<void> {
       const materialized = await materializeAgentArticleImages({
         text: ctx.message.text,
         artifacts: thread.artifacts,
+        sourceDownloadId: ctx.source.downloadId,
         runId: run.id,
         tools: ctx.tools,
         signal: controller.signal,
@@ -2020,6 +2397,7 @@ function createRunContext(
     history: [],
     progressGuard: new AgentProgressGuard(),
     evidence: new AgentEvidence(),
+    taskContinuation: new AgentTaskContinuation(),
     appendAppState: async () => undefined,
     recordCompleteSource: () => undefined,
     updateOutput: () => undefined
@@ -2035,6 +2413,7 @@ async function executeAgent(
 ): Promise<void> {
   const ctx = createRunContext(entry, input, text, contextLeafId)
   const { signals } = ctx
+  entry.permissionMode = parseAgentPermissionMode(settingsManager.getAll().agentManagementTools)
   entry.approvals = new Map()
   entry.pathApproved = new Set()
   entry.calibration = new BudgetCalibration()

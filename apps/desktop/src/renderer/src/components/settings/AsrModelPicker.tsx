@@ -45,6 +45,7 @@ export const AsrModelPicker = ({
   concurrency,
   onChangeConcurrency,
   onSelectTier,
+  showModels = true,
   onToggleAutoTranscribe
 }: {
   activeTier: AsrTierId
@@ -52,6 +53,7 @@ export const AsrModelPicker = ({
   concurrency?: number
   onChangeConcurrency?: (value: number) => void
   onSelectTier: (tier: AsrTierId) => Promise<void> | void
+  showModels?: boolean
   onToggleAutoTranscribe?: () => void
 }) => {
   const { t, i18n } = useTranslation()
@@ -220,126 +222,136 @@ export const AsrModelPicker = ({
             <ItemSeparator />
           </>
         )}
-        <Item variant="muted">
-          <ItemContent>
-            <ItemTitle>{t('settings.transcriptModelsTitle')}</ItemTitle>
-            <ItemDescription>
-              {status?.ready
-                ? t('settings.transcriptModelsReady', { size: formatBytes(status.bytes) })
-                : t('settings.transcriptModelsMissing')}
-              {status && status.downloads.length > 1
-                ? ` ${t('settings.asrDownloadingMany', { count: status.downloads.length })}`
-                : status?.downloads[0]
-                  ? ` ${t('settings.asrDownloading', {
-                      received: formatBytes(status.downloads[0].received),
-                      total: status.downloads[0].total
-                        ? formatBytes(status.downloads[0].total)
-                        : '—'
-                    })}`
-                  : null}
-            </ItemDescription>
-          </ItemContent>
-        </Item>
+        {showModels ? (
+          <Item variant="muted">
+            <ItemContent>
+              <ItemTitle>{t('settings.transcriptModelsTitle')}</ItemTitle>
+              <ItemDescription>
+                {status?.ready
+                  ? t('settings.transcriptModelsReady', { size: formatBytes(status.bytes) })
+                  : t('settings.transcriptModelsMissing')}
+                {status && status.downloads.length > 1
+                  ? ` ${t('settings.asrDownloadingMany', { count: status.downloads.length })}`
+                  : status?.downloads[0]
+                    ? ` ${t('settings.asrDownloading', {
+                        received: formatBytes(status.downloads[0].received),
+                        total: status.downloads[0].total
+                          ? formatBytes(status.downloads[0].total)
+                          : '—'
+                      })}`
+                    : null}
+              </ItemDescription>
+            </ItemContent>
+          </Item>
+        ) : null}
       </ItemGroup>
 
-      {downloaded.length > 0 ? (
-        <div className="space-y-2">
-          <h3 className="px-1 font-medium text-muted-foreground text-sm">
-            {t('settings.asrDownloaded')}
-          </h3>
-          <ItemGroup>
-            {downloaded.map((tier, index) => (
-              <AsrModelRow
-                activeTier={activeTier}
-                busy={busyTiers.has(tier) || status?.pendingTiers.includes(tier) === true}
-                downloading={status?.downloads.find((item) => item.tier === tier) ?? null}
-                key={`downloaded-${tier}`}
-                onCancel={(id) => void handleCancel(id)}
-                onDelete={(id) => void handleDelete(id)}
-                onSelect={(id) => void handleSelect(id)}
-                recommended={recommendedIds.includes(tier)}
-                showSeparator={index > 0}
-                status={status?.tiers.find((item) => item.id === tier)}
-                tier={tier}
-              />
-            ))}
-          </ItemGroup>
-        </div>
-      ) : null}
-
-      <div className="space-y-2">
-        <div className="space-y-1 px-1">
-          <h3 className="font-medium text-muted-foreground text-sm">
-            {t('settings.asrRecommended')}
-          </h3>
-          {status?.machine ? (
-            <p className="text-muted-foreground text-xs leading-relaxed">
-              {t('settings.asrRecommendedFor', {
-                ram: formatRam(status.machine.ramBytes),
-                cores: status.machine.cpuCount,
-                language: languageName,
-                os: t(`settings.asrOs.${status.machine.os ?? 'other'}`),
-                gpu: displayGpuName(status.machine.gpuName, status.machine.gpu, (kind) =>
-                  t(`settings.asrGpu.${kind}`)
-                )
-              })}
-            </p>
-          ) : null}
-        </div>
-        <ItemGroup>
-          {(recommendedIds.length > 0 ? recommendedIds : (['minimal'] as AsrTierId[])).map(
-            (tier, index) => (
-              <AsrModelRow
-                activeTier={activeTier}
-                busy={busyTiers.has(tier) || status?.pendingTiers.includes(tier) === true}
-                downloading={status?.downloads.find((item) => item.tier === tier) ?? null}
-                key={`recommended-${tier}`}
-                onCancel={(id) => void handleCancel(id)}
-                onSelect={(id) => void handleSelect(id)}
-                recommended
-                showSeparator={index > 0}
-                status={status?.tiers.find((item) => item.id === tier)}
-                tier={tier}
-              />
-            )
-          )}
-        </ItemGroup>
-      </div>
-
-      <div className="space-y-3">
-        <h3 className="px-1 font-medium text-muted-foreground text-sm">
-          {t('settings.asrAllModels')}
-        </h3>
-        {ASR_FAMILY_ORDER.map((family) => {
-          const models = ASR_TIERS.filter((tier) => tier.family === family)
-          if (models.length === 0) {
-            return null
-          }
-          return (
-            <div className="space-y-2" key={family}>
-              <p className="px-1 text-muted-foreground text-xs">
-                {t(`settings.asrFamily.${family}`)}
-              </p>
+      {showModels ? (
+        <>
+          {downloaded.length > 0 ? (
+            <div className="space-y-2">
+              <h3 className="px-1 font-medium text-muted-foreground text-sm">
+                {t('settings.asrDownloaded')}
+              </h3>
               <ItemGroup>
-                {models.map((tier, index) => (
+                {downloaded.map((tier, index) => (
                   <AsrModelRow
                     activeTier={activeTier}
-                    busy={busyTiers.has(tier.id) || status?.pendingTiers.includes(tier.id) === true}
-                    downloading={status?.downloads.find((item) => item.tier === tier.id) ?? null}
-                    key={`all-${tier.id}`}
+                    busy={busyTiers.has(tier) || status?.pendingTiers.includes(tier) === true}
+                    downloading={status?.downloads.find((item) => item.tier === tier) ?? null}
+                    key={`downloaded-${tier}`}
                     onCancel={(id) => void handleCancel(id)}
+                    onDelete={(id) => void handleDelete(id)}
                     onSelect={(id) => void handleSelect(id)}
-                    recommended={recommendedIds.includes(tier.id)}
+                    recommended={recommendedIds.includes(tier)}
                     showSeparator={index > 0}
-                    status={status?.tiers.find((item) => item.id === tier.id)}
-                    tier={tier.id}
+                    status={status?.tiers.find((item) => item.id === tier)}
+                    tier={tier}
                   />
                 ))}
               </ItemGroup>
             </div>
-          )
-        })}
-      </div>
+          ) : null}
+
+          <div className="space-y-2">
+            <div className="space-y-1 px-1">
+              <h3 className="font-medium text-muted-foreground text-sm">
+                {t('settings.asrRecommended')}
+              </h3>
+              {status?.machine ? (
+                <p className="text-muted-foreground text-xs leading-relaxed">
+                  {t('settings.asrRecommendedFor', {
+                    ram: formatRam(status.machine.ramBytes),
+                    cores: status.machine.cpuCount,
+                    language: languageName,
+                    os: t(`settings.asrOs.${status.machine.os ?? 'other'}`),
+                    gpu: displayGpuName(status.machine.gpuName, status.machine.gpu, (kind) =>
+                      t(`settings.asrGpu.${kind}`)
+                    )
+                  })}
+                </p>
+              ) : null}
+            </div>
+            <ItemGroup>
+              {(recommendedIds.length > 0 ? recommendedIds : (['minimal'] as AsrTierId[])).map(
+                (tier, index) => (
+                  <AsrModelRow
+                    activeTier={activeTier}
+                    busy={busyTiers.has(tier) || status?.pendingTiers.includes(tier) === true}
+                    downloading={status?.downloads.find((item) => item.tier === tier) ?? null}
+                    key={`recommended-${tier}`}
+                    onCancel={(id) => void handleCancel(id)}
+                    onSelect={(id) => void handleSelect(id)}
+                    recommended
+                    showSeparator={index > 0}
+                    status={status?.tiers.find((item) => item.id === tier)}
+                    tier={tier}
+                  />
+                )
+              )}
+            </ItemGroup>
+          </div>
+
+          <div className="space-y-3">
+            <h3 className="px-1 font-medium text-muted-foreground text-sm">
+              {t('settings.asrAllModels')}
+            </h3>
+            {ASR_FAMILY_ORDER.map((family) => {
+              const models = ASR_TIERS.filter((tier) => tier.family === family)
+              if (models.length === 0) {
+                return null
+              }
+              return (
+                <div className="space-y-2" key={family}>
+                  <p className="px-1 text-muted-foreground text-xs">
+                    {t(`settings.asrFamily.${family}`)}
+                  </p>
+                  <ItemGroup>
+                    {models.map((tier, index) => (
+                      <AsrModelRow
+                        activeTier={activeTier}
+                        busy={
+                          busyTiers.has(tier.id) || status?.pendingTiers.includes(tier.id) === true
+                        }
+                        downloading={
+                          status?.downloads.find((item) => item.tier === tier.id) ?? null
+                        }
+                        key={`all-${tier.id}`}
+                        onCancel={(id) => void handleCancel(id)}
+                        onSelect={(id) => void handleSelect(id)}
+                        recommended={recommendedIds.includes(tier.id)}
+                        showSeparator={index > 0}
+                        status={status?.tiers.find((item) => item.id === tier.id)}
+                        tier={tier.id}
+                      />
+                    ))}
+                  </ItemGroup>
+                </div>
+              )
+            })}
+          </div>
+        </>
+      ) : null}
     </>
   )
 }

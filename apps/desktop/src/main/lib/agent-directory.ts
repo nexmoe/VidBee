@@ -10,6 +10,7 @@ import {
 import {
   agentThreadIsRunning,
   agentThreadLatestRun,
+  agentThreadNeedsApproval,
   agentThreadUpdatedAt
 } from '../../shared/agent-history'
 
@@ -17,6 +18,8 @@ import {
 interface AgentDirectoryMeta {
   hasHistory: boolean
   running: boolean
+  /** Manual approval state retained without loading private tool payloads. */
+  approvalPending?: boolean
   updatedAt: number
   userText: string
   /** Latest run status and model, so lists can label finished results. Absent on older rows. */
@@ -49,6 +52,7 @@ export function agentDirectoryMeta(thread: AgentThread): AgentDirectoryMeta {
   return {
     hasHistory: thread.messages.length > 0 || Boolean(thread.images?.length),
     running: agentThreadIsRunning(thread),
+    approvalPending: agentThreadNeedsApproval(thread),
     updatedAt: agentThreadUpdatedAt(thread),
     userText: firstUserLine(thread),
     ...(latest ? { status: latest.status, model: latest.model } : {})
@@ -346,7 +350,7 @@ function previewMessage(
 }
 
 /**
- * One stand-in run carrying running state and the directory timestamp.
+ * One stand-in run carrying status, approval state and the directory timestamp.
  *
  * @param meta Header projection.
  */
@@ -361,7 +365,10 @@ function directoryRun(meta: AgentDirectoryMeta): AgentChatRun {
     createdAt: meta.updatedAt,
     updatedAt: meta.updatedAt,
     rawMessages: [],
-    tools: []
+    tools:
+      meta.running && meta.approvalPending
+        ? [{ id: 'directory-approval', name: '', status: 'pending-approval' }]
+        : []
   }
 }
 

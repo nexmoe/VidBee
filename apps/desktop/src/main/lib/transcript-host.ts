@@ -26,15 +26,16 @@ import {
   latestTranscriptHead,
   listTranscriptionChildren,
   MINIMAL_MODEL_GROUPS,
-  MINIMAL_MODEL_TIERS,
   ModelManager,
   type ModelPrepStatus,
   type ModelStatus,
   type PipelineSegment,
   parseAsrTier,
+  parseCaptionTrack,
   parseSpeakerCount,
   readMachineProfile,
   recommendAsrModels,
+  recordForTranscriptSource,
   resolveTranscriptHeads,
   type SpeakerCount,
   startMinimalModelFill,
@@ -166,6 +167,9 @@ const rememberCaptionView = (record: TranscriptRecord | null): void => {
  * @returns True when a rediarize task was created.
  */
 export const overlayCaptionSpeakersIfNeeded = async (downloadTaskId: string): Promise<boolean> => {
+  if (settingsManager.get('transcriptionProvider') === 'cloud') {
+    return false
+  }
   const queue = getDesktopTaskQueueRef()
   if (findActiveTranscription(queue, downloadTaskId)) {
     return false
@@ -306,9 +310,11 @@ export const startAutoTranscription = (): void => {
     queue: getDesktopTaskQueueRef(),
     store: getTranscriptStore(),
     isEnabled: () => settingsManager.get('autoTranscribeAfterDownload') === true,
-    isModelsReady: () => readMinimalModelPrep().ready,
+    isModelsReady: () => readTranscriptionModelPrep().ready,
     resolveSourceFile: resolveTaskSourceFile,
     resolveAsrTier: () => readActiveAsrTier(),
+    resolveProvider: () => settingsManager.get('transcriptionProvider'),
+    resolveCloudModelId: () => settingsManager.get('cloudTranscriptionModelId'),
     resolveLanguage: () => readUiLanguage(),
     tryImportCaptions: async ({ downloadTaskId, sourceFilePath }) => {
       const imported = await importCaptionsForFinishedDownload(downloadTaskId, sourceFilePath)
@@ -462,6 +468,36 @@ export const readTranscriptPlaybackCues = (
   }
 }
 
+/** Read one subtitle source without activating it, importing records, or starting tasks. */
+export const readTranscriptSourceCues = (
+  downloadTaskId: string,
+  key: string
+): Array<{ startMs: number; endMs: number; text: string }> => {
+  const view = readTranscriptView(downloadTaskId, { importSidecars: false, scanSidecars: true })
+  const source = view.sources.find((option) => option.key === key)
+  if (!source) {
+    return []
+  }
+  const stored = recordForTranscriptSource(
+    source,
+    getTranscriptStore().listHeadsForDownload(downloadTaskId),
+    null
+  )
+  if (stored) {
+    return getTranscriptStore().listPlaybackCues(stored.id)
+  }
+  if (source.kind !== 'captions') {
+    return []
+  }
+  const language = captionLanguageKey(source.language)
+  const track = view.sourceFilePath
+    ? findSidecarCaptionTracks(view.sourceFilePath).find(
+        (item) => captionLanguageKey(item.language) === language
+      )
+    : undefined
+  return track ? parseCaptionTrack(track.text, track.format) : []
+}
+
 export const getTranscriptSnapshot = (downloadTaskId: string): TranscriptSnapshot =>
   finishTranscriptSnapshot(
     readTranscriptView(downloadTaskId, { importSidecars: true, scanSidecars: true }),
@@ -586,7 +622,9 @@ export const importLocalMediaForTranscription = async (
     store: getTranscriptStore(),
     paths,
     language: readUiLanguage(),
-    asrTier: readActiveAsrTier()
+    asrTier: readActiveAsrTier(),
+    provider: settingsManager.get('transcriptionProvider'),
+    cloudModelId: settingsManager.get('cloudTranscriptionModelId')
   })
   for (const item of result.imported) {
     broadcastTranscript(getTranscriptSnapshot(item.downloadId))
@@ -631,6 +669,8 @@ export const startTranscriptionForDownload = async (
     title: download.input.title,
     trigger: force ? 'force' : 'manual',
     asrTier: asrTier ?? readActiveAsrTier(),
+    provider: asrTier ? 'local' : settingsManager.get('transcriptionProvider'),
+    cloudModelId: settingsManager.get('cloudTranscriptionModelId'),
     language: readUiLanguage(),
     speakerCount: parseSpeakerCount(speakerCount, DEFAULT_SPEAKER_COUNT)
   })
@@ -640,13 +680,23 @@ export const startTranscriptionForDownload = async (
   return snapshot
 }
 
+/** Retry with the selected model, creating a fresh task when the model changed. */
 export const retryTranscription = async (downloadTaskId: string): Promise<TranscriptSnapshot> => {
   const queue = getDesktopTaskQueueRef()
   const latest = listTranscriptionChildren(queue, downloadTaskId)[0]
   if (latest && (latest.status === 'failed' || latest.status === 'cancelled')) {
+    if (
+      parseAsrTier(latest.input.options?.asrTier) !== readActiveAsrTier() ||
+      (latest.input.options?.provider ?? 'local') !==
+        settingsManager.get('transcriptionProvider') ||
+      (settingsManager.get('transcriptionProvider') === 'cloud' &&
+        latest.input.options?.cloudModelId !== settingsManager.get('cloudTranscriptionModelId'))
+    ) {
+      return startTranscriptionForDownload(downloadTaskId, true)
+    }
     await queue.retryManual(latest.id)
   } else {
-    await startTranscriptionForDownload(downloadTaskId, false)
+    return startTranscriptionForDownload(downloadTaskId, false)
   }
   const snapshot = getTranscriptSnapshot(downloadTaskId)
   broadcastTranscript(snapshot)
@@ -760,6 +810,7 @@ export const getTranscriptionModelStatus = async (): Promise<ModelStatus> => {
   const language = readUiLanguage()
   return {
     ...status,
+    ready: readTranscriptionModelPrep().ready,
     pendingTiers: peekDesktopTaskQueueRef()
       ? listAsrModelTasks().flatMap((task) => {
           const tier = task.input.options?.asrTier
@@ -802,6 +853,8 @@ export const setActiveAsrTier = async (tier: AsrTierId): Promise<ModelStatus> =>
     throw Object.assign(new Error('ASR model download cancelled or paused'), { name: 'AbortError' })
   }
   settingsManager.set('asrTier', tier)
+  settingsManager.set('transcriptionProvider', 'local')
+  broadcastModelPrep()
   return getModelManager().status(undefined, [tier])
 }
 
@@ -848,6 +901,7 @@ export const deleteAsrTier = async (tier: AsrTierId): Promise<ModelStatus> => {
     throw new Error('Cancel the queued ASR download before deleting its model')
   }
   getModelManager().removeTier(tier)
+  broadcastModelPrep()
   return getTranscriptionModelStatus()
 }
 
@@ -872,6 +926,7 @@ export const upgradeAndRetranscribe = async (
   tier: AsrTierId
 ): Promise<TranscriptSnapshot> => {
   settingsManager.set('asrTier', tier)
+  settingsManager.set('transcriptionProvider', 'local')
   logger.info('transcription: upgrade queued', { downloadTaskId, tier })
   return startTranscriptionForDownload(downloadTaskId, true, tier)
 }
@@ -936,15 +991,17 @@ const readActiveAsrTierForDownload = (downloadTaskId: string): AsrTierId => {
 }
 
 /**
- * Current boot-set model readiness and download percent.
+ * Current default model and shared prerequisite readiness and download percent.
  */
-export const readMinimalModelPrep = (): ModelPrepStatus =>
-  toModelPrepStatus(getModelManager().status(MINIMAL_MODEL_GROUPS, MINIMAL_MODEL_TIERS))
+export const readTranscriptionModelPrep = (): ModelPrepStatus =>
+  settingsManager.get('transcriptionProvider') === 'cloud'
+    ? { ready: true, downloading: false, percent: 100 }
+    : toModelPrepStatus(getModelManager().status(MINIMAL_MODEL_GROUPS, [readActiveAsrTier()]))
 
 /**
- * Push boot-set model prep progress to every renderer window.
+ * Push current default model prep progress to every renderer window.
  */
-const broadcastModelPrep = (status = readMinimalModelPrep()): void => {
+const broadcastModelPrep = (status = readTranscriptionModelPrep()): void => {
   for (const window of BrowserWindow.getAllWindows()) {
     if (!window.isDestroyed()) {
       window.webContents.send('transcript:models', status)
@@ -968,7 +1025,7 @@ const subscribeModelProgressBroadcasts = (): void => {
 /**
  * Enqueue downloads that finished while the boot models were still arriving.
  */
-const flushDeferredAutoTranscriptions = (): void => {
+export const flushDeferredAutoTranscriptions = (): void => {
   broadcastModelPrep()
   if (!coordinator) {
     return
@@ -978,6 +1035,9 @@ const flushDeferredAutoTranscriptions = (): void => {
 
 export const startIdleMinimalModelFill = (): void => {
   subscribeModelProgressBroadcasts()
+  if (settingsManager.get('transcriptionProvider') === 'cloud') {
+    return
+  }
   if (modelFillStarted) {
     return
   }
@@ -1089,7 +1149,7 @@ export const broadcastTranscriptPartials = (
 /** Publish transcript changes and admit any configured automatic skill runs. */
 export const broadcastTranscript = (snapshot: TranscriptSnapshot): void => {
   runAutoSkillsForTranscript(snapshot)
-  const list = toTranscriptListSnapshot(snapshot)
+  const list = { ...toTranscriptListSnapshot(snapshot), sources: snapshot.sources }
   for (const window of BrowserWindow.getAllWindows()) {
     if (!window.isDestroyed()) {
       window.webContents.send('transcript:updated', list)

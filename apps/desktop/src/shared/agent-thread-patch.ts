@@ -170,6 +170,7 @@ export function projectAgentRun(run: AgentChatRun, activity: AgentActivity[]): A
     contextSummary: undefined,
     tools: run.tools.map((tool) => ({
       ...tool,
+      skills: tool.skills?.map((skill) => ({ ...skill })),
       approval: tool.approval ? { ...tool.approval } : undefined
     }))
   }

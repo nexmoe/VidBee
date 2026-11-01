@@ -69,6 +69,7 @@ import {
   startIdleMinimalModelFill,
   subscribeTranscriptBroadcasts
 } from './lib/transcript-host'
+import { getMainWindowState, rememberMainWindowState } from './lib/window-state'
 import { initializeYtDlpKernelService, stopYtDlpKernelService } from './lib/ytdlp-kernel-host'
 import { startExtensionApiServer, stopExtensionApiServer } from './local-api'
 import { isPortableMode } from './portable'
@@ -547,9 +548,9 @@ export function createWindow(): void {
   isMainWindowReadyToShow = false
   isRendererReady = false
 
+  const { maximized, ...windowSize } = getMainWindowState()
   const windowOptions: BrowserWindowConstructorOptions = {
-    width: 1200,
-    height: 800,
+    ...windowSize,
     show: false,
     autoHideMenuBar: true,
     icon: appIcon, // Set application icon
@@ -575,6 +576,7 @@ export function createWindow(): void {
 
   // Create the browser window
   mainWindow = new BrowserWindow(windowOptions)
+  rememberMainWindowState(mainWindow, maximized)
 
   mainWindow.on('close', (event) => {
     if (isAppQuitting()) {

@@ -1,37 +1,32 @@
+import {
+  FEEDBACK_EMAIL,
+  FEEDBACK_GITHUB_URL,
+  FEEDBACK_REPORT_FILENAME
+} from '@vidbee/ui/lib/feedback-diagnostics'
 import { AI_OVERVIEW_PROMPT_ID } from '../../shared/ai-prompts'
-import articleRewriteSkill from './agent-skills/article-rewrite/SKILL.md?raw'
-import faqSkill from './agent-skills/faq/SKILL.md?raw'
-import overviewSkill from './agent-skills/overview/SKILL.md?raw'
+import { BUILTIN_SKILLS } from '../../shared/builtin-skills'
+import { type AgentSkill, parseAgentSkill } from './agent-skill-document'
 
-export interface AgentSkill {
-  name: string
-  description: string
-  body: string
-}
-
-const FRONTMATTER = /^---\n([\s\S]*?)\n---\n?/
-
-/** Parse a SKILL.md document into name, description, and instruction body. */
-export function parseAgentSkill(markdown: string): AgentSkill {
-  const fence = markdown.match(FRONTMATTER)
-  const fields: Record<string, string> = {}
-  for (const line of (fence?.[1] ?? '').split('\n')) {
-    const separator = line.indexOf(':')
-    if (separator > 0) {
-      fields[line.slice(0, separator).trim()] = line.slice(separator + 1).trim()
-    }
+/** Read the repository's canonical skill document without keeping a second prompt definition. */
+function document(name: string): string {
+  const skill = BUILTIN_SKILLS.find((item) => item.name === name)
+  if (!skill) {
+    throw new Error(`Missing built-in skill: ${name}`)
   }
-  return {
-    name: fields.name ?? '',
-    description: fields.description ?? '',
-    body: markdown.slice(fence?.[0].length ?? 0).trim()
-  }
+  return skill.document
 }
 
 export const AGENT_SKILLS = {
-  overview: parseAgentSkill(overviewSkill),
-  articleRewrite: parseAgentSkill(articleRewriteSkill),
-  faq: parseAgentSkill(faqSkill)
+  overview: parseAgentSkill(document('overview')),
+  articleRewrite: parseAgentSkill(document('article-rewrite')),
+  faq: parseAgentSkill(document('faq')),
+  videoLocalization: parseAgentSkill(document('video-localization')),
+  diagnoseTask: parseAgentSkill(
+    document('diagnose-task')
+      .replaceAll('{{feedback.github}}', FEEDBACK_GITHUB_URL)
+      .replaceAll('{{feedback.email}}', FEEDBACK_EMAIL)
+      .replaceAll('{{feedback.filename}}', FEEDBACK_REPORT_FILENAME)
+  )
 } as const
 
 /**
@@ -51,7 +46,7 @@ export function selectAgentSkills(input: {
   return [AGENT_SKILLS.articleRewrite]
 }
 
-/** Inline the selected skill body so its workflow reaches the model without load_tools. */
+/** Inline the selected skill body so its workflow reaches the model without tool discovery. */
 export function formatAgentSkillsForPrompt(skills: AgentSkill[]): string {
   return skills
     .map((skill) => `Skill (${skill.name}): ${skill.description}\n${skill.body}`)

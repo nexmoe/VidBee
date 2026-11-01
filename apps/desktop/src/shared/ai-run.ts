@@ -15,7 +15,7 @@ const INCOMPLETE_STREAM_PATTERN = /stream ended without finish_reason/i
 /**
  * Empty snapshot used before the first run of a prompt.
  *
- * @param downloadId Download or settings-test id.
+ * @param downloadId Download id.
  * @param promptId Prompt id.
  * @param now Timestamp.
  */
@@ -36,9 +36,9 @@ export const idlePromptRunSnapshot = (
 })
 
 /**
- * Settings "test prompt" ids are not real downloads and must not be stored.
+ * Reserved internal ids are not real downloads and must not be stored.
  *
- * @param downloadId Download or settings-test id.
+ * @param downloadId Download id.
  */
 export const isEphemeralPromptRunDownloadId = (downloadId: string): boolean =>
   downloadId.startsWith('__')

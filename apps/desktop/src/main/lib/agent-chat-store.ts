@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto'
 import { existsSync, readFileSync } from 'node:fs'
-import type { SessionEntry } from '@earendil-works/pi-coding-agent'
 import type { Database } from 'better-sqlite3'
 import type {
   AgentArtifact,
@@ -12,6 +11,7 @@ import { sanitizeAgentConversationTitle } from '../../shared/agent-history'
 import { durableAgentEvent } from '../../shared/agent-thread-patch'
 import { agentDirectoryMeta, readDirectoryThreads, readPromptThreadView } from './agent-directory'
 import { agentSavePlan, publicAgentPatch, publicAgentThread } from './agent-run-event'
+import type { SessionEntry } from './agent-session-types'
 import { loadPersistedPromptRun } from './ai-prompt-store'
 import { getDatabaseConnection } from './database'
 

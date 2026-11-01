@@ -12,6 +12,7 @@ allowBuilds:
   protobufjs: true
   sharp: true
   spawn-sync: true
+  tree-sitter-bash: set this to true or false
 overrides:
   '@orpc/client': '>=1.15.0 <2'
   '@orpc/contract': '>=1.15.0 <2'
@@ -75,3 +76,14 @@ overrides:
   ws: '>=8.21.0'
 patchedDependencies:
   streamdown@2.5.0: patches/streamdown@2.5.0.patch
+
+# VidBee provides the small plugin host surface; no Coding Agent runtime is installed.
+packageExtensions:
+  '@gotgenes/pi-permission-system@41.0.0':
+    peerDependenciesMeta:
+      '@earendil-works/pi-coding-agent':
+        optional: true
+  '@mzwing/pi-permission-auto-review@0.9.2':
+    peerDependenciesMeta:
+      '@earendil-works/pi-coding-agent':
+        optional: true

@@ -293,35 +293,39 @@ export class TranscriptStore {
     }))
   }
 
+  /** Persist a transcript atomically, optionally adding a secondary track without changing the current row. */
   commit(input: {
     downloadTaskId: string
     transcriptionTaskId: string
     sourceFilePath: string | null
     result: PipelineResult
     transcriptId?: string
+    activate?: boolean
   }): TranscriptRecord {
     const now = this.clock()
     const transcriptId = input.transcriptId ?? randomUUID()
     const existing = this.getByTranscriptionTaskId(input.transcriptionTaskId)
-    if (existing && existing.supersededAt == null) {
+    if (existing && (input.activate === false || existing.supersededAt == null)) {
       return existing
     }
 
     const write = this.db.transaction(() => {
-      this.db
-        .prepare(
-          `UPDATE transcripts
+      if (input.activate !== false) {
+        this.db
+          .prepare(
+            `UPDATE transcripts
            SET superseded_at = ?, updated_at = ?
            WHERE download_task_id = ? AND superseded_at IS NULL`
-        )
-        .run(now, now, input.downloadTaskId)
+          )
+          .run(now, now, input.downloadTaskId)
+      }
 
       this.db
         .prepare(
           `INSERT INTO transcripts (
              id, download_task_id, transcription_task_id, result_kind, model_version,
              asr_tier, language, source_file_path, source_kind, superseded_at, created_at, updated_at
-           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?)`
+           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
         )
         .run(
           transcriptId,
@@ -333,6 +337,7 @@ export class TranscriptStore {
           input.result.language,
           input.sourceFilePath,
           input.result.sourceKind ?? 'asr',
+          input.activate === false ? now : null,
           now,
           now
         )
@@ -378,6 +383,37 @@ export class TranscriptStore {
       throw new Error(`transcript commit failed for ${transcriptId}`)
     }
     return committed
+  }
+
+  /** Append validated caption cues in one transaction, preserving existing cue IDs and the current track. */
+  appendCaptionCues(
+    transcriptId: string,
+    cues: ReadonlyArray<{ startMs: number; endMs: number; text: string }>
+  ): TranscriptRecord {
+    const record = this.getById(transcriptId)
+    if (record?.sourceKind !== 'captions') {
+      throw new Error('Caption transcript is unavailable')
+    }
+    const firstIndex =
+      record.segments.reduce((max, segment) => Math.max(max, segment.sortIndex), -1) + 1
+    const write = this.db.transaction(() => {
+      const insert = this.db.prepare(
+        `INSERT INTO transcript_segments (id, transcript_id, speaker_id, start_ms, end_ms, text, words_json, confidence, sort_index)
+         VALUES (?, ?, NULL, ?, ?, ?, '[]', NULL, ?)`
+      )
+      for (const [index, cue] of cues.entries()) {
+        insert.run(randomUUID(), transcriptId, cue.startMs, cue.endMs, cue.text, firstIndex + index)
+      }
+      this.db
+        .prepare('UPDATE transcripts SET updated_at = ? WHERE id = ?')
+        .run(this.clock(), transcriptId)
+    })
+    write.immediate()
+    const updated = this.getById(transcriptId)
+    if (!updated) {
+      throw new Error('Caption transcript could not be read after appending cues')
+    }
+    return updated
   }
 
   /**

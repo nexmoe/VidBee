@@ -19,13 +19,13 @@ import { ipcServices } from '@renderer/lib/ipc'
 import { logger } from '@renderer/lib/logger'
 import type { TranscriptSnapshotView } from '@renderer/store/transcripts'
 import { languageList, normalizeLanguageCode } from '@vidbee/i18n/languages'
-import { type AsrTierId, parseAsrTier, upgradeAsrTiers } from '@vidbee/transcription/asr'
+import { ASR_TIERS, type AsrTierId, parseAsrTier } from '@vidbee/transcription/asr'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
 /**
- * Upgrade picker that reuses the settings model row and machine recommendation.
+ * Model picker that restarts transcription using the selected model.
  */
 export function AsrUpgradeDialog({
   currentTier,
@@ -80,14 +80,20 @@ export function AsrUpgradeDialog({
     }
   }, [busyTier, open, refresh])
 
-  const upgradeOptions = useMemo(
-    () => (status ? upgradeAsrTiers(activeTier, status.recommended) : null),
+  const modelOptions = useMemo(
+    () =>
+      status
+        ? ASR_TIERS.filter((tier) => tier.id !== activeTier).sort(
+            (left, right) =>
+              Number(status.recommended.includes(right.id)) -
+              Number(status.recommended.includes(left.id))
+          )
+        : [],
     [activeTier, status]
   )
-  const showMax = upgradeOptions !== null && upgradeOptions.length === 0
 
   /**
-   * Download a higher model if needed, then start a new transcript.
+   * Cancel any active transcription and enqueue a new run with the selected model.
    */
   const handleSelect = async (tier: AsrTierId) => {
     setBusyTier(tier)
@@ -112,13 +118,11 @@ export function AsrUpgradeDialog({
     <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>{t('transcript.qualityHint')}</DialogTitle>
-          <DialogDescription>
-            {showMax ? t('transcript.qualityHintMax') : t('transcript.qualityHintDetail')}
-          </DialogDescription>
+          <DialogTitle>{t('transcript.changeModel')}</DialogTitle>
+          <DialogDescription>{t('transcript.qualityHintDetail')}</DialogDescription>
         </DialogHeader>
-        {upgradeOptions && upgradeOptions.length > 0 ? (
-          <div className="space-y-3">
+        {modelOptions.length > 0 ? (
+          <div className="max-h-[60vh] space-y-3 overflow-y-auto">
             {status?.machine ? (
               <p className="text-muted-foreground text-xs leading-relaxed">
                 {t('settings.asrRecommendedFor', {
@@ -133,7 +137,7 @@ export function AsrUpgradeDialog({
               </p>
             ) : null}
             <ItemGroup>
-              {upgradeOptions.map((tier, index) => (
+              {modelOptions.map((tier, index) => (
                 <AsrModelRow
                   activeTier={activeTier}
                   busy={busyTier === tier.id}

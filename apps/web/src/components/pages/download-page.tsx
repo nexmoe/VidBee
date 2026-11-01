@@ -94,14 +94,20 @@ export const DownloadPage = () => {
 	);
 	const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 	const listRef = useRef<HTMLDivElement>(null);
-	const { finishPointer, marquee, onPointerDown, onPointerMove } =
-		useListMarqueeSelection({
-			containerRef: listRef,
-			onSelectIds: (ids) => {
-				setSelectedIds(new Set(ids));
-			},
-			selectedIds,
-		});
+	const {
+		finishPointer,
+		marquee,
+		onClickCapture,
+		onContextMenuCapture,
+		onPointerDown,
+		onPointerMove,
+	} = useListMarqueeSelection({
+		containerRef: listRef,
+		onSelectIds: (ids) => {
+			setSelectedIds(new Set(ids));
+		},
+		selectedIds,
+	});
 	const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(
 		null,
 	);
@@ -724,6 +730,8 @@ export const DownloadPage = () => {
 						) : (
 							<div
 								className={cn("relative w-full pb-4", marquee && "select-none")}
+								onClickCapture={onClickCapture}
+								onContextMenuCapture={onContextMenuCapture}
 								onPointerCancel={finishPointer}
 								onPointerDown={onPointerDown}
 								onPointerMove={onPointerMove}

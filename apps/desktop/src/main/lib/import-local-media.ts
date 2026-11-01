@@ -2,6 +2,7 @@ import { existsSync, statSync } from 'node:fs'
 import { basename, dirname, resolve } from 'node:path'
 import { isDownloadTaskKind, type Task, type TaskQueueAPI } from '@vidbee/task-queue'
 import { type AsrTierId, enqueueTranscription, type TranscriptStore } from '@vidbee/transcription'
+import type { TranscriptionProvider } from '@vidbee/transcription/cloud'
 import type { DownloadHistoryItem } from '../../shared/types'
 import { projectTaskForRendererHistory } from './projection'
 
@@ -77,6 +78,8 @@ export interface ImportLocalMediaInput {
   paths: string[]
   language?: string
   asrTier?: AsrTierId
+  provider?: TranscriptionProvider
+  cloudModelId?: string
 }
 
 /**
@@ -223,7 +226,9 @@ export const importLocalMediaFiles = async (
       title,
       trigger: 'manual',
       language: input.language,
-      asrTier: input.asrTier
+      asrTier: input.asrTier,
+      provider: input.provider,
+      cloudModelId: input.cloudModelId
     })
 
     const task = input.queue.get(downloadId)

@@ -83,6 +83,7 @@ export class SubtitleDownloadExecutor implements Executor {
               size: result.bytes,
               durationMs: Math.round(result.snapshot.duration * 1000),
               sha256: null,
+              cookieSources: result.snapshot.cookieSources,
               subtitleStatus: 'downloaded',
               subtitleLanguages: result.language ? [result.language] : [],
               transcript: { resultKind: 'transcript', transcriptId: record.id }

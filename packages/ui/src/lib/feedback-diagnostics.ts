@@ -47,7 +47,9 @@ export interface FeedbackDiagnostics {
 }
 
 export const FEEDBACK_REPORT_FILENAME = 'vidbee-diagnostics.txt'
-const MAILTO_PREFIX = 'mailto:team@vidbee.org?subject=VidBee%20feedback&body='
+export const FEEDBACK_GITHUB_URL = 'https://github.com/nexmoe/VidBee/issues/new/choose'
+export const FEEDBACK_EMAIL = 'team@vidbee.org'
+const MAILTO_PREFIX = `mailto:${FEEDBACK_EMAIL}?subject=VidBee%20feedback&body=`
 const MAX_MAILTO_LENGTH = 1900
 const SENSITIVE_QUERY_KEY =
   /token|password|secret|signature|credential|api.?key|authorization|cookie|session|^(?:sig|key|jwt|auth)$/i

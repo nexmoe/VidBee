@@ -303,7 +303,10 @@
         "stopped": "Stopped"
       }
     },
-    "sourceFile": "Source file"
+    "sourceFile": "Source file",
+    "troubleshoot": "Troubleshoot",
+    "troubleshootPrompt": "Help me troubleshoot download task {{taskId}}. Inspect its current status, error details and logs, explain the likely cause, and recommend next steps before taking any action.",
+    "troubleshootFailed": "Could not start troubleshooting. Please try again."
   },
   "error": {
     "title": "Something went wrong",
@@ -669,6 +672,15 @@
       "extensionPriority": "Cookie browser priority",
       "extensionPriorityHint": "Use the first online browser in this order. Offline browsers are skipped automatically.",
       "extensionUse": "Use",
+      "extensionVariants": {
+        "dev": "Development",
+        "store": "Store"
+      },
+      "extensionLegacy": "Legacy",
+      "extensionLastConnected": "Last connected: {{time}}",
+      "extensionLastConnectedUnknown": "Last connection time unavailable",
+      "extensionRemove": "Remove",
+      "extensionRemoveLabel": "Remove {{browser}}",
       "extensionMoveUp": "Move {{browser}} up",
       "extensionMoveDown": "Move {{browser}} down"
     },
@@ -752,12 +764,12 @@
     "shareWatermarkDescription": "Add a watermark with the original title, author, and VidBee branding",
     "maxConcurrentDownloads": "Maximum number of active downloads",
     "maxConcurrentDownloadsDescription": "Maximum number of simultaneous downloads",
-    "agentManagementTools": "Agent management tools",
-    "agentManagementToolsDescription": "Whether the agent can change tasks and subscriptions, and whether it must ask first",
+    "agentManagementTools": "Agent permissions",
+    "agentManagementToolsDescription": "Manual approval asks you when permission is needed. Automatic review uses the current model and asks you when it cannot decide; paths outside the download folder still need your approval. Full access runs tools and shell commands without approval or automatic review, including access outside the download folder. Changes apply to new replies.",
     "agentManagementToolsOptions": {
-      "off": "Off",
-      "ask": "Ask first",
-      "auto": "Allow automatically"
+      "full": "Full access",
+      "ask": "Manual approval",
+      "auto": "Automatic review"
     },
     "none": "None",
     "oneClickDownload": "One-Click Download",
@@ -818,6 +830,22 @@
     "autoTranscribeAfterDownloadDescription": "When a download finishes, start a local transcript in the background. This uses your computer and skips files with no speech. Already queued jobs are not cancelled if you turn this off",
     "maxConcurrentTranscriptions": "Maximum number of active transcripts",
     "maxConcurrentTranscriptionsDescription": "How many transcripts can run at the same time. Each job uses this computer. Lowering this does not stop jobs that are already running",
+    "cloudTranscription": {
+      "title": "VidBee Cloud transcription",
+      "description": "Get high-quality multilingual transcripts with powerful cloud speech models, without model downloads or heavy recognition work on your computer.",
+      "billing": "Cloud uses your AI credit balance and charges by audio second. Local transcription is free and stays on your computer.",
+      "provider": "Transcription service",
+      "local": "Local · Free",
+      "cloud": "VidBee Cloud · Paid",
+      "model": "Cloud speech model",
+      "price": "{{credits}} credits per audio minute. Each clip is rounded up to the next second; completed clips are reused when retrying.",
+      "balance": "{{credits}} credits available",
+      "signInDescription": "Sign in to see available models and current prices.",
+      "automatic": "When automatic transcription is enabled, new downloads also use this paid cloud model. Audio is sent to Cloud for recognition.",
+      "timing": "Cloud provides clip-level timing. Use a local model for word timestamps and speaker recognition.",
+      "unavailable": "Cloud models could not be loaded. Try again.",
+      "modelUnavailable": "The selected Cloud model is unavailable. Choose an available model before transcribing."
+    },
     "transcriptModelsTitle": "Transcript models",
     "transcriptModelsReady": "Models ready on disk ({{size}})",
     "transcriptModelsMissing": "Models are not downloaded yet. The first transcript will fetch them",
@@ -863,20 +891,70 @@
       "testingConnection": "Testing…",
       "testSuccess": "Connected. Reply: {{reply}}",
       "testFailed": "Could not reach this model.",
-      "addPrompt": "Add skill",
-      "editPrompt": "Edit skill",
+      "searchSkills": "Search skills",
+      "allSkills": "All",
+      "personalSkills": "Personal",
+      "builtInSkills": "Built-in",
+      "customizeSkill": "Create custom copy",
+      "noSkillsFound": "No skills found.",
+      "skillUpdatedAt": "Updated {{date}}",
+      "trySkill": "Try it out",
+      "skillShowInTranscript": "Show in transcript sidebar",
+      "skillShowInTranscriptDescription": "Show this skill as a shortcut in the transcript sidebar. Chat access and auto-run are controlled separately.",
+      "skillAutoRun": "Auto-run",
+      "skillAutoRunDescription": "Run automatically after a download finishes and its transcript is ready. You can always use this skill manually in chat.",
+      "suggestedUsage": "Suggested uses",
+      "skillUsage": {
+        "summary": {
+          "first": "Summarize a completed video's transcript with the main ideas and key timestamps.",
+          "second": "Turn a long tutorial into concise takeaways I can review later.",
+          "third": "Summarize an interview and highlight the speaker's most useful quotes."
+        },
+        "rewrite": {
+          "first": "Rewrite a video's transcript as a clear article while keeping the original meaning.",
+          "second": "Clean up grammar and filler words in a transcript without adding new facts.",
+          "third": "Rewrite a technical explanation so a general audience can understand it."
+        },
+        "faq": {
+          "first": "Create a FAQ from a video's transcript and answer each question using the source.",
+          "second": "Turn a product tutorial into questions and answers for new users.",
+          "third": "Extract common questions from an interview and organize the answers by topic."
+        },
+        "translate": {
+          "first": "Translate a video's transcript into my language while preserving its meaning.",
+          "second": "Translate a technical tutorial and keep terminology consistent throughout.",
+          "third": "Translate an interview while preserving the speakers and topic changes."
+        },
+        "statistics": {
+          "first": "Extract the numbers, percentages and dates mentioned in a video's transcript.",
+          "second": "Collect the statistics from a presentation with their context and source timestamps.",
+          "third": "Find the measurements and comparisons in a transcript without inventing missing values."
+        },
+        "mindmap": {
+          "first": "Create a mind map of a video's main ideas and how they connect.",
+          "second": "Turn a course transcript into a topic hierarchy I can use for revision.",
+          "third": "Map the concepts in a technical talk, keeping related ideas together."
+        },
+        "diagnose": {
+          "first": "Help me understand why a download failed and suggest the next useful step.",
+          "second": "Inspect a stuck task and help me find out whether it is still making progress.",
+          "third": "Help me prepare a bug report using the evidence from a failed task."
+        },
+        "custom": {
+          "first": "Help me use this skill for my task. Ask what I want to achieve before starting.",
+          "second": "Walk me through a practical example and ask for any source material you need.",
+          "third": "Help me adapt this skill to my situation and confirm the output format first."
+        }
+      },
       "deletePrompt": "Delete skill",
-      "promptTitle": "Title",
-      "promptBody": "Skill",
-      "promptDialogDescription": "This skill runs against a transcript with the enabled provider",
-      "promptAutoRun": "Auto-run",
-      "promptAutoRunDescription": "Run this skill automatically when a download finishes and its transcript is ready.",
+      "skillHelp": "Skills use SKILL.md files. The Agent discovers them by description and reads their instructions when needed. Use $skill-name in chat to request a skill.",
+      "importSkill": "Import SKILL.md",
+      "exportSkill": "Export SKILL.md",
+      "openSkillFolder": "Open skill folder",
+      "skillLoading": "Loading skill",
+      "skillLoaded": "Skill loaded",
+      "skillFailed": "Skill failed",
       "restorePresets": "Restore defaults",
-      "testTitle": "Test with a sample transcript",
-      "testRun": "Run",
-      "testStop": "Stop",
-      "testOutput": "Output",
-      "testPlaceholder": "Skill output will appear here",
       "presets": {
         "alibaba": "Alibaba Cloud",
         "anthropic": "Anthropic",
@@ -903,30 +981,67 @@
         "xai": "xAI",
         "zhipu": "Zhipu"
       },
-      "presetPrompts": {
+      "addSkill": "Add skill",
+      "createSkillWithVidbee": "Create skill with VidBee",
+      "createSkillRequest": "Help me create a reusable Skill. Ask what I want it to do, when it should be used, and what the output should look like. Once the requirements are clear, create and save the Skill in VidBee.",
+      "uploadSkill": "Upload a skill",
+      "importGitHubSkill": "Import skill from GitHub",
+      "githubSkillDescription": "Paste a public GitHub repository or skill directory link, then choose a skill to install with its supporting files.",
+      "githubSkillUrl": "GitHub URL",
+      "selectSkill": "Select a skill",
+      "installSkill": "Install skill",
+      "findSkills": "Find skills",
+      "skillInstalling": "Please wait…",
+      "skillInstallError": "Could not install the skill. Check the source and try again.",
+      "skillUploadTooLarge": "Upload a SKILL.md or ZIP file up to 10 MB.",
+      "presetSkills": {
         "overview": {
-          "title": "Overview"
+          "name": "Overview",
+          "description": "Create a transcript overview with timestamped chapters and key quotes. Use to understand a recording or find a topic to revisit."
         },
         "bullet-points": {
-          "title": "Bullet Points"
+          "name": "Bullet Points",
+          "description": "Summarize a transcript as concise bullet points grouped by topic. Use for a quick recap of a video, podcast or meeting."
         },
         "improve-grammar": {
-          "title": "Improve Grammar & Punctuation"
+          "name": "Improve Grammar & Punctuation",
+          "description": "Correct transcript grammar, spelling and punctuation while preserving speakers and meaning. Use to prepare readable transcripts."
         },
         "generate-faq": {
-          "title": "Generate FAQ"
+          "name": "Generate FAQ",
+          "description": "Turn a transcript into a structured FAQ with concise, source-grounded answers. Use to create a reusable reference from a recording."
         },
         "extract-statistics": {
-          "title": "Extract Statistics"
+          "name": "Extract Statistics",
+          "description": "Extract numbers, dates, percentages and amounts with their context. Use to review quantitative claims in a transcript."
         },
         "paraphrase-content": {
-          "title": "Paraphrase Content"
+          "name": "Paraphrase Content",
+          "description": "Rephrase a transcript in clear, natural language without adding claims. Use to improve wording while preserving the source meaning."
         },
         "create-mindmap": {
-          "title": "Create a mindmap"
+          "name": "Create a mindmap",
+          "description": "Organize transcript topics and their relationships into a Mermaid mind map. Use to visualize the structure of a recording."
         },
         "translate": {
-          "title": "Translate"
+          "name": "Translate",
+          "description": "Translate subtitles with context and consistent terminology, review the wording, and save a complete timed language track."
+        },
+        "article-rewrite": {
+          "name": "Rewrite as an article",
+          "description": "Rewrite source material as a complete article, adding relevant video stills when available. Use to turn a recording into publishable prose."
+        },
+        "faq": {
+          "name": "Video FAQ",
+          "description": "Build a FAQ from the current video, reading relevant transcript passages as needed. Use to create source-grounded Q&A about the active video."
+        },
+        "diagnose-task": {
+          "name": "Troubleshoot a task",
+          "description": "Investigate failed or stalled tasks using their status, errors and logs. Use to recommend recovery steps or prepare feedback for a suspected VidBee defect."
+        },
+        "video-localization": {
+          "name": "Video localization",
+          "description": "Translate and export subtitles, or create synchronized dubbing."
         }
       }
     },
@@ -1057,20 +1172,14 @@
       "copied": "MCP configuration copied",
       "rotate": "Rotate access token",
       "error": "Could not update MCP settings",
-      "transport": "Connection method",
-      "transportDescription": "Choose one method. Both provide the same capabilities.",
-      "httpRecommended": "HTTP (recommended)",
       "configuration": "Agent configuration",
       "httpDescription": "Connect directly to the running Desktop app with a URL and token.",
-      "stdioDescription": "Use a local bridge for agents that connect through a startup command.",
       "viewConfig": "View configuration",
       "configDescription": "Paste this configuration into your agent’s MCP settings.",
-      "endpoint": "Server address",
-      "endpointDescription": "Available only on this computer while VidBee is running.",
       "accessToken": "Access token",
       "rotateDescription": "Revoke existing HTTP configurations. Copy a new one after rotating.",
       "capabilitiesTitle": "Available capabilities",
-      "capabilitiesDescription": "{{tools}} tools, {{resources}} resources and templates, {{prompts}} workflows. Available through either connection method.",
+      "capabilitiesDescription": "{{tools}} tools, {{resources}} resources and templates, {{prompts}} workflows.",
       "searchCapabilities": "Search capabilities…",
       "noCapabilities": "No matching capabilities",
       "loading": "Loading capabilities…",
@@ -1082,7 +1191,7 @@
         "ai": "AI conversations and skills",
         "exports": "Documents and share images",
         "resources": "Resources and templates",
-        "prompts": "Workflow prompts"
+        "prompts": "Skills"
       },
       "capabilities": {
         "get_app_status": "App status and engine readiness",
@@ -1395,6 +1504,7 @@
     "stop": "Stop",
     "stopFailed": "Could not stop transcription.",
     "stillTranscribe": "Transcribe anyway",
+    "changeModel": "Change model",
     "qualityHint": "Not happy with this transcript?",
     "qualityHintDetail": "We'll switch to this model, download it if needed, and transcribe again. You can leave this page. The current transcript is kept as history.",
     "qualityHintMax": "This already used the highest-quality model. Try adjusting the speaker count if labels are mixed. Background music and overlapping speech can still confuse speakers.",
@@ -1565,31 +1675,31 @@
       "creditsExhausted": {
         "s1": "Open Account to review your remaining credits.",
         "s2": "Earn more credits by inviting a new user.",
-        "s3": "Run the prompt again after credits are added."
+        "s3": "Run the skill again after credits are added."
       },
       "signInRequired": {
         "s1": "Open Settings → Providers.",
         "s2": "Sign in with GitHub under VidBee Cloud.",
-        "s3": "Run the prompt again."
+        "s3": "Run the skill again."
       },
       "noProvider": {
         "s1": "Open Settings → Providers.",
         "s2": "Add a service, save an API key and model ID, then click Use.",
-        "s3": "Come back here and run the prompt again."
+        "s3": "Come back here and run the skill again."
       },
       "missingApiKey": {
         "s1": "Open Settings → Providers and edit the enabled provider.",
         "s2": "Paste a valid API key and save.",
-        "s3": "Run the prompt again."
+        "s3": "Run the skill again."
       },
       "missingModel": {
         "s1": "Open Settings → Providers and edit the enabled provider.",
         "s2": "Enter a model ID that this service actually supports.",
-        "s3": "Run the prompt again."
+        "s3": "Run the skill again."
       },
       "unknownPrompt": {
-        "s1": "Open Settings → Prompts.",
-        "s2": "Click Restore defaults, or add this prompt again."
+        "s1": "Open Settings → Skills.",
+        "s2": "Click Restore defaults, or add this skill again."
       },
       "emptyTranscript": {
         "s1": "Wait until transcription finishes.",
@@ -1603,7 +1713,7 @@
       "authCloud": {
         "s1": "Open Account and confirm you are still signed in.",
         "s2": "Sign in again if the session expired.",
-        "s3": "Try the prompt again."
+        "s3": "Try the skill again."
       },
       "network": {
         "s1": "Check your internet connection and any proxy settings.",
@@ -1705,6 +1815,10 @@
       "cookiesBrowser": "Read from browser",
       "cookiesNone": "No cookies used",
       "cookiesUnrecorded": "Not recorded",
+      "cookiesUnavailable": "Source unavailable — no acquisition record",
+      "cookiesNotConfigured": "No cookies configured",
+      "cookiesConfigured": "Queued settings: {{sources}} (actual source not recorded)",
+      "cookiesConfig": "yt-dlp configuration (cookie use unknown)",
       "empty": "No details available yet.",
       "openUrl": "Open source URL",
       "group": {
@@ -1717,6 +1831,13 @@
     "seekSpeaker": "Jump to {{name}}",
     "seekAt": "Jump to {{time}}",
     "searchPlaceholder": "Search transcript",
+    "bilingual": "Bilingual transcript",
+    "secondarySubtitle": "Secondary subtitles",
+    "noSecondarySubtitles": "No secondary subtitles yet",
+    "translateSubtitles": "Translate in a new chat…",
+    "translateSubtitlesPrompt": "Translate this video's subtitles into another language for bilingual reading. Ask me which language to use.",
+    "subtitleLoading": "Loading subtitles…",
+    "subtitleLoadFailed": "Could not read this subtitle track.",
     "searchMatches": "{{count}} matches",
     "searchNoMatches": "No matches",
     "searchNext": "Next match",
@@ -1785,7 +1906,7 @@
       },
       "summary": {
         "title": "Ask AI about any transcript",
-        "description": "Summarize, translate, generate FAQs or mind maps, and run your own prompts with the AI provider you choose."
+        "description": "Summarize, translate, generate FAQs or mind maps, and run your own skills with the AI provider you choose."
       },
       "localFiles": {
         "title": "Transcribe any file",
@@ -1806,6 +1927,89 @@
     "all": "All time"
   },
   "agentChat": {
+    "progress": {
+      "title": "Execution progress",
+      "running": "Working…",
+      "waiting": "Waiting for a background task",
+      "approval": "Waiting for your approval",
+      "input": "Waiting for your input",
+      "completed": "Execution finished",
+      "aborted": "Agent stopped",
+      "interrupted": "Execution interrupted",
+      "error": "Execution failed",
+      "steps": "Task steps",
+      "pending": "Not started",
+      "tasks": "Background tasks",
+      "results": "Created files",
+      "continueAfterWait": "The agent will continue automatically when the background task finishes.",
+      "stop": "Stop agent",
+      "stopHint": "Stop this agent run. Background tasks continue independently.",
+      "showingTasks": "Showing {{count}} of {{total}} tasks."
+    },
+    "ui": {
+      "continue": "Continue",
+      "sent": "Sent",
+      "sendFailed": "Could not send your selection. Please try again.",
+      "inactive": "You can answer cards in the latest reply when the agent is ready.",
+      "loading": "Loading tasks…",
+      "loadFailed": "Could not load tasks. Reopen the conversation to try again.",
+      "taskUnavailable": "This task is no longer available.",
+      "fileUnavailable": "This file is not ready or is no longer available.",
+      "taskFailed": "This task failed. Ask me to check its details.",
+      "invalid": "This card could not be displayed. You can continue in the message box.",
+      "progress": "Task progress",
+      "format": "Output format",
+      "resolution": "Resolution",
+      "kinds": {
+        "video": "Video download",
+        "audio": "Audio download",
+        "subtitles": "Subtitles",
+        "playlist": "Playlist",
+        "subscription-item": "Subscription download",
+        "yt-dlp-forward": "Download",
+        "transcription": "Transcription",
+        "conversion": "Conversion",
+        "model-download": "Model download"
+      },
+      "status": {
+        "queued": "Queued",
+        "running": "Running",
+        "processing": "Processing",
+        "paused": "Paused",
+        "retry-scheduled": "Retry scheduled",
+        "completed": "Completed",
+        "failed": "Failed",
+        "cancelled": "Cancelled"
+      }
+    },
+    "suggestions": {
+      "title": "Your best audio and video processing assistant",
+      "description": "I'm VidBee. Tell me what you’d like to do, or choose an option below to get started.",
+      "download": {
+        "label": "Download a video",
+        "prompt": "Help me download a video in VidBee. Ask for the video URL and my preferred quality, then create a download task."
+      },
+      "audio": {
+        "label": "Extract audio",
+        "prompt": "Help me save audio from a video in VidBee. Ask for the video URL and my preferred audio format, then create an audio download task."
+      },
+      "compress": {
+        "label": "Compress a video",
+        "prompt": "Help me reduce a video's file size in VidBee. Show my completed video downloads, ask which video to compress and what lower output resolution I want, then create a converted copy and keep the original."
+      },
+      "convert": {
+        "label": "Convert a format",
+        "prompt": "Help me convert media to another format in VidBee. Show my completed downloads, ask which file to convert and the desired output format, then create a converted copy and keep the original."
+      },
+      "transcribe": {
+        "label": "Transcribe a download",
+        "prompt": "Help me turn a downloaded video or audio into text in VidBee. Show my completed downloads, ask which item to transcribe, then start a local transcription task."
+      },
+      "subscribe": {
+        "label": "Create a subscription",
+        "prompt": "Help me create a subscription in VidBee. Ask for a channel, website, or RSS URL, verify the feed, and ask whether to download new videos automatically before saving it."
+      }
+    },
     "eventStream": "Event Stream",
     "eventStatus": {
       "running": "Running",
@@ -1820,6 +2024,12 @@
       "deny": "Deny",
       "pending": "The agent wants to {{summary}}"
     },
+    "notifications": {
+      "approval": "VidBee Agent needs your permission",
+      "response": "VidBee Agent needs your input",
+      "body": "Open the conversation to review and respond."
+    },
+    "newChatPlaceholder": "Ask anything…",
     "placeholder": "Ask a follow-up about this video…",
     "send": "Send message",
     "attachImages": "Attach images",
@@ -1861,8 +2071,15 @@
     "catalogMatched": "Matched {{name}}. Context window and capabilities were filled in.",
     "catalogBadge": "Catalog",
     "tools": {
+      "show_ui": "Showing cards",
+      "create_task": "Creating a task",
+      "list_tasks": "Finding tasks",
+      "get_task": "Checking task details",
+      "wait_for_task": "Waiting for a task",
+      "select_video": "Selecting source media",
       "list_transcripts": "Checking available subtitles",
       "select_transcript": "Selecting subtitle source",
+      "add_subtitles": "Adding subtitles",
       "load_tools": "Finding available capabilities",
       "get_video_info": "Reading video information",
       "read_transcript": "Reading transcript",
@@ -1876,7 +2093,9 @@
       "read_artifact": "Reviewing saved image",
       "rename_conversation": "Renaming conversation",
       "write_article": "Writing article",
-      "review_article": "Reviewing article"
+      "review_article": "Reviewing article",
+      "export_subtitles": "Exporting subtitles",
+      "create_dubbed_video": "Generating synchronized dubbing"
     },
     "modelCapabilities": "Model capabilities",
     "runDurationRunning": "Working · {{duration}}",

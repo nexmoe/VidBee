@@ -5,6 +5,8 @@ import type {
   AgentThinkingMessage as AgentChatMessage,
   AgentThinkingRun as AgentChatRun
 } from '../lib/agent-activity'
+import { agentSkillDisplayName } from '../lib/agent-skill-text'
+import type { IconName } from '../lib/icon-context'
 import { thinkingDurationHeader } from '../lib/thinking-header'
 import { AgentThinkingContent } from './agent-thinking-content'
 import { Button } from './ui/button'
@@ -17,30 +19,77 @@ import {
   ThinkingStepsHeader
 } from './ui/thinking-steps'
 
-const toolIcons = {
-  get_video_info: 'monitor',
-  read_transcript: 'square-library',
-  search_transcript: 'search',
-  capture_frames: 'image',
-  create_clip: 'play',
-  read_history: 'square-library',
+/** Use the operation's meaning rather than a generic document or settings glyph. */
+const toolIcons: Record<string, IconName> = {
+  get_video_info: 'info',
+  select_video: 'video',
+  list_transcripts: 'list-video',
+  select_transcript: 'list-filter',
+  read_transcript: 'captions',
+  search_transcript: 'text-search',
+  add_subtitles: 'list-plus',
+  export_subtitles: 'file-output',
+  create_dubbed_video: 'audio-lines',
+  capture_frames: 'camera',
+  create_clip: 'scissors',
+  read_history: 'history',
   search_history: 'search',
-  read_notes: 'square-library',
-  write_notes: 'square-library',
-  read_artifact: 'image'
-} as const
+  read_notes: 'notebook-text',
+  write_notes: 'notebook-pen',
+  read_artifact: 'image',
+  rename_conversation: 'pencil',
+  write_article: 'file-pen-line',
+  review_article: 'list-checks',
+  read: 'file-text',
+  read_skill: 'puzzle',
+  bash: 'terminal',
+  load_tools: 'wrench',
+  show_ui: 'layout-dashboard',
+  create_task: 'circle-plus',
+  wait_for_task: 'hourglass',
+  list_tasks: 'list-checks',
+  get_task: 'clipboard-list',
+  manage_task: 'sliders-horizontal',
+  list_subscriptions: 'rss',
+  test_subscription: 'rss',
+  manage_subscription: 'rss',
+  get_settings: 'settings',
+  update_settings: 'sliders-horizontal',
+  manage_ai_settings: 'brain',
+  manage_asr_model: 'download'
+}
+
+/** Keep context maintenance and retries distinct from the model's ordinary thinking. */
+const contextIcons: Record<string, IconName> = {
+  retrying: 'rotate-ccw',
+  compacting: 'archive',
+  recovering: 'history',
+  reviewing: 'list-checks',
+  writing: 'file-pen-line'
+}
+
+/** Prefer actual skill-read metadata over the generic file reader's icon. */
+function activityIcon(event: AgentActivity, tool?: AgentChatRun['tools'][number]): IconName {
+  if (event.kind === 'tool') {
+    return tool?.skills?.length ? 'puzzle' : (toolIcons[event.name] ?? 'wrench')
+  }
+  return event.kind === 'status' ? (contextIcons[event.status] ?? 'brain') : 'dot'
+}
 
 /** Keep one stable row per reasoning block as streamed paragraphs grow. */
 export function eventRows(message: AgentChatMessage, run?: AgentChatRun): AgentActivity[] {
-  const activity = run?.activity?.length
-    ? run.activity
-    : (run?.tools.map((tool) => ({
+  const activity =
+    run?.activity ??
+    run?.tools
+      .filter((tool) => tool.name !== 'skill')
+      .map((tool) => ({
         id: tool.id,
         kind: 'tool' as const,
         toolId: tool.id,
         name: tool.name,
         artifactIds: []
-      })) ?? [])
+      })) ??
+    []
   const hasThinking = activity.some((event) => event.kind === 'thinking' && event.text.trim())
   const events: AgentActivity[] =
     !hasThinking && message.thinking.trim()
@@ -215,6 +264,7 @@ export function AgentEventStream({
       setOpen(true)
       return
     }
+    // Streamed text may become tool commentary, so only settle the rail when the run ends.
     if (running) {
       if (!userClosed.current) {
         setOpen(true)
@@ -225,11 +275,11 @@ export function AgentEventStream({
       setOpen(false)
     }
   }, [awaitingApproval, failed, running, stopped])
-  if (!(rows.length || running || hasTail)) {
-    return null
-  }
   const startedAt = run?.createdAt ?? message.createdAt
   const elapsedMs = running ? Math.max(0, now - startedAt) : (message.thinkingMs ?? 0)
+  if (!(rows.length || running || hasTail || elapsedMs > 0)) {
+    return null
+  }
   const header =
     elapsedMs || running
       ? thinkingDurationHeader(t, running, elapsedMs)
@@ -251,9 +301,11 @@ export function AgentEventStream({
             event.kind === 'tool' ? run?.tools.find((item) => item.id === event.toolId) : undefined
           const last = index === rows.length - 1 && !hasTail && !(running && run?.contextStatus)
           const active = running && last
-          const label =
-            event.kind === 'tool'
-              ? `${t(`agentChat.tools.${event.name}`)}${event.count === undefined ? '' : ` (${event.count})`}`
+          const skills = tool?.skills
+          const label = skills?.length
+            ? skills.map((skill) => agentSkillDisplayName(skill, t)).join(', ')
+            : event.kind === 'tool'
+              ? `${t(`agentChat.tools.${event.name}`, { defaultValue: event.name.replaceAll('_', ' ') })}${event.count === undefined ? '' : ` (${event.count})`}`
               : event.kind === 'status'
                 ? t(
                     event.status === 'retrying'
@@ -261,8 +313,15 @@ export function AgentEventStream({
                       : `agentChat.contextStatus.${event.status}`
                   )
                 : event.text
-          const description =
-            tool?.status === 'error'
+          const description = skills?.length
+            ? `${t(
+                tool?.status === 'running'
+                  ? 'settings.ai.skillLoading'
+                  : ['error', 'denied'].includes(tool?.status ?? '')
+                    ? 'settings.ai.skillFailed'
+                    : 'settings.ai.skillLoaded'
+              )} · ${skills.map((skill) => `${skill.name}/${skill.resource}`).join(', ')}`
+            : tool?.status === 'error'
               ? t('agentChat.eventStatus.error')
               : tool?.status === 'pending-approval'
                 ? t('agentChat.eventStatus.pendingApproval')
@@ -274,13 +333,7 @@ export function AgentEventStream({
           return (
             <ThinkingStep
               description={description}
-              icon={
-                event.kind === 'tool'
-                  ? (toolIcons[event.name as keyof typeof toolIcons] ?? 'settings')
-                  : event.kind === 'status'
-                    ? 'brain'
-                    : 'dot'
-              }
+              icon={activityIcon(event, tool)}
               isLast={last}
               key={event.id}
               label={label}
@@ -347,7 +400,7 @@ export function AgentEventStream({
         ) : null}
         {running && run?.contextStatus ? (
           <ThinkingStep
-            icon="brain"
+            icon={contextIcons[run.contextStatus] ?? 'brain'}
             isLast={!hasTail}
             label={t(`agentChat.contextStatus.${run.contextStatus}`)}
             status="active"

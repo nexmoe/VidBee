@@ -1,9 +1,14 @@
 import { randomUUID } from 'node:crypto'
-import { lstat, mkdir } from 'node:fs/promises'
+import { lstat, mkdir, mkdtemp, rm } from 'node:fs/promises'
+import os from 'node:os'
 import path from 'node:path'
 import type { TaskCreationMetadata } from '@vidbee/task-queue'
 import { isMediaTaskKind } from '@vidbee/task-queue'
-import { agentAiSettingsSchema, agentSettingsSchema } from '../../shared/agent-settings'
+import {
+  agentAiSettingsSchema,
+  agentSettingsSchema,
+  agentTtsModelSchema
+} from '../../shared/agent-settings'
 import { AI_PROVIDER_PRESETS, getAiProviderPreset } from '../../shared/ai-presets'
 import { mediaTransformSchema } from '../../shared/media-transform'
 import { settingsManager } from '../settings'
@@ -50,6 +55,53 @@ export function getAgentSettings(): Record<string, unknown> {
   }
 }
 
+/** List local TTS capabilities or persist the requested default for future dubbing calls. */
+export async function manageAgentTts(
+  raw: unknown,
+  signal = new AbortController().signal,
+  progress: (text: string) => void = () => {}
+): Promise<Record<string, unknown>> {
+  const input = agentTtsModelSchema.parse(raw)
+  const { localSpeechModels, prepareLocalSpeech, synthesizeLocalSpeech } = await import(
+    './local-speech-runtime'
+  )
+  if (input.action === 'prepare') {
+    if (!input.modelId) {
+      throw new Error('modelId is required to prepare a TTS model')
+    }
+    const { withAgentMedia } = await import('./agent-media')
+    await withAgentMedia(signal, async () => {
+      const runtime = await prepareLocalSpeech(signal, false, progress, input.modelId)
+      const directory = await mkdtemp(path.join(os.tmpdir(), 'vidbee-tts-inspect-'))
+      try {
+        await synthesizeLocalSpeech({
+          ...runtime,
+          directory,
+          cues: [],
+          voice: 0,
+          maxSpeed: 1,
+          chineseRules: false,
+          signal,
+          onProgress: progress
+        })
+      } finally {
+        await rm(directory, { recursive: true, force: true })
+      }
+    })
+  }
+  if (input.action === 'select') {
+    if (!input.modelId) {
+      throw new Error('modelId is required to select a default TTS model')
+    }
+    await updateAgentSettings({ ttsModelId: input.modelId }, { signal })
+  }
+  return {
+    defaultModelId: settingsManager.get('ttsModelId'),
+    downloadOnFirstUse: true,
+    ...(await localSpeechModels(signal, input))
+  }
+}
+
 /**
  * Validate the entire patch before persistence and preserve all unspecified preferences.
  *
@@ -60,9 +112,13 @@ export function getAgentSettings(): Record<string, unknown> {
  */
 export async function updateAgentSettings(
   raw: unknown,
-  options?: { approvedPath?: boolean }
+  options?: { approvedPath?: boolean; signal?: AbortSignal }
 ): Promise<Record<string, unknown>> {
   const patch = agentSettingsSchema.parse(raw)
+  if (patch.ttsModelId) {
+    const { requireSpeechModel } = await import('./local-speech-catalog')
+    await requireSpeechModel(patch.ttsModelId, options?.signal ?? new AbortController().signal)
+  }
   for (const key of ['downloadPath', 'cookiesPath', 'configPath'] as const) {
     const value = patch[key]
     if (value && !path.isAbsolute(value)) {
@@ -336,9 +392,9 @@ export async function manageAgentAi(raw: unknown): Promise<Record<string, unknow
       }
       const {
         action: _action,
-        title: _title,
+        description: _description,
         content: _content,
-        enabled: _enabled,
+        autoRun: _autoRun,
         id: _id,
         ...patch
       } = input
@@ -358,28 +414,25 @@ export async function manageAgentAi(raw: unknown): Promise<Record<string, unknow
       aiStore.deleteProvider(provider.id)
       break
     case 'save_prompt': {
-      const existing = snapshot.prompts.find((prompt) => prompt.id === input.id)
-      if (input.id && !existing) {
-        throw new Error('Prompt not found')
-      }
-      const title = input.title ?? existing?.title
+      const existing = snapshot.prompts.find((prompt) => prompt.name === input.name)
+      const name = input.name ?? existing?.name
       const content = input.content ?? existing?.content
-      if (!(title?.trim() && content?.trim())) {
-        throw new Error('Prompt title and content are required')
+      if (!(name?.trim() && content?.trim())) {
+        throw new Error('Skill name and instructions are required')
       }
       aiStore.upsertPrompt({
-        id: existing?.id,
-        title,
+        name,
+        description: input.description ?? existing?.description,
         content,
-        enabled: input.enabled ?? existing?.enabled
+        autoRun: input.autoRun ?? existing?.autoRun
       })
       break
     }
     case 'delete_prompt':
-      if (!(input.id && snapshot.prompts.some((prompt) => prompt.id === input.id))) {
+      if (!(input.name && snapshot.prompts.some((prompt) => prompt.name === input.name))) {
         throw new Error('Prompt not found')
       }
-      aiStore.deletePrompt(input.id)
+      aiStore.deletePrompt(input.name)
       break
     case 'restore_prompts':
       aiStore.restoreDefaultPrompts()

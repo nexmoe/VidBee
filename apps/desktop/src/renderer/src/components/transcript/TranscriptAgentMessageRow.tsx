@@ -251,6 +251,8 @@ export const TranscriptAgentMessageRow = memo(AgentMessageRow, sameAgentMessageR
 interface TranscriptAgentMessagesProps {
   thread: AgentThread
   messages: AgentChatMessage[]
+  /** Preserve the local row while its durable message id replaces the pending id. */
+  sendContinuity?: { id: string; key: string }
   busy: boolean
   overviewPrompt: boolean
   currentTimeMs: number
@@ -272,6 +274,7 @@ interface TranscriptAgentMessagesProps {
 export function TranscriptAgentMessages({
   thread,
   messages,
+  sendContinuity,
   busy,
   overviewPrompt,
   currentTimeMs,
@@ -284,6 +287,13 @@ export function TranscriptAgentMessages({
   onShare,
   onBranch
 }: TranscriptAgentMessagesProps) {
+  const continuity = useRef<{ threadId: string; keys: Map<string, string> } | null>(null)
+  if (continuity.current?.threadId !== thread.id) {
+    continuity.current = { threadId: thread.id, keys: new Map() }
+  }
+  if (sendContinuity) {
+    continuity.current.keys.set(sendContinuity.id, sendContinuity.key)
+  }
   const actions = useRef({ onSeek, onRetry, onDecideTool, onShare, onBranch })
   actions.current = { onSeek, onRetry, onDecideTool, onShare, onBranch }
   const projection = useRef<{ thread: AgentThread; deps: Map<string, AgentMessageDeps> } | null>(
@@ -317,7 +327,10 @@ export function TranscriptAgentMessages({
       return null
     }
     return (
-      <MessageScrollerItem key={message.id} messageId={message.id}>
+      <MessageScrollerItem
+        key={continuity.current?.keys.get(message.id) ?? message.id}
+        messageId={message.id}
+      >
         <TranscriptAgentMessageRow
           busy={busy}
           currentTimeMs={currentTimeMs}
