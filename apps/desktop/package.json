@@ -133,6 +133,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.9",
+    "@electron/asar": "3.4.1",
     "@electron-toolkit/tsconfig": "^2.0.0",
     "@iconify/json": "^2.2.394",
     "@sentry/cli": "^3.6.2",

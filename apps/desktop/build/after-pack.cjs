@@ -1,6 +1,7 @@
 const { execFileSync } = require('node:child_process')
 const fs = require('node:fs')
 const path = require('node:path')
+const { getRawHeader } = require('@electron/asar')
 const {
   pruneSherpaNatives,
   resolveUnpackedNodeModules,
@@ -24,6 +25,18 @@ const BINARIES = [...SIGN_ALWAYS, path.join('node', 'node')]
 // Official Node ships DWARF; strip -x is safe after re-sign. Never strip yt-dlp
 // (PyInstaller payload) or ffmpeg/ffprobe (already stripped, zero savings).
 const STRIP_BINARIES = [path.join('node', 'node')]
+
+/** Fail packaging when source files or duplicated runtime tools enter app.asar. */
+const assertPackagedAppFiles = (archivePath) => {
+  const { header } = getRawHeader(archivePath)
+  const allowed = new Set(['out', 'node_modules', 'package.json'])
+  const unexpected = Object.keys(header.files).filter((name) => !allowed.has(name))
+  if (unexpected.length > 0) {
+    throw new Error(
+      `Unexpected app.asar payload: ${unexpected.join(', ')}. Ship runtime tools through extraResources.`
+    )
+  }
+}
 
 /**
  * Finds the .app bundle inside electron-builder's output directory.
@@ -188,6 +201,9 @@ exports.default = async function afterPack(context) {
       `afterPack: could not locate unpacked node_modules in ${context.appOutDir}`
     )
   }
+  assertPackagedAppFiles(
+    path.join(path.dirname(path.dirname(unpackedNodeModules)), 'app.asar')
+  )
   pruneSherpaNatives(unpackedNodeModules, keepSherpa, log)
 
   if (context.electronPlatformName !== 'darwin') {
@@ -233,6 +249,7 @@ exports.default = async function afterPack(context) {
 }
 
 exports.BINARIES = BINARIES
+exports.assertPackagedAppFiles = assertPackagedAppFiles
 exports.STRIP_BINARIES = STRIP_BINARIES
 exports.lipoArchForElectronArch = lipoArchForElectronArch
 exports.listMachOArchitectures = listMachOArchitectures

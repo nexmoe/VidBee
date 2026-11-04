@@ -5,6 +5,9 @@ For full release notes, see [GitHub Releases](https://github.com/nexmoe/VidBee/r
 
 ## [Unreleased]
 
+### Fixed
+- Reduce installation size by removing duplicated runtime tools and unused development assets.
+
 ### Added
 - Support Microsoft Store distribution with updates and update settings managed through the Store.
 - Follow long Agent requests with a concise plan, real background task progress, and generated media in a dedicated progress card.
