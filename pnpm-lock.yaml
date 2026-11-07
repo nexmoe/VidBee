@@ -466,6 +466,9 @@ importers:
       '@biomejs/biome':
         specifier: 2.5.9
         version: 2.5.9
+      '@electron/asar':
+        specifier: 3.4.1
+        version: 3.4.1
       '@electron-toolkit/tsconfig':
         specifier: ^2.0.0
         version: 2.0.0(@types/node@22.19.21)

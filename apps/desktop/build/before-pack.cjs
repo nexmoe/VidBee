@@ -26,6 +26,7 @@ let originalFiles = null
 
 // electron-builder's yml excludes miss some of these (especially out/**/*.map).
 const PACKAGING_FILE_IGNORES = [
+  '!resources{,/**}',
   '!src{,/**}',
   '!scripts{,/**}',
   '!docs{,/**}',
@@ -110,10 +111,26 @@ const extraFileIgnores = (electronPlatformName, arch) => {
   for (const name of SQLITE_PREBUILDS) {
     if (name !== keepSqlite) {
       ignores.push(`!node_modules/better-sqlite3/prebuilds/${name}*`)
+      ignores.push(`!node_modules/tree-sitter-bash/prebuilds/${name}{,/**}`)
     }
   }
 
   return ignores
+}
+
+/** Append ignores to the normalized root FileSet without creating a second catch-all matcher. */
+const appendFileIgnores = (files, ignores) => {
+  const result = structuredClone(files)
+  const root = result.find(
+    (entry) => typeof entry === 'object' && (entry.from == null || entry.from === '.')
+  )
+  if (root) {
+    const filter = root.filter ?? ['**/*']
+    root.filter = [...(Array.isArray(filter) ? filter : [filter]), ...ignores]
+  } else {
+    result.push(...ignores)
+  }
+  return result
 }
 
 /**
@@ -136,17 +153,17 @@ exports.default = async function beforePack(context) {
   }
 
   if (originalFiles === null) {
-    originalFiles = [...config.files]
+    originalFiles = structuredClone(config.files)
   }
 
-  config.files = [
-    ...originalFiles,
+  config.files = appendFileIgnores(originalFiles, [
     ...PACKAGING_FILE_IGNORES,
     ...extraFileIgnores(context.electronPlatformName, context.arch)
-  ]
+  ])
 }
 
 exports.PACKAGING_FILE_IGNORES = PACKAGING_FILE_IGNORES
+exports.appendFileIgnores = appendFileIgnores
 exports.SHERPA_PACKAGES = SHERPA_PACKAGES
 exports.SQLITE_PREBUILDS = SQLITE_PREBUILDS
 exports.extraFileIgnores = extraFileIgnores

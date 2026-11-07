@@ -12,7 +12,7 @@ allowBuilds:
   protobufjs: true
   sharp: true
   spawn-sync: true
-  tree-sitter-bash: set this to true or false
+  tree-sitter-bash: true
 overrides:
   '@orpc/client': '>=1.15.0 <2'
   '@orpc/contract': '>=1.15.0 <2'

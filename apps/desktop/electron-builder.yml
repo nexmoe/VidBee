@@ -14,6 +14,9 @@ protocols:
     schemes:
       - com.vidbee
 files:
+  # Only compiled application files belong in app.asar; tools ship via extraResources.
+  # electron-builder collects production node_modules and package.json separately.
+  - 'out/**'
   - '!**/.vscode/*'
   - '!**/.context/**'
   - '!**/.github/**'
@@ -90,6 +93,14 @@ files:
   # better-sqlite3 ships its C sources and every platform prebuild.
   - '!node_modules/better-sqlite3/deps{,/**}'
   - '!node_modules/better-sqlite3/src{,/**}'
+  # Web access ships demonstration media that is not used by its runtime.
+  - '!node_modules/pi-web-access/{banner.png,pi-web-fetch-demo.mp4}'
+  # Zod exports compiled JavaScript; its source tree also contains upstream tests.
+  - '!node_modules/**/zod/src{,/**}'
+  # Keep the published native prebuild and node-types.json, not compiler inputs.
+  - '!node_modules/tree-sitter-bash/src/**/*.{c,h}'
+  - '!node_modules/tree-sitter-bash/src/grammar.json'
+  - '!node_modules/tree-sitter-bash/build{,/**}'
 extraResources:
   - from: ../../skills
     to: skills
