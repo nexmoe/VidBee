@@ -731,8 +731,8 @@
       "original": "Asli (bawaan yt-dlp)",
       "webm": "WebM"
     },
-    "autoTranscribeAfterDownload": "Transcribe after download",
-    "autoTranscribeAfterDownloadDescription": "When a download finishes, start a local transcript in the background. This uses your computer and skips files with no speech. Already queued jobs are not cancelled if you turn this off",
+    "autoTranscribeAfterDownload": "Transkripsi setelah unduhan",
+    "autoTranscribeAfterDownloadDescription": "Setelah unduhan selesai, mulai transkripsi lokal di latar belakang menggunakan sumber daya komputer. Berkas tanpa ucapan dilewati. Menonaktifkan opsi ini tidak membatalkan tugas yang sudah mengantre.",
     "maxConcurrentTranscriptions": "Jumlah transkripsi aktif maksimum",
     "maxConcurrentTranscriptionsDescription": "Berapa banyak transkripsi yang dapat berjalan bersamaan. Setiap tugas memakai komputer ini. Menurunkan nilai tidak menghentikan tugas yang sedang berjalan",
     "cloudTranscription": {
@@ -751,18 +751,18 @@
       "unavailable": "Model cloud tidak dapat dimuat. Coba lagi.",
       "modelUnavailable": "Model cloud yang dipilih tidak tersedia. Pilih model yang tersedia sebelum melakukan transkripsi."
     },
-    "transcriptModelsTitle": "Transcript models",
-    "transcriptModelsReady": "Models ready on disk ({{size}})",
-    "transcriptModelsMissing": "Models are not downloaded yet. The first transcript will fetch them",
+    "transcriptModelsTitle": "Model transkripsi",
+    "transcriptModelsReady": "Model siap di perangkat ({{size}})",
+    "transcriptModelsMissing": "Model belum diunduh. Transkripsi pertama akan mengunduhnya.",
     "transcriptModelsRedownload": "Redownload",
     "transcriptModelsRedownloadError": "Could not redownload transcript models.",
     "aiTab": "AI",
-    "asrUse": "Use",
-    "asrUseCurrent": "In use",
-    "asrStatusReady": "Ready",
-    "asrStatusActive": "In use",
-    "asrStatusMissing": "Not downloaded",
-    "asrStatusDownloading": "Downloading",
+    "asrUse": "Gunakan",
+    "asrUseCurrent": "Digunakan",
+    "asrStatusReady": "Siap",
+    "asrStatusActive": "Digunakan",
+    "asrStatusMissing": "Belum diunduh",
+    "asrStatusDownloading": "Mengunduh",
     "asrDownloading": "Downloading {{received}} / {{total}}",
     "asrDownloadingMany": "Mengunduh {{count}} model",
     "asrDelete": "Hapus",
@@ -1059,10 +1059,6 @@
         "diagnose-task": {
           "name": "Diagnosis tugas",
           "description": "Menyelidiki tugas gagal atau macet melalui status, kesalahan, dan log. Untuk menyarankan pemulihan atau menyiapkan umpan balik atas dugaan cacat VidBee."
-        },
-        "video-localization": {
-          "name": "Lokalisasi video",
-          "description": "Terjemahkan dan ekspor subtitel, atau buat sulih suara tersinkron."
         }
       }
     },
@@ -1525,7 +1521,7 @@
       "experimentalHint": "Mungkin digabung ke Unduhan nanti."
     },
     "followResume": "Jump to current line",
-    "title": "Transcript",
+    "title": "Transkrip",
     "ready": "Transcript ready",
     "listLabel": {
       "subtitles": "Takarir",
@@ -1570,12 +1566,13 @@
         "subtitles": "Subtitle",
         "segments": "Segmen",
         "whisper": "Whisper",
-        "video": "Video + subtitle"
+        "video": "Video dan subtitel"
       },
       "formatLabel": "Format",
       "format": {
         "txt": ".txt",
-        "md": ".md"
+        "md": ".md",
+        "srt": ".srt"
       },
       "encodeLabel": "Encode",
       "encode": {
@@ -1614,7 +1611,7 @@
     "unknownSpeaker": "Pembicara tidak dikenal",
     "speakers": "Pembicara ({{count}})",
     "info": {
-      "tab": "Info",
+      "tab": "Informasi",
       "channel": "Saluran",
       "duration": "Durasi",
       "file": "Berkas",
@@ -1702,7 +1699,7 @@
       }
     },
     "changeModel": "Ganti model",
-    "qualityHint": "Not happy with this transcript?",
+    "qualityHint": "Perlu memperbaiki transkrip?",
     "qualityHintDetail": "Download a higher-quality model and transcribe again. The current transcript is kept as history.",
     "qualityHintMax": "Model kualitas tertinggi sudah digunakan. Coba sesuaikan jumlah pembicara jika label tercampur. Musik latar dan suara yang tumpang tindih masih bisa membingungkan pembicara.",
     "speakerCount": {
@@ -2024,7 +2021,7 @@
       "body": "Buka percakapan untuk meninjau dan menanggapi."
     },
     "newChatPlaceholder": "Tanyakan apa saja…",
-    "placeholder": "Ask a follow-up about this video…",
+    "placeholder": "Ajukan pertanyaan tentang video ini…",
     "send": "Send message",
     "attachImages": "Attach images",
     "removeImage": "Remove {{name}}",

@@ -13,6 +13,7 @@ import { getAgentComposerOptions, selectAgentComposerModel } from './agent-compo
 import { importAgentImageData } from './agent-image-attachments'
 import { aiStore } from './ai-store'
 import { dislikeCloudResult } from './cloud-device'
+import { readExtensionChatTasks, readExtensionChatVideos } from './extension-chat-cards'
 import { historyManager } from './history-manager'
 import { markdownWithEmbeddedImages, renderMarkdownPdf } from './markdown-export'
 import { withVidBeeExportAttribution, withVideoSourceLink } from './markdown-pdf'
@@ -151,6 +152,12 @@ export async function executeExtensionChatAction(
     throw new Error('Invalid chat action')
   }
   const input = value as Record<string, unknown>
+  if (action === 'tasks') {
+    return readExtensionChatTasks(input)
+  }
+  if (action === 'videos') {
+    return readExtensionChatVideos(input)
+  }
   if (action === 'model') {
     if (typeof input.value !== 'string' || input.value.length > 256) {
       throw new Error('Invalid model')

@@ -67,10 +67,10 @@ export function getMessageSendPose(time: number) {
   )
   const index = Math.min(Math.floor(position), samples.length - 2)
   const fraction = position - index
-  const before = samples[Math.max(0, index - 1)]
-  const start = samples[index]
-  const end = samples[index + 1]
-  const after = samples[Math.min(samples.length - 1, index + 2)]
+  const before = samples[Math.max(0, index - 1)] ?? samples[0]
+  const start = samples[index] ?? samples[0]
+  const end = samples[index + 1] ?? samples[0]
+  const after = samples[Math.min(samples.length - 1, index + 2)] ?? samples[0]
   const squared = fraction * fraction
   const cubed = squared * fraction
 

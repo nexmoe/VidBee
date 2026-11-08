@@ -142,7 +142,7 @@ function modelLanguages(id: string, family: TtsFamily): string[] {
     /(?:piper|coqui|mimic3|mms|icefall|kokoro|inflect|tts)[-_]([a-z]{2,3}(?:_[A-Z]{2}|_[a-z]{2})?)(?:[-_]|$)/.exec(
       id
     ) ?? /^vits-([a-z]{2,3})(?:[-_]|$)/.exec(id)
-  if (!match) {
+  if (!match?.[1]) {
     return []
   }
   return match[1]

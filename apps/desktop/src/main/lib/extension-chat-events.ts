@@ -6,8 +6,10 @@ import type {
   ExtensionChatState,
   ExtensionChatVideo
 } from '../../shared/extension-chat'
+import { getAgentChatStore } from './agent-chat-store'
 import { subscribeAgentEvents } from './agent-events'
 import { aiStore } from './ai-store'
+import { extensionChatTaskIds } from './extension-chat-cards'
 import { peekDesktopTaskQueueRef } from './queue-ref'
 
 /** Send only public video context to the extension's history navigator. */
@@ -83,7 +85,31 @@ export function streamExtensionChatEvents(
     }
     res.write(frame)
   }
+  let taskThreadId: string | undefined
+  let tasksDirty = true
+  let taskIds = new Set<string>()
+  const offTasks = peekDesktopTaskQueueRef()?.subscribe?.((event) => {
+    if (
+      closed ||
+      !['transition', 'progress', 'snapshot-changed', 'task-removed'].includes(event.type)
+    ) {
+      return
+    }
+    const selected = threadId()
+    if (tasksDirty || selected !== taskThreadId) {
+      taskThreadId = selected
+      tasksDirty = false
+      const thread = selected ? getAgentChatStore().get(selected, { sessionEntries: false }) : null
+      taskIds = thread ? extensionChatTaskIds(thread) : new Set()
+    }
+    if (taskIds.has(event.taskId)) {
+      send({ type: 'task', id: event.taskId })
+    }
+  })
   const offAgent = subscribeAgentEvents((event) => {
+    if (event.threadId === threadId()) {
+      tasksDirty = true
+    }
     const scope =
       event.catalog?.kind === 'upsert'
         ? event.catalog.summary.downloadId
@@ -121,6 +147,7 @@ export function streamExtensionChatEvents(
     }
     closed = true
     clearInterval(heartbeat)
+    offTasks?.()
     offAgent()
     offSettings()
     res.end()

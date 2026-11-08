@@ -2,7 +2,7 @@ import { applyViaVidBeeFilename } from '@vidbee/downloader-core/filename-style'
 import { buildSrtDocument, formatSrtClock } from './subtitle-export'
 
 export type TranscriptExportStyle = 'transcript' | 'subtitles' | 'segments' | 'whisper' | 'video'
-export type TranscriptExportFormat = 'txt' | 'md'
+export type TranscriptExportFormat = 'txt' | 'md' | 'srt'
 export type TranscriptVideoEncode = 'soft' | 'hard'
 export type TranscriptExportGrouping = 'none' | 'words' | 'sentences'
 export type TranscriptExportFileExtension = TranscriptExportFormat | 'mkv' | 'mp4'
@@ -207,7 +207,7 @@ const renderUnit = (
  */
 export const buildTranscriptExportText = (input: BuildTranscriptExportInput): string => {
   const units = buildExportUnits(input.segments, input.grouping)
-  if (input.style === 'video') {
+  if (input.style === 'video' || input.format === 'srt') {
     return buildSrtDocument(units)
   }
   return units.map((unit, index) => renderUnit(unit, index, input)).join('\n\n')

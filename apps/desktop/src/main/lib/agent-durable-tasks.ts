@@ -237,7 +237,7 @@ async function openTask(
         tools,
         hooks: [
           hook(GenerationTask, {
-            /** Retain the same Cloud retry classification used by the main Coding Agent. */
+            /** Share the main agent's Cloud retry classification. */
             afterResponse: (message) => {
               if (message.stopReason === 'error') {
                 message.errorMessage =

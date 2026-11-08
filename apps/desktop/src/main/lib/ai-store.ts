@@ -234,7 +234,6 @@ class AiStore {
     for (const skill of [
       AGENT_SKILLS.articleRewrite,
       AGENT_SKILLS.faq,
-      AGENT_SKILLS.videoLocalization,
       AGENT_SKILLS.diagnoseTask
     ]) {
       if (!merged.some((prompt) => prompt.name === skill.name)) {

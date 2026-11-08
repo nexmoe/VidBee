@@ -20,7 +20,6 @@ export const AGENT_SKILLS = {
   overview: parseAgentSkill(document('overview')),
   articleRewrite: parseAgentSkill(document('article-rewrite')),
   faq: parseAgentSkill(document('faq')),
-  videoLocalization: parseAgentSkill(document('video-localization')),
   diagnoseTask: parseAgentSkill(
     document('diagnose-task')
       .replaceAll('{{feedback.github}}', FEEDBACK_GITHUB_URL)

@@ -731,8 +731,8 @@
       "original": "Original (padrão do yt-dlp)",
       "webm": "WebM"
     },
-    "autoTranscribeAfterDownload": "Transcribe after download",
-    "autoTranscribeAfterDownloadDescription": "When a download finishes, start a local transcript in the background. This uses your computer and skips files with no speech. Already queued jobs are not cancelled if you turn this off",
+    "autoTranscribeAfterDownload": "Transcrever após o download",
+    "autoTranscribeAfterDownloadDescription": "Ao concluir um download, inicie uma transcrição local em segundo plano. Usa recursos do computador e ignora arquivos sem fala. Desativar a opção não cancela tarefas já na fila.",
     "maxConcurrentTranscriptions": "Número máximo de transcrições ativas",
     "maxConcurrentTranscriptionsDescription": "Quantas transcrições podem ser executadas ao mesmo tempo. Cada tarefa usa este computador. Diminuir o valor não interrompe as tarefas em andamento",
     "cloudTranscription": {
@@ -751,18 +751,18 @@
       "unavailable": "Não foi possível carregar os modelos da nuvem. Tente novamente.",
       "modelUnavailable": "O modelo selecionado não está disponível. Escolha um modelo disponível antes de transcrever."
     },
-    "transcriptModelsTitle": "Transcript models",
-    "transcriptModelsReady": "Models ready on disk ({{size}})",
-    "transcriptModelsMissing": "Models are not downloaded yet. The first transcript will fetch them",
+    "transcriptModelsTitle": "Modelos de transcrição",
+    "transcriptModelsReady": "Modelos prontos no dispositivo ({{size}})",
+    "transcriptModelsMissing": "Os modelos ainda não foram baixados. A primeira transcrição fará o download.",
     "transcriptModelsRedownload": "Redownload",
     "transcriptModelsRedownloadError": "Could not redownload transcript models.",
     "aiTab": "AI",
-    "asrUse": "Use",
-    "asrUseCurrent": "In use",
-    "asrStatusReady": "Ready",
-    "asrStatusActive": "In use",
-    "asrStatusMissing": "Not downloaded",
-    "asrStatusDownloading": "Downloading",
+    "asrUse": "Usar",
+    "asrUseCurrent": "Em uso",
+    "asrStatusReady": "Pronto",
+    "asrStatusActive": "Em uso",
+    "asrStatusMissing": "Não baixado",
+    "asrStatusDownloading": "Baixando",
     "asrDownloading": "Downloading {{received}} / {{total}}",
     "asrDownloadingMany": "Baixando {{count}} modelos",
     "asrDelete": "Excluir",
@@ -1059,10 +1059,6 @@
         "diagnose-task": {
           "name": "Diagnosticar uma tarefa",
           "description": "Investiga tarefas falhadas ou bloqueadas através do estado, erros e registos. Para recomendar soluções ou preparar comentários sobre um possível defeito do VidBee."
-        },
-        "video-localization": {
-          "name": "Localização de vídeo",
-          "description": "Traduza e exporte legendas ou crie dublagem sincronizada."
         }
       }
     },
@@ -1525,7 +1521,7 @@
       "experimentalHint": "Pode ser integrada a Downloads."
     },
     "followResume": "Jump to current line",
-    "title": "Transcript",
+    "title": "Transcrição",
     "ready": "Transcript ready",
     "listLabel": {
       "subtitles": "Legendas",
@@ -1570,12 +1566,13 @@
         "subtitles": "Legendas",
         "segments": "Segmentos",
         "whisper": "Whisper",
-        "video": "Vídeo + legendas"
+        "video": "Vídeo com legendas"
       },
       "formatLabel": "Formato",
       "format": {
         "txt": ".txt",
-        "md": ".md"
+        "md": ".md",
+        "srt": ".srt"
       },
       "encodeLabel": "Codificação",
       "encode": {
@@ -1614,7 +1611,7 @@
     "unknownSpeaker": "Falante desconhecido",
     "speakers": "Falantes ({{count}})",
     "info": {
-      "tab": "Info",
+      "tab": "Informações",
       "channel": "Canal",
       "duration": "Duração",
       "file": "Arquivo",
@@ -1702,7 +1699,7 @@
       }
     },
     "changeModel": "Alterar modelo",
-    "qualityHint": "Not happy with this transcript?",
+    "qualityHint": "A transcrição precisa de ajustes?",
     "qualityHintDetail": "Download a higher-quality model and transcribe again. The current transcript is kept as history.",
     "qualityHintMax": "Já foi usado o modelo de maior qualidade. Ajuste o número de falantes se os rótulos estiverem misturados. Música de fundo e falas sobrepostas ainda podem confundir os falantes.",
     "speakerCount": {
@@ -2024,7 +2021,7 @@
       "body": "Abra a conversa para analisar a solicitação e responder."
     },
     "newChatPlaceholder": "Pergunte o que quiser…",
-    "placeholder": "Ask a follow-up about this video…",
+    "placeholder": "Faça uma pergunta sobre este vídeo…",
     "send": "Send message",
     "attachImages": "Attach images",
     "removeImage": "Remove {{name}}",

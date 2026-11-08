@@ -33,24 +33,15 @@ import {
 import type { AiPrompt } from '@shared/ai-types'
 import { sharePromptUserText } from '@shared/types/share-card'
 import { AgentChatComposer } from '@vidbee/ui/components/agent-chat-composer'
+import { useAgentMessageSend } from '@vidbee/ui/components/agent-message-send'
 import { AgentConversationLayout } from '@vidbee/ui/components/agent-workspace'
-import { useMessageSendTransition } from '@vidbee/ui/components/ui/message-send-transition'
 import { useAtom, useAtomValue } from 'jotai'
 import { Loader2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { flushSync } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { AgentUiProvider } from './AgentUiCards'
 import { ChatSuggestions } from './ChatSuggestions'
-
-interface OutgoingMessage {
-  identity: string
-  message: AgentChatMessage
-  previousIds: Set<string>
-  admitted: boolean
-  finished: boolean
-}
 
 export interface AgentChatProps {
   /** Omit the video identity to start a standalone conversation. */
@@ -219,30 +210,24 @@ export function AgentChat({
   const [drafts, setDrafts] = useState<Record<string, string>>(() =>
     initialDraft ? { [identity]: initialDraft } : {}
   )
-  const [outgoing, setOutgoing] = useState<OutgoingMessage | null>(null)
   const [shareMessageId, setShareMessageId] = useState<string | null>(null)
   const viewport = useRef<HTMLDivElement>(null)
   const composerInput = useRef<HTMLDivElement>(null)
-  const prepareSendTransition = useMessageSendTransition({
-    identity,
-    inputRef: composerInput,
-    viewportRef: viewport
-  })
   const composerInitiallyFocused = useRef(false)
   const cardResponsePending = useRef(false)
   const [selecting, setSelecting] = useState(false)
   const draft = drafts[identity] ?? ''
   const messages = thread ? selectedAgentMessages(thread) : []
-  const preview = outgoing?.identity === identity ? outgoing : null
-  const admittedMessage = preview
-    ? messages.find(
-        (message) =>
-          message.role === 'user' &&
-          !preview.previousIds.has(message.id) &&
-          message.text === preview.message.text &&
-          (message.imageIds ?? []).join('\n') === (preview.message.imageIds ?? []).join('\n')
-      )
-    : undefined
+  const {
+    preview,
+    admittedMessage,
+    submit: submitMessage
+  } = useAgentMessageSend({
+    identity,
+    messages,
+    inputRef: composerInput,
+    viewportRef: viewport
+  })
   const presentedMessages = preview && !admittedMessage ? [...messages, preview.message] : messages
   const presentedThread =
     thread && preview && !admittedMessage
@@ -363,41 +348,17 @@ export function AgentChat({
       thinking: '',
       createdAt: Date.now()
     }
-    const animateMessage = prepareSendTransition(() => {
-      setOutgoing((current) =>
-        current?.message.id === message.id
-          ? current.admitted
-            ? null
-            : { ...current, finished: true }
-          : current
-      )
-    })
-    flushSync(() => {
-      setOutgoing({
-        identity,
-        message,
-        previousIds: new Set(thread.messages.map((item) => item.id)),
-        admitted: false,
-        finished: false
-      })
-      setDrafts((current) => ({ ...current, [identity]: '' }))
-      animateMessage()
-    })
-    const admitted = await send({
-      ...context,
-      text: draft,
-      ...(message.imageIds?.length ? { imageIds: message.imageIds } : {})
-    })
-    setOutgoing((current) =>
-      current?.message.id === message.id
-        ? admitted && !current.finished
-          ? { ...current, admitted: true }
-          : null
-        : current
+    await submitMessage(
+      message,
+      () =>
+        send({
+          ...context,
+          text: draft,
+          ...(message.imageIds?.length ? { imageIds: message.imageIds } : {})
+        }),
+      () => setDrafts((current) => ({ ...current, [identity]: '' })),
+      () => setDrafts((current) => ({ ...current, [identity]: current[identity] || draft }))
     )
-    if (!admitted) {
-      setDrafts((current) => ({ ...current, [identity]: current[identity] || draft }))
-    }
   }
 
   /** Fill and focus the composer without starting a model request or application action. */

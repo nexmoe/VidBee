@@ -731,8 +731,8 @@
       "original": "オリジナル (yt-dlp 既定)",
       "webm": "WebM"
     },
-    "autoTranscribeAfterDownload": "Transcribe after download",
-    "autoTranscribeAfterDownloadDescription": "When a download finishes, start a local transcript in the background. This uses your computer and skips files with no speech. Already queued jobs are not cancelled if you turn this off",
+    "autoTranscribeAfterDownload": "ダウンロード後に文字起こし",
+    "autoTranscribeAfterDownloadDescription": "ダウンロード完了後、パソコンの処理能力を使ってバックグラウンドでローカル文字起こしを開始します。発話のないファイルはスキップします。無効にしても待機中の処理は取り消されません。",
     "maxConcurrentTranscriptions": "同時文字起こし数",
     "maxConcurrentTranscriptionsDescription": "同時に実行できる文字起こしの数です。各ジョブはこのパソコンのCPUとメモリを使います。値を下げても実行中のジョブは止まりません",
     "cloudTranscription": {
@@ -751,18 +751,18 @@
       "unavailable": "クラウドモデルを読み込めませんでした。再試行してください。",
       "modelUnavailable": "選択したクラウドモデルは利用できません。利用可能なモデルを選択してください。"
     },
-    "transcriptModelsTitle": "Transcript models",
-    "transcriptModelsReady": "Models ready on disk ({{size}})",
-    "transcriptModelsMissing": "Models are not downloaded yet. The first transcript will fetch them",
+    "transcriptModelsTitle": "文字起こしモデル",
+    "transcriptModelsReady": "端末上のモデルは準備完了（{{size}}）",
+    "transcriptModelsMissing": "モデルは未ダウンロードです。初回の文字起こし時に取得します。",
     "transcriptModelsRedownload": "Redownload",
     "transcriptModelsRedownloadError": "Could not redownload transcript models.",
     "aiTab": "AI",
-    "asrUse": "Use",
-    "asrUseCurrent": "In use",
-    "asrStatusReady": "Ready",
-    "asrStatusActive": "In use",
-    "asrStatusMissing": "Not downloaded",
-    "asrStatusDownloading": "Downloading",
+    "asrUse": "使用",
+    "asrUseCurrent": "使用中",
+    "asrStatusReady": "準備完了",
+    "asrStatusActive": "使用中",
+    "asrStatusMissing": "未ダウンロード",
+    "asrStatusDownloading": "ダウンロード中",
     "asrDownloading": "Downloading {{received}} / {{total}}",
     "asrDownloadingMany": "{{count}} 個のモデルをダウンロード中",
     "asrDelete": "削除",
@@ -1059,10 +1059,6 @@
         "diagnose-task": {
           "name": "タスクの問題を調査",
           "description": "状態、エラー、ログから失敗・停止したタスクを調査します。復旧方法の提案や、VidBee の不具合が疑われる場合の報告作成に使います。"
-        },
-        "video-localization": {
-          "name": "動画の多言語化",
-          "description": "字幕の翻訳と書き出し、または映像に同期した吹き替えを作成します。"
         }
       }
     },
@@ -1525,7 +1521,7 @@
       "experimentalHint": "将来ダウンロード画面に統合される可能性があります。"
     },
     "followResume": "Jump to current line",
-    "title": "Transcript",
+    "title": "文字起こし",
     "ready": "Transcript ready",
     "listLabel": {
       "subtitles": "字幕",
@@ -1570,12 +1566,13 @@
         "subtitles": "字幕",
         "segments": "セグメント",
         "whisper": "Whisper",
-        "video": "動画＋字幕"
+        "video": "動画と字幕"
       },
       "formatLabel": "形式",
       "format": {
         "txt": ".txt",
-        "md": ".md"
+        "md": ".md",
+        "srt": ".srt"
       },
       "encodeLabel": "エンコード",
       "encode": {
@@ -1702,7 +1699,7 @@
       }
     },
     "changeModel": "モデルを変更",
-    "qualityHint": "Not happy with this transcript?",
+    "qualityHint": "文字起こしを改善しますか？",
     "qualityHintDetail": "Download a higher-quality model and transcribe again. The current transcript is kept as history.",
     "qualityHintMax": "すでに最高品質のモデルです。話者ラベルが混ざる場合は人数を調整してください。BGM や同時発話は話者分離を乱すことがあります。",
     "speakerCount": {
@@ -2024,7 +2021,7 @@
       "body": "会話を開いて内容を確認し、応答してください。"
     },
     "newChatPlaceholder": "何でも聞いてください…",
-    "placeholder": "Ask a follow-up about this video…",
+    "placeholder": "この動画について質問する…",
     "send": "Send message",
     "attachImages": "Attach images",
     "removeImage": "Remove {{name}}",

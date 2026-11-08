@@ -1147,10 +1147,6 @@
         "diagnose-task": {
           "name": "任务排查",
           "description": "根据任务状态、错误和日志排查失败或停滞的任务，给出恢复建议；疑似 VidBee 缺陷时协助整理反馈。"
-        },
-        "video-localization": {
-          "name": "视频本地化",
-          "description": "翻译并导出字幕，或生成与视频同步的配音。"
         }
       }
     },
@@ -1587,7 +1583,8 @@
       "formatLabel": "格式",
       "format": {
         "txt": ".txt",
-        "md": ".md"
+        "md": ".md",
+        "srt": ".srt"
       },
       "encodeLabel": "编码",
       "encode": {
@@ -2024,7 +2021,7 @@
       "body": "打开对话以查看请求并回复。"
     },
     "newChatPlaceholder": "有什么想聊的…",
-    "placeholder": "Ask a follow-up about this video…",
+    "placeholder": "围绕这段视频继续提问…",
     "send": "Send message",
     "attachImages": "Attach images",
     "removeImage": "Remove {{name}}",

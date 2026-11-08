@@ -1038,10 +1038,6 @@
         "diagnose-task": {
           "name": "Troubleshoot a task",
           "description": "Investigate failed or stalled tasks using their status, errors and logs. Use to recommend recovery steps or prepare feedback for a suspected VidBee defect."
-        },
-        "video-localization": {
-          "name": "Video localization",
-          "description": "Translate and export subtitles, or create synchronized dubbing."
         }
       }
     },
@@ -1760,7 +1756,8 @@
       "formatLabel": "Format",
       "format": {
         "txt": ".txt",
-        "md": ".md"
+        "md": ".md",
+        "srt": ".srt"
       },
       "encodeLabel": "Encode",
       "encode": {

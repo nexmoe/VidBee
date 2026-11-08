@@ -82,7 +82,7 @@ export const agentChatPrompt = (now: number = Date.now(), hasSource = true): AiP
  * with the current interface language name before a prompt is shown or sent.
  */
 export const AI_PROMPT_PRESETS: readonly AiPromptPresetSeed[] = BUILTIN_SKILLS.filter(
-  (skill) => !['article-rewrite', 'faq', 'diagnose-task', 'video-localization'].includes(skill.name)
+  (skill) => !['article-rewrite', 'faq', 'diagnose-task'].includes(skill.name)
 ).sort(
   (left, right) =>
     Number(right.name === AI_OVERVIEW_PROMPT_ID) - Number(left.name === AI_OVERVIEW_PROMPT_ID)

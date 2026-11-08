@@ -731,8 +731,8 @@
       "original": "원본 (yt-dlp 기본)",
       "webm": "WebM"
     },
-    "autoTranscribeAfterDownload": "Transcribe after download",
-    "autoTranscribeAfterDownloadDescription": "When a download finishes, start a local transcript in the background. This uses your computer and skips files with no speech. Already queued jobs are not cancelled if you turn this off",
+    "autoTranscribeAfterDownload": "다운로드 후 자동 전사",
+    "autoTranscribeAfterDownloadDescription": "다운로드가 끝나면 컴퓨터 자원을 사용해 백그라운드에서 로컬 전사를 시작하고 음성이 없는 파일은 건너뜁니다. 옵션을 꺼도 이미 대기열에 있는 작업은 취소되지 않습니다.",
     "maxConcurrentTranscriptions": "동시 받아쓰기 수",
     "maxConcurrentTranscriptionsDescription": "동시에 실행할 받아쓰기 작업 수입니다. 각 작업은 이 컴퓨터의 CPU와 메모리를 사용합니다. 값을 낮춰도 이미 실행 중인 작업은 중단되지 않습니다",
     "cloudTranscription": {
@@ -751,18 +751,18 @@
       "unavailable": "클라우드 모델을 불러오지 못했습니다. 다시 시도하세요.",
       "modelUnavailable": "선택한 클라우드 모델을 사용할 수 없습니다. 사용 가능한 모델을 선택하세요."
     },
-    "transcriptModelsTitle": "Transcript models",
-    "transcriptModelsReady": "Models ready on disk ({{size}})",
-    "transcriptModelsMissing": "Models are not downloaded yet. The first transcript will fetch them",
+    "transcriptModelsTitle": "전사 모델",
+    "transcriptModelsReady": "기기에 모델 준비됨 ({{size}})",
+    "transcriptModelsMissing": "아직 모델을 다운로드하지 않았습니다. 첫 전사 때 다운로드합니다.",
     "transcriptModelsRedownload": "Redownload",
     "transcriptModelsRedownloadError": "Could not redownload transcript models.",
     "aiTab": "AI",
-    "asrUse": "Use",
-    "asrUseCurrent": "In use",
-    "asrStatusReady": "Ready",
-    "asrStatusActive": "In use",
-    "asrStatusMissing": "Not downloaded",
-    "asrStatusDownloading": "Downloading",
+    "asrUse": "사용",
+    "asrUseCurrent": "사용 중",
+    "asrStatusReady": "준비됨",
+    "asrStatusActive": "사용 중",
+    "asrStatusMissing": "다운로드 안 됨",
+    "asrStatusDownloading": "다운로드 중",
     "asrDownloading": "Downloading {{received}} / {{total}}",
     "asrDownloadingMany": "모델 {{count}}개 다운로드 중",
     "asrDelete": "삭제",
@@ -1059,10 +1059,6 @@
         "diagnose-task": {
           "name": "작업 문제 해결",
           "description": "상태, 오류, 로그를 확인하여 실패하거나 멈춘 작업을 조사합니다. 복구 방법을 제안하거나 VidBee 결함이 의심될 때 피드백을 정리합니다."
-        },
-        "video-localization": {
-          "name": "동영상 현지화",
-          "description": "자막을 번역하고 내보내거나 영상에 맞춘 더빙을 생성합니다."
         }
       }
     },
@@ -1525,7 +1521,7 @@
       "experimentalHint": "나중에 다운로드 화면으로 통합될 수 있습니다."
     },
     "followResume": "Jump to current line",
-    "title": "Transcript",
+    "title": "전사",
     "ready": "Transcript ready",
     "listLabel": {
       "subtitles": "자막",
@@ -1570,12 +1566,13 @@
         "subtitles": "자막",
         "segments": "구간",
         "whisper": "Whisper",
-        "video": "영상 + 자막"
+        "video": "동영상 및 자막"
       },
       "formatLabel": "형식",
       "format": {
         "txt": ".txt",
-        "md": ".md"
+        "md": ".md",
+        "srt": ".srt"
       },
       "encodeLabel": "인코딩",
       "encode": {
@@ -1702,7 +1699,7 @@
       }
     },
     "changeModel": "모델 변경",
-    "qualityHint": "Not happy with this transcript?",
+    "qualityHint": "전사 결과를 개선할까요?",
     "qualityHintDetail": "Download a higher-quality model and transcribe again. The current transcript is kept as history.",
     "qualityHintMax": "이미 최고 품질 모델입니다. 화자 라벨이 섞이면 화자 수를 조정해 보세요. 배경 음악과 겹치는 발화는 여전히 화자를 혼동시킬 수 있습니다.",
     "speakerCount": {
@@ -2024,7 +2021,7 @@
       "body": "대화를 열어 내용을 확인하고 응답하세요."
     },
     "newChatPlaceholder": "무엇이든 물어보세요…",
-    "placeholder": "Ask a follow-up about this video…",
+    "placeholder": "이 동영상에 관해 질문하세요…",
     "send": "Send message",
     "attachImages": "Attach images",
     "removeImage": "Remove {{name}}",

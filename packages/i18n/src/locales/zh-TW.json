@@ -1059,10 +1059,6 @@
         "diagnose-task": {
           "name": "工作排查",
           "description": "根據任務狀態、錯誤與記錄排查失敗或停滯的任務，提供恢復建議；疑似 VidBee 缺陷時協助整理回報。"
-        },
-        "video-localization": {
-          "name": "影片在地化",
-          "description": "翻譯並匯出字幕，或產生與影片同步的配音。"
         }
       }
     },
@@ -1575,7 +1571,8 @@
       "formatLabel": "格式",
       "format": {
         "txt": ".txt",
-        "md": ".md"
+        "md": ".md",
+        "srt": ".srt"
       },
       "encodeLabel": "編碼",
       "encode": {
@@ -2024,7 +2021,7 @@
       "body": "開啟對話以檢視請求並回覆。"
     },
     "newChatPlaceholder": "有什麼想聊的…",
-    "placeholder": "Ask a follow-up about this video…",
+    "placeholder": "針對這段影片繼續提問…",
     "send": "Send message",
     "attachImages": "Attach images",
     "removeImage": "Remove {{name}}",

@@ -53,6 +53,34 @@ function legacyName(skill: LegacySkill): string {
   )
 }
 
+/** Merge repeated official seeds, preferring the latest edited preferences over fresh defaults. */
+function deduplicateBuiltinSkills(records: AiPrompt[], files: AgentSkillFiles): AiPrompt[] {
+  const skills: AiPrompt[] = []
+  const positions = new Map<string, number>()
+  for (const record of records) {
+    if (!(record.isPreset && files.isBuiltin(record.name))) {
+      skills.push(record)
+      continue
+    }
+    const index = positions.get(record.name)
+    if (index === undefined) {
+      positions.set(record.name, skills.length)
+      skills.push(record)
+      continue
+    }
+    const previous = skills[index]
+    const edited = record.updatedAt > record.createdAt
+    const previousEdited = previous.updatedAt > previous.createdAt
+    if (
+      (edited && !previousEdited) ||
+      (edited === previousEdited && record.updatedAt > previous.updatedAt)
+    ) {
+      skills[index] = record
+    }
+  }
+  return skills
+}
+
 /** Remove the separate ID and safely move legacy documents and resources to their canonical names. */
 export function migrateStoredSkills(
   records: readonly LegacySkill[],
@@ -114,13 +142,14 @@ export function migrateStoredSkills(
     }
     return migrated
   })
-  return { skills, renamed }
+  return { skills: deduplicateBuiltinSkills(skills, files), renamed }
 }
 
-/** Identify the two retired official translate bodies without treating local edits as upstream content. */
+/** Identify superseded official translate bodies without treating local edits as upstream content. */
 const RETIRED_TRANSLATE_DIGESTS = new Set([
   'ddb27d9035d3f786f43daabe40a2b750faa85d811df3508f81715b5dff04d37f',
-  '351581f3acbe096d9abeb47e1cf93527c00dee352144ecf50b0088200894563f'
+  '351581f3acbe096d9abeb47e1cf93527c00dee352144ecf50b0088200894563f',
+  'dfd61977081c3da379baff54172bd49c0773953c8987385eeba9c2f896e763f8'
 ])
 
 /** Descriptions authored by older official seeds, not evidence that the user edited a skill. */
@@ -275,10 +304,30 @@ function hasCustomResources(local: string, bundled: string, root = true): boolea
   return false
 }
 
+/** Archive the retired workflow's legacy folder while retaining explicitly registered personal skills. */
+function retireVideoLocalization(records: AiPrompt[], files: AgentSkillFiles): AiPrompt[] {
+  const name = 'video-localization'
+  const personal = records.some(
+    (record) => !record.isPreset && (record.directoryName ?? record.name) === name
+  )
+  if (!personal && existsSync(files.directory(name))) {
+    let document: ReturnType<typeof parseAgentSkill> | undefined
+    try {
+      document = parseAgentSkill(files.read(name))
+    } catch {
+      // Preserve unreadable legacy resources in the archive as well.
+    }
+    if (!document || document.name === name) {
+      archiveSkill(files, name)
+    }
+  }
+  return records.filter((record) => !(record.isPreset && record.name === name))
+}
+
 /** Separate old mixed-library copies once, keeping modified instructions, resources and history as personal skills. */
 export function separateBuiltinSkills(records: AiPrompt[], files: AgentSkillFiles) {
   const skills: AiPrompt[] = []
-  const repaired = repairOfficialDuplicates(records, files)
+  const repaired = repairOfficialDuplicates(retireVideoLocalization(records, files), files)
   const renamed = repaired.renamed
   const reserved = new Set(repaired.skills.map((record) => record.name))
   const personalFolders = new Set(

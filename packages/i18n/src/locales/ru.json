@@ -731,8 +731,8 @@
       "original": "Оригинал (по умолчанию yt-dlp)",
       "webm": "WebM"
     },
-    "autoTranscribeAfterDownload": "Transcribe after download",
-    "autoTranscribeAfterDownloadDescription": "When a download finishes, start a local transcript in the background. This uses your computer and skips files with no speech. Already queued jobs are not cancelled if you turn this off",
+    "autoTranscribeAfterDownload": "Расшифровывать после загрузки",
+    "autoTranscribeAfterDownloadDescription": "После загрузки запускать локальную расшифровку в фоне. Используются ресурсы компьютера, файлы без речи пропускаются. Отключение не отменяет уже поставленные в очередь задания.",
     "maxConcurrentTranscriptions": "Максимум одновременных расшифровок",
     "maxConcurrentTranscriptionsDescription": "Сколько расшифровок может выполняться одновременно. Каждая задача использует этот компьютер. Уменьшение значения не останавливает уже запущенные задачи",
     "cloudTranscription": {
@@ -751,18 +751,18 @@
       "unavailable": "Не удалось загрузить облачные модели. Повторите попытку.",
       "modelUnavailable": "Выбранная облачная модель недоступна. Перед транскрипцией выберите доступную модель."
     },
-    "transcriptModelsTitle": "Transcript models",
-    "transcriptModelsReady": "Models ready on disk ({{size}})",
-    "transcriptModelsMissing": "Models are not downloaded yet. The first transcript will fetch them",
+    "transcriptModelsTitle": "Модели расшифровки",
+    "transcriptModelsReady": "Модели на устройстве готовы ({{size}})",
+    "transcriptModelsMissing": "Модели ещё не загружены. Они будут загружены при первой расшифровке.",
     "transcriptModelsRedownload": "Redownload",
     "transcriptModelsRedownloadError": "Could not redownload transcript models.",
     "aiTab": "AI",
-    "asrUse": "Use",
-    "asrUseCurrent": "In use",
-    "asrStatusReady": "Ready",
-    "asrStatusActive": "In use",
-    "asrStatusMissing": "Not downloaded",
-    "asrStatusDownloading": "Downloading",
+    "asrUse": "Использовать",
+    "asrUseCurrent": "Используется",
+    "asrStatusReady": "Готово",
+    "asrStatusActive": "Используется",
+    "asrStatusMissing": "Не загружено",
+    "asrStatusDownloading": "Загрузка",
     "asrDownloading": "Downloading {{received}} / {{total}}",
     "asrDownloadingMany": "Скачивание моделей: {{count}}",
     "asrDelete": "Удалить",
@@ -1059,10 +1059,6 @@
         "diagnose-task": {
           "name": "Диагностика задачи",
           "description": "Исследует неудачные или зависшие задачи по статусу, ошибкам и журналам. Для рекомендаций по восстановлению или подготовки сообщения о возможном дефекте VidBee."
-        },
-        "video-localization": {
-          "name": "Локализация видео",
-          "description": "Переводите и экспортируйте субтитры или создавайте синхронизированный дубляж."
         }
       }
     },
@@ -1525,7 +1521,7 @@
       "experimentalHint": "Позже может быть объединена с загрузками."
     },
     "followResume": "Jump to current line",
-    "title": "Transcript",
+    "title": "Расшифровка",
     "ready": "Transcript ready",
     "listLabel": {
       "subtitles": "Субтитры",
@@ -1570,12 +1566,13 @@
         "subtitles": "Субтитры",
         "segments": "Сегменты",
         "whisper": "Whisper",
-        "video": "Видео + субтитры"
+        "video": "Видео с субтитрами"
       },
       "formatLabel": "Формат",
       "format": {
         "txt": ".txt",
-        "md": ".md"
+        "md": ".md",
+        "srt": ".srt"
       },
       "encodeLabel": "Кодирование",
       "encode": {
@@ -1614,7 +1611,7 @@
     "unknownSpeaker": "Неизвестный спикер",
     "speakers": "Спикеры ({{count}})",
     "info": {
-      "tab": "Сведения",
+      "tab": "Информация",
       "channel": "Канал",
       "duration": "Длительность",
       "file": "Файл",
@@ -1702,7 +1699,7 @@
       }
     },
     "changeModel": "Сменить модель",
-    "qualityHint": "Not happy with this transcript?",
+    "qualityHint": "Нужно улучшить расшифровку?",
     "qualityHintDetail": "Download a higher-quality model and transcribe again. The current transcript is kept as history.",
     "qualityHintMax": "Уже использована модель максимального качества. Если метки смешались, измените число говорящих. Фоновая музыка и пересекающаяся речь всё ещё могут путать говорящих.",
     "speakerCount": {
@@ -2024,7 +2021,7 @@
       "body": "Откройте беседу, чтобы проверить запрос и ответить."
     },
     "newChatPlaceholder": "Спросите о чём угодно…",
-    "placeholder": "Ask a follow-up about this video…",
+    "placeholder": "Задайте вопрос об этом видео…",
     "send": "Send message",
     "attachImages": "Attach images",
     "removeImage": "Remove {{name}}",

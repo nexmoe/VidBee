@@ -6,6 +6,7 @@ import type {
   AgentThread,
   AgentThreadSummary
 } from './agent-chat'
+import type { AgentUiResponse } from './agent-ui'
 import type { AiPrompt } from './ai-types'
 
 /** Browser evidence imported once into Desktop's persistent transcript library. */
@@ -46,6 +47,7 @@ export type ExtensionChatCommand =
       retryMessageId?: string
       thinkingLevel?: AgentThinkingLevel
       imageIds?: string[]
+      uiResponse?: AgentUiResponse
     }
   | { type: 'thinking'; threadId: string; level: AgentThinkingLevel }
   | { type: 'remove-image'; threadId: string; imageId: string }
@@ -88,6 +90,7 @@ export type ExtensionChatEvent =
   | { type: 'snapshot'; state: ExtensionChatState }
   | { type: 'agent'; event: AgentRunEvent; source?: ExtensionChatVideo }
   | { type: 'settings' }
+  | { type: 'task'; id: string }
 
 /** Only persisted assistant replies can be exported or receive feedback. */
 export interface ExtensionChatExport {
@@ -102,4 +105,10 @@ export interface ExtensionChatExport {
 export interface ExtensionChatFile {
   name: string
   dataUrl: string
+}
+
+/** Paginated, path-free library candidates for the shared video mention picker. */
+export interface ExtensionChatVideos {
+  videos: { id: string; title: string }[]
+  nextCursor: string | null
 }

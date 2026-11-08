@@ -8,13 +8,19 @@ For full release notes, see [GitHub Releases](https://github.com/nexmoe/VidBee/r
 ### Fixed
 - Reduce installation size by removing duplicated runtime tools and unused development assets.
 
-### Added
-- Support Microsoft Store distribution with updates and update settings managed through the Store.
-- Follow long Agent requests with a concise plan, real background task progress, and generated media in a dedicated progress card.
+## [v2.4.0](https://github.com/nexmoe/VidBee/releases/tag/v2.4.0) - 2026-11-01
 
-### Fixed
-- Keep Agent requests running while downloads and other queued tasks finish, then continue the requested work automatically.
-- Translate subtitles, export, and dub downloaded media in the same independent Agent conversation.
+### What's New
+- Start an independent Agent conversation, attach videos from your library, and continue working across downloads, subtitles, and exports.
+- Follow long requests with a concise plan, live task progress, and generated media in one place. Agent continues automatically when background tasks finish.
+- Translate subtitles, export bilingual subtitles, and create locally dubbed videos from the same conversation.
+- Choose Cloud transcription alongside local models and resume interrupted transcription without repeating completed audio.
+- Install skills from GitHub, organize your skill library, and mention a skill directly in a message.
+- Install VidBee from the Microsoft Store, with updates managed by the Store.
+
+### Improvements
+- Select multiple library items with the keyboard or by dragging, then manage them together.
+- Open local files linked in Agent answers and keep your preferred window position between launches.
 
 ## [v2.3.0](https://github.com/nexmoe/VidBee/releases/tag/v2.3.0) - 2026-10-25
 

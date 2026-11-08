@@ -1,11 +1,11 @@
 ---
 name: translate
-description: "Translate video subtitles with topic context, terminology, faithful review and language-aware subtitle length constraints, then save a complete timed language track. Use for subtitle translation or the translation stage of video localization."
+description: "Translate video subtitles with topic context, terminology, faithful review and language-aware subtitle length constraints, then save a complete timed language track. Use for subtitle translation."
 ---
 
 # Subtitle translation
 
-Produce a complete saved subtitle track using the adapted VideoLingo prompts bundled with this skill. This skill owns translation, including when invoked by `video-localization`. Use VidBee's existing tools and isolated tasks in this Agent runtime; do not install or run VideoLingo, Python or another provider client.
+Produce a complete saved subtitle track using the adapted VideoLingo prompts bundled with this skill. This skill owns translation. Use VidBee's existing tools and isolated tasks in this Agent runtime; do not install or run VideoLingo, Python or another provider client.
 
 For long transcripts, discover `delegate_task` with `tool_search` when available and assign bounded translation, review or alignment work in independent contexts. Pass the exact stage, source cue indices/text/times, neighboring lines, relevant glossary, constraints and validated prior result. Include `skills: ["translate"]` and `tools: ["read"]` so the worker can use these reference prompts. The parent retains overall coverage and decides what to save. Workers return the assigned stage result and exceptions, not a claim that the whole video is complete. Use `read_task_result` to recover a full worker result when its initial response is paginated; omit its ID to find saved tasks after interruption, inspect their status and use `resume_task` for unfinished work. Workers do not inherit parent messages or notes; preserve shared terminology and progress explicitly in the parent checkpoint.
 
@@ -67,7 +67,7 @@ At completion, select the saved track for this run, read its full details and ve
 
 When the caller requests dubbing, read the verified saved track's full details, retaining globalLineOffset, exact display text and real timing. Load `number-to-text.txt` for cues with numeric expressions and prepare context-appropriate spoken forms; validate the values, digit sequences, units, names and same-language meaning. Leave unambiguous native readings unchanged when no contextual conversion is needed. Use `trim.txt` when concise voiceover was requested or a real fitting error identifies an affected cue. Its JSON has brief editorial `analysis` and a nonempty same-language `result`; remove only filler and redundancy while preserving meaningful information.
 
-Return sparse `speechOverrides` to `video-localization`: each item has `cueIndex = globalLineOffset + 1` in the complete saved target track, exact `originalText` from that saved cue, and the validated spoken `text`. These indices are not renumbered for downloaded clips. A read page or text fragment is not a complete cue; reassemble it before creating an override. The tool rejects duplicate indices, mismatched display text and cues outside the selected media before preparing speech models. Use the saved output cue indices after any verified timed splitting, not the input source indices.
+Return sparse `speechOverrides` to the calling Agent for `create_dubbed_video`: each item has `cueIndex = globalLineOffset + 1` in the complete saved target track, exact `originalText` from that saved cue, and the validated spoken `text`. These indices are not renumbered for downloaded clips. A read page or text fragment is not a complete cue; reassemble it before creating an override. The tool rejects duplicate indices, mismatched display text and cues outside the selected media before preparing speech models. Use the saved output cue indices after any verified timed splitting, not the input source indices.
 
 Load `tts-clean.txt` only for an actual pronunciation/text-format problem. Its JSON `text` is another spoken variant. Preserve meaning, names, numbers, diacritics, abbreviations and word-internal hyphens; skip punctuation removal when it changes meaning or pronunciation. Do not save spoken variants with `add_subtitles` or alter the display track for TTS. Requested display-subtitle edits still need their own supported correction path.
 

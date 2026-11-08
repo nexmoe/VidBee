@@ -731,8 +731,8 @@
       "original": "أصلي (افتراضي yt-dlp)",
       "webm": "WebM"
     },
-    "autoTranscribeAfterDownload": "Transcribe after download",
-    "autoTranscribeAfterDownloadDescription": "When a download finishes, start a local transcript in the background. This uses your computer and skips files with no speech. Already queued jobs are not cancelled if you turn this off",
+    "autoTranscribeAfterDownload": "تفريغ تلقائي بعد التنزيل",
+    "autoTranscribeAfterDownloadDescription": "عند اكتمال التنزيل، ابدأ تفريغًا محليًا في الخلفية باستخدام موارد الحاسوب، مع تجاوز الملفات التي لا تحتوي على كلام. إيقاف الخيار لا يلغي المهام المنتظرة.",
     "maxConcurrentTranscriptions": "الحد الأقصى لعمليات التفريغ النشطة",
     "maxConcurrentTranscriptionsDescription": "عدد عمليات التفريغ التي يمكن تشغيلها في الوقت نفسه. كل مهمة تستخدم هذا الجهاز. خفض القيمة لا يوقف المهام الجارية",
     "cloudTranscription": {
@@ -751,18 +751,18 @@
       "unavailable": "تعذّر تحميل النماذج السحابية. أعد المحاولة.",
       "modelUnavailable": "النموذج السحابي المحدد غير متاح. اختر نموذجًا متاحًا قبل بدء النسخ."
     },
-    "transcriptModelsTitle": "Transcript models",
-    "transcriptModelsReady": "Models ready on disk ({{size}})",
-    "transcriptModelsMissing": "Models are not downloaded yet. The first transcript will fetch them",
+    "transcriptModelsTitle": "نماذج التفريغ",
+    "transcriptModelsReady": "النماذج جاهزة على الجهاز ({{size}})",
+    "transcriptModelsMissing": "لم تُنزّل النماذج بعد. سيجري تنزيلها عند أول تفريغ.",
     "transcriptModelsRedownload": "Redownload",
     "transcriptModelsRedownloadError": "Could not redownload transcript models.",
     "aiTab": "AI",
-    "asrUse": "Use",
-    "asrUseCurrent": "In use",
-    "asrStatusReady": "Ready",
-    "asrStatusActive": "In use",
-    "asrStatusMissing": "Not downloaded",
-    "asrStatusDownloading": "Downloading",
+    "asrUse": "استخدام",
+    "asrUseCurrent": "قيد الاستخدام",
+    "asrStatusReady": "جاهز",
+    "asrStatusActive": "قيد الاستخدام",
+    "asrStatusMissing": "لم يُنزّل",
+    "asrStatusDownloading": "جارٍ التنزيل",
     "asrDownloading": "Downloading {{received}} / {{total}}",
     "asrDownloadingMany": "جارٍ تنزيل {{count}} من النماذج",
     "asrDelete": "حذف",
@@ -1059,10 +1059,6 @@
         "diagnose-task": {
           "name": "تشخيص مشكلات المهمة",
           "description": "يفحص المهام الفاشلة أو المتوقفة باستخدام الحالة والأخطاء والسجلات. لاقتراح خطوات استعادة أو إعداد ملاحظات حول خلل محتمل في VidBee."
-        },
-        "video-localization": {
-          "name": "توطين الفيديو",
-          "description": "ترجم الترجمات وصدّرها، أو أنشئ دبلجة متزامنة."
         }
       }
     },
@@ -1525,7 +1521,7 @@
       "experimentalHint": "قد تُدمج في التنزيلات لاحقًا."
     },
     "followResume": "Jump to current line",
-    "title": "Transcript",
+    "title": "النص المفرّغ",
     "ready": "Transcript ready",
     "listLabel": {
       "subtitles": "الترجمة",
@@ -1570,12 +1566,13 @@
         "subtitles": "ترجمة",
         "segments": "مقاطع",
         "whisper": "Whisper",
-        "video": "فيديو + ترجمة"
+        "video": "فيديو مع الترجمة المصاحبة"
       },
       "formatLabel": "التنسيق",
       "format": {
         "txt": ".txt",
-        "md": ".md"
+        "md": ".md",
+        "srt": ".srt"
       },
       "encodeLabel": "الترميز",
       "encode": {
@@ -1702,7 +1699,7 @@
       }
     },
     "changeModel": "تغيير النموذج",
-    "qualityHint": "Not happy with this transcript?",
+    "qualityHint": "هل يحتاج النص إلى تحسين؟",
     "qualityHintDetail": "Download a higher-quality model and transcribe again. The current transcript is kept as history.",
     "qualityHintMax": "استُخدم بالفعل أعلى نموذج جودة. جرّب ضبط عدد المتحدثين إذا اختلطت التسميات. قد تربك الموسيقى الخلفية والكلام المتداخل المتحدثين.",
     "speakerCount": {
@@ -2024,7 +2021,7 @@
       "body": "افتح المحادثة للمراجعة والرد."
     },
     "newChatPlaceholder": "اسأل عن أي شيء…",
-    "placeholder": "Ask a follow-up about this video…",
+    "placeholder": "اطرح سؤالًا حول هذا الفيديو…",
     "send": "Send message",
     "attachImages": "Attach images",
     "removeImage": "Remove {{name}}",

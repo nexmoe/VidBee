@@ -1995,7 +1995,7 @@ const CaptionRow = memo(function CaptionRow({
       aria-current={active ? 'true' : undefined}
       aria-live={streamingLine ? 'polite' : undefined}
       className={cn(
-        'grid w-full grid-cols-[auto_minmax(0,1fr)] items-start gap-x-2 gap-y-1 py-2 text-left',
+        'grid w-full grid-cols-[auto_minmax(0,1fr)] items-start gap-x-2 gap-y-1 py-2 text-start',
         hasQuery ? 'rounded-md hover:bg-muted/50' : '',
         isSearchHit ? 'bg-primary/10' : ''
       )}
@@ -2035,7 +2035,7 @@ const CaptionRow = memo(function CaptionRow({
           {formatClock(segment.startMs / 1000)}
         </button>
       </div>
-      <p className="col-start-2 text-left text-sm leading-relaxed [overflow-wrap:anywhere]">
+      <p className="col-start-2 text-start text-sm leading-relaxed [overflow-wrap:anywhere]">
         {editing ? (
           <CaptionTextEditor
             initialText={segment.text}
@@ -2054,7 +2054,7 @@ const CaptionRow = memo(function CaptionRow({
           </>
         ) : hasQuery ? (
           <button
-            className="w-full cursor-pointer text-left"
+            className="w-full cursor-pointer text-start"
             data-testid="transcript-search-jump"
             onClick={openCaption}
             title={t('transcript.searchJumpTo')}
@@ -2238,7 +2238,7 @@ function FollowText({
   if (words.length === 0) {
     return (
       <button
-        className="w-full cursor-text border-0 bg-transparent p-0 text-left font-[inherit] text-[length:inherit] leading-[inherit]"
+        className="w-full cursor-text border-0 bg-transparent p-0 text-start font-[inherit] text-[length:inherit] leading-[inherit]"
         data-follow-token={active ? 'true' : undefined}
         data-testid={active ? 'transcript-follow-token' : undefined}
         onClick={() => onSeek(segment.startMs / 1000)}
@@ -2259,7 +2259,7 @@ function FollowText({
         {gap && !previousEnded ? ' ' : null}
         <button
           className={cn(
-            'inline cursor-pointer whitespace-normal border-0 bg-transparent p-0 text-left align-baseline font-[inherit] text-[length:inherit] leading-[inherit]',
+            'inline cursor-pointer whitespace-normal border-0 bg-transparent p-0 text-start align-baseline font-[inherit] text-[length:inherit] leading-[inherit]',
             current
               ? '-mx-0.5 rounded-sm bg-primary px-0.5 text-primary-foreground'
               : 'hover:rounded-sm hover:bg-muted'

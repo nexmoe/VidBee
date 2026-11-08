@@ -5,6 +5,20 @@ Pour les notes de version complètes, consultez [GitHub Releases](https://github
 
 ## [Unreleased]
 
+## [v2.4.0](https://github.com/nexmoe/VidBee/releases/tag/v2.4.0) - 2026-11-01
+
+### Nouveautés
+- Démarrez une conversation Agent indépendante, joignez des vidéos de votre bibliothèque et poursuivez téléchargements, sous-titres et exports dans le même échange.
+- Suivez les demandes longues avec un plan concis, la progression des tâches et les médias créés au même endroit. Agent reprend automatiquement lorsque les tâches en arrière-plan se terminent.
+- Traduisez les sous-titres, exportez des sous-titres bilingues et créez des vidéos doublées localement depuis la même conversation.
+- Choisissez la transcription dans le cloud ou un modèle local et reprenez une transcription interrompue sans retraiter les passages déjà terminés.
+- Installez des compétences depuis GitHub, organisez votre bibliothèque et mentionnez directement une compétence dans un message.
+- Installez VidBee depuis le Microsoft Store, qui prend en charge les mises à jour.
+
+### Améliorations
+- Sélectionnez plusieurs éléments de la bibliothèque au clavier ou en traçant une zone, puis gérez-les ensemble.
+- Ouvrez les fichiers locaux liés dans les réponses d’Agent et retrouvez la position de fenêtre choisie au prochain lancement.
+
 ## [v2.3.0](https://github.com/nexmoe/VidBee/releases/tag/v2.3.0) - 2026-10-25
 
 ### Améliorations

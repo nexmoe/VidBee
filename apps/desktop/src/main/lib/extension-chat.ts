@@ -9,6 +9,7 @@ import {
 } from '../../shared/agent-chat'
 import { isUuid } from '../../shared/agent-history'
 import { selectedAgentRunView } from '../../shared/agent-thread-patch'
+import { agentUiResponseSchema } from '../../shared/agent-ui'
 import { AI_CHAT_PROMPT_ID } from '../../shared/ai-prompts'
 import type { ExtensionChatCommand, ExtensionChatState } from '../../shared/extension-chat'
 import { resolveAgentArtifact } from './agent-artifacts'
@@ -107,6 +108,8 @@ function validCommand(value: unknown): value is ExtensionChatCommand {
         (Array.isArray(command.imageIds) &&
           command.imageIds.length <= AGENT_MAX_MESSAGE_IMAGES &&
           command.imageIds.every((id) => typeof id === 'string' && isUuid(id)))) &&
+      (command.uiResponse === undefined ||
+        agentUiResponseSchema.safeParse(command.uiResponse).success) &&
       (command.thinkingLevel === undefined ||
         AGENT_THINKING_LEVELS.some((level) => level === command.thinkingLevel))
     )
@@ -200,6 +203,7 @@ async function execute(session: ChatSession, command: ExtensionChatCommand): Pro
         retryMessageId: command.retryMessageId,
         thinkingLevel: command.thinkingLevel,
         imageIds: command.imageIds,
+        uiResponse: command.uiResponse,
         uiLanguage: 'en'
       }).id
     })
@@ -372,7 +376,7 @@ export async function handleExtensionChat(
     }
     if (
       parts.length === 2 &&
-      ['model', 'images', 'export', 'feedback'].includes(parts[1]) &&
+      ['model', 'images', 'export', 'feedback', 'tasks', 'videos'].includes(parts[1]) &&
       req.method === 'POST'
     ) {
       const action = parts[1]
@@ -388,7 +392,10 @@ export async function handleExtensionChat(
       }
       try {
         const result = await executeExtensionChatAction(action, input, abort.signal)
-        replyExtensionJson(res, 200, { result, state: state(session) })
+        replyExtensionJson(res, 200, {
+          result,
+          ...(action === 'tasks' || action === 'videos' ? {} : { state: state(session) })
+        })
       } finally {
         if (action === 'export') {
           session.exporting = false

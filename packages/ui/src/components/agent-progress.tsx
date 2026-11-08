@@ -1,11 +1,10 @@
-import { Badge } from '@renderer/components/ui/badge'
-import { Button } from '@renderer/components/ui/button'
-import type { AgentArtifact, AgentChatRun, AgentRunStatus } from '@shared/agent-chat'
-import { agentProgressState } from '@shared/agent-progress'
-import type { AgentProgressStep } from '@shared/agent-ui'
 import { Check, ChevronDown, File, Loader2, Square } from 'lucide-react'
 import { type ReactNode, useId, useState } from 'react'
-import { useTranslation } from 'react-i18next'
+import { agentProgressState } from '../lib/agent-progress'
+import type { AgentProgressStep, AgentUiArtifact, AgentUiRun } from '../lib/agent-ui'
+import { useAgentUiRuntime } from './agent-ui-runtime'
+import { Badge } from './ui/badge'
+import { Button } from './ui/button'
 
 /** Render an explicitly reported plan stage; tool calls remain in the reasoning history. */
 function PlanStep({
@@ -14,10 +13,10 @@ function PlanStep({
   index
 }: {
   step: AgentProgressStep
-  runStatus: AgentRunStatus
+  runStatus: AgentUiRun['status']
   index: number
 }) {
-  const { t } = useTranslation()
+  const { t } = useAgentUiRuntime()
   const active = runStatus === 'running' && step.status === 'running'
   const inactive = runStatus !== 'running' && step.status === 'running'
   const completed = step.status === 'completed'
@@ -65,13 +64,13 @@ export function AgentProgress({
 }: {
   title?: string
   steps?: AgentProgressStep[]
-  run: AgentChatRun
+  run: AgentUiRun
   current: boolean
-  artifacts: AgentArtifact[]
+  artifacts: AgentUiArtifact[]
   onStop?: () => Promise<void>
   children?: ReactNode
 }) {
-  const { t } = useTranslation()
+  const { t } = useAgentUiRuntime()
   const [open, setOpen] = useState(run.status === 'running')
   const [stopping, setStopping] = useState(false)
   const contentId = useId()
