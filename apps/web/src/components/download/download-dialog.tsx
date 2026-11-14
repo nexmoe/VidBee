@@ -15,6 +15,11 @@ import { IngestDropOverlay } from "@vidbee/ui/components/ui/ingest-drop-overlay"
 import { Input } from "@vidbee/ui/components/ui/input";
 import { Label } from "@vidbee/ui/components/ui/label";
 import { WebmThumbnailNotice } from "@vidbee/ui/components/ui/webm-thumbnail-notice";
+import {
+	createMetadataRequestCoordinator,
+	hasDownloadableFormats,
+	hasPlaylistEntries,
+} from "@vidbee/ui/lib/download-metadata";
 import { useAddUrlInteraction } from "@vidbee/ui/lib/use-add-url-interaction";
 import { useHomeIngest } from "@vidbee/ui/lib/use-home-ingest";
 import { FolderOpen, Loader2 } from "lucide-react";
@@ -53,7 +58,8 @@ export function DownloadDialog({ onDownloadsChanged }: DownloadDialogProps) {
 	const [videoInfo, setVideoInfo] = useState<VideoInfo | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
-	const videoInfoRequestId = useRef(0);
+	const [metadataRequests] = useState(createMetadataRequestCoordinator);
+	useEffect(() => () => metadataRequests.invalidate(), [metadataRequests]);
 	const { settings, updateSettings } = useWebDownloadSettings();
 
 	const [url, setUrl] = useState("");
@@ -144,7 +150,8 @@ export function DownloadDialog({ onDownloadsChanged }: DownloadDialogProps) {
 				return;
 			}
 
-			const requestId = ++videoInfoRequestId.current;
+			const requestId = metadataRequests.beginRequest();
+			setPlaylistPreviewLoading(false);
 			setLoading(true);
 			setError(null);
 			setVideoInfo(null);
@@ -154,12 +161,16 @@ export function DownloadDialog({ onDownloadsChanged }: DownloadDialogProps) {
 					url: trimmedUrl,
 					settings: readOrpcDownloadSettings(),
 				});
-				if (requestId !== videoInfoRequestId.current) {
+				if (!metadataRequests.isCurrentRequest(requestId)) {
+					return;
+				}
+				if (!hasDownloadableFormats(result.video?.formats)) {
+					setError(t("errors.fetchInfoFailed"));
 					return;
 				}
 				setVideoInfo(result.video);
 			} catch (fetchError) {
-				if (requestId !== videoInfoRequestId.current) {
+				if (!metadataRequests.isCurrentRequest(requestId)) {
 					return;
 				}
 				const message =
@@ -168,12 +179,12 @@ export function DownloadDialog({ onDownloadsChanged }: DownloadDialogProps) {
 						: t("errors.fetchInfoFailed");
 				setError(message);
 			} finally {
-				if (requestId === videoInfoRequestId.current) {
+				if (metadataRequests.isCurrentRequest(requestId)) {
 					setLoading(false);
 				}
 			}
 		},
-		[t],
+		[metadataRequests, t],
 	);
 
 	const startOneClickDownload = useCallback(
@@ -253,48 +264,60 @@ export function DownloadDialog({ onDownloadsChanged }: DownloadDialogProps) {
 		await fetchVideoInfo(url.trim());
 	}, [url, fetchVideoInfo, t]);
 
-	const handleParsePlaylistUrl = useCallback(
-		async (trimmedUrl: string) => {
-			videoInfoRequestId.current++;
+	const fetchPlaylistInfo = useCallback(
+		async (targetUrl: string) => {
+			const requestId = metadataRequests.beginRequest();
 			setVideoInfo(null);
 			setLoading(false);
 			setError(null);
-			setOpen(true);
-			setActiveTab("playlist");
-			setPlaylistUrl(trimmedUrl);
 			setPlaylistInfo(null);
-			setPlaylistPreviewError(null);
 			setSelectedEntryIds(new Set());
-
 			setPlaylistPreviewError(null);
 			setPlaylistPreviewLoading(true);
 			try {
-				const info = await orpcClient.playlist.info({
-					url: trimmedUrl,
+				const { playlist } = await orpcClient.playlist.info({
+					url: targetUrl,
 					settings: readOrpcDownloadSettings(),
 				});
-				setPlaylistInfo(info.playlist);
-				if (info.playlist.entryCount === 0) {
-					toast.error(t("playlist.noEntries"));
+				if (!metadataRequests.isCurrentRequest(requestId)) {
 					return;
 				}
+				if (!hasPlaylistEntries(playlist)) {
+					setPlaylistPreviewError(t("playlist.noEntries"));
+					return;
+				}
+				setPlaylistInfo(playlist);
 				toast.success(
-					t("playlist.foundVideos", { count: info.playlist.entryCount }),
+					t("playlist.foundVideos", { count: playlist.entryCount }),
 				);
 			} catch (fetchError) {
+				if (!metadataRequests.isCurrentRequest(requestId)) {
+					return;
+				}
 				logger.error("Failed to fetch playlist info:", fetchError);
 				const message =
 					fetchError instanceof Error && fetchError.message
 						? fetchError.message
 						: t("playlist.previewFailed");
 				setPlaylistPreviewError(message);
-				setPlaylistInfo(null);
 				toast.error(t("playlist.previewFailed"));
 			} finally {
-				setPlaylistPreviewLoading(false);
+				if (metadataRequests.isCurrentRequest(requestId)) {
+					setPlaylistPreviewLoading(false);
+				}
 			}
 		},
-		[t],
+		[metadataRequests, t],
+	);
+
+	const handleParsePlaylistUrl = useCallback(
+		async (trimmedUrl: string) => {
+			setOpen(true);
+			setActiveTab("playlist");
+			setPlaylistUrl(trimmedUrl);
+			await fetchPlaylistInfo(trimmedUrl);
+		},
+		[fetchPlaylistInfo],
 	);
 
 	const handleParseSingleUrl = useCallback(
@@ -393,36 +416,8 @@ export function DownloadDialog({ onDownloadsChanged }: DownloadDialogProps) {
 			toast.error(t("errors.emptyUrl"));
 			return;
 		}
-		setPlaylistPreviewError(null);
-		setPlaylistPreviewLoading(true);
-		try {
-			const trimmedUrl = playlistUrl.trim();
-			const info = await orpcClient.playlist.info({
-				url: trimmedUrl,
-				settings: readOrpcDownloadSettings(),
-			});
-			setPlaylistInfo(info.playlist);
-			setSelectedEntryIds(new Set());
-			if (info.playlist.entryCount === 0) {
-				toast.error(t("playlist.noEntries"));
-				return;
-			}
-			toast.success(
-				t("playlist.foundVideos", { count: info.playlist.entryCount }),
-			);
-		} catch (fetchError) {
-			logger.error("Failed to fetch playlist info:", fetchError);
-			const message =
-				fetchError instanceof Error && fetchError.message
-					? fetchError.message
-					: t("playlist.previewFailed");
-			setPlaylistPreviewError(message);
-			setPlaylistInfo(null);
-			toast.error(t("playlist.previewFailed"));
-		} finally {
-			setPlaylistPreviewLoading(false);
-		}
-	}, [playlistUrl, t]);
+		await fetchPlaylistInfo(playlistUrl.trim());
+	}, [fetchPlaylistInfo, playlistUrl, t]);
 
 	const handleDownloadPlaylist = useCallback(async () => {
 		const trimmedUrl = playlistUrl.trim();
@@ -431,7 +426,7 @@ export function DownloadDialog({ onDownloadsChanged }: DownloadDialogProps) {
 			return;
 		}
 
-		if (!playlistInfo) {
+		if (!hasPlaylistEntries(playlistInfo) || !playlistInfo) {
 			toast.error(t("playlist.previewRequired"));
 			return;
 		}
@@ -596,6 +591,18 @@ export function DownloadDialog({ onDownloadsChanged }: DownloadDialogProps) {
 		transferToList,
 	]);
 
+	const handleOpenChange = useCallback(
+		(nextOpen: boolean) => {
+			if (!nextOpen) {
+				metadataRequests.invalidate();
+				setLoading(false);
+				setPlaylistPreviewLoading(false);
+			}
+			setOpen(nextOpen);
+		},
+		[metadataRequests],
+	);
+
 	const wasDialogOpenRef = useRef(open);
 
 	useEffect(() => {
@@ -605,6 +612,8 @@ export function DownloadDialog({ onDownloadsChanged }: DownloadDialogProps) {
 			return;
 		}
 
+		metadataRequests.invalidate();
+		setPlaylistPreviewLoading(false);
 		setUrl("");
 		setError(null);
 		setLoading(false);
@@ -629,7 +638,7 @@ export function DownloadDialog({ onDownloadsChanged }: DownloadDialogProps) {
 		setStartIndex("1");
 		setEndIndex("");
 		setSelectedEntryIds(new Set());
-	}, [open]);
+	}, [open, metadataRequests]);
 
 	const handleSingleVideoStateChange = useCallback(
 		(updates: Partial<SingleVideoState>) => {
@@ -834,7 +843,7 @@ export function DownloadDialog({ onDownloadsChanged }: DownloadDialogProps) {
 				lockDialogHeight={lockDialogHeight}
 				tabsDisabled={playlistBusy}
 				onActiveTabChange={handleActiveTabChange}
-				onOpenChange={setOpen}
+				onOpenChange={handleOpenChange}
 				open={open}
 				playlistTabContent={
 					<PlaylistDownload

@@ -16,6 +16,7 @@
     "./lib/list-marquee": "./src/lib/list-marquee.ts",
     "./lib/use-list-marquee": "./src/lib/use-list-marquee.ts",
     "./lib/shape-context": "./src/lib/shape-context.tsx",
+    "./lib/download-metadata": "./src/lib/download-metadata.ts",
     "./lib/ingest": "./src/lib/ingest.ts",
     "./lib/url-kind": "./src/lib/url-kind.ts",
     "./lib/use-add-url-interaction": "./src/lib/use-add-url-interaction.ts",
