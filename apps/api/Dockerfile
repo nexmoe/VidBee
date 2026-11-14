@@ -25,6 +25,7 @@ COPY packages/transcription/package.json packages/transcription/package.json
 
 RUN pnpm install --filter "{./apps/api}..." --frozen-lockfile
 
+COPY apps/desktop/package.json apps/desktop/package.json
 COPY apps/api apps/api
 COPY packages/db packages/db
 COPY packages/downloader-core packages/downloader-core
