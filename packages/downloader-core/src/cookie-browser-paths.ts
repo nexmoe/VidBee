@@ -95,7 +95,10 @@ export const getBrowserProfileBaseDirs = (
       return [join(homeDir, '.config', 'chromium')]
     }
     if (browser === 'brave') {
-      return [join(homeDir, '.config', 'BraveSoftware', 'Brave-Browser')]
+      return [
+        join(homeDir, '.config', 'BraveSoftware', 'Brave-Browser'),
+        join(homeDir, '.config', 'BraveSoftware', 'Brave-Origin')
+      ]
     }
     if (browser === 'vivaldi') {
       return [join(homeDir, '.config', 'vivaldi')]

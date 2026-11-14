@@ -288,16 +288,15 @@ export const normalizeBrowserCookiesSettingForYtDlp = (value?: string | null): s
     return `${browser}:${profile}`
   }
 
-  // GitHub issue #331: yt-dlp accepts either a profile name or an absolute
-  // path. Firefox profiles in non-default locations (portable/custom installs)
-  // cannot be resolved by name, so when the absolute path holds a
-  // cookies.sqlite we pass it verbatim; otherwise fall back to the basename,
-  // which keeps resolving for standard installs.
+  // Preserve absolute Chromium profile paths, including Brave Origin (#521).
+  // Firefox custom profiles still need cookies.sqlite (#331); otherwise keep
+  // the profile-name fallback for standard installs.
   const isWindowsPath = profile.includes('\\')
-  const isAbsolutePath = isWindowsPath
-    ? path.win32.isAbsolute(profile)
-    : path.posix.isAbsolute(profile)
-  if (browser === 'firefox' && isAbsolutePath && existsSync(path.join(profile, 'cookies.sqlite'))) {
+  const isAbsolutePath = path.posix.isAbsolute(profile) || path.win32.isAbsolute(profile)
+  if (
+    isAbsolutePath &&
+    (browser !== 'firefox' || existsSync(path.join(profile, 'cookies.sqlite')))
+  ) {
     return `${browser}:${profile}`
   }
 
