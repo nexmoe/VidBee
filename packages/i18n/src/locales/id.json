@@ -123,6 +123,7 @@
     "end": "Akhir",
     "endHint": "Jika dibiarkan kosong, akan diunduh sampai akhir",
     "endPlaceholder": "10:00",
+    "filenameTemplateHint": "Opsional. Biarkan kosong untuk menggunakan gaya nama file dari Pengaturan.",
     "selectLocation": "Pilih Lokasi Unduhan",
     "start": "Mulai",
     "startHint": "Jika dibiarkan kosong, akan dimulai dari awal",

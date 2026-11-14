@@ -123,6 +123,7 @@
     "end": "終了",
     "endHint": "空のままにすると最後までダウンロードされます",
     "endPlaceholder": "10:00",
+    "filenameTemplateHint": "任意。空欄にすると、設定のファイル名スタイルを使用します。",
     "selectLocation": "ダウンロード場所を選択",
     "start": "開始",
     "startHint": "空のままにすると最初から開始されます",

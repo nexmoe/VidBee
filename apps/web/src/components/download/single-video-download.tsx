@@ -9,6 +9,7 @@ import {
 	DOWNLOAD_FEEDBACK_ISSUE_TITLE,
 	FeedbackLinkButtons,
 } from "@vidbee/ui/components/ui/feedback-link-buttons";
+import { FilenameTemplateOptions } from "@vidbee/ui/components/ui/filename-template-options";
 import { Label } from "@vidbee/ui/components/ui/label";
 import {
 	RadioGroup,
@@ -36,6 +37,7 @@ export interface SingleVideoState {
 	activeTab: "video" | "audio";
 	selectedVideoFormat: string;
 	selectedAudioFormat: string;
+	customFilenameTemplate: string;
 	startTime: string;
 	endTime: string;
 	selectedContainer?: string;
@@ -785,6 +787,12 @@ export function SingleVideoDownload({
 											</div>
 										)}
 									</div>
+									<FilenameTemplateOptions
+										onChange={(value) =>
+											onStateChange({ customFilenameTemplate: value })
+										}
+										value={state.customFilenameTemplate}
+									/>
 									<TimeRangeOptions
 										endTime={endTime}
 										onEndTimeChange={(value) =>

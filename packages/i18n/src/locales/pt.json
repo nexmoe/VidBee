@@ -123,6 +123,7 @@
     "end": "Fim",
     "endHint": "Se deixado vazio, será baixado até o final",
     "endPlaceholder": "10:00",
+    "filenameTemplateHint": "Opcional. Deixe em branco para usar o estilo de nome de arquivo das Configurações.",
     "selectLocation": "Selecionar Local de Download",
     "start": "Início",
     "startHint": "Se deixado vazio, começará do início",

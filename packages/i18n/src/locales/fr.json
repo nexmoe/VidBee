@@ -123,6 +123,7 @@
     "end": "Fin",
     "endHint": "Si laissé vide, sera téléchargé jusqu'à la fin",
     "endPlaceholder": "10:00",
+    "filenameTemplateHint": "Facultatif. Laissez ce champ vide pour utiliser le style de nom de fichier des paramètres.",
     "selectLocation": "Sélectionner l'Emplacement de Téléchargement",
     "start": "Début",
     "startHint": "Si laissé vide, commencera du début",

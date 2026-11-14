@@ -123,6 +123,7 @@
     "end": "结束",
     "endHint": "如果留空，将下载到结尾",
     "endPlaceholder": "10:00",
+    "filenameTemplateHint": "选填。留空时使用“设置”中的文件名样式。",
     "selectLocation": "选择下载位置",
     "start": "开始",
     "startHint": "如果留空，将从开头开始",

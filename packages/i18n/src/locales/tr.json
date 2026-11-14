@@ -123,6 +123,7 @@
     "end": "Son",
     "endHint": "Boş bırakılırsa, sonuna kadar indirilecektir.",
     "endPlaceholder": "10:00",
+    "filenameTemplateHint": "İsteğe bağlı. Ayarlardaki dosya adı biçimini kullanmak için boş bırakın.",
     "selectLocation": "İndirme Konumunu Seç",
     "start": "Başlat",
     "startHint": "Boş bırakılırsa, baştan başlayacaktır.",

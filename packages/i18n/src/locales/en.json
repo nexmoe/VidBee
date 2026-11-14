@@ -123,6 +123,7 @@
     "end": "End",
     "endHint": "If kept empty, it will be downloaded to the end",
     "endPlaceholder": "10:00",
+    "filenameTemplateHint": "Optional. Leave blank to use the filename style from Settings.",
     "selectLocation": "Select Download Location",
     "start": "Start",
     "startHint": "If kept empty, it will start from the beginning",

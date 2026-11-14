@@ -123,6 +123,7 @@
     "end": "Ende",
     "endHint": "Wenn leer gelassen, wird bis zum Ende heruntergeladen",
     "endPlaceholder": "10:00",
+    "filenameTemplateHint": "Optional. Leer lassen, um den Dateinamenstil aus den Einstellungen zu verwenden.",
     "selectLocation": "Download-Speicherort auswählen",
     "start": "Start",
     "startHint": "Wenn leer gelassen, wird vom Anfang an gestartet",

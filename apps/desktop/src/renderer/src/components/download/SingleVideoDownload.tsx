@@ -12,6 +12,7 @@ import {
 import { TabItem, Tabs, TabsList } from '@renderer/components/ui/tabs'
 import { cn } from '@renderer/lib/utils'
 import type { OneClickQualityPreset, VideoFormat, VideoInfo } from '@shared/types'
+import { FilenameTemplateOptions } from '@vidbee/ui/components/ui/filename-template-options'
 import { TimeRangeOptions } from '@vidbee/ui/components/ui/time-range-options'
 import { useAtom } from 'jotai'
 import { ExternalLink, Loader2, Settings2 } from 'lucide-react'
@@ -28,6 +29,7 @@ export interface SingleVideoState {
   selectedVideoFormat: string
   selectedAudioFormat: string
   customDownloadPath: string
+  customFilenameTemplate: string
   startTime: string
   endTime: string
   selectedContainer?: string
@@ -647,6 +649,10 @@ export function SingleVideoDownload({
                   </div>
                 )}
               </div>
+              <FilenameTemplateOptions
+                onChange={(value) => onStateChange({ customFilenameTemplate: value })}
+                value={state.customFilenameTemplate}
+              />
               <TimeRangeOptions
                 endTime={endTime}
                 onEndTimeChange={(value) => onStateChange({ endTime: value })}

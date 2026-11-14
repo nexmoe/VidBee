@@ -123,6 +123,7 @@
     "end": "끝",
     "endHint": "비워두면 끝까지 다운로드됩니다",
     "endPlaceholder": "10:00",
+    "filenameTemplateHint": "선택 사항입니다. 비워 두면 설정의 파일 이름 스타일을 사용합니다.",
     "selectLocation": "다운로드 위치 선택",
     "start": "시작",
     "startHint": "비워두면 처음부터 시작됩니다",
