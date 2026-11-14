@@ -223,6 +223,8 @@
     "logs": {
       "live": "Registros en vivo",
       "history": "Registros guardados",
+      "copy": "Copiar registros",
+      "copied": "Registros copiados al portapapeles",
       "command": "Comando de yt-dlp",
       "empty": "Aún no hay registros.",
       "scrollPaused": "Desplazamiento en pausa"

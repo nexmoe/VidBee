@@ -235,6 +235,8 @@
     "logs": {
       "live": "Live logs",
       "history": "Saved logs",
+      "copy": "Copy logs",
+      "copied": "Logs copied to clipboard",
       "command": "yt-dlp command",
       "empty": "No logs yet.",
       "scrollPaused": "Scroll paused"

@@ -223,6 +223,8 @@
     "logs": {
       "live": "실시간 로그",
       "history": "저장된 로그",
+      "copy": "로그 복사",
+      "copied": "로그를 클립보드에 복사했습니다",
       "command": "yt-dlp 명령어",
       "empty": "아직 로그가 없습니다.",
       "scrollPaused": "스크롤 일시 중지"

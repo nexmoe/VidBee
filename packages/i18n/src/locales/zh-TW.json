@@ -223,6 +223,8 @@
     "logs": {
       "live": "即時日誌",
       "history": "已儲存日誌",
+      "copy": "複製日誌",
+      "copied": "日誌已複製到剪貼簿",
       "command": "yt-dlp 指令",
       "empty": "尚無日誌。",
       "scrollPaused": "捲動已暫停"

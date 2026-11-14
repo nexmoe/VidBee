@@ -223,6 +223,8 @@
     "logs": {
       "live": "Log langsung",
       "history": "Log tersimpan",
+      "copy": "Salin log",
+      "copied": "Log disalin ke papan klip",
       "command": "Perintah yt-dlp",
       "empty": "Belum ada log.",
       "scrollPaused": "Pengguliran dijeda"
