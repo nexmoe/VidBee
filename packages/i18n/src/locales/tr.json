@@ -223,6 +223,8 @@
     "logs": {
       "live": "Canlı günlükler",
       "history": "Kaydedilen günlükler",
+      "copy": "Günlükleri kopyala",
+      "copied": "Günlükler panoya kopyalandı",
       "command": "yt-dlp komutu",
       "empty": "Henüz kayıt yok.",
       "scrollPaused": "Kaydırma duraklatıldı"

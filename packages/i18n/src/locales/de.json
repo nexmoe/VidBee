@@ -223,6 +223,8 @@
     "logs": {
       "live": "Live-Logs",
       "history": "Gespeicherte Logs",
+      "copy": "Protokolle kopieren",
+      "copied": "Protokolle in die Zwischenablage kopiert",
       "command": "yt-dlp-Befehl",
       "empty": "Noch keine Logs.",
       "scrollPaused": "Scrollen pausiert"

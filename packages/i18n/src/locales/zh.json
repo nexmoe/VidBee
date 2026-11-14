@@ -235,6 +235,8 @@
     "logs": {
       "live": "实时日志",
       "history": "已保存日志",
+      "copy": "复制日志",
+      "copied": "日志已复制到剪贴板",
       "command": "yt-dlp 命令",
       "empty": "暂无日志。",
       "scrollPaused": "滚动已暂停"

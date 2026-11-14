@@ -223,6 +223,8 @@
     "logs": {
       "live": "Journaux en direct",
       "history": "Journaux enregistrés",
+      "copy": "Copier les journaux",
+      "copied": "Journaux copiés dans le presse-papiers",
       "command": "Commande yt-dlp",
       "empty": "Aucun journal pour le moment.",
       "scrollPaused": "Défilement en pause"

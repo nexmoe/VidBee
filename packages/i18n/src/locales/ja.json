@@ -223,6 +223,8 @@
     "logs": {
       "live": "ライブログ",
       "history": "保存済みログ",
+      "copy": "ログをコピー",
+      "copied": "ログをクリップボードにコピーしました",
       "command": "yt-dlp コマンド",
       "empty": "ログはまだありません。",
       "scrollPaused": "スクロールを一時停止"
