@@ -1,3 +1,5 @@
+import { hasDownloadableFormats } from '@vidbee/ui/lib/download-metadata'
+import i18n from 'i18next'
 import { atom } from 'jotai'
 import type { VideoInfo } from '../../../shared/types'
 import { ipcServices } from '../lib/ipc'
@@ -34,12 +36,12 @@ export const fetchVideoInfoAtom = atom(null, async (_get, set, url: string) => {
       return
     }
     set(videoInfoCommandAtom, result.ytDlpCommand)
-    if (result.info) {
+    if (result.info && hasDownloadableFormats(result.info.formats)) {
       set(currentVideoInfoAtom, result.info)
       set(currentVideoInfoSourceUrlAtom, url)
       return
     }
-    set(videoInfoErrorAtom, result.error || 'Failed to fetch video info')
+    set(videoInfoErrorAtom, result.error || i18n.t('errors.fetchInfoFailed'))
   } catch (error) {
     if (!videoInfoRequestCoordinator.isCurrentRequest(requestId)) {
       return
