@@ -18,6 +18,7 @@ COPY packages/ui/package.json packages/ui/package.json
 
 RUN pnpm install --filter "{./apps/web}..." --frozen-lockfile --ignore-scripts
 
+COPY apps/desktop/package.json apps/desktop/package.json
 COPY apps/web apps/web
 COPY packages/downloader-core packages/downloader-core
 COPY packages/i18n packages/i18n

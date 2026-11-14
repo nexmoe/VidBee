@@ -5,7 +5,7 @@ import viteReact from "@vitejs/plugin-react";
 import Icons from "unplugin-icons/vite";
 import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
-import packageJson from "./package.json" with { type: "json" };
+import releasePackage from "../desktop/package.json" with { type: "json" };
 
 const apiProxyTarget =
 	process.env.VIDBEE_API_URL_INTERNAL?.trim() || "http://localhost:3100";
@@ -38,7 +38,7 @@ const reactSsrDeps = [
 
 const config = defineConfig(({ command }) => ({
 	define: {
-		__APP_VERSION__: JSON.stringify(packageJson.version),
+		__APP_VERSION__: JSON.stringify(releasePackage.version),
 	},
 	legacy: {
 		inconsistentCjsInterop: true,
