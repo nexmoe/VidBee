@@ -5,7 +5,7 @@
 
 ## [Unreleased]
 
-## [v2.4.0](https://github.com/nexmoe/VidBee/releases/tag/v2.4.0) - 2026-11-01
+## [v2.4.0](https://github.com/nexmoe/VidBee/releases/tag/v2.4.0) - 2026-11-14
 
 ### 新增功能
 - 可以开启独立的 Agent 对话，关联资料库中的视频，在同一段对话中完成下载、字幕处理和导出。
@@ -18,6 +18,7 @@
 ### 改进与修复
 - 可以通过键盘或拖动框选多个资料库条目，统一执行管理操作。
 - 可以打开 Agent 回答中的本地文件链接，重新启动后也会保留偏好的窗口位置。
+- 安装占用的空间更小。
 
 ## [v2.3.0](https://github.com/nexmoe/VidBee/releases/tag/v2.3.0) - 2026-10-25
 

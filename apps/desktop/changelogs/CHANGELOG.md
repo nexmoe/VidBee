@@ -5,10 +5,7 @@ For full release notes, see [GitHub Releases](https://github.com/nexmoe/VidBee/r
 
 ## [Unreleased]
 
-### Fixed
-- Reduce installation size by removing duplicated runtime tools and unused development assets.
-
-## [v2.4.0](https://github.com/nexmoe/VidBee/releases/tag/v2.4.0) - 2026-11-01
+## [v2.4.0](https://github.com/nexmoe/VidBee/releases/tag/v2.4.0) - 2026-11-14
 
 ### What's New
 - Start an independent Agent conversation, attach videos from your library, and continue working across downloads, subtitles, and exports.
@@ -21,6 +18,7 @@ For full release notes, see [GitHub Releases](https://github.com/nexmoe/VidBee/r
 ### Improvements
 - Select multiple library items with the keyboard or by dragging, then manage them together.
 - Open local files linked in Agent answers and keep your preferred window position between launches.
+- VidBee takes less space to install.
 
 ## [v2.3.0](https://github.com/nexmoe/VidBee/releases/tag/v2.3.0) - 2026-10-25
 

@@ -5,7 +5,7 @@ Pour les notes de version complètes, consultez [GitHub Releases](https://github
 
 ## [Unreleased]
 
-## [v2.4.0](https://github.com/nexmoe/VidBee/releases/tag/v2.4.0) - 2026-11-01
+## [v2.4.0](https://github.com/nexmoe/VidBee/releases/tag/v2.4.0) - 2026-11-14
 
 ### Nouveautés
 - Démarrez une conversation Agent indépendante, joignez des vidéos de votre bibliothèque et poursuivez téléchargements, sous-titres et exports dans le même échange.
@@ -18,6 +18,7 @@ Pour les notes de version complètes, consultez [GitHub Releases](https://github
 ### Améliorations
 - Sélectionnez plusieurs éléments de la bibliothèque au clavier ou en traçant une zone, puis gérez-les ensemble.
 - Ouvrez les fichiers locaux liés dans les réponses d’Agent et retrouvez la position de fenêtre choisie au prochain lancement.
+- L’installation de VidBee prend moins de place.
 
 ## [v2.3.0](https://github.com/nexmoe/VidBee/releases/tag/v2.3.0) - 2026-10-25
 
