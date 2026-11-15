@@ -11,6 +11,7 @@
     "build": "vite build",
     "start": "node server.mjs",
     "preview": "vite preview",
+    "test:app-version": "node --experimental-strip-types --test src/lib/app-version.test.ts",
     "format": "biome format",
     "lint": "biome lint",
     "check": "biome check"
