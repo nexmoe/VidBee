@@ -36,6 +36,14 @@ export const AI_PROVIDER_PRESETS: readonly AiProviderPreset[] = [
     website: 'azure.microsoft.com'
   },
   {
+    id: 'cheaperinference',
+    defaultModel: 'gpt-5.4-mini',
+    needsApiKey: true,
+    requiresBaseUrl: false,
+    baseUrl: 'https://api.cheaperinference.com/v1',
+    website: 'cheaperinference.com'
+  },
+  {
     id: 'deepseek',
     defaultModel: 'deepseek-chat',
     needsApiKey: true,
