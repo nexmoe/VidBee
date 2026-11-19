@@ -5,9 +5,9 @@
  * read-only. FFmpeg stays on the system path. A daily check downloads a
  * newer official yt-dlp release when GitHub is reachable.
  */
-import { execFile } from 'node:child_process'
-import { createWriteStream, existsSync } from 'node:fs'
-import { chmod, mkdir, rename } from 'node:fs/promises'
+import { execFile, execFileSync } from 'node:child_process'
+import { createWriteStream, existsSync, statSync } from 'node:fs'
+import { chmod, mkdir, rename, rm } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import path from 'node:path'
 import { Readable } from 'node:stream'
@@ -42,7 +42,10 @@ export interface EngineStatus {
 
 let engineLanguage: string | undefined
 let engineMirror: string | undefined
-let cachedYtDlpPath: string | null = null
+const ytDlpProbes = new Map<
+  string,
+  { mtimeMs: number; ctimeMs: number; size: number; version: string | null }
+>()
 let cachedFfmpegLocation: string | null | undefined
 let latestYtDlpVersion: string | null = null
 let engineState: EngineState = 'checking'
@@ -64,14 +67,27 @@ const githubFetch: typeof fetch = createGithubMirrorFetch(
   UPDATE_TIMEOUT_MS
 )
 
-export const getYtDlpReleaseAssetName = (platform: string = process.platform): string => {
+const isMuslRuntime = (): boolean => {
+  const report = process.report.getReport() as { header: { glibcVersionRuntime?: string } }
+  return !report.header.glibcVersionRuntime
+}
+
+export const getYtDlpReleaseAssetName = (
+  platform: string = process.platform,
+  arch: string = process.arch,
+  musl = platform === 'linux' && isMuslRuntime()
+): string => {
   if (platform === 'win32') {
     return 'yt-dlp.exe'
   }
   if (platform === 'darwin') {
     return 'yt-dlp_macos'
   }
-  return 'yt-dlp_linux'
+  if (platform === 'linux' && (arch === 'x64' || arch === 'arm64')) {
+    const base = musl ? 'yt-dlp_musllinux' : 'yt-dlp_linux'
+    return arch === 'arm64' ? `${base}_aarch64` : base
+  }
+  throw new Error(`No standalone yt-dlp update asset for ${platform}/${arch}`)
 }
 
 export const compareYtDlpVersions = (left: string, right: string): number => {
@@ -123,22 +139,13 @@ const whichBinary = (name: string): string | null => {
 }
 
 export const resolveYtDlpPath = (): string => {
-  if (cachedYtDlpPath && existsSync(cachedYtDlpPath)) {
-    return cachedYtDlpPath
-  }
-  const managed = managedYtDlpPath()
-  if (existsSync(managed)) {
-    cachedYtDlpPath = managed
-    return managed
-  }
-  const envPath = trimEnv('YTDLP_PATH')
-  if (envPath && existsSync(envPath)) {
-    cachedYtDlpPath = envPath
-    return envPath
+  for (const candidate of [managedYtDlpPath(), trimEnv('YTDLP_PATH')]) {
+    if (candidate && probeYtDlpFile(candidate)) {
+      return candidate
+    }
   }
   const fromPath = whichBinary('yt-dlp')
-  if (fromPath) {
-    cachedYtDlpPath = fromPath
+  if (fromPath && probeYtDlpFile(fromPath)) {
     return fromPath
   }
   throw new Error('yt-dlp binary not found. Set YTDLP_PATH or install yt-dlp in PATH.')
@@ -152,7 +159,6 @@ export const resolveFfmpegLocation = (): string | undefined => {
   if (envPath) {
     try {
       if (existsSync(envPath)) {
-        const { statSync } = require('node:fs') as typeof import('node:fs')
         const stats = statSync(envPath)
         cachedFfmpegLocation = stats.isDirectory() ? envPath : path.dirname(envPath)
         return cachedFfmpegLocation
@@ -190,7 +196,36 @@ const resolveFfmpegBinary = (): string | null => {
 
 const parseYtDlpVersion = (output: string): string | null => {
   const match = output.match(/(\d{4}(?:\.\d+){2,})/)
-  return match?.[1] ?? output.trim().split(/\s+/)[0] ?? null
+  return match?.[1] ?? null
+}
+
+// The executor needs synchronous resolution. Cache both successful and failed
+// probes until the file changes so a persisted bad copy cannot shadow a fallback.
+const probeYtDlpFile = (binary: string): string | null => {
+  try {
+    const { mtimeMs, ctimeMs, size } = statSync(binary)
+    const cached = ytDlpProbes.get(binary)
+    if (cached?.mtimeMs === mtimeMs && cached.ctimeMs === ctimeMs && cached.size === size) {
+      return cached.version
+    }
+    let version: string | null = null
+    try {
+      const output = execFileSync(binary, ['--version'], {
+        encoding: 'utf8',
+        timeout: VERSION_TIMEOUT_MS,
+        windowsHide: true,
+        stdio: ['ignore', 'pipe', 'pipe']
+      })
+      version = parseYtDlpVersion(output)
+    } catch {
+      /* Try the next engine candidate. */
+    }
+    ytDlpProbes.set(binary, { mtimeMs, ctimeMs, size, version })
+    return version
+  } catch {
+    ytDlpProbes.delete(binary)
+    return null
+  }
 }
 
 const parseFfmpegVersion = (output: string): string | null => {
@@ -201,14 +236,12 @@ const parseFfmpegVersion = (output: string): string | null => {
 const probeYtDlpVersion = async (): Promise<{ path: string; version: string } | null> => {
   try {
     const binary = resolveYtDlpPath()
-    const output = await runCommand(binary, ['--version'], VERSION_TIMEOUT_MS)
-    const version = parseYtDlpVersion(output)
+    const version = probeYtDlpFile(binary)
     if (!version) {
       return null
     }
     return { path: binary, version }
   } catch {
-    cachedYtDlpPath = null
     return null
   }
 }
@@ -259,7 +292,7 @@ const snapshot = async (): Promise<EngineStatus> => {
 
 export const getEngineStatus = async (): Promise<EngineStatus> => snapshot()
 
-const downloadOfficialYtDlp = async (destPath: string): Promise<void> => {
+const downloadOfficialYtDlp = async (destPath: string): Promise<string> => {
   const asset = getYtDlpReleaseAssetName()
   const url = `${GITHUB_YTDLP_LATEST}/${asset}`
   const response = await githubFetch(url, {
@@ -270,11 +303,20 @@ const downloadOfficialYtDlp = async (destPath: string): Promise<void> => {
     throw new Error(`yt-dlp download failed with HTTP ${response.status}`)
   }
   await mkdir(path.dirname(destPath), { recursive: true })
-  const tmpPath = `${destPath}.part`
-  await pipeline(Readable.fromWeb(response.body as never), createWriteStream(tmpPath))
-  await rename(tmpPath, destPath)
-  if (process.platform !== 'win32') {
-    await chmod(destPath, 0o755)
+  const tmpPath = process.platform === 'win32' ? `${destPath}.part.exe` : `${destPath}.part`
+  try {
+    await pipeline(Readable.fromWeb(response.body as never), createWriteStream(tmpPath))
+    if (process.platform !== 'win32') {
+      await chmod(tmpPath, 0o755)
+    }
+    const version = parseYtDlpVersion(await runCommand(tmpPath, ['--version'], VERSION_TIMEOUT_MS))
+    if (!version) {
+      throw new Error('Updated yt-dlp did not report a version')
+    }
+    await rename(tmpPath, destPath)
+    return version
+  } finally {
+    await rm(tmpPath, { force: true })
   }
 }
 
@@ -287,17 +329,12 @@ export const updateYtDlp = async (): Promise<EngineStatus> => {
     engineError = null
     try {
       const destPath = managedYtDlpPath()
-      await downloadOfficialYtDlp(destPath)
-      cachedYtDlpPath = destPath
-      const probed = await probeYtDlpVersion()
-      if (!probed) {
-        throw new Error('Updated yt-dlp did not report a version')
-      }
-      latestYtDlpVersion = probed.version
+      const version = await downloadOfficialYtDlp(destPath)
+      latestYtDlpVersion = version
       engineState = 'up-to-date'
       log.info({
         event: 'engines',
-        message: `yt-dlp updated to ${probed.version}`,
+        message: `yt-dlp updated to ${version}`,
         meta: { path: destPath }
       })
       return snapshot()
@@ -307,7 +344,10 @@ export const updateYtDlp = async (): Promise<EngineStatus> => {
       log.warn({ event: 'engines', message: 'yt-dlp update failed', meta: { error: engineError } })
       const current = await snapshot()
       if (current.ytDlpVersion) {
-        engineState = latestYtDlpVersion ? 'update-available' : 'up-to-date'
+        engineState =
+          latestYtDlpVersion && compareYtDlpVersions(current.ytDlpVersion, latestYtDlpVersion) < 0
+            ? 'update-available'
+            : 'up-to-date'
       }
       return snapshot()
     } finally {

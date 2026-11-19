@@ -10,6 +10,7 @@
     "migrate-history": "tsx scripts/migrate-history.ts",
     "before-start": "node scripts/ensure-node-sqlite.mjs && tsx scripts/migrate-history.ts && tsx src/index.ts",
     "typecheck": "tsc --noEmit",
+    "test:engines": "tsx --test scripts/engines.test.ts",
     "check": "ultracite check && pnpm run typecheck"
   },
   "dependencies": {

@@ -3,8 +3,7 @@
  * Replaces the equivalent calls on `DownloaderCore`, which the API layer
  * no longer instantiates after NEX-131.
  */
-import { execSync, spawn } from 'node:child_process'
-import fs from 'node:fs'
+import { spawn } from 'node:child_process'
 import type {
   DownloadRuntimeSettings,
   PlaylistInfo,
@@ -16,6 +15,7 @@ import {
   buildVideoInfoArgs,
   retryTransientYtDlpNetworkError
 } from '@vidbee/downloader-core'
+import { resolveYtDlpPath } from './engines'
 
 interface RawVideoInfo {
   id?: string
@@ -64,7 +64,6 @@ interface RawPlaylistInfo {
   entries?: RawPlaylistEntry[]
 }
 
-const trim = (v?: string | null): string => v?.trim() ?? ''
 const optString = (v: unknown): string | undefined => {
   if (typeof v !== 'string') {
     return undefined
@@ -119,34 +118,6 @@ const resolveEntryUrl = (entry: RawPlaylistEntry): string | undefined => {
     }
   }
   return undefined
-}
-
-let cachedYtDlpPath: string | null = null
-const resolveYtDlpPath = (): string => {
-  if (cachedYtDlpPath && fs.existsSync(cachedYtDlpPath)) {
-    return cachedYtDlpPath
-  }
-  const env = trim(process.env.YTDLP_PATH)
-  if (env && fs.existsSync(env)) {
-    cachedYtDlpPath = env
-    return env
-  }
-  try {
-    const out = execSync(process.platform === 'win32' ? 'where yt-dlp' : 'which yt-dlp', {
-      stdio: ['ignore', 'pipe', 'ignore']
-    })
-      .toString()
-      .split(/\r?\n/)
-      .map((s) => s.trim())
-      .find((s) => s.length > 0)
-    if (out && fs.existsSync(out)) {
-      cachedYtDlpPath = out
-      return out
-    }
-  } catch {
-    /* noop */
-  }
-  throw new Error('yt-dlp binary not found. Set YTDLP_PATH or install yt-dlp in PATH.')
 }
 
 const runYtDlp = (args: string[]): Promise<string> =>
