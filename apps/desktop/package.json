@@ -81,7 +81,7 @@
     "@vidbee/task-queue": "workspace:*",
     "@vidbee/transcription": "workspace:*",
     "@videojs/react": "^10.0.0-beta.27",
-    "adm-zip": "0.6.0",
+    "adm-zip": "0.6.1",
     "better-auth": "1.7.2",
     "better-sqlite3": "^13.0.3",
     "class-variance-authority": "^0.7.1",
