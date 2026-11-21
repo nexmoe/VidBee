@@ -3,6 +3,101 @@
 Cette page ne présente que les évolutions visibles par les utilisateurs, sans détails techniques.
 Pour les notes de version complètes, consultez [GitHub Releases](https://github.com/nexmoe/VidBee/releases).
 
+## [Unreleased]
+
+## [v2.5.0](https://github.com/nexmoe/VidBee/releases/tag/v2.5.0) - 2026-11-21
+
+### Nouveautés
+- Recherchez des médias, des sous-titres enregistrés et des messages dans toute votre bibliothèque, puis accédez directement au passage ou à la conversation correspondante.
+- Les assistants IA connectés peuvent aussi rechercher dans votre bibliothèque locale et lire les sous-titres et messages correspondants.
+
+### Améliorations
+- Retrouvez les détails d’une vidéo lorsque le lien ne renvoie initialement aucune information. Les résultats d’un ancien lien ne remplacent plus votre sélection actuelle. (by @miko-agent[bot], [#526](https://github.com/nexmoe/VidBee/pull/526))
+- Sélectionnez le texte des diagnostics de téléchargement et copiez plus facilement le journal complet. (by @miko-agent[bot], [#528](https://github.com/nexmoe/VidBee/pull/528))
+- Recevez les indications adaptées lorsque votre propre fournisseur d’IA signale une erreur de paiement.
+
+## [v2.4.0](https://github.com/nexmoe/VidBee/releases/tag/v2.4.0) - 2026-11-14
+
+### Nouveautés
+- Démarrez une conversation Agent indépendante, joignez des vidéos de votre bibliothèque et poursuivez téléchargements, sous-titres et exports dans le même échange.
+- Suivez les demandes longues avec un plan concis, la progression des tâches et les médias créés au même endroit. Agent reprend automatiquement lorsque les tâches en arrière-plan se terminent.
+- Traduisez les sous-titres, exportez des sous-titres bilingues et créez des vidéos doublées localement depuis la même conversation.
+- Choisissez la transcription dans le cloud ou un modèle local et reprenez une transcription interrompue sans retraiter les passages déjà terminés.
+- Installez des compétences depuis GitHub, organisez votre bibliothèque et mentionnez directement une compétence dans un message.
+- Installez VidBee depuis le Microsoft Store, qui prend en charge les mises à jour.
+
+### Améliorations
+- Sélectionnez plusieurs éléments de la bibliothèque au clavier ou en traçant une zone, puis gérez-les ensemble.
+- Ouvrez les fichiers locaux liés dans les réponses d’Agent et retrouvez la position de fenêtre choisie au prochain lancement.
+- L’installation de VidBee prend moins de place.
+
+## [v2.3.0](https://github.com/nexmoe/VidBee/releases/tag/v2.3.0) - 2026-10-25
+
+### Améliorations
+- Les nouvelles installations activent par défaut le lancement à l’ouverture de session et masquent l’icône du Dock sur macOS ; ces deux options restent modifiables dans les réglages.
+- Les images de partage des transcriptions et des réponses IA sont plus compactes grâce à un texte légèrement réduit.
+
+## [v2.2.4](https://github.com/nexmoe/VidBee/releases/tag/v2.2.4) - 2026-10-24
+
+### Nouveautés
+- Connectez des assistants IA externes à VidBee pour gérer les téléchargements, abonnements, transcriptions et exports.
+- Poursuivez la même conversation Agent dans VidBee Desktop et dans l’extension du navigateur.
+- Téléchargez uniquement les sous-titres, sans télécharger la vidéo.
+- Enregistrez les diagrammes IA en JPG, en plus des formats SVG, PNG et du texte source Mermaid.
+
+### Améliorations
+- Les grandes bibliothèques de téléchargements et de transcriptions restent réactives ; les fichiers convertis sont plus faciles à retrouver.
+- Les titres et les couvertures apparaissent dès l’ajout à la file de téléchargement.
+- Chaque profil de navigateur conserve sa propre session de connexion lorsque l’extension utilise Desktop.
+- Les diagrammes IA et leurs commandes sont plus cohérents dans les thèmes clair et sombre.
+- Les téléchargements peuvent à nouveau démarrer dans les versions pour Mac Intel qui ne contenaient pas tous les outils nécessaires.
+
+## [v2.2.3](https://github.com/nexmoe/VidBee/releases/tag/v2.2.3) - 2026-10-11
+
+### Améliorations
+- Les modèles d’un même fournisseur IA restent groupés lorsque vous modifiez ou supprimez ce fournisseur.
+- Les réponses illustrées d’Agent n’ajoutent plus de captures d’écran inutilisées à la fin.
+
+## [v2.2.2](https://github.com/nexmoe/VidBee/releases/tag/v2.2.2) - 2026-10-11
+
+### Améliorations
+- Les conversations Agent et les demandes portant sur une transcription fonctionnent à nouveau dans l’application installée, sans échouer dès le démarrage.
+
+## [v2.2.1](https://github.com/nexmoe/VidBee/releases/tag/v2.2.1) - 2026-10-11
+
+### Améliorations
+- Les réglages du compte sont de nouveau accessibles dans la version publiée de l’application de bureau.
+
+## [v2.2.0](https://github.com/nexmoe/VidBee/releases/tag/v2.2.0) - 2026-10-11
+
+### Nouveautés
+- Choisissez FireRedASR v2 pour le chinois, l’anglais et les dialectes chinois, ou le modèle Qwen3-ASR 1.7B, plus volumineux, pour la transcription locale.
+- Choisissez Orukeet pour la transcription locale. (by @Nathan-Roll1, [#480](https://github.com/nexmoe/VidBee/pull/480))
+- Connectez-vous à votre compte VidBee et utilisez les modèles Cloud dans les conversations avec Agent.
+- Demandez à Agent de gérer les téléchargements et les abonnements, de transcrire des fichiers, ou de convertir et découper des médias.
+
+### Améliorations
+- Choisissez le format de conteneur vidéo pour télécharger une liste de lecture. (by @jabrailkhalil, [#469](https://github.com/nexmoe/VidBee/pull/469))
+- Conservez les vidéos WebM même si la pochette ne peut pas être intégrée, ainsi que les fichiers de sous-titres des téléchargements par abonnement. ([#487](https://github.com/nexmoe/VidBee/pull/487), [#484](https://github.com/nexmoe/VidBee/pull/484))
+- Le compte se rafraîchit moins souvent et les informations sur les modèles Cloud disponibles sont réutilisées entre les conversations. ([#495](https://github.com/nexmoe/VidBee/pull/495))
+- Les titres modifiés pendant une réponse d’Agent sont enregistrés ; le chronomètre s’arrête pendant une demande de confirmation et la capacité Cloud est libérée à l’arrêt de la réponse. ([#495](https://github.com/nexmoe/VidBee/pull/495))
+- Une confirmation est demandée avant de modifier des réglages protégés ou de supprimer du contenu, y compris dans les dossiers hors bibliothèque accessibles par un lien symbolique. ([#495](https://github.com/nexmoe/VidBee/pull/495))
+- Les exports Markdown et PDF conservent les liens vidéo d’origine et les captures d’articles montrent précisément les images demandées, même déjà chargées. ([#495](https://github.com/nexmoe/VidBee/pull/495))
+- La fusion ou la conversion d’un média ne provoque plus un échec du téléchargement après une minute. ([#462](https://github.com/nexmoe/VidBee/issues/462), [#488](https://github.com/nexmoe/VidBee/pull/488))
+- Les sélecteurs de format des versions bureau et web conservent les vidéos HLS en haute résolution et les pistes audio de langues différentes. ([#443](https://github.com/nexmoe/VidBee/issues/443), [#488](https://github.com/nexmoe/VidBee/pull/488))
+- Les vidéos RSS peuvent être ajoutées à nouveau après suppression de leur téléchargement ; leur lien peut aussi être copié depuis le menu. ([#479](https://github.com/nexmoe/VidBee/issues/479), [#485](https://github.com/nexmoe/VidBee/pull/485))
+- Les fichiers Qwen3-ASR incomplets sont réparés ou signalés clairement avant la transcription. Les installations simultanées ne suppriment plus les fichiers des autres, même en cas d’annulation. ([#473](https://github.com/nexmoe/VidBee/issues/473), [#486](https://github.com/nexmoe/VidBee/pull/486))
+- Reprenez les sections inachevées d’un article et capturez les images pertinentes pendant la rédaction.
+- Les réponses terminées d’Agent s’arrêtent rapidement et les longs historiques de réflexion restent lisibles.
+- Les images partagées et les documents exportés conservent la durée de réflexion et le pied de page VidBee.
+- L’état actif d’un abonnement est conservé lors de l’enregistrement des options de téléchargement automatique.
+- Les sous-titres disponibles de la plateforme sont importés avant la transcription locale.
+- Le solde du compte et les crédits en attente de restitution s’affichent plus sûrement.
+- Les téléchargements en double sont évités, même pour des demandes simultanées ou des fichiers déjà enregistrés sur cet ordinateur.
+- Les files de transcription continuent d’avancer et conservent le temps écoulé après un rechargement.
+- L’historique de raisonnement d’Agent est conservé et l’export de Markdown en PDF est amélioré.
+- Les entrées de téléchargement peuvent être supprimées même si leurs fichiers ont déjà disparu.
+
 ## [v2.1.0](https://github.com/nexmoe/VidBee/releases/tag/v2.1.0) - 2026-08-30
 
 ### Nouveautés
@@ -77,6 +172,41 @@ En 1.x, VidBee enregistrait le fichier et s'arrêtait là. 2.0 continue : transc
 - La transcription fonctionne aussi sur les Mac Intel.
 - Téléchargements et installations auto-hébergées plus fiables.
 
+## [v1.3.14](https://github.com/nexmoe/VidBee/releases/tag/v1.3.14) - 2026-07-05
+
+### Améliorations
+- La prise en charge des téléchargements est actualisée pour suivre les changements récents des sites compatibles.
+
+## [v1.3.13](https://github.com/nexmoe/VidBee/releases/tag/v1.3.13) - 2026-06-20
+
+### Nouveautés
+- Utilisez VidBee sous Windows sans installation, avec la possibilité de conserver les données et les téléchargements à côté de l’application. (by @jabrailkhalil, [#403](https://github.com/nexmoe/VidBee/pull/403))
+- Consultez les journaux d’un téléchargement en cours et retrouvez-les dans l’historique.
+
+### Améliorations
+- Coller un lien de playlist ou de chaîne YouTube ouvre automatiquement les options de playlist.
+- Changer de lien ne lance plus le téléchargement de la vidéo précédemment sélectionnée.
+- Annuler un téléchargement sous Windows l’arrête complètement ; les cookies de Firefox sont reconnus plus sûrement.
+- Un sous-titre facultatif indisponible ne bloque plus les téléchargements Twitch ; un autre format est essayé si la combinaison souhaitée est absente.
+- L’application peut à nouveau démarrer après son installation avec le paquet Debian pour Linux.
+
+## [v1.3.12](https://github.com/nexmoe/VidBee/releases/tag/v1.3.12) - 2026-06-20
+
+### Nouveautés
+- Choisissez les mises à jour stables ou de préversion dans À propos et continuez à recevoir celles du canal sélectionné.
+
+## [v1.3.11](https://github.com/nexmoe/VidBee/releases/tag/v1.3.11) - 2026-06-19
+
+### Nouveautés
+- Choisissez MP4, MKV, WebM ou le format d’origine pour les téléchargements en un clic.
+- Appuyez sur Ctrl+V ou Cmd+V pour ouvrir l’ajout de téléchargement avec le lien copié.
+
+### Améliorations
+- Les indications sont plus claires lorsqu’un téléchargement nécessite des cookies, une connexion au site ou un accès réseau fonctionnel.
+- Les téléchargements longs et les grandes playlists ne font plus planter l’application.
+- Certaines anciennes installations 1.3 peuvent à nouveau démarrer ; la détection des outils de téléchargement sur macOS est améliorée.
+- La prise en charge des téléchargements est actualisée pour suivre les changements récents des sites compatibles.
+
 ## [v1.3.10](https://github.com/nexmoe/VidBee/releases/tag/v1.3.10) - 2026-04-11
 ### Ameliorations
 - Telechargement en un clic active par defaut pour demarrer plus vite des la premiere utilisation.
@@ -112,6 +242,11 @@ En 1.x, VidBee enregistrait le fichier et s'arrêtait là. 2.0 continue : transc
 - Ajout d'une notification de mise à jour lorsque la version est obsolète
 - Intégration de l'analytique Rybbit
 - Amélioration des détails de l'interface de téléchargement
+
+## [v1.3.5](https://github.com/nexmoe/VidBee/releases/tag/v1.3.5) - 2026-03-18
+
+### Améliorations
+- La prise en charge des téléchargements est actualisée pour suivre les changements récents des sites compatibles.
 
 ## [v1.3.4](https://github.com/nexmoe/VidBee/releases/tag/v1.3.4) - 2026-03-14
 ### Corrections de bugs

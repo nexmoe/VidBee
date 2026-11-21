@@ -1,0 +1,23 @@
+extends: ./electron-builder.yml
+win:
+  target:
+    - target: appx
+      arch:
+        - x64
+appx:
+  identityName: Nexmoe.VidBee
+  publisher: CN=D23BB833-5C9D-4C6D-80C1-B479A01E5645
+  publisherDisplayName: Nexmoe
+  applicationId: VidBee
+  displayName: VidBee
+  artifactName: vidbee-${version}-store-${arch}.msix
+  languages:
+    - en-US
+  minVersion: 10.0.19041.0
+  maxVersionTested: 10.0.26100.0
+  backgroundColor: transparent
+  showNameOnTiles: false
+  capabilities:
+    - internetClient
+    - runFullTrust
+  electronUpdaterAware: false

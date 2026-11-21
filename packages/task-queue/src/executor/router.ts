@@ -2,7 +2,7 @@
  * Routes a task attempt to the executor registered for its kind.
  *
  * The kernel stays kind-agnostic: download and transcription logic live in
- * host-supplied executors. Only download kinds use the default executor.
+ * host-supplied executors. Only media download kinds use the default executor.
  */
 import { isDownloadTaskKind, type TaskKind } from '../types'
 import type { Executor, ExecutorContext, ExecutorEvents, ExecutorRun } from './index'
@@ -21,9 +21,10 @@ export class ExecutorRouter implements Executor {
     this.byKind = opts.byKind ?? {}
   }
 
-  /** Route registered kinds and reject missing non-download executors. */
+  /** Route registered kinds and require a dedicated executor for subtitle-only downloads. */
   run(ctx: ExecutorContext, events: ExecutorEvents): ExecutorRun {
-    if (!(this.byKind[ctx.input.kind] || isDownloadTaskKind(ctx.input.kind))) {
+    const useDefault = isDownloadTaskKind(ctx.input.kind) && ctx.input.kind !== 'subtitles'
+    if (!(this.byKind[ctx.input.kind] || useDefault)) {
       throw new Error(`This host has no executor for ${ctx.input.kind} tasks`)
     }
     const executor = this.byKind[ctx.input.kind] ?? this.defaultExecutor

@@ -2,9 +2,17 @@ import type { FilenameStyle } from '@vidbee/downloader-core/filename-style'
 import type { OneClickContainerOption } from '@vidbee/downloader-core/format-preferences'
 import { DEFAULT_SUBTITLE_LANGUAGES } from '@vidbee/downloader-core/subtitle-languages'
 import { defaultLanguageCode, type LanguageCode } from '@vidbee/i18n/languages'
-import type { TaskCreationMetadata, TaskKind } from '@vidbee/task-queue'
+import type { SubscriptionDownloadPreferences } from '@vidbee/subscriptions-core/types'
+import type { DownloadCookieSource, TaskCreationMetadata, TaskKind } from '@vidbee/task-queue'
 import type { AsrTierId } from '@vidbee/transcription/asr'
+import {
+  DEFAULT_CLOUD_TRANSCRIPTION_MODEL,
+  type TranscriptionProvider
+} from '@vidbee/transcription/cloud'
 import type { DownloadMirror } from '@vidbee/transcription/download-mirrors'
+import { type AgentPermissionMode, DEFAULT_AGENT_PERMISSION_MODE } from '../agent-permissions'
+import type { ExtensionCookieSourcePreference } from '../extension-cookies'
+import { DEFAULT_TTS_MODEL_ID, type TtsModelId } from '../tts-models'
 
 export type {
   YtDlpKernelPreparationStep,
@@ -70,6 +78,9 @@ export type DownloadStatus =
   | 'cancelled'
 
 export interface DownloadItem {
+  cookieSources?: DownloadCookieSource[]
+  /** Historical admission settings, never evidence of the actual executed source. */
+  configuredCookieSources?: DownloadCookieSource[]
   id: string
   url: string
   title: string
@@ -141,6 +152,9 @@ export interface SubscriptionFeedItem {
 }
 
 export interface DownloadHistoryItem {
+  cookieSources?: DownloadCookieSource[]
+  /** Historical admission settings, never evidence of the actual executed source. */
+  configuredCookieSources?: DownloadCookieSource[]
   id: string
   url: string
   title: string
@@ -268,7 +282,7 @@ export type SubscriptionStatus = 'idle' | 'checking' | 'up-to-date' | 'failed'
 
 export const SUBSCRIPTION_DUPLICATE_FEED_ERROR = 'SUBSCRIPTION_DUPLICATE_FEED_URL'
 
-export interface SubscriptionRule {
+export interface SubscriptionRule extends SubscriptionDownloadPreferences {
   id: string
   title: string
   sourceUrl: string
@@ -300,7 +314,7 @@ export interface SubscriptionResolvedFeed {
   platform: SubscriptionPlatform
 }
 
-export interface SubscriptionCreatePayload {
+export interface SubscriptionCreatePayload extends SubscriptionDownloadPreferences {
   sourceUrl: string
   feedUrl: string
   platform: SubscriptionPlatform
@@ -313,7 +327,7 @@ export interface SubscriptionCreatePayload {
   enabled?: boolean
 }
 
-export interface SubscriptionUpdatePayload {
+export interface SubscriptionUpdatePayload extends SubscriptionDownloadPreferences {
   title?: string
   sourceUrl?: string
   feedUrl?: string
@@ -337,6 +351,8 @@ export interface AppSettings {
   downloadWithoutChannelSubfolders: boolean
   browserForCookies: string
   cookiesPath: string
+  /** Remember extension profiles in cookie priority order, including offline sources. */
+  extensionCookieSources: ExtensionCookieSourcePreference[]
   proxy: string
   configPath: string
   language: LanguageCode
@@ -367,13 +383,14 @@ export interface AppSettings {
   autoTranscribeAfterDownload: boolean
   maxConcurrentTranscriptions: number
   asrTier: AsrTierId
+  ttsModelId: TtsModelId
+  transcriptionProvider: TranscriptionProvider
+  cloudTranscriptionModelId: string
   /** Prefer ModelScope / GitHub proxies when GitHub is blocked or auto-detected as China. */
   downloadMirror: DownloadMirror
   lastSeenWhatsNew: string
-  /** How management tools run: hidden, ask first, or autonomous. */
-  agentManagementTools: 'off' | 'ask' | 'auto'
-  /** Max simultaneous local-provider agent runs. Cloud uses the profile cap. */
-  agentMaxConcurrentRuns: number
+  /** Whether tool operations use manual approval, model review, or full access. */
+  agentManagementTools: AgentPermissionMode
 }
 
 export const DEFAULT_SUBSCRIPTION_FILENAME_TEMPLATE = '%(uploader)s/%(title)s.%(ext)s'
@@ -384,6 +401,7 @@ export const defaultSettings: AppSettings = {
   downloadWithoutChannelSubfolders: false,
   browserForCookies: 'none',
   cookiesPath: '',
+  extensionCookieSources: [],
   proxy: '',
   configPath: '',
   language: defaultLanguageCode,
@@ -393,8 +411,8 @@ export const defaultSettings: AppSettings = {
   oneClickQuality: 'best',
   oneClickContainer: 'auto',
   closeToTray: true,
-  hideDockIcon: false,
-  launchAtLogin: false,
+  hideDockIcon: true,
+  launchAtLogin: true,
   autoUpdate: true,
   subscriptionOnlyLatestDefault: true,
   enableAnalytics: true,
@@ -414,8 +432,10 @@ export const defaultSettings: AppSettings = {
   autoTranscribeAfterDownload: true,
   maxConcurrentTranscriptions: 1,
   asrTier: 'minimal',
+  ttsModelId: DEFAULT_TTS_MODEL_ID,
+  transcriptionProvider: 'local',
+  cloudTranscriptionModelId: DEFAULT_CLOUD_TRANSCRIPTION_MODEL,
   downloadMirror: 'auto',
   lastSeenWhatsNew: '',
-  agentManagementTools: 'ask',
-  agentMaxConcurrentRuns: 2
+  agentManagementTools: DEFAULT_AGENT_PERMISSION_MODE
 }

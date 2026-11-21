@@ -130,7 +130,7 @@ function AgentAttachment({
   )
 }
 
-/** Render verified artifact references inline and retain unreferenced outputs below the answer. */
+/** Render selected inline media or standalone attachments when the answer has no selections. */
 export function AgentResponseContent({
   text,
   artifacts,

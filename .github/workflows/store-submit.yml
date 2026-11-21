@@ -1,0 +1,48 @@
+name: Submit Microsoft Store package
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Release run that uploaded microsoft-store-package
+        required: true
+        type: string
+
+# Share the release workflow's Store lock so two submissions cannot start together.
+concurrency:
+  group: microsoft-store-9MVHDX4ZBPHS
+  cancel-in-progress: false
+
+jobs:
+  submit:
+    if: vars.MSSTORE_PUBLISH_ENABLED == 'true'
+    runs-on: windows-latest
+    timeout-minutes: 40
+    permissions:
+      actions: read
+      contents: read
+    env:
+      MSSTORE_APP_ID: 9MVHDX4ZBPHS
+      MSSTORE_TENANT_ID: ${{ secrets.MSSTORE_TENANT_ID }}
+      MSSTORE_SELLER_ID: ${{ secrets.MSSTORE_SELLER_ID }}
+      MSSTORE_CLIENT_ID: ${{ secrets.MSSTORE_CLIENT_ID }}
+      MSSTORE_CLIENT_SECRET: ${{ secrets.MSSTORE_CLIENT_SECRET }}
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v4
+
+      - name: Download verified Store package
+        uses: actions/download-artifact@v4
+        with:
+          name: microsoft-store-package
+          path: store-package
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Submit the package for certification
+        shell: pwsh
+        run: |
+          $packages = @(Get-ChildItem store-package/*-store-*.msix -File)
+          if ($packages.Count -ne 1) { throw 'Expected exactly one verified Microsoft Store package.' }
+          python .github/scripts/submit-microsoft-store.py $packages[0].FullName
+          if ($LASTEXITCODE -ne 0) { throw 'Microsoft Store submission failed. Check Partner Center before retrying.' }

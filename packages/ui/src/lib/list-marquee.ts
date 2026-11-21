@@ -1,5 +1,4 @@
-export const LIST_MARQUEE_HOLD_MS = 200
-export const LIST_MARQUEE_MOVE_PX = 4
+export const LIST_MARQUEE_MOVE_PX = 8
 export const LIST_MARQUEE_IGNORE_SELECTOR =
   'a, button, input, textarea, select, [role="checkbox"], [data-marquee-ignore]'
 

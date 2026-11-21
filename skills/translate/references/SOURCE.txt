@@ -1,0 +1,45 @@
+VideoLingo prompt provenance
+
+Upstream: https://github.com/Huanshere/VideoLingo
+Revision: 01f843492759be9bbfd1a5cb697b799cc9de1609
+File: core/prompts.py
+SHA-256: 581370e1c91f90285015bc50709ead89f3a51d95e9461fd40ac4cddf9d1c048b
+License: Apache-2.0 (full text in ../assets/VideoLingo-LICENSE).
+
+The original nine template families adapt all nine prompt-producing functions in that source file. Python f-string substitutions become named input slots. The original roles, tasks, translation principles, review criteria, split alternatives and trim examples are retained. align.txt now extends the single alignment into two candidates as described below. Expressiveness requests brief editorial findings instead of private reasoning. Bindings and validation notes describe VidBee-specific tool, storage and timestamp constraints.
+
+Orchestration also follows core/_4_1_summarize.py, core/_4_2_translate.py, core/translate_lines.py and core/_5_split_sub.py at this revision: theme plus glossary; roughly 600 source characters or 10 lines per batch; previous 3/next 2 lines of context; direct then optional reflective translation; at most 3 attempts; faithful-result fallback for failed polishing; matching nonempty split/alignment parts.
+
+subtitle-constraints.txt adapts the actual segmentation, display-length and timing policies beyond the prompt templates. The inspected local checkout is at the same revision; these constraint sources have no working-tree changes. SHA-256:
+  config.yaml: 2967eee3d9f7a59fb7b42ec77905fb2068e2e098b500707c92e3bd6dd3091273
+  core/_3_2_split_meaning.py: 361cbbe8aebdc723f57ee84121d1ef1123a1f2e547b7b7f06c58119d6a0727a0
+  core/_4_2_translate.py: cb9f410ed4553976c1385786f907953843fc09abfcb744b2decc599b49895be5
+  core/_5_split_sub.py: dde160b6ee9fbed445bdd5adb5a194c715e2458488a4793a615a4464e454d8cd
+  core/_6_gen_sub.py: 222402f1401a5ee50ad81fe1cc726ea8d5ffed404afe053d8b306896da082c3d
+  core/_8_1_audio_task.py: abd6e2523e9a890ffff3a7937e1c211f8ddbebf28500f88d9c4729d9f397cec1
+  core/_8_2_dub_chunks.py: 581b35a47cb290a6689aa60779a7901d56f8db92821dd68e984ee0d1f591964f
+  core/spacy_utils/split_by_mark.py: 6bac388cb19e1d4cdef0f4da7b1b5456e5c012f5d4cd5dbde230022c2e104e1f
+  core/spacy_utils/split_by_comma.py: 2a0a2ce5a30d0a27437e799314822d560f0f6bca0bc3ca1f169134c32141f412
+  core/spacy_utils/split_by_connector.py: 51da295940eedf343b4c5aec19bef7b8e6ded601f429747bd52305dde89e1de6
+  core/spacy_utils/split_long_by_root.py: 2dccafa27a64ebc6569a4aabd775ee1e0d890e7860e3d858c535a367e3762a16
+
+The policy preserves the 20-word semantic target, 75-character source budget, 1.2 target multiplier, implemented Unicode weights, two-way split alternatives, mechanical fallback, matched bilingual parts and at most three split/recheck rounds. It distinguishes these from translation batching and prompt-validation retries. The stale calc_len comment is not used as the weight definition.
+
+VidBee adaptations are explicit: split parts normally become display rows inside unchanged cue intervals; new intervals need exact source word timing; saving the target does not reflow the read-only original; unresolved widths are handed back instead of being treated as validated. Upstream sub-second gap filling, 2.5-second audio cue merging/extension and 1.5-second chunk tolerance are documented but not applied. The upstream 3.5-second conditional voiceover trim and 1/1.2/1.4 speed settings are audio policy, not display requirements; VidBee keeps its actual dubbing-tool fit checks and supported correction paths. These instructions do not add programmatic subtitle-width enforcement.
+
+VidBee uses native skill reads, existing notes, transcript timestamps and add_subtitles. It does not run the upstream Python application, Excel intermediates or its task runner. All upstream brand-role wording is prompt text, not a claim of certification or affiliation.
+
+Pro-informed VidBee extensions
+
+Reference checkout: VideoLingoPro
+Revision: dcb707f10978b0f088b1c334985155b531f32c8a
+Inspected files (SHA-256):
+  core/prompts.py: 97252e2f8cb16ca0805e37c08cd37a5bc7823c41ebf9ae2bf3f1c45780ca1d67
+  core/_5_split_sub.py: e80528b3ee42a9670e73d4ba37f1a57b6149ceae0fc9d7ed40350473c8c27d82
+  core/text_guard.py: 0963491254cbbd740c09b5630c30086b6d0858aae45879ab18b5c0c56c0b4690
+
+The following are VidBee-authored instruction changes informed by observed Pro behavior, not a copy of the Pro application or an assertion about its license:
+- align.txt compares align1/align2, validates the chosen candidate and tries the other candidate before failing. Both candidates retain the existing indexed source/target schema. Punctuation-only target parts are rejected.
+- subtitle-constraints.txt reconstructs each source cue and checks exact text before saving. Unlike Pro's diagnostic-only normalized-text guard, the Agent must reject a changed source candidate; this remains an instruction-driven check, not a new backend validator.
+- number-to-text.txt is an additional VidBee-authored prompt for same-language, context-sensitive numeric pronunciation, preserving identifiers, units and significant digits. It uses the converted field and returns sparse speechOverrides bound to exact saved cues.
+- create_dubbed_video consumes separate spoken variants, retains display subtitles and source timing, and supports bounded meaning-preserving spoken repairs after real fitting errors. It does not adopt Pro's fuzzy time mapping or unbounded effective tempo. Actual cue binding and audio fit are enforced by Desktop; language quality remains the Agent's responsibility.

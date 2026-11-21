@@ -83,6 +83,8 @@ export function ImageWithPlaceholder({
       <img
         alt={alt}
         className={cn('h-full w-full object-cover', imgClassName, isLoading && 'opacity-0')}
+        decoding="async"
+        loading="lazy"
         onError={handleError}
         onLoad={handleLoad}
         ref={imageRef}

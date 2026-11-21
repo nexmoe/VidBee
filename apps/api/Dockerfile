@@ -13,6 +13,7 @@ RUN corepack enable
 WORKDIR /app
 
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY patches patches
 COPY apps/api/package.json apps/api/package.json
 COPY packages/db/package.json packages/db/package.json
 COPY packages/downloader-core/package.json packages/downloader-core/package.json
@@ -34,7 +35,7 @@ COPY packages/task-queue packages/task-queue
 COPY packages/transcription packages/transcription
 
 RUN pnpm --filter ./apps/api run build
-RUN pnpm --filter ./apps/api deploy --prod --legacy /prod/api
+RUN pnpm --filter ./apps/api deploy --prod --legacy --config.allowUnusedPatches=true /prod/api
 
 FROM node:22-alpine AS runner
 

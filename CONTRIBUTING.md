@@ -60,31 +60,20 @@ apps/desktop/src/
 - Use `pnpm build:unpack` to generate unpacked directories under `apps/desktop/dist/` for manual inspection.
 - Bundle `yt-dlp` under `apps/desktop/resources/` and `ffmpeg/ffprobe` under `apps/desktop/resources/ffmpeg/` before packaging so merges and audio extraction work out of the box.
 
-## Releasing & Update Channels
+## Releasing
 
-VidBee ships two auto-update channels. Auto-updates use the GitHub provider
-(`apps/desktop/electron-builder.yml`); electron-builder derives the channel from the
-version's prerelease label, so the tag is the single source of truth.
+VidBee publishes stable releases with `pnpm release` and `vX.Y.Z` tags. Installed apps
+automatically follow the stable `latest` channel through the GitHub provider configured in
+`apps/desktop/electron-builder.yml`, which emits `latest*.yml` update metadata.
 
-| Channel | Lane | Command | Tag / version | electron-builder output | GitHub release |
-| --- | --- | --- | --- | --- | --- |
-| Stable | `latest` | `pnpm release` | `vX.Y.Z` | `latest*.yml` | normal release |
-| Preview | `preview` | `pnpm release:preview` | `vX.Y.Z-preview.N` | `preview*.yml` | prerelease |
-
-- Both commands run `pnpm run check` and then `bumpp`, which bumps `apps/desktop/package.json`,
-  commits, tags, and pushes. The tag push triggers `.github/workflows/release.yml`, which builds
-  every platform, publishes the GitHub release (marked **prerelease** for `-preview.` tags), and
-  notifies Cloudflare Pages for stable releases only.
-- Before building, CI runs `apps/desktop/scripts/stamp-release.mjs` (see `build.yml`): it stamps
-  the tag's version into `package.json` and, for `-preview.` tags, sets the electron-builder
-  publish channel so the build emits `preview*.yml` instead of `latest*.yml`. (The GitHub
-  provider does not derive the channel from the version on its own, so this is required.)
+- The release command runs `pnpm run check` and then `bumpp`, which bumps
+  `apps/desktop/package.json`, commits, tags, and pushes. The tag push triggers
+  `.github/workflows/release.yml`, which builds every platform, publishes the GitHub release,
+  and notifies Cloudflare Pages. Tags containing a prerelease suffix do not trigger this workflow.
+- Before building, CI runs `apps/desktop/scripts/stamp-release.mjs` (see `build.yml`) to stamp
+  the tag's version into `package.json`.
 - A manual `workflow_dispatch` run of the release workflow is a build-only smoke test: it
   produces artifacts but does **not** publish a release (no tag).
-
-Installed apps always follow the stable `latest` channel. The in-app Preview channel opt-in is
-retired. Preview tags still publish GitHub prereleases for maintainers; they are not offered as
-an auto-update channel.
 
 ## Working on Changes
 - Keep each pull request focused on a single problem or feature.

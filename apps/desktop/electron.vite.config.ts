@@ -1,4 +1,4 @@
-import { readFileSync, realpathSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, join, resolve } from 'node:path'
 import tailwindcss from '@tailwindcss/vite'
@@ -14,39 +14,31 @@ const lobeIconsDir = join(
   dirname(require.resolve('@lobehub/icons-static-svg/package.json')),
   'icons'
 )
-const streamdownMermaidDir = dirname(
-  realpathSync(join(import.meta.dirname, 'node_modules/@streamdown/mermaid/package.json'))
-)
-const mermaidRoot = dirname(
-  require.resolve('mermaid/package.json', {
-    paths: [dirname(streamdownMermaidDir)]
-  })
-)
-const mermaidBundledEntry = join(mermaidRoot, 'dist/mermaid.esm.min.mjs')
-const beautifulMermaidDir = dirname(
-  realpathSync(join(import.meta.dirname, 'node_modules/beautiful-mermaid/package.json'))
-)
-const elkBundledEntry = require.resolve('elkjs/lib/elk.bundled.js', {
-  paths: [dirname(beautifulMermaidDir)]
-})
 
 const bundledWorkspacePackages = [
+  '@modelcontextprotocol/sdk',
   '@vidbee/db',
   '@vidbee/downloader-core',
   '@vidbee/i18n',
+  '@vidbee/ui',
   '@vidbee/logger',
   '@vidbee/task-queue',
   '@vidbee/subscriptions-core',
   '@vidbee/transcription',
   '@earendil-works/pi-ai',
+  '@earendil-works/pi-durable',
+  '@earendil-works/chord',
   '@earendil-works/pi-agent-core',
-  '@earendil-works/pi-telemetry'
+  '@earendil-works/pi-telemetry',
+  'zod'
 ]
 const nativeRuntimeExternals = ['electron', 'better-sqlite3', 'sherpa-onnx-node'] as const
 const nativeRuntimeExternalMatchers: Array<string | RegExp> = [
   ...nativeRuntimeExternals,
   /^electron\//,
-  /^@earendil-works\/pi-coding-agent(?:\/|$)/,
+  /^@gotgenes\/pi-permission-system(?:\/|$)/,
+  /^@mzwing\/pi-permission-auto-review(?:\/|$)/,
+  /^jiti(?:\/|$)/,
   /^sherpa-onnx-/
 ]
 
@@ -103,13 +95,17 @@ export default defineConfig(({ mode }) => {
             'transcription-worker': resolve(
               import.meta.dirname,
               '../../packages/transcription/src/worker/entry.ts'
-            )
+            ),
+            'speech-worker': resolve(import.meta.dirname, 'src/main/lib/local-speech-worker.ts')
           },
           output: {
             format: 'cjs',
-            entryFileNames: '[name].js'
+            entryFileNames: '[name].js',
+            // Runtime helpers resolve preload and worker paths relative to the main output directory.
+            chunkFileNames: '[name]-[hash].js'
           },
-          external: nativeRuntimeExternalMatchers
+          // The GA4 transport reads renderer-bootstrap.js beside its installed module.
+          external: [...nativeRuntimeExternalMatchers, /^electron-ga4-telemetry(?:\/|$)/]
         },
         externalizeDeps: {
           exclude: bundledWorkspacePackages
@@ -127,7 +123,7 @@ export default defineConfig(({ mode }) => {
           }
         },
         {
-          name: 'assert-transcription-worker-isolation',
+          name: 'assert-native-worker-isolation',
           generateBundle(_options, bundle) {
             const main = Object.values(bundle).find(
               (item) => item.type === 'chunk' && item.fileName === 'index.js'
@@ -145,23 +141,24 @@ export default defineConfig(({ mode }) => {
                 'main process must not bundle electron or better-sqlite3; keep them on rollupOptions.external'
               )
             }
-            const worker = Object.values(bundle).find(
-              (item) =>
-                item.type === 'chunk' &&
-                (item.fileName === 'transcription-worker.js' ||
-                  item.fileName === 'transcription-worker.mjs')
-            )
-            const code = worker && 'code' in worker ? worker.code : ''
-            if (!code) {
-              throw new Error('transcription-worker bundle is missing')
-            }
-            if (
-              code.includes('require("./index.js")') ||
-              code.includes('@electron-toolkit/utils')
-            ) {
-              throw new Error(
-                'transcription-worker must not load Electron main; keep it on rollupOptions.input, not lib.entry'
+            for (const name of ['transcription-worker', 'speech-worker']) {
+              const worker = Object.values(bundle).find(
+                (item) =>
+                  item.type === 'chunk' &&
+                  (item.fileName === `${name}.js` || item.fileName === `${name}.mjs`)
               )
+              const code = worker && 'code' in worker ? worker.code : ''
+              if (!code) {
+                throw new Error(`${name} bundle is missing`)
+              }
+              if (
+                code.includes('require("./index.js")') ||
+                code.includes('@electron-toolkit/utils')
+              ) {
+                throw new Error(
+                  `${name} must not load Electron main; keep it on rollupOptions.input, not lib.entry`
+                )
+              }
             }
           }
         }
@@ -180,13 +177,20 @@ export default defineConfig(({ mode }) => {
       build: {
         sourcemap: true,
         externalizeDeps: {
-          exclude: bundledWorkspacePackages
+          exclude: [...bundledWorkspacePackages, 'electron-ga4-telemetry']
         }
       }
     },
     renderer: {
       server: portlessUrl
-        ? { host: '127.0.0.1', port: Number(process.env.PORT), strictPort: true }
+        ? {
+            host: '127.0.0.1',
+            port: Number(process.env.PORT),
+            strictPort: true,
+            allowedHosts: process.env.PORTLESS_TAILSCALE_URL
+              ? [new URL(process.env.PORTLESS_TAILSCALE_URL).hostname]
+              : []
+          }
         : undefined,
       base: './',
       define,
@@ -203,11 +207,6 @@ export default defineConfig(({ mode }) => {
           '@vidbee/downloader-core/cookie-setup',
           '@vidbee/downloader-core/filename-style',
           '@vidbee/downloader-core/format-preferences',
-          // mermaid.core.mjs pulls CJS named exports (`sanitizeUrl`) that Vite 8
-          // serves raw. Alias mermaid to the bundled ESM build instead of
-          // prebundling mermaid (Rolldown then loses chunk metadata).
-          'mermaid',
-          '@streamdown/mermaid',
           'katex'
         ],
         include: [
@@ -219,20 +218,10 @@ export default defineConfig(({ mode }) => {
           '@streamdown/code',
           '@streamdown/math',
           '@streamdown/cjk',
-          '@shadcn/react/message-scroller',
-          // CJS UMD; Vite 8 otherwise serves it as ESM without a default export.
-          'beautiful-mermaid',
-          'elkjs/lib/elk.bundled.js'
+          '@shadcn/react/message-scroller'
         ]
       },
-      resolve: {
-        ...rendererResolve,
-        alias: {
-          ...rendererResolve.alias,
-          mermaid: mermaidBundledEntry,
-          'elkjs/lib/elk.bundled.js': elkBundledEntry
-        }
-      },
+      resolve: rendererResolve,
       plugins: [
         {
           name: 'dev-csp-inline-scripts',

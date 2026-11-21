@@ -135,18 +135,40 @@ export const reorderPlaybackPlaylistAtom = atom(
 )
 
 /**
+ * Keep one stored second so tiny clock ticks do not allocate a new progress map.
+ * @param seconds Media time in seconds.
+ * @returns Whole seconds, or 0 when the sample is not finite.
+ */
+function playlistProgressSeconds(seconds: number): number {
+  if (!Number.isFinite(seconds) || seconds <= 0) {
+    return 0
+  }
+  return Math.floor(seconds)
+}
+
+/**
  * Publish the latest clock for one playlist item without rerendering unrelated state.
  */
 export const updatePlaylistPlaybackProgressAtom = atom(
   null,
   (get, set, update: { currentTime: number; downloadId: string; duration: number }) => {
+    if (!update.downloadId) {
+      return
+    }
+    const currentTime = playlistProgressSeconds(update.currentTime)
+    const duration = playlistProgressSeconds(update.duration)
     const current = get(playlistPlaybackProgressAtom)
+    const previous = current[update.downloadId]
+    if (
+      previous &&
+      playlistProgressSeconds(previous.currentTime) === currentTime &&
+      playlistProgressSeconds(previous.duration) === duration
+    ) {
+      return
+    }
     set(playlistPlaybackProgressAtom, {
       ...current,
-      [update.downloadId]: {
-        currentTime: update.currentTime,
-        duration: update.duration
-      }
+      [update.downloadId]: { currentTime, duration }
     })
   }
 )

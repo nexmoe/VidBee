@@ -1,5 +1,5 @@
 import { List, Video } from 'lucide-react'
-import type { ReactNode } from 'react'
+import type { ReactNode, Ref } from 'react'
 import { cn } from '../../lib/cn'
 import {
   Dialog,
@@ -15,8 +15,10 @@ import { TabItem, TabPanel, Tabs, TabsList } from './tabs'
 export const downloadDialogRadius = 'rounded-md'
 
 interface DownloadDialogLayoutProps {
+  contentRef?: Ref<HTMLDivElement>
   open: boolean
   lockDialogHeight: boolean
+  tabsDisabled?: boolean
   activeTab: 'single' | 'playlist'
   dialogTitle: string
   dialogSubtitle: string
@@ -34,8 +36,10 @@ interface DownloadDialogLayoutProps {
  * Download dialog chrome modeled on a title / chips / preview / footer card.
  */
 export const DownloadDialogLayout = ({
+  contentRef,
   open,
   lockDialogHeight,
+  tabsDisabled,
   activeTab,
   dialogTitle,
   dialogSubtitle,
@@ -56,6 +60,7 @@ export const DownloadDialogLayout = ({
           'flex max-h-[90vh] flex-col gap-0 overflow-hidden rounded-md p-6 sm:max-w-lg',
           lockDialogHeight && 'min-h-[24rem]'
         )}
+        ref={contentRef}
       >
         <DialogHeader className="items-start space-y-1.5 pr-8 text-left">
           <DialogTitle className="text-xl leading-tight">{dialogTitle}</DialogTitle>
@@ -71,8 +76,13 @@ export const DownloadDialogLayout = ({
         >
           <div className="mt-3 border-border/60 border-t pt-3">
             <TabsList className={cn('w-fit', downloadDialogRadius, '[&>div]:rounded-md')}>
-              <TabItem icon={Video} label={singleTabLabel} value="single" />
-              <TabItem icon={List} label={playlistTabLabel} value="playlist" />
+              <TabItem disabled={tabsDisabled} icon={Video} label={singleTabLabel} value="single" />
+              <TabItem
+                disabled={tabsDisabled}
+                icon={List}
+                label={playlistTabLabel}
+                value="playlist"
+              />
             </TabsList>
           </div>
           <TabPanel className="min-h-0 pt-3 [&[hidden]]:hidden" value="single">

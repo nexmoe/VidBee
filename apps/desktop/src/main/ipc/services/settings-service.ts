@@ -2,7 +2,6 @@ import { type IpcContext, IpcMethod, IpcService } from 'electron-ipc-decorator'
 import type { AppSettings } from '../../../shared/types'
 import { updateDesktopSettings } from '../../lib/settings-host'
 import { applyDesktopQueueConcurrency } from '../../lib/task-queue-host'
-import { applyUpdateChannel } from '../../lib/update-channel'
 import { settingsManager } from '../../settings'
 import { applyAutoLaunchSetting } from '../../utils/auto-launch'
 import { applyDockVisibility } from '../../utils/dock'
@@ -36,7 +35,6 @@ class SettingsService extends IpcService {
     applyDockVisibility(settingsManager.get('hideDockIcon'))
     applyAutoLaunchSetting(settingsManager.get('launchAtLogin'))
     applyDesktopQueueConcurrency()
-    applyUpdateChannel()
   }
 
   /**

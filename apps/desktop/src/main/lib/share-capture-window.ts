@@ -1,6 +1,11 @@
 import { join } from 'node:path'
 import { APP_PROTOCOL_SCHEME } from '@shared/constants'
 import {
+  MERMAID_EXPORT_CHANNEL,
+  type MermaidExportImage,
+  type MermaidExportPayload
+} from '@shared/types/mermaid-export'
+import {
   SHARE_CAPTURE_HASH,
   SHARE_CAPTURE_READY_CHANNEL,
   SHARE_CAPTURE_RENDER_CHANNEL,
@@ -11,6 +16,7 @@ import {
 } from '@shared/types/share-card'
 import { BrowserWindow, clipboard, ipcMain, nativeImage } from 'electron'
 import { scopedLoggers } from '../utils/logger'
+import { isDesktopAnalyticsWindow } from './desktop-analytics-window'
 import { splitShareImage } from './share-image-split'
 
 const log = scopedLoggers.window
@@ -248,7 +254,7 @@ export const createShareCaptureHost = (deps: ShareCaptureDeps) => {
    * @param window Candidate window.
    */
   const isAppWindow = (window: ShareCaptureWindowLike): boolean =>
-    !(window.isDestroyed() || isShareCaptureWindow(window))
+    !(window.isDestroyed() || isShareCaptureWindow(window) || isDesktopAnalyticsWindow(window))
 
   /**
    * Destroy the hidden share-capture window if it exists.
@@ -306,7 +312,8 @@ export const createShareCaptureHost = (deps: ShareCaptureDeps) => {
     })
 
   /**
-   * Load the capture page once and reuse the same hidden window.
+   * Create the hidden offscreen window for the capture that is about to run.
+   * The caller destroys it when that capture settles.
    */
   const ensureShareCaptureWindow = async (): Promise<ShareCaptureWindowLike> => {
     bindShareCaptureReadyListener()
@@ -345,8 +352,9 @@ export const createShareCaptureHost = (deps: ShareCaptureDeps) => {
       }
     })
     shareWindow = window
-    loadPromise = window
-      .loadURL(shareCaptureUrl())
+    // A finished document load can precede React's IPC subscriptions in an offscreen window.
+    const rendererReady = waitForShareCardReady(0)
+    loadPromise = Promise.all([window.loadURL(shareCaptureUrl()), rendererReady])
       .then(() => undefined)
       .catch((error: unknown) => {
         log.warn(
@@ -370,6 +378,23 @@ export const createShareCaptureHost = (deps: ShareCaptureDeps) => {
     payload: ShareCardPayload
   ): Promise<{ png: Buffer; layout: ShareCaptureReadyMessage['layout'] }> => {
     const window = await ensureShareCaptureWindow()
+    try {
+      return await paintShareCapture(window, payload)
+    } finally {
+      destroyShareCaptureWindow()
+    }
+  }
+
+  /**
+   * Paint one payload in an existing window, then snapshot it in GPU-safe strips.
+   *
+   * @param window Hidden offscreen window for this capture.
+   * @param payload Serializable card props.
+   */
+  const paintShareCapture = async (
+    window: ShareCaptureWindowLike,
+    payload: ShareCardPayload
+  ): Promise<{ png: Buffer; layout: ShareCaptureReadyMessage['layout'] }> => {
     const requestId = nextRequestId
     nextRequestId += 1
     const ready = waitForShareCardReady(requestId)
@@ -422,22 +447,50 @@ export const createShareCaptureHost = (deps: ShareCaptureDeps) => {
     return { png: stitchShareCaptureStrips(strips, deps.nativeImage), layout: size.layout }
   }
 
-  /**
-   * Capture the share card in a reused hidden window. Serialized across callers.
-   *
-   * @param payload Serializable card props from the visible preview.
-   */
-  const captureShareCard = async (payload: ShareCardPayload) => {
-    const run = captureChain.then(
-      () => captureShareCardPngOnce(payload),
-      () => captureShareCardPngOnce(payload)
-    )
+  /** Serialize share cards and diagram exports so they cannot replace another caller's renderer. */
+  const serializeCapture = <T>(capture: () => Promise<T>): Promise<T> => {
+    const run = captureChain.then(capture, capture)
     captureChain = run.then(
       () => undefined,
       () => undefined
     )
     return run
   }
+
+  /** Capture a share card without overlapping another hidden-window export. */
+  const captureShareCard = (payload: ShareCardPayload) =>
+    serializeCapture(() => captureShareCardPngOnce(payload))
+
+  /** Export a single diagram using the same serialized private renderer and destroy it on every outcome. */
+  const exportMermaidDiagram = (
+    payload: MermaidExportPayload,
+    signal: AbortSignal
+  ): Promise<MermaidExportImage> =>
+    serializeCapture(async () => {
+      signal.throwIfAborted()
+      /** Stop only the active export's hidden renderer when its client disconnects. */
+      const abort = (): void => destroyShareCaptureWindow()
+      signal.addEventListener('abort', abort, { once: true })
+      try {
+        const window = await ensureShareCaptureWindow()
+        signal.throwIfAborted()
+        const requestId = nextRequestId++
+        const ready = waitForShareCardReady(requestId)
+        window.webContents.send(MERMAID_EXPORT_CHANNEL, { requestId, payload })
+        const result = await ready
+        signal.throwIfAborted()
+        if (result.error) {
+          throw new Error(result.error)
+        }
+        if (!result.diagram?.data.byteLength) {
+          throw new Error('Mermaid diagram export is empty')
+        }
+        return result.diagram
+      } finally {
+        signal.removeEventListener('abort', abort)
+        destroyShareCaptureWindow()
+      }
+    })
 
   /** Capture a full poster without changing its original layout. */
   const captureShareCardPng = async (payload: ShareCardPayload): Promise<Buffer> =>
@@ -459,6 +512,7 @@ export const createShareCaptureHost = (deps: ShareCaptureDeps) => {
     captureShareCardPages,
     captureShareCardPng,
     destroyShareCaptureWindow,
+    exportMermaidDiagram,
     isAppWindow,
     isShareCaptureWindow,
     writeShareImagePng
@@ -482,6 +536,7 @@ const defaultHost = createShareCaptureHost({
 export const captureShareCardPng = defaultHost.captureShareCardPng
 export const captureShareCardPages = defaultHost.captureShareCardPages
 export const destroyShareCaptureWindow = defaultHost.destroyShareCaptureWindow
+export const exportMermaidDiagram = defaultHost.exportMermaidDiagram
 export const isAppWindow = defaultHost.isAppWindow as (window: BrowserWindow) => boolean
 export const isShareCaptureWindow = defaultHost.isShareCaptureWindow as (
   window: BrowserWindow

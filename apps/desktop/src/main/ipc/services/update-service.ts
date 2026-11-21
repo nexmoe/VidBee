@@ -1,8 +1,8 @@
 import { app } from 'electron'
 import { type IpcContext, IpcMethod, IpcService } from 'electron-ipc-decorator'
 import { autoUpdater } from 'electron-updater'
-import { allowAppQuit } from '../../lib/quit-confirmation-host'
-import { isPortableMode } from '../../portable'
+import { prepareAppQuit } from '../../lib/app-quit'
+import { canUseAppAutoUpdater, isMicrosoftStore } from '../../lib/app-update-policy'
 
 const isNewerVersion = (latest: string, current: string): boolean => {
   const toSegments = (version: string) =>
@@ -38,7 +38,7 @@ class UpdateService extends IpcService {
   async checkForUpdates(
     _context: IpcContext
   ): Promise<{ available: boolean; version?: string; error?: string }> {
-    if (isPortableMode) {
+    if (!canUseAppAutoUpdater) {
       return {
         available: false,
         version: app.getVersion()
@@ -71,10 +71,10 @@ class UpdateService extends IpcService {
 
   @IpcMethod()
   async downloadUpdate(_context: IpcContext): Promise<{ success: boolean; error?: string }> {
-    if (isPortableMode) {
+    if (!canUseAppAutoUpdater) {
       return {
         success: false,
-        error: 'Auto-update is disabled in portable mode'
+        error: 'App auto-updates are disabled for this distribution'
       }
     }
 
@@ -89,13 +89,14 @@ class UpdateService extends IpcService {
     }
   }
 
+  /** Finish shutdown work before the updater takes ownership of quit and restart. */
   @IpcMethod()
-  quitAndInstall(_context: IpcContext): void {
-    if (isPortableMode) {
+  async quitAndInstall(_context: IpcContext): Promise<void> {
+    if (!canUseAppAutoUpdater) {
       return
     }
 
-    allowAppQuit()
+    await prepareAppQuit()
     autoUpdater.quitAndInstall()
   }
 
@@ -104,9 +105,15 @@ class UpdateService extends IpcService {
     return app.getVersion()
   }
 
+  /** Identify installations whose application updates are managed by Microsoft Store. */
+  @IpcMethod()
+  isStoreManaged(_context: IpcContext): boolean {
+    return isMicrosoftStore
+  }
+
   @IpcMethod()
   isAutoUpdateEnabled(_context: IpcContext): boolean {
-    return !isPortableMode
+    return canUseAppAutoUpdater
   }
 }
 

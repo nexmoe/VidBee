@@ -1,10 +1,13 @@
 import {
   type AsrTierId,
+  FIRE_RED_ASR_ARCHIVE,
+  FIRE_RED_ASR_DIR,
   ORUKEET_DIR,
   PARAKEET_V2_ARCHIVE,
   PARAKEET_V2_DIR,
   PARAKEET_V3_ARCHIVE,
   PARAKEET_V3_DIR,
+  QWEN3_ASR_1_7B_DIR,
   QWEN3_ASR_ARCHIVE,
   QWEN3_ASR_DIR,
   SENSE_VOICE_2025_ARCHIVE,
@@ -45,6 +48,9 @@ const PUNCT_CT_DIR = 'sherpa-onnx-punct-ct-transformer-zh-en-vocab272727-2024-04
 const ORUKEET_BASE_URL =
   'https://huggingface.co/oruk/orukeet/resolve/debfb0d5423d4b0446361e0ea024e6891e23a249/onnx/sherpa-v0.1.0-int8'
 const ORUKEET_MANIFEST = `${ORUKEET_DIR}/manifest.json`
+/** Pinned 1.7B export linked by the official sherpa-onnx Qwen3-ASR documentation. */
+const QWEN3_ASR_1_7B_BASE_URL =
+  'https://modelscope.cn/models/zengshuishui/Qwen3-ASR-onnx/resolve/cb045ad80b8970c9d411d463e5b78991a566596c'
 
 /**
  * Publisher-provided sherpa-onnx assets. Whisper packages use int8
@@ -264,6 +270,33 @@ export const MODEL_CATALOG: readonly ModelFileSpec[] = [
     required: true
   },
   {
+    id: 'fire-red-asr-encoder',
+    role: 'asr-encoder',
+    group: 'asr',
+    tier: 'fire-red-asr',
+    fileName: `${FIRE_RED_ASR_DIR}/encoder.int8.onnx`,
+    url: FIRE_RED_ASR_ARCHIVE,
+    required: true
+  },
+  {
+    id: 'fire-red-asr-decoder',
+    role: 'asr-decoder',
+    group: 'asr',
+    tier: 'fire-red-asr',
+    fileName: `${FIRE_RED_ASR_DIR}/decoder.int8.onnx`,
+    url: FIRE_RED_ASR_ARCHIVE,
+    required: true
+  },
+  {
+    id: 'fire-red-asr-tokens',
+    role: 'asr-tokens',
+    group: 'asr',
+    tier: 'fire-red-asr',
+    fileName: `${FIRE_RED_ASR_DIR}/tokens.txt`,
+    url: FIRE_RED_ASR_ARCHIVE,
+    required: true
+  },
+  {
     id: 'parakeet-v2-encoder',
     role: 'asr-encoder',
     group: 'asr',
@@ -439,6 +472,46 @@ export const MODEL_CATALOG: readonly ModelFileSpec[] = [
     tier: 'quality',
     fileName: `${QWEN3_ASR_DIR}/tokenizer`,
     url: QWEN3_ASR_ARCHIVE,
+    directoryMembers: QWEN3_ASR_TOKENIZER_FILES,
+    required: true
+  },
+  {
+    id: 'qwen3-asr-1.7b-encoder',
+    role: 'asr-encoder',
+    group: 'asr',
+    tier: 'qwen3-1.7b',
+    fileName: `${QWEN3_ASR_1_7B_DIR}/encoder.int8.onnx`,
+    url: `${QWEN3_ASR_1_7B_BASE_URL}/model_1.7B/encoder.int8.onnx`,
+    sha256: '436fbd910a0c8914851e5ac1354e807be9f283d08a5da728adaa609731c41469',
+    required: true
+  },
+  {
+    id: 'qwen3-asr-1.7b-decoder',
+    role: 'asr-decoder',
+    group: 'asr',
+    tier: 'qwen3-1.7b',
+    fileName: `${QWEN3_ASR_1_7B_DIR}/decoder.int8.onnx`,
+    url: `${QWEN3_ASR_1_7B_BASE_URL}/model_1.7B/decoder.int8.onnx`,
+    sha256: 'c43c853fa6e97d08365cb8a5502b360b595cd43c00dc60e4d8ca7cc18cad460b',
+    required: true
+  },
+  {
+    id: 'qwen3-asr-1.7b-frontend',
+    role: 'asr-frontend',
+    group: 'asr',
+    tier: 'qwen3-1.7b',
+    fileName: `${QWEN3_ASR_1_7B_DIR}/conv_frontend.onnx`,
+    url: `${QWEN3_ASR_1_7B_BASE_URL}/model_1.7B/conv_frontend.onnx`,
+    sha256: 'fa894a4ba53da6a4238f2a6ca0b09362e505d39cecbd646051b033e2e8d7e2fb',
+    required: true
+  },
+  {
+    id: 'qwen3-asr-1.7b-tokenizer',
+    role: 'asr-tokenizer',
+    group: 'asr',
+    tier: 'qwen3-1.7b',
+    fileName: `${QWEN3_ASR_1_7B_DIR}/tokenizer`,
+    url: `${QWEN3_ASR_1_7B_BASE_URL}/tokenizer`,
     directoryMembers: QWEN3_ASR_TOKENIZER_FILES,
     required: true
   },

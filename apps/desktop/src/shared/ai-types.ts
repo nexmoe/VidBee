@@ -28,21 +28,6 @@ export type AiProviderPresetId =
   | 'xai'
   | 'zhipu'
 
-/** Lucide icon names stored with a prompt. */
-export type AiPromptIconId =
-  | 'list'
-  | 'spell-check'
-  | 'rows-3'
-  | 'highlighter'
-  | 'circle-help'
-  | 'smile'
-  | 'message-circle-question'
-  | 'chart-no-axes-column'
-  | 'repeat-2'
-  | 'git-branch'
-  | 'languages'
-  | 'sparkles'
-
 /** Catalog entry for a built-in provider. */
 export interface AiProviderPreset {
   id: AiProviderPresetId
@@ -56,6 +41,8 @@ export interface AiProviderPreset {
 
 /** Persisted provider configuration. The API key never leaves the main process. */
 export interface AiProviderConfig {
+  /** Stable identity shared by all model records configured for one provider. */
+  groupId?: string
   contextWindow?: number
   vision?: boolean
   /** When false, Agent chat does not send tools to this model. */
@@ -84,6 +71,7 @@ export interface AiProviderConfig {
 
 /** Payload used to create or update a provider from the renderer. */
 export interface AiProviderWriteInput {
+  groupId?: string
   contextWindow?: number
   vision?: boolean
   tools?: boolean
@@ -105,24 +93,41 @@ export interface AiProviderWriteInput {
 
 /** User-editable prompt used with a transcript. */
 export interface AiPrompt {
-  id: string
-  title: string
-  icon: AiPromptIconId
+  /** The standard SKILL.md name is the sole skill identifier. */
+  name: string
+  /** Personal storage folder when it differs from the authored invocation name. */
+  directoryName?: string
+  description?: string
+  /** Legacy workflow marker, also used as the sidebar visibility default for custom skills. */
+  workflowOnly?: boolean
+  /** Invalid files stay visible in Settings but cannot be invoked. */
+  skillError?: string
   content: string
-  enabled: boolean
+  /** Run once for each completed download when a transcript is available. Defaults to false. */
+  autoRun?: boolean
+  /** Override sidebar visibility; built-ins default to Overview, Generate FAQ and Mindmap. */
+  showInTranscript?: boolean
   isPreset: boolean
+  /** Explicitly created or imported personal skills are excluded from legacy duplicate repair. */
+  userCreated?: boolean
   sortOrder: number
   createdAt: number
   updatedAt: number
 }
 
-/** Payload used to create or update a prompt from the renderer. */
+/** Payload used to create or update a managed skill. */
 export interface AiPromptWriteInput {
-  id?: string
-  title: string
-  icon: AiPromptIconId
+  /** A rename operation refers to the previous standard name, never an opaque ID. */
+  previousName?: string
+  name: string
+  description?: string
   content: string
+  /** Ignored legacy field; installed skills are always available for manual use. */
   enabled?: boolean
+  autoRun?: boolean
+  showInTranscript?: boolean
+  /** Original YAML metadata when importing a portable skill document. */
+  frontmatter?: Record<string, unknown>
 }
 
 /** Lifecycle of a prompt run that lives in the main process. */
@@ -152,6 +157,8 @@ export interface AiProviderTestResult {
 
 /** Snapshot a renderer can restore after navigating away. */
 export interface AiPromptRunSnapshot {
+  /** Provider category only; no provider credentials or model identifiers. */
+  providerType?: 'cloud' | 'byok'
   cloudResultId?: string
   /** Latest transient failure, visible until fresh model output arrives. */
   recovery?: { attempt: number; maxAttempts: number; error: string }

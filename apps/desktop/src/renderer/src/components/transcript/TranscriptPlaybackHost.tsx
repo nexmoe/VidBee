@@ -30,22 +30,22 @@ import {
   playbackSlotsAtom,
   playbackVolumeAtom,
   restorePlaybackSessionAtom,
+  shouldPublishPlaybackClock,
   type TranscriptPlaybackClock,
   type TranscriptPlaybackVolume,
   type TranscriptPlayerControls,
   takePlaybackSessionAtom
 } from '@renderer/store/transcript-playback'
+import { useTranscriptPlaybackCues } from '@renderer/store/transcript-playback-cues'
 import {
   finishPlaybackPlaylistItemAtom,
   playbackPlaylistAtom,
   updatePlaylistPlaybackProgressAtom
 } from '@renderer/store/transcript-playlist'
-import { type TranscriptSegmentView, transcriptMapAtom } from '@renderer/store/transcripts'
+import { transcriptMapAtom } from '@renderer/store/transcripts'
 import { useAtomValue, useSetAtom } from 'jotai'
 import { type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-
-const EMPTY_SEGMENTS: TranscriptSegmentView[] = []
 
 /**
  * Keep a single Video.js instance alive across routes and rehome it into page or bar slots.
@@ -95,8 +95,12 @@ export function TranscriptPlaybackHost(): ReactNode {
     duration: 0,
     playing: false
   })
+  const publishedClockRef = useRef<TranscriptPlaybackClock>(clockRef.current)
+  const clockFrameRef = useRef<number | null>(null)
+  const downloadIdRef = useRef('')
 
   const downloadId = session?.downloadId ?? ''
+  downloadIdRef.current = downloadId
   const filePath = session?.filePath ?? null
   const nextDownloadId = playlistIds.find((id) => id !== downloadId) ?? null
   const nextDownload = useMemo(
@@ -131,7 +135,7 @@ export function TranscriptPlaybackHost(): ReactNode {
   const { error: playerError, playablePath, retry: retryPrepare } = player
   const { getStartAt, persistTime } = useTranscriptPlaybackPosition(downloadId, playablePath)
   const mediaSrc = playablePath ? toLocalFileSrc(playablePath) : null
-  const segments = transcriptMap[downloadId]?.record?.segments ?? EMPTY_SEGMENTS
+  const segments = useTranscriptPlaybackCues()
   const vttText = useMemo(() => buildVttText(segments), [segments])
   const captionsSrc = useMemo(() => {
     if (!vttText) {
@@ -233,6 +237,41 @@ export function TranscriptPlaybackHost(): ReactNode {
     [getStartAt]
   )
 
+  /**
+   * Write one visible clock sample and the playlist progress for that sample.
+   */
+  const publishClock = useCallback(() => {
+    clockFrameRef.current = null
+    const next = clockRef.current
+    if (!shouldPublishPlaybackClock(publishedClockRef.current, next)) {
+      return
+    }
+    const snapshot: TranscriptPlaybackClock = {
+      currentTime: next.currentTime,
+      duration: next.duration,
+      playing: next.playing
+    }
+    publishedClockRef.current = snapshot
+    setClock(snapshot)
+    updatePlaylistProgress({
+      currentTime: snapshot.currentTime,
+      downloadId: downloadIdRef.current,
+      duration: snapshot.duration
+    })
+  }, [setClock, updatePlaylistProgress])
+
+  /**
+   * Coalesce clock ticks to one publish per animation frame.
+   */
+  const scheduleClock = useCallback(() => {
+    if (clockFrameRef.current != null) {
+      return
+    }
+    clockFrameRef.current = window.requestAnimationFrame(() => {
+      publishClock()
+    })
+  }, [publishClock])
+
   const handleTime = useCallback(
     (nextTime: number, nextDuration: number) => {
       clockRef.current = {
@@ -240,24 +279,29 @@ export function TranscriptPlaybackHost(): ReactNode {
         currentTime: nextTime,
         duration: nextDuration
       }
-      setClock(clockRef.current)
-      updatePlaylistProgress({ currentTime: nextTime, downloadId, duration: nextDuration })
+      if (shouldPublishPlaybackClock(publishedClockRef.current, clockRef.current)) {
+        scheduleClock()
+      }
       persistTime(nextTime, nextDuration)
       tryRestore(nextTime, nextDuration)
     },
-    [downloadId, persistTime, setClock, tryRestore, updatePlaylistProgress]
+    [persistTime, scheduleClock, tryRestore]
   )
 
   const handlePlaying = useCallback(
     (playing: boolean) => {
       clockRef.current = { ...clockRef.current, playing }
-      setClock(clockRef.current)
+      if (clockFrameRef.current != null) {
+        window.cancelAnimationFrame(clockFrameRef.current)
+        clockFrameRef.current = null
+      }
+      publishClock()
       if (playing) {
         markStarted()
         consumePlayWhenReady()
       }
     },
-    [consumePlayWhenReady, markStarted, setClock]
+    [consumePlayWhenReady, markStarted, publishClock]
   )
 
   /**
@@ -287,6 +331,11 @@ export function TranscriptPlaybackHost(): ReactNode {
     completedDownloadIdRef.current = null
     controlsDownloadIdRef.current = null
     clockRef.current = { currentTime: 0, duration: 0, playing: false }
+    publishedClockRef.current = clockRef.current
+    if (clockFrameRef.current != null) {
+      window.cancelAnimationFrame(clockFrameRef.current)
+      clockFrameRef.current = null
+    }
     resumeStateRef.current = { attempts: 0, done: false }
     pendingSeekRef.current = seekToRef.current
     seekRef.current = () => undefined

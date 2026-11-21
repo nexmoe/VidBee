@@ -4,9 +4,11 @@ import {
   findSidecarCaptionTracks,
   parseCaptionTrack
 } from '@vidbee/transcription'
-import type { AgentChatInput } from '../../shared/agent-chat'
+import { AGENT_WORKSPACE_ID, type AgentChatInput } from '../../shared/agent-chat'
+import type { AgentSubtitleInput } from '../../shared/agent-subtitles'
 import { AI_OVERVIEW_PROMPT_ID } from '../../shared/ai-prompts'
 import { agentSourceMediaKind, agentSourceOffset } from './agent-media'
+import { addAgentSubtitles } from './agent-subtitles'
 import { agentTimingLines, agentTranscriptLines } from './agent-transcript'
 import { getDesktopTaskQueueRef } from './queue-ref'
 import { getTranscriptSnapshot, getTranscriptStore } from './transcript-host'
@@ -37,11 +39,14 @@ export interface AgentTranscriptSource {
  * invalidates inherited coverage.
  */
 export interface AgentRunSource {
+  downloadId: string
+  hasSource: boolean
   lines: AgentSourceLine[]
   timingLines: AgentSourceLine[]
   evidenceSource: string
   transcripts: AgentTranscriptSource[]
   selectTranscript: (key: string) => AgentTranscriptSource
+  addSubtitles: (input: AgentSubtitleInput) => { source: AgentTranscriptSource; added: number }
   sourceOffset: number
   mediaEnabled: boolean
   mediaKind: ReturnType<typeof agentSourceMediaKind>
@@ -60,6 +65,26 @@ export interface AgentRunSource {
  * agent still receives the caller's raw text as evidence.
  */
 export function buildAgentRunSource(input: AgentChatInput, promptId: string): AgentRunSource {
+  if (input.downloadId === AGENT_WORKSPACE_ID) {
+    return {
+      downloadId: input.downloadId,
+      hasSource: false,
+      lines: [],
+      timingLines: [],
+      evidenceSource: AGENT_WORKSPACE_ID,
+      transcripts: [],
+      selectTranscript: () => {
+        throw new Error('This conversation has no source video')
+      },
+      addSubtitles: () => {
+        throw new Error('This conversation has no source video')
+      },
+      sourceOffset: 0,
+      mediaEnabled: false,
+      mediaKind: 'video',
+      metadata: { title: '', mediaKind: 'video', hasVideoFrames: false, durationSeconds: 0 }
+    }
+  }
   const transcript = getTranscriptSnapshot(input.downloadId)
   const task = getDesktopTaskQueueRef().get(input.downloadId)
   const sourceOffset = agentSourceOffset(task?.input.options?.startTime)
@@ -107,9 +132,35 @@ export function buildAgentRunSource(input: AgentChatInput, promptId: string): Ag
     ]
   })
   const result: AgentRunSource = {
+    downloadId: input.downloadId,
+    hasSource: true,
     lines,
     timingLines: [...timingLines],
     transcripts: available.map((item) => item.option),
+    addSubtitles: (subtitles) => {
+      const saved = addAgentSubtitles(input.downloadId, subtitles)
+      const sourceLines = agentTranscriptLines(saved.record, sourceOffset)
+      const previous = result.transcripts.find((source) => source.key === saved.key)
+      const option: AgentTranscriptSource = {
+        key: saved.key,
+        language: saved.record.language,
+        languageCode: saved.record.language?.replace(/^ai-/, '') ?? null,
+        kind: 'captions',
+        auto: true,
+        selected: previous?.selected ?? false,
+        lines: sourceLines.length
+      }
+      const item = { option, lines: sourceLines, timingLines: sourceLines }
+      const index = available.findIndex((source) => source.option.key === saved.key)
+      if (index < 0) {
+        available.push(item)
+        result.transcripts.push(option)
+      } else {
+        available[index] = item
+        result.transcripts.splice(index, 1, option)
+      }
+      return { source: option, added: saved.added }
+    },
     selectTranscript: (key) => {
       const selected = available.find((item) => item.option.key === key)
       if (!selected) {

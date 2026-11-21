@@ -14,7 +14,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { log as evlog } from '@vidbee/logger/script'
 import { expandGithubMirrors } from './github-mirrors.js'
-import { downloadNodeRuntime } from './setup-node-runtime.js'
+import { downloadNodeRuntime, extractArchive } from './setup-node-runtime.js'
 import { YTDLP_PLATFORM_ASSETS } from './ytdlp-assets.js'
 
 // Configuration
@@ -342,29 +342,12 @@ async function resolveReleaseAsset(release) {
   return null
 }
 
+/** Reuse the bundled Node extractor for platform-specific ZIP handling. */
 function extractZip(zipPath, extractDir) {
-  const platform = os.platform()
-  ensureDir(extractDir)
-
-  if (platform === 'win32') {
-    // Use PowerShell Expand-Archive on Windows
-    try {
-      const zipAbsPath = path.resolve(zipPath)
-      const extractAbsDir = path.resolve(extractDir)
-      execSync(
-        `powershell -NoProfile -Command "Expand-Archive -Path '${zipAbsPath.replace(/'/g, "''")}' -DestinationPath '${extractAbsDir.replace(/'/g, "''")}' -Force"`,
-        { stdio: 'inherit' }
-      )
-    } catch (error) {
-      throw new Error(`Failed to extract zip: ${error.message}`)
-    }
-  } else {
-    // Use unzip command on macOS/Linux
-    try {
-      execSync(`unzip -q "${zipPath}" -d "${extractDir}"`, { stdio: 'inherit' })
-    } catch (error) {
-      throw new Error(`Failed to extract zip: ${error.message}`)
-    }
+  try {
+    extractArchive(zipPath, extractDir)
+  } catch (error) {
+    throw new Error(`Failed to extract zip: ${error.message}`)
   }
 }
 

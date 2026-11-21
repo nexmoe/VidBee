@@ -1,6 +1,8 @@
 // Types entry only — the package barrel evaluates Node process helpers and
 // crashes the desktop renderer (`node:child_process` is browser-external).
-import { TRANSCRIPTION_GROUP_KEY } from '@vidbee/task-queue/types'
+import { canAdmitTranscription, TRANSCRIPTION_GROUP_KEY } from '@vidbee/task-queue/types'
+
+export { canAdmitTranscription }
 
 export const DEFAULT_MAX_CONCURRENT_TRANSCRIPTIONS = 1
 export const MAX_CONCURRENT_TRANSCRIPTIONS = 4
@@ -12,6 +14,7 @@ const MAX_CONCURRENT_DOWNLOADS = 10
 export interface TranscriptionConcurrencyQueue {
   setMaxConcurrency: (n: number) => Promise<void> | void
   setMaxPerGroup: (groupKey: string, n: number | null) => Promise<void> | void
+  setMaxConcurrentDownloads: (n: number) => Promise<void> | void
 }
 
 /**
@@ -47,7 +50,9 @@ export const clampMaxConcurrentTranscriptions = (value: unknown): number => {
  *
  * Global slots stay large enough for the higher of the two caps. Transcription
  * tasks still share one group, so they cannot exceed the transcript setting.
- * Lowering the cap does not stop jobs that are already running.
+ * A new ASR task also waits while active downloads are at the download cap and
+ * starts once a download slot frees. Lowering the cap does not stop jobs that
+ * are already running.
  *
  * @param input Queue plus the two stored concurrency settings.
  */
@@ -60,4 +65,5 @@ export const applyTranscriptionConcurrency = (input: {
   const transcriptions = clampMaxConcurrentTranscriptions(input.maxConcurrentTranscriptions)
   void input.queue.setMaxConcurrency(Math.max(downloads, transcriptions))
   void input.queue.setMaxPerGroup(TRANSCRIPTION_GROUP_KEY, transcriptions)
+  void input.queue.setMaxConcurrentDownloads(downloads)
 }

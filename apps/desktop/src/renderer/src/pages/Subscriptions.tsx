@@ -39,13 +39,19 @@ import {
 import type { DownloadStatus, SubscriptionFeedItem, SubscriptionRule } from '@shared/types'
 import { SUBSCRIPTION_DUPLICATE_FEED_ERROR } from '@shared/types'
 import {
+  getSubscriptionFeedEntries,
+  type SubscriptionFeedEntry
+} from '@vidbee/subscriptions-core/feed-items'
+import {
   getSubscriptionStatusMeta,
   resolveSubscriptionItemStatus
 } from '@vidbee/subscriptions-core/status'
+import { SubscriptionAllTab } from '@vidbee/ui/components/ui/subscription-all-tab'
+import { SubscriptionVirtualGrid } from '@vidbee/ui/components/ui/subscription-virtual-grid'
 import dayjs from 'dayjs'
 import { useAtom, useAtomValue, useSetAtom } from 'jotai'
 import { Copy, Download, Edit, ExternalLink, Plus, Power, RefreshCw, Trash2 } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { logger } from '../lib/logger'
@@ -100,6 +106,7 @@ const isDuplicateFeedError = (error: unknown) => {
   return Boolean(message?.includes(SUBSCRIPTION_DUPLICATE_FEED_ERROR))
 }
 
+/** Render one subscription's selector and management actions. */
 function SubscriptionTab({
   subscription,
   onRefresh,
@@ -146,6 +153,7 @@ function SubscriptionTab({
           <ContextMenuTrigger asChild>
             <HoverCardTrigger asChild>
               <button
+                aria-pressed={isActive}
                 className={cn(
                   'flex h-auto w-20 shrink-0 grow-0 flex-col items-center gap-1 rounded-2xl px-2 py-2 transition-all hover:opacity-80',
                   isActive && 'bg-muted/45'
@@ -211,9 +219,10 @@ function SubscriptionTab({
         mode="edit"
         onClose={() => setEditOpen(false)}
         onSave={async (data) => {
-          await onUpdate(data)
-          toast.success(t('subscriptions.notifications.updated'))
-          setEditOpen(false)
+          if (await onUpdate(data)) {
+            toast.success(t('subscriptions.notifications.updated'))
+            setEditOpen(false)
+          }
         }}
         open={editOpen}
         subscription={subscription}
@@ -222,6 +231,7 @@ function SubscriptionTab({
   )
 }
 
+/** Render all RSS items or the selected subscription's items. */
 export function Subscriptions() {
   const { t } = useTranslation()
   const [subscriptions] = useAtom(subscriptionsAtom)
@@ -231,7 +241,8 @@ export function Subscriptions() {
   const refreshSubscription = useSetAtom(refreshSubscriptionAtom)
 
   const [addDialogOpen, setAddDialogOpen] = useState(false)
-  const [selectedTab, setSelectedTab] = useState<string>('')
+  const [selectedTab, setSelectedTab] = useState<string | null>(null)
+  const [viewport, setViewport] = useState<HTMLDivElement | null>(null)
 
   useEffect(() => {
     // Another host can update the shared database without a local IPC event.
@@ -251,6 +262,7 @@ export function Subscriptions() {
   )
 
   const resolveFeed = useSetAtom(resolveFeedAtom)
+  /** Persist preferences before refreshing the feed in the background. */
   const handleUpdateSubscription = useCallback(
     async (id: string, data: SubscriptionRuleUpdateForm) => {
       const updatePayload: Parameters<typeof updateSubscription>[0]['data'] = {
@@ -258,6 +270,9 @@ export function Subscriptions() {
         tags: data.tags,
         onlyDownloadLatest: data.onlyDownloadLatest,
         autoDownload: data.autoDownload,
+        downloadType: data.downloadType,
+        downloadQuality: data.downloadQuality,
+        downloadContainer: data.downloadContainer,
         downloadDirectory: data.downloadDirectory,
         namingTemplate: data.namingTemplate,
         enabled: data.enabled
@@ -273,13 +288,12 @@ export function Subscriptions() {
         } catch (error) {
           logger.error('Failed to resolve feed URL:', error)
           toast.error(t('subscriptions.notifications.resolveError'))
-          return
+          return false
         }
       }
 
       try {
         await updateSubscription({ id, data: updatePayload })
-        await refreshSubscription(id)
       } catch (error) {
         logger.error('Failed to update subscription:', error)
         toast.error(
@@ -287,7 +301,14 @@ export function Subscriptions() {
             ? t('subscriptions.notifications.duplicateUrl')
             : t('subscriptions.notifications.createError')
         )
+        return false
       }
+
+      // Feed fetching must not delay dismissal after the preferences are persisted.
+      void refreshSubscription(id).catch((error) => {
+        logger.error('Failed to refresh saved subscription:', error)
+      })
+      return true
     },
     [refreshSubscription, updateSubscription, resolveFeed, t]
   )
@@ -308,6 +329,9 @@ export function Subscriptions() {
           tags: data.tags?.join(', '),
           onlyDownloadLatest: data.onlyDownloadLatest,
           autoDownload: data.autoDownload,
+          downloadType: data.downloadType,
+          downloadQuality: data.downloadQuality,
+          downloadContainer: data.downloadContainer,
           downloadDirectory: data.downloadDirectory,
           namingTemplate: data.namingTemplate,
           enabled: data.enabled
@@ -335,35 +359,31 @@ export function Subscriptions() {
     }
   }, [t])
 
-  // Filter subscriptions based on selected tab
-  const displayedSubscriptions = useMemo(() => {
-    if (!selectedTab) {
-      return []
-    }
-    return sortedSubscriptions.filter((sub) => sub.id === selectedTab)
+  const displayedItems = useMemo(() => {
+    const sources =
+      selectedTab === null
+        ? sortedSubscriptions
+        : sortedSubscriptions.filter((subscription) => subscription.id === selectedTab)
+    return getSubscriptionFeedEntries(sources)
   }, [selectedTab, sortedSubscriptions])
 
-  // Set default tab to first subscription if available
+  // Return to all items when the selected subscription is removed.
   useEffect(() => {
-    if (!selectedTab && sortedSubscriptions.length > 0) {
-      // Set to first subscription if no tab is selected
-      setSelectedTab(sortedSubscriptions[0].id)
-    } else if (selectedTab && !sortedSubscriptions.find((s) => s.id === selectedTab)) {
-      // If selected subscription no longer exists, switch to first available
-      if (sortedSubscriptions.length > 0) {
-        setSelectedTab(sortedSubscriptions[0].id)
-      } else {
-        setSelectedTab('')
-      }
+    if (selectedTab !== null && !sortedSubscriptions.some((s) => s.id === selectedTab)) {
+      setSelectedTab(null)
     }
   }, [selectedTab, sortedSubscriptions])
 
   return (
-    <div className="relative flex h-full w-full flex-col">
+    <div className="relative flex h-full min-h-0 w-full flex-col">
       {/* Channel Tabs Header */}
-      <div className="flex flex-row pr-6 pb-6 pl-6">
+      <div className="flex shrink-0 flex-row pr-6 pb-6 pl-6">
         <ScrollArea className="min-w-0 flex-1" orientation="horizontal" viewportClassName="h-auto">
           <div className="flex h-auto w-auto justify-start">
+            <SubscriptionAllTab
+              isActive={selectedTab === null}
+              onSelect={() => setSelectedTab(null)}
+            />
             {sortedSubscriptions.map((subscription) => (
               <SubscriptionTab
                 isActive={subscription.id === selectedTab}
@@ -395,7 +415,7 @@ export function Subscriptions() {
         </Button>
       </div>
 
-      <ScrollArea className="overflow-y-auto">
+      <ScrollArea className="min-h-0 flex-1" viewportRef={setViewport}>
         {/* Content Area */}
         <div className="relative space-y-8 p-6 pt-0">
           <section className="space-y-4">
@@ -403,16 +423,12 @@ export function Subscriptions() {
               <div className="py-12 text-center text-muted-foreground text-sm">
                 {t('subscriptions.empty')}
               </div>
-            ) : selectedTab ? (
-              <div className="space-y-3">
-                {displayedSubscriptions.map((subscription) => (
-                  <SubscriptionCard key={subscription.id} subscription={subscription} />
-                ))}
-              </div>
             ) : (
-              <div className="py-12 text-center text-muted-foreground text-sm">
-                {t('subscriptions.empty')}
-              </div>
+              <SubscriptionItems
+                entries={displayedItems}
+                key={selectedTab ?? 'all'}
+                viewport={viewport}
+              />
             )}
           </section>
 
@@ -454,17 +470,31 @@ interface SubscriptionTabProps {
   onRefresh: () => Promise<void>
   onRemove: () => Promise<void>
   onSelect: () => void
-  onUpdate: (data: SubscriptionRuleUpdateForm) => Promise<void>
+  onUpdate: (data: SubscriptionRuleUpdateForm) => Promise<boolean>
 }
 
 type SubscriptionRuleUpdateForm = SubscriptionFormData
 
-function SubscriptionCard({ subscription }: { subscription: SubscriptionRule }) {
+/** Render a mixed feed while resolving download status and actions per source. */
+function SubscriptionItems({
+  entries,
+  viewport
+}: {
+  entries: SubscriptionFeedEntry<SubscriptionRule>[]
+  viewport: HTMLDivElement | null
+}) {
   const { t } = useTranslation()
-  const feedItems: SubscriptionFeedItem[] = subscription.items ?? []
+  const [visibleRange, setVisibleRange] = useState({ startIndex: 0, endIndex: 0 })
+  const feedItems = useMemo(
+    () => entries.slice(visibleRange.startIndex, visibleRange.endIndex).map((entry) => entry.item),
+    [entries, visibleRange]
+  )
   const downloads = useAtomValue(downloadsArrayAtom)
   const [historyStatusMap, setHistoryStatusMap] = useState<Record<string, DownloadStatus | null>>(
     {}
+  )
+  const historyRequests = useRef(
+    new Map<string, Promise<{ downloadId: string; status: DownloadStatus | null }>>()
   )
   const downloadLookup = useMemo(() => {
     const map = new Map<string, DownloadRecord>()
@@ -496,14 +526,23 @@ function SubscriptionCard({ subscription }: { subscription: SubscriptionRule }) 
     const fetchHistoryStatuses = async () => {
       try {
         const results = await Promise.all(
-          missingIds.map(async (downloadId) => {
-            try {
-              const historyItem = await ipcServices.history.getHistoryById(downloadId)
-              return { downloadId, status: historyItem?.status ?? null }
-            } catch (error) {
-              logger.error('Failed to fetch download history entry:', error)
-              return { downloadId, status: null }
+          missingIds.map((downloadId) => {
+            let request = historyRequests.current.get(downloadId)
+            if (!request) {
+              /** Share lookups when scrolling or a download update replaces the visible window. */
+              const fetchStatus = async () => {
+                try {
+                  const historyItem = await ipcServices.history.getHistoryById(downloadId)
+                  return { downloadId, status: historyItem?.status ?? null }
+                } catch (error) {
+                  logger.error('Failed to fetch download history entry:', error)
+                  return { downloadId, status: null }
+                }
+              }
+              request = fetchStatus()
+              historyRequests.current.set(downloadId, request)
             }
+            return request
           })
         )
 
@@ -537,7 +576,7 @@ function SubscriptionCard({ subscription }: { subscription: SubscriptionRule }) 
     }
   }, [feedItems, downloadLookup, historyStatusMap])
 
-  const resolveItemStatus = (item: SubscriptionFeedItem): SubscriptionItemStatus => {
+  const itemStatusLookup = useMemo(() => {
     const combined = new Map<string, { status: string }>()
     for (const [id, download] of downloadLookup) {
       combined.set(id, { status: download.status })
@@ -547,8 +586,8 @@ function SubscriptionCard({ subscription }: { subscription: SubscriptionRule }) 
         combined.set(id, { status })
       }
     }
-    return resolveSubscriptionItemStatus(item, combined)
-  }
+    return combined
+  }, [downloadLookup, historyStatusMap])
 
   const handleOpenItem = async (url: string) => {
     try {
@@ -573,14 +612,15 @@ function SubscriptionCard({ subscription }: { subscription: SubscriptionRule }) 
     }
   }
 
+  /** Queue an item against its original subscription, including in the all view. */
   const handleQueueItem = useCallback(
-    async (item: SubscriptionFeedItem) => {
+    async (subscriptionId: string, item: SubscriptionFeedItem) => {
       if (item.addedToQueue) {
         toast.info(t('subscriptions.notifications.itemAlreadyQueued'))
         return
       }
       try {
-        const queued = await ipcServices.subscriptions.queueItem(subscription.id, item.id)
+        const queued = await ipcServices.subscriptions.queueItem(subscriptionId, item.id)
         if (queued) {
           toast.success(t('subscriptions.notifications.itemQueued'))
           return
@@ -591,10 +631,10 @@ function SubscriptionCard({ subscription }: { subscription: SubscriptionRule }) 
         toast.error(t('subscriptions.notifications.queueError'))
       }
     },
-    [subscription.id, t]
+    [t]
   )
 
-  if (feedItems.length === 0) {
+  if (entries.length === 0) {
     return (
       <div className="py-12 text-center text-muted-foreground text-sm">
         {t('subscriptions.items.empty')}
@@ -603,9 +643,11 @@ function SubscriptionCard({ subscription }: { subscription: SubscriptionRule }) 
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {feedItems.map((item) => {
-        const itemStatus = resolveItemStatus(item)
+    <SubscriptionVirtualGrid
+      entries={entries}
+      onVisibleRangeChange={setVisibleRange}
+      renderEntry={({ subscription, item }) => {
+        const itemStatus = resolveSubscriptionItemStatus(item, itemStatusLookup)
         const hasResolvedDownloadStatus =
           item.addedToQueue && itemStatus !== 'queued' && itemStatus !== 'notQueued'
         const badgeLabel = item.addedToQueue
@@ -672,33 +714,20 @@ function SubscriptionCard({ subscription }: { subscription: SubscriptionRule }) 
                     <TooltipContent>{tooltipLabel}</TooltipContent>
                   </Tooltip>
                 </div>
-                <div className="flex flex-col gap-4 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="space-y-1">
-                    <p
-                      className="font-semibold text-base text-card-foreground leading-snug"
-                      title={item.title}
-                    >
-                      {item.title}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      className="rounded-full px-4"
-                      onClick={() => void handleOpenItem(item.url)}
-                      size="sm"
-                      title={t('subscriptions.items.actions.open')}
-                      variant="secondary"
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                    </Button>
-                  </div>
+                <div className="px-3 py-2">
+                  <p
+                    className="font-semibold text-base text-card-foreground leading-snug"
+                    title={item.title}
+                  >
+                    {item.title}
+                  </p>
                 </div>
               </article>
             </ContextMenuTrigger>
             <ContextMenuContent>
               <ContextMenuItem
                 disabled={item.addedToQueue}
-                onClick={() => void handleQueueItem(item)}
+                onClick={() => void handleQueueItem(subscription.id, item)}
               >
                 <Download className="h-4 w-4" />
                 {t('subscriptions.items.actions.queue')}
@@ -717,7 +746,8 @@ function SubscriptionCard({ subscription }: { subscription: SubscriptionRule }) 
             </ContextMenuContent>
           </ContextMenu>
         )
-      })}
-    </div>
+      }}
+      viewport={viewport}
+    />
   )
 }

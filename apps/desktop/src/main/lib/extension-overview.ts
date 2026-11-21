@@ -141,9 +141,7 @@ function listDownloadMatches(): OverviewDownloadMatch[] {
 /** Read the Desktop Overview the user already sees, without creating an empty thread. */
 function liveOverviewSnapshot(downloadId: string): AiPromptRunSnapshot | null {
   try {
-    const overview = getAgentChatStore()
-      .listVideoThreads(downloadId)
-      .find((thread) => thread.promptId === AI_OVERVIEW_PROMPT_ID)
+    const overview = getAgentChatStore().loadPromptThreadView(downloadId, AI_OVERVIEW_PROMPT_ID)
     const fromAgent = overview ? snapshotFromOverviewThread(overview) : null
     if (fromAgent && isReusableOverviewSnapshot(fromAgent)) {
       return fromAgent

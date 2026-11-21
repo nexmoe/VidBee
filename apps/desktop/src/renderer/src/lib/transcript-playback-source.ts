@@ -29,11 +29,14 @@ export const buildTranscriptPlaybackInput = (input: {
   snapshot: TranscriptSnapshotView | null
 }): EnsurePlaybackSessionInput => {
   const { cachedThumbnail, download, downloadId, fallbackTitle, snapshot } = input
-  const filePath = snapshot?.sourceFilePath
-    ? snapshot.sourceFilePath
-    : download?.savedFileName && download.downloadPath
-      ? `${download.downloadPath}/${download.savedFileName}`
-      : null
+  const filePath =
+    download?.taskKind === 'subtitles'
+      ? null
+      : snapshot?.sourceFilePath
+        ? snapshot.sourceFilePath
+        : download?.savedFileName && download.downloadPath
+          ? `${download.downloadPath}/${download.savedFileName}`
+          : null
   const isAudio =
     sourceMediaKind({
       type: download?.type,

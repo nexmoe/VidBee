@@ -7,12 +7,6 @@ import {
   DialogHeader,
   DialogTitle
 } from '@renderer/components/ui/dialog'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from '@renderer/components/ui/dropdown-menu'
 import { Input } from '@renderer/components/ui/input'
 import {
   Sheet,
@@ -23,18 +17,21 @@ import {
 } from '@renderer/components/ui/sheet'
 import { ipcEvents, ipcServices } from '@renderer/lib/ipc'
 import { logger } from '@renderer/lib/logger'
-import { cn } from '@renderer/lib/utils'
 import { transcriptMapAtom } from '@renderer/store/transcripts'
-import type { AgentThreadSummary } from '@shared/agent-chat'
+import type { AgentRunEvent, AgentThreadSummary } from '@shared/agent-chat'
 import {
   type AgentHistoryGroup,
   agentHistoryDisplayTitle,
   groupAgentHistory
 } from '@shared/agent-history'
-import { AI_CHAT_PROMPT_ID } from '@shared/ai-prompts'
+import {
+  type CatalogMemoryEntry,
+  mergeCatalogList,
+  rememberCatalog
+} from '@shared/agent-thread-patch'
+import { AgentHistoryList } from '@vidbee/ui/components/agent-workspace'
 import { useAtomValue } from 'jotai'
-import { MoreHorizontal } from 'lucide-react'
-import { type MouseEvent, useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 interface TranscriptPromptHistoryProps {
@@ -67,85 +64,6 @@ function historyGroupLabel(
   return group.label ?? ''
 }
 
-interface HistoryRowProps {
-  current: boolean
-  item: AgentThreadSummary
-  promptLabel: string
-  onDelete: (item: AgentThreadSummary) => void
-  onRename: (item: AgentThreadSummary) => void
-  onSelect: (item: AgentThreadSummary) => void
-}
-
-/**
- * One conversation row: title and a more menu.
- */
-function HistoryRow({ current, item, promptLabel, onDelete, onRename, onSelect }: HistoryRowProps) {
-  const { t } = useTranslation()
-  const title = agentHistoryDisplayTitle(item, t('transcript.promptHistoryUntitled'), promptLabel)
-
-  /**
-   * Keep row actions from also selecting the conversation.
-   *
-   * @param event Mouse event from a nested control.
-   */
-  const stopRow = (event: MouseEvent): void => {
-    event.preventDefault()
-    event.stopPropagation()
-  }
-
-  return (
-    <div
-      className={cn(
-        'flex items-center gap-1 rounded-2xl px-3 py-3',
-        current ? 'bg-muted' : 'hover:bg-muted/50'
-      )}
-      data-testid={`transcript-prompt-history-item-${item.id}`}
-    >
-      <button
-        className="min-w-0 flex-1 cursor-pointer text-left font-normal text-[15px] text-foreground leading-snug [overflow-wrap:anywhere]"
-        onClick={() => onSelect(item)}
-        type="button"
-      >
-        <span className="line-clamp-2">{title}</span>
-      </button>
-      {item.running ? (
-        <span
-          aria-hidden
-          className="relative inline-flex size-2 shrink-0"
-          data-status="running"
-          data-testid={`transcript-prompt-history-running-${item.id}`}
-          title={t('transcript.promptRunning')}
-        >
-          <span className="absolute inset-0 animate-ping rounded-full bg-primary opacity-60 motion-reduce:hidden" />
-          <span className="relative block size-2 rounded-full bg-primary" />
-        </span>
-      ) : null}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button
-            aria-label={t('transcript.promptHistoryMore')}
-            className="inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-background/80 hover:text-foreground"
-            onClick={stopRow}
-            type="button"
-          >
-            <MoreHorizontal className="size-4" />
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" onClick={stopRow}>
-          {item.promptId === AI_CHAT_PROMPT_ID ? (
-            <DropdownMenuItem onSelect={() => onRename(item)}>
-              {t('transcript.promptHistoryRename')}
-            </DropdownMenuItem>
-          ) : null}
-          <DropdownMenuItem onSelect={() => onDelete(item)} variant="destructive">
-            {t('transcript.promptHistoryDelete')}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
-  )
-}
-
 /**
  * Conversation history drawer for transcript prompt tabs.
  */
@@ -166,6 +84,8 @@ export function TranscriptPromptHistory({
   const [pendingDelete, setPendingDelete] = useState<AgentThreadSummary | null>(null)
   const [pendingRename, setPendingRename] = useState<AgentThreadSummary | null>(null)
   const [renameDraft, setRenameDraft] = useState('')
+  const catalogMemory = useRef(new Map<string, CatalogMemoryEntry>())
+  const catalogClock = useRef(0)
 
   const titledItems = useMemo(
     () =>
@@ -185,8 +105,8 @@ export function TranscriptPromptHistory({
    *
    * @param next Rows returned by main.
    */
-  const accept = useCallback((next: AgentThreadSummary[]): void => {
-    setItems(next)
+  const accept = useCallback((next: AgentThreadSummary[], seen = catalogClock.current): void => {
+    setItems(mergeCatalogList(next, catalogMemory.current, seen, { historyOnly: true }))
     setLoaded(true)
   }, [])
 
@@ -199,11 +119,12 @@ export function TranscriptPromptHistory({
     }
     let cancelled = false
     const refresh = (): void => {
+      const seen = catalogClock.current
       void ipcServices.ai
         .listAgentHistory()
         .then((next) => {
           if (!cancelled) {
-            accept(next)
+            accept(next, seen)
           }
         })
         .catch((error) => {
@@ -213,11 +134,32 @@ export function TranscriptPromptHistory({
           }
         })
     }
+    const onEvent = (...args: unknown[]): void => {
+      const notice = (args[0] as AgentRunEvent | undefined)?.catalog
+      if (cancelled || !notice) {
+        return
+      }
+      const next = rememberCatalog(catalogMemory.current, notice)
+      if (!next.applied) {
+        return
+      }
+      catalogMemory.current = next.memory
+      catalogClock.current = Math.max(catalogClock.current, notice.revision)
+      setItems((current) =>
+        mergeCatalogList(current, catalogMemory.current, notice.revision - 1, {
+          historyOnly: true
+        })
+      )
+    }
     refresh()
-    const off = ipcEvents.on('ai:agent-event', refresh)
+    const off = ipcEvents.on('ai:agent-event', onEvent)
+    window.addEventListener('focus', refresh)
+    window.addEventListener('online', refresh)
     return () => {
       cancelled = true
-      ipcEvents.removeListener('ai:agent-event', off as (...args: unknown[]) => void)
+      ipcEvents.removeListener('ai:agent-event', off)
+      window.removeEventListener('focus', refresh)
+      window.removeEventListener('online', refresh)
     }
   }, [accept, open])
 
@@ -228,12 +170,14 @@ export function TranscriptPromptHistory({
     if (!pendingRename) {
       return
     }
+    const seen = catalogClock.current
     try {
       accept(
         await ipcServices.ai.renameAgentThread({
           threadId: pendingRename.id,
           title: renameDraft
-        })
+        }),
+        seen
       )
       setPendingRename(null)
     } catch (error) {
@@ -249,8 +193,9 @@ export function TranscriptPromptHistory({
       return
     }
     const item = pendingDelete
+    const seen = catalogClock.current
     try {
-      accept(await ipcServices.ai.deleteAgentThread(item.id))
+      accept(await ipcServices.ai.deleteAgentThread(item.id), seen)
       setPendingDelete(null)
       onDeleted(item)
     } catch (error) {
@@ -272,45 +217,37 @@ export function TranscriptPromptHistory({
               {t('transcript.promptHistoryDescription')}
             </SheetDescription>
           </SheetHeader>
-          <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-4">
-            {loaded && titledItems.length === 0 ? (
-              <p className="px-3 py-8 text-center text-muted-foreground text-sm">
-                {t('transcript.promptHistoryEmpty')}
-              </p>
-            ) : (
-              groups.map((group, index) => (
-                <section key={group.key}>
-                  <h3
-                    className={cn(
-                      'px-3 pb-2 font-semibold text-muted-foreground text-sm',
-                      index === 0 ? 'pt-3' : 'pt-6'
-                    )}
-                  >
-                    {historyGroupLabel(group, t)}
-                  </h3>
-                  {group.items.map((item) => (
-                    <HistoryRow
-                      current={
-                        currentThreadId
-                          ? item.id === currentThreadId
-                          : item.downloadId === currentDownloadId &&
-                            item.promptId === currentPromptId
-                      }
-                      item={item}
-                      key={item.id}
-                      onDelete={setPendingDelete}
-                      onRename={(row) => {
-                        setPendingRename(row)
-                        setRenameDraft(row.title.trim())
-                      }}
-                      onSelect={onSelect}
-                      promptLabel={promptLabel(item.promptId)}
-                    />
-                  ))}
-                </section>
-              ))
-            )}
-          </div>
+          <AgentHistoryList
+            canRename={(item) => item.promptId === 'chat'}
+            currentId={
+              currentThreadId ??
+              titledItems.find(
+                (item) => item.downloadId === currentDownloadId && item.promptId === currentPromptId
+              )?.id
+            }
+            emptyLabel={t('transcript.promptHistoryEmpty')}
+            groups={groups.map((group) => ({ ...group, label: historyGroupLabel(group, t) }))}
+            labels={{
+              running: t('transcript.promptRunning'),
+              more: t('transcript.promptHistoryMore'),
+              rename: t('transcript.promptHistoryRename'),
+              delete: t('transcript.promptHistoryDelete')
+            }}
+            loaded={loaded}
+            onDelete={setPendingDelete}
+            onRename={(row) => {
+              setPendingRename(row)
+              setRenameDraft(row.title.trim())
+            }}
+            onSelect={onSelect}
+            title={(item) =>
+              agentHistoryDisplayTitle(
+                item,
+                t('transcript.promptHistoryUntitled'),
+                promptLabel(item.promptId)
+              )
+            }
+          />
         </SheetContent>
       </Sheet>
       <Dialog

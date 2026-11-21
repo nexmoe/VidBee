@@ -1,10 +1,12 @@
+import { shell } from 'electron'
 import { type IpcContext, IpcMethod, IpcService } from 'electron-ipc-decorator'
-import type { AgentChatInput, AgentThread, AgentThreadSummary } from '../../../shared/agent-chat'
-import {
-  agentConversationTitle,
-  agentThreadIsRunning,
-  agentThreadUpdatedAt
-} from '../../../shared/agent-history'
+import type {
+  AgentChatInput,
+  AgentImageUpload,
+  AgentThinkingLevel,
+  AgentThread,
+  AgentThreadSummary
+} from '../../../shared/agent-chat'
 import { AI_PROVIDER_PRESETS } from '../../../shared/ai-presets'
 import type {
   AiPrompt,
@@ -17,20 +19,33 @@ import type {
   AiProviderWriteInput,
   AiSettingsSnapshot
 } from '../../../shared/ai-types'
+import type { GitHubSkillInstallInput, GitHubSkillSource } from '../../../shared/skill-install'
 import { saveAgentArtifact } from '../../lib/agent-artifacts'
 import {
+  renameAgentThread as commitAgentThreadTitle,
   getAgentThinkingOptions,
   openAgentThread,
+  readAgentEvents,
   removeAgentImage,
   deleteAgentThread as removeAgentThread,
   decideAgentTool as resolveAgentToolDecision,
   selectAgentBranch,
   selectAgentImages,
   sendAgentMessage,
+  setAgentThinkingLevel,
   createAgentThread as startBlankAgentThread,
   stopAgentRun
 } from '../../lib/agent-chat-runner'
-import { getAgentChatStore } from '../../lib/agent-chat-store'
+import { getAgentComposerOptions, selectAgentComposerModel } from '../../lib/agent-composer'
+import { listAgentConversations } from '../../lib/agent-conversations'
+import { takeAgentNotificationTarget } from '../../lib/agent-notifications'
+import { parseAgentSkill } from '../../lib/agent-skill-document'
+import {
+  inspectGitHubSkills,
+  readGitHubSkill,
+  readSkillUpload
+} from '../../lib/agent-skill-install'
+import { readAgentUiTasks } from '../../lib/agent-ui-tasks'
 import {
   type CatalogModelCapabilities,
   type CatalogModelOption,
@@ -43,32 +58,48 @@ import { type AiRemoteModelsInput, listRemoteProviderModels } from '../../lib/ai
 import { aiStore } from '../../lib/ai-store'
 import { dislikeCloudResult } from '../../lib/cloud-device'
 import { loadCloudModels } from '../../lib/cloud-models'
-import { peekDesktopTaskQueueRef } from '../../lib/queue-ref'
 import { settingsManager } from '../../settings'
-
-/** Public history row that omits messages, runs and artifact paths. */
-function toHistorySummary(thread: AgentThread): AgentThreadSummary {
-  const videoTitle = peekDesktopTaskQueueRef()?.get(thread.downloadId)?.input.title?.trim() ?? ''
-  return {
-    id: thread.id,
-    downloadId: thread.downloadId,
-    promptId: thread.promptId,
-    title: agentConversationTitle(thread, videoTitle),
-    updatedAt: agentThreadUpdatedAt(thread),
-    running: agentThreadIsRunning(thread)
-  }
-}
 
 /** Conversations with messages, newest first. */
 function listHistorySummaries(): AgentThreadSummary[] {
-  return getAgentChatStore()
-    .listHistory()
-    .map(toHistorySummary)
-    .sort((left, right) => right.updatedAt - left.updatedAt)
+  return listAgentConversations()
 }
 
 class AiService extends IpcService {
   static readonly groupName = 'ai'
+
+  /** Read live public task facts for a bounded set of Agent card IDs. */
+  @IpcMethod()
+  getAgentUiTasks(_context: IpcContext, ids: string[]) {
+    return readAgentUiTasks(ids)
+  }
+
+  /** Consume the pending system notification click after the renderer mounts. */
+  @IpcMethod()
+  takeAgentNotificationTarget() {
+    return takeAgentNotificationTarget()
+  }
+
+  /** Read credential-free model menu options shared with the extension. */
+  @IpcMethod()
+  async getAgentComposerOptions() {
+    return await getAgentComposerOptions()
+  }
+
+  /** Apply a Composer model selection through the common Desktop settings service. */
+  @IpcMethod()
+  async selectAgentComposerModel(_context: IpcContext, value: string) {
+    await selectAgentComposerModel(value)
+  }
+
+  /** Synchronize the next-message effort without altering a reply already running. */
+  @IpcMethod()
+  setAgentThinkingLevel(
+    _context: IpcContext,
+    input: { threadId: string; level: AgentThinkingLevel }
+  ): AgentThread {
+    return setAgentThinkingLevel(input.threadId, input.level)
+  }
 
   /** Load supported thinking levels without exposing provider credentials. */
   @IpcMethod()
@@ -85,7 +116,7 @@ class AiService extends IpcService {
     return openAgentThread(input.downloadId, input.promptId, input.threadId)
   }
 
-  /** Start a blank Agent conversation on this video. */
+  /** Start a blank Agent conversation in the workspace or on a library video. */
   @IpcMethod()
   createAgentThread(_context: IpcContext, input: { downloadId: string }): AgentThread {
     return startBlankAgentThread(input.downloadId)
@@ -106,10 +137,14 @@ class AiService extends IpcService {
     resolveAgentToolDecision(input)
   }
 
-  /** Copy explicitly selected images into the conversation before admitting a message. */
+  /** Import picked or pasted images before admitting a message. */
   @IpcMethod()
-  async selectAgentImages(_context: IpcContext, threadId: string): Promise<AgentThread> {
-    return await selectAgentImages(threadId)
+  async selectAgentImages(
+    _context: IpcContext,
+    threadId: string,
+    files?: AgentImageUpload[]
+  ): Promise<AgentThread> {
+    return await selectAgentImages(threadId, files)
   }
 
   /** Remove only an attachment that has not been sent in a user message. */
@@ -139,10 +174,7 @@ class AiService extends IpcService {
   /** Recover missed events and the current committed snapshot. */
   @IpcMethod()
   getAgentEvents(_context: IpcContext, input: { threadId: string; after: number }) {
-    if (!Number.isSafeInteger(input.after) || input.after < 0) {
-      throw new Error('Invalid event cursor')
-    }
-    return getAgentChatStore().events(input.threadId, input.after)
+    return readAgentEvents(input.threadId, input.after)
   }
 
   /** List conversations with messages or selected image drafts. */
@@ -154,7 +186,7 @@ class AiService extends IpcService {
   /** List every conversation on one video, including unused blank chats. */
   @IpcMethod()
   listAgentThreads(_context: IpcContext, input: { downloadId: string }): AgentThreadSummary[] {
-    return getAgentChatStore().listVideoThreads(input.downloadId).map(toHistorySummary)
+    return listAgentConversations(input.downloadId)
   }
 
   /** Rename a conversation tab without changing its messages. */
@@ -163,7 +195,7 @@ class AiService extends IpcService {
     _context: IpcContext,
     input: { threadId: string; title: string }
   ): AgentThreadSummary[] {
-    getAgentChatStore().rename(input.threadId, input.title)
+    commitAgentThreadTitle(input.threadId, input.title)
     return listHistorySummaries()
   }
 
@@ -285,11 +317,95 @@ class AiService extends IpcService {
   /**
    * Create or update a prompt.
    *
-   * @param input Dialog values.
+   * @param input Skill metadata and instructions.
    */
   @IpcMethod()
   upsertPrompt(_context: IpcContext, input: AiPromptWriteInput): AiPrompt {
     return aiStore.upsertPrompt(input)
+  }
+
+  /** Create a personal copy of an official skill, retaining its complete supporting resources. */
+  @IpcMethod()
+  customizeSkill(_context: IpcContext, name: string): AiPrompt {
+    const skill = aiStore.getPrompt(name)
+    if (!skill?.isPreset) {
+      throw new Error('Unknown built-in skill')
+    }
+    return aiStore.upsertPrompt({
+      previousName: name,
+      name,
+      description: skill.description,
+      content: skill.content
+    })
+  }
+
+  /** Import a portable SKILL.md as a new general skill, without overwriting existing names. */
+  @IpcMethod()
+  importSkillDocument(_context: IpcContext, document: string): AiPrompt {
+    const skill = parseAgentSkill(document)
+    if (aiStore.getPrompt(skill.name)) {
+      throw new Error('A skill with this name already exists')
+    }
+    return aiStore.upsertPrompt({
+      name: skill.name,
+      description: skill.description,
+      content: skill.body,
+      frontmatter: skill.frontmatter
+    })
+  }
+
+  /** Import a document or ZIP with the same validated, atomic directory installation. */
+  @IpcMethod()
+  importSkillUpload(_context: IpcContext, input: { name: string; bytes: Uint8Array }): AiPrompt {
+    return aiStore.installSkill(readSkillUpload(input.name, input.bytes))
+  }
+
+  /** Find selectable skills in a public GitHub repository at a fixed commit. */
+  @IpcMethod()
+  async inspectGitHubSkills(_context: IpcContext, url: string): Promise<GitHubSkillSource> {
+    return await inspectGitHubSkills(url)
+  }
+
+  /** Install one selected GitHub skill with its scripts, references and assets. */
+  @IpcMethod()
+  async importGitHubSkill(_context: IpcContext, input: GitHubSkillInstallInput): Promise<AiPrompt> {
+    return aiStore.installSkill(await readGitHubSkill(input))
+  }
+
+  /** Change transcript auto-run without modifying skill availability or on-disk instructions. */
+  @IpcMethod()
+  setSkillAutoRun(
+    _context: IpcContext,
+    input: { name: string; autoRun: boolean }
+  ): AiSettingsSnapshot {
+    return aiStore.setSkillAutoRun(input.name, input.autoRun)
+  }
+
+  /** Change only whether a skill has a shortcut in the transcript sidebar. */
+  @IpcMethod()
+  setSkillTranscriptVisibility(
+    _context: IpcContext,
+    input: { name: string; showInTranscript: boolean }
+  ): AiSettingsSnapshot {
+    return aiStore.setSkillTranscriptVisibility(input.name, input.showInTranscript)
+  }
+
+  /** Export the selected document independently of transcript auto-run. */
+  @IpcMethod()
+  exportSkillDocument(_context: IpcContext, id: string): string {
+    return aiStore.exportSkillDocument(id)
+  }
+
+  /** Reveal only a registered skill folder or the managed skill library. */
+  @IpcMethod()
+  async openSkillDirectory(_context: IpcContext, id?: string): Promise<void> {
+    if (id && aiStore.getPrompt(id)?.isPreset) {
+      throw new Error('Built-in skills are read-only; create a custom copy first')
+    }
+    const error = await shell.openPath(aiStore.getSkillDirectory(id))
+    if (error) {
+      throw new Error(error)
+    }
   }
 
   /**

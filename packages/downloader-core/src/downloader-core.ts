@@ -5,6 +5,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { backgroundChildSpawnOptions, lowerChildPriority } from '@vidbee/task-queue/process'
 import YTDlpWrap from 'yt-dlp-wrap-plus'
 import type {
   CreateDownloadInput,
@@ -27,6 +28,7 @@ import { resolveYtDlpWrapCtor } from './yt-dlp-wrap'
 
 interface YtDlpExecProcess {
   ytDlpProcess?: {
+    pid?: number
     stdout?: NodeJS.ReadableStream
     stderr?: NodeJS.ReadableStream
   }
@@ -38,7 +40,7 @@ interface YtDlpExecProcess {
 }
 
 interface YtDlpWrapInstance {
-  exec(args: string[], options?: { signal?: AbortSignal }): YtDlpExecProcess
+  exec(args: string[], options?: { signal?: AbortSignal; detached?: boolean }): YtDlpExecProcess
 }
 
 type YtDlpWrapConstructor = new (binaryPath: string) => YtDlpWrapInstance
@@ -572,6 +574,7 @@ export class DownloaderCore extends EventEmitter {
 
   private async runJsonCommand<T>(args: string[]): Promise<T> {
     const process = this.getYtDlp().exec(args)
+    lowerChildPriority(process.ytDlpProcess?.pid)
     let stdout = ''
     let stderr = ''
 
@@ -878,8 +881,10 @@ export class DownloaderCore extends EventEmitter {
     const controller = new AbortController()
     const ytDlpCommand = formatYtDlpCommand(args)
     const process = this.getYtDlp().exec(args, {
-      signal: controller.signal
+      signal: controller.signal,
+      ...backgroundChildSpawnOptions()
     })
+    lowerChildPriority(process.ytDlpProcess?.pid)
 
     this.active.set(nextId, { controller, process })
 

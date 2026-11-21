@@ -3,6 +3,101 @@
 本页只记录你能直接感知到的更新，不展开技术实现细节。
 完整发布记录请查看 [GitHub Releases](https://github.com/nexmoe/VidBee/releases)。
 
+## [Unreleased]
+
+## [v2.5.0](https://github.com/nexmoe/VidBee/releases/tag/v2.5.0) - 2026-11-21
+
+### 新增功能
+- 全局搜索资料库中的媒体、已保存的字幕和聊天消息，直接跳转到匹配的字幕位置或对话。
+- 连接的 AI 助手也能搜索本地资料库，读取匹配的字幕和消息。
+
+### 改进与修复
+- 链接首次未返回信息时可恢复视频详情，切换链接后也不会被旧请求的结果覆盖。 (by @miko-agent[bot], [#526](https://github.com/nexmoe/VidBee/pull/526))
+- 下载诊断信息可以选中文本，也更方便复制完整下载日志。 (by @miko-agent[bot], [#528](https://github.com/nexmoe/VidBee/pull/528))
+- 使用自己的 AI 服务遇到付款错误时，显示对应的处理提示。
+
+## [v2.4.0](https://github.com/nexmoe/VidBee/releases/tag/v2.4.0) - 2026-11-14
+
+### 新增功能
+- 可以开启独立的 Agent 对话，关联资料库中的视频，在同一段对话中完成下载、字幕处理和导出。
+- 长任务会显示简明计划、实时进度和生成的媒体文件；后台任务完成后，Agent 会自动继续后续工作。
+- 可以在同一段对话中翻译字幕、导出双语字幕，并使用本地语音模型生成配音视频。
+- 转录可选择云端或本地模型；中断后可继续处理，无需重复已完成的音频。
+- 可以从 GitHub 安装技能、整理技能库，并在消息中直接提及要使用的技能。
+- 支持从 Microsoft Store 安装 VidBee，并由商店管理更新。
+
+### 改进与修复
+- 可以通过键盘或拖动框选多个资料库条目，统一执行管理操作。
+- 可以打开 Agent 回答中的本地文件链接，重新启动后也会保留偏好的窗口位置。
+- 安装占用的空间更小。
+
+## [v2.3.0](https://github.com/nexmoe/VidBee/releases/tag/v2.3.0) - 2026-10-25
+
+### 改进与修复
+- 全新安装默认开启登录时启动，并在 macOS 上隐藏 Dock 图标；两项设置均可在设置中调整。
+- 略微缩小转录和 AI 回答分享图片中的文字比例，让排版更紧凑。
+
+## [v2.2.4](https://github.com/nexmoe/VidBee/releases/tag/v2.2.4) - 2026-10-24
+
+### 新增功能
+- 可以让外部 AI 助手连接 VidBee，管理下载、订阅、转录和导出。
+- 可以在 VidBee Desktop 和浏览器扩展中继续同一段 Agent 对话。
+- 可以只下载字幕，无需下载视频。
+- AI 图表新增 JPG 下载，并保留 SVG、PNG 和 Mermaid 源文件格式。
+
+### 改进与修复
+- 下载和转录资料库较大时保持流畅，转换后的音视频也更容易查找和切换。
+- 视频加入下载队列后即可看到标题和封面。
+- 扩展连接 Desktop 时，不同浏览器配置使用各自独立的登录会话。
+- AI 图表在明暗主题下显示更一致，下载和查看操作保持统一。
+- 修复 Intel Mac 安装包中下载工具缺失导致无法开始下载的问题。
+
+## [v2.2.3](https://github.com/nexmoe/VidBee/releases/tag/v2.2.3) - 2026-10-11
+
+### 改进与修复
+- 编辑或移除 AI 服务商时，属于同一服务商的模型会保持分组。
+- Agent 的图文回答不再在末尾附加未使用的截图。
+
+## [v2.2.2](https://github.com/nexmoe/VidBee/releases/tag/v2.2.2) - 2026-10-11
+
+### 改进与修复
+- 修复安装版中 Agent 对话和转录提示词一开始就失败的问题。
+
+## [v2.2.1](https://github.com/nexmoe/VidBee/releases/tag/v2.2.1) - 2026-10-11
+
+### 改进与修复
+- 恢复已发布桌面版中的账号设置。
+
+## [v2.2.0](https://github.com/nexmoe/VidBee/releases/tag/v2.2.0) - 2026-10-11
+
+### 新增功能
+- 本地转录新增 FireRedASR v2，支持中文、英文和中文方言；也可选择更大的 Qwen3-ASR 1.7B 模型。
+- 本地转录新增 Orukeet 模型。(by @Nathan-Roll1, [#480](https://github.com/nexmoe/VidBee/pull/480))
+- 可以登录 VidBee 账号，在 Agent 对话中使用 Cloud 模型。
+- 可以让 Agent 管理下载和订阅、转录文件，以及转换和裁剪音视频。
+
+### 改进与修复
+- 下载播放列表时可以选择视频容器格式。(by @jabrailkhalil, [#469](https://github.com/nexmoe/VidBee/pull/469))
+- WebM 视频无法嵌入封面时仍会保留下载文件；订阅下载也会保留字幕文件。([#487](https://github.com/nexmoe/VidBee/pull/487), [#484](https://github.com/nexmoe/VidBee/pull/484))
+- 减少账号刷新请求，在不同对话间复用可用的 Cloud 模型信息。([#495](https://github.com/nexmoe/VidBee/pull/495))
+- Agent 运行期间修改的标题会保存；等待确认时暂停计时，停止回答后及时释放 Cloud 使用额度。([#495](https://github.com/nexmoe/VidBee/pull/495))
+- 修改受保护的设置或删除内容前会请求确认，包括通过符号链接访问资料库之外的下载目录。([#495](https://github.com/nexmoe/VidBee/pull/495))
+- Markdown 和 PDF 导出保留原始视频链接；文章截图会准确捕获所选画面，包括已缓存的画面。([#495](https://github.com/nexmoe/VidBee/pull/495))
+- 合并或转换音视频时，不再因超过一分钟而误报下载超时。([#462](https://github.com/nexmoe/VidBee/issues/462), [#488](https://github.com/nexmoe/VidBee/pull/488))
+- 桌面版和网页版选择格式时，会保留高分辨率 HLS 视频和不同语言的音轨。([#443](https://github.com/nexmoe/VidBee/issues/443), [#488](https://github.com/nexmoe/VidBee/pull/488))
+- 删除 RSS 视频的下载记录后可重新加入队列，也支持从条目菜单复制视频链接。([#479](https://github.com/nexmoe/VidBee/issues/479), [#485](https://github.com/nexmoe/VidBee/pull/485))
+- 转录前会修复或明确提示不完整的 Qwen3-ASR 模型文件；同时安装或取消模型时，不再误删其他安装任务的文件。([#473](https://github.com/nexmoe/VidBee/issues/473), [#486](https://github.com/nexmoe/VidBee/pull/486))
+- 写文章时可以继续未完成的章节，并捕获相关截图。
+- Agent 完成回答后会及时结束，较长的思考历史也更容易阅读。
+- 分享图片和导出文档保留思考耗时与品牌页脚。
+- 保存自动下载选项时，订阅的启用状态会保留。
+- 本地转录前会先导入可用的平台字幕。
+- 账号余额和待退还积分显示更可靠。
+- 避免重复下载，包括同时提交的请求和已保存在电脑上的文件。
+- 转录队列持续推进，重新加载后保留已用时间。
+- 保留 Agent 的推理历史，并改进 Markdown PDF 导出。
+- 已保存的文件被删除后，仍可正常移除下载记录。
+
 ## [v2.1.0](https://github.com/nexmoe/VidBee/releases/tag/v2.1.0) - 2026-08-30
 
 ### 新增功能
@@ -77,6 +172,41 @@
 - Intel Mac 上的转写功能现在可以正常使用。
 - 下载与自建部署更稳定。
 
+## [v1.3.14](https://github.com/nexmoe/VidBee/releases/tag/v1.3.14) - 2026-07-05
+
+### 改进与修复
+- 更新下载支持，适应受支持网站的近期变化。
+
+## [v1.3.13](https://github.com/nexmoe/VidBee/releases/tag/v1.3.13) - 2026-06-20
+
+### 新增功能
+- Windows 新增免安装版，可选择将应用数据和下载文件保存在应用旁边。(by @jabrailkhalil, [#403](https://github.com/nexmoe/VidBee/pull/403))
+- 可以查看实时下载日志，并从下载历史中重新打开日志。
+
+### 改进与修复
+- 粘贴播放列表或 YouTube 频道链接时，会自动打开播放列表下载选项。
+- 更换链接后，不再误下载此前选中的视频。
+- 在 Windows 上取消下载时会彻底停止任务，Firefox 浏览器 Cookie 的识别也更可靠。
+- Twitch 的可选字幕不可用时仍会继续下载；首选音视频组合缺失时，会尝试可用格式。
+- 修复 Linux Debian 安装包安装后无法启动的问题。
+
+## [v1.3.12](https://github.com/nexmoe/VidBee/releases/tag/v1.3.12) - 2026-06-20
+
+### 新增功能
+- 可以在“关于”中选择稳定版或预览版更新，并持续接收所选通道的更新。
+
+## [v1.3.11](https://github.com/nexmoe/VidBee/releases/tag/v1.3.11) - 2026-06-19
+
+### 新增功能
+- 一键下载可选择 MP4、MKV、WebM 或原始格式。
+- 按 Ctrl+V 或 Cmd+V 可用复制的链接打开添加下载窗口。
+
+### 改进与修复
+- 下载需要浏览器 Cookie、登录或可用网络时，会提供更清楚的操作指引。
+- 修复长时间下载或大型播放列表导致应用崩溃的问题。
+- 恢复部分旧版 1.3 安装的正常启动，改善 macOS 上下载工具的识别。
+- 更新下载支持，适应受支持网站的近期变化。
+
 ## [v1.3.10](https://github.com/nexmoe/VidBee/releases/tag/v1.3.10) - 2026-04-11
 ### 改进
 - 首次使用默认开启一键下载，开始下载更快。
@@ -112,6 +242,11 @@
 - 新增版本过期更新提醒通知
 - 集成 Rybbit 分析
 - 优化下载界面细节
+
+## [v1.3.5](https://github.com/nexmoe/VidBee/releases/tag/v1.3.5) - 2026-03-18
+
+### 改进与修复
+- 更新下载支持，适应受支持网站的近期变化。
 
 ## [v1.3.4](https://github.com/nexmoe/VidBee/releases/tag/v1.3.4) - 2026-03-14
 ### Bug 修复

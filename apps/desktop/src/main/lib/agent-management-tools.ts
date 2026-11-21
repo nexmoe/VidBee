@@ -22,13 +22,37 @@ export function createAgentManagementTools(context: AgentToolContext): AgentTool
   const creation: TaskCreationMetadata = {
     origin: 'agent',
     agentConversation: {
-      downloadId: context.downloadId,
+      downloadId: context.conversationDownloadId ?? context.downloadId,
       threadId: context.threadId,
       promptId: context.promptId ?? 'chat'
     }
   }
+  const waitForTask = context.waitForTask
+  const selectVideo = context.selectVideo
   return [
     ...createAgentCapabilityTools(context),
+    ...(waitForTask
+      ? [
+          defineAgentTool(
+            context,
+            'wait_for_task',
+            'Wait for one queued task to finish without polling the model. Returns completed, failed, cancelled, paused, removed or timeout. Automatic retry schedules are still pending. Continue dependent steps only after completed; inspect get_task for failures. Stopping this wait does not cancel the background task.',
+            Type.Object({ id }, { additionalProperties: false }),
+            async ({ id }, callId, signal) => result(await waitForTask(id, callId, signal))
+          )
+        ]
+      : []),
+    ...(selectVideo
+      ? [
+          defineAgentTool(
+            context,
+            'select_video',
+            "Attach a completed library media task as this independent chat's source, or refresh its subtitles after transcription. Find its exact id with create_task/list_tasks/get_task; wait_for_task first if unfinished. Enables transcript, translation, subtitle export and dubbing tools for that source. Keeps the current chat and user interface unchanged. Source tools always use the most recently selected video.",
+            Type.Object({ id }, { additionalProperties: false }),
+            async ({ id }) => result(await selectVideo(id))
+          )
+        ]
+      : []),
     defineAgentTool(
       context,
       'list_tasks',
@@ -59,10 +83,18 @@ export function createAgentManagementTools(context: AgentToolContext): AgentTool
     defineAgentTool(
       context,
       'create_task',
-      'Create a queued task. video/audio (default video): download url using yt-dlp; optional format is a yt-dlp selector. conversion: FFmpeg transform of completed parentId; format is output extension, with optional trim/height. transcription: transcribe completed parentId locally. model-download: download asrTier without selecting it. Returns admission status, not completion. Inspect get_task for progress/logs; manage_task handles pause, cancel and retry. Reuse existing downloads; inspect failures before retrying.',
+      'Create a queued task. video/audio (default video): download url using yt-dlp; optional format is a yt-dlp selector. conversion: FFmpeg transform of completed parentId; format is output extension, with optional trim/height. transcription: transcribe completed parentId locally. model-download: download asrTier without selecting it. Returns admission status, not completion. Use wait_for_task before dependent work, then select_video to attach downloaded media in an independent chat. Inspect get_task for logs; manage_task handles pause, cancel and retry. Reuse existing downloads; inspect failures before retrying.',
       Type.Unsafe<z.infer<typeof agentTaskParameters>>(z.toJSONSchema(agentTaskParameters)),
-      async (params) =>
-        result(await (await host()).createAgentTask(params, context.signal, creation))
+      async (params) => {
+        const { background, ...input } = params
+        const created = await (await host()).createAgentTask(input, context.signal, creation)
+        if (background) {
+          context.trackTasks?.(created, false)
+        } else {
+          context.trackTasks?.(created)
+        }
+        return result(created)
+      }
     ),
     defineAgentTool(
       context,
@@ -80,7 +112,13 @@ export function createAgentManagementTools(context: AgentToolContext): AgentTool
         },
         { additionalProperties: false }
       ),
-      async (params) => result(await (await host()).manageAgentTask(params))
+      async (params) => {
+        const managed = await (await host()).manageAgentTask(params)
+        if (params.action === 'retry' || params.action === 'resume') {
+          context.trackTasks?.(managed)
+        }
+        return result(managed)
+      }
     ),
     defineAgentTool(
       context,
@@ -129,14 +167,17 @@ export function createAgentManagementTools(context: AgentToolContext): AgentTool
         },
         { additionalProperties: false }
       ),
-      async (params, callId) =>
-        result(
-          await (await host()).manageAgentSubscription(
-            { ...params, approvedPath: context.pathApproved?.(callId) === true },
-            context.signal,
-            creation
-          )
+      async (params, callId) => {
+        const managed = await (await host()).manageAgentSubscription(
+          { ...params, approvedPath: context.pathApproved?.(callId) === true },
+          context.signal,
+          creation
         )
+        if (params.action === 'queue_item') {
+          context.trackTasks?.(managed)
+        }
+        return result(managed)
+      }
     )
   ]
 }

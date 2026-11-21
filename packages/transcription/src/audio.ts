@@ -1,6 +1,11 @@
 import { spawn } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, rmSync, statSync } from 'node:fs'
 import { join } from 'node:path'
+import {
+  backgroundChildSpawnOptions,
+  FFMPEG_ENCODE_THREADS,
+  lowerChildPriority
+} from '@vidbee/task-queue/process'
 import { isNoAudioStreamError, NO_AUDIO_STREAM_ERROR } from './errors'
 import { ffprobePathFromFfmpeg } from './extract-captions'
 
@@ -61,6 +66,8 @@ export async function extractMonoWav(input: {
       '1',
       '-ar',
       String(TARGET_SAMPLE_RATE),
+      '-threads',
+      FFMPEG_ENCODE_THREADS,
       '-vn',
       wavPath
     ],
@@ -117,7 +124,18 @@ const remuxThenDecode = async (input: {
     )
     await runFfmpeg(
       input.ffmpegPath,
-      ['-y', '-i', copyPath, '-ac', '1', '-ar', String(TARGET_SAMPLE_RATE), input.wavPath],
+      [
+        '-y',
+        '-i',
+        copyPath,
+        '-ac',
+        '1',
+        '-ar',
+        String(TARGET_SAMPLE_RATE),
+        '-threads',
+        FFMPEG_ENCODE_THREADS,
+        input.wavPath
+      ],
       input.signal
     )
   } finally {
@@ -138,7 +156,11 @@ const remuxThenDecode = async (input: {
  */
 const runFfmpeg = (bin: string, args: string[], signal?: AbortSignal): Promise<void> =>
   new Promise((resolve, reject) => {
-    const child = spawn(bin, args, { stdio: ['ignore', 'pipe', 'pipe'] })
+    const child = spawn(bin, args, {
+      stdio: ['ignore', 'pipe', 'pipe'],
+      ...backgroundChildSpawnOptions()
+    })
+    lowerChildPriority(child.pid)
     let stderr = ''
     child.stderr.on('data', (chunk: Buffer) => {
       stderr += chunk.toString()

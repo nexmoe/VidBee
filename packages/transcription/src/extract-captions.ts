@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'
+import { backgroundChildSpawnOptions, lowerChildPriority } from '@vidbee/task-queue/process'
 import { captionLanguageScore, isHumanCaptionTrack, isTextSubtitleCodec } from './captions'
 
 export interface ExtractedCaptionTrack {
@@ -39,7 +40,11 @@ export const ffprobePathFromFfmpeg = (ffmpegPath: string): string =>
  */
 const runCaptured = (bin: string, args: string[], timeoutMs: number): Promise<string> =>
   new Promise((resolve, reject) => {
-    const child = spawn(bin, args, { stdio: ['ignore', 'pipe', 'pipe'] })
+    const child = spawn(bin, args, {
+      stdio: ['ignore', 'pipe', 'pipe'],
+      ...backgroundChildSpawnOptions()
+    })
+    lowerChildPriority(child.pid)
     let stdout = ''
     let stderr = ''
     const timer = setTimeout(() => {

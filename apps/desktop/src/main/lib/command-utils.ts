@@ -36,7 +36,7 @@ export const buildCaptionExtractArgs = (
   url: string,
   outputTemplate: string,
   settings: ReturnType<typeof settingsManager.getAll>,
-  subtitleLanguages = 'all'
+  subtitleLanguages: readonly string[] = []
 ): string[] =>
   buildSharedCaptionExtractArgs(
     url,

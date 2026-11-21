@@ -7,6 +7,8 @@
     ".": "./src/index.ts",
     "./asr": "./src/asr-tiers.ts",
     "./concurrency": "./src/concurrency.ts",
+    "./cloud": "./src/cloud.ts",
+    "./cloud-runner": "./src/cloud-runner.ts",
     "./download-mirrors": "./src/download-mirrors.ts",
     "./worker": "./src/worker/entry.ts"
   },
@@ -20,7 +22,7 @@
     "@vidbee/logger": "workspace:*",
     "@vidbee/task-queue": "workspace:*",
     "opencc-js": "^1.4.1",
-    "sherpa-onnx-node": "1.13.6"
+    "sherpa-onnx-node": "1.13.8"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^9.6.0",

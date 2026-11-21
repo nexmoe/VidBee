@@ -84,19 +84,12 @@ const download = (url, dest) =>
     })
   })
 
-const extractArchive = (archive, destDir) => {
+/** Extract bundled engine archives without loading a PowerShell module or invoking a shell. */
+export const extractArchive = (archive, destDir) => {
   mkdirSync(destDir, { recursive: true })
   if (archive.endsWith('.zip')) {
     if (process.platform === 'win32') {
-      execFileSync(
-        'powershell',
-        [
-          '-NoProfile',
-          '-Command',
-          `Expand-Archive -Path '${archive}' -DestinationPath '${destDir}' -Force`
-        ],
-        { stdio: 'inherit' }
-      )
+      execFileSync('tar', ['-xf', archive, '-C', destDir], { stdio: 'inherit' })
       return
     }
     execFileSync('unzip', ['-q', archive, '-d', destDir], { stdio: 'inherit' })

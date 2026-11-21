@@ -1,26 +1,10 @@
-export interface VideoInfoRequestCoordinator {
-  beginRequest: () => number
-  invalidate: () => void
-  isCurrentRequest: (requestId: number) => boolean
-}
+import {
+  createMetadataRequestCoordinator,
+  type MetadataRequestCoordinator
+} from '@vidbee/ui/lib/download-metadata'
 
-/**
- * Create a request coordinator that ignores stale video-info responses.
- *
- * Issue refs: #354, #379.
- */
-export const createVideoInfoRequestCoordinator = (): VideoInfoRequestCoordinator => {
-  let currentRequestId = 0
+export type VideoInfoRequestCoordinator = MetadataRequestCoordinator
 
-  return {
-    beginRequest: () => {
-      currentRequestId += 1
-      return currentRequestId
-    },
-    // Bump the id so any in-flight response is treated as stale (#379).
-    invalidate: () => {
-      currentRequestId += 1
-    },
-    isCurrentRequest: (requestId: number) => requestId === currentRequestId
-  }
-}
+/** Preserve the single-video store's request API for #354 and #379. */
+export const createVideoInfoRequestCoordinator = (): VideoInfoRequestCoordinator =>
+  createMetadataRequestCoordinator()

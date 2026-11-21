@@ -1,4 +1,6 @@
+import type { AgentSkillLabel } from '@vidbee/ui/lib/agent-skill-text'
 import type { AgentArtifact } from '../agent-chat'
+import type { MermaidExportImage } from './mermaid-export'
 /** CSS width of the branded share poster. */
 export const SHARE_CARD_WIDTH = 540
 
@@ -29,8 +31,12 @@ export interface SharePromptCardPayload {
   sourceByline?: string | null
   sourceTitle?: string | null
   tagline: string
+  /** Finished thinking duration, such as "Thought for 2 minutes". Omitted when unknown. */
+  thinkingLabel?: string
   /** User-visible instruction that produced this reply, when it is not the prompt name. */
   userText?: string | null
+  /** Skill names and localized labels used to render references in the hidden capture window. */
+  userSkills?: AgentSkillLabel[]
 }
 
 export interface ShareCaptionCardPayload {
@@ -108,11 +114,15 @@ export interface ShareImageLayout {
   width: number
   height: number
   padding: number
+  /** Start of the reusable footer, including its gap above and bottom padding. */
+  footerTop?: number
   safeBreaks: number[]
   preferredBreaks: number[]
 }
 
 export interface ShareCaptureReadyMessage {
+  diagram?: MermaidExportImage
+  error?: string
   layout?: ShareImageLayout
   height: number
   requestId: number

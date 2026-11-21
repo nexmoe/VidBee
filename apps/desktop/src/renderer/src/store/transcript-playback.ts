@@ -64,6 +64,43 @@ export const EMPTY_PLAYBACK_CLOCK: TranscriptPlaybackClock = {
   playing: false
 }
 
+/** How often the visible clock may move while playback time is the only change. */
+export const PLAYBACK_CLOCK_PUBLISH_MS = 250
+
+/**
+ * Quantize a clock sample so sub-threshold ticks share one publish bucket.
+ * @param seconds Media position or duration in seconds.
+ * @returns Bucket index, or 0 when the sample is not a positive finite time.
+ */
+export function playbackClockPublishBucket(seconds: number): number {
+  if (!Number.isFinite(seconds) || seconds <= 0) {
+    return 0
+  }
+  return Math.floor((seconds * 1000) / PLAYBACK_CLOCK_PUBLISH_MS)
+}
+
+/**
+ * Decide whether subscribers should see this clock sample.
+ * @param previous Last clock written to the atom.
+ * @param next Precise clock held by the player host.
+ * @returns True on play/pause, a new duration bucket, or a 250ms time boundary.
+ */
+export function shouldPublishPlaybackClock(
+  previous: TranscriptPlaybackClock,
+  next: TranscriptPlaybackClock
+): boolean {
+  if (previous.playing !== next.playing) {
+    return true
+  }
+  if (playbackClockPublishBucket(previous.duration) !== playbackClockPublishBucket(next.duration)) {
+    return true
+  }
+  return (
+    playbackClockPublishBucket(previous.currentTime) !==
+    playbackClockPublishBucket(next.currentTime)
+  )
+}
+
 export const EMPTY_PLAYBACK_PRESENTATION: TranscriptPlaybackPresentation = {
   currentSpeakerName: null,
   currentSpeakerSortIndex: null

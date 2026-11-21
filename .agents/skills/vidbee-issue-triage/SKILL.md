@@ -1,11 +1,11 @@
 ---
 name: vidbee-issue-triage
-description: "Triage GitHub issues for nexmoe/VidBee: short English comments, docs-backed guidance, code-backed preliminary bug judgment, duplicates, invalid non-media URLs, close fixed yt-dlp or already-shipped VidBee bugs with an update prompt; retitle/label; maintain dashboard #247. Not for implementing code fixes."
+description: "Handle nexmoe/VidBee issues as user feedback: empathetic English support, practical solutions, honest repair expectations and verified PR/release links; classify, consolidate duplicates and maintain dashboard #247. For released fixes, state the fix date and first fixed version and guide updating. Not for implementing code fixes."
 ---
 
 # VidBee Issue Triage
 
-Perform lightweight triage so users receive actionable documentation guidance, duplicate discussions converge on a canonical issue, and development work retains clear reproduction evidence. The default repository is `nexmoe/VidBee`. Maintain [#247 — VidBee issue triage dashboard](https://github.com/nexmoe/VidBee/issues/247) as the primary dashboard.
+Handle each issue as feedback from a person using VidBee. Give them a considerate, understandable response, something useful to do now, and an honest account of the repair status. Keep detailed engineering evidence in the dashboard or private run records. The default repository is `nexmoe/VidBee`. Maintain [#247 — VidBee issue triage dashboard](https://github.com/nexmoe/VidBee/issues/247) as the primary dashboard; its updates do not replace replies to affected reporters.
 
 ## Scope and execution mode
 
@@ -59,6 +59,8 @@ Use the local repository checkout / worktree for the target repo when available;
 
 If the matching fix is already on `main` **and** included in a **released** VidBee version newer than (or equal to, when clearly containing the fix) the reporter's build: short comment linking the PR/commit/release, tell them to **update to the latest VidBee**, then **close as completed**.
 
+For every already-fixed reply, verify and state **when the fix landed (YYYY-MM-DD)**, the **first released version containing it**, and the release date when different from the fix date. Check the PR/commit, release notes and tag ancestry; the latest release number alone does not establish the first fixed version. Link the actual fix and release, then explicitly ask the reporter to update to that version or newer (normally the latest stable VidBee) and retry. A release-only source can establish the release date; identify it as that date instead of inventing a merge date. If the date or first fixed version cannot be established, say exactly what remains unverified and do not guess or close on that unsupported claim.
+
 If the fix is only on `main` / unreleased: keep open, note the pending PR/commit, and do not claim the user's build is fixed yet.
 
 If code search finds nothing useful: keep the issue open as a VidBee bug with symptoms organized for development — do not invent a root cause.
@@ -108,7 +110,7 @@ For extractor failures, `Unable to extract`, `Unsupported URL`, SABR/EJS, DPAPI/
 - When the matching upstream issue or PR is fixed **in a released yt-dlp**, treat the VidBee report as resolved for triage: comment with the upstream link and release/tag if known, tell the reporter to update to the **latest VidBee** (and use any in-app yt-dlp/engine refresh if documented), then **close as completed**. Do not leave fixed-upstream extractors open waiting for more discussion.
 - Closing as "fixed upstream" requires a real fix (merged fix landed in a yt-dlp release, or maintainer confirmation of a fixed release). Upstream closed as duplicate, not planned, or unreproducible is **not** a fix — keep tracking or reclassify.
 - If upstream is fixed only on git master and **not** in any release yet, keep the VidBee issue open, note that, and do not close as completed yet.
-- Example shape (keep short): `Fixed upstream in yt-dlp <version> (<upstream URL>). Please update to the latest VidBee and retry. Closing.`
+- For a released upstream fix, state its fix/release date and first fixed yt-dlp version, link the upstream fix/release, and verify which released VidBee build bundles it or which documented in-app engine update delivers it. Tell the reporter how to obtain that fixed engine. Do not imply an upstream release is already included in every VidBee build, or ask the reporter to replace binaries manually without a supported guide. If the delivered VidBee version is unknown, disclose that rather than inventing it.
 - When uncertain, compare independent yt-dlp behavior with the same URL, account and network conditions, and relevant arguments. State when this has not been tested. Do not require every ordinary user to install a CLI before receiving help.
 - An error emitted by yt-dlp may still come from VidBee's format selection, cookie arguments, bundled JS runtime or FFmpeg, or version integration. Distinguish a core failure from incorrect invocation.
 - Check [yt-dlp supported sites](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md), the relevant [FAQ](https://github.com/yt-dlp/yt-dlp/wiki/FAQ), and upstream conclusions. Unlisted sites may work through the generic extractor; listed sites are not guaranteed to work for every page or current version.
@@ -126,18 +128,26 @@ Replace uninformative, default-template, or overly broad titles with an English 
 
 Describe supported symptoms rather than a guessed root cause. Keep clear existing titles and useful repository title conventions. Do not rewrite the reporter's body.
 
-### Comment style (keep short)
+### Comment style (user feedback, not an engineering report)
 
-Write the shortest useful English reply. Prefer 2–5 short sentences or a tiny list. No preamble, no restating the whole bug report, no filler thanks paragraphs, no essay.
+Write concise, natural English for the reporter. Usually two or three short paragraphs are enough; a tiny list helps when there are actual steps. A brief acknowledgment of the inconvenience is useful, especially after repeated failures or a misleading earlier reply. Avoid exaggerated apologies and canned sympathy. Do not open with an internal classification, code path, test matrix or triage heading.
 
-Typical shape:
-1. One sentence: classification or confirmed fact (bug / duplicate / invalid URL / need more info / already fixed).
-2. Optional: one short preliminary code note or fix/PR/release link — only with evidence from section 1b.
-3. Optional: 1–3 concrete steps or the canonical/docs link — only if it directly helps.
-4. Optional: one line of missing info, only if it changes the next action.
-5. Stop.
+Cover what matters for this report:
 
-Already-fixed VidBee example (keep short): `This looks fixed in <PR/release>. Please update to the latest VidBee and retry. Closing.`
+1. **Acknowledge and explain:** recognize the specific inconvenience, and explain the confirmed problem in everyday product terms. If an earlier reply misunderstood it, correct that briefly and take responsibility.
+2. **Help now:** give a verified workaround or 1–3 concrete steps and an applicable guide. When there is no verified workaround, go directly to the useful next step without announcing that absence. Request only missing details that change the next action, explain where to find them, and avoid asking again for information already supplied.
+3. **Share useful repair progress:** keep investigation, reproduction, draft/open PR, merged-but-unreleased changes and released fixes distinct. Link a verified related PR and explain its scope and current status when there is one. Give a target date/version only if a maintainer or release plan actually commits to it. Do not fill the reply with inventories such as "no PR submitted," "no release date/version confirmed," or "no verified workaround." Mention an absent milestone only when the reporter asks or it is needed to avoid a misleading claim of availability. An internal implementation estimate is not a delivery promise. Do not promise future work or monitoring that the workflow does not arrange.
+4. **For released fixes:** give the verified fix date, first fixed version and fix/release links, explicitly guide updating, and ask the reporter to retry. Distinguish merge date from release date. Do not say merely "already fixed" or "update to latest" without identifying the fix. If the match or version is unverified, keep that uncertainty visible.
+
+Examples of tone and content (replace placeholders only with verified facts):
+
+> Thanks for the screenshots, and sorry for the confusion in our earlier reply. The missing pictures are the covers in VidBee's download list. We reproduced a case where covers fail when downloads use an app proxy. Could you share your VidBee version and whether an app proxy is enabled? That will help us check whether the reproduced problem matches yours.
+
+> Sorry this has been interrupting your downloads. The fix was merged on <fix date> in <PR link> and first released in VidBee <version> on <release date> (<release link>). Please update to the latest stable VidBee, <version> or newer, and retry the affected video. If it still fails, reply with your updated version and the new error so we can check for a remaining case.
+
+For duplicates, acknowledge the problem, explain that it is being tracked in the canonical issue, include `Duplicate of #<number>`, and carry over any verified workaround or repair status. A duplicate closure does not mean the bug is fixed.
+
+Technical terms are appropriate only when the reporter needs them to act. Keep source links, function names, confidence/tier labels, synthetic probes, control groups and internal handoff failures out of ordinary support replies. Share a useful reproduced behavior when it changes the next action; an internal handoff failure alone needs no public update. Never dump the operator summary into an issue.
 
 Mark uncertainty explicitly. Use "likely", "possible", or "unconfirmed" for guesses (cookies changing YouTube clients, thumbnail CDN quirks, and similar). Do not state hypotheses as facts. Do not use a docs page as the causal explanation of a bug unless that page documents the exact failure path (example to avoid: citing RSS "no duplicate if already in Downloads" for a stale **Queued** flag after manual remove — #479).
 
@@ -149,14 +159,17 @@ Feature requests with no covering guide: brief acknowledgment, note undocumented
 
 On canonical issues, duplicate follow-ups add only new reproduction facts — do not restate the whole diagnosis.
 
-Prepare exact UTF-8 comment text in a temporary file and post with `gh issue comment <number> --repo nexmoe/VidBee --body-file <comment-file>`. Preserve literal newlines and backticks; never interpolate issue content into shell code. Apply labels and titles with `gh issue edit`, without rewriting the reporter's body or overwriting unrelated labels.
+Prepare exact UTF-8 comment text in a temporary file. For a necessary update to this App bot's relevant existing reply, use `gh api` to edit its verified comment ID in place. Use `gh issue comment <number> --repo nexmoe/VidBee --body-file <comment-file>` only when a new comment is warranted under section 6. Preserve literal newlines and backticks; never interpolate issue content into shell code. Apply labels and titles with `gh issue edit`, without rewriting the reporter's body or overwriting unrelated labels.
 
 ## 6. Execute, verify, and report
 
 - Prepare per-issue actions first: classification, evidence, comment draft, new title, labels, and closure reason. Execute directly when already authorized; do not add a separate blanket approval gate. Deliver the action list for read-only requests.
-- Reread the current state and latest comments before writing. Reassess when a reporter or maintainer has already acted. Skip equivalent replies, correct titles, existing labels, and already-applied closures to avoid repeated notifications.
+- **Already answered means no reply by default.** Reread the complete issue discussion immediately before any write, including human-maintainer replies and earlier automation accounts (`mikoagent`, `miko-agent[bot]`, and any relevant maintainer response). Compare the meaning and requested next action, not exact wording or the current bot's identity. An adequate earlier reply counts even if it has no current-run marker. Skip equivalent replies, correct titles, existing labels, and already-applied closures.
+- **No new user-relevant information means no comment and no edit.** An unanswered information request is already handled: wait for the reporter instead of asking again or sending a reminder. A scheduled run, different wording, code revision, internal probe/confidence change, handoff failure, bot comment, label/title edit or changed `updated_at` alone is not a reason to contact the reporter. A thank-you or acknowledgment without a new question also needs no automated reply. Continue independent investigation or dashboard maintenance without repeating support content.
+- **Only a useful change reopens the reply decision:** an unanswered new reporter question or new evidence that changes the guidance, a verified actionable correction/workaround, a real related PR, a meaningful merge/release milestone, or a blocker change that changes what the reporter should do. Check that nobody has already communicated that same change. A private-only finding with the same public advice does not qualify. For released fixes retain the required date, first fixed version and update guidance.
+- For a necessary support update, prefer editing this App bot's relevant existing comment in place after verifying its ID, author and complete content. Preserve useful context; do not reword adequate replies merely for style on each run. Create a new comment only when the update needs a separate response to a new reporter question, the earlier comment covers another subject, or the relevant prior reply belongs to someone else and a material update must be communicated. Never rewrite human or other-account comments automatically. Record `no_change` with the existing reply reference and reason when skipping; a receipt is not an instruction to publish. Material progress still belongs on the original issue rather than only #247.
 - Apply comments, labels, and closure sequentially for each issue and verify results. After a timeout, read back to determine whether the action succeeded before retrying. Pause writes and report authentication failures, insufficient permissions, or rate limits; do not loop blindly or suppress errors.
-- Do not blindly use `--edit-last` or `--delete-last`: your latest comment may be unrelated to this triage. To correct a comment, verify its ID, author, and content, or add a short correction. If a prior triage comment mapped the report to the wrong product area or invented product behavior, add a short correction when you re-touch that issue in an authorized run; do not leave the wrong framing as the last word. For mistaken consolidation, also undo the duplicate relationship and label and restore the previous open state.
+- Do not blindly use `--edit-last` or `--delete-last`: your latest comment may be unrelated to this triage. To correct a comment, verify its ID, author, and content and prefer an in-place correction to this App bot's own reply. If a prior triage comment mapped the report to the wrong product area or invented product behavior, correct that when you re-touch it in an authorized run; add a separate correction only when the relevant comment cannot appropriately be edited under the rule above. For mistaken consolidation, also undo the duplicate relationship and label and restore the previous open state.
 - Report the actual reviewed range and per-issue results: issue link, classification, evidence or canonical/documentation links, title changes, comment/label/state changes, and missing information. Separate executed actions, proposals, and failures. Do not describe a limited batch as the entire backlog or derive repository totals from truncated results.
 - Synchronize persistent results to #247 under section 7. Include the dashboard link and synchronization outcome in the final report. List lasting documentation gaps as suggestions rather than also editing the website.
 

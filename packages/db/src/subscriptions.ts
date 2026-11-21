@@ -39,7 +39,10 @@ export const subscriptionsTable = sqliteTable('subscriptions', {
   createdAt: integer('created_at', { mode: 'number' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'number' }).notNull(),
   downloadDirectory: text('download_directory'),
-  namingTemplate: text('naming_template')
+  namingTemplate: text('naming_template'),
+  downloadType: text('download_type'),
+  downloadQuality: text('download_quality'),
+  downloadContainer: text('download_container')
 })
 
 export const subscriptionItemsTable = sqliteTable(
@@ -181,5 +184,11 @@ export const applySubscriptionsMigrations = (
   exec(SUBSCRIPTIONS_DDL_V1)
   if (!columns.includes('auto_download')) {
     exec(SUBSCRIPTIONS_DDL_V2)
+  }
+  // Nullable overrides preserve the global defaults for existing subscriptions.
+  for (const column of ['download_type', 'download_quality', 'download_container']) {
+    if (!columns.includes(column)) {
+      exec(`ALTER TABLE subscriptions ADD COLUMN ${column} TEXT;`)
+    }
   }
 }

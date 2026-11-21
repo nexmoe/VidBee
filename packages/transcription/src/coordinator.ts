@@ -5,6 +5,7 @@ import {
   type TaskQueueEvent,
   TRANSCRIBABLE_TASK_KINDS
 } from '@vidbee/task-queue'
+import type { TranscriptionProvider } from './cloud'
 import { enqueueTranscription } from './enqueue'
 import type { MemoryTranscriptStore } from './memory-store'
 import type { TranscriptStore } from './transcript-store'
@@ -21,6 +22,8 @@ export interface AutoTranscriptionCoordinatorOptions {
   isEnabled: () => boolean
   resolveSourceFile: (task: Task) => string | null
   resolveAsrTier?: () => string
+  resolveProvider?: () => TranscriptionProvider
+  resolveCloudModelId?: () => string
   /** UI language. Only Simplified vs Traditional Chinese is kept as a post-ASR script preference. */
   resolveLanguage?: () => string
   /** Import embedded or sidecar captions. Return true when a transcript was stored. */
@@ -35,10 +38,14 @@ export interface AutoTranscriptionCoordinatorOptions {
  * after `start()`, so enabling the setting never backfills history.
  */
 export class AutoTranscriptionCoordinator {
+  private readonly opts: AutoTranscriptionCoordinatorOptions
   private unsubscribe: (() => void) | null = null
   private readonly pending = new Set<string>()
 
-  constructor(private readonly opts: AutoTranscriptionCoordinatorOptions) {}
+  /** Keep host configuration pinned for the coordinator's lifetime. */
+  constructor(opts: AutoTranscriptionCoordinatorOptions) {
+    this.opts = opts
+  }
 
   start(): void {
     if (this.unsubscribe) {
@@ -129,6 +136,8 @@ export class AutoTranscriptionCoordinator {
         sourceFilePath: source,
         title: task.input.title,
         trigger: 'auto',
+        provider: this.opts.resolveProvider?.(),
+        cloudModelId: this.opts.resolveCloudModelId?.(),
         asrTier: this.opts.resolveAsrTier?.(),
         language: this.opts.resolveLanguage?.()
       })

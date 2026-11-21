@@ -94,14 +94,20 @@ export const DownloadPage = () => {
 	);
 	const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 	const listRef = useRef<HTMLDivElement>(null);
-	const { finishPointer, marquee, onPointerDown, onPointerMove } =
-		useListMarqueeSelection({
-			containerRef: listRef,
-			onSelectIds: (ids) => {
-				setSelectedIds(new Set(ids));
-			},
-			selectedIds,
-		});
+	const {
+		finishPointer,
+		marquee,
+		onClickCapture,
+		onContextMenuCapture,
+		onPointerDown,
+		onPointerMove,
+	} = useListMarqueeSelection({
+		containerRef: listRef,
+		onSelectIds: (ids) => {
+			setSelectedIds(new Set(ids));
+		},
+		selectedIds,
+	});
 	const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(
 		null,
 	);
@@ -679,7 +685,10 @@ export const DownloadPage = () => {
 				</CardHeader>
 
 				<ScrollArea className="flex-1 overflow-y-auto">
-					<CardContent className="w-full space-y-3 overflow-x-hidden p-0">
+					<CardContent
+						className="w-full space-y-3 overflow-x-hidden p-0"
+						data-download-transfer-list=""
+					>
 						{!hasCookieConfig ? (
 							<div className="mx-6 mt-4 rounded-xl bg-muted/40 px-6 py-5">
 								<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -721,6 +730,8 @@ export const DownloadPage = () => {
 						) : (
 							<div
 								className={cn("relative w-full pb-4", marquee && "select-none")}
+								onClickCapture={onClickCapture}
+								onContextMenuCapture={onContextMenuCapture}
 								onPointerCancel={finishPointer}
 								onPointerDown={onPointerDown}
 								onPointerMove={onPointerMove}

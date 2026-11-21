@@ -1,11 +1,10 @@
 import { app, session } from 'electron'
 
-export const RYBBIT_ORIGIN = 'https://rybbit.102417.xyz'
 const USER_IMAGE_SCHEME = 'user-image:'
 
 const BASE_DIRECTIVES: Record<string, string[]> = {
   'default-src': ["'self'"],
-  'script-src': ["'self'", "'unsafe-eval'", RYBBIT_ORIGIN],
+  'script-src': ["'self'", "'unsafe-eval'"],
   'style-src': ["'self'", "'unsafe-inline'"],
   'img-src': [
     "'self'",
@@ -19,7 +18,7 @@ const BASE_DIRECTIVES: Record<string, string[]> = {
     'https://favicon.im'
   ],
   'media-src': ["'self'", 'blob:', 'file:', 'vidbee:', 'agent-artifact:'],
-  'connect-src': ["'self'", 'data:', 'blob:', 'file:', 'vidbee:', 'agent-artifact:', RYBBIT_ORIGIN]
+  'connect-src': ["'self'", 'data:', 'blob:', 'file:', 'vidbee:', 'agent-artifact:']
 }
 
 const appendUnique = (values: string[], extras: string[]): string[] => {
@@ -59,7 +58,7 @@ const parseCsp = (policy: string): Map<string, string[]> => {
   return directives
 }
 
-/** Build the renderer CSP, including the auth API origin and Rybbit analytics. */
+/** Build the renderer CSP for application resources and the auth API origin. */
 export function buildRendererContentSecurityPolicy(
   authApiUrl: string,
   allowInlineScripts = false
@@ -81,7 +80,7 @@ export function buildRendererContentSecurityPolicy(
   return serializeCsp(directives)
 }
 
-/** Merge Rybbit, auth API, and avatar proxy origins into an existing CSP header. */
+/** Merge auth API and avatar proxy origins into an existing CSP header. */
 export function mergeRendererContentSecurityPolicy(
   policy: string,
   authApiUrl: string,
@@ -92,13 +91,12 @@ export function mergeRendererContentSecurityPolicy(
   const connectSrc = directives.get('connect-src')
   directives.set(
     'connect-src',
-    appendUnique(connectSrc ?? BASE_DIRECTIVES['connect-src'], ["'self'", origin, RYBBIT_ORIGIN])
+    appendUnique(connectSrc ?? BASE_DIRECTIVES['connect-src'], ["'self'", origin])
   )
 
   const scriptSrc = directives.get('script-src')
-  const scriptExtras = allowInlineScripts ? [RYBBIT_ORIGIN, "'unsafe-inline'"] : [RYBBIT_ORIGIN]
-  if (scriptSrc) {
-    directives.set('script-src', appendUnique(scriptSrc, scriptExtras))
+  if (scriptSrc && allowInlineScripts) {
+    directives.set('script-src', appendUnique(scriptSrc, ["'unsafe-inline'"]))
   }
 
   const imgSrc = directives.get('img-src')
@@ -115,8 +113,8 @@ export function mergeRendererContentSecurityPolicy(
  * Apply a complete renderer CSP as a response header.
  *
  * Better Auth's `csp: true` injects only `connect-src 'self' <api>` when no
- * header exists. That second policy intersects the HTML meta CSP and blocks
- * Rybbit, so Desktop owns the header instead.
+ * header exists. Desktop owns the header so local media and auth connections
+ * remain available alongside the HTML meta CSP.
  */
 export function setupRendererContentSecurityPolicy(authApiUrl: string): void {
   const allowInlineScripts = !app.isPackaged

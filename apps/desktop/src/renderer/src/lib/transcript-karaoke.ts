@@ -5,9 +5,9 @@ export interface TimedWord {
 }
 
 const TRANSCRIPT_TOKEN_PATTERN =
-  /(\s+)|([\u4e00-\u9fff][^\s\u4e00-\u9fffA-Za-z0-9]*)|([A-Za-z0-9]+(?:['’-][A-Za-z0-9]+)*[^\s\u4e00-\u9fffA-Za-z0-9]*)|(\S+)/g
-const CJK_LIKE = /[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]/
-const PUNCT_ONLY = /^[^\s\u4e00-\u9fffA-Za-z0-9]+$/
+  /(\s+)|([\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}][^\s\p{L}\p{N}\p{M}]*)|([\p{L}\p{N}\p{M}]+(?:['’-][\p{L}\p{N}\p{M}]+)*[^\s\p{L}\p{N}\p{M}]*)|(\S+)/gu
+const CJK_LIKE = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\u3000-\u303f\uff00-\uffef]/u
+const PUNCT_ONLY = /^[^\s\p{L}\p{N}\p{M}]+$/u
 const SENTENCE_END = /[。！？!?…]["'"」』]*$/u
 /** Keep real ASR words; longer blobs are captions that wrap inside one karaoke button. */
 const COARSE_WORD_CHARS = 8
@@ -77,7 +77,7 @@ const tokenizeTranscript = (text: string): TranscriptToken[] => {
     const value = match[0]
     tokens.push({
       start: match.index,
-      text: value,
+      text: !match[1] && tokens.at(-1)?.weight === 0 ? ` ${value}` : value,
       weight: match[1] ? 0 : [...value].length
     })
     match = TRANSCRIPT_TOKEN_PATTERN.exec(text)

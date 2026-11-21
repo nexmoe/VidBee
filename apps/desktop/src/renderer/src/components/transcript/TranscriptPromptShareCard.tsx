@@ -1,6 +1,10 @@
 import { TranscriptShareCardChrome } from '@renderer/components/transcript/TranscriptShareCardChrome'
 import type { AgentArtifact } from '@shared/agent-chat'
+import { AgentUserPrompt } from '@vidbee/ui/components/agent-user-prompt'
+import type { AgentSkillLabel } from '@vidbee/ui/lib/agent-skill-text'
+import { Brain } from 'lucide-react'
 import type { Ref } from 'react'
+import { useTranslation } from 'react-i18next'
 import { AgentResponseContent } from './AgentResponseContent'
 
 interface TranscriptPromptShareCardProps {
@@ -12,7 +16,9 @@ interface TranscriptPromptShareCardProps {
   sourceByline?: string | null
   sourceTitle?: string | null
   tagline: string
+  thinkingLabel?: string
   userText?: string | null
+  userSkills?: AgentSkillLabel[]
 }
 
 /**
@@ -24,7 +30,9 @@ interface TranscriptPromptShareCardProps {
  * @param props.sourceByline Platform and channel under the title.
  * @param props.sourceTitle Media title in the header.
  * @param props.tagline One-line VidBee intro in the footer.
+ * @param props.thinkingLabel Finished thinking duration. Omitted when the run has none.
  * @param props.userText User-sent instruction that produced this reply.
+ * @param props.userSkills Skill names and localized labels captured from the conversation.
  */
 export function TranscriptPromptShareCard({
   artifacts,
@@ -35,8 +43,11 @@ export function TranscriptPromptShareCard({
   sourceByline,
   sourceTitle,
   tagline,
-  userText
+  thinkingLabel,
+  userText,
+  userSkills
 }: TranscriptPromptShareCardProps) {
+  const { t } = useTranslation()
   return (
     <TranscriptShareCardChrome
       cardRef={cardRef}
@@ -50,16 +61,26 @@ export function TranscriptPromptShareCard({
       <div className="transcript-prompt-share-scale">
         {userText ? (
           <div className="mb-6 flex justify-end">
-            <p
-              className="max-w-[80%] whitespace-pre-wrap rounded-3xl bg-white/14 px-4 py-2.5 text-sm text-white/90 leading-relaxed"
+            <div
+              className="max-w-[80%] whitespace-pre-wrap rounded-3xl bg-white/14 px-4 py-2 text-sm text-white/90 leading-relaxed [&_.agent-skill-badge]:bg-white/14"
               data-testid="transcript-share-card-user-text"
               dir="auto"
             >
-              {userText}
-            </p>
+              <AgentUserPrompt skills={userSkills} t={t} text={userText} />
+            </div>
           </div>
         ) : null}
-        <div className="text-white [&_*]:text-white">
+        {thinkingLabel ? (
+          <p
+            className="mb-4 flex items-center gap-1.5 text-sm text-white/70 leading-snug"
+            data-testid="transcript-share-card-thinking"
+            dir="auto"
+          >
+            <Brain aria-hidden className="size-3.5 shrink-0" />
+            <span>{thinkingLabel}</span>
+          </p>
+        ) : null}
+        <div className="text-white">
           <AgentResponseContent
             artifacts={artifacts ?? []}
             ownRunId={runId}

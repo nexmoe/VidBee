@@ -1,69 +1,75 @@
 import { useNavigate } from '@tanstack/react-router'
+import { useAtomValue } from 'jotai'
+import { selectAtom } from 'jotai/utils'
+import { type ReactNode, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+import type { DownloadSelectionModifiers } from '../../hooks/use-download-selection'
+import { downloadLivePatchesAtom } from '../../store/download-live-patch'
 import type { DownloadRecord } from '../../store/downloads'
 import { DownloadItem } from './DownloadItem'
 
 interface DownloadTaskTreeProps {
-  download: DownloadRecord
-  childrenByParent: Map<string, DownloadRecord[]>
-  matchingIds: Set<string>
   contextIds?: Set<string>
+  depth?: number
+  download: DownloadRecord
+  isTabStop?: boolean
+  matchingIds: Set<string>
+  onToggleSelect?: (id: string, modifiers?: DownloadSelectionModifiers) => void
   selectedIds?: Set<string>
   selectionActive?: boolean
-  onToggleSelect?: (id: string) => void
+  selectionContextMenu?: ReactNode
 }
 
-/** Nest derived media beneath its source, including a non-selectable source when filtered out. */
+/**
+ * Render one download row. Nested rows are separate virtual items, indented by depth.
+ */
 export function DownloadTaskTree({
-  download,
-  childrenByParent,
-  matchingIds,
   contextIds,
+  depth = 0,
+  download,
+  isTabStop,
+  matchingIds,
+  onToggleSelect,
   selectedIds,
   selectionActive,
-  onToggleSelect
+  selectionContextMenu
 }: DownloadTaskTreeProps) {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const children = childrenByParent.get(download.id) ?? []
+  const patchAtom = useMemo(
+    () => selectAtom(downloadLivePatchesAtom, (patches) => patches.get(download.id), Object.is),
+    [download.id]
+  )
+  const patch = useAtomValue(patchAtom)
+  const view = patch ? { ...download, ...patch } : download
+  const showRecord = matchingIds.has(download.id) || Boolean(contextIds?.has(download.id))
   return (
-    <div>
-      {matchingIds.has(download.id) || contextIds?.has(download.id) ? (
+    <div
+      className={depth > 0 ? 'border-border/60 border-l' : undefined}
+      style={depth > 0 ? { marginLeft: depth * 24 } : undefined}
+    >
+      {showRecord ? (
         <DownloadItem
-          download={download}
+          download={view}
           isSelected={selectedIds?.has(download.id)}
+          isTabStop={isTabStop}
           onToggleSelect={matchingIds.has(download.id) ? onToggleSelect : undefined}
           selectionActive={selectionActive}
+          selectionContextMenu={selectionContextMenu}
         />
       ) : (
         <button
           className="mx-6 my-3 max-w-[calc(100%-3rem)] truncate text-left text-muted-foreground text-xs hover:text-foreground"
           onClick={() => {
             void navigate({
-              to: '/downloads/$downloadId/transcript',
-              params: { downloadId: download.id }
+              params: { downloadId: download.id },
+              to: '/downloads/$downloadId/transcript'
             })
           }}
           type="button"
         >
           {t('download.sourceFile')}: {download.title}
         </button>
-      )}
-      {children.length > 0 && (
-        <div className="ml-6 border-border/60 border-l pl-3">
-          {children.map((child) => (
-            <DownloadTaskTree
-              childrenByParent={childrenByParent}
-              contextIds={contextIds}
-              download={child}
-              key={child.id}
-              matchingIds={matchingIds}
-              onToggleSelect={onToggleSelect}
-              selectedIds={selectedIds}
-              selectionActive={selectionActive}
-            />
-          ))}
-        </div>
       )}
     </div>
   )

@@ -8,8 +8,9 @@ import { execFile } from 'node:child_process'
  * fragment-downloader children running — the download keeps going in the
  * background after the user cancels (GitHub issue #395). `taskkill /T` walks
  * and terminates the whole process tree; `/F` forces it because yt-dlp does
- * not handle the graceful WM_CLOSE that plain taskkill sends. On POSIX we keep
- * the existing single-process signal semantics (SIGTERM grace, then SIGKILL).
+ * not handle the graceful WM_CLOSE that plain taskkill sends. On POSIX, signal
+ * the process group first so grandchildren such as ffmpeg die with yt-dlp, then
+ * fall back to the pid when it is not a group leader.
  *
  * @param pid Process id to terminate; no-op when missing or non-positive.
  * @param signal Signal used on POSIX platforms.
@@ -30,5 +31,13 @@ export const killProcessTree = (
     return
   }
 
-  process.kill(pid, signal)
+  try {
+    process.kill(-pid, signal)
+  } catch {
+    try {
+      process.kill(pid, signal)
+    } catch {
+      // already gone
+    }
+  }
 }

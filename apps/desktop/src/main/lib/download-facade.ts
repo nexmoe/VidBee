@@ -9,22 +9,23 @@
  * are mapped back through `projectTaskForRenderer`.
  *
  * Live yt-dlp log streaming is wired through the kernel's `log` event
- * (emitted from the executor's `onStd`): we accumulate a capped per-task
- * buffer and replay it via `download-log`. Saved logs for terminal items are
- * read on demand from the persisted attempt tail (`queue.getTaskLog`).
+ * (emitted from the executor's `onStd`): we keep a capped per-task buffer and
+ * emit only the appended chunk on `download-log`. Saved logs for terminal items
+ * are read on demand from the persisted attempt tail (`queue.getTaskLog`).
  * `glitchTipEventId` remains a best-effort no-op in this iteration.
  */
 import { EventEmitter } from 'node:events'
 import path from 'node:path'
 
 import {
-  isMediaTaskKind,
+  downloadIdentity,
+  isLibraryTaskKind,
   PRIORITY_USER,
   type Task,
   type TaskInput,
   type TaskQueueAPI
 } from '@vidbee/task-queue'
-
+import { appendCappedLog } from '../../shared/live-log'
 import type {
   DownloadItem,
   DownloadOptions,
@@ -35,11 +36,12 @@ import type {
   VideoInfo,
   VideoInfoCommandResult
 } from '../../shared/types'
-import { buildPendingDownloadItem, hasDisplayMetadata } from '../../shared/utils/pending-download'
-import { buildVideoInfoDownloadMetadata } from '../../shared/utils/video-info-metadata'
+import { buildPendingDownloadItem } from '../../shared/utils/pending-download'
 import { settingsManager } from '../settings'
 import { scopedLoggers } from '../utils/logger'
+import { cancelledPartTargets, deleteCancelledDownloadParts } from './cancelled-download-parts'
 import { toSharedSettings } from './command-utils'
+import { hydrateDownloadMetadata } from './download-metadata'
 import { shouldSurfaceQueuedDownload } from './download-queue-events'
 import { applyAutoVideoDownloadPath } from './path-resolver'
 import { projectProgressForRenderer, projectTaskForRenderer } from './projection'
@@ -60,9 +62,6 @@ const NON_TERMINAL: ReadonlySet<Task['status']> = new Set([
   'retry-scheduled'
 ])
 
-/** Cap the per-task live log buffer so a long-running download cannot grow it without bound. */
-const MAX_LOG_BUFFER = 80_000
-
 const ensureDirectoryExists = (dir?: string): void => {
   if (!dir) {
     return
@@ -73,31 +72,6 @@ const ensureDirectoryExists = (dir?: string): void => {
     fs.mkdirSync(dir, { recursive: true })
   } catch (err) {
     logger.warn('download-facade: failed to ensure download directory', err)
-  }
-}
-
-/** Fill missing title/thumbnail metadata from yt-dlp before a task is queued. */
-const hydrateDownloadMetadata = async (options: DownloadOptions): Promise<DownloadOptions> => {
-  if (hasDisplayMetadata(options)) {
-    return options
-  }
-
-  try {
-    const info = await fetchVideoInfo(options.url)
-    const metadata = buildVideoInfoDownloadMetadata(info)
-    return {
-      ...options,
-      title: options.title ?? metadata.title,
-      thumbnail: options.thumbnail ?? metadata.thumbnail,
-      description: options.description ?? metadata.description,
-      channel: options.channel ?? metadata.channel,
-      uploader: options.uploader ?? metadata.uploader,
-      viewCount: options.viewCount ?? metadata.viewCount,
-      duration: options.duration ?? metadata.duration
-    }
-  } catch (err) {
-    logger.warn('download-facade: failed to hydrate video metadata', err)
-    return options
   }
 }
 
@@ -160,10 +134,13 @@ export const prepareDownloadTaskInput = async (
 
 class DownloadFacade extends EventEmitter {
   private subscribed = false
-  /** Accumulated live yt-dlp output per active task, replayed to the renderer via `download-log`. */
+  /** Capped live yt-dlp output per active task. Callers that need the full tail read `queue.getTaskLog`. */
   private readonly logBuffers = new Map<string, string>()
   /** Starts that have been shown in the list but are still hydrating metadata. */
-  private readonly pendingStarts = new Map<string, { cancelled: boolean }>()
+  private readonly pendingStarts = new Map<
+    string,
+    { cancelled: boolean; identity: string | null }
+  >()
 
   private get queue(): TaskQueueAPI {
     return getDesktopTaskQueue()
@@ -180,7 +157,7 @@ class DownloadFacade extends EventEmitter {
       this.emit('download-removed', event.taskId)
     })
     queue.on('snapshot-changed', (event) => {
-      if (!isMediaTaskKind(event.task.kind)) {
+      if (!isLibraryTaskKind(event.task.kind)) {
         return
       }
       const item = projectTaskForRenderer(event.task)
@@ -188,7 +165,7 @@ class DownloadFacade extends EventEmitter {
     })
     queue.on('transition', (event) => {
       const task = queue.get(event.taskId)
-      if (!(task && isMediaTaskKind(task.kind))) {
+      if (!(task && isLibraryTaskKind(task.kind))) {
         return
       }
       const item = projectTaskForRenderer(task)
@@ -214,6 +191,7 @@ class DownloadFacade extends EventEmitter {
         }
         case 'cancelled':
           this.logBuffers.delete(event.taskId)
+          void this.removeCancelledPartialFiles(task)
           this.emit('download-cancelled', event.taskId)
           break
         default:
@@ -231,13 +209,13 @@ class DownloadFacade extends EventEmitter {
         this.emit('download-progress', event.taskId, progress as DownloadProgress)
       }
     })
-    // Stream live yt-dlp output: append each line to a capped per-task buffer and
-    // replay the full buffer so the renderer's log panel mirrors the legacy contract.
+    // Stream live yt-dlp output. The buffer stays capped for in-process readers.
+    // Renderer IPC receives only the appended line; the main process coalesces it.
     queue.on('log', (event) => {
-      const next = `${this.logBuffers.get(event.taskId) ?? ''}${event.line}\n`
-      const buffer = next.length > MAX_LOG_BUFFER ? next.slice(next.length - MAX_LOG_BUFFER) : next
+      const chunk = `${event.line}\n`
+      const buffer = appendCappedLog(this.logBuffers.get(event.taskId) ?? '', chunk)
       this.logBuffers.set(event.taskId, buffer)
-      this.emit('download-log', event.taskId, buffer)
+      this.emit('download-log', event.taskId, chunk)
     })
   }
 
@@ -257,12 +235,24 @@ class DownloadFacade extends EventEmitter {
 
   // ───────────── Queue control ─────────────
 
+  /** Reject duplicate requests before displaying or hydrating another pending download. */
   startDownload(id: string, options: DownloadOptions): boolean {
     this.subscribeOnce()
+    const input = buildTaskInput(id, options)
+    const identity = downloadIdentity(input)
+    if (
+      this.queue.get(id) ||
+      this.queue.findDuplicateDownload(input) ||
+      this.pendingStarts.has(id) ||
+      (identity &&
+        [...this.pendingStarts.values()].some((pending) => pending.identity === identity))
+    ) {
+      return false
+    }
     // Show the row immediately. Bilibili (and similar) metadata probes can
     // take tens of seconds; the list must not wait on that hydration.
     this.emit('download-queued', buildPendingDownloadItem(id, options))
-    const pending = { cancelled: false }
+    const pending = { cancelled: false, identity }
     this.pendingStarts.set(id, pending)
     void (async () => {
       try {
@@ -276,11 +266,15 @@ class DownloadFacade extends EventEmitter {
         }
         // Pass the renderer-generated id through so optimistic-UI rows merge
         // with the real task instead of showing as two separate entries.
-        await this.queue.add({
+        const result = await this.queue.add({
           id,
           input,
           priority: PRIORITY_USER
         })
+        if (result.id !== id) {
+          this.emit('download-removed', id)
+          return
+        }
         if (pending.cancelled) {
           await this.queue.cancel(id, 'user')
         }
@@ -292,10 +286,46 @@ class DownloadFacade extends EventEmitter {
         const message = err instanceof Error ? err : new Error(String(err))
         this.emit('download-error', id, message)
       } finally {
-        this.pendingStarts.delete(id)
+        if (this.pendingStarts.get(id) === pending) {
+          this.pendingStarts.delete(id)
+        }
       }
     })()
     return true
+  }
+
+  /**
+   * Remove yt-dlp partials for a cancelled task. Paused tasks never reach this path.
+   *
+   * @param task Cancelled download task.
+   */
+  private async removeCancelledPartialFiles(task: Task): Promise<void> {
+    if (task.kind === 'subtitles') {
+      return
+    }
+    try {
+      const options = task.input.options ?? {}
+      let configured = ''
+      if (typeof options.customDownloadPath === 'string') {
+        configured = options.customDownloadPath
+      } else if (typeof options.downloadPath === 'string') {
+        configured = options.downloadPath
+      }
+      const downloadDir = configured.trim()
+      const log = await this.queue.getTaskLog(task.id)
+      const targets = cancelledPartTargets({
+        downloadDir,
+        filePath: task.output?.filePath,
+        log,
+        outputTemplate:
+          typeof options.customFilenameTemplate === 'string' ? options.customFilenameTemplate : null
+      })
+      for (const target of targets) {
+        await deleteCancelledDownloadParts(target.directory, target.basenames)
+      }
+    } catch (err) {
+      logger.warn('download-facade: failed to remove cancelled partial files', err)
+    }
   }
 
   /**
@@ -478,7 +508,7 @@ class DownloadFacade extends EventEmitter {
     do {
       const page = this.queue.list({ limit: 200, cursor })
       for (const t of page.tasks) {
-        if (NON_TERMINAL.has(t.status) && isMediaTaskKind(t.kind)) {
+        if (NON_TERMINAL.has(t.status) && isLibraryTaskKind(t.kind)) {
           active.push(projectTaskForRenderer(t))
         }
       }

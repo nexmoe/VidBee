@@ -40,5 +40,13 @@ export function updateDesktopSettings(settings: Partial<AppSettings>): void {
     Object.keys(settings).map((key) => [key, actual[key as keyof AppSettings]])
   )
   applyBatchSettingSideEffects(applied, settingSideEffectHandlers)
+  if (settings.transcriptionProvider !== undefined) {
+    void import('./transcript-host').then(
+      ({ flushDeferredAutoTranscriptions, startIdleMinimalModelFill }) => {
+        startIdleMinimalModelFill()
+        flushDeferredAutoTranscriptions()
+      }
+    )
+  }
   broadcastSettingsChanged()
 }

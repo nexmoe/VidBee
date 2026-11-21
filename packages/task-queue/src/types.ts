@@ -9,6 +9,7 @@
 export type TaskKind =
   | 'video'
   | 'audio'
+  | 'subtitles'
   | 'playlist'
   | 'subscription-item'
   | 'yt-dlp-forward'
@@ -29,9 +30,25 @@ export const TRANSCRIPTION_GROUP_KEY = 'transcription'
 export const isDownloadTaskKind = (kind: TaskKind): boolean =>
   kind !== 'transcription' && kind !== 'conversion' && kind !== 'model-download'
 
+/**
+ * Return whether a new ASR task may start.
+ * Transcription waits while active downloads fill the download cap, then starts when a slot frees.
+ *
+ * @param activeDownloads Download tasks currently occupying a scheduler slot.
+ * @param maxConcurrentDownloads Configured download cap.
+ */
+export const canAdmitTranscription = (
+  activeDownloads: number,
+  maxConcurrentDownloads: number
+): boolean => activeDownloads < maxConcurrentDownloads
+
 /** Media-producing tasks share file, playback and history surfaces. */
 export const isMediaTaskKind = (kind: TaskKind): boolean =>
-  isDownloadTaskKind(kind) || kind === 'conversion'
+  (isDownloadTaskKind(kind) && kind !== 'subtitles') || kind === 'conversion'
+
+/** Library entries include subtitle sources that have no playable audio or video. */
+export const isLibraryTaskKind = (kind: TaskKind): boolean =>
+  isMediaTaskKind(kind) || kind === 'subtitles'
 
 export type TaskStatus =
   | 'queued'
@@ -110,7 +127,15 @@ export interface TranscriptTaskResult {
 
 export type SubtitleDownloadStatus = 'downloaded' | 'unavailable' | 'skipped-auth' | 'failed'
 
+/** Cookie acquisition method, without cookie values, file paths, or browser profiles. */
+export interface DownloadCookieSource {
+  type: 'extension' | 'browser' | 'file' | 'config'
+  browser?: string
+}
+
 export interface TaskOutput {
+  /** Sources used for this download; an empty array means none, absence means unrecorded. */
+  cookieSources?: DownloadCookieSource[]
   /** Immutable acquisition facts captured by the downloader process. */
   subtitleAcquisition?: {
     id: string
@@ -136,9 +161,8 @@ export interface TaskOutput {
   /** Actual yt-dlp subtitle language tags selected for download. */
   subtitleLanguages?: string[]
   /**
-   * Set by the transcription executor after the transcript or explicit
-   * no-speech result has been committed to SQLite. Download tasks leave
-   * this unset.
+   * Set after ASR or downloaded website captions have been committed to SQLite.
+   * ASR may also commit an explicit no-speech result.
    */
   transcript?: TranscriptTaskResult
 }

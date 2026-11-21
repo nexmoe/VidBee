@@ -8,6 +8,7 @@ import { logger } from '../lib/logger'
 
 // Settings atom
 export const settingsAtom = atom<AppSettings>(defaultSettings)
+export const settingsLoadedAtom = atom(false)
 export const enableDownloadNotificationsAtom = atom(
   (get) => get(settingsAtom).enableDownloadNotifications
 )
@@ -28,6 +29,7 @@ export const loadSettingsAtom = atom(null, async (_get, set) => {
     }
 
     set(settingsAtom, { ...settings, language: savedLanguage })
+    set(settingsLoadedAtom, true)
   } catch (error) {
     logger.error('Failed to load settings:', error)
   }

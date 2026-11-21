@@ -9,6 +9,11 @@ export interface MarkdownPdfWindow {
   }
 }
 
+export interface ExportVideoSource {
+  url: string
+  label?: string
+}
+
 const PRINT_PDF_OPTIONS = {
   margins: { bottom: 0.6, left: 0.6, right: 0.6, top: 0.6 },
   pageSize: 'A4' as const,
@@ -49,7 +54,11 @@ export const PRINT_DOCUMENT_READY = `(async () => {
  * @param value Raw markdown or attribute text.
  */
 export const escapeHtml = (value: string): string =>
-  value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+  value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
 
 /**
  * Keep http(s), mailto, in-page, and embedded raster images; drop javascript and opaque artifact URLs.
@@ -84,11 +93,11 @@ export const renderMarkdownInline = (text: string): string => {
     if (!href) {
       return alt ? `<em>${alt}</em>` : ''
     }
-    return `<img alt="${alt}" src="${escapeHtml(href)}" />`
+    return `<img alt="${alt}" src="${href}" />`
   })
   html = html.replace(/\[([^\]]+)]\(([^)\s]+)\)/g, (_match, label: string, url: string) => {
     const href = safeHref(url)
-    return href ? `<a href="${escapeHtml(href)}">${label}</a>` : label
+    return href ? `<a href="${href.replaceAll('"', '&quot;')}">${label}</a>` : label
   })
   html = html.replace(
     /\*\*(.+?)\*\*|__(.+?)__/g,
@@ -286,41 +295,71 @@ const PRINT_STYLES = `
   img { display: block; height: auto; margin: 0.8em 0; max-width: 100%; page-break-inside: avoid; }
   a { color: inherit; }
   hr { border: 0; border-top: 1px solid #d4d4d4; margin: 1.4em 0; }
-  footer {
-    border-top: 1px solid #d4d4d4;
-    color: #666;
-    font-size: 10pt;
-    margin-top: 2.4em;
-    padding-top: 0.85em;
-  }
-  footer a { text-decoration: none; }
 `.replaceAll(/\s+/g, ' ')
 
 export const VIDBEE_EXPORT_URL = 'https://vidbee.org'
 export const VIDBEE_EXPORT_NAME = 'VidBee'
 
+/** Append the original video's public URL below the exported document. */
+export const withVideoSourceLink = (markdown: string, source?: ExportVideoSource): string => {
+  const url = source?.url.trim()
+  if (!(url && /^https?:\/\//i.test(url) && URL.canParse(url))) {
+    return markdown
+  }
+  const href = new URL(url).href.replaceAll(
+    /[()[\]*_`\\]/g,
+    (character) => `%${character.charCodeAt(0).toString(16).toUpperCase()}`
+  )
+  return `${markdown.trimEnd()}\n\n---\n\n${source?.label ?? 'Source URL'}: [${href}](${href})\n`
+}
+
 /**
- * Append a VidBee colophon so exported Markdown files stay attributed.
+ * Place VidBee attribution directly below the opening heading, or before untitled content.
+ * A finished thinking duration follows that attribution when one was recorded.
  *
  * @param markdown Reply body after images have been inlined.
+ * @param thinkingLabel Localized duration, such as "Thought for 6 seconds".
  */
-export const withVidBeeExportFooter = (markdown: string): string =>
-  `${markdown.trimEnd()}\n\n---\n\n[${VIDBEE_EXPORT_NAME}](${VIDBEE_EXPORT_URL})\n`
+export const withVidBeeExportAttribution = (markdown: string, thinkingLabel?: string): string => {
+  const body = markdown.trim()
+  const attribution = `Made with [${VIDBEE_EXPORT_NAME}](${VIDBEE_EXPORT_URL})`
+  const duration = thinkingLabel?.trim() ?? ''
+  const preface = duration ? `${attribution}\n\n${duration}` : attribution
+  const heading = body.match(/^#{1,6}[ \t]+[^\n]*(?:\n|$)/)?.[0]
+  if (heading) {
+    return `${heading.trimEnd()}\n\n${preface}\n\n${body.slice(heading.length).trimStart()}\n`
+  }
+  return `${preface}\n\n${body}\n`
+}
 
 /**
  * Wrap converted markdown in a printable document with CJK-safe typography.
  *
  * @param markdown Reply body.
  * @param title Optional document title shown when the body has no H1.
+ * @param thinkingLabel Localized duration printed under the attribution.
+ * @param source Original video URL and its localized label.
  */
-export const markdownToPrintableHtml = (markdown: string, title?: string): string => {
-  const body = markdownToHtml(markdown.trim())
+export const markdownToPrintableHtml = (
+  markdown: string,
+  title?: string,
+  thinkingLabel?: string,
+  source?: ExportVideoSource
+): string => {
+  const body = markdownToHtml(withVideoSourceLink(markdown, source).trim())
   const heading = title?.trim()
   const hasTitle = Boolean(heading) && !/^\s*<h1[\s>]/i.test(body)
   const titleHtml = hasTitle ? `<h1>${escapeHtml(heading ?? '')}</h1>` : ''
   const pageTitle = heading || VIDBEE_EXPORT_NAME
-  const footer = `<footer><a href="${VIDBEE_EXPORT_URL}">${VIDBEE_EXPORT_NAME}</a></footer>`
-  return `<!DOCTYPE html><html><head><meta charset="utf-8" /><title>${escapeHtml(pageTitle)}</title><style>${PRINT_STYLES}</style></head><body><article>${titleHtml}${body}${footer}</article></body></html>`
+  const content = `${titleHtml}${body}`
+  const attribution = markdownToHtml(withVidBeeExportAttribution('')).trim()
+  const duration = thinkingLabel?.trim()
+  const thinkingHtml = duration ? markdownToHtml(duration).trim() : ''
+  const openingHeading = content.match(/^<h[1-6]>.*?<\/h[1-6]>/s)?.[0] ?? ''
+  const attributedBody = `${openingHeading}${attribution}${thinkingHtml}${content.slice(
+    openingHeading.length
+  )}`
+  return `<!DOCTYPE html><html><head><meta charset="utf-8" /><meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data: https: http:; style-src 'unsafe-inline'" /><title>${escapeHtml(pageTitle)}</title><style>${PRINT_STYLES}</style></head><body><article>${attributedBody}</article></body></html>`
 }
 
 /**

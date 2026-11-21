@@ -4,7 +4,9 @@ const INACTIVITY_MS = 5 * 60 * 1000
 const WALL_CLOCK_MS = 60 * 60 * 1000
 const APPROVAL_MS = 10 * 60 * 1000
 const TOOL_CEILING_MS = {
+  durable: 55 * 60 * 1000,
   media: 30 * 60 * 1000,
+  localization: 55 * 60 * 1000,
   management: 3 * 60 * 1000,
   default: 5 * 60 * 1000
 } as const
@@ -13,6 +15,7 @@ export type AgentToolTimerCategory = keyof typeof TOOL_CEILING_MS
 
 /**
  * Three explicit clocks for one agent run: inactivity, per-tool ceiling, and wall cap.
+ * Approval and queue waits count toward none of them. Queue waits have an independent deadline.
  */
 export class AgentRunTimers {
   private inactivity: ReturnType<typeof setTimeout> | undefined
@@ -21,6 +24,10 @@ export class AgentRunTimers {
   private approval: ReturnType<typeof setTimeout> | undefined
   private disposed = false
   private approvalPaused = false
+  private taskPaused = false
+  private toolCategory: AgentToolTimerCategory | undefined
+  private wallRemainingMs = WALL_CLOCK_MS
+  private wallStartedAt: number | undefined
   private readonly onExpire: (failure: AgentFailure) => void
   private readonly onApprovalTimeout: () => void
 
@@ -30,13 +37,7 @@ export class AgentRunTimers {
   }) {
     this.onExpire = input.onExpire
     this.onApprovalTimeout = input.onApprovalTimeout ?? (() => undefined)
-    this.wall = setTimeout(() => {
-      this.expire({
-        code: 'TIMEOUT',
-        message: 'The agent run reached its 60-minute time limit.',
-        retryable: false
-      })
-    }, WALL_CLOCK_MS)
+    this.armWall(WALL_CLOCK_MS)
     this.armInactivity()
   }
 
@@ -45,7 +46,7 @@ export class AgentRunTimers {
    * Does not refresh the per-tool ceiling.
    */
   activity(): void {
-    if (this.disposed || this.approvalPaused) {
+    if (this.disposed || this.approvalPaused || this.taskPaused) {
       return
     }
     this.armInactivity()
@@ -53,11 +54,16 @@ export class AgentRunTimers {
 
   /**
    * Arm the per-tool ceiling for the active tool category.
+   * A pending approval keeps the ceiling down until the user decides.
    *
-   * @param category Media, management, or default bound.
+   * @param category Media, localization, management, or default bound.
    */
   toolStarted(category: AgentToolTimerCategory): void {
     if (this.disposed) {
+      return
+    }
+    this.toolCategory = category
+    if (this.approvalPaused || this.taskPaused) {
       return
     }
     this.armTool(category)
@@ -65,14 +71,14 @@ export class AgentRunTimers {
 
   /** Clear the per-tool ceiling when the active tool finishes. */
   toolFinished(): void {
-    if (this.tool) {
-      clearTimeout(this.tool)
-      this.tool = undefined
-    }
+    this.toolCategory = undefined
+    this.clearToolTimer()
   }
 
   /**
-   * Pause inactivity while the user decides, and arm the 10-minute auto-deny.
+   * Pause inactivity, the tool ceiling, and the wall clock while the user decides.
+   * Arms the 10-minute auto-deny. A decision restarts the tool ceiling from zero
+   * and continues the wall clock with the active time that was left.
    *
    * @param pending True when at least one approval is outstanding.
    */
@@ -80,15 +86,19 @@ export class AgentRunTimers {
     if (this.disposed) {
       return
     }
-    this.approvalPaused = pending
     if (this.approval) {
       clearTimeout(this.approval)
       this.approval = undefined
     }
     if (pending) {
-      if (this.inactivity) {
-        clearTimeout(this.inactivity)
-        this.inactivity = undefined
+      if (!this.approvalPaused) {
+        this.approvalPaused = true
+        if (this.inactivity) {
+          clearTimeout(this.inactivity)
+          this.inactivity = undefined
+        }
+        this.clearToolTimer()
+        this.pauseWall()
       }
       this.approval = setTimeout(() => {
         this.approval = undefined
@@ -96,12 +106,46 @@ export class AgentRunTimers {
       }, APPROVAL_MS)
       return
     }
-    this.armInactivity()
+    const wasPaused = this.approvalPaused
+    this.approvalPaused = false
+    if (wasPaused && !this.taskPaused) {
+      this.resumeWall()
+      if (this.toolCategory) {
+        this.armTool(this.toolCategory)
+      }
+    }
+    if (!this.taskPaused) {
+      this.armInactivity()
+    }
+  }
+
+  /** Freeze model clocks during an event-driven queue wait, which has its own deadline. */
+  taskWaiting(pending: boolean): void {
+    if (this.disposed || this.taskPaused === pending) {
+      return
+    }
+    this.taskPaused = pending
+    if (pending) {
+      if (this.inactivity) {
+        clearTimeout(this.inactivity)
+      }
+      this.inactivity = undefined
+      this.clearToolTimer()
+      this.pauseWall()
+    } else if (!this.approvalPaused) {
+      this.resumeWall()
+      if (this.toolCategory) {
+        this.armTool(this.toolCategory)
+      }
+      this.armInactivity()
+    }
   }
 
   /** Cancel every clock. Safe to call more than once. */
   dispose(): void {
     this.disposed = true
+    this.toolCategory = undefined
+    this.wallStartedAt = undefined
     for (const timer of [this.inactivity, this.tool, this.wall, this.approval]) {
       if (timer) {
         clearTimeout(timer)
@@ -119,7 +163,13 @@ export class AgentRunTimers {
    * @param name Tool identifier from the registry.
    */
   static categoryForTool(name: string): AgentToolTimerCategory {
-    if (name === 'capture_frames' || name === 'create_clip' || name === 'read_artifact') {
+    if (name === 'delegate_task' || name === 'resume_task') {
+      return 'durable'
+    }
+    if (name === 'create_dubbed_video' || name === 'manage_tts_model') {
+      return 'localization'
+    }
+    if (['capture_frames', 'create_clip', 'read_artifact', 'export_subtitles'].includes(name)) {
       return 'media'
     }
     if (
@@ -149,14 +199,12 @@ export class AgentRunTimers {
   }
 
   /**
-   * Restart the per-tool ceiling; progress does not refresh this timer.
+   * Restart the per-tool ceiling from its full bound. Progress does not refresh it.
    *
    * @param category Active tool bucket.
    */
   private armTool(category: AgentToolTimerCategory): void {
-    if (this.tool) {
-      clearTimeout(this.tool)
-    }
+    this.clearToolTimer()
     this.tool = setTimeout(() => {
       this.expire({
         code: 'TIMEOUT',
@@ -164,6 +212,55 @@ export class AgentRunTimers {
         retryable: false
       })
     }, TOOL_CEILING_MS[category])
+  }
+
+  /** Drop the tool timeout and keep the category so a decision can arm a fresh ceiling. */
+  private clearToolTimer(): void {
+    if (this.tool) {
+      clearTimeout(this.tool)
+      this.tool = undefined
+    }
+  }
+
+  /**
+   * Start the wall clock for the active time still allowed.
+   *
+   * @param durationMs Milliseconds of active run time remaining.
+   */
+  private armWall(durationMs: number): void {
+    if (this.wall) {
+      clearTimeout(this.wall)
+    }
+    this.wallRemainingMs = durationMs
+    this.wallStartedAt = Date.now()
+    this.wall = setTimeout(() => {
+      this.expire({
+        code: 'TIMEOUT',
+        message: 'The agent run reached its 60-minute time limit.',
+        retryable: false
+      })
+    }, durationMs)
+  }
+
+  /** Freeze the wall clock and remember the active time still left. */
+  private pauseWall(): void {
+    if (this.wallStartedAt === undefined) {
+      return
+    }
+    this.wallRemainingMs = Math.max(0, this.wallRemainingMs - (Date.now() - this.wallStartedAt))
+    if (this.wall) {
+      clearTimeout(this.wall)
+      this.wall = undefined
+    }
+    this.wallStartedAt = undefined
+  }
+
+  /** Continue the wall clock from the active time saved when approval began. */
+  private resumeWall(): void {
+    if (this.disposed || this.wallStartedAt !== undefined) {
+      return
+    }
+    this.armWall(this.wallRemainingMs)
   }
 
   /**

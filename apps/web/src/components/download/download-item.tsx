@@ -11,6 +11,7 @@ import {
 	ContextMenuItem,
 	ContextMenuTrigger,
 } from "@vidbee/ui/components/ui/context-menu";
+import { DownloadLogs } from "@vidbee/ui/components/ui/download-logs";
 import { DownloadPlatformIcon } from "@vidbee/ui/components/ui/download-platform-icon";
 import { DownloadRecordContextMenuItems } from "@vidbee/ui/components/ui/download-record-context-menu";
 import {
@@ -857,7 +858,10 @@ export function DownloadItem({
 					}
 				>
 					<div className="flex w-full items-start gap-3">
-						<div className="relative z-20 flex h-14 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border/60 bg-background/60">
+						<div
+							className="relative z-20 flex h-14 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border/60 bg-background/60"
+							data-download-transfer-cover=""
+						>
 							{isHistory && onToggleSelect && (
 								<div
 									className={`absolute top-1 left-1 z-30 rounded-md transition ${
@@ -1073,8 +1077,11 @@ export function DownloadItem({
 											onLinkClick={(event) => event.stopPropagation()}
 											showGroupSeparator={canShowSheet}
 											sourceUrl={download.url}
+											stage="download"
+											task={download}
 											wrapperClassName="flex flex-wrap items-center gap-1.5"
 											ytDlpCommand={download.ytDlpCommand}
+											ytDlpLog={logContent}
 										/>
 									</div>
 								</div>
@@ -1135,39 +1142,14 @@ export function DownloadItem({
 											className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden px-6 py-4"
 											value="logs"
 										>
-											<div className="flex items-center justify-between text-muted-foreground text-xs">
-												<span>
-													{isInProgressStatus
-														? t("download.logs.live")
-														: t("download.logs.history")}
-												</span>
-												{logAutoScroll ? null : (
-													<span className="text-muted-foreground/70">
-														{t("download.logs.scrollPaused")}
-													</span>
-												)}
-											</div>
-											{hasYtDlpCommand && (
-												<div className="rounded-md border border-border/60 bg-muted/20 p-2">
-													<div className="font-medium text-[11px] text-muted-foreground">
-														{t("download.logs.command")}
-													</div>
-													<div className="mt-1 whitespace-pre-wrap break-words font-mono text-xs">
-														{ytDlpCommand}
-													</div>
-												</div>
-											)}
-											<div className="min-h-0 flex-1 rounded-md border border-border/60 bg-muted/30">
-												<div
-													className="h-full overflow-y-auto whitespace-pre-wrap break-words p-3 font-mono text-xs leading-relaxed"
-													onScroll={handleLogScroll}
-													ref={logContainerRef}
-												>
-													{hasLogContent
-														? logContent
-														: t("download.logs.empty")}
-												</div>
-											</div>
+											<DownloadLogs
+												isLive={isInProgressStatus}
+												logAutoScroll={logAutoScroll}
+												logContainerRef={logContainerRef}
+												logContent={logContent}
+												onLogScroll={handleLogScroll}
+												ytDlpCommand={ytDlpCommand}
+											/>
 										</TabPanel>
 									</Tabs>
 								</div>

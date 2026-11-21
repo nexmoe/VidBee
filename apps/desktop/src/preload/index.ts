@@ -2,6 +2,7 @@ import { setupRenderer } from '@better-auth/electron/preload'
 import { electronAPI } from '@electron-toolkit/preload'
 import { logger } from '@vidbee/logger/client'
 import { contextBridge, ipcRenderer, webUtils } from 'electron'
+import { installGoogleTagPreload } from 'electron-ga4-telemetry/transport-preload'
 import { createIpcProxy } from 'electron-ipc-decorator/client'
 import type { IpcServices } from '../main/ipc'
 
@@ -9,6 +10,7 @@ import type { IpcServices } from '../main/ipc'
 const ipcServices = createIpcProxy<IpcServices>(ipcRenderer)
 
 setupRenderer({ channelPrefix: 'vidbee-auth' })
+installGoogleTagPreload()
 
 // Custom APIs for renderer
 const api = {

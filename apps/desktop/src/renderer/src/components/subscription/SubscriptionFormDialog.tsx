@@ -58,16 +58,22 @@ export function SubscriptionFormDialog({
 
   return (
     <SharedSubscriptionFormDialog
+      downloadDefaults={{
+        downloadType: settings.oneClickDownloadType,
+        downloadQuality: settings.oneClickQuality,
+        downloadContainer: settings.oneClickContainer
+      }}
       downloadPath={settings.downloadPath}
       mode={mode}
       onClose={onClose}
       onlyLatestDefault={settings.subscriptionOnlyLatestDefault}
       onOpenRssDocs={handleOpenRssDocs}
-      onResolveFeed={(url) => resolveFeed(url)}
+      onResolveFeed={resolveFeed}
       onSave={onSave}
       onSelectDirectory={handleSelectDirectory}
       open={open}
       subscription={subscription}
+      supportsSubtitleDownloads
     />
   )
 }

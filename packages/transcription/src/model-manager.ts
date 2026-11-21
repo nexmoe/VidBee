@@ -682,6 +682,8 @@ export class ModelManager {
       try {
         if (isArchiveUrl(url)) {
           await this.installArchive({ ...spec, url }, signal)
+        } else if (spec.directoryMembers?.length) {
+          await this.installDirectory(spec, url, signal)
         } else {
           await this.downloadUrl(url, dest, sha256, spec.tier, signal)
         }
@@ -714,6 +716,28 @@ export class ModelManager {
       throw new Error(state.issue)
     }
     throw lastError instanceof Error ? lastError : new Error(String(lastError))
+  }
+
+  /** Download and repair pinned directory members from a publisher's raw directory URL. */
+  private async installDirectory(
+    spec: ModelFileSpec,
+    url: string,
+    signal?: AbortSignal
+  ): Promise<void> {
+    const dest = this.pathFor(spec)
+    if (existsSync(dest) && !statSync(dest).isDirectory()) {
+      rmSync(dest, { force: true })
+    }
+    mkdirSync(dest, { recursive: true })
+    for (const member of spec.directoryMembers ?? []) {
+      throwIfAborted(signal, spec.tier)
+      if (assessDirectoryMembers(dest, [member]).present) {
+        continue
+      }
+      const memberPath = join(dest, member.name)
+      rmSync(memberPath, { recursive: true, force: true })
+      await this.downloadUrl(`${url}/${member.name}`, memberPath, member.sha256, spec.tier, signal)
+    }
   }
 
   /** Read a file's checksum from its pinned publisher manifest before downloading it. */

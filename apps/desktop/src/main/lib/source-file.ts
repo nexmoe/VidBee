@@ -5,7 +5,11 @@ import type { Task } from '@vidbee/task-queue'
 const fileOk = (path: string | null | undefined): path is string =>
   Boolean(path && existsSync(path) && statSync(path).size > 0)
 
+/** Resolve playable media without treating a subtitle export as an audio/video source. */
 export const resolveTaskSourceFile = (task: Readonly<Task>): string | null => {
+  if (task.kind === 'subtitles') {
+    return null
+  }
   if (fileOk(task.output?.filePath)) {
     return task.output.filePath
   }

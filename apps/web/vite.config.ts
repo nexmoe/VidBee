@@ -16,16 +16,22 @@ const apiProxyTarget =
 // Vite's secure localhost default.
 function resolveAllowedHosts(): true | string[] | undefined {
 	const raw = process.env.VIDBEE_ALLOWED_HOSTS?.trim();
+	const tailscaleHosts = process.env.PORTLESS_TAILSCALE_URL
+		? [new URL(process.env.PORTLESS_TAILSCALE_URL).hostname]
+		: [];
 	if (!raw) {
-		return undefined;
+		return tailscaleHosts.length ? tailscaleHosts : undefined;
 	}
 	if (raw === "*" || raw === "all") {
 		return true;
 	}
-	return raw
-		.split(",")
-		.map((host) => host.trim())
-		.filter(Boolean);
+	return [
+		...raw
+			.split(",")
+			.map((host) => host.trim())
+			.filter(Boolean),
+		...tailscaleHosts,
+	];
 }
 
 const reactSsrDeps = [

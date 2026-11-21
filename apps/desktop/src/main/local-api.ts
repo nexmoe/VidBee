@@ -13,6 +13,7 @@ import {
   updateAutomationDescriptorToken
 } from './lib/automation-descriptor'
 import { downloadEngine } from './lib/download-facade'
+import { clearExtensionChats, handleExtensionChat, isExtensionChatPath } from './lib/extension-chat'
 import {
   clearExtensionCookies,
   getExtensionCookieConnection,
@@ -43,6 +44,7 @@ import {
   startDesktopTaskQueue,
   stopDesktopTaskQueue
 } from './lib/task-queue-host'
+import { handleMcpRequest, startDesktopMcp, stopDesktopMcp } from './mcp/http'
 
 const PORT_RANGE_START = LOCAL_API_PORT_START
 const PORT_RANGE_END = LOCAL_API_PORT_END
@@ -441,8 +443,26 @@ const handleRequest = async (
       })
       return
     }
+    if (req.url && new URL(req.url, 'http://127.0.0.1').pathname === '/mcp') {
+      if (caller.kind !== 'cli') {
+        writeJson(res, 403, { error: 'Forbidden origin' })
+        return
+      }
+      await handleMcpRequest(req, res)
+      return
+    }
     if (caller.kind === 'extension') {
       applyExtensionCors(res, caller.origin)
+    }
+
+    if (req.url && isExtensionChatPath(new URL(req.url, 'http://127.0.0.1').pathname)) {
+      await handleExtensionChat(
+        req,
+        res,
+        new URL(req.url, 'http://127.0.0.1').pathname,
+        extensionTokens.consume
+      )
+      return
     }
 
     if (req.url && isExtensionOverviewPath(new URL(req.url, 'http://127.0.0.1').pathname)) {
@@ -568,6 +588,8 @@ const handleRequest = async (
           extensionSecurity: 1,
           extensionCookies: 1,
           extensionOverview: 1,
+          extensionChat: 1,
+          extensionChatSidebar: 1,
           extensionTranscript: 1
         },
         extension: {
@@ -600,7 +622,7 @@ const startServerOnPort = (port: number): Promise<http.Server> =>
     httpServer.listen(port, '127.0.0.1', () => resolve(httpServer))
   })
 
-/** Start the loopback API with production trust rules unless development origins are explicit. */
+/** Start the loopback API with the fixed development identity enabled only when unpackaged. */
 export async function startExtensionApiServer(): Promise<number | null> {
   if (server && serverPort) {
     return serverPort
@@ -627,6 +649,11 @@ export async function startExtensionApiServer(): Promise<number | null> {
       } catch (err) {
         log.warn('startExtensionApiServer: failed to write descriptor:', err)
       }
+      try {
+        startDesktopMcp(serverHost, serverPort)
+      } catch (error) {
+        log.warn('Desktop MCP failed to start:', error)
+      }
       return serverPort
     } catch (error) {
       const err = error as NodeJS.ErrnoException
@@ -644,6 +671,7 @@ export async function stopExtensionApiServer(): Promise<void> {
   if (!server) {
     return
   }
+  await stopDesktopMcp()
 
   if (unsubscribeFromTaskQueue) {
     try {
@@ -670,6 +698,7 @@ export async function stopExtensionApiServer(): Promise<void> {
   server = null
   serverPort = null
   clearExtensionOverviews()
+  clearExtensionChats()
   clearExtensionTranscripts()
   clearExtensionCookies()
   extensionTokens.clear()

@@ -4,8 +4,11 @@ import path from 'node:path'
 import { normalizeSubtitleLanguages } from '@vidbee/downloader-core/subtitle-languages'
 import { detectSystemProfile } from '@vidbee/i18n/system-locale'
 import { parseAsrTier } from '@vidbee/transcription'
+import { parseTranscriptionProvider } from '@vidbee/transcription/cloud'
 import { parseDownloadMirror } from '@vidbee/transcription/download-mirrors'
 import { app } from 'electron'
+import { parseAgentPermissionMode } from '../shared/agent-permissions'
+import { parseTtsModelId } from '../shared/tts-models'
 import type { AppSettings } from '../shared/types'
 import { defaultSettings } from '../shared/types'
 import { shouldShowWhatsNew, WHATS_NEW_ID } from '../shared/whats-new'
@@ -95,8 +98,20 @@ class SettingsManager {
       return parseAsrTier(this.store.get(key)) as AppSettings[K]
     }
 
+    if (key === 'ttsModelId') {
+      return parseTtsModelId(this.store.get(key)) as AppSettings[K]
+    }
+
+    if (key === 'transcriptionProvider') {
+      return parseTranscriptionProvider(this.store.get(key)) as AppSettings[K]
+    }
+
     if (key === 'downloadMirror') {
       return parseDownloadMirror(this.store.get(key)) as AppSettings[K]
+    }
+
+    if (key === 'agentManagementTools') {
+      return parseAgentPermissionMode(this.store.get(key)) as AppSettings[K]
     }
 
     return this.store.get(key)
@@ -116,7 +131,7 @@ class SettingsManager {
     if (key === 'downloadPath' && typeof value === 'string') {
       ensureDirectoryExists(value)
     }
-    this.store.set(key, value)
+    this.store.set(key, key === 'agentManagementTools' ? parseAgentPermissionMode(value) : value)
   }
 
   getAll(): AppSettings {
@@ -129,6 +144,9 @@ class SettingsManager {
         ? REQUIRED_LAUNCH_AT_LOGIN
         : (this.store.store.launchAtLogin ?? defaultSettings.launchAtLogin),
       asrTier: parseAsrTier(this.store.store.asrTier),
+      ttsModelId: parseTtsModelId(this.store.store.ttsModelId),
+      transcriptionProvider: parseTranscriptionProvider(this.store.store.transcriptionProvider),
+      agentManagementTools: parseAgentPermissionMode(this.store.store.agentManagementTools),
       downloadMirror: parseDownloadMirror(this.store.store.downloadMirror)
     }
   }
@@ -165,7 +183,10 @@ class SettingsManager {
       if (key === 'downloadPath' && typeof value === 'string') {
         ensureDirectoryExists(value)
       }
-      this.store.set(key as keyof AppSettings, value as AppSettings[keyof AppSettings])
+      this.store.set(
+        key as keyof AppSettings,
+        key === 'agentManagementTools' ? parseAgentPermissionMode(value) : value
+      )
     }
   }
 
@@ -228,6 +249,11 @@ class SettingsManager {
 
   private ensureRequiredSettings(): void {
     try {
+      const storedPermissionMode = this.store.get('agentManagementTools')
+      const permissionMode = parseAgentPermissionMode(storedPermissionMode)
+      if (storedPermissionMode !== permissionMode) {
+        this.store.set('agentManagementTools', permissionMode)
+      }
       if (this.store.get('autoUpdate') !== REQUIRED_AUTO_UPDATE) {
         this.store.set('autoUpdate', REQUIRED_AUTO_UPDATE)
       }

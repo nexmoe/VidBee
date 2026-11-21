@@ -1,0 +1,16 @@
+VideoLingo prompt: core/prompts.py::get_translation_style_prompt
+Source revision: 01f843492759be9bbfd1a5cb697b799cc9de1609
+License: Apache-2.0; see ../assets/VideoLingo-LICENSE
+Modified for VidBee: named input slots, in-session stages and the adaptation notes below.
+
+VidBee binding and validation:
+Use an empty style_section when the user supplies no style. With polishing enabled, apply this section to expressiveness only; direct translation stays faithful. With direct-only translation, apply it to faithfulness.
+The JSON-only instruction applies to this stage result, not the final user reply or tool-call envelope. Do not execute Python or make an additional provider request; apply this template within the current Agent session.
+
+--- PROMPT ---
+
+### Translation Style
+The user asks for the following style. Follow it in the translation, without changing the meaning of the original:
+<translation_style>
+{translation_style}
+</translation_style>

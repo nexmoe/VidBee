@@ -1,3 +1,4 @@
+import { FFMPEG_ENCODE_THREADS } from '@vidbee/task-queue/process'
 import { z } from 'zod'
 
 /** Structured media operations never accept arbitrary process flags or output paths. */
@@ -53,5 +54,6 @@ export function buildMediaTransformArgs(
   if (input.format === 'mp4' || input.format === 'm4a') {
     args.push('-movflags', '+faststart')
   }
+  args.push('-threads', FFMPEG_ENCODE_THREADS)
   return [...args, '-progress', 'pipe:1', '-nostats', output]
 }

@@ -12,7 +12,6 @@ import { AlertCircle, FolderOpen } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { getDownloadErrorGuidance } from '../../lib/download-error-guidance'
-import { sendGlitchTipFeedback } from '../../lib/glitchtip-feedback'
 import { useAppInfo } from '../feedback/FeedbackLinks'
 
 interface DownloadParseErrorBannerProps {
@@ -139,17 +138,10 @@ export function DownloadParseErrorBanner({
               iconClassName="h-2.5 w-2.5"
               includeAppInfo
               issueTitle={DOWNLOAD_FEEDBACK_ISSUE_TITLE}
-              onGlitchTipFeedback={() =>
-                sendGlitchTipFeedback({
-                  appInfo,
-                  error,
-                  sourceUrl,
-                  ytDlpCommand,
-                  ytDlpLog: error
-                })
-              }
               sourceUrl={sourceUrl}
+              stage="metadata"
               ytDlpCommand={ytDlpCommand}
+              ytDlpLog={error}
             />
           </div>
         </div>

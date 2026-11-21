@@ -4,6 +4,7 @@ import { existsSync, mkdirSync, renameSync, statSync, unlinkSync } from 'node:fs
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { promisify } from 'node:util'
+import { backgroundChildSpawnOptions, lowerChildPriority } from '@vidbee/task-queue/process'
 import { isNativelyPlayableAudio } from '../../shared/utils/native-playable'
 
 const execFileAsync = promisify(execFile)
@@ -473,7 +474,11 @@ export const preparePlayableMedia = async (
  */
 const runFfmpeg = async (ffmpegPath: string, args: string[]): Promise<void> => {
   await new Promise<void>((resolve, reject) => {
-    const child = spawn(ffmpegPath, args, { stdio: ['ignore', 'ignore', 'pipe'] })
+    const child = spawn(ffmpegPath, args, {
+      stdio: ['ignore', 'ignore', 'pipe'],
+      ...backgroundChildSpawnOptions()
+    })
+    lowerChildPriority(child.pid)
     const chunks: Buffer[] = []
     let bytes = 0
     child.stderr?.on('data', (chunk: Buffer) => {

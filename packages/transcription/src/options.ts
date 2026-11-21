@@ -1,5 +1,6 @@
 import type { TaskCreationMetadata, TaskInput } from '@vidbee/task-queue'
 import { DEFAULT_ASR_TIER, parseAsrTier } from './asr-tiers'
+import { DEFAULT_CLOUD_TRANSCRIPTION_MODEL, parseTranscriptionProvider } from './cloud'
 import { DEFAULT_SPEAKER_COUNT, parseSpeakerCount } from './speaker-count'
 import type { TranscriptionTaskOptions, TranscriptionTrigger } from './types'
 
@@ -33,6 +34,11 @@ export function readTranscriptionOptions(input: TaskInput): TranscriptionTaskOpt
     return null
   }
   return {
+    provider: parseTranscriptionProvider(raw.provider),
+    cloudModelId:
+      typeof raw.cloudModelId === 'string' && raw.cloudModelId.length <= 200
+        ? raw.cloudModelId
+        : DEFAULT_CLOUD_TRANSCRIPTION_MODEL,
     downloadTaskId,
     sourceFilePath,
     trigger: isTranscriptionTrigger(raw.trigger) ? raw.trigger : 'manual',
@@ -53,6 +59,8 @@ export function buildTranscriptionInput(
     kind: 'transcription',
     title: opts.title,
     options: {
+      provider: parseTranscriptionProvider(opts.provider),
+      cloudModelId: opts.cloudModelId ?? DEFAULT_CLOUD_TRANSCRIPTION_MODEL,
       origin: 'manual',
       ...opts.creation,
       downloadTaskId: opts.downloadTaskId,

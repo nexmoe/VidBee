@@ -1,3 +1,9 @@
+export {
+  BACKGROUND_CHILD_PRIORITY,
+  backgroundChildSpawnOptions,
+  FFMPEG_ENCODE_THREADS,
+  lowerChildPriority
+} from './child-priority'
 export { killProcessTree } from './kill-process-tree'
 export { ProcessRegistry } from './registry'
 export type { ProcessHandle, ProcessRegistryDeps } from './registry'

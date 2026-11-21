@@ -1,0 +1,68 @@
+VideoLingo prompt: core/prompts.py::get_summary_prompt
+Source revision: 01f843492759be9bbfd1a5cb697b799cc9de1609
+License: Apache-2.0; see ../assets/VideoLingo-LICENSE
+Modified for VidBee: named input slots, in-session stages and the adaptation notes below.
+
+VidBee binding and validation:
+Bind terms_note to the original Existing Terms section below, or an empty string when no user glossary exists. Merge the user glossary back after extraction; never replace its approved equivalents. Validate theme and every src/tgt/note string.
+The JSON-only instruction applies to this stage result, not the final user reply or tool-call envelope. Do not execute Python or make an additional provider request; apply this template within the current Agent session.
+
+--- PROMPT ---
+
+## Role
+You are a video translation expert and terminology consultant, specializing in {source_language} comprehension and {target_language} expression optimization.
+
+## Task
+For the provided {source_language} video text:
+1. Summarize main topic in two sentences
+2. Extract professional terms/names with {target_language} translations (excluding existing terms)
+3. Provide brief explanation for each term
+
+{existing_terms_section}
+
+Steps:
+1. Topic Summary:
+   - Quick scan for general understanding
+   - Write two sentences: first for main topic, second for key point
+2. Term Extraction:
+   - Mark professional terms and names (excluding those listed in Existing Terms)
+   - Provide {target_language} translation or keep original
+   - Add brief explanation
+   - Extract less than 15 terms
+
+## INPUT
+<text>
+{source_content}
+</text>
+
+## Output in only JSON format and no other text
+{
+  "theme": "Two-sentence video summary",
+  "terms": [
+    {
+      "src": "{source_language} term",
+      "tgt": "{target_language} translation or original",
+      "note": "Brief explanation"
+    },
+    ...
+  ]
+}
+
+## Example
+{
+  "theme": "本视频介绍人工智能在医疗领域的应用现状。重点展示了AI在医学影像诊断和药物研发中的突破性进展。",
+  "terms": [
+    {
+      "src": "Machine Learning",
+      "tgt": "机器学习",
+      "note": "AI的核心技术，通过数据训练实现智能决策"
+    },
+    {
+      "src": "CNN",
+      "tgt": "CNN",
+      "note": "卷积神经网络，用于医学图像识别的深度学习模型"
+    }
+  ]
+}
+
+Note: Start you answer with ```json and end with ```, do not add any other text.

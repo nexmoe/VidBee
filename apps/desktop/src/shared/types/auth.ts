@@ -64,6 +64,17 @@ export interface DesktopPaginatedResult<T> {
   nextCursor: string | null
 }
 
+export interface DesktopAiCreditSnapshot {
+  credits: DesktopAiCreditUsage
+  reservations: DesktopAiReservation[]
+}
+
+export interface DesktopAccountOverview extends DesktopAiCreditSnapshot {
+  invitationOverview: DesktopInvitationOverview
+  invitedUsers: DesktopPaginatedResult<DesktopInvitedUser>
+  giftedCreditRecords: DesktopPaginatedResult<DesktopGiftedCreditRecord>
+}
+
 export type DesktopCloudCacheStats = Record<
   'today' | 'week' | 'month' | 'all',
   {
@@ -76,6 +87,8 @@ export type DesktopCloudCacheStats = Record<
 
 /** An authenticated task hold; reconciliation is included in the reserved balance. */
 export interface DesktopAiReservation {
+  /** Automatic recovery has stopped; the held balance requires operator review. */
+  recoveryStoppedAt?: number | null
   createdAt: number
   deadlineAt: number
   expiresAt: number

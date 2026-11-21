@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { copyFileSync, existsSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
+import { backgroundChildSpawnOptions, lowerChildPriority } from '@vidbee/task-queue/process'
 import { BrowserWindow, dialog } from 'electron'
 import { settingsManager } from '../settings'
 import { scopedLoggers } from '../utils/logger'
@@ -53,7 +54,8 @@ export const cancelVideoSubtitleExport = (): void => {
  * Ask the user where to save the video, then mux or burn captions with ffmpeg.
  */
 export const exportVideoWithSubtitles = async (
-  input: VideoSubtitleExportInput
+  input: VideoSubtitleExportInput,
+  options?: { outputPath: string; signal: AbortSignal }
 ): Promise<VideoSubtitleExportResult> => {
   const sourcePath = path.normalize(input.sourcePath.trim())
   if (!(sourcePath && existsSync(sourcePath) && isNonEmptyFile(sourcePath))) {
@@ -73,17 +75,27 @@ export const exportVideoWithSubtitles = async (
     return { reason: 'audio-only', status: 'unavailable' }
   }
 
-  const outputPath = await pickExportPath(input.defaultFileName, input.mode)
+  const outputPath =
+    options?.outputPath ?? (await pickExportPath(input.defaultFileName, input.mode))
   if (!outputPath) {
     return { status: 'canceled' }
   }
   if (path.resolve(outputPath) === path.resolve(sourcePath)) {
     return { message: 'output path matches the source video', status: 'failed' }
   }
+  if (options && (existsSync(outputPath) || activeExport)) {
+    return {
+      message: activeExport
+        ? 'Another video export is already running'
+        : 'Output file already exists',
+      status: 'failed'
+    }
+  }
 
   const abort = new AbortController()
   activeExport?.abort()
   activeExport = abort
+  const signal = options ? AbortSignal.any([abort.signal, options.signal]) : abort.signal
 
   const subtitleExt = input.mode === 'hard' ? '.ass' : '.srt'
   const subtitlePath = path.join(tmpdir(), `vidbee-export-${randomUUID()}${subtitleExt}`)
@@ -107,7 +119,7 @@ export const exportVideoWithSubtitles = async (
             subtitlePath
           })
     broadcastProgress({ percent: durationMs > 0 ? 0 : null })
-    await runExportFfmpeg(ffmpegPath, args, durationMs, abort.signal)
+    await runExportFfmpeg(ffmpegPath, args, durationMs, signal)
     if (!isNonEmptyFile(stagingPath)) {
       return { message: 'ffmpeg produced an empty file', status: 'failed' }
     }
@@ -116,7 +128,7 @@ export const exportVideoWithSubtitles = async (
     return { path: outputPath, status: 'saved' }
   } catch (error) {
     removeIfExists(stagingPath)
-    if (abort.signal.aborted) {
+    if (signal.aborted) {
       return { status: 'canceled' }
     }
     const detail = error instanceof Error ? error.message : String(error)
@@ -124,6 +136,7 @@ export const exportVideoWithSubtitles = async (
     return { message: detail, status: 'failed' }
   } finally {
     removeIfExists(subtitlePath)
+    removeIfExists(stagingPath)
     if (activeExport === abort) {
       activeExport = null
     }
@@ -212,7 +225,11 @@ const runExportFfmpeg = (
   signal: AbortSignal
 ): Promise<void> =>
   new Promise((resolve, reject) => {
-    const child = spawn(ffmpegPath, args, { stdio: ['ignore', 'pipe', 'pipe'] })
+    const child = spawn(ffmpegPath, args, {
+      stdio: ['ignore', 'pipe', 'pipe'],
+      ...backgroundChildSpawnOptions()
+    })
+    lowerChildPriority(child.pid)
     const chunks: Buffer[] = []
     let bytes = 0
     const onAbort = (): void => {

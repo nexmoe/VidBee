@@ -25,6 +25,11 @@ const gapCenters = (bands: Band[], height: number): number[] => {
 /** Measure safe page breaks from actual text lines and indivisible visual elements. */
 export const measureShareImageLayout = (root: HTMLElement): ShareImageLayout => {
   const box = root.getBoundingClientRect()
+  const footer = root.querySelector('footer')
+  const footerTop = footer
+    ? (footer.previousElementSibling?.getBoundingClientRect().bottom ??
+        footer.getBoundingClientRect().top) - box.top
+    : undefined
   const lines: Band[] = []
   const blocks: Band[] = []
   /** Convert a visible rectangle to a protected vertical band inside the poster. */
@@ -82,6 +87,7 @@ export const measureShareImageLayout = (root: HTMLElement): ShareImageLayout => 
     width: box.width,
     height: box.height,
     padding: (36 / 540) * box.width,
+    footerTop,
     safeBreaks: gapCenters(lines, box.height),
     preferredBreaks: gapCenters([...lines, ...blocks], box.height)
   }

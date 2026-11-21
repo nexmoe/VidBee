@@ -21,12 +21,17 @@ import type {
   TaskOutput
 } from '@vidbee/task-queue'
 import { classify, virtualError } from '@vidbee/task-queue'
-import { killProcessTree } from '@vidbee/task-queue/process'
+import {
+  backgroundChildSpawnOptions,
+  killProcessTree,
+  lowerChildPriority
+} from '@vidbee/task-queue/process'
 import YTDlpWrap from 'yt-dlp-wrap-plus'
 import type { OneClickContainerOption } from './format-preferences'
 import type { DownloadRuntimeSettings } from './types'
 import {
   buildDownloadArgs,
+  cookieSourcesFromArgs,
   formatYtDlpCommand,
   isUnsupportedThumbnailEmbedOnlyFailure,
   resolveSubtitleDownloadSkipReason,
@@ -51,7 +56,7 @@ interface YtDlpExecProcess {
 }
 
 interface YtDlpWrapInstance {
-  exec(args: string[], options?: { signal?: AbortSignal }): YtDlpExecProcess
+  exec(args: string[], options?: { signal?: AbortSignal; detached?: boolean }): YtDlpExecProcess
 }
 
 type YtDlpWrapConstructor = new (binaryPath: string) => YtDlpWrapInstance
@@ -320,6 +325,10 @@ export class YtDlpExecutor implements Executor {
         return makeNoopRun()
       }
       const subtitlesRequested = hasSubtitleDownloadArgs(args)
+      const cookieSources = cookieSourcesFromArgs(
+        args,
+        this.resolveRuntimeSettings(ctx.input, settingsOverride)
+      )
       const initialSubtitleStatus = this.resolveInitialSubtitleStatus(ctx.input)
 
       const ffmpegLocation = this.opts.resolveFfmpegLocation()
@@ -389,10 +398,16 @@ export class YtDlpExecutor implements Executor {
       }
 
       /** Spawn one yt-dlp child with the shared cancellation signal. */
-      const spawnProcess = (processArgs: string[]): YtDlpExecProcess =>
-        this.opts.spawnFn
+      const spawnProcess = (processArgs: string[]): YtDlpExecProcess => {
+        const proc = this.opts.spawnFn
           ? this.opts.spawnFn(ytDlpPath, processArgs, controller.signal)
-          : this.getYtDlp(ytDlpPath).exec(processArgs, { signal: controller.signal })
+          : this.getYtDlp(ytDlpPath).exec(processArgs, {
+              signal: controller.signal,
+              ...backgroundChildSpawnOptions()
+            })
+        lowerChildPriority(proc.ytDlpProcess?.pid)
+        return proc
+      }
 
       /** Finish a successful child after verifying the output file on disk. */
       const finishSuccessfulProcess = (closedAt: number): void => {
@@ -431,6 +446,9 @@ export class YtDlpExecutor implements Executor {
           subtitlesRequested,
           unavailableSeen: subtitleUnavailableSeen
         })
+        if (cookieSources !== undefined) {
+          output.cookieSources = cookieSources
+        }
         if (subtitleOutcome) {
           output.subtitleStatus = subtitleOutcome.status
           output.subtitleAcquisition = {

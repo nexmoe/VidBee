@@ -61,6 +61,33 @@ import {
   Calendar,
   Folder,
   SlidersHorizontal,
+  Puzzle,
+  Captions,
+  TextSearch,
+  ListVideo,
+  ListFilter,
+  ListPlus,
+  Info,
+  Video,
+  Camera,
+  Scissors,
+  History,
+  NotebookText,
+  NotebookPen,
+  FileText,
+  FilePenLine,
+  FileOutput,
+  ListChecks,
+  AudioLines,
+  Terminal,
+  Wrench,
+  LayoutDashboard,
+  CirclePlus,
+  ClipboardList,
+  Hourglass,
+  Rss,
+  Download,
+  Archive,
 } from "lucide-react";
 
 export interface IconComponentProps {
@@ -85,7 +112,12 @@ export type IconName =
   | "home" | "message-circle" | "inbox"
   | "pencil" | "scaling" | "skip-forward" | "corner-down-right" | "corner-down-left"
   | "panel-left" | "panel-right" | "chevrons-up-down" | "more-horizontal" | "more-vertical" | "calendar" | "folder"
-  | "sliders-horizontal";
+  | "sliders-horizontal"
+  | "puzzle" | "captions" | "text-search" | "list-video" | "list-filter" | "list-plus"
+  | "info" | "video" | "camera" | "scissors" | "history"
+  | "notebook-text" | "notebook-pen" | "file-text" | "file-pen-line" | "file-output" | "list-checks"
+  | "audio-lines" | "terminal" | "wrench" | "layout-dashboard"
+  | "circle-plus" | "clipboard-list" | "hourglass" | "rss" | "download" | "archive";
 
 export const defaultIcons: Record<IconName, IconComponent> = {
   "chevron-right": ChevronRight,
@@ -146,6 +178,33 @@ export const defaultIcons: Record<IconName, IconComponent> = {
   "calendar": Calendar,
   "folder": Folder,
   "sliders-horizontal": SlidersHorizontal,
+  "puzzle": Puzzle,
+  "captions": Captions,
+  "text-search": TextSearch,
+  "list-video": ListVideo,
+  "list-filter": ListFilter,
+  "list-plus": ListPlus,
+  "info": Info,
+  "video": Video,
+  "camera": Camera,
+  "scissors": Scissors,
+  "history": History,
+  "notebook-text": NotebookText,
+  "notebook-pen": NotebookPen,
+  "file-text": FileText,
+  "file-pen-line": FilePenLine,
+  "file-output": FileOutput,
+  "list-checks": ListChecks,
+  "audio-lines": AudioLines,
+  "terminal": Terminal,
+  "wrench": Wrench,
+  "layout-dashboard": LayoutDashboard,
+  "circle-plus": CirclePlus,
+  "clipboard-list": ClipboardList,
+  "hourglass": Hourglass,
+  "rss": Rss,
+  "download": Download,
+  "archive": Archive,
 };
 
 const IconContext = createContext<Record<IconName, IconComponent> | null>(null);

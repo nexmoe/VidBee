@@ -1,4 +1,4 @@
-import { randomBytes } from 'node:crypto'
+import { createHash, randomBytes } from 'node:crypto'
 import { promises as fs } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import os from 'node:os'
@@ -11,9 +11,15 @@ import {
   looksLikeNetscapeCookies,
   matchCookieSites,
   type NetscapeCookieInput,
-  serializeNetscapeCookies
+  serializeNetscapeCookies,
+  VIDBEE_EXTENSION_ORIGIN
 } from '@vidbee/downloader-core/cookie-setup'
-import type { ExtensionCookieConnection } from '../../shared/extension-cookies'
+import type {
+  ExtensionCookieConnection,
+  ExtensionCookieSourcePreference
+} from '../../shared/extension-cookies'
+import { VIDBEE_DEV_EXTENSION_ORIGIN } from '../../shared/extension-identity'
+import { settingsManager } from '../settings'
 import { scopedLoggers } from '../utils/logger'
 import { applyExtensionCors, extensionRequestOrigin, replyExtensionJson } from './extension-origin'
 
@@ -24,6 +30,8 @@ const COOKIES_PATH = `${PREFIX}/cookies`
 const SESSION_TTL_MS = 45_000
 const WAIT_TIMEOUT_MS = 25_000
 const COOKIE_REQUEST_TIMEOUT_MS = 12_000
+const MAX_SESSIONS = 32
+const MAX_SOURCES = 64
 const MAX_COOKIE_ROWS = 4000
 const COOKIE_FILE_TTL_MS = 60 * 60 * 1000
 const BROWSER_IDS = new Set([
@@ -40,6 +48,7 @@ const BROWSER_IDS = new Set([
 
 interface Session {
   browser: string
+  sourceId: string
   lastSeenAt: number
   origin: string
   sites: ExtensionCookieConnection['sites']
@@ -79,16 +88,68 @@ export function isExtensionCookiesPath(pathname: string): boolean {
 /** Snapshot used by Settings and `/status` without exposing session tokens. */
 export function getExtensionCookieConnection(): ExtensionCookieConnection {
   pruneSessions()
-  const session = latestSession()
-  if (!session) {
-    return { connected: false, sites: [] }
-  }
+  const live = new Map([...sessions.values()].map((session) => [session.sourceId, session]))
+  const sources = sourcePreferences().map((source) => {
+    const session = live.get(source.id)
+    const legacyVariant = legacySourceVariant(source)
+    return {
+      ...source,
+      variant: source.variant ?? legacyVariant,
+      legacy: !!legacyVariant,
+      connected: !!session,
+      lastSeenAt: session?.lastSeenAt,
+      sites: session?.sites ?? []
+    }
+  })
+  const active = sources.find((source) => source.connected)
   return {
-    browser: session.browser,
-    connected: true,
-    lastSeenAt: session.lastSeenAt,
-    sites: session.sites
+    activeSourceId: active?.id,
+    browser: active?.browser,
+    connected: !!active,
+    lastSeenAt: active?.lastSeenAt,
+    sites: active?.sites ?? [],
+    sources
   }
+}
+
+/** Persist a user-selected priority, retaining profiles discovered during a concurrent edit. */
+export function setExtensionCookieSourceOrder(sourceIds: string[]): ExtensionCookieConnection {
+  const sources = sourcePreferences()
+  if (
+    !Array.isArray(sourceIds) ||
+    sourceIds.length > MAX_SOURCES ||
+    new Set(sourceIds).size !== sourceIds.length ||
+    sourceIds.some((id) => !sources.some((source) => source.id === id))
+  ) {
+    throw new Error('Invalid extension cookie source order')
+  }
+  const byId = new Map(sources.map((source) => [source.id, source]))
+  const ordered = sourceIds.flatMap((id) => {
+    const source = byId.get(id)
+    return source ? [source] : []
+  })
+  settingsManager.set('extensionCookieSources', [
+    ...ordered,
+    ...sources.filter((source) => !sourceIds.includes(source.id))
+  ])
+  return getExtensionCookieConnection()
+}
+
+/** Forget an offline source, rechecking live sessions before changing saved preferences. */
+export function removeExtensionCookieSource(sourceId: string): ExtensionCookieConnection {
+  pruneSessions()
+  const sources = sourcePreferences()
+  if (typeof sourceId !== 'string' || !sources.some((source) => source.id === sourceId)) {
+    throw new Error('Invalid extension cookie source')
+  }
+  if ([...sessions.values()].some((session) => session.sourceId === sourceId)) {
+    throw new Error('Cannot remove a connected extension cookie source')
+  }
+  settingsManager.set(
+    'extensionCookieSources',
+    sources.filter((source) => source.id !== sourceId)
+  )
+  return getExtensionCookieConnection()
 }
 
 /**
@@ -102,22 +163,31 @@ export async function applyExtensionCookieSettings(
   url: string,
   settings?: DownloadRuntimeSettings
 ): Promise<DownloadRuntimeSettings | undefined> {
-  if (!getExtensionCookieConnection().connected) {
-    return undefined
+  pruneSessions()
+  for (const session of orderedSessions()) {
+    if (!sessions.has(session.token)) {
+      continue
+    }
+    const cookies = await requestCookiesForUrl(url, session)
+    if (!cookies?.length) {
+      continue
+    }
+    const netscape = serializeNetscapeCookies(cookies)
+    if (!looksLikeNetscapeCookies(netscape)) {
+      continue
+    }
+    const cookiesPath = await writeCookiesFile(netscape)
+    logger.info(
+      `extension-cookies: wrote ${cookies.length} cookies from ${session.browser} for download`
+    )
+    return {
+      ...settings,
+      browserForCookies: 'none',
+      cookiesPath,
+      cookieSource: { type: 'extension', browser: session.browser }
+    }
   }
-  const cookies = await requestCookiesForUrl(url)
-  if (!cookies?.length) {
-    logger.info('extension-cookies: no cookies returned for download')
-    return undefined
-  }
-  const netscape = serializeNetscapeCookies(cookies)
-  if (!looksLikeNetscapeCookies(netscape)) {
-    logger.warn('extension-cookies: extension payload was not a valid Netscape export')
-    return undefined
-  }
-  const cookiesPath = await writeCookiesFile(netscape)
-  logger.info(`extension-cookies: wrote ${cookies.length} cookies for download`)
-  return { ...settings, browserForCookies: 'none', cookiesPath }
+  return undefined
 }
 
 /** Drop sessions and pending jobs when the local API stops. */
@@ -173,11 +243,54 @@ export async function handleExtensionCookies(
       replyExtensionJson(res, 400, { error: 'Invalid connect payload' })
       return
     }
-    dropOriginSessions(origin)
+    const sourceId = extensionCookieSourceId(origin, body.clientId ?? body.browser)
+    const previous = [...sessions.values()].find((candidate) => candidate.sourceId === sourceId)
+    if (!previous && sessions.size >= MAX_SESSIONS) {
+      replyExtensionJson(res, 429, { error: 'Too many extension sessions' })
+      return
+    }
+    const sources = sourcePreferences()
+    const variant = origin === VIDBEE_EXTENSION_ORIGIN ? 'store' : 'dev'
+    const connectedAt = Date.now()
+    const preference: ExtensionCookieSourcePreference = {
+      id: sourceId,
+      browser: body.browser,
+      variant,
+      lastConnectedAt: connectedAt
+    }
+    const existing = sources.find((source) => source.id === sourceId)
+    const legacyId = extensionCookieSourceId(origin, body.browser)
+    const legacyIndex = body.clientId ? sources.findIndex((source) => source.id === legacyId) : -1
+    const legacyConnected = [...sessions.values()].some((session) => session.sourceId === legacyId)
+    if (legacyIndex >= 0 && !legacyConnected) {
+      const index = existing ? Math.min(legacyIndex, sources.indexOf(existing)) : legacyIndex
+      const merged = sources.filter((source) => source.id !== legacyId && source.id !== sourceId)
+      merged.splice(index, 0, preference)
+      settingsManager.set('extensionCookieSources', merged)
+    } else if (existing) {
+      settingsManager.set(
+        'extensionCookieSources',
+        sources.map((source) => (source.id === sourceId ? { ...source, ...preference } : source))
+      )
+    } else {
+      if (sources.length >= MAX_SOURCES) {
+        const inactive = sources.findLastIndex(
+          (source) => ![...sessions.values()].some((candidate) => candidate.sourceId === source.id)
+        )
+        if (inactive >= 0) {
+          sources.splice(inactive, 1)
+        }
+      }
+      settingsManager.set('extensionCookieSources', [...sources, preference])
+    }
+    if (previous) {
+      dropSession(previous.token)
+    }
     const token = randomBytes(32).toString('hex')
     const session: Session = {
       browser: body.browser,
-      lastSeenAt: Date.now(),
+      sourceId,
+      lastSeenAt: connectedAt,
       origin,
       sites: body.sites,
       token
@@ -245,15 +358,15 @@ export async function handleExtensionCookies(
 }
 
 /**
- * Ask the newest connected extension for cookies covering this URL.
+ * Ask the selected extension for cookies covering this URL.
  *
  * @param url Download URL.
+ * @param session Browser installation selected before the asynchronous request.
  */
-async function requestCookiesForUrl(url: string): Promise<NetscapeCookieInput[] | null> {
-  const session = latestSession()
-  if (!session) {
-    return null
-  }
+async function requestCookiesForUrl(
+  url: string,
+  session: Session
+): Promise<NetscapeCookieInput[] | null> {
   const domains = cookieDomainsForUrl(url)
   if (domains.length === 0) {
     return null
@@ -263,10 +376,8 @@ async function requestCookiesForUrl(url: string): Promise<NetscapeCookieInput[] 
   flushWaiters(session.token, { domains, id, type: 'cookies', url })
   return await new Promise((resolve) => {
     const timer = setTimeout(() => {
-      jobWaiters.delete(id)
-      jobs.delete(id)
       logger.info('extension-cookies: cookie request timed out')
-      resolve(null)
+      dropSession(session.token)
     }, COOKIE_REQUEST_TIMEOUT_MS)
     jobWaiters.set(id, {
       resolve: (cookies) => {
@@ -314,15 +425,39 @@ async function writeCookiesFile(netscape: string): Promise<string> {
   return filePath
 }
 
-/** Most recently seen live session, if any. */
-function latestSession(): Session | undefined {
-  let newest: Session | undefined
-  for (const session of sessions.values()) {
-    if (!newest || session.lastSeenAt > newest.lastSeenAt) {
-      newest = session
+/** Read a copy so reordering never mutates electron-store's cached settings value. */
+function sourcePreferences() {
+  return [...(settingsManager.get('extensionCookieSources') ?? [])]
+}
+
+/** Keep legacy browser identities and current installation identities in the same origin namespace. */
+function extensionCookieSourceId(origin: string, identity: string): string {
+  return createHash('sha256').update(`${origin}\0${identity}`).digest('hex')
+}
+
+/** Recognize browser-based identities from old clients without guessing an installation's origin. */
+function legacySourceVariant(
+  source: ExtensionCookieSourcePreference
+): ExtensionCookieSourcePreference['variant'] {
+  for (const [variant, origin] of [
+    ['store', VIDBEE_EXTENSION_ORIGIN],
+    ['dev', VIDBEE_DEV_EXTENSION_ORIGIN]
+  ] as const) {
+    const id = extensionCookieSourceId(origin, source.browser)
+    if (id === source.id) {
+      return variant
     }
   }
-  return newest
+  return undefined
+}
+
+/** Resolve live sessions in saved priority order, skipping every offline profile. */
+function orderedSessions(): Session[] {
+  const live = new Map([...sessions.values()].map((session) => [session.sourceId, session]))
+  return sourcePreferences().flatMap((source) => {
+    const session = live.get(source.id)
+    return session ? [session] : []
+  })
 }
 
 /** Drop sessions whose wait loop has gone quiet. */
@@ -332,22 +467,18 @@ function pruneSessions(): void {
     if (session.lastSeenAt >= cutoff) {
       continue
     }
-    sessions.delete(token)
-    for (const [id, job] of jobs) {
-      if (job.sessionToken === token) {
-        fulfillJob(id, null)
-      }
-    }
+    dropSession(token)
   }
 }
 
-/** Replace an earlier session from the same extension origin. */
-function dropOriginSessions(origin: string): void {
-  for (const [token, session] of sessions) {
-    if (session.origin !== origin) {
-      continue
+/** Revoke one installation's session and release only its pending requests. */
+function dropSession(token: string): void {
+  sessions.delete(token)
+  flushWaiters(token, { sites: [], type: 'idle' })
+  for (const [id, job] of jobs) {
+    if (job.sessionToken === token) {
+      fulfillJob(id, null)
     }
-    sessions.delete(token)
   }
 }
 
@@ -385,31 +516,32 @@ function waitForEvent(sessionToken: string, req: IncomingMessage): Promise<WaitE
   return new Promise((resolve) => {
     const session = sessions.get(sessionToken)
     let settled = false
+    /** Settle once and release the timeout and request listener. */
     const finish = (event: WaitEvent): void => {
       if (settled) {
         return
       }
       settled = true
+      clearTimeout(timer)
       req.off('close', onClose)
+      const index = waiters.indexOf(waiter)
+      if (index >= 0) {
+        waiters.splice(index, 1)
+      }
       resolve(event)
     }
     const waiter: Waiter = { resolve: finish, sessionToken }
+    /** Mark a disconnected browser offline and release its outstanding cookie requests. */
     const onClose = (): void => {
-      const index = waiters.indexOf(waiter)
-      if (index >= 0) {
-        waiters.splice(index, 1)
-      }
+      dropSession(sessionToken)
       finish({ sites: session?.sites ?? [], type: 'idle' })
     }
+    const timer = setTimeout(
+      () => finish({ sites: session?.sites ?? [], type: 'idle' }),
+      WAIT_TIMEOUT_MS
+    )
     waiters.push(waiter)
     req.on('close', onClose)
-    setTimeout(() => {
-      const index = waiters.indexOf(waiter)
-      if (index >= 0) {
-        waiters.splice(index, 1)
-      }
-      finish({ sites: session?.sites ?? [], type: 'idle' })
-    }, WAIT_TIMEOUT_MS)
   })
 }
 
@@ -423,18 +555,27 @@ function readBearer(req: IncomingMessage): string {
  *
  * @param req Incoming POST body.
  */
-async function readConnectBody(
-  req: IncomingMessage
-): Promise<{ browser: string; sites: ExtensionCookieConnection['sites'] } | null> {
+async function readConnectBody(req: IncomingMessage): Promise<{
+  browser: string
+  clientId?: string
+  sites: ExtensionCookieConnection['sites']
+} | null> {
   const body = await readJson(req, 16_384)
   if (!body || typeof body !== 'object') {
     return null
   }
-  const payload = body as { browser?: unknown; sites?: unknown }
+  const payload = body as { browser?: unknown; clientId?: unknown; sites?: unknown }
   if (typeof payload.browser !== 'string' || !BROWSER_IDS.has(payload.browser)) {
     return null
   }
-  return { browser: payload.browser, sites: parseSites(payload.sites) }
+  if (
+    payload.clientId !== undefined &&
+    (typeof payload.clientId !== 'string' ||
+      !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(payload.clientId))
+  ) {
+    return null
+  }
+  return { browser: payload.browser, clientId: payload.clientId, sites: parseSites(payload.sites) }
 }
 
 /**

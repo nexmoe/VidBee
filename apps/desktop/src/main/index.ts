@@ -22,8 +22,8 @@ import {
 import { configureLogger } from './config/logger-config'
 import { services } from './ipc'
 import { registerAgentArtifactProtocol } from './lib/agent-artifacts'
-import { stopAllAgentRuns } from './lib/agent-chat-runner'
-import { stopAllPromptRuns } from './lib/ai-prompt-runner'
+import { isAppQuitPrepared, isAppQuitting, prepareAppQuit } from './lib/app-quit'
+import { canUseAppAutoUpdater } from './lib/app-update-policy'
 import {
   AUTH_PROTOCOL,
   handleDesktopAuthCallback,
@@ -31,6 +31,7 @@ import {
   registerDesktopAuthProtocol,
   setupDesktopAuth
 } from './lib/auth-client'
+import { initializeDesktopAnalytics } from './lib/desktop-analytics'
 import { downloadEngine } from './lib/download-facade'
 import { ffmpegManager } from './lib/ffmpeg-manager'
 import {
@@ -40,6 +41,11 @@ import {
   initGlitchTipMain
 } from './lib/glitchtip'
 import { localMediaKind } from './lib/import-local-media'
+import {
+  createKeyedCoalescer,
+  LOG_IPC_INTERVAL_MS,
+  PROGRESS_IPC_INTERVAL_MS
+} from './lib/ipc-coalescer'
 import { stopPlayerHost } from './lib/player-host'
 import {
   installPrivilegedSchemeCollector,
@@ -63,7 +69,7 @@ import {
   startIdleMinimalModelFill,
   subscribeTranscriptBroadcasts
 } from './lib/transcript-host'
-import { applyUpdateChannel } from './lib/update-channel'
+import { getMainWindowState, rememberMainWindowState } from './lib/window-state'
 import { initializeYtDlpKernelService, stopYtDlpKernelService } from './lib/ytdlp-kernel-host'
 import { startExtensionApiServer, stopExtensionApiServer } from './local-api'
 import { isPortableMode } from './portable'
@@ -159,9 +165,6 @@ protocol.registerSchemesAsPrivileged([
 ])
 
 let mainWindow: BrowserWindow | null = null
-let isQuitting = false
-let promptRunsStoppingForQuit = false
-let promptRunsStoppedForQuit = false
 let isYtdlpReady = false
 let kernelBackgroundUpdatesStarted = false
 interface DeepLinkData {
@@ -204,7 +207,7 @@ const isRendererUnavailable = (window: BrowserWindow): boolean =>
  * Replace a failed renderer process with a fresh home route in the same native window.
  */
 const recoverRendererToHome = (window: BrowserWindow, trigger: string): void => {
-  if (isQuitting || window.isDestroyed() || window.webContents.isDestroyed()) {
+  if (isAppQuitting() || window.isDestroyed() || window.webContents.isDestroyed()) {
     return
   }
   if (rendererRecoveryPromise) {
@@ -545,9 +548,9 @@ export function createWindow(): void {
   isMainWindowReadyToShow = false
   isRendererReady = false
 
+  const { maximized, ...windowSize } = getMainWindowState()
   const windowOptions: BrowserWindowConstructorOptions = {
-    width: 1200,
-    height: 800,
+    ...windowSize,
     show: false,
     autoHideMenuBar: true,
     icon: appIcon, // Set application icon
@@ -573,9 +576,10 @@ export function createWindow(): void {
 
   // Create the browser window
   mainWindow = new BrowserWindow(windowOptions)
+  rememberMainWindowState(mainWindow, maximized)
 
   mainWindow.on('close', (event) => {
-    if (isQuitting) {
+    if (isAppQuitting()) {
       return
     }
 
@@ -609,6 +613,10 @@ export function createWindow(): void {
     isRendererReady = false
     destroyShareCaptureWindow()
     applyDockVisibility(settingsManager.get('hideDockIcon'))
+    // The hidden analytics collector keeps window-all-closed from firing.
+    if (process.platform !== 'darwin' && !isAppQuitting() && !settingsManager.get('closeToTray')) {
+      app.quit()
+    }
   })
 
   mainWindow.on('show', () => {
@@ -696,7 +704,7 @@ function setupRendererErrorHandling(window: BrowserWindow): void {
   }
 
   window.webContents.on('render-process-gone', (_event, details) => {
-    if (isQuitting) {
+    if (isAppQuitting()) {
       return
     }
     const rendererUrl = window.webContents.getURL()
@@ -750,7 +758,7 @@ function setupRendererErrorHandling(window: BrowserWindow): void {
     if (process.platform === 'win32' && app.isPackaged) {
       unresponsiveRecoveryTimer = setTimeout(() => {
         unresponsiveRecoveryTimer = null
-        if (unresponsiveSince === null || isQuitting || isRendererUnavailable(window)) {
+        if (unresponsiveSince === null || isAppQuitting() || isRendererUnavailable(window)) {
           return
         }
         log.error(
@@ -829,11 +837,57 @@ function setupRendererErrorHandling(window: BrowserWindow): void {
   })
 }
 
+const progressIpc = createKeyedCoalescer<unknown>({
+  intervalMs: PROGRESS_IPC_INTERVAL_MS,
+  merge: (_pending, next) => next,
+  emit: (id, progress) => {
+    sendToRenderer('download:progress', { id, progress })
+  }
+})
+
+const logIpc = createKeyedCoalescer<string>({
+  intervalMs: LOG_IPC_INTERVAL_MS,
+  merge: (pending, next) => `${pending ?? ''}${next}`,
+  emit: (id, chunk) => {
+    sendToRenderer('download:log', { id, chunk })
+  }
+})
+
+/**
+ * Deliver the latest progress and any unsent log text, then drop coalescer state.
+ *
+ * @param id Download task id.
+ */
+function flushDownloadIpc(id: string): void {
+  progressIpc.flush(id)
+  logIpc.flush(id)
+  progressIpc.clear(id)
+  logIpc.clear(id)
+}
+
+/**
+ * Read a download id from a queued renderer item.
+ *
+ * @param item Queued download payload.
+ */
+function queuedDownloadId(item: unknown): string {
+  if (!item || typeof item !== 'object' || !('id' in item)) {
+    return ''
+  }
+  return typeof item.id === 'string' ? item.id : ''
+}
+
 function setupDownloadEvents(): void {
   downloadEngine.on('download-removed', (id: string) => {
+    flushDownloadIpc(id)
     sendToRenderer('download:removed', id)
   })
   downloadEngine.on('download-queued', (item: unknown) => {
+    const id = queuedDownloadId(item)
+    if (id) {
+      progressIpc.clear(id)
+      logIpc.clear(id)
+    }
     addMainBreadcrumb('download', 'Download queued')
     sendToRenderer('download:queued', item)
   })
@@ -848,14 +902,15 @@ function setupDownloadEvents(): void {
   })
 
   downloadEngine.on('download-progress', (id: string, progress: unknown) => {
-    sendToRenderer('download:progress', { id, progress })
+    progressIpc.push(id, progress)
   })
 
-  downloadEngine.on('download-log', (id: string, logText: string) => {
-    sendToRenderer('download:log', { id, log: logText })
+  downloadEngine.on('download-log', (id: string, chunk: string) => {
+    logIpc.push(id, chunk)
   })
 
   downloadEngine.on('download-completed', (id: string) => {
+    flushDownloadIpc(id)
     addMainBreadcrumb('download', 'Download completed', { downloadId: id })
     sendToRenderer('download:completed', id)
   })
@@ -878,10 +933,12 @@ function setupDownloadEvents(): void {
     if (glitchTipEventId) {
       downloadEngine.updateDownloadInfo(id, { glitchTipEventId })
     }
+    flushDownloadIpc(id)
     sendToRenderer('download:error', { id, error: error.message })
   })
 
   downloadEngine.on('download-cancelled', (id: string) => {
+    flushDownloadIpc(id)
     sendToRenderer('download:cancelled', id)
   })
 }
@@ -1051,9 +1108,10 @@ function registerVidbeeProtocol(): void {
   }
 }
 
+/** Initialize stable automatic updates for installed desktop apps. */
 function initAutoUpdater(): void {
-  if (isPortableMode) {
-    log.info('Portable mode is active, skipping auto-updater initialization')
+  if (!canUseAppAutoUpdater) {
+    log.info('App auto-updates are disabled for portable and Microsoft Store distributions')
     return
   }
 
@@ -1064,6 +1122,10 @@ function initAutoUpdater(): void {
     autoUpdater.logger = log
     autoUpdater.autoDownload = true
     autoUpdater.autoInstallOnAppQuit = true
+    autoUpdater.allowPrerelease = false
+    autoUpdater.channel = 'latest'
+    // Setting the channel enables downgrades unless explicitly disabled afterward.
+    autoUpdater.allowDowngrade = false
 
     autoUpdater.on('update-available', (info) => {
       log.info('Update available:', info.version)
@@ -1090,7 +1152,6 @@ function initAutoUpdater(): void {
     })
 
     autoUpdater.on('download-progress', (progressObj) => {
-      log.info('Download progress:', progressObj.percent)
       sendToRenderer('update:download-progress', progressObj)
     })
 
@@ -1104,7 +1165,6 @@ function initAutoUpdater(): void {
 
     log.info('Auto-updater initialized successfully')
     log.info('Automatic updates are required, checking for updates immediately...')
-    applyUpdateChannel()
     // Use checkForUpdates instead of checkForUpdatesAndNotify
     // because we have our own notification system and want to ensure immediate download
     void autoUpdater.checkForUpdates()
@@ -1139,7 +1199,7 @@ if (gotSingleInstanceLock) {
 }
 
 app.on('child-process-gone', (_event, details) => {
-  if (isQuitting || details.reason === 'clean-exit') {
+  if (isAppQuitting() || details.reason === 'clean-exit') {
     return
   }
 
@@ -1202,6 +1262,7 @@ app.whenReady().then(async () => {
   settingsManager.applyFreshInstallLocale()
 
   registerVidbeeProtocol()
+  initializeDesktopAnalytics(() => mainWindow, rendererEntryUrl(), app.getVersion())
 
   if (isPortableMode) {
     log.info(`Portable mode is active, skipping ${APP_PROTOCOL} protocol handler registration`)
@@ -1347,20 +1408,16 @@ app.on('before-quit', (event) => {
     log.warn('Skipping quit confirmation because the renderer is unavailable')
   }
 
-  if (!promptRunsStoppedForQuit) {
+  if (!isAppQuitPrepared()) {
     event.preventDefault()
-    isQuitting = true
-    if (!promptRunsStoppingForQuit) {
-      promptRunsStoppingForQuit = true
-      void Promise.all([stopAllPromptRuns(), stopAllAgentRuns()]).finally(() => {
-        promptRunsStoppedForQuit = true
+    if (!isAppQuitting()) {
+      void prepareAppQuit().then(() => {
         app.quit()
       })
     }
     return
   }
 
-  isQuitting = true
   stopYtDlpKernelService()
   downloadEngine.flushDownloadSession()
   void stopPlayerHost()

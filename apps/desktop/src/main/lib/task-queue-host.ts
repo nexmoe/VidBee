@@ -11,6 +11,8 @@
  * desktop. The `historyManager` and `downloadEngine` exports are thin
  * facades over this API.
  */
+
+import { EventEmitter, once } from 'node:events'
 import fs from 'node:fs'
 import path from 'node:path'
 import { TASK_QUEUE_DDL_V1 } from '@vidbee/db/task-queue'
@@ -34,12 +36,14 @@ import { settingsManager } from '../settings'
 import { scopedLoggers } from '../utils/logger'
 import { AsrModelExecutor } from './asr-model-executor'
 import { resolveBundledResourcesPath } from './bundled-resources-path'
+import { runDesktopCloudTranscription } from './cloud-transcription'
 import { getDatabaseConnection } from './database'
 import { startDownloadPowerSaveGuard } from './download-power-save'
 import { applyExtensionCookieSettings } from './extension-cookies'
 import { ffmpegManager } from './ffmpeg-manager'
 import { MediaTransformExecutor } from './media-transform-executor'
 import { setDesktopTaskQueueRef } from './queue-ref'
+import { SubtitleDownloadExecutor } from './subtitle-download-executor'
 import {
   broadcastTranscript,
   broadcastTranscriptPartials,
@@ -84,6 +88,8 @@ const resolveFfmpegLocation = (): string | undefined => {
 
 let taskQueueInstance: TaskQueueAPI | null = null
 let started = false
+let starting: Promise<void> | undefined
+const queueLifecycle = new EventEmitter()
 let dbPath: string | null = null
 let persistent = false
 let stopPowerSaveGuard: (() => void) | null = null
@@ -156,6 +162,7 @@ const buildTranscriptionExecutor = (): TranscriptionExecutor => {
     bundledNodePath: resolveBundledNodePath([resourcesDir]),
     workDir: path.join(app.getPath('userData'), 'transcript-work'),
     resolveGpuKinds: resolveTranscriptionGpuKinds,
+    runCloud: runDesktopCloudTranscription,
     onPartial: ({ downloadTaskId, segments }) => {
       broadcastTranscriptPartials(downloadTaskId, segments)
     },
@@ -177,6 +184,7 @@ export const getDesktopTaskQueue = (): TaskQueueAPI => {
     byKind: {
       transcription: buildTranscriptionExecutor(),
       conversion: new MediaTransformExecutor(),
+      subtitles: new SubtitleDownloadExecutor(),
       'model-download': new AsrModelExecutor()
     }
   })
@@ -204,10 +212,27 @@ export const applyDesktopQueueConcurrency = (): void => {
   })
 }
 
-export const startDesktopTaskQueue = async (): Promise<void> => {
-  if (started) {
-    return
+/** Await the normal application startup without dispatching work before kernel preparation. */
+export async function waitForDesktopTaskQueueReady(signal: AbortSignal): Promise<void> {
+  signal.throwIfAborted()
+  if (!started) {
+    await once(queueLifecycle, 'ready', { signal })
   }
+}
+
+/** Share initialization so concurrent callers cannot observe a partially recovered task index. */
+export const startDesktopTaskQueue = (): Promise<void> => {
+  if (started) {
+    return Promise.resolve()
+  }
+  starting ??= initializeDesktopTaskQueue().finally(() => {
+    starting = undefined
+  })
+  return starting
+}
+
+/** Recover persisted tasks after the application's existing kernel preparation has finished. */
+async function initializeDesktopTaskQueue(): Promise<void> {
   const queue = getDesktopTaskQueue()
   await queue.start()
   try {
@@ -227,6 +252,7 @@ export const startDesktopTaskQueue = async (): Promise<void> => {
   }
   stopPowerSaveGuard = startDownloadPowerSaveGuard(queue, powerSaveBlocker)
   started = true
+  queueLifecycle.emit('ready')
 }
 
 export const stopDesktopTaskQueue = async (): Promise<void> => {

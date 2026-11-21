@@ -1,3 +1,4 @@
+import { DownloadCookieSourceSchema } from '@vidbee/task-queue/schemas'
 import { z } from 'zod'
 import {
   DEFAULT_SUBTITLE_LANGUAGES,
@@ -69,6 +70,7 @@ export const DownloadTaskSchema = z.object({
   speed: z.string().optional(),
   ytDlpCommand: z.string().optional(),
   ytDlpLog: z.string().optional(),
+  cookieSources: z.array(DownloadCookieSourceSchema).optional(),
   downloadPath: z.string().optional(),
   savedFileName: z.string().optional(),
   description: z.string().optional(),
@@ -174,10 +176,12 @@ export const WebAppSettingsSchema = z.object({
         'whisper-turbo',
         'sense-voice',
         'sense-voice-2025',
+        'fire-red-asr',
         'parakeet-v2',
         'parakeet-v3',
         'orukeet',
-        'quality'
+        'quality',
+        'qwen3-1.7b'
       ])
       .default('minimal')
   )

@@ -2,6 +2,7 @@ import { SHARE_CARD_LOGO_SRC } from '@renderer/components/transcript/share-card-
 import { RemoteImage } from '@renderer/components/ui/remote-image'
 import { SHARE_CARD_WASH, useCoverFillColor } from '@renderer/lib/share-card-fill'
 import { SHARE_CARD_WIDTH } from '@shared/types/share-card'
+import { EXPORT_BRAND } from '@vidbee/ui/lib/export-brand'
 import type { CSSProperties, ReactNode, Ref } from 'react'
 
 export { SHARE_CARD_WASH, SHARE_CARD_WIDTH }
@@ -14,14 +15,13 @@ export const SHARE_CARD_THEME = {
   '--foreground': '#ffffff',
   '--card': SHARE_CARD_WASH,
   '--card-foreground': '#ffffff',
+  '--surface-1': 'color-mix(in oklab, var(--background) 75%, black)',
   '--muted': '#44403c',
   '--muted-foreground': 'rgba(255,255,255,0.55)',
   '--border': 'rgba(255,255,255,0.2)',
   '--primary': '#ffffff',
   '--sidebar': SHARE_CARD_WASH
 } as CSSProperties
-
-const COVER_FALLBACK = SHARE_CARD_LOGO_SRC
 
 interface TranscriptShareCardChromeProps {
   cardRef?: Ref<HTMLDivElement>
@@ -51,7 +51,7 @@ const shareCardTheme = (fillColor: string): CSSProperties & Record<`--${string}`
 })
 
 /**
- * Poster or cover-fill chrome the hidden capture window snapshots as a PNG.
+ * Poster or cover-fill chrome with a local dark palette for previews and PNG captures.
  *
  * @param props.cardRef Root node measured after fonts and images settle.
  * @param props.children Quote or prompt body.
@@ -78,14 +78,15 @@ export function TranscriptShareCardChrome({
 }: TranscriptShareCardChromeProps) {
   const title = sourceTitle?.trim() || ''
   const byline = sourceByline?.trim() || ''
-  const cover = coverSrc?.trim() || COVER_FALLBACK
+  const cover = coverSrc?.trim() || ''
+  const showHeader = Boolean(cover || title || byline)
   const ratio = progressRatio === undefined ? null : Math.min(1, Math.max(0, progressRatio))
   const showProgress = Boolean(startLabel && durationLabel)
   const isPoster = variant === 'poster'
   const fill = useCoverFillColor(isPoster ? null : coverSrc)
   return (
     <div
-      className="relative box-border overflow-hidden text-white"
+      className="dark relative box-border overflow-hidden text-white"
       data-share-fill={isPoster ? undefined : fill.ready ? 'ready' : 'pending'}
       data-testid={testId}
       ref={cardRef}
@@ -94,7 +95,7 @@ export function TranscriptShareCardChrome({
         width: SHARE_CARD_WIDTH
       }}
     >
-      {isPoster ? (
+      {isPoster && cover ? (
         <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
           <div
             className="size-full origin-center scale-[2.2]"
@@ -107,34 +108,38 @@ export function TranscriptShareCardChrome({
         </div>
       ) : null}
       <div className="relative flex flex-col gap-8 px-8 py-9">
-        <header className="flex items-center gap-5">
-          <div
-            className="h-[72px] w-fit shrink-0 overflow-hidden rounded-[3px] bg-black/20 shadow-[0_1px_3px_rgba(0,0,0,0.12)]"
-            data-testid="transcript-share-card-cover"
-          >
-            <RemoteImage
-              alt={title || 'VidBee'}
-              className="h-full w-auto"
-              imgClassName="block h-full w-auto object-contain"
-              src={cover}
-            />
-          </div>
-          {title || byline ? (
-            <div className="min-w-0 flex-1 overflow-hidden">
-              {title ? (
-                <p className="line-clamp-2 font-semibold text-[18px] leading-snug">{title}</p>
-              ) : null}
-              {byline ? (
-                <p
-                  className="mt-1 truncate text-[13px] text-white/65 leading-snug"
-                  data-testid="transcript-share-card-byline"
-                >
-                  {byline}
-                </p>
-              ) : null}
-            </div>
-          ) : null}
-        </header>
+        {showHeader ? (
+          <header className="flex items-center gap-5">
+            {cover ? (
+              <div
+                className="h-[72px] w-fit shrink-0 overflow-hidden rounded-[3px] bg-black/20 shadow-[0_1px_3px_rgba(0,0,0,0.12)]"
+                data-testid="transcript-share-card-cover"
+              >
+                <RemoteImage
+                  alt={title || 'VidBee'}
+                  className="h-full w-auto"
+                  imgClassName="block h-full w-auto object-contain"
+                  src={cover}
+                />
+              </div>
+            ) : null}
+            {title || byline ? (
+              <div className="min-w-0 flex-1 overflow-hidden">
+                {title ? (
+                  <p className="line-clamp-2 font-semibold text-[18px] leading-snug">{title}</p>
+                ) : null}
+                {byline ? (
+                  <p
+                    className="not-first:mt-1 truncate text-[13px] text-white/65 leading-snug"
+                    data-testid="transcript-share-card-byline"
+                  >
+                    {byline}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+          </header>
+        ) : null}
         <div>{children}</div>
         {showProgress ? (
           <div>
@@ -151,18 +156,30 @@ export function TranscriptShareCardChrome({
           </div>
         ) : null}
         <footer
-          className="relative flex items-center justify-center gap-2 whitespace-nowrap pt-5 text-[20px] leading-none before:absolute before:top-0 before:left-1/2 before:h-px before:w-12 before:-translate-x-1/2 before:bg-white/30"
+          className="relative flex items-center justify-center whitespace-nowrap leading-none"
           data-testid="transcript-share-card-footer"
+          style={{
+            gap: EXPORT_BRAND.gap,
+            paddingTop: EXPORT_BRAND.dividerGap,
+            fontSize: EXPORT_BRAND.fontSize
+          }}
         >
-          <span className="text-white/65">Made with</span>
+          <span
+            aria-hidden
+            className="absolute top-0 left-1/2 h-px -translate-x-1/2 bg-current"
+            style={{ width: EXPORT_BRAND.dividerWidth, opacity: EXPORT_BRAND.dividerOpacity }}
+          />
+          <span style={{ opacity: EXPORT_BRAND.prefixOpacity }}>{EXPORT_BRAND.prefix}</span>
           <img
             alt=""
-            className="block size-7 shrink-0 rounded"
-            height={28}
+            className="block shrink-0 rounded"
+            height={EXPORT_BRAND.logoSize}
             src={SHARE_CARD_LOGO_SRC}
-            width={28}
+            width={EXPORT_BRAND.logoSize}
           />
-          <span className="font-semibold text-white/85">VidBee</span>
+          <span style={{ fontWeight: EXPORT_BRAND.fontWeight, opacity: EXPORT_BRAND.nameOpacity }}>
+            {EXPORT_BRAND.name}
+          </span>
         </footer>
       </div>
     </div>

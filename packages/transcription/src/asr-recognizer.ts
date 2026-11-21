@@ -237,6 +237,22 @@ export const buildOfflineRecognizerConfig = (
       }
     }
   }
+  if (family === 'fire-red-asr') {
+    if (!(paths.encoder && paths.decoder && paths.tokens)) {
+      throw new Error('model missing: fire-red-asr')
+    }
+    return {
+      featConfig,
+      modelConfig: {
+        fireRedAsr: {
+          encoder: paths.encoder,
+          decoder: paths.decoder
+        },
+        tokens: paths.tokens,
+        ...shared
+      }
+    }
+  }
   if (family === 'sense-voice') {
     if (!(paths.model && paths.tokens)) {
       throw new Error('model missing: sense-voice')

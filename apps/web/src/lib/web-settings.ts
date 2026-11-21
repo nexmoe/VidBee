@@ -39,10 +39,12 @@ export const ASR_TIERS = [
 	"whisper-turbo",
 	"sense-voice",
 	"sense-voice-2025",
+	"fire-red-asr",
 	"parakeet-v2",
 	"parakeet-v3",
 	"orukeet",
 	"quality",
+	"qwen3-1.7b",
 ] as const;
 
 export type AsrTier = (typeof ASR_TIERS)[number];

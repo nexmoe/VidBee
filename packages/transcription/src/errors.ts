@@ -29,6 +29,22 @@ export function isNoAudioStreamError(message: string): boolean {
  */
 export function classifyTranscriptionFailure(err: unknown): ClassifiedError {
   const message = err instanceof Error ? err.message : String(err)
+  const details =
+    err instanceof Error
+      ? (err as Error & { code?: string; status?: number; retryAfterMs?: number })
+      : undefined
+  const code = details?.code
+  if (details?.status === 429) {
+    const delay = details.retryAfterMs
+    return {
+      ...transcriptionError('http-429', message),
+      suggestedRetryAfterMs:
+        delay && Number.isFinite(delay) && delay > 0 ? Math.min(delay, 120_000) : 5000
+    }
+  }
+  if (code === 'AI_TRANSCRIPTION_FAILED' || code === 'AI_REQUEST_ALREADY_EXISTS') {
+    return transcriptionError('network-transient', message)
+  }
   const lower = message.toLowerCase()
   if (/enospc|no space left/i.test(message)) {
     return transcriptionError('disk-full', message)
@@ -48,7 +64,11 @@ export function classifyTranscriptionFailure(err: unknown): ClassifiedError {
   if (/enoent|no such file|source file missing|file not found/i.test(lower)) {
     return transcriptionError('not-found', message)
   }
-  if (/econnreset|etimedout|enotfound|socket hang up|http error 5|network/i.test(lower)) {
+  if (
+    /econnreset|etimedout|enotfound|socket hang up|http error 5|network|fetch failed|timeout/i.test(
+      lower
+    )
+  ) {
     return transcriptionError('network-transient', message)
   }
   if (/sherpa-onnx|model missing|model not ready|incomplete model|native addon/i.test(lower)) {

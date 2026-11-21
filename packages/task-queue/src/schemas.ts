@@ -3,6 +3,7 @@ import { z } from 'zod'
 export const TaskKindSchema = z.enum([
   'video',
   'audio',
+  'subtitles',
   'playlist',
   'subscription-item',
   'yt-dlp-forward',
@@ -64,7 +65,13 @@ export const SubtitleDownloadStatusSchema = z.enum([
   'failed'
 ])
 
+export const DownloadCookieSourceSchema = z.object({
+  type: z.enum(['extension', 'browser', 'file', 'config']),
+  browser: z.string().optional()
+})
+
 export const TaskOutputSchema = z.object({
+  cookieSources: z.array(DownloadCookieSourceSchema).optional(),
   filePath: z.string(),
   size: z.number().int().nonnegative(),
   durationMs: z.number().int().nullable(),

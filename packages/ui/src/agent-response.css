@@ -1,0 +1,193 @@
+@import "./agent-mermaid.css";
+
+/* Pele diagrams follow the app palette without re-rendering on theme changes. */
+.pele {
+  --pele-bg: var(--background);
+  --pele-fg: var(--foreground);
+  --pele-muted: var(--muted-foreground);
+  --pele-line: var(--foreground);
+  --pele-surface: var(--card);
+  --pele-surface-alt: var(--muted);
+  --pele-border: var(--border);
+  --pele-accent: var(--primary);
+  --pele-critical: var(--destructive);
+  --pele-error: var(--destructive);
+}
+
+/* Keep prose readable while allowing tables, diagrams, and code to use the full output width. */
+.transcript-prompt-markdown {
+  font-size: 0.9375rem;
+  font-synthesis: none;
+  font-weight: 400;
+  line-height: 1.75;
+}
+
+.transcript-prompt-markdown :is([data-streamdown="strong"], strong) {
+  font-weight: 700;
+}
+
+.transcript-prompt-markdown
+  > :where(
+    p,
+    [data-streamdown^="heading-"],
+    [data-streamdown="ordered-list"],
+    [data-streamdown="unordered-list"],
+    [data-streamdown="blockquote"]
+  ),
+.transcript-prompt-markdown
+  > div[dir]
+  > :where(
+    p,
+    [data-streamdown^="heading-"],
+    [data-streamdown="ordered-list"],
+    [data-streamdown="unordered-list"],
+    [data-streamdown="blockquote"]
+  ) {
+  max-width: 72ch;
+  width: 100%;
+}
+
+/* Streamdown's direction wrappers use display: contents, so paragraphs need their own rhythm. */
+.transcript-prompt-markdown > p,
+.transcript-prompt-markdown > div[dir] > p {
+  margin-block: 0 1rem;
+  text-wrap: pretty;
+}
+
+.transcript-prompt-markdown > p:last-child,
+.transcript-prompt-markdown > div:last-child > p:last-child {
+  margin-block-end: 0;
+}
+
+.transcript-prompt-markdown [data-streamdown^="heading-"] {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+.transcript-prompt-markdown [data-streamdown="heading-1"] {
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+  margin-block: 2rem 0.75rem;
+}
+
+.transcript-prompt-markdown [data-streamdown="heading-2"] {
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+  margin-block: 1.75rem 0.625rem;
+}
+
+.transcript-prompt-markdown [data-streamdown="heading-3"] {
+  font-size: 1rem;
+  line-height: 1.5rem;
+  margin-block: 1.5rem 0.5rem;
+}
+
+.transcript-prompt-markdown
+  :is(
+    [data-streamdown="heading-4"],
+    [data-streamdown="heading-5"],
+    [data-streamdown="heading-6"]
+  ) {
+  font-size: 0.9375rem;
+  line-height: 1.5rem;
+  margin-block: 1.25rem 0.5rem;
+}
+
+.transcript-prompt-markdown > [data-streamdown^="heading-"]:first-child,
+.transcript-prompt-markdown
+  > div:first-child
+  > [data-streamdown^="heading-"]:first-child {
+  margin-block-start: 0;
+}
+
+.transcript-prompt-markdown
+  :is([data-streamdown="ordered-list"], [data-streamdown="unordered-list"]) {
+  margin-block: 0 1rem;
+  margin-inline-start: 0;
+  padding-inline-start: 0;
+  list-style: none;
+}
+
+.transcript-prompt-markdown [data-streamdown="ordered-list"] {
+  counter-reset: transcript-list;
+}
+
+.transcript-prompt-markdown [data-streamdown="list-item"] {
+  position: relative;
+  padding-block: 0.15em;
+}
+
+.transcript-prompt-markdown
+  [data-streamdown="unordered-list"]
+  > [data-streamdown="list-item"] {
+  padding-inline-start: 1em;
+}
+
+.transcript-prompt-markdown
+  [data-streamdown="ordered-list"]
+  > [data-streamdown="list-item"] {
+  padding-inline-start: 1.6em;
+  counter-increment: transcript-list;
+}
+
+.transcript-prompt-markdown
+  [data-streamdown="unordered-list"]
+  > [data-streamdown="list-item"]::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0;
+  top: calc(0.15em + 0.5lh - 0.175em);
+  width: 0.35em;
+  height: 0.35em;
+  border-radius: 50%;
+  background-color: currentColor;
+}
+
+.transcript-prompt-markdown
+  [data-streamdown="ordered-list"]
+  > [data-streamdown="list-item"]::before {
+  content: counter(transcript-list) ".";
+  position: absolute;
+  inset-inline-start: 0;
+  top: 0.15em;
+  line-height: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+.transcript-prompt-markdown
+  [data-streamdown="list-item"]
+  :is([data-streamdown="ordered-list"], [data-streamdown="unordered-list"]) {
+  margin-block: 0.35em;
+}
+
+.transcript-prompt-markdown .prompt-clock {
+  background: none;
+  border: 0;
+  font: inherit;
+  padding: 0;
+}
+
+/* Streamdown nests a bordered table inside a padded card. Keep one surface
+   with a tool row above the table, like a spreadsheet chrome bar. */
+div[data-streamdown="table-wrapper"] {
+  gap: 0;
+  padding: 0;
+  background-color: var(--background);
+}
+
+div[data-streamdown="table-wrapper"] > :first-child:not(:has(> table)) {
+  padding-block: 0.25rem;
+  padding-inline: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+div[data-streamdown="table-wrapper"] > :has(> table) {
+  border-width: 0;
+  border-start-start-radius: 0;
+  border-start-end-radius: 0;
+  border-end-start-radius: inherit;
+  border-end-end-radius: inherit;
+  background-color: transparent;
+}
+

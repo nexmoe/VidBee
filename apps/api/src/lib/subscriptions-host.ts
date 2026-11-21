@@ -20,6 +20,7 @@ import {
   RssParserFeedFetcher,
   SubscriptionsApi
 } from '@vidbee/subscriptions-core'
+import { buildSubscriptionDownloadOptions } from '@vidbee/subscriptions-core/download-options'
 
 import { getDatabaseConnection } from './database'
 import { taskQueue } from './task-queue-host'
@@ -56,15 +57,18 @@ export const getApiSubscriptions = (): SubscriptionsApi => {
     taskExists: (taskId) => taskQueue.hasTask(taskId),
     enqueueItem: async ({ subscription, item }) => {
       const tags = Array.from(new Set([subscription.platform, ...subscription.tags]))
-      const settings = toWebDownloadRuntimeSettings(await webSettingsStore.get())
+      const defaults = await webSettingsStore.get()
+      const settings = toWebDownloadRuntimeSettings(defaults)
+      const downloadOptions = buildSubscriptionDownloadOptions(subscription, defaults)
       const result = await taskQueue.add({
         input: {
           url: item.url,
-          kind: 'subscription-item',
+          kind: downloadOptions.type === 'subtitles' ? 'subtitles' : 'subscription-item',
           title: item.title,
           ...(item.thumbnail === undefined ? {} : { thumbnail: item.thumbnail }),
           subscriptionId: subscription.id,
           options: {
+            ...downloadOptions,
             origin: 'subscription',
             subscriptionId: subscription.id,
             itemId: item.id,

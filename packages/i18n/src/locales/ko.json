@@ -12,6 +12,7 @@
     },
     "appName": "VidBee",
     "autoUpdateDescription": "백그라운드에서 새 릴리스를 자동으로 다운로드하고 설치합니다.",
+    "microsoftStoreUpdateDescription": "앱 업데이트는 Microsoft Store에서 관리합니다. 스토어를 열어 업데이트를 확인하세요.",
     "autoUpdateTitle": "자동 업데이트",
     "description": "1000개 이상의 사이트에서 미디어를 다운로드하고, 이 컴퓨터에서 검색 가능한 대본을 만든 다음, 선택한 AI 제공자로 요약·번역하거나 질문하세요. 이 모든 기능을 무료 오픈 소스 데스크톱 앱 하나에서 사용할 수 있습니다.",
     "downloadEngine": {
@@ -173,8 +174,12 @@
     "fetch": "가져오기",
     "fetchingVideoInfo": "비디오 정보 가져오는 중...",
     "feedback": {
-      "reportNow": "지금 신고",
-      "reportingNow": "신고 중...",
+      "email": "이메일로 의견 보내기",
+      "diagnosticReport": "진단 보고서",
+      "reportDescription": "이메일에 포함될 진단 정보를 확인한 후 발생한 문제와 재현 방법을 추가해 주세요.",
+      "attachReportDescription": "보고서가 너무 길어 이메일 링크에 모두 담을 수 없습니다. 이메일에 복사하거나 다운로드하여 첨부한 후 문제 재현 방법을 추가해 주세요.",
+      "downloadReport": "보고서 다운로드",
+      "openEmail": "이메일 열기",
       "title": "이 오류를 보고:",
       "githubUrlTooLong": "이 GitHub 링크가 매우 깁니다. 열리지 않으면 이슈 페이지를 열고 로그를 수동으로 붙여 넣어 주세요."
     },
@@ -218,6 +223,8 @@
     "logs": {
       "live": "실시간 로그",
       "history": "저장된 로그",
+      "copy": "로그 복사",
+      "copied": "로그를 클립보드에 복사했습니다",
       "command": "yt-dlp 명령어",
       "empty": "아직 로그가 없습니다.",
       "scrollPaused": "스크롤 일시 중지"
@@ -287,7 +294,21 @@
     "createdByAgent": "AI가 생성",
     "createdBySubscription": "구독",
     "openSourceConversation": "원본 대화 열기",
-    "sourceFile": "원본 파일"
+    "agentTasks": {
+      "title": "Agent 작업",
+      "count": "Agent 작업 {{count}}개",
+      "summary": "Agent 작업: {{tasks}}",
+      "status": {
+        "running": "진행 중",
+        "completed": "완료",
+        "failed": "실패",
+        "stopped": "중지됨"
+      }
+    },
+    "sourceFile": "원본 파일",
+    "troubleshoot": "문제 진단",
+    "troubleshootPrompt": "다운로드 작업 {{taskId}}의 문제를 진단해 주세요. 현재 상태, 오류 세부 정보와 로그를 확인하고, 예상 원인과 해결 방법을 설명해 주세요. 작업을 수행하기 전에 먼저 다음 단계를 제안해 주세요.",
+    "troubleshootFailed": "문제 진단을 시작하지 못했습니다. 다시 시도해 주세요."
   },
   "error": {
     "title": "문제가 발생했습니다",
@@ -491,7 +512,7 @@
       "invitedListTitle": "초대한 사용자",
       "invitedUsers": "초대 인원",
       "loadMore": "더 보기",
-      "creditsDescription": "VidBee Cloud 전사 및 AI 프롬프트에 사용됩니다.",
+      "creditsDescription": "VidBee Cloud 전사 및 AI Skill에 사용됩니다.",
       "creditsError": "AI 크레딧을 불러오지 못했습니다.",
       "creditsLoading": "AI 크레딧을 불러오는 중…",
       "creditsRemaining": "{{remaining}} 남음",
@@ -515,7 +536,7 @@
       "creditsReservedAmount": "예약됨 {{credits}}",
       "creditsReservedHelp": "실행 중인 작업 또는 사용량 확인을 위해 예약됩니다. 정산 후 미사용 크레딧은 반환됩니다.",
       "creditsInterruptedAmount": "중단된 작업에서 사용된 크레딧 {{credits}}",
-      "creditsInterruptedHelp": "사용한 크레딧에 포함되며 추가 차감이 아닙니다. 실패, 취소 또는 시간 초과된 AI 프롬프트의 정산된 사용량입니다.",
+      "creditsInterruptedHelp": "사용한 크레딧에 포함되며 추가 차감이 아닙니다. 실패, 취소 또는 시간 초과된 AI Skill의 정산된 사용량입니다.",
       "creditsRefresh": "잔액 새로고침",
       "creditsTopUp": "크레딧 충전",
       "creditsTopUpError": "요금 페이지를 열 수 없습니다. 다시 시도해 주세요.",
@@ -523,7 +544,7 @@
       "creditsReviewAmount": "예약된 크레딧 중 {{credits}} 확인 중",
       "reservationTitle": "크레딧 예약 작업",
       "reservationHelp": "만료된 예약분을 매분 확인합니다. 5분의 확인 기간이 끝나면 다음 확인 시 미확인 금액을 해제합니다.",
-      "reservationTask": "AI 프롬프트",
+      "reservationTask": "AI Skill",
       "reservationElapsed": "{{minutes}}분 전에 시작",
       "reservationActivity": "최근 진행: {{time}}",
       "reservationHeartbeat": "최근 연결: {{time}}",
@@ -595,6 +616,7 @@
     "dark": "다크",
     "description": "다운로드 환경설정 및 앱 설정 구성",
     "directorySelectError": "디렉토리 선택 실패",
+    "saveError": "설정을 저장할 수 없습니다.",
     "downloadPath": "다운로드 위치",
     "downloadPathDescription": "다운로드 파일을 저장할 위치 선택",
     "fileSelectError": "파일 선택 실패",
@@ -711,22 +733,38 @@
       "original": "원본 (yt-dlp 기본)",
       "webm": "WebM"
     },
-    "autoTranscribeAfterDownload": "Transcribe after download",
-    "autoTranscribeAfterDownloadDescription": "When a download finishes, start a local transcript in the background. This uses your computer and skips files with no speech. Already queued jobs are not cancelled if you turn this off",
+    "autoTranscribeAfterDownload": "다운로드 후 자동 전사",
+    "autoTranscribeAfterDownloadDescription": "다운로드가 끝나면 컴퓨터 자원을 사용해 백그라운드에서 로컬 전사를 시작하고 음성이 없는 파일은 건너뜁니다. 옵션을 꺼도 이미 대기열에 있는 작업은 취소되지 않습니다.",
     "maxConcurrentTranscriptions": "동시 받아쓰기 수",
     "maxConcurrentTranscriptionsDescription": "동시에 실행할 받아쓰기 작업 수입니다. 각 작업은 이 컴퓨터의 CPU와 메모리를 사용합니다. 값을 낮춰도 이미 실행 중인 작업은 중단되지 않습니다",
-    "transcriptModelsTitle": "Transcript models",
-    "transcriptModelsReady": "Models ready on disk ({{size}})",
-    "transcriptModelsMissing": "Models are not downloaded yet. The first transcript will fetch them",
+    "cloudTranscription": {
+      "title": "VidBee Cloud 받아쓰기",
+      "description": "강력한 클라우드 음성 모델로 고품질 다국어 스크립트를 만드세요. 모델 다운로드나 컴퓨터의 무거운 인식 처리가 필요 없습니다.",
+      "billing": "클라우드는 AI 크레딧 잔액에서 오디오 초 단위로 요금을 차감합니다. 로컬 받아쓰기는 무료이며 오디오는 컴퓨터에 보관됩니다.",
+      "provider": "받아쓰기 서비스",
+      "local": "로컬 · 무료",
+      "cloud": "VidBee Cloud · 유료",
+      "model": "클라우드 음성 모델",
+      "price": "오디오 1분당 {{credits}} 크레딧입니다. 각 클립의 길이는 초 단위로 올림하며, 재시도 시 완료된 클립을 재사용합니다.",
+      "balance": "사용 가능: {{credits}} 크레딧",
+      "signInDescription": "로그인하여 사용 가능한 모델과 현재 요금을 확인하세요.",
+      "automatic": "자동 받아쓰기가 켜져 있으면 새 다운로드에도 이 유료 클라우드 모델을 사용합니다. 인식을 위해 오디오가 Cloud로 전송됩니다.",
+      "timing": "클라우드는 클립 단위의 시간 정보를 제공합니다. 단어별 타임스탬프와 화자 인식에는 로컬 모델을 사용하세요.",
+      "unavailable": "클라우드 모델을 불러오지 못했습니다. 다시 시도하세요.",
+      "modelUnavailable": "선택한 클라우드 모델을 사용할 수 없습니다. 사용 가능한 모델을 선택하세요."
+    },
+    "transcriptModelsTitle": "전사 모델",
+    "transcriptModelsReady": "기기에 모델 준비됨 ({{size}})",
+    "transcriptModelsMissing": "아직 모델을 다운로드하지 않았습니다. 첫 전사 때 다운로드합니다.",
     "transcriptModelsRedownload": "Redownload",
     "transcriptModelsRedownloadError": "Could not redownload transcript models.",
     "aiTab": "AI",
-    "asrUse": "Use",
-    "asrUseCurrent": "In use",
-    "asrStatusReady": "Ready",
-    "asrStatusActive": "In use",
-    "asrStatusMissing": "Not downloaded",
-    "asrStatusDownloading": "Downloading",
+    "asrUse": "사용",
+    "asrUseCurrent": "사용 중",
+    "asrStatusReady": "준비됨",
+    "asrStatusActive": "사용 중",
+    "asrStatusMissing": "다운로드 안 됨",
+    "asrStatusDownloading": "다운로드 중",
     "asrDownloading": "Downloading {{received}} / {{total}}",
     "asrDownloadingMany": "모델 {{count}}개 다운로드 중",
     "asrDelete": "삭제",
@@ -762,9 +800,14 @@
         "size": "약 670 MB"
       },
       "quality": {
-        "title": "Qwen3-ASR",
+        "title": "Qwen3-ASR 0.6B",
         "tag": "중국어 정확도가 가장 높습니다. 고성능 PC가 필요합니다",
         "size": "약 840 MB"
+      },
+      "qwen3-1.7b": {
+        "title": "Qwen3-ASR 1.7B",
+        "tag": "더 큰 Qwen3 모델. 더 많은 RAM 필요",
+        "size": "약 2.4 GB"
       },
       "whisper-medium": {
         "title": "Whisper Medium",
@@ -790,6 +833,11 @@
         "title": "Parakeet TDT v3",
         "tag": "더 새로운 영어 Parakeet. 영어에 가장 적합합니다",
         "size": "약 650 MB"
+      },
+      "fire-red-asr": {
+        "title": "FireRedASR v2",
+        "tag": "중국어, 영어 및 중국어 방언 지원. 더 많은 RAM 필요",
+        "size": "약 1.2 GB"
       }
     },
     "asrDownload": "다운로드",
@@ -808,7 +856,8 @@
       "whisper": "Whisper — 다국어",
       "sense-voice": "SenseVoice — 중국어, 일본어, 한국어, 영어",
       "qwen3": "Qwen3-ASR — 중국어 정확도 최고",
-      "parakeet": "Parakeet"
+      "parakeet": "Parakeet",
+      "fire-red-asr": "FireRedASR — 중국어, 영어 및 중국어 방언"
     },
     "asrLanguages": {
       "multi": "다국어"
@@ -827,7 +876,7 @@
       "unknown": "알 수 없는 GPU"
     },
     "providersTab": "제공자",
-    "promptsTab": "프롬프트",
+    "promptsTab": "Skill",
     "transcriptionTab": "전사",
     "ai": {
       "ownProvider": "내 Provider 사용",
@@ -861,19 +910,63 @@
       "testingConnection": "테스트 중…",
       "testSuccess": "연결됨. 응답: {{reply}}",
       "testFailed": "이 모델에 연결할 수 없습니다.",
-      "addPrompt": "프롬프트 추가",
-      "editPrompt": "프롬프트 편집",
-      "deletePrompt": "프롬프트 삭제",
-      "promptTitle": "제목",
-      "promptIcon": "아이콘",
-      "promptBody": "프롬프트",
-      "promptDialogDescription": "활성화된 제공자로 전사에 이 프롬프트를 실행합니다",
+      "searchSkills": "Skill 검색",
+      "allSkills": "전체",
+      "personalSkills": "개인",
+      "builtInSkills": "기본 제공",
+      "customizeSkill": "사용자 지정 사본 만들기",
+      "noSkillsFound": "Skill을 찾을 수 없습니다.",
+      "skillUpdatedAt": "업데이트: {{date}}",
+      "trySkill": "사용해 보기",
+      "skillShowInTranscript": "스크립트 사이드바에 표시",
+      "skillShowInTranscriptDescription": "스크립트 사이드바에 이 스킬의 바로가기를 표시합니다. 채팅 사용과 자동 실행은 별도로 설정됩니다.",
+      "skillAutoRun": "자동 실행",
+      "skillAutoRunDescription": "다운로드가 완료되고 대본이 준비되면 자동으로 실행합니다. 채팅에서는 언제든지 이 Skill을 수동으로 사용할 수 있습니다.",
+      "suggestedUsage": "추천 사용법",
+      "skillUsage": {
+        "summary": {
+          "first": "완료된 동영상의 자막을 주요 내용과 핵심 타임스탬프를 포함해 요약해 주세요.",
+          "second": "긴 튜토리얼을 나중에 복습하기 좋은 간결한 요점으로 정리해 주세요.",
+          "third": "인터뷰를 요약하고 화자의 가장 유용한 발언을 골라 주세요."
+        },
+        "rewrite": {
+          "first": "동영상 자막을 원래 의미를 유지하면서 읽기 쉬운 글로 다시 써 주세요.",
+          "second": "새로운 사실을 추가하지 않고 자막의 문법과 불필요한 표현을 다듬어 주세요.",
+          "third": "기술 설명을 일반 독자도 이해할 수 있는 내용으로 다시 써 주세요."
+        },
+        "faq": {
+          "first": "동영상 자막에서 자주 묻는 질문을 만들고 원문에 근거해 답해 주세요.",
+          "second": "제품 튜토리얼을 신규 사용자를 위한 질문과 답변으로 정리해 주세요.",
+          "third": "인터뷰에서 자주 나오는 질문을 추출하고 주제별로 답변을 정리해 주세요."
+        },
+        "translate": {
+          "first": "동영상 자막을 원래 의미를 유지하며 제 언어로 번역해 주세요.",
+          "second": "기술 튜토리얼을 번역하고 전체 용어를 일관되게 유지해 주세요.",
+          "third": "화자와 주제 전환을 유지하며 인터뷰를 번역해 주세요."
+        },
+        "statistics": {
+          "first": "동영상 자막에 나오는 숫자, 백분율, 날짜를 추출해 주세요.",
+          "second": "발표의 통계를 맥락과 출처 타임스탬프와 함께 정리해 주세요.",
+          "third": "누락된 값을 만들지 않고 자막의 측정값과 비교를 찾아 주세요."
+        },
+        "mindmap": {
+          "first": "동영상의 주요 내용과 그 관계를 마인드맵으로 만들어 주세요.",
+          "second": "강의 자막을 복습에 사용할 수 있는 주제 계층으로 정리해 주세요.",
+          "third": "기술 강연의 개념을 관련 내용끼리 묶어 구조화해 주세요."
+        },
+        "diagnose": {
+          "first": "다운로드가 실패한 이유를 알아보고 다음에 할 일을 제안해 주세요.",
+          "second": "멈춘 작업을 확인하고 아직 진행 중인지 판단해 주세요.",
+          "third": "실패한 작업의 증거를 바탕으로 버그 보고서 작성을 도와주세요."
+        },
+        "custom": {
+          "first": "이 Skill로 작업을 진행하고 싶어요. 시작 전에 제 목표를 물어봐 주세요.",
+          "second": "실제 예제를 안내하고 필요한 원본 자료가 있으면 요청해 주세요.",
+          "third": "이 Skill을 제 상황에 맞게 활용하도록 먼저 출력 형식을 확인해 주세요."
+        }
+      },
+      "deletePrompt": "Skill 삭제",
       "restorePresets": "기본값 복원",
-      "testTitle": "샘플 전사로 테스트",
-      "testRun": "실행",
-      "testStop": "중지",
-      "testOutput": "출력",
-      "testPlaceholder": "프롬프트 결과가 여기에 표시됩니다",
       "presets": {
         "anthropic": "Anthropic",
         "atlascloud": "Atlas Cloud",
@@ -901,36 +994,76 @@
         "volcengine": "Volcengine",
         "zhipu": "Zhipu"
       },
-      "presetPrompts": {
-        "overview": {
-          "title": "개요"
-        },
-        "bullet-points": {
-          "title": "글머리 기호"
-        },
-        "improve-grammar": {
-          "title": "문법 및 구두점 교정"
-        },
-        "generate-faq": {
-          "title": "FAQ 생성"
-        },
-        "extract-statistics": {
-          "title": "통계 추출"
-        },
-        "paraphrase-content": {
-          "title": "내용 바꿔 쓰기"
-        },
-        "create-mindmap": {
-          "title": "마인드맵 만들기"
-        },
-        "translate": {
-          "title": "번역"
-        }
-      },
       "createModel": "Create “{{query}}”",
       "noModelFound": "No model found.",
       "allModelsSelected": "목록의 모델이 모두 추가되었습니다.",
-      "loadingModels": "제공자에서 모델을 불러오는 중…"
+      "loadingModels": "제공자에서 모델을 불러오는 중…",
+      "skillHelp": "Skill은 SKILL.md 파일로 관리됩니다. Agent는 설명을 통해 Skill을 찾고 필요할 때 지침을 읽습니다. 채팅에서 $skill-name을 입력하여 Skill을 지정하세요.",
+      "addSkill": "Skill 추가",
+      "createSkillWithVidbee": "VidBee로 Skill 만들기",
+      "createSkillRequest": "재사용할 수 있는 Skill을 만들어 주세요. 작업 목표, 사용 상황, 원하는 출력 형식을 먼저 물어보고, 요구 사항이 명확해지면 VidBee에 만들고 저장해 주세요.",
+      "uploadSkill": "Skill 업로드",
+      "importGitHubSkill": "GitHub에서 Skill 가져오기",
+      "githubSkillDescription": "공개 GitHub 저장소 또는 Skill 폴더 링크를 붙여 넣고, 관련 파일과 함께 설치할 Skill을 선택하세요.",
+      "githubSkillUrl": "GitHub URL",
+      "selectSkill": "Skill 선택",
+      "installSkill": "Skill 설치",
+      "findSkills": "Skill 찾기",
+      "skillInstalling": "잠시 기다려 주세요…",
+      "skillInstallError": "Skill을 설치하지 못했습니다. 출처를 확인하고 다시 시도하세요.",
+      "skillUploadTooLarge": "10 MB 이하의 SKILL.md 또는 ZIP 파일을 업로드하세요.",
+      "importSkill": "SKILL.md 가져오기",
+      "exportSkill": "SKILL.md 내보내기",
+      "openSkillFolder": "Skill 폴더 열기",
+      "skillLoading": "Skill 불러오는 중",
+      "skillLoaded": "Skill 불러옴",
+      "skillFailed": "Skill 불러오기 실패",
+      "presetSkills": {
+        "overview": {
+          "name": "개요",
+          "description": "전사 내용을 타임스탬프가 있는 장과 주요 인용문으로 정리합니다. 녹화 내용을 파악하거나 다시 볼 주제를 찾을 때 사용합니다."
+        },
+        "bullet-points": {
+          "name": "글머리 기호",
+          "description": "전사 내용의 핵심을 주제별로 간결한 글머리 기호 목록으로 요약합니다. 동영상, 팟캐스트, 회의를 빠르게 복습할 때 사용합니다."
+        },
+        "improve-grammar": {
+          "name": "문법 및 구두점 교정",
+          "description": "화자와 의미를 유지하면서 전사 내용의 문법, 맞춤법, 문장 부호를 교정합니다. 읽기 좋은 원고를 준비할 때 사용합니다."
+        },
+        "generate-faq": {
+          "name": "FAQ 생성",
+          "description": "전사 내용에 근거한 간결한 답변으로 체계적인 FAQ를 만듭니다. 녹화 내용을 찾아보기 쉬운 자료로 만들 때 사용합니다."
+        },
+        "extract-statistics": {
+          "name": "통계 추출",
+          "description": "전사 내용에서 숫자, 날짜, 비율, 금액을 문맥과 함께 추출합니다. 정량적 정보를 검토할 때 사용합니다."
+        },
+        "paraphrase-content": {
+          "name": "내용 바꿔 쓰기",
+          "description": "새로운 주장을 추가하지 않고 전사 내용을 명확하고 자연스럽게 바꿔 씁니다. 원래 의미를 유지하면서 표현을 다듬을 때 사용합니다."
+        },
+        "create-mindmap": {
+          "name": "마인드맵 만들기",
+          "description": "전사 내용의 주제와 관계를 Mermaid 마인드맵으로 구성합니다. 녹화 내용의 구조를 시각화할 때 사용합니다."
+        },
+        "translate": {
+          "name": "번역",
+          "description": "화자, 의미, 세부 사항을 유지하면서 전사 내용을 인터페이스 언어로 번역합니다. 다른 언어의 녹화 내용을 읽을 때 사용합니다."
+        },
+        "article-rewrite": {
+          "name": "글로 다시 작성",
+          "description": "원본 자료를 완성된 기사로 다시 쓰고 영상이 있으면 관련 스틸 이미지를 추가합니다. 녹화 내용을 게시용 글로 만들 때 사용합니다."
+        },
+        "faq": {
+          "name": "동영상 FAQ",
+          "description": "필요에 따라 현재 동영상의 관련 전사 내용을 읽고 근거 있는 FAQ를 만듭니다. 보고 있는 동영상의 내용을 질의응답 자료로 정리할 때 사용합니다."
+        },
+        "diagnose-task": {
+          "name": "작업 문제 해결",
+          "description": "상태, 오류, 로그를 확인하여 실패하거나 멈춘 작업을 조사합니다. 복구 방법을 제안하거나 VidBee 결함이 의심될 때 피드백을 정리합니다."
+        }
+      }
     },
     "cookiesSetup": {
       "statusNotConfigured": "설정되지 않음",
@@ -974,36 +1107,167 @@
       "checking": "쿠키 확인 중…",
       "applied": "쿠키가 업데이트되었습니다",
       "profileMissingDb": "이 Firefox 프로필에는 쿠키 데이터베이스가 없습니다. Firefox를 한 번 연 다음 다시 시도하세요.",
-      "statusUsingExtension": "Using {{browser}} extension",
-      "healthOkExtension": "The VidBee extension will send live cookies from {{browser}} for each download",
-      "healthEmptyExtension": "The extension is connected, but no supported login cookies were found. Sign in to the site in that browser",
-      "statusHeading": "Cookie status",
-      "methodRecommended": "Recommended",
+      "statusUsingExtension": "{{browser}} 확장 프로그램 사용 중",
+      "healthOkExtension": "VidBee 확장 프로그램이 다운로드할 때마다 {{browser}}의 최신 쿠키를 보냅니다",
+      "healthEmptyExtension": "확장 프로그램은 연결되었지만 지원되는 로그인 쿠키를 찾지 못했습니다. 해당 브라우저에서 사이트에 로그인하세요",
+      "statusHeading": "쿠키 상태",
+      "methodRecommended": "추천",
       "methodExtensionWhy": "Best option. Desktop uses live cookies for each download, including Chrome and Edge on Windows.",
-      "extensionTitle": "Browser extension",
+      "extensionTitle": "브라우저 확장 프로그램",
       "extensionDescription": "Install the VidBee extension so Desktop can use your live signed-in cookies when downloading",
-      "extensionConnected": "Connected",
-      "extensionDisconnected": "Not connected",
-      "extensionConnectedHint": "{{browser}} is connected. New downloads will use cookies from this browser",
-      "extensionDisconnectedHint": "Keep VidBee Desktop open, install the extension, then sign in to the site in that browser",
-      "extensionInstallChrome": "Add to Chrome",
-      "extensionInstallEdge": "Add to Edge",
-      "extensionInstallFirefox": "Add to Firefox",
+      "extensionConnected": "연결됨",
+      "extensionDisconnected": "연결 안 됨",
+      "extensionConnectedHint": "{{browser}}이(가) 연결되었습니다. 새 다운로드는 이 브라우저의 쿠키를 사용합니다",
+      "extensionDisconnectedHint": "VidBee Desktop을 열어 둔 채 확장 프로그램을 설치한 다음 해당 브라우저에서 사이트에 로그인하세요",
+      "extensionInstallChrome": "Chrome에 추가",
+      "extensionInstallEdge": "Edge에 추가",
+      "extensionInstallFirefox": "Firefox에 추가",
       "extensionInstallStep1": "Install the VidBee extension in Chrome, Edge, or Firefox",
-      "extensionInstallStep2": "Keep VidBee Desktop running so the extension can connect",
-      "extensionInstallStep3": "Sign in to YouTube, Bilibili, or other sites in that browser, then open the VidBee toolbar icon once"
+      "extensionInstallStep2": "확장 프로그램이 연결되도록 VidBee Desktop을 계속 실행해 두세요",
+      "extensionInstallStep3": "Sign in to YouTube, Bilibili, or other sites in that browser, then open the VidBee toolbar icon once",
+      "sourceHeading": "쿠키 소스",
+      "sourceInUse": "사용 중",
+      "sourceFallback": "대체",
+      "modeAuto": "완전 자동",
+      "modeSemiAuto": "반자동",
+      "modeManual": "수동",
+      "browserTitle": "브라우저에서 읽기",
+      "extensionShortHint": "한 번 설치하면 다운로드마다 최신 로그인 쿠키를 사용합니다",
+      "extensionConnectedShort": "{{browser}}에 연결됨",
+      "browserShortHint": "로그인된 브라우저를 선택하세요",
+      "fileShortHint": "cookies.txt를 내보내 선택하세요. 만료되면 다시 내보내야 합니다",
+      "whyTitle": "쿠키를 설정해 더 안정적으로 다운로드하기",
+      "whyDescription": "VidBee가 로그인한 계정으로 다운로드하므로 더 안정적이고 성공률이 높아집니다",
+      "extensionPriority": "쿠키를 가져올 브라우저 우선순위",
+      "extensionPriorityHint": "이 순서에서 처음으로 연결된 브라우저를 사용합니다. 연결이 끊긴 브라우저는 자동으로 건너뜁니다.",
+      "extensionUse": "사용",
+      "extensionLegacy": "이전 기록",
+      "extensionLastConnected": "마지막 연결: {{time}}",
+      "extensionLastConnectedUnknown": "마지막 연결 시간 기록 없음",
+      "extensionRemove": "제거",
+      "extensionRemoveLabel": "{{browser}} 제거",
+      "extensionVariants": {
+        "dev": "개발 버전",
+        "store": "스토어 버전"
+      },
+      "extensionMoveUp": "{{browser}} 위로 이동",
+      "extensionMoveDown": "{{browser}} 아래로 이동"
     },
-    "agentManagementTools": "에이전트 관리 도구",
-    "agentManagementToolsDescription": "에이전트가 작업과 구독을 변경할 수 있는지, 먼저 확인할지 정합니다",
+    "agentManagementTools": "에이전트 권한",
+    "agentManagementToolsDescription": "수동 승인에서는 권한이 필요할 때 승인을 요청합니다. 자동 검토는 현재 모델을 사용하며 판단할 수 없으면 승인을 요청합니다. 다운로드 폴더 외부의 경로는 여전히 승인이 필요합니다. 전체 액세스는 다운로드 폴더 외부 접근을 포함하여 승인이나 자동 검토 없이 도구와 셸 명령을 실행합니다. 변경 사항은 다음 답변부터 적용됩니다.",
     "agentManagementToolsOptions": {
-      "off": "끔",
-      "ask": "먼저 묻기",
-      "auto": "자동 허용"
+      "full": "전체 액세스",
+      "ask": "수동 승인",
+      "auto": "자동 검토"
     },
-    "agentMaxConcurrentRuns": "로컬 에이전트 동시 실행",
-    "agentMaxConcurrentRunsDescription": "로컬 모델을 쓸 때 동시에 실행할 수 있는 에이전트 대화 수"
+    "mcp": {
+      "tab": "MCP",
+      "enable": "MCP 접근 활성화",
+      "description": "외부 에이전트가 VidBee의 다운로드, 구독, 전사 및 AI 대화를 사용할 수 있습니다.",
+      "running": "실행 중 · 도구 {{count}}개 사용 가능",
+      "stopped": "현재 MCP를 사용할 수 없습니다",
+      "accessNote": "연결 중에는 VidBee를 실행 상태로 유지하세요. 이 컴퓨터에서만 연결할 수 있습니다. HTTP 설정을 비밀번호처럼 보관하세요. 토큰을 갱신하면 저장된 HTTP 설정이 무효화됩니다.",
+      "copy": "{{transport}} 설정 복사",
+      "copied": "MCP 설정을 복사했습니다",
+      "rotate": "접근 토큰 갱신",
+      "error": "MCP 설정을 업데이트하지 못했습니다",
+      "configuration": "Agent 설정",
+      "httpDescription": "주소와 토큰으로 실행 중인 데스크톱 앱에 직접 연결합니다.",
+      "viewConfig": "설정 보기",
+      "configDescription": "이 설정을 Agent의 MCP 설정에 붙여 넣으세요.",
+      "accessToken": "액세스 토큰",
+      "rotateDescription": "기존 HTTP 설정을 무효화합니다. 갱신 후 새 설정을 복사하세요.",
+      "capabilitiesTitle": "사용 가능한 기능",
+      "capabilitiesDescription": "도구 {{tools}}개, 리소스 및 템플릿 {{resources}}개, 워크플로 {{prompts}}개.",
+      "searchCapabilities": "기능 검색…",
+      "noCapabilities": "일치하는 기능이 없습니다",
+      "loading": "기능을 불러오는 중…",
+      "groups": {
+        "application": "앱 및 환경설정",
+        "tasks": "다운로드 및 대기열",
+        "subscriptions": "구독",
+        "transcripts": "자막 및 모델",
+        "ai": "AI 대화 및 Skill",
+        "exports": "문서 및 공유 이미지",
+        "resources": "리소스 및 템플릿",
+        "prompts": "Skill"
+      },
+      "capabilities": {
+        "get_app_status": "앱 상태 및 엔진 준비 상태",
+        "get_settings": "앱 환경설정 읽기",
+        "update_settings": "앱 환경설정 업데이트",
+        "get_ai_settings": "AI 제공업체 및 Skill 읽기",
+        "manage_ai_settings": "제공업체, 모델 및 저장된 Skill 관리",
+        "list_tasks": "다운로드, 변환 및 전사 작업 탐색",
+        "get_task": "작업 진행률, 오류 및 로그 읽기",
+        "get_queue_stats": "대기열 상태 및 동시 실행 수",
+        "create_task": "미디어 다운로드, 변환, 자르기, 크기 조정 또는 전사",
+        "download_media": "사용자 지정 옵션으로 동영상 또는 오디오 다운로드",
+        "download_batch": "여러 링크 일괄 다운로드",
+        "manage_task": "작업 일시 중지, 재개, 취소, 재시도, 제거 또는 이름 변경",
+        "configure_queue_group": "대기열 그룹 동시 실행 수 설정",
+        "inspect_media_engine": "형식 및 재생목록 확인, 다운로드 도구 진단 또는 업데이트",
+        "list_download_history": "다운로드 기록 검색",
+        "list_subscriptions": "구독 탐색",
+        "get_subscription": "구독 설정 읽기",
+        "test_subscription": "피드, 웹사이트 및 채널 링크 확인",
+        "create_subscription": "구독 추가",
+        "update_subscription": "구독 환경설정 업데이트",
+        "remove_subscription": "구독 제거",
+        "refresh_subscription": "피드를 새로고침하여 새 항목 찾기",
+        "list_subscription_items": "피드 항목 및 다운로드 상태 탐색",
+        "queue_subscription_item": "피드 항목 다운로드",
+        "list_transcripts": "자막 상태 및 소스 탐색",
+        "get_transcript": "자막, 화자 및 단어별 타임스탬프 읽기",
+        "import_media": "로컬 동영상 및 오디오 파일 가져오기",
+        "start_transcription": "로컬 전사 시작",
+        "manage_transcription": "재시도, 취소, 화자 분리, 소스 전환 또는 음성 인식 업그레이드",
+        "update_transcript_segment": "자막 텍스트, 시간 및 화자 편집",
+        "insert_transcript_segment": "자막 구간 삽입",
+        "delete_transcript_segments": "자막 구간 삭제",
+        "export_transcript": "TXT, Markdown, SRT, VTT 또는 JSON 자막 내보내기",
+        "export_subtitled_video": "선택형 자막 또는 번인 자막이 포함된 동영상 내보내기",
+        "manage_asr_model": "음성 인식 모델 및 저장 공간 관리",
+        "list_agent_threads": "AI 대화 탐색",
+        "get_agent_thread": "대화 답변, 실행 기록 및 첨부파일 읽기",
+        "get_agent_message": "전체 답변 및 선택적 사고 과정 읽기",
+        "create_agent_thread": "미디어용 AI 대화 만들기",
+        "send_agent_message": "자막 맥락이 포함된 메시지 보내기",
+        "manage_agent_thread": "대화 중지, 이름 변경, 삭제 또는 분기 전환",
+        "decide_agent_tool": "Agent 도구 호출 승인 또는 거부",
+        "get_agent_events": "대화 활동 및 이벤트 읽기",
+        "start_ai_prompt": "저장된 AI Skill 실행",
+        "get_ai_prompt_run": "Skill 결과 및 실행 상태 읽기",
+        "stop_ai_prompt": "실행 중인 Skill 중지",
+        "list_skill_results": "저장된 Skill 결과 및 Agent 답변 탐색",
+        "export_skill_result": "Skill 결과를 Markdown, PDF 또는 공유 이미지로 내보내기",
+        "export_mermaid_diagram": "개별 Mermaid 다이어그램을 PNG, JPG, SVG 또는 소스로 내보내기",
+        "export_caption_share_image": "선택한 자막을 공유 이미지로 내보내기",
+        "summarize_media": "타임스탬프 근거와 함께 미디어 요약",
+        "download_and_transcribe": "미디어를 다운로드하고 로컬 자막 만들기",
+        "diagnose_task": "실패한 작업 진단 및 복구 방법 제안",
+        "search": "미디어, 자막, 채팅 메시지 검색"
+      }
+    }
   },
   "subscriptions": {
+    "downloadOptions": {
+      "type": "다운로드 유형",
+      "typeDescription": "이 구독에서 다운로드할 동영상 또는 오디오를 선택합니다.",
+      "subtitlesDescription": "동영상이나 오디오 없이 자막만 다운로드",
+      "quality": "선호 품질",
+      "qualityDescription": "이 구독의 다운로드에 사용할 품질 프리셋을 선택합니다.",
+      "container": "컨테이너 형식",
+      "containerDescription": "자동 모드는 MP4를 우선하며 코덱이 호환되지 않으면 MKV를 사용합니다.",
+      "audioQualityOptions": {
+        "best": "최상 (≤320 kbps)",
+        "good": "높음 (≤256 kbps)",
+        "normal": "보통 (≤192 kbps)",
+        "bad": "낮음 (≤128 kbps)",
+        "worst": "사용 가능한 최저 품질"
+      }
+    },
+    "all": "전체",
     "title": "구독",
     "subtitle": "{{count}} 구독{{count, plural, one {} other {s}}}",
     "description": "채널을 자동으로 확인하고 새 다운로드를 수동 작업 없이 대기열에 넣습니다.",
@@ -1224,7 +1488,6 @@
     "modelsPreparing": "받아쓰기 모델을 준비하는 중…",
     "preparingSpeakerModels": "화자 모델 준비 중…",
     "modelsProgressLabel": "받아쓰기 모델 다운로드 진행률",
-    "view": "View transcript",
     "sourceCaptions": "영상 자막",
     "sourceAi": "AI 대본",
     "sourceSwitch": "대본 소스",
@@ -1262,21 +1525,18 @@
       "experimentalHint": "나중에 다운로드 화면으로 통합될 수 있습니다."
     },
     "followResume": "Jump to current line",
-    "title": "Transcript",
+    "title": "전사",
     "ready": "Transcript ready",
     "listLabel": {
       "subtitles": "자막",
       "transcribed": "전사",
-      "downloaded": "다운로드"
+      "downloaded": "다운로드",
+      "fromExtension": "브라우저 확장 프로그램에서"
     },
     "listHint": {
       "queued": "전사를 기다리는 중입니다. 자리가 나면 시작됩니다.",
       "retrySoon": "전사에 실패하여 곧 다시 시도합니다.",
-      "ready": "전사 자막이 준비되었습니다. 행을 클릭해 여세요.",
-      "captions": "영상의 자막 트랙으로 만들었습니다. 행을 클릭해 여세요.",
       "cancelled": "전사가 취소되었습니다.",
-      "subtitlesDownloaded": "자막 파일을 저장했습니다({{languages}}).",
-      "subtitlesDownloadedUnknown": "자막 파일을 저장했습니다.",
       "subtitlesUnavailable": "이 영상에는 다운로드할 자막 트랙이 없습니다.",
       "subtitlesAuth": "자막을 받으려면 로그인한 뒤 다시 시도하세요.",
       "subtitlesFailed": "자막 다운로드에 실패했습니다."
@@ -1310,12 +1570,13 @@
         "subtitles": "자막",
         "segments": "구간",
         "whisper": "Whisper",
-        "video": "영상 + 자막"
+        "video": "동영상 및 자막"
       },
       "formatLabel": "형식",
       "format": {
         "txt": ".txt",
-        "md": ".md"
+        "md": ".md",
+        "srt": ".srt"
       },
       "encodeLabel": "인코딩",
       "encode": {
@@ -1366,18 +1627,33 @@
       "speakers": "화자",
       "segments": "구간",
       "createdAt": "변환 시각",
+      "cookieSource": "쿠키 가져오기 방식",
+      "cookiesBrowser": "브라우저에서 직접 읽기",
+      "cookiesNone": "쿠키 사용 안 함",
+      "cookiesUnrecorded": "기록 없음",
+      "cookiesUnavailable": "출처를 확인할 수 없음 — 가져오기 기록 없음",
+      "cookiesNotConfigured": "쿠키 설정 없음",
       "empty": "표시할 정보가 없습니다.",
       "openUrl": "원본 URL 열기",
       "group": {
         "media": "미디어",
         "file": "파일",
         "transcript": "대본"
-      }
+      },
+      "cookiesConfigured": "대기열 추가 시 설정: {{sources}} (실제 출처는 기록되지 않음)",
+      "cookiesConfig": "yt-dlp 설정 (쿠키 사용 여부 알 수 없음)"
     },
     "speakingShare": "{{percent}}%",
     "seekSpeaker": "{{name}}(으)로 이동",
     "seekAt": "{{time}}(으)로 이동",
     "searchPlaceholder": "전사 검색",
+    "bilingual": "이중 언어 대본",
+    "secondarySubtitle": "보조 자막",
+    "noSecondarySubtitles": "아직 두 번째 자막이 없습니다",
+    "translateSubtitles": "새 채팅에서 번역…",
+    "translateSubtitlesPrompt": "이 영상의 자막을 다른 언어로 번역해 두 언어로 읽을 수 있게 해 주세요. 어떤 언어로 번역할지 저에게 물어봐 주세요.",
+    "subtitleLoading": "자막 불러오는 중…",
+    "subtitleLoadFailed": "이 자막 트랙을 읽을 수 없습니다.",
     "searchMatches": "{{count}}개 일치",
     "searchNoMatches": "일치 항목 없음",
     "searchNext": "다음",
@@ -1426,7 +1702,8 @@
         "more": "재생목록 항목 작업"
       }
     },
-    "qualityHint": "Not happy with this transcript?",
+    "changeModel": "모델 변경",
+    "qualityHint": "전사 결과를 개선할까요?",
     "qualityHintDetail": "Download a higher-quality model and transcribe again. The current transcript is kept as history.",
     "qualityHintMax": "이미 최고 품질 모델입니다. 화자 라벨이 섞이면 화자 수를 조정해 보세요. 배경 음악과 겹치는 발화는 여전히 화자를 혼동시킬 수 있습니다.",
     "speakerCount": {
@@ -1437,7 +1714,7 @@
       "apply": "다시 받아쓰기",
       "detail": "이 화자 수로 다시 받아씁니다. 기본값은 자동입니다. 이 페이지를 떠나도 됩니다. 현재 받아쓰기는 기록으로 남습니다."
     },
-    "promptMenu": "모든 프롬프트",
+    "promptMenu": "모든 Skill",
     "promptStop": "중지",
     "promptRerun": "다시 실행",
     "promptCopy": "복사",
@@ -1456,11 +1733,11 @@
     "promptShareFooter": "VidBee로 제작",
     "promptShareTagline": "다운로드. 로컬 전사. AI에게 질문.",
     "captionShareSaid": "{{name}}에서",
-    "promptOutput": "프롬프트 결과",
+    "promptOutput": "Skill 결과",
     "promptScrollToEnd": "최신으로 이동",
     "promptCopied": "복사됨",
     "promptCloudGenerated": "VidBee Cloud로 생성됨",
-    "promptNoProvider": "이 프롬프트를 실행하려면 설정에서 AI 제공자를 구성하세요.",
+    "promptNoProvider": "이 Skill을 실행하려면 설정에서 AI 제공자를 구성하세요.",
     "promptOpenSettings": "제공자 설정 열기",
     "promptEmpty": "결과가 여기에 표시됩니다.",
     "overviewChapters": "챕터",
@@ -1469,13 +1746,13 @@
     "promptWaiting": "모델 응답 대기 중 · {{seconds}}초",
     "promptRunning": "작성 중…",
     "promptThinking": "생각 중",
-    "promptThinkingFor": "{{seconds}}초 동안 생각 중",
-    "promptThoughtFor": "{{seconds}}초 동안 생각함",
+    "promptThinkingFor": "{{duration}} 동안 생각 중",
+    "promptThoughtFor": "{{duration}} 동안 생각함",
     "promptAborted": "중지됨",
     "promptTabCompleted": "완료됨",
     "promptTabError": "실패",
-    "promptNoTranscript": "이 프롬프트를 실행하려면 전사가 필요합니다.",
-    "promptWaitForTranscript": "전사가 끝나면 이 프롬프트를 실행할 수 있습니다.",
+    "promptNoTranscript": "이 Skill을 실행하려면 전사가 필요합니다.",
+    "promptWaitForTranscript": "전사가 끝나면 이 Skill을 실행할 수 있습니다.",
     "promptRunWhenReady": "준비되면 실행",
     "promptWaitingToRun": "전사를 기다리는 중…",
     "promptTryAgain": "다시 시도",
@@ -1484,19 +1761,19 @@
       "interrupted": "AI 응답이 완료되기 전에 중단되었습니다.",
       "creditsExhausted": "이 계정의 AI 크레딧이 부족합니다.",
       "signInRequired": "VidBee Cloud에 로그인하면 Ask AI를 바로 무료로 사용할 수 있습니다.",
-      "noProvider": "사용 중인 AI 제공자가 없어 이 프롬프트를 실행할 수 없습니다.",
+      "noProvider": "사용 중인 AI 제공자가 없어 이 Skill을 실행할 수 없습니다.",
       "missingApiKey": "사용 중인 제공자에 API 키가 없습니다.",
       "missingModel": "사용 중인 제공자에 모델 ID가 없습니다.",
-      "unknownPrompt": "이 프롬프트를 더 이상 사용할 수 없습니다.",
-      "emptyTranscript": "이 프롬프트에는 완료된 전사가 필요합니다.",
+      "unknownPrompt": "이 Skill을 더 이상 사용할 수 없습니다.",
+      "emptyTranscript": "이 Skill에는 완료된 전사가 필요합니다.",
       "auth": "제공자가 요청을 거부했습니다. API 키나 계정이 잘못되었을 수 있습니다.",
       "authCloud": "VidBee Cloud가 요청을 거부했습니다. 세션이 만료되었을 수 있습니다.",
       "network": "제공자에 연결할 수 없습니다.",
       "networkCloud": "VidBee Cloud에 연결할 수 없습니다.",
       "emptyOutput": "제공자가 끝났지만 텍스트를 반환하지 않았습니다.",
       "emptyOutputCloud": "VidBee Cloud가 끝났지만 텍스트를 반환하지 않았습니다.",
-      "unknown": "프롬프트를 실행할 수 없습니다.",
-      "unknownCloud": "VidBee Cloud가 이 프롬프트를 완료하지 못했습니다.",
+      "unknown": "Skill을 실행할 수 없습니다.",
+      "unknownCloud": "VidBee Cloud가 이 Skill을 완료하지 못했습니다.",
       "serviceErrorCloud": "VidBee Cloud's AI service rejected this request."
     },
     "promptErrorDetails": "오류 상세",
@@ -1507,31 +1784,31 @@
       "creditsExhausted": {
         "s1": "계정에서 남은 크레딧을 확인하세요.",
         "s2": "새 사용자를 초대해 크레딧을 받으세요.",
-        "s3": "크레딧이 추가된 후 다시 실행하세요."
+        "s3": "크레딧이 추가된 후 Skill을 다시 실행하세요."
       },
       "signInRequired": {
         "s1": "설정 → Providers를 여세요.",
         "s2": "VidBee Cloud에서 GitHub로 로그인하세요.",
-        "s3": "프롬프트를 다시 실행하세요."
+        "s3": "Skill을 다시 실행하세요."
       },
       "noProvider": {
         "s1": "설정 → 제공자를 엽니다.",
         "s2": "서비스를 추가하고 API 키와 모델 ID를 저장한 다음 사용을 누릅니다.",
-        "s3": "여기로 돌아와 프롬프트를 다시 실행합니다."
+        "s3": "여기로 돌아와 Skill을 다시 실행합니다."
       },
       "missingApiKey": {
         "s1": "설정 → 제공자에서 사용 중인 항목을 편집합니다.",
         "s2": "유효한 API 키를 붙여넣고 저장합니다.",
-        "s3": "프롬프트를 다시 실행합니다."
+        "s3": "Skill을 다시 실행합니다."
       },
       "missingModel": {
         "s1": "설정 → 제공자에서 사용 중인 항목을 편집합니다.",
         "s2": "이 서비스가 실제로 지원하는 모델 ID를 입력합니다.",
-        "s3": "프롬프트를 다시 실행합니다."
+        "s3": "Skill을 다시 실행합니다."
       },
       "unknownPrompt": {
-        "s1": "설정 → 프롬프트를 엽니다.",
-        "s2": "기본값을 복원하거나 이 프롬프트를 다시 추가합니다."
+        "s1": "설정 → Skill을 엽니다.",
+        "s2": "기본값을 복원하거나 이 Skill을 다시 추가합니다."
       },
       "emptyTranscript": {
         "s1": "전사가 끝날 때까지 기다립니다.",
@@ -1545,7 +1822,7 @@
       "authCloud": {
         "s1": "계정을 열고 로그인 상태가 유지되는지 확인합니다.",
         "s2": "세션이 만료되었다면 다시 로그인합니다.",
-        "s3": "프롬프트를 다시 실행합니다."
+        "s3": "Skill을 다시 실행합니다."
       },
       "network": {
         "s1": "인터넷과 프록시를 확인합니다.",
@@ -1609,10 +1886,10 @@
     "promptShareSplitCount": "Number of images (optional)",
     "promptShareSplitCountAuto": "Automatic",
     "promptShareSplitCountHint": "Leave blank for automatic splitting. Fewer images may be saved to keep content intact.",
-    "thinkingSecond": "{{count}} second",
-    "thinkingSeconds": "{{count}} seconds",
-    "thinkingMinute": "{{count}} minute",
-    "thinkingMinutes": "{{count}} minutes",
+    "thinkingSecond": "{{count}}초",
+    "thinkingSeconds": "{{count}}초",
+    "thinkingMinute": "{{count}}분",
+    "thinkingMinutes": "{{count}}분",
     "promptCloudServiceErrorDetail": "Your transcript is saved. This service issue needs to be resolved before you can generate the response."
   },
   "whatsNew": {
@@ -1630,7 +1907,7 @@
       },
       "summary": {
         "title": "어떤 대본이든 AI에게 질문",
-        "description": "선택한 AI 제공자로 요약, 번역, FAQ나 마인드맵을 만들고 나만의 프롬프트도 실행하세요."
+        "description": "선택한 AI 제공자로 요약, 번역, FAQ나 마인드맵을 만들고 나만의 Skill도 실행하세요."
       },
       "localFiles": {
         "title": "모든 파일 전사",
@@ -1651,15 +1928,104 @@
     "all": "전체 기간"
   },
   "agentChat": {
+    "progress": {
+      "title": "실행 진행 상황",
+      "running": "처리 중…",
+      "waiting": "백그라운드 작업 대기 중",
+      "approval": "승인 대기 중",
+      "input": "입력 대기 중",
+      "completed": "실행 종료",
+      "aborted": "에이전트 중지됨",
+      "interrupted": "실행 중단됨",
+      "error": "실행 실패",
+      "steps": "작업 단계",
+      "tasks": "백그라운드 작업",
+      "results": "생성된 파일",
+      "continueAfterWait": "백그라운드 작업이 끝나면 에이전트가 자동으로 계속 실행합니다.",
+      "stop": "에이전트 중지",
+      "stopHint": "이 에이전트의 실행을 중지합니다. 백그라운드 작업은 독립적으로 계속됩니다.",
+      "showingTasks": "전체 {{total}}개 작업 중 {{count}}개 표시 중.",
+      "pending": "시작 전"
+    },
+    "ui": {
+      "continue": "계속",
+      "sent": "전송됨",
+      "sendFailed": "선택 내용을 보내지 못했어요. 다시 시도해 주세요.",
+      "inactive": "에이전트의 응답이 끝나면 최신 답변의 카드에 응답할 수 있어요.",
+      "loading": "작업 불러오는 중…",
+      "loadFailed": "작업을 불러오지 못했어요. 대화를 다시 열어 주세요.",
+      "taskUnavailable": "이 작업은 더 이상 사용할 수 없어요.",
+      "fileUnavailable": "파일이 아직 준비되지 않았거나 더 이상 사용할 수 없어요.",
+      "taskFailed": "작업이 실패했어요. 자세한 원인을 확인해 달라고 요청할 수 있어요.",
+      "invalid": "카드를 표시할 수 없어요. 입력창에서 대화를 이어 갈 수 있어요.",
+      "progress": "작업 진행률",
+      "format": "출력 형식",
+      "resolution": "해상도",
+      "kinds": {
+        "video": "동영상 다운로드",
+        "audio": "오디오 다운로드",
+        "subtitles": "자막",
+        "playlist": "재생목록",
+        "subscription-item": "구독 다운로드",
+        "yt-dlp-forward": "다운로드",
+        "transcription": "받아쓰기",
+        "conversion": "형식 변환",
+        "model-download": "모델 다운로드"
+      },
+      "status": {
+        "queued": "대기 중",
+        "running": "실행 중",
+        "processing": "처리 중",
+        "paused": "일시 중지됨",
+        "retry-scheduled": "재시도 대기 중",
+        "completed": "완료",
+        "failed": "실패",
+        "cancelled": "취소됨"
+      }
+    },
+    "suggestions": {
+      "title": "최고의 오디오·비디오 처리 도우미",
+      "description": "저는 VidBee입니다. 무엇을 하고 싶은지 알려 주세요. 아래에서 하나를 골라 시작해도 좋아요.",
+      "download": {
+        "label": "동영상 다운로드",
+        "prompt": "VidBee로 동영상을 다운로드하도록 도와주세요. 먼저 동영상 URL과 원하는 화질을 물어본 다음 다운로드 작업을 만들어 주세요."
+      },
+      "audio": {
+        "label": "오디오 추출",
+        "prompt": "VidBee로 동영상의 오디오를 저장하도록 도와주세요. 먼저 동영상 URL과 원하는 오디오 형식을 물어본 다음 오디오 다운로드 작업을 만들어 주세요."
+      },
+      "transcribe": {
+        "label": "다운로드한 미디어 받아쓰기",
+        "prompt": "VidBee로 다운로드한 동영상이나 오디오를 텍스트로 바꾸도록 도와주세요. 완료된 다운로드 목록을 보여 주고 받아쓸 항목을 물어본 다음 로컬 받아쓰기 작업을 시작해 주세요."
+      },
+      "subscribe": {
+        "label": "구독 만들기",
+        "prompt": "VidBee에서 구독을 만들도록 도와주세요. 채널, 웹사이트 또는 RSS URL을 물어보고 피드를 검증한 뒤 저장하기 전에 새 동영상을 자동으로 다운로드할지 물어봐 주세요."
+      },
+      "compress": {
+        "label": "동영상 압축",
+        "prompt": "VidBee로 동영상 파일 크기를 줄이고 싶어요. 다운로드가 완료된 동영상 목록을 보여 주고, 압축할 동영상과 낮출 해상도를 물어본 다음 원본을 유지하면서 변환된 사본을 만들어 주세요."
+      },
+      "convert": {
+        "label": "형식 변환",
+        "prompt": "VidBee로 미디어 형식을 변환하고 싶어요. 다운로드가 완료된 파일 목록을 보여 주고, 변환할 파일과 원하는 출력 형식을 물어본 다음 원본을 유지하면서 변환된 사본을 만들어 주세요."
+      }
+    },
     "eventStream": "Event Stream",
     "eventStatus": {
-      "running": "Running",
-      "completed": "Completed",
-      "error": "Failed",
+      "running": "실행 중",
+      "completed": "완료",
+      "error": "실패",
       "pendingApproval": "승인 대기",
       "denied": "거절됨"
     },
-    "placeholder": "Ask a follow-up about this video…",
+    "notifications": {
+      "approval": "VidBee Agent가 권한을 요청합니다",
+      "response": "VidBee Agent가 입력을 기다리고 있습니다",
+      "body": "대화를 열어 내용을 확인하고 응답하세요."
+    },
+    "newChatPlaceholder": "무엇이든 물어보세요…",
+    "placeholder": "이 동영상에 관해 질문하세요…",
     "send": "Send message",
     "attachImages": "Attach images",
     "removeImage": "Remove {{name}}",
@@ -1700,11 +2066,16 @@
     "catalogMatched": "Matched {{name}}. Context window and capabilities were filled in.",
     "catalogBadge": "Catalog",
     "tools": {
+      "show_ui": "카드 표시 중",
+      "create_task": "작업 생성 중",
+      "wait_for_task": "작업 대기 중",
+      "select_video": "원본 미디어 선택 중",
       "list_transcripts": "사용 가능한 자막을 확인하는 중",
       "select_transcript": "자막 소스를 선택하는 중",
+      "add_subtitles": "자막 추가 중",
       "load_tools": "사용 가능한 기능 확인 중",
       "get_video_info": "Reading video information",
-      "read_transcript": "Reading transcript",
+      "read_transcript": "자막 읽는 중",
       "search_transcript": "Searching transcript",
       "capture_frames": "Capturing video frames",
       "create_clip": "Creating video clip",
@@ -1715,7 +2086,11 @@
       "read_artifact": "Reviewing saved image",
       "rename_conversation": "Renaming conversation",
       "write_article": "Writing article",
-      "review_article": "Reviewing article"
+      "review_article": "Reviewing article",
+      "export_subtitles": "자막 내보내는 중",
+      "create_dubbed_video": "동기화된 더빙 생성 중",
+      "list_tasks": "작업 찾는 중",
+      "get_task": "작업 세부 정보 확인 중"
     },
     "modelCapabilities": "Model capabilities",
     "runDurationRunning": "Working · {{duration}}",
@@ -1768,5 +2143,24 @@
     "storageDownloadDir": "Download directory",
     "storageDataDir": "Data directory",
     "storageDbFile": "SQLite database"
+  },
+  "globalSearch": {
+    "title": "검색",
+    "description": "로컬 미디어, 자막, 채팅 본문을 검색하거나 페이지로 이동하세요.",
+    "placeholder": "미디어, 자막, 채팅, 설정 검색…",
+    "noResults": "검색 결과가 없습니다.",
+    "media": "미디어",
+    "recentMedia": "최근 미디어",
+    "navigation": "바로 가기",
+    "navigate": "이동",
+    "open": "열기",
+    "close": "닫기",
+    "limitHint": "처음 {{count}}개의 미디어 결과를 표시합니다. 검색 조건을 좁혀 더 많은 결과를 찾아보세요.",
+    "subtitles": "자막 본문",
+    "chats": "채팅 본문",
+    "searching": "로컬 콘텐츠 검색 중…",
+    "searchFailed": "로컬 콘텐츠를 검색할 수 없습니다. 다시 입력해 주세요.",
+    "openFailed": "이 결과를 열 수 없습니다. 내용이 변경되었거나 대화에서 응답을 생성 중일 수 있습니다.",
+    "contentLimitHint": "콘텐츠 유형별로 처음 {{count}}개의 결과를 표시합니다. 검색 조건을 좁혀 주세요."
   }
 }

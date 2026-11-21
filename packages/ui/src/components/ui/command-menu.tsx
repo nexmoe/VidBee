@@ -163,12 +163,12 @@ function shortcutTokens(shortcut: string): string[] {
   const tokens = trimmed.split("+").map((t) => t.trim());
   // "mod++" splits into ["mod", "", ""]: the empties were a literal "+".
   const out: string[] = [];
-  for (let i = 0; i < tokens.length; i++) {
-    if (tokens[i] === "" && i > 0) {
+  for (const [i, token] of tokens.entries()) {
+    if (token === "" && i > 0) {
       if (out[out.length - 1] !== "+") out.push("+");
       continue;
     }
-    if (tokens[i] !== "") out.push(tokens[i]);
+    if (token !== "") out.push(token);
   }
   return out;
 }
@@ -617,17 +617,19 @@ const CommandMenu = forwardRef<HTMLDivElement, CommandMenuProps>(
         rowsRef.current.forEach((row, i) => {
           if (!row.disabled) enabled.push(i);
         });
-        if (enabled.length === 0) return;
+        const first = enabled[0];
+        if (first === undefined) return;
+        const last = enabled[enabled.length - 1] ?? first;
         let next: number;
-        if (to === "first") next = enabled[0];
-        else if (to === "last") next = enabled[enabled.length - 1];
+        if (to === "first") next = first;
+        else if (to === "last") next = last;
         else {
           const current = highlightRef.current;
           const pos = current === null ? -1 : enabled.indexOf(current);
           // Wraps at both ends: the list is the whole keyboard space, there
           // is no field to stop at.
-          if (pos === -1) next = to === 1 ? enabled[0] : enabled[enabled.length - 1];
-          else next = enabled[(pos + to + enabled.length) % enabled.length];
+          if (pos === -1) next = to === 1 ? first : last;
+          else next = enabled[(pos + to + enabled.length) % enabled.length] ?? first;
         }
         setActiveIndex(next);
         scrollToRow(next, "center");
@@ -780,7 +782,8 @@ const CommandMenuInput = forwardRef<HTMLInputElement, CommandMenuInputProps>(
           const current = tabs.tabs.findIndex((tab) => tab.value === tabs.value);
           const step = e.key === "ArrowRight" ? 1 : -1;
           const next = ((current === -1 ? 0 : current) + step + count) % count;
-          tabs.onValueChange(tabs.tabs[next].value);
+          const nextTab = tabs.tabs[next];
+          if (nextTab) tabs.onValueChange(nextTab.value);
           return;
         }
         case "ArrowDown":

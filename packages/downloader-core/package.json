@@ -13,6 +13,7 @@
     "./format-preferences": "./src/format-preferences.ts",
     "./format-presentation": "./src/format-presentation.ts",
     "./format-selector": "./src/format-selector.ts",
+    "./schemas": "./src/schemas.ts",
     "./output-path": "./src/output-path.ts",
     "./audio-format-preferences": "./src/audio-format-preferences.ts",
     "./subtitle-languages": "./src/subtitle-languages.ts",

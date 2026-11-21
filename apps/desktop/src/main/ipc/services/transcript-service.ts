@@ -6,6 +6,7 @@ import type {
   SpeakerCount
 } from '@vidbee/transcription'
 import { type IpcContext, IpcMethod, IpcService } from 'electron-ipc-decorator'
+import { loadCloudTranscriptionModels } from '../../lib/cloud-transcription'
 import {
   cancelVideoSubtitleExport,
   exportVideoWithSubtitles,
@@ -29,13 +30,18 @@ import {
   importLocalMediaForTranscription,
   insertTranscriptSegment,
   overlayCaptionSpeakersIfNeeded,
-  readMinimalModelPrep,
+  readTranscriptDetail,
+  readTranscriptionModelPrep,
+  readTranscriptPlaybackCues,
+  readTranscriptSourceCues,
   rediarizeTranscription,
   redownloadTranscriptionModels,
   retryTranscription,
   selectTranscriptSource,
   setActiveAsrTier,
   startTranscriptionForDownload,
+  type TranscriptListSnapshot,
+  type TranscriptPlaybackCueSnapshot,
   type TranscriptSnapshot,
   updateTranscriptSegment,
   upgradeAndRetranscribe
@@ -43,6 +49,12 @@ import {
 
 class TranscriptService extends IpcService {
   static readonly groupName = 'transcript'
+
+  /** Load the signed-in account's authoritative speech models and per-second prices. */
+  @IpcMethod()
+  async getCloudModels(_context: IpcContext) {
+    return loadCloudTranscriptionModels()
+  }
 
   @IpcMethod()
   async getForDownload(_context: IpcContext, downloadId: string): Promise<TranscriptSnapshot> {
@@ -66,8 +78,30 @@ class TranscriptService extends IpcService {
     return next
   }
 
+  /**
+   * Read the current detail without importing sidecars or starting a task.
+   */
   @IpcMethod()
-  async getStatusMap(_context: IpcContext): Promise<Record<string, TranscriptSnapshot>> {
+  getDetail(_context: IpcContext, downloadId: string): TranscriptSnapshot {
+    return readTranscriptDetail(downloadId)
+  }
+
+  /**
+   * Read cue text for the selected source. Word timestamps are not included.
+   */
+  @IpcMethod()
+  getPlaybackCues(_context: IpcContext, downloadId: string): TranscriptPlaybackCueSnapshot | null {
+    return readTranscriptPlaybackCues(downloadId)
+  }
+
+  /** Read a secondary caption language without changing the user's selected source. */
+  @IpcMethod()
+  getSourceCues(_context: IpcContext, input: { downloadId: string; key: string }) {
+    return readTranscriptSourceCues(input.downloadId, input.key)
+  }
+
+  @IpcMethod()
+  async getStatusMap(_context: IpcContext): Promise<Record<string, TranscriptListSnapshot>> {
     await startDesktopTaskQueue()
     return getTranscriptStatusMap()
   }
@@ -141,7 +175,7 @@ class TranscriptService extends IpcService {
    */
   @IpcMethod()
   getModelPrepStatus(_context: IpcContext): ModelPrepStatus {
-    return readMinimalModelPrep()
+    return readTranscriptionModelPrep()
   }
 
   @IpcMethod()

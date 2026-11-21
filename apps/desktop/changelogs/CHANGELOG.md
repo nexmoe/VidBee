@@ -5,11 +5,100 @@ For full release notes, see [GitHub Releases](https://github.com/nexmoe/VidBee/r
 
 ## [Unreleased]
 
+## [v2.5.0](https://github.com/nexmoe/VidBee/releases/tag/v2.5.0) - 2026-11-21
+
+### What's New
+- Search your entire library for media, saved subtitles, and chat messages, then jump straight to the matching subtitle or conversation.
+- Let connected AI assistants search your local library and read the matching subtitles and messages.
+
+### Improvements
+- Recover video details when a link initially returns no information, and prevent results from older links from replacing your current selection. (by @miko-agent[bot], [#526](https://github.com/nexmoe/VidBee/pull/526))
+- Select download diagnostics and copy the complete download log more easily. (by @miko-agent[bot], [#528](https://github.com/nexmoe/VidBee/pull/528))
+- Show the correct guidance when your own AI provider reports a payment error.
+
+## [v2.4.0](https://github.com/nexmoe/VidBee/releases/tag/v2.4.0) - 2026-11-14
+
+### What's New
+- Start an independent Agent conversation, attach videos from your library, and continue working across downloads, subtitles, and exports.
+- Follow long requests with a concise plan, live task progress, and generated media in one place. Agent continues automatically when background tasks finish.
+- Translate subtitles, export bilingual subtitles, and create locally dubbed videos from the same conversation.
+- Choose Cloud transcription alongside local models and resume interrupted transcription without repeating completed audio.
+- Install skills from GitHub, organize your skill library, and mention a skill directly in a message.
+- Install VidBee from the Microsoft Store, with updates managed by the Store.
+
+### Improvements
+- Select multiple library items with the keyboard or by dragging, then manage them together.
+- Open local files linked in Agent answers and keep your preferred window position between launches.
+- VidBee takes less space to install.
+
+## [v2.3.0](https://github.com/nexmoe/VidBee/releases/tag/v2.3.0) - 2026-10-25
+
+### Improvements
+- Fresh installations now enable launch at login and hide the macOS Dock icon by default; both options remain adjustable in Settings.
+- Make shared transcript and AI answer images more compact by slightly reducing the text scale.
+
+## [v2.2.4](https://github.com/nexmoe/VidBee/releases/tag/v2.2.4) - 2026-10-24
+
+### Added
+- Connect external AI assistants to VidBee through local MCP tools for downloads, subscriptions, transcription, and exports.
+- Continue the same Agent conversation across VidBee Desktop and the browser extension.
+- Download subtitles on their own, without downloading the video.
+- Download AI diagrams as JPG alongside SVG, PNG, and Mermaid source.
+
+### Changed
+- Keep large download and transcript libraries responsive and improve navigation between converted media.
+- Show download titles and covers as soon as items enter the queue.
+- Keep a separate cookie session for each browser profile used by the extension.
+- Render AI diagrams with Pele and consistent controls in light and dark themes.
+
 ### Fixed
+- Preserve the complete download engine in Intel macOS packages so managed preparation and bundled fallback can start successfully.
+
+## [v2.2.3](https://github.com/nexmoe/VidBee/releases/tag/v2.2.3) - 2026-10-11
+
+### Fixed
+- Keep models from the same AI provider together when editing or removing the provider.
+- Avoid appending unused screenshots after illustrated Agent answers.
+
+## [v2.2.2](https://github.com/nexmoe/VidBee/releases/tag/v2.2.2) - 2026-10-11
+
+### Fixed
+- Restore Agent conversations and transcript prompts that fail immediately in the installed app.
+
+## [v2.2.1](https://github.com/nexmoe/VidBee/releases/tag/v2.2.1) - 2026-10-11
+
+### Fixed
+- Restore Account settings in the released desktop app.
+
+## [v2.2.0](https://github.com/nexmoe/VidBee/releases/tag/v2.2.0) - 2026-10-11
+
+### What's New
+- Choose FireRedASR v2 for Chinese, English, and Chinese dialects, or the larger Qwen3-ASR 1.7B model for local transcription.
+- Choose Orukeet for local transcription. (by @Nathan-Roll1, [#480](https://github.com/nexmoe/VidBee/pull/480))
+- Sign in to your VidBee account and use Cloud models in Agent conversations.
+- Ask Agent to manage downloads and subscriptions, transcribe files, or convert and trim media.
+
+### Fixed
+- Choose the video container when downloading a playlist. (by @jabrailkhalil, [#469](https://github.com/nexmoe/VidBee/pull/469))
+- Keep downloaded WebM videos when cover art cannot be embedded, and retain subtitle files for subscription downloads. ([#487](https://github.com/nexmoe/VidBee/pull/487), [#484](https://github.com/nexmoe/VidBee/pull/484))
+- Reduce account refresh requests and reuse Cloud model capabilities between conversations. ([#495](https://github.com/nexmoe/VidBee/pull/495))
+- Keep Agent titles saved during live runs, pause execution timers while awaiting approval, and release Cloud capacity when streams stop. ([#495](https://github.com/nexmoe/VidBee/pull/495))
+- Ask before protected settings changes and deletions, including download folders outside the library reached through symbolic links. ([#495](https://github.com/nexmoe/VidBee/pull/495))
+- Preserve original video links in Markdown and PDF exports and capture the requested article screenshots accurately, including cached frames. ([#495](https://github.com/nexmoe/VidBee/pull/495))
 - Downloads no longer time out after one minute while merging or converting media. ([#462](https://github.com/nexmoe/VidBee/issues/462), [#488](https://github.com/nexmoe/VidBee/pull/488))
 - Desktop and web format pickers retain high-resolution HLS streams and distinct audio languages when HTTP downloads are also available. ([#443](https://github.com/nexmoe/VidBee/issues/443), [#488](https://github.com/nexmoe/VidBee/pull/488))
 - RSS videos can be queued again after their downloads are removed, including removals from another connected app. You can also copy video links from the RSS item menu. ([#479](https://github.com/nexmoe/VidBee/issues/479), [#485](https://github.com/nexmoe/VidBee/pull/485))
 - Incomplete Qwen3-ASR model files are repaired or reported clearly before transcription starts. Overlapping model installations no longer delete each other's files, including when one is cancelled. ([#473](https://github.com/nexmoe/VidBee/issues/473), [#486](https://github.com/nexmoe/VidBee/pull/486))
+- Resume unfinished article sections and capture relevant screenshots while writing.
+- Finish completed agent answers promptly and keep long thinking histories readable.
+- Preserve thinking duration and branded footers in shared images and exported documents.
+- Keep subscription settings enabled when saving auto-download changes.
+- Import available platform-generated subtitles before starting local transcription.
+- Show account balances and pending credit recovery more reliably.
+- Prevent duplicate downloads, including simultaneous requests and files already saved on this computer.
+- Keep transcription queues moving and preserve elapsed times after reloading the app.
+- Preserve agent reasoning history and improve Markdown PDF exports.
+- Remove download records reliably when their saved files have already been deleted.
 
 ## [v2.1.0](https://github.com/nexmoe/VidBee/releases/tag/v2.1.0) - 2026-08-30
 
@@ -86,11 +175,40 @@ In 1.x, VidBee saved the file and stopped there. 2.0 keeps going: transcribe on 
 - Downloads and self-hosted setups are more reliable.
 
 ## [v1.3.14](https://github.com/nexmoe/VidBee/releases/tag/v1.3.14) - 2026-07-05
-### Requirement Updates
-- Updated the bundled yt-dlp runtime from v2026.06.09 to v2026.07.04 so site compatibility stays current.
+
+### Improvements
+- Refresh download support for recent changes on supported websites.
+
+## [v1.3.13](https://github.com/nexmoe/VidBee/releases/tag/v1.3.13) - 2026-06-20
+
+### What's New
+- Run VidBee on Windows without installing it, with an option to keep app data and downloads beside the app. (by @jabrailkhalil, [#403](https://github.com/nexmoe/VidBee/pull/403))
+- View live download logs and reopen them from download history.
+
+### Improvements
+- Open playlist options automatically when pasting a playlist or YouTube channel link.
+- Prevent a changed link from downloading the previously selected video.
+- Stop Windows downloads completely when cancelled, and recognize Firefox browser cookies more reliably.
+- Keep Twitch downloads running when optional subtitles are unavailable, and try an available format when the preferred combination is missing.
+- Restore startup of the installed Linux Debian package.
+
+## [v1.3.12](https://github.com/nexmoe/VidBee/releases/tag/v1.3.12) - 2026-06-20
+
+### What's New
+- Choose stable or preview updates from About and keep receiving updates from your selected channel.
+
 ## [v1.3.11](https://github.com/nexmoe/VidBee/releases/tag/v1.3.11) - 2026-06-19
-### Requirement Updates
-- Updated the bundled yt-dlp runtime from v2026.03.17 to v2026.06.09 so site compatibility stays current.
+
+### What's New
+- Choose MP4, MKV, WebM, or the original format for one-click downloads.
+- Press Ctrl+V or Cmd+V to open the add-download dialog with the copied link.
+
+### Improvements
+- Get clearer help when downloads need browser cookies, sign-in, or a working network connection.
+- Keep long downloads and large playlists from crashing the app.
+- Restore startup for affected older 1.3 installations and improve download-tool detection on macOS.
+- Refresh download support for recent changes on supported websites.
+
 ## [v1.3.10](https://github.com/nexmoe/VidBee/releases/tag/v1.3.10) - 2026-04-11
 ### Improvements
 - One-click download is enabled by default so you can start downloads faster on first use.
@@ -128,8 +246,10 @@ In 1.x, VidBee saved the file and stopped there. 2.0 keeps going: transcribe on 
 - Improved download UI details
 
 ## [v1.3.5](https://github.com/nexmoe/VidBee/releases/tag/v1.3.5) - 2026-03-18
-### Requirement Updates
-- Updated the bundled yt-dlp runtime from v2026.03.13 to v2026.03.17 so site compatibility stays current.
+
+### Improvements
+- Refresh download support for recent changes on supported websites.
+
 ## [v1.3.4](https://github.com/nexmoe/VidBee/releases/tag/v1.3.4) - 2026-03-14
 ### Bug Fixes
 - Improved macOS release build reliability by using the default Electron download source during packaging.

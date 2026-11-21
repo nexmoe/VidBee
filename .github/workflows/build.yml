@@ -67,7 +67,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Lint and format check
-        run: pnpm run check && pnpm run typecheck
+        run: pnpm --filter ./apps/desktop exec ultracite check && pnpm run typecheck
 
       - name: Setup macOS signing
         if: matrix.platform == 'macos'
@@ -111,12 +111,9 @@ jobs:
           echo "APPLE_API_ISSUER=$APPLE_API_ISSUER" >> "$GITHUB_ENV"
           echo "SIGNING_AVAILABLE=true" >> "$GITHUB_ENV"
 
-      - name: Stamp release version and channel from tag
+      - name: Stamp release version from tag
         if: github.ref_type == 'tag'
         shell: bash
-        # Stamp the tag version into package.json and, for prerelease tags, set the publish
-        # channel so electron-builder emits preview*.yml instead of latest*.yml (its GitHub
-        # provider does not derive the channel from the version on its own).
         run: node apps/desktop/scripts/stamp-release.mjs "${GITHUB_REF_NAME}"
 
       - name: Build application
@@ -130,8 +127,54 @@ jobs:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: ${{ matrix.build_script }}
 
+      - name: Verify packaged macOS download engines
+        if: matrix.platform == 'macos'
+        run: node apps/desktop/scripts/check-packaged-ytdlp.cjs
+
       - name: Verify packaged sherpa natives
         run: node apps/desktop/scripts/check-packaged-sherpa.cjs ${{ matrix.platform }}
+
+      - name: Package Microsoft Store application
+        if: matrix.platform == 'windows'
+        working-directory: apps/desktop
+        run: pnpm exec electron-builder --config electron-builder.store.yml --win appx --x64 --publish never
+
+      - name: Verify Microsoft Store package
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $packages = @(Get-ChildItem apps/desktop/dist/*-store-*.msix -File)
+          if ($packages.Count -ne 1) { throw 'Expected exactly one Microsoft Store package.' }
+          $archive = [System.IO.Compression.ZipFile]::OpenRead($packages[0].FullName)
+          try {
+            $reader = [System.IO.StreamReader]::new($archive.GetEntry('AppxManifest.xml').Open())
+            try { [xml]$manifest = $reader.ReadToEnd() } finally { $reader.Dispose() }
+            $version = (Get-Content apps/desktop/package.json -Raw | ConvertFrom-Json).version + '.0'
+            if ($manifest.Package.Identity.Name -ne 'Nexmoe.VidBee' -or
+                $manifest.Package.Identity.Publisher -ne 'CN=D23BB833-5C9D-4C6D-80C1-B479A01E5645' -or
+                $manifest.Package.Identity.Version -ne $version -or
+                $manifest.Package.Identity.ProcessorArchitecture -ne 'x64' -or
+                $manifest.Package.Properties.PublisherDisplayName -ne 'Nexmoe' -or
+                $manifest.Package.Dependencies.TargetDeviceFamily.Name -ne 'Windows.Desktop' -or
+                $null -eq $archive.GetEntry('app/vidbee.exe')) {
+              throw 'Microsoft Store package identity, version, platform or executable is invalid.'
+            }
+          } finally { $archive.Dispose() }
+          Write-Host "Validated Microsoft Store package: $($packages[0].Name)"
+
+      - name: Verify Store packaged sherpa natives
+        if: matrix.platform == 'windows'
+        run: node apps/desktop/scripts/check-packaged-sherpa.cjs windows
+
+      - name: Upload Microsoft Store package
+        if: matrix.platform == 'windows' && inputs.upload_artifacts == true
+        uses: actions/upload-artifact@v4
+        with:
+          name: microsoft-store-package
+          path: apps/desktop/dist/*-store-*.msix
+          retention-days: 14
+          if-no-files-found: error
 
       - name: Verify Windows release artifacts
         if: matrix.platform == 'windows'
@@ -184,6 +227,10 @@ jobs:
           if [[ "$dmgs_found" -eq 0 ]]; then
             echo "::notice::No DMG artifacts found to validate"
           fi
+
+      - name: Refresh macOS update checksums after notarization
+        if: matrix.platform == 'macos'
+        run: node apps/desktop/scripts/refresh-mac-update-manifest.mjs
 
       - name: Upload build artifacts
         if: inputs.upload_artifacts == true

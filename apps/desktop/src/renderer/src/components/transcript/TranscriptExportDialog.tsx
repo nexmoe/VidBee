@@ -21,10 +21,11 @@ import {
 } from '@renderer/components/ui/select'
 import { Switch } from '@renderer/components/ui/switch'
 import { ipcEvents, ipcServices } from '@renderer/lib/ipc'
+import { cn } from '@renderer/lib/utils'
+import type { TranscriptSegmentView } from '@renderer/store/transcripts'
+import { buildAssDocument, buildSrtDocument } from '@shared/subtitle-export'
 import {
-  buildAssDocument,
   buildExportUnits,
-  buildSrtDocument,
   buildTranscriptExportFileName,
   buildTranscriptExportText,
   buildVideoSubtitleExportFileName,
@@ -32,9 +33,7 @@ import {
   type TranscriptExportGrouping,
   type TranscriptExportStyle,
   type TranscriptVideoEncode
-} from '@renderer/lib/transcript-export'
-import { cn } from '@renderer/lib/utils'
-import type { TranscriptSegmentView } from '@renderer/store/transcripts'
+} from '@shared/transcript-export'
 import { AlignLeft, Captions, Copy, FileText, Flame, Layers, List, Mic, Video } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -48,6 +47,7 @@ interface TranscriptExportDialogProps {
   resolveSpeaker: (speakerId: string | null) => string
   segments: TranscriptSegmentView[]
   title: string
+  sourceUrl?: string | null
 }
 
 const STYLES: Array<{
@@ -66,6 +66,8 @@ const FORMATS: Array<{ icon: typeof FileText; id: TranscriptExportFormat }> = [
   { icon: FileText, id: 'md' }
 ]
 
+const SUBTITLE_FORMATS: typeof FORMATS = [{ icon: Captions, id: 'srt' }, ...FORMATS]
+
 const ENCODES: Array<{ icon: typeof Layers; id: TranscriptVideoEncode }> = [
   { icon: Layers, id: 'soft' },
   { icon: Flame, id: 'hard' }
@@ -83,7 +85,8 @@ export function TranscriptExportDialog({
   open,
   resolveSpeaker,
   segments,
-  title
+  title,
+  sourceUrl
 }: TranscriptExportDialogProps) {
   const { t } = useTranslation()
   const [style, setStyle] = useState<TranscriptExportStyle>('transcript')
@@ -94,6 +97,7 @@ export function TranscriptExportDialog({
   const [saving, setSaving] = useState(false)
   const [progress, setProgress] = useState<number | null>(null)
   const isVideo = style === 'video'
+  const formats = style === 'subtitles' ? SUBTITLE_FORMATS : FORMATS
   const videoBlocked = isVideo && (isAudio || !mediaPath)
   const units = useMemo(() => buildExportUnits(segments, grouping), [grouping, segments])
   const preview = useMemo(
@@ -128,6 +132,17 @@ export function TranscriptExportDialog({
     }
   }, [open])
 
+  /** Select the default subtitle format and keep other styles in text formats. */
+  const handleStyleChange = (next: TranscriptExportStyle) => {
+    if (next === 'subtitles') {
+      setFormat('srt')
+    } else if (format === 'srt') {
+      setFormat('txt')
+    }
+    setStyle(next)
+  }
+
+  /** Copy the current export preview. */
   const handleCopy = async () => {
     if (!preview) {
       toast.error(t('transcript.export.empty'))
@@ -141,6 +156,7 @@ export function TranscriptExportDialog({
     }
   }
 
+  /** Save the current preview using its selected file extension. */
   const handleExport = async () => {
     if (!preview) {
       toast.error(t('transcript.export.empty'))
@@ -154,7 +170,10 @@ export function TranscriptExportDialog({
     try {
       const saved = await ipcServices.fs.saveTextFile({
         content: preview,
-        defaultFileName: buildTranscriptExportFileName(title, format)
+        defaultFileName: buildTranscriptExportFileName(title, format, style === 'subtitles'),
+        ...(format === 'md' && sourceUrl
+          ? { source: { url: sourceUrl, label: t('transcript.info.url') } }
+          : {})
       })
       if (!saved) {
         return
@@ -282,9 +301,10 @@ export function TranscriptExportDialog({
                         'h-auto flex-col gap-2 px-2 py-3 font-normal',
                         selected && 'border-primary bg-primary/5'
                       )}
+                      data-testid={`transcript-export-style-${item.id}`}
                       disabled={saving}
                       key={item.id}
-                      onClick={() => setStyle(item.id)}
+                      onClick={() => handleStyleChange(item.id)}
                       type="button"
                       variant="outline"
                     >
@@ -301,7 +321,7 @@ export function TranscriptExportDialog({
                 {t(isVideo ? 'transcript.export.encodeLabel' : 'transcript.export.formatLabel')}
               </h3>
               <div className={cn('grid gap-2', isVideo ? 'grid-cols-2' : 'grid-cols-3')}>
-                {(isVideo ? ENCODES : FORMATS).map((item) => {
+                {(isVideo ? ENCODES : formats).map((item) => {
                   const Icon = item.icon
                   const selected = isVideo ? encode === item.id : format === item.id
                   return (
@@ -311,6 +331,11 @@ export function TranscriptExportDialog({
                         'h-auto flex-col gap-2 px-2 py-3 font-normal',
                         selected && 'border-primary bg-primary/5'
                       )}
+                      data-testid={
+                        isVideo
+                          ? `transcript-export-encode-${item.id}`
+                          : `transcript-export-format-${item.id}`
+                      }
                       disabled={saving}
                       key={item.id}
                       onClick={() => {
@@ -363,7 +388,7 @@ export function TranscriptExportDialog({
                   </SelectContent>
                 </Select>
               </div>
-              {isVideo ? null : (
+              {isVideo || format === 'srt' ? null : (
                 <div className="flex items-center justify-between gap-3">
                   <Label htmlFor="transcript-export-timestamp">
                     {t('transcript.export.showTimestamp')}
@@ -410,7 +435,12 @@ export function TranscriptExportDialog({
             >
               <Copy />
             </Button>
-            <Button disabled={!canExport} onClick={() => void handleExport()} type="button">
+            <Button
+              data-testid="transcript-export-action"
+              disabled={!canExport}
+              onClick={() => void handleExport()}
+              type="button"
+            >
               {saving ? t('transcript.export.exporting') : t('transcript.export.action')}
             </Button>
           </div>

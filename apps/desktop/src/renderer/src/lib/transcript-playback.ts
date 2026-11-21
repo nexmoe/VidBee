@@ -189,7 +189,7 @@ export const shouldKeepPlaybackSession = (
 }
 
 /**
- * Show the now-playing bar after playback starts and the queue is not empty.
+ * Show the now-playing bar only on Home and transcript detail pages after playback starts.
  *
  * Transcript detail pages keep the bar mounted and collapse it to the seek
  * strip via `shouldCollapsePlaybackBar` instead of hiding it.
@@ -200,7 +200,13 @@ export const shouldShowPlaybackBar = (input: {
   playlistCount: number
   started: boolean
 }): boolean => {
-  return Boolean(input.started && input.downloadId && input.playlistCount > 0)
+  return Boolean(
+    (normalizePlaybackPathname(input.pathname) === '/' ||
+      isTranscriptDetailPathname(input.pathname)) &&
+      input.started &&
+      input.downloadId &&
+      input.playlistCount > 0
+  )
 }
 
 /**

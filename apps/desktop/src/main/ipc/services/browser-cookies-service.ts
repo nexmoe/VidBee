@@ -19,7 +19,12 @@ import {
 import { type IpcContext, IpcMethod, IpcService } from 'electron-ipc-decorator'
 import type { ExtensionCookieConnection } from '../../../shared/extension-cookies'
 import { inspectBrowserCookieAccess } from '../../lib/browser-cookie-access'
-import { extensionCookieHealth, getExtensionCookieConnection } from '../../lib/extension-cookies'
+import {
+  extensionCookieHealth,
+  getExtensionCookieConnection,
+  removeExtensionCookieSource,
+  setExtensionCookieSourceOrder
+} from '../../lib/extension-cookies'
 import { resolvePathWithHome } from '../../utils/path-helpers'
 
 class BrowserCookiesService extends IpcService {
@@ -127,6 +132,18 @@ class BrowserCookiesService extends IpcService {
   @IpcMethod()
   getExtensionConnection(_context: IpcContext): ExtensionCookieConnection {
     return getExtensionCookieConnection()
+  }
+
+  /** Save browser-extension cookie priority without changing any chat session. */
+  @IpcMethod()
+  setExtensionSourceOrder(_context: IpcContext, sourceIds: string[]): ExtensionCookieConnection {
+    return setExtensionCookieSourceOrder(sourceIds)
+  }
+
+  /** Remove one remembered offline source without affecting other extension sessions. */
+  @IpcMethod()
+  removeExtensionSource(_context: IpcContext, sourceId: string): ExtensionCookieConnection {
+    return removeExtensionCookieSource(sourceId)
   }
 
   /**

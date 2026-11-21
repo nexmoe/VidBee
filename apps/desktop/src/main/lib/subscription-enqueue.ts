@@ -5,15 +5,14 @@
  * snapshot the same runtime settings as a one-off download. The desktop
  * executor has no default runtime settings. GitHub issue #475.
  */
+import { resolveSubtitleLanguages } from '@vidbee/downloader-core/subtitle-languages'
+import { buildSubscriptionDownloadOptions } from '@vidbee/subscriptions-core/download-options'
+import type { SubscriptionDownloadPreferences } from '@vidbee/subscriptions-core/types'
 import type { TaskCreationMetadata, TaskInput } from '@vidbee/task-queue'
 import type { AppSettings } from '../../shared/types'
-import {
-  buildAudioFormatPreference,
-  buildVideoFormatPreference
-} from '../../shared/utils/format-preferences'
 import { sanitizeFilenameTemplate, toSharedSettings } from '../download-engine/args-builder'
 
-export interface SubscriptionDownloadSource {
+export interface SubscriptionDownloadSource extends SubscriptionDownloadPreferences {
   id: string
   platform: string
   tags: readonly string[]
@@ -33,6 +32,7 @@ export interface DesktopSubscriptionTaskInput {
   downloadDirectory: string
 }
 
+/** Snapshot subscription format overrides and global runtime settings into a queued task. */
 export const buildDesktopSubscriptionTaskInput = (input: {
   settings: AppSettings
   subscription: SubscriptionDownloadSource
@@ -45,27 +45,27 @@ export const buildDesktopSubscriptionTaskInput = (input: {
   const namingTemplate = input.subscription.namingTemplate
     ? sanitizeFilenameTemplate(input.subscription.namingTemplate)
     : undefined
-  const downloadType = input.settings.oneClickDownloadType ?? 'video'
-  const formatPreference =
-    downloadType === 'video'
-      ? buildVideoFormatPreference(input.settings)
-      : buildAudioFormatPreference(input.settings)
-  const containerFormat =
-    downloadType === 'video' ? (input.settings.oneClickContainer ?? 'auto') : undefined
   const tags = Array.from(new Set([input.subscription.platform, ...input.subscription.tags]))
+  const downloadOptions = buildSubscriptionDownloadOptions(input.subscription, input.settings)
 
   return {
     downloadDirectory,
     task: {
       url: input.item.url,
-      kind: 'subscription-item',
+      kind: downloadOptions.type === 'subtitles' ? 'subtitles' : 'subscription-item',
       title: input.item.title,
       ...(input.item.thumbnail === undefined ? {} : { thumbnail: input.item.thumbnail }),
       subscriptionId: input.subscription.id,
       options: {
-        type: downloadType,
-        format: formatPreference,
-        ...(containerFormat === undefined ? {} : { containerFormat }),
+        ...downloadOptions,
+        ...(downloadOptions.type === 'subtitles'
+          ? {
+              languages: resolveSubtitleLanguages(
+                input.settings.subtitleLanguages,
+                input.settings.language
+              )
+            }
+          : {}),
         customDownloadPath: downloadDirectory,
         ...(namingTemplate ? { customFilenameTemplate: namingTemplate } : {}),
         tags,

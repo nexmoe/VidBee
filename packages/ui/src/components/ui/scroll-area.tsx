@@ -23,7 +23,7 @@ interface ScrollAreaProps extends ComponentPropsWithoutRef<'div'> {
   viewportRef?: Ref<HTMLDivElement>
   /** Extra attributes for the scrolling viewport (events, aria, tabIndex). */
   viewportProps?: ComponentPropsWithoutRef<'div'>
-  /** Which axes get scrollbars. Defaults to `"vertical"`. */
+  /** Which axes can scroll. Defaults to `"vertical"`. */
   orientation?: Orientation
 }
 
@@ -50,7 +50,7 @@ const ScrollArea = forwardRef<ComponentRef<typeof ScrollAreaPrimitive.Root>, Scr
             <div
               className={cn(
                 'size-full rounded-[inherit]',
-                orientation === 'vertical' && 'overflow-y-auto',
+                orientation === 'vertical' && 'overflow-x-hidden overflow-y-auto',
                 orientation === 'horizontal' && 'overflow-x-auto',
                 orientation === 'both' && 'overflow-auto',
                 viewportClassName
@@ -75,9 +75,15 @@ const ScrollArea = forwardRef<ComponentRef<typeof ScrollAreaPrimitive.Root>, Scr
               className={cn('size-full rounded-[inherit]', viewportClassName)}
               data-slot="scroll-area-viewport"
               ref={viewportRef}
+              style={orientation === 'vertical' ? { overflowX: 'hidden' } : undefined}
               {...viewportProps}
             >
-              <ScrollAreaPrimitive.Content>{children}</ScrollAreaPrimitive.Content>
+              {/* Override Base UI's intrinsic minimum so vertical content can shrink. */}
+              <ScrollAreaPrimitive.Content
+                style={orientation === 'vertical' ? { minWidth: 0 } : undefined}
+              >
+                {children}
+              </ScrollAreaPrimitive.Content>
             </ScrollAreaPrimitive.Viewport>
             {orientation !== 'horizontal' && <ScrollBar orientation="vertical" />}
             {orientation !== 'vertical' && <ScrollBar orientation="horizontal" />}

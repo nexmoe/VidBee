@@ -11,10 +11,10 @@ import { retryTransientYtDlpNetworkError } from '@vidbee/downloader-core'
 import type { PlaylistInfo, VideoInfo, VideoInfoCommandResult } from '../../shared/types'
 import { settingsManager } from '../settings'
 import { scopedLoggers } from '../utils/logger'
-import { createBoundedTextBuffer } from './bounded-output-buffer'
 import { probeConfiguredBrowserCookieAccess } from './browser-cookie-access'
 import { buildPlaylistInfoArgs, buildVideoInfoArgs, formatYtDlpCommand } from './command-utils'
 import { applyExtensionCookieSettings } from './extension-cookies'
+import { runYtDlpMetadataCommand } from './yt-dlp-metadata-command'
 import { ytdlpManager } from './ytdlp-manager'
 
 /**
@@ -57,34 +57,29 @@ const parseVideoInfoPayload = (stdout: string): VideoInfo => {
   }
 }
 
-/**
- * Run one yt-dlp `-j` probe and parse the resulting video info payload.
- */
-const execVideoInfo = (url: string, args: string[], signal?: AbortSignal): Promise<VideoInfo> =>
-  new Promise((resolve, reject) => {
-    signal?.throwIfAborted()
-    const instance = ytdlpManager.getInstance()
-    const proc = signal ? instance.exec(args, {}, signal) : instance.exec(args)
-    const stdout = createBoundedTextBuffer()
-    const stderr = createBoundedTextBuffer()
-    proc.ytDlpProcess?.stdout?.on('data', (d: Buffer) => stdout.append(d))
-    proc.ytDlpProcess?.stderr?.on('data', (d: Buffer) => stderr.append(d))
-    proc.on('close', (code) => {
-      const out = stdout.get()
-      const err = stderr.get()
-      if (code === 0 && out) {
-        try {
-          resolve(inflateEstimatedSizes(parseVideoInfoPayload(out)))
-        } catch (error) {
-          reject(new Error(`Failed to parse video info: ${error}`))
-        }
-        return
-      }
-      logger.error('Failed to fetch video info for:', url, 'exit', code, err)
-      reject(new Error(err || 'Failed to fetch video info'))
-    })
-    proc.on('error', reject)
-  })
+/** Run a metadata probe with the active binary and complete structured output. */
+const execMetadata = async (url: string, args: string[], signal?: AbortSignal): Promise<string> => {
+  try {
+    return await runYtDlpMetadataCommand(ytdlpManager.getPath(), args, signal)
+  } catch (error) {
+    logger.error('Failed to fetch metadata for:', url, error)
+    throw error
+  }
+}
+
+/** Run one yt-dlp `-j` probe and parse the resulting video info payload. */
+const execVideoInfo = async (
+  url: string,
+  args: string[],
+  signal?: AbortSignal
+): Promise<VideoInfo> => {
+  const stdout = await execMetadata(url, args, signal)
+  try {
+    return inflateEstimatedSizes(parseVideoInfoPayload(stdout))
+  } catch (error) {
+    throw new Error(`Failed to parse video info: ${error}`)
+  }
+}
 
 /**
  * Merge live extension cookies into the current app settings when available.
@@ -168,55 +163,37 @@ const resolveEntryUrl = (entry: RawPlaylistEntry): string => {
 /**
  * Run one yt-dlp playlist listing probe.
  */
-const execPlaylistInfo = (
+const execPlaylistInfo = async (
   url: string,
   args: string[],
   signal?: AbortSignal
-): Promise<PlaylistInfo> =>
-  new Promise((resolve, reject) => {
-    signal?.throwIfAborted()
-    const instance = ytdlpManager.getInstance()
-    const proc = signal ? instance.exec(args, {}, signal) : instance.exec(args)
-    const stdout = createBoundedTextBuffer()
-    const stderr = createBoundedTextBuffer()
-    proc.ytDlpProcess?.stdout?.on('data', (d: Buffer) => stdout.append(d))
-    proc.ytDlpProcess?.stderr?.on('data', (d: Buffer) => stderr.append(d))
-    proc.on('close', (code) => {
-      const out = stdout.get()
-      const err = stderr.get()
-      if (code === 0 && out) {
-        try {
-          const parsed = JSON.parse(out) as {
-            id?: string
-            title?: string
-            entries?: RawPlaylistEntry[]
-          }
-          const rawEntries = Array.isArray(parsed.entries) ? parsed.entries : []
-          const entries = rawEntries
-            .map((entry, i) => ({
-              id: entry.id || `${i}`,
-              title: entry.title || `Entry ${i + 1}`,
-              url: resolveEntryUrl(entry),
-              index: i + 1
-            }))
-            .filter((e) => e.url.length > 0)
-          resolve({
-            id: parsed.id || url,
-            title: parsed.title || 'Playlist',
-            entries,
-            entryCount: entries.length
-          })
-          return
-        } catch (error) {
-          reject(new Error(`Failed to parse playlist info: ${error}`))
-          return
-        }
-      }
-      logger.error('Failed to fetch playlist info for:', url, 'exit', code, err)
-      reject(new Error(err || 'Failed to fetch playlist info'))
-    })
-    proc.on('error', reject)
-  })
+): Promise<PlaylistInfo> => {
+  const stdout = await execMetadata(url, args, signal)
+  try {
+    const parsed = JSON.parse(stdout) as {
+      id?: string
+      title?: string
+      entries?: RawPlaylistEntry[]
+    }
+    const rawEntries = Array.isArray(parsed.entries) ? parsed.entries : []
+    const entries = rawEntries
+      .map((entry, i) => ({
+        id: entry.id || `${i}`,
+        title: entry.title || `Entry ${i + 1}`,
+        url: resolveEntryUrl(entry),
+        index: i + 1
+      }))
+      .filter((e) => e.url.length > 0)
+    return {
+      id: parsed.id || url,
+      title: parsed.title || 'Playlist',
+      entries,
+      entryCount: entries.length
+    }
+  } catch (error) {
+    throw new Error(`Failed to parse playlist info: ${error}`)
+  }
+}
 
 export const fetchPlaylistInfo = async (
   url: string,

@@ -19,8 +19,13 @@ import {
   isMuxedVideoFormat
 } from '@vidbee/downloader-core/format-selector'
 import { DownloadContainerSelect } from '@vidbee/ui/components/ui/download-container-select'
+import { useDownloadTransfer } from '@vidbee/ui/components/ui/download-transfer'
 import { IngestDropOverlay } from '@vidbee/ui/components/ui/ingest-drop-overlay'
 import { WebmThumbnailNotice } from '@vidbee/ui/components/ui/webm-thumbnail-notice'
+import {
+  createMetadataRequestCoordinator,
+  hasPlaylistEntries
+} from '@vidbee/ui/lib/download-metadata'
 import { isPlaylistLikeUrl } from '@vidbee/ui/lib/url-kind'
 import { useAddUrlInteraction } from '@vidbee/ui/lib/use-add-url-interaction'
 import { useHomeIngest } from '@vidbee/ui/lib/use-home-ingest'
@@ -56,6 +61,7 @@ export function DownloadDialog({
   onOpenSupportedSites,
   onOpenSettings: _onOpenSettings
 }: DownloadDialogProps) {
+  const { contentRef, popoverRef, transferToList } = useDownloadTransfer()
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const [videoInfo, _setVideoInfo] = useAtom(currentVideoInfoAtom)
@@ -139,91 +145,55 @@ export function DownloadDialog({
     )
   }, [playlistInfo, computePlaylistRange, selectedEntryIds])
 
-  // Listen for deep link events
-  useEffect(() => {
-    const handleDeepLink = async (data: unknown) => {
-      // Support both old format (string) and new format (object with url and type)
-      let url: string
-      let type: 'single' | 'playlist' = 'single'
+  const [metadataRequests] = useState(createMetadataRequestCoordinator)
+  const deepLinkTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-      if (typeof data === 'string') {
-        // Legacy format: just URL string
-        url = data.trim()
-      } else if (data && typeof data === 'object' && 'url' in data) {
-        // New format: object with url and type
-        url = typeof data.url === 'string' ? data.url.trim() : ''
-        if ('type' in data && data.type === 'playlist') {
-          type = 'playlist'
+  const invalidateMetadataRequests = useCallback(() => {
+    if (deepLinkTimerRef.current !== null) {
+      clearTimeout(deepLinkTimerRef.current)
+      deepLinkTimerRef.current = null
+    }
+    metadataRequests.invalidate()
+    clearVideoInfo()
+  }, [clearVideoInfo, metadataRequests])
+
+  useEffect(() => () => invalidateMetadataRequests(), [invalidateMetadataRequests])
+
+  const fetchPlaylistInfo = useCallback(
+    async (targetUrl: string) => {
+      const requestId = metadataRequests.beginRequest()
+      setPlaylistInfo(null)
+      setSelectedEntryIds(new Set())
+      setPlaylistPreviewError(null)
+      setPlaylistPreviewLoading(true)
+      try {
+        const info = await ipcServices.download.getPlaylistInfo(targetUrl)
+        if (!metadataRequests.isCurrentRequest(requestId)) {
+          return
         }
-      } else {
-        return
+        if (!hasPlaylistEntries(info)) {
+          setPlaylistPreviewError(t('playlist.noEntries'))
+          return
+        }
+        setPlaylistInfo(info)
+        toast.success(t('playlist.foundVideos', { count: info.entryCount }))
+      } catch (error) {
+        if (!metadataRequests.isCurrentRequest(requestId)) {
+          return
+        }
+        logger.error('Failed to fetch playlist info:', error)
+        const message =
+          error instanceof Error && error.message ? error.message : t('playlist.previewFailed')
+        setPlaylistPreviewError(message)
+        toast.error(t('playlist.previewFailed'))
+      } finally {
+        if (metadataRequests.isCurrentRequest(requestId)) {
+          setPlaylistPreviewLoading(false)
+        }
       }
-
-      if (!url) {
-        return
-      }
-
-      // Open dialog and set URL
-      setOpen(true)
-      setActiveTab(type)
-
-      if (type === 'playlist') {
-        // Handle playlist
-        setPlaylistUrl(url)
-        setPlaylistInfo(null)
-        setPlaylistPreviewError(null)
-        setPlaylistCustomDownloadPath('')
-        setSelectedEntryIds(new Set())
-
-        // Wait for dialog to open, then fetch playlist info
-        setTimeout(async () => {
-          setPlaylistPreviewError(null)
-          setPlaylistPreviewLoading(true)
-          try {
-            const info = await ipcServices.download.getPlaylistInfo(url)
-            setPlaylistInfo(info)
-            if (info.entryCount === 0) {
-              toast.error(t('playlist.noEntries'))
-              return
-            }
-            toast.success(t('playlist.foundVideos', { count: info.entryCount }))
-          } catch (error) {
-            logger.error('Failed to fetch playlist info:', error)
-            const message =
-              error instanceof Error && error.message ? error.message : t('playlist.previewFailed')
-            setPlaylistPreviewError(message)
-            setPlaylistInfo(null)
-            toast.error(t('playlist.previewFailed'))
-          } finally {
-            setPlaylistPreviewLoading(false)
-          }
-        }, 100)
-      } else {
-        // Handle single video
-        setUrl(url)
-
-        // Wait for dialog to open and settings to load, then fetch video info
-        setTimeout(async () => {
-          setSingleVideoState((prev) => ({
-            ...prev,
-            selectedVideoFormat: '',
-            selectedAudioFormat: '',
-            startTime: '',
-            endTime: '',
-            selectedContainer: undefined,
-            selectedCodec: undefined,
-            selectedFps: undefined
-          }))
-          await fetchVideoInfo(url)
-        }, 100)
-      }
-    }
-
-    ipcEvents.on('download:deeplink', handleDeepLink)
-    return () => {
-      ipcEvents.removeListener('download:deeplink', handleDeepLink)
-    }
-  }, [fetchVideoInfo, t])
+    },
+    [metadataRequests, t]
+  )
 
   useEffect(() => {
     if (!open) {
@@ -241,9 +211,10 @@ export function DownloadDialog({
       const trimmedUrl = targetUrl.trim()
       if (!trimmedUrl) {
         toast.error(t('errors.emptyUrl'))
-        return
+        return false
       }
 
+      const source = popoverRef.current ?? contentRef.current
       if (options?.setInputValue) {
         setUrl(trimmedUrl)
       }
@@ -279,87 +250,42 @@ export function DownloadDialog({
         if (!started) {
           removeDownload(id)
           toast.info(t('notifications.downloadAlreadyQueued'))
-          return
+          return false
         }
 
         toast.success(t('download.oneClickDownloadStarted'))
+        transferToList(id, source)
         if (options?.clearInput) {
           setUrl('')
         }
+        return true
       } catch (error) {
         removeDownload(id)
         logger.error('Failed to start one-click download:', error)
         toast.error(t('notifications.downloadFailed'))
+        return false
       }
     },
-    [settings, addDownload, removeDownload, t]
+    [settings, addDownload, removeDownload, t, transferToList, popoverRef, contentRef]
   )
 
   const handleParsePlaylistUrl = useCallback(
     async (trimmedUrl: string) => {
-      // #379: drop any stale single-video info when switching to a playlist.
-      clearVideoInfo()
+      invalidateMetadataRequests()
       setOpen(true)
       setActiveTab('playlist')
       setPlaylistUrl(trimmedUrl)
-      setPlaylistInfo(null)
-      setPlaylistPreviewError(null)
       setPlaylistCustomDownloadPath('')
-      setSelectedEntryIds(new Set())
-
-      setPlaylistPreviewError(null)
-      setPlaylistPreviewLoading(true)
-      try {
-        const info = await ipcServices.download.getPlaylistInfo(trimmedUrl)
-        setPlaylistInfo(info)
-        if (info.entryCount === 0) {
-          toast.error(t('playlist.noEntries'))
-          return
-        }
-        toast.success(t('playlist.foundVideos', { count: info.entryCount }))
-      } catch (error) {
-        logger.error('Failed to fetch playlist info:', error)
-        const message =
-          error instanceof Error && error.message ? error.message : t('playlist.previewFailed')
-        setPlaylistPreviewError(message)
-        setPlaylistInfo(null)
-        toast.error(t('playlist.previewFailed'))
-      } finally {
-        setPlaylistPreviewLoading(false)
-      }
+      await fetchPlaylistInfo(trimmedUrl)
     },
-    [clearVideoInfo, t]
+    [fetchPlaylistInfo, invalidateMetadataRequests]
   )
-
-  const handleFetchVideo = useCallback(async () => {
-    if (!url.trim()) {
-      toast.error(t('errors.emptyUrl'))
-      return
-    }
-    if (isPlaylistLikeUrl(url.trim())) {
-      // GitHub issue #391: surface the Playlist tab as soon as a playlist URL
-      // is detected so the user is not left on the Single Video tab.
-      setActiveTab('playlist')
-      await handleParsePlaylistUrl(url.trim())
-      return
-    }
-    setSingleVideoState((prev) => ({
-      ...prev,
-      selectedVideoFormat: '',
-      selectedAudioFormat: '',
-      startTime: '',
-      endTime: '',
-      selectedContainer: undefined,
-      selectedCodec: undefined,
-      selectedFps: undefined
-    }))
-    await fetchVideoInfo(url.trim())
-  }, [url, fetchVideoInfo, handleParsePlaylistUrl, t])
 
   const handleParseSingleUrl = useCallback(
     async (trimmedUrl: string) => {
       // #379: reset stale info and invalidate in-flight fetches before re-fetch.
-      clearVideoInfo()
+      invalidateMetadataRequests()
+      setPlaylistPreviewLoading(false)
       setOpen(true)
       setActiveTab('single')
       setUrl(trimmedUrl)
@@ -375,12 +301,69 @@ export function DownloadDialog({
       }))
       await fetchVideoInfo(trimmedUrl)
     },
-    [clearVideoInfo, fetchVideoInfo]
+    [invalidateMetadataRequests, fetchVideoInfo]
   )
+
+  const handleFetchVideo = useCallback(async () => {
+    const trimmedUrl = url.trim()
+    if (!trimmedUrl) {
+      toast.error(t('errors.emptyUrl'))
+      return
+    }
+    if (isPlaylistLikeUrl(trimmedUrl)) {
+      await handleParsePlaylistUrl(trimmedUrl)
+      return
+    }
+    await handleParseSingleUrl(trimmedUrl)
+  }, [url, handleParsePlaylistUrl, handleParseSingleUrl, t])
+
+  // Deep links share the manual parsers, but their deferred start is owned by this dialog.
+  useEffect(() => {
+    const handleDeepLink = (data: unknown) => {
+      let targetUrl = ''
+      let type: 'single' | 'playlist' = 'single'
+      if (typeof data === 'string') {
+        targetUrl = data.trim()
+      } else if (data && typeof data === 'object' && 'url' in data) {
+        targetUrl = typeof data.url === 'string' ? data.url.trim() : ''
+        if ('type' in data && data.type === 'playlist') {
+          type = 'playlist'
+        }
+      }
+      if (!targetUrl) {
+        return
+      }
+      invalidateMetadataRequests()
+      const requestId = metadataRequests.beginRequest()
+      setOpen(true)
+      setActiveTab(type)
+      setPlaylistInfo(null)
+      setPlaylistPreviewError(null)
+      setPlaylistPreviewLoading(false)
+      if (type === 'playlist') {
+        setPlaylistUrl(targetUrl)
+      } else {
+        setUrl(targetUrl)
+      }
+      deepLinkTimerRef.current = setTimeout(() => {
+        deepLinkTimerRef.current = null
+        if (!metadataRequests.isCurrentRequest(requestId)) {
+          return
+        }
+        if (type === 'playlist') {
+          void handleParsePlaylistUrl(targetUrl)
+        } else {
+          void handleParseSingleUrl(targetUrl)
+        }
+      }, 100)
+    }
+    ipcEvents.on('download:deeplink', handleDeepLink)
+    return () => ipcEvents.removeListener('download:deeplink', handleDeepLink)
+  }, [handleParsePlaylistUrl, handleParseSingleUrl, invalidateMetadataRequests, metadataRequests])
 
   const handleOneClickFromAddUrl = useCallback(
     async (trimmedUrl: string) => {
-      await startOneClickDownload(trimmedUrl, { setInputValue: false, clearInput: false })
+      return await startOneClickDownload(trimmedUrl, { setInputValue: false, clearInput: false })
     },
     [startOneClickDownload]
   )
@@ -390,16 +373,20 @@ export function DownloadDialog({
     addUrlValue,
     batchRequiresOneClick,
     canConfirmAddUrl,
+    handleActiveTabChange,
     handleConfirmAddUrl,
     handleOpenAddUrlPopover,
     hasAddUrlValue,
+    isSubmitting,
     setAddUrlPopoverOpen,
     setAddUrlValue,
     submitUrl
   } = useAddUrlInteraction({
     activeTab,
+    sourceUrl: activeTab === 'playlist' ? playlistUrl : url,
     isOneClickDownloadEnabled: settings.oneClickDownload,
     isPlaylistBusy: playlistBusy,
+    onActiveTabChange: setActiveTab,
     onEmptyUrl: () => {
       toast.error(t('errors.emptyUrl'))
     },
@@ -460,29 +447,9 @@ export function DownloadDialog({
       toast.error(t('errors.emptyUrl'))
       return
     }
-    setPlaylistPreviewError(null)
-    setPlaylistPreviewLoading(true)
-    try {
-      const trimmedUrl = playlistUrl.trim()
-      const info = await ipcServices.download.getPlaylistInfo(trimmedUrl)
-      setPlaylistInfo(info)
-      setSelectedEntryIds(new Set())
-      if (info.entryCount === 0) {
-        toast.error(t('playlist.noEntries'))
-        return
-      }
-      toast.success(t('playlist.foundVideos', { count: info.entryCount }))
-    } catch (error) {
-      logger.error('Failed to fetch playlist info:', error)
-      const message =
-        error instanceof Error && error.message ? error.message : t('playlist.previewFailed')
-      setPlaylistPreviewError(message)
-      setPlaylistInfo(null)
-      toast.error(t('playlist.previewFailed'))
-    } finally {
-      setPlaylistPreviewLoading(false)
-    }
-  }, [playlistUrl, t])
+    invalidateMetadataRequests()
+    await fetchPlaylistInfo(playlistUrl.trim())
+  }, [fetchPlaylistInfo, invalidateMetadataRequests, playlistUrl, t])
 
   const handleDownloadPlaylist = useCallback(async () => {
     const trimmedUrl = playlistUrl.trim()
@@ -491,7 +458,7 @@ export function DownloadDialog({
       return
     }
 
-    if (!playlistInfo) {
+    if (!(hasPlaylistEntries(playlistInfo) && playlistInfo)) {
       toast.error(t('playlist.previewRequired'))
       return
     }
@@ -566,24 +533,8 @@ export function DownloadDialog({
         return
       }
 
-      const baseCreatedAt = Date.now()
-      result.entries.forEach((entry, index) => {
-        const downloadItem = {
-          id: entry.downloadId,
-          url: entry.url,
-          title: entry.title || t('download.fetchingVideoInfo'),
-          type: downloadType,
-          status: 'pending' as const,
-          progress: { percent: 0 },
-          createdAt: baseCreatedAt + index,
-          playlistId: result.groupId,
-          playlistTitle: result.playlistTitle,
-          playlistIndex: entry.index,
-          playlistSize: result.totalCount
-        }
-        addDownload(downloadItem)
-      })
-
+      // Queue events preserve the actual state and group of reused download tasks.
+      transferToList(result.entries[0]?.downloadId)
       setOpen(false) // Close dialog after download starts
     } catch (error) {
       logger.error('Failed to start playlist download:', error)
@@ -597,11 +548,11 @@ export function DownloadDialog({
     computePlaylistRange,
     downloadType,
     settings,
-    addDownload,
     t,
     playlistCustomDownloadPath,
     playlistContainer,
-    selectedEntryIds
+    selectedEntryIds,
+    transferToList
   ])
 
   // Update single video title when videoInfo changes
@@ -697,12 +648,24 @@ export function DownloadDialog({
       }
       addDownload(downloadItem)
 
+      transferToList(id)
       setOpen(false) // Close dialog after download starts
     } catch (error) {
       logger.error('Failed to start download:', error)
       toast.error(t('notifications.downloadFailed'))
     }
-  }, [videoInfo, videoInfoSourceUrl, singleVideoState, addDownload, t, url])
+  }, [videoInfo, videoInfoSourceUrl, singleVideoState, addDownload, t, url, transferToList])
+
+  const handleOpenChange = useCallback(
+    (nextOpen: boolean) => {
+      if (!nextOpen) {
+        invalidateMetadataRequests()
+        setPlaylistPreviewLoading(false)
+      }
+      setOpen(nextOpen)
+    },
+    [invalidateMetadataRequests]
+  )
 
   const wasDialogOpenRef = useRef(open)
 
@@ -716,7 +679,8 @@ export function DownloadDialog({
       return
     }
 
-    clearVideoInfo()
+    invalidateMetadataRequests()
+    setPlaylistPreviewLoading(false)
     setUrl('')
     setActiveTab('single')
     setSingleVideoState({
@@ -740,7 +704,7 @@ export function DownloadDialog({
     setStartIndex('1')
     setEndIndex('')
     setSelectedEntryIds(new Set())
-  }, [open, clearVideoInfo])
+  }, [open, invalidateMetadataRequests])
 
   const handleSingleVideoStateChange = useCallback(
     (updates: Partial<SingleVideoState>) => {
@@ -784,6 +748,7 @@ export function DownloadDialog({
             cancelLabel={t('download.cancel')}
             confirmDisabled={!canConfirmAddUrl}
             confirmLabel={t('download.fetch')}
+            contentRef={popoverRef}
             description={t('download.enterUrlDescription')}
             invalidMessage={
               batchRequiresOneClick
@@ -816,12 +781,14 @@ export function DownloadDialog({
             onValueChange={setAddUrlValue}
             open={addUrlPopoverOpen}
             placeholder={t('download.urlPlaceholder')}
+            submitting={isSubmitting}
             supportedSitesLabel={t('menu.supportedSites')}
             title={t('download.enterUrl')}
             triggerLabel={t('download.pasteUrlButton')}
             value={addUrlValue}
           />
         }
+        contentRef={contentRef}
         dialogSubtitle={t('download.dialogSubtitle')}
         dialogTitle={t('download.dialogTitle')}
         footer={
@@ -974,8 +941,8 @@ export function DownloadDialog({
           </div>
         }
         lockDialogHeight={lockDialogHeight}
-        onActiveTabChange={setActiveTab}
-        onOpenChange={setOpen}
+        onActiveTabChange={handleActiveTabChange}
+        onOpenChange={handleOpenChange}
         open={open}
         playlistTabContent={
           <PlaylistDownload
@@ -1030,6 +997,7 @@ export function DownloadDialog({
           />
         }
         singleTabLabel={t('download.singleVideo')}
+        tabsDisabled={playlistBusy}
       />
       <IngestDropOverlay
         description={t('download.ingestDropDescription')}

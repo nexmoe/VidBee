@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - v*.*.*
+      - '!v*-*'
   workflow_dispatch:
 
 # Never run two releases for the same ref at once, and never cancel an in-progress
@@ -13,7 +14,23 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  verify-source:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out complete release history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Require a release from main
+        if: github.ref_type == 'tag'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-list --first-parent origin/main | grep -Fx "$GITHUB_SHA"
+
   build:
+    needs: [verify-source]
     uses: ./.github/workflows/build.yml
     with:
       upload_artifacts: true
@@ -29,16 +46,6 @@ jobs:
       - name: Check out Git repository
         uses: actions/checkout@v4
 
-      - name: Detect release type
-        id: release_meta
-        shell: bash
-        run: |
-          if [[ "${GITHUB_REF_NAME}" == *-preview.* ]]; then
-            echo "is_preview=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "is_preview=false" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
@@ -47,12 +54,12 @@ jobs:
           path: dist/
 
       - name: Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3.0.3
         with:
           body: |
             View the full changelog at [vidbee.org/changelog](https://vidbee.org/changelog/).
           generate_release_notes: true
-          prerelease: ${{ steps.release_meta.outputs.is_preview == 'true' }}
+          prerelease: false
           files: |
             dist/*.exe
             dist/*.zip
@@ -68,8 +75,41 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
 
       - name: Notify Cloudflare Pages
-        if: steps.release_meta.outputs.is_preview != 'true'
         env:
           CLOUDFLARE_WEBHOOK_URL: ${{ secrets.CLOUDFLARE_WEBHOOK_URL }}
         run: |
           curl -X POST "$CLOUDFLARE_WEBHOOK_URL"
+
+  microsoft-store:
+    needs: [release]
+    if: github.ref_type == 'tag' && vars.MSSTORE_PUBLISH_ENABLED == 'true'
+    runs-on: windows-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+    concurrency:
+      group: microsoft-store-9MVHDX4ZBPHS
+      cancel-in-progress: false
+    env:
+      MSSTORE_APP_ID: 9MVHDX4ZBPHS
+      MSSTORE_TENANT_ID: ${{ secrets.MSSTORE_TENANT_ID }}
+      MSSTORE_SELLER_ID: ${{ secrets.MSSTORE_SELLER_ID }}
+      MSSTORE_CLIENT_ID: ${{ secrets.MSSTORE_CLIENT_ID }}
+      MSSTORE_CLIENT_SECRET: ${{ secrets.MSSTORE_CLIENT_SECRET }}
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v4
+
+      - name: Download verified Store package
+        uses: actions/download-artifact@v4
+        with:
+          name: microsoft-store-package
+          path: store-package
+
+      - name: Submit the package for certification
+        shell: pwsh
+        run: |
+          $packages = @(Get-ChildItem store-package/*-store-*.msix -File)
+          if ($packages.Count -ne 1) { throw 'Expected exactly one verified Microsoft Store package.' }
+          python .github/scripts/submit-microsoft-store.py $packages[0].FullName
+          if ($LASTEXITCODE -ne 0) { throw 'Microsoft Store submission failed. Check Partner Center before retrying.' }

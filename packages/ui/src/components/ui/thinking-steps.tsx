@@ -106,7 +106,7 @@ const TriggerRow = forwardRef<HTMLButtonElement, TriggerRowProps>(
     return (
       <Collapsible.Trigger
         ref={ref}
-        {...(props as React.ButtonHTMLAttributes<HTMLButtonElement>)}
+        {...(props as React.ComponentPropsWithoutRef<typeof Collapsible.Trigger>)}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         className={cn(

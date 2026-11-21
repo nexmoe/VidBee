@@ -9,6 +9,7 @@ import { downloadRecordsAtom } from '@renderer/store/downloads'
 import {
   playbackClockAtom,
   playbackControlsAtom,
+  playbackPlayingAtom,
   playbackSessionAtom,
   takePlaybackSessionAtom
 } from '@renderer/store/transcript-playback'
@@ -21,7 +22,7 @@ import {
   isAppIconMenuCommand,
   sameAppIconMenuState
 } from '@shared/app-icon-menu'
-import { useAtomValue, useSetAtom } from 'jotai'
+import { useAtomValue, useSetAtom, useStore } from 'jotai'
 import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -31,13 +32,14 @@ import { useTranslation } from 'react-i18next'
 export function useAppIconPlaybackMenu(): void {
   const { t } = useTranslation()
   const session = useAtomValue(playbackSessionAtom)
-  const clock = useAtomValue(playbackClockAtom)
+  const playing = useAtomValue(playbackPlayingAtom)
   const controls = useAtomValue(playbackControlsAtom)
+  const store = useStore()
   const playlistIds = useAtomValue(playbackPlaylistAtom)
   const records = useAtomValue(downloadRecordsAtom)
   const transcriptMap = useAtomValue(transcriptMapAtom)
   const takeSession = useSetAtom(takePlaybackSessionAtom)
-  const clockRef = useRef(clock)
+  const clockRef = useRef(store.get(playbackClockAtom))
   const controlsRef = useRef(controls)
   const playlistIdsRef = useRef(playlistIds)
   const recordsRef = useRef(records)
@@ -46,7 +48,6 @@ export function useAppIconPlaybackMenu(): void {
   const takeSessionRef = useRef(takeSession)
   const fallbackTitleRef = useRef(t('transcript.title'))
   const menuStateRef = useRef<AppIconMenuState | null>(null)
-  clockRef.current = clock
   controlsRef.current = controls
   playlistIdsRef.current = playlistIds
   recordsRef.current = records
@@ -56,9 +57,16 @@ export function useAppIconPlaybackMenu(): void {
   fallbackTitleRef.current = t('transcript.title')
 
   useEffect(() => {
+    clockRef.current = store.get(playbackClockAtom)
+    return store.sub(playbackClockAtom, () => {
+      clockRef.current = store.get(playbackClockAtom)
+    })
+  }, [store])
+
+  useEffect(() => {
     const nextState = buildAppIconMenuState({
       playlistCount: playlistIds.length,
-      playing: clock.playing,
+      playing,
       sessionId: session?.downloadId ?? null
     })
     if (menuStateRef.current && sameAppIconMenuState(menuStateRef.current, nextState)) {
@@ -66,7 +74,7 @@ export function useAppIconPlaybackMenu(): void {
     }
     menuStateRef.current = nextState
     void ipcServices.player.syncIconMenu(nextState)
-  }, [clock.playing, playlistIds.length, session?.downloadId])
+  }, [playing, playlistIds.length, session?.downloadId])
 
   useEffect(() => {
     /**

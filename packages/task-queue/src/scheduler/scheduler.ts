@@ -8,7 +8,13 @@
  * to perform the FSM transition through the `dispatch` callback. The Scheduler
  * only owns the dispatch ordering, slot bookkeeping and demote-on-shrink logic.
  */
-import type { Task, TaskPriority } from '../types'
+import {
+  canAdmitTranscription,
+  isDownloadTaskKind,
+  TRANSCRIPTION_GROUP_KEY,
+  type Task,
+  type TaskPriority
+} from '../types'
 import { AsyncMutex } from '../util/async-mutex'
 import { MinHeap } from '../util/min-heap'
 import { logCaughtError } from '@vidbee/logger'
@@ -53,6 +59,8 @@ export class Scheduler {
   )
   /** taskId → 1 currently consuming a slot. */
   private readonly running = new Set<string>()
+  /** Reservations whose dispatch callback has not settled yet. */
+  private readonly dispatching = new Set<string>()
   /** groupKey → number of tasks currently consuming a slot. */
   private readonly perGroupRunning = new Map<string, number>()
   /** groupKey → explicit per-group cap. Null means unlimited. */
@@ -60,6 +68,8 @@ export class Scheduler {
   private readonly mutex = new AsyncMutex()
   private seqCounter = 0
   private maxConcurrency: number
+  /** When set, new transcription tasks wait until fewer downloads are running. */
+  private maxConcurrentDownloads: number | null = null
   private defaultMaxPerGroup: number | null
 
   constructor(private readonly opts: SchedulerOptions) {
@@ -69,15 +79,9 @@ export class Scheduler {
 
   // ─────────────── Public API ───────────────
 
-  async enqueue(taskId: string, priority: TaskPriority): Promise<void> {
-    await this.mutex.runExclusive(() => {
-      this.readyHeap.push({
-        taskId,
-        priority,
-        seq: ++this.seqCounter
-      })
-    })
-    await this.tryDispatch()
+  /** Schedule each task once, including concurrent admission and recovery calls. */
+  enqueue(taskId: string, priority: TaskPriority): Promise<void> {
+    return this.ensureEnqueued(taskId, priority)
   }
 
   /** Removes a task from the ready heap (does not touch running set). */
@@ -119,13 +123,17 @@ export class Scheduler {
   async sweepDeadSlots(isLive: (taskId: string) => boolean): Promise<void> {
     await this.mutex.runExclusive(() => {
       for (const id of [...this.running]) {
-        if (isLive(id)) {
+        if (this.dispatching.has(id) || isLive(id)) {
           continue
         }
         this.running.delete(id)
+      }
+      // Rebuild from live reservations to repair counters left by duplicate or removed tasks.
+      this.perGroupRunning.clear()
+      for (const id of this.running) {
         const task = this.opts.getTask(id)
-        if (task?.groupKey) {
-          this.decGroup(task.groupKey)
+        if (task) {
+          this.incGroup(task.groupKey)
         }
       }
     })
@@ -181,6 +189,21 @@ export class Scheduler {
     void this.tryDispatch()
   }
 
+  /**
+   * Remember the download cap used to defer ASR while downloads are saturated.
+   *
+   * @param n Maximum concurrent download tasks.
+   */
+  async setMaxConcurrentDownloads(n: number): Promise<void> {
+    if (!Number.isInteger(n) || n < 1) {
+      throw new Error(`maxConcurrentDownloads must be ≥ 1 integer, got ${n}`)
+    }
+    await this.mutex.runExclusive(() => {
+      this.maxConcurrentDownloads = n
+    })
+    await this.tryDispatch()
+  }
+
   async setMaxPerGroup(groupKey: string, n: number | null): Promise<void> {
     await this.mutex.runExclusive(() => {
       if (n == null) {
@@ -231,6 +254,7 @@ export class Scheduler {
         const t = this.opts.getTask(candidate.taskId)
         if (!t) continue
         this.running.add(candidate.taskId)
+        this.dispatching.add(candidate.taskId)
         this.incGroup(t.groupKey)
         toDispatch.push(candidate.taskId)
       }
@@ -242,6 +266,7 @@ export class Scheduler {
       } catch (err) {
         logCaughtError('task_queue_dispatch_threw', err)
       }
+      this.dispatching.delete(id)
       if (!ok) {
         // Roll back the slot reservation; the orchestrator may have failed
         // the task synchronously, in which case we would already have been
@@ -266,18 +291,50 @@ export class Scheduler {
     while (this.readyHeap.size() > 0) {
       const top = this.readyHeap.pop()!
       const task = this.opts.getTask(top.taskId)
-      if (!task) {
-        // Stale entry — task was cancelled while in heap. Drop it.
+      if (!task || this.running.has(top.taskId)) {
+        // Drop stale entries and tasks that already own a reservation.
         continue
       }
-      if (this.canRunInGroup(task.groupKey)) {
-        chosen = top
-        break
+      if (this.transcriptionWaitsForDownload(task) || !this.canRunInGroup(task.groupKey)) {
+        skipped.push(top)
+        continue
       }
-      skipped.push(top)
+      chosen = top
+      break
     }
     for (const s of skipped) this.readyHeap.push(s)
     return chosen
+  }
+
+  /**
+   * Hold a queued ASR task while every download slot is busy.
+   *
+   * @param task Candidate ready task.
+   */
+  private transcriptionWaitsForDownload(task: Readonly<Task>): boolean {
+    if (this.maxConcurrentDownloads == null) {
+      return false
+    }
+    const isTranscription =
+      task.kind === 'transcription' || task.groupKey === TRANSCRIPTION_GROUP_KEY
+    if (!isTranscription) {
+      return false
+    }
+    return !canAdmitTranscription(this.runningDownloadCount(), this.maxConcurrentDownloads)
+  }
+
+  /**
+   * Count download tasks that currently own a slot.
+   */
+  private runningDownloadCount(): number {
+    let count = 0
+    for (const id of this.running) {
+      const task = this.opts.getTask(id)
+      if (task && isDownloadTaskKind(task.kind)) {
+        count += 1
+      }
+    }
+    return count
   }
 
   private canRunInGroup(groupKey: string): boolean {

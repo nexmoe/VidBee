@@ -47,20 +47,44 @@ type LatestVersionState =
   | { status: 'error'; error?: string }
   | null
 
+/** Display application information and updates for the current distribution. */
 export function About() {
   const { t, i18n } = useTranslation()
   const [updateReady] = useAtom(updateReadyAtom)
   const [updateAvailableState] = useAtom(updateAvailableAtom)
   const setUpdateAvailable = useSetAtom(updateAvailableAtom)
   const kernelStatus = useAtomValue(ytdlpKernelStatusAtom)
-  const { appVersion, osVersion } = useAppInfo()
+  const appInfo = useAppInfo()
+  const { appVersion } = appInfo
   const appVersionLabel = appVersion || '—'
   const [latestVersionState, setLatestVersionState] = useState<LatestVersionState>(null)
   const [updateDownloadProgress, setUpdateDownloadProgress] = useState<number | null>(null)
+  const [isStoreManaged, setIsStoreManaged] = useState<boolean | null>(null)
   const websiteUrl = buildLocalizedVidBeeUrl('/', i18n.language)
   const downloadUrl = buildLocalizedVidBeeUrl('/download/', i18n.language)
   const changelogUrl = buildLocalizedVidBeeUrl('/changelog/', i18n.language)
   const shareTargetUrl = websiteUrl
+
+  useEffect(() => {
+    let isActive = true
+
+    /** Resolve the update owner before exposing application update actions. */
+    const loadUpdateOwner = async () => {
+      try {
+        const storeManaged = await ipcServices.update.isStoreManaged()
+        if (isActive) {
+          setIsStoreManaged(storeManaged)
+        }
+      } catch (error) {
+        logger.error('Failed to determine application update owner:', error)
+      }
+    }
+
+    void loadUpdateOwner()
+    return () => {
+      isActive = false
+    }
+  }, [])
 
   useEffect(() => {
     if (!updateAvailableState.available) {
@@ -220,7 +244,9 @@ export function About() {
         : 'text-muted-foreground'
   const latestVersionStatusText = latestVersionStatusKey ? t(latestVersionStatusKey) : null
   const shouldShowCheckUpdates =
-    !updateAvailableState.available && latestVersionState?.status !== 'available'
+    isStoreManaged === false &&
+    !updateAvailableState.available &&
+    latestVersionState?.status !== 'available'
 
   const aboutResources = useMemo<AboutResource[]>(
     () => [
@@ -282,7 +308,7 @@ export function About() {
                           <Github className="h-3.5 w-3.5" />
                         </a>
                       </Button>
-                      {updateReady.ready ? (
+                      {isStoreManaged === false && updateReady.ready ? (
                         <Button
                           className="gap-2"
                           onClick={handleRestartToUpdate}
@@ -293,7 +319,7 @@ export function About() {
                           {t('about.notifications.restartNowAction')}
                         </Button>
                       ) : null}
-                      {latestVersionState?.status === 'available' ? (
+                      {isStoreManaged === false && latestVersionState?.status === 'available' ? (
                         <Button
                           className="gap-2"
                           onClick={handleGoToDownload}
@@ -308,6 +334,17 @@ export function About() {
                         <Button className="gap-2" onClick={handleCheckForUpdates} size="sm">
                           <RefreshCw className="h-3.5 w-3.5" />
                           {t('about.actions.checkUpdates')}
+                        </Button>
+                      ) : null}
+                      {isStoreManaged ? (
+                        <Button asChild size="sm" variant="outline">
+                          <a
+                            href="https://apps.microsoft.com/detail/9MVHDX4ZBPHS"
+                            rel="noopener noreferrer"
+                            target="_blank"
+                          >
+                            Microsoft Store
+                          </a>
                         </Button>
                       ) : null}
                     </div>
@@ -333,16 +370,22 @@ export function About() {
             <div className="flex items-center justify-between gap-4 px-6 py-3">
               <div className="min-w-0 space-y-1">
                 <p className="font-medium leading-none">{t('about.autoUpdateTitle')}</p>
-                <p className="text-muted-foreground text-sm">{t('about.autoUpdateDescription')}</p>
+                <p className="text-muted-foreground text-sm">
+                  {isStoreManaged
+                    ? t('about.microsoftStoreUpdateDescription')
+                    : t('about.autoUpdateDescription')}
+                </p>
               </div>
-              <Switch
-                aria-label={t('about.autoUpdateTitle')}
-                checked
-                disabled
-                label=""
-                onToggle={() => undefined}
-                size="compact"
-              />
+              {isStoreManaged === false ? (
+                <Switch
+                  aria-label={t('about.autoUpdateTitle')}
+                  checked
+                  disabled
+                  label=""
+                  onToggle={() => undefined}
+                  size="compact"
+                />
+              ) : null}
             </div>
             <ItemSeparator />
             <DownloadEngineRow
@@ -435,7 +478,7 @@ export function About() {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <FeedbackLinkButtons
-                    appInfo={{ appVersion, osVersion }}
+                    appInfo={appInfo}
                     buttonClassName="gap-2"
                     iconClassName="h-4 w-4"
                     useSimpleGithubUrl={true}

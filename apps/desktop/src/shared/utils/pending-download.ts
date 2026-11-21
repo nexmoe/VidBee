@@ -3,8 +3,9 @@ import type { DownloadItem, DownloadOptions } from '../types'
 /**
  * True when a caller already provided enough video metadata for list rendering.
  */
-export const hasDisplayMetadata = (options: DownloadOptions): boolean =>
-  Boolean(options.title?.trim() && options.thumbnail?.trim())
+export const hasDisplayMetadata = (
+  options: Pick<DownloadOptions, 'title' | 'thumbnail'>
+): boolean => Boolean(options.title?.trim() && options.thumbnail?.trim())
 
 /**
  * Build the pending row shown as soon as a download is accepted, before
