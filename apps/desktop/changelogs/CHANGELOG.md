@@ -5,6 +5,17 @@ For full release notes, see [GitHub Releases](https://github.com/nexmoe/VidBee/r
 
 ## [Unreleased]
 
+## [v2.5.0](https://github.com/nexmoe/VidBee/releases/tag/v2.5.0) - 2026-11-21
+
+### What's New
+- Search your entire library for media, saved subtitles, and chat messages, then jump straight to the matching subtitle or conversation.
+- Let connected AI assistants search your local library and read the matching subtitles and messages.
+
+### Improvements
+- Recover video details when a link initially returns no information, and prevent results from older links from replacing your current selection. (by @miko-agent[bot], [#526](https://github.com/nexmoe/VidBee/pull/526))
+- Select download diagnostics and copy the complete download log more easily. (by @miko-agent[bot], [#528](https://github.com/nexmoe/VidBee/pull/528))
+- Show the correct guidance when your own AI provider reports a payment error.
+
 ## [v2.4.0](https://github.com/nexmoe/VidBee/releases/tag/v2.4.0) - 2026-11-14
 
 ### What's New

@@ -5,6 +5,17 @@
 
 ## [Unreleased]
 
+## [v2.5.0](https://github.com/nexmoe/VidBee/releases/tag/v2.5.0) - 2026-11-21
+
+### 新增功能
+- 全局搜索资料库中的媒体、已保存的字幕和聊天消息，直接跳转到匹配的字幕位置或对话。
+- 连接的 AI 助手也能搜索本地资料库，读取匹配的字幕和消息。
+
+### 改进与修复
+- 链接首次未返回信息时可恢复视频详情，切换链接后也不会被旧请求的结果覆盖。 (by @miko-agent[bot], [#526](https://github.com/nexmoe/VidBee/pull/526))
+- 下载诊断信息可以选中文本，也更方便复制完整下载日志。 (by @miko-agent[bot], [#528](https://github.com/nexmoe/VidBee/pull/528))
+- 使用自己的 AI 服务遇到付款错误时，显示对应的处理提示。
+
 ## [v2.4.0](https://github.com/nexmoe/VidBee/releases/tag/v2.4.0) - 2026-11-14
 
 ### 新增功能

@@ -5,6 +5,17 @@ Pour les notes de version complètes, consultez [GitHub Releases](https://github
 
 ## [Unreleased]
 
+## [v2.5.0](https://github.com/nexmoe/VidBee/releases/tag/v2.5.0) - 2026-11-21
+
+### Nouveautés
+- Recherchez des médias, des sous-titres enregistrés et des messages dans toute votre bibliothèque, puis accédez directement au passage ou à la conversation correspondante.
+- Les assistants IA connectés peuvent aussi rechercher dans votre bibliothèque locale et lire les sous-titres et messages correspondants.
+
+### Améliorations
+- Retrouvez les détails d’une vidéo lorsque le lien ne renvoie initialement aucune information. Les résultats d’un ancien lien ne remplacent plus votre sélection actuelle. (by @miko-agent[bot], [#526](https://github.com/nexmoe/VidBee/pull/526))
+- Sélectionnez le texte des diagnostics de téléchargement et copiez plus facilement le journal complet. (by @miko-agent[bot], [#528](https://github.com/nexmoe/VidBee/pull/528))
+- Recevez les indications adaptées lorsque votre propre fournisseur d’IA signale une erreur de paiement.
+
 ## [v2.4.0](https://github.com/nexmoe/VidBee/releases/tag/v2.4.0) - 2026-11-14
 
 ### Nouveautés
