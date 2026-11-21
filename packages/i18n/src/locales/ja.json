@@ -1244,7 +1244,8 @@
         "export_caption_share_image": "選択した字幕を共有画像で書き出す",
         "summarize_media": "タイムスタンプの根拠付きでメディアを要約",
         "download_and_transcribe": "メディアをダウンロードしてローカル字幕を作成",
-        "diagnose_task": "失敗したタスクを診断して復旧方法を提案"
+        "diagnose_task": "失敗したタスクを診断して復旧方法を提案",
+        "search": "メディア、字幕、チャット本文を検索"
       }
     }
   },
@@ -2141,5 +2142,24 @@
     "storageDownloadDir": "Download directory",
     "storageDataDir": "Data directory",
     "storageDbFile": "SQLite database"
+  },
+  "globalSearch": {
+    "title": "検索",
+    "description": "ローカルのメディア、字幕、チャット本文を検索したり、ページに移動したりできます。",
+    "placeholder": "メディア、字幕、チャット、設定を検索…",
+    "noResults": "検索結果が見つかりません。",
+    "media": "メディア",
+    "recentMedia": "最近のメディア",
+    "navigation": "移動先",
+    "navigate": "移動",
+    "open": "開く",
+    "close": "閉じる",
+    "limitHint": "最初の {{count}} 件のメディアを表示しています。検索条件を絞り込んでください。",
+    "subtitles": "字幕本文",
+    "chats": "チャット本文",
+    "searching": "ローカルコンテンツを検索中…",
+    "searchFailed": "ローカルコンテンツを検索できませんでした。もう一度入力してください。",
+    "openFailed": "この結果を開けませんでした。内容が変更されたか、会話が応答を生成中の可能性があります。",
+    "contentLimitHint": "各種類の先頭 {{count}} 件を表示しています。検索条件を絞り込んでください。"
   }
 }

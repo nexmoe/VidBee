@@ -1244,7 +1244,8 @@
         "export_caption_share_image": "Ekspor subtitle pilihan sebagai gambar untuk dibagikan",
         "summarize_media": "Ringkas media dengan bukti penanda waktu",
         "download_and_transcribe": "Unduh media dan buat transkrip lokal",
-        "diagnose_task": "Diagnosis tugas gagal dan sarankan pemulihan"
+        "diagnose_task": "Diagnosis tugas gagal dan sarankan pemulihan",
+        "search": "Cari media, subtitel, dan pesan obrolan"
       }
     }
   },
@@ -2141,5 +2142,24 @@
     "storageDownloadDir": "Download directory",
     "storageDataDir": "Data directory",
     "storageDbFile": "SQLite database"
+  },
+  "globalSearch": {
+    "title": "Cari",
+    "description": "Cari media lokal, teks subtitel, dan pesan obrolan, atau buka halaman.",
+    "placeholder": "Cari media, subtitel, obrolan, dan pengaturan…",
+    "noResults": "Tidak ada hasil ditemukan.",
+    "media": "Media",
+    "recentMedia": "Media terbaru",
+    "navigation": "Buka halaman",
+    "navigate": "Navigasi",
+    "open": "Buka",
+    "close": "Tutup",
+    "limitHint": "Menampilkan {{count}} hasil media pertama. Persempit pencarian untuk menemukan hasil lainnya.",
+    "subtitles": "Teks subtitel",
+    "chats": "Pesan obrolan",
+    "searching": "Mencari konten lokal…",
+    "searchFailed": "Tidak dapat mencari konten lokal. Ketik ulang pencarian Anda.",
+    "openFailed": "Tidak dapat membuka hasil ini. Kontennya mungkin telah berubah atau percakapan sedang sibuk.",
+    "contentLimitHint": "Menampilkan {{count}} kecocokan pertama untuk setiap jenis konten. Persempit pencarian Anda."
   }
 }

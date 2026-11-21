@@ -1244,7 +1244,8 @@
         "export_caption_share_image": "Exportar legendas selecionadas como imagens para compartilhar",
         "summarize_media": "Resumir mídia com evidências de marcações de tempo",
         "download_and_transcribe": "Baixar mídia e criar uma transcrição local",
-        "diagnose_task": "Diagnosticar uma tarefa com falha e sugerir recuperação"
+        "diagnose_task": "Diagnosticar uma tarefa com falha e sugerir recuperação",
+        "search": "Pesquisar mídia, legendas e mensagens"
       }
     }
   },
@@ -2141,5 +2142,24 @@
     "storageDownloadDir": "Download directory",
     "storageDataDir": "Data directory",
     "storageDbFile": "SQLite database"
+  },
+  "globalSearch": {
+    "title": "Pesquisar",
+    "description": "Pesquise mídia local, legendas e mensagens ou acesse uma página.",
+    "placeholder": "Pesquisar mídia, legendas, conversas e configurações…",
+    "noResults": "Nenhum resultado encontrado.",
+    "media": "Mídia",
+    "recentMedia": "Mídia recente",
+    "navigation": "Ir para",
+    "navigate": "Navegar",
+    "open": "Abrir",
+    "close": "Fechar",
+    "limitHint": "Exibindo os primeiros {{count}} resultados de mídia. Refine sua pesquisa para encontrar mais.",
+    "subtitles": "Texto das legendas",
+    "chats": "Mensagens de conversa",
+    "searching": "Pesquisando conteúdo local…",
+    "searchFailed": "Não foi possível pesquisar o conteúdo local. Digite sua pesquisa novamente.",
+    "openFailed": "Não foi possível abrir este resultado. O conteúdo pode ter mudado ou a conversa está ocupada.",
+    "contentLimitHint": "Exibindo as primeiras {{count}} correspondências por tipo de conteúdo. Refine sua pesquisa."
   }
 }

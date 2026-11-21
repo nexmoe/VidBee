@@ -183,7 +183,14 @@ export default defineConfig(({ mode }) => {
     },
     renderer: {
       server: portlessUrl
-        ? { host: '127.0.0.1', port: Number(process.env.PORT), strictPort: true }
+        ? {
+            host: '127.0.0.1',
+            port: Number(process.env.PORT),
+            strictPort: true,
+            allowedHosts: process.env.PORTLESS_TAILSCALE_URL
+              ? [new URL(process.env.PORTLESS_TAILSCALE_URL).hostname]
+              : []
+          }
         : undefined,
       base: './',
       define,

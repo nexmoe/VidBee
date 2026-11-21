@@ -1244,7 +1244,8 @@
         "export_caption_share_image": "將選取字幕匯出為分享圖片",
         "summarize_media": "結合時間戳記證據摘要媒體",
         "download_and_transcribe": "下載媒體並建立本機字幕",
-        "diagnose_task": "診斷失敗工作並建議復原方法"
+        "diagnose_task": "診斷失敗工作並建議復原方法",
+        "search": "搜尋媒體、字幕與聊天內文"
       }
     }
   },
@@ -2141,5 +2142,24 @@
     "storageDownloadDir": "Download directory",
     "storageDataDir": "Data directory",
     "storageDbFile": "SQLite database"
+  },
+  "globalSearch": {
+    "title": "搜尋",
+    "description": "搜尋本機媒體、字幕和聊天內文，或前往指定頁面。",
+    "placeholder": "搜尋媒體、字幕、聊天與設定…",
+    "noResults": "找不到符合的結果。",
+    "media": "媒體",
+    "recentMedia": "最近的媒體",
+    "navigation": "前往",
+    "navigate": "選擇",
+    "open": "開啟",
+    "close": "關閉",
+    "limitHint": "目前顯示前 {{count}} 筆媒體結果，請縮小搜尋範圍以尋找更多結果。",
+    "subtitles": "字幕內文",
+    "chats": "聊天內文",
+    "searching": "正在搜尋本機內容…",
+    "searchFailed": "無法搜尋本機內容，請重新輸入後再試。",
+    "openFailed": "無法開啟此結果，內容可能已變更，或該對話正在產生回覆。",
+    "contentLimitHint": "每類內文最多顯示前 {{count}} 筆符合結果，請縮小搜尋範圍。"
   }
 }

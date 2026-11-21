@@ -1244,7 +1244,8 @@
         "export_caption_share_image": "Esporta i sottotitoli selezionati come immagini da condividere",
         "summarize_media": "Riassumi i contenuti con prove basate su timestamp",
         "download_and_transcribe": "Scarica contenuti e crea una trascrizione locale",
-        "diagnose_task": "Diagnostica un’attività non riuscita e suggerisci il ripristino"
+        "diagnose_task": "Diagnostica un’attività non riuscita e suggerisci il ripristino",
+        "search": "Cerca contenuti, sottotitoli e messaggi della chat"
       }
     }
   },
@@ -2141,5 +2142,24 @@
     "storageDownloadDir": "Download directory",
     "storageDataDir": "Data directory",
     "storageDbFile": "SQLite database"
+  },
+  "globalSearch": {
+    "title": "Cerca",
+    "description": "Cerca contenuti locali, sottotitoli e messaggi oppure passa a una pagina.",
+    "placeholder": "Cerca contenuti, sottotitoli, chat e impostazioni…",
+    "noResults": "Nessun risultato trovato.",
+    "media": "Contenuti multimediali",
+    "recentMedia": "Contenuti recenti",
+    "navigation": "Vai a",
+    "navigate": "Naviga",
+    "open": "Apri",
+    "close": "Chiudi",
+    "limitHint": "Sono mostrati i primi {{count}} risultati multimediali. Affina la ricerca per trovarne altri.",
+    "subtitles": "Testo dei sottotitoli",
+    "chats": "Messaggi della chat",
+    "searching": "Ricerca nei contenuti locali…",
+    "searchFailed": "Impossibile cercare nei contenuti locali. Digita nuovamente la ricerca.",
+    "openFailed": "Impossibile aprire questo risultato. Il contenuto potrebbe essere cambiato o la conversazione è occupata.",
+    "contentLimitHint": "Sono mostrate le prime {{count}} corrispondenze per tipo di contenuto. Affina la ricerca."
   }
 }

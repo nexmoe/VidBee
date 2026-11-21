@@ -1244,7 +1244,8 @@
         "export_caption_share_image": "Exportar subtítulos seleccionados como imágenes para compartir",
         "summarize_media": "Resumir medios con pruebas de marcas de tiempo",
         "download_and_transcribe": "Descargar medios y crear una transcripción local",
-        "diagnose_task": "Diagnosticar una tarea fallida y sugerir cómo recuperarla"
+        "diagnose_task": "Diagnosticar una tarea fallida y sugerir cómo recuperarla",
+        "search": "Buscar contenido, subtítulos y mensajes de chat"
       }
     }
   },
@@ -2141,5 +2142,24 @@
     "storageDownloadDir": "Download directory",
     "storageDataDir": "Data directory",
     "storageDbFile": "SQLite database"
+  },
+  "globalSearch": {
+    "title": "Buscar",
+    "description": "Busca contenido local, subtítulos y mensajes, o ve a una página.",
+    "placeholder": "Buscar contenido, subtítulos, chats y ajustes…",
+    "noResults": "No se encontraron resultados.",
+    "media": "Contenido multimedia",
+    "recentMedia": "Contenido reciente",
+    "navigation": "Ir a",
+    "navigate": "Navegar",
+    "open": "Abrir",
+    "close": "Cerrar",
+    "limitHint": "Se muestran los primeros {{count}} resultados multimedia. Afina tu búsqueda para encontrar más.",
+    "subtitles": "Texto de subtítulos",
+    "chats": "Mensajes de chat",
+    "searching": "Buscando contenido local…",
+    "searchFailed": "No se pudo buscar contenido local. Vuelve a escribir tu búsqueda.",
+    "openFailed": "No se pudo abrir este resultado. Puede haber cambiado o la conversación está ocupada.",
+    "contentLimitHint": "Se muestran las primeras {{count}} coincidencias por tipo de contenido. Afina tu búsqueda."
   }
 }

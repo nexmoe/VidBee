@@ -1,4 +1,5 @@
 import { CookiesSetupDialog } from '@renderer/components/download/CookiesSetupDialog'
+import { GlobalSearch } from '@renderer/components/search/GlobalSearch'
 import { TranscriptModelsBanner } from '@renderer/components/transcript/TranscriptModelsBanner'
 import { TranscriptPlaybackBar } from '@renderer/components/transcript/TranscriptPlaybackBar'
 import { TranscriptPlaybackHost } from '@renderer/components/transcript/TranscriptPlaybackHost'
@@ -109,6 +110,7 @@ const pathToPage = (pathname: string): Page => {
 export function AppLayout() {
   const { platform } = useRouteContext({ from: '__root__' })
   const [appVersion, setAppVersion] = useState<string>('')
+  const [searchOpen, setSearchOpen] = useState(false)
   const [titleBarContent, setTitleBarContent] = useState<ReactNode>(null)
   const loadSubscriptions = useSetAtom(loadSubscriptionsAtom)
   const setSubscriptions = useSetAtom(setSubscriptionsAtom)
@@ -438,6 +440,7 @@ export function AppLayout() {
       >
         <Sidebar
           currentPage={currentPage}
+          onOpenSearch={() => setSearchOpen(true)}
           onOpenTools={handleOpenTools}
           onPageChange={handlePageChange}
           transcriptsActive={hasActiveTranscripts}
@@ -480,6 +483,7 @@ export function AppLayout() {
         </main>
 
         <TranscriptPlaybackHost />
+        <GlobalSearch onOpenChange={setSearchOpen} open={searchOpen} />
         <Toaster
           offset={playbackBarHeight > 0 ? playbackBarHeight + 16 : undefined}
           richColors={true}

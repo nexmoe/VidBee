@@ -1244,7 +1244,8 @@
         "export_caption_share_image": "Exporter les sous-titres sélectionnés en images à partager",
         "summarize_media": "Résumer un média avec des preuves horodatées",
         "download_and_transcribe": "Télécharger un média et créer une transcription locale",
-        "diagnose_task": "Diagnostiquer une tâche échouée et proposer une reprise"
+        "diagnose_task": "Diagnostiquer une tâche échouée et proposer une reprise",
+        "search": "Rechercher des médias, sous-titres et messages"
       }
     }
   },
@@ -2141,5 +2142,24 @@
     "storageDownloadDir": "Download directory",
     "storageDataDir": "Data directory",
     "storageDbFile": "SQLite database"
+  },
+  "globalSearch": {
+    "title": "Rechercher",
+    "description": "Recherchez des médias locaux, des sous-titres et des messages, ou accédez à une page.",
+    "placeholder": "Rechercher médias, sous-titres, discussions et paramètres…",
+    "noResults": "Aucun résultat trouvé.",
+    "media": "Médias",
+    "recentMedia": "Médias récents",
+    "navigation": "Aller à",
+    "navigate": "Naviguer",
+    "open": "Ouvrir",
+    "close": "Fermer",
+    "limitHint": "Les {{count}} premiers résultats multimédias sont affichés. Affinez votre recherche pour en trouver davantage.",
+    "subtitles": "Texte des sous-titres",
+    "chats": "Messages",
+    "searching": "Recherche du contenu local…",
+    "searchFailed": "Impossible de rechercher le contenu local. Saisissez à nouveau votre recherche.",
+    "openFailed": "Impossible d’ouvrir ce résultat. Le contenu a peut-être changé ou la conversation est occupée.",
+    "contentLimitHint": "Les {{count}} premiers résultats de chaque type sont affichés. Affinez votre recherche."
   }
 }

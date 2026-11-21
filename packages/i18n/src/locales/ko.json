@@ -1244,7 +1244,8 @@
         "export_caption_share_image": "선택한 자막을 공유 이미지로 내보내기",
         "summarize_media": "타임스탬프 근거와 함께 미디어 요약",
         "download_and_transcribe": "미디어를 다운로드하고 로컬 자막 만들기",
-        "diagnose_task": "실패한 작업 진단 및 복구 방법 제안"
+        "diagnose_task": "실패한 작업 진단 및 복구 방법 제안",
+        "search": "미디어, 자막, 채팅 메시지 검색"
       }
     }
   },
@@ -2141,5 +2142,24 @@
     "storageDownloadDir": "Download directory",
     "storageDataDir": "Data directory",
     "storageDbFile": "SQLite database"
+  },
+  "globalSearch": {
+    "title": "검색",
+    "description": "로컬 미디어, 자막, 채팅 본문을 검색하거나 페이지로 이동하세요.",
+    "placeholder": "미디어, 자막, 채팅, 설정 검색…",
+    "noResults": "검색 결과가 없습니다.",
+    "media": "미디어",
+    "recentMedia": "최근 미디어",
+    "navigation": "바로 가기",
+    "navigate": "이동",
+    "open": "열기",
+    "close": "닫기",
+    "limitHint": "처음 {{count}}개의 미디어 결과를 표시합니다. 검색 조건을 좁혀 더 많은 결과를 찾아보세요.",
+    "subtitles": "자막 본문",
+    "chats": "채팅 본문",
+    "searching": "로컬 콘텐츠 검색 중…",
+    "searchFailed": "로컬 콘텐츠를 검색할 수 없습니다. 다시 입력해 주세요.",
+    "openFailed": "이 결과를 열 수 없습니다. 내용이 변경되었거나 대화에서 응답을 생성 중일 수 있습니다.",
+    "contentLimitHint": "콘텐츠 유형별로 처음 {{count}}개의 결과를 표시합니다. 검색 조건을 좁혀 주세요."
   }
 }

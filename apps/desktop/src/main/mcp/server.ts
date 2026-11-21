@@ -15,6 +15,7 @@ import { app } from 'electron'
 import type { DesktopMcpCapabilityGroup } from '../../shared/mcp'
 import { createMcpAiTools } from './ai-tools'
 import { createMcpExportTools } from './export-tools'
+import { createMcpSearchTools } from './search-tools'
 import { createMcpSettingsTools } from './settings-tools'
 import { createMcpSubscriptionTools } from './subscription-tools'
 import { createMcpTaskTools } from './task-tools'
@@ -22,7 +23,7 @@ import { mcpId } from './tool'
 import { createMcpTranscriptTools } from './transcript-tools'
 
 const toolGroups = [
-  { id: 'application', tools: createMcpSettingsTools() },
+  { id: 'application', tools: [...createMcpSettingsTools(), ...createMcpSearchTools()] },
   { id: 'tasks', tools: createMcpTaskTools() },
   { id: 'subscriptions', tools: createMcpSubscriptionTools() },
   { id: 'transcripts', tools: createMcpTranscriptTools() },

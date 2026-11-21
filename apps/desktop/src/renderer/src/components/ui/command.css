@@ -1,0 +1,45 @@
+/* Native animations let Base UI retain the complete palette through its exit. */
+.command-dialog[data-open] {
+  animation: command-dialog-enter var(--command-dialog-enter) both;
+}
+
+.command-dialog[data-closed] {
+  animation: command-dialog-exit var(--command-dialog-exit) ease-out both;
+}
+
+@keyframes command-dialog-enter {
+  from {
+    opacity: 0;
+    transform: scale(var(--command-dialog-scale, 0.97));
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes command-dialog-exit {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(var(--command-dialog-scale, 0.97));
+  }
+}
+
+.command-list {
+  height: min(calc(var(--cmdk-list-height, 0px) + 1rem), calc(76dvh - 6rem));
+  transition: height var(--command-list-transition);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .command-dialog {
+    --command-dialog-scale: 1;
+  }
+
+  .command-list {
+    transition: none;
+  }
+}

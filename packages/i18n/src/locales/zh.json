@@ -1244,7 +1244,8 @@
         "export_caption_share_image": "将选中字幕导出为分享图片",
         "summarize_media": "结合时间戳证据总结媒体",
         "download_and_transcribe": "下载媒体并创建本地字幕",
-        "diagnose_task": "诊断失败任务并建议恢复方法"
+        "diagnose_task": "诊断失败任务并建议恢复方法",
+        "search": "搜索媒体、字幕和聊天正文"
       }
     }
   },
@@ -2141,5 +2142,24 @@
     "storageDownloadDir": "Download directory",
     "storageDataDir": "Data directory",
     "storageDbFile": "SQLite database"
+  },
+  "globalSearch": {
+    "title": "搜索",
+    "description": "搜索本地媒体、字幕和聊天正文，或跳转到指定页面。",
+    "placeholder": "搜索媒体、字幕、聊天和设置…",
+    "noResults": "未找到匹配结果。",
+    "media": "媒体",
+    "recentMedia": "最近的媒体",
+    "navigation": "跳转到",
+    "navigate": "选择",
+    "open": "打开",
+    "close": "关闭",
+    "limitHint": "当前显示前 {{count}} 条媒体结果，请缩小搜索范围以查找更多结果。",
+    "subtitles": "字幕正文",
+    "chats": "聊天正文",
+    "searching": "正在搜索本地内容…",
+    "searchFailed": "无法搜索本地内容，请重新输入后重试。",
+    "openFailed": "无法打开此结果，内容可能已变更，或该会话正在生成回复。",
+    "contentLimitHint": "每类正文最多显示前 {{count}} 条匹配，请缩小搜索范围以查找更多结果。"
   }
 }

@@ -212,10 +212,12 @@ export const isRecoverableAiPromptError = (message: string): boolean => {
  *
  * @param message Error text from pi-agent or the local runner.
  * @param emptyText True when the model finished without writing anything.
+ * @param usingCloud True when this run used VidBee Cloud instead of a local key.
  */
 export const classifyAiPromptError = (
   message: string | null | undefined,
-  emptyText = false
+  emptyText = false,
+  usingCloud = false
 ): AiPromptErrorCode => {
   const text = message?.trim() ?? ''
   if (/no ai provider/i.test(text)) {
@@ -233,7 +235,7 @@ export const classifyAiPromptError = (
   if (/transcript is empty/i.test(text)) {
     return 'empty-transcript'
   }
-  if (/AI_CREDIT_QUOTA_EXCEEDED|not enough ai credits|\b402\b/i.test(text)) {
+  if (usingCloud && /AI_CREDIT_QUOTA_EXCEEDED|not enough ai credits|\b402\b/i.test(text)) {
     return 'credits-exhausted'
   }
   if (/sign in required/i.test(text) || text.includes('UNAUTHORIZED')) {

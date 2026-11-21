@@ -1244,7 +1244,8 @@
         "export_caption_share_image": "Seçili altyazıları paylaşım görselleri olarak dışa aktar",
         "summarize_media": "Zaman damgalı kanıtlarla medyayı özetle",
         "download_and_transcribe": "Medyayı indir ve yerel transkript oluştur",
-        "diagnose_task": "Başarısız görevi tanıla ve kurtarma öner"
+        "diagnose_task": "Başarısız görevi tanıla ve kurtarma öner",
+        "search": "Medya, altyazı ve sohbet mesajlarını ara"
       }
     }
   },
@@ -2141,5 +2142,24 @@
     "storageDownloadDir": "Download directory",
     "storageDataDir": "Data directory",
     "storageDbFile": "SQLite database"
+  },
+  "globalSearch": {
+    "title": "Ara",
+    "description": "Yerel medya, altyazı metni ve sohbet mesajlarını arayın veya bir sayfaya gidin.",
+    "placeholder": "Medya, altyazı, sohbet ve ayarlarda ara…",
+    "noResults": "Sonuç bulunamadı.",
+    "media": "Medya",
+    "recentMedia": "Son medya",
+    "navigation": "Şuraya git",
+    "navigate": "Gezin",
+    "open": "Aç",
+    "close": "Kapat",
+    "limitHint": "İlk {{count}} medya sonucu gösteriliyor. Daha fazlasını bulmak için aramanızı daraltın.",
+    "subtitles": "Altyazı metni",
+    "chats": "Sohbet mesajları",
+    "searching": "Yerel içerik aranıyor…",
+    "searchFailed": "Yerel içerikte arama yapılamadı. Aramanızı yeniden yazın.",
+    "openFailed": "Bu sonuç açılamadı. İçerik değişmiş veya sohbet meşgul olabilir.",
+    "contentLimitHint": "Her içerik türü için ilk {{count}} eşleşme gösteriliyor. Aramanızı daraltın."
   }
 }

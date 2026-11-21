@@ -814,7 +814,7 @@ const startAgentPromptRun = (
           continue
         }
         const error = formatAiPromptError(message, run.viaCloud)
-        const errorCode = classifyAiPromptError(message, !run.snapshot.text.trim())
+        const errorCode = classifyAiPromptError(message, !run.snapshot.text.trim(), run.viaCloud)
         emit(
           {
             ...run.snapshot,

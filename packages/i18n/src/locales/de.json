@@ -1244,7 +1244,8 @@
         "export_caption_share_image": "Ausgewählte Untertitel als teilbare Bilder exportieren",
         "summarize_media": "Medien mit Zeitstempelbelegen zusammenfassen",
         "download_and_transcribe": "Medien herunterladen und lokales Transkript erstellen",
-        "diagnose_task": "Fehlgeschlagene Aufgabe untersuchen und Wiederherstellung vorschlagen"
+        "diagnose_task": "Fehlgeschlagene Aufgabe untersuchen und Wiederherstellung vorschlagen",
+        "search": "Medien, Untertitel und Chatnachrichten durchsuchen"
       }
     }
   },
@@ -2141,5 +2142,24 @@
     "storageDownloadDir": "Download directory",
     "storageDataDir": "Data directory",
     "storageDbFile": "SQLite database"
+  },
+  "globalSearch": {
+    "title": "Suchen",
+    "description": "Durchsuche lokale Medien, Untertitel und Chatnachrichten oder wechsle zu einer Seite.",
+    "placeholder": "Medien, Untertitel, Chats und Einstellungen suchen…",
+    "noResults": "Keine Ergebnisse gefunden.",
+    "media": "Medien",
+    "recentMedia": "Zuletzt hinzugefügte Medien",
+    "navigation": "Gehe zu",
+    "navigate": "Navigieren",
+    "open": "Öffnen",
+    "close": "Schließen",
+    "limitHint": "Die ersten {{count}} Medienergebnisse werden angezeigt. Grenze deine Suche weiter ein.",
+    "subtitles": "Untertiteltext",
+    "chats": "Chatnachrichten",
+    "searching": "Lokale Inhalte werden durchsucht…",
+    "searchFailed": "Lokale Inhalte konnten nicht durchsucht werden. Gib die Suche erneut ein.",
+    "openFailed": "Dieses Ergebnis konnte nicht geöffnet werden. Der Inhalt wurde möglicherweise geändert oder die Unterhaltung ist beschäftigt.",
+    "contentLimitHint": "Die ersten {{count}} Treffer je Inhaltstyp werden angezeigt. Grenze deine Suche weiter ein."
   }
 }

@@ -1,6 +1,7 @@
 import { AppSidebar, type AppSidebarItem } from '@vidbee/ui/components/ui/app-sidebar'
 import { appSidebarIcons } from '@vidbee/ui/components/ui/app-sidebar-icons'
 import { useAtomValue } from 'jotai'
+import { Search } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import '../../assets/title-bar.css'
 import { agentApprovalPendingAtom } from '@renderer/store/agent-tasks'
@@ -12,6 +13,7 @@ interface SidebarProps {
   currentPage: Page
   onPageChange: (page: Page) => void
   onOpenTools: () => void
+  onOpenSearch: () => void
   transcriptsActive?: boolean
 }
 
@@ -22,6 +24,7 @@ export function Sidebar({
   currentPage,
   onPageChange,
   onOpenTools,
+  onOpenSearch,
   transcriptsActive = false
 }: SidebarProps) {
   const { t } = useTranslation()
@@ -44,6 +47,12 @@ export function Sidebar({
       indicator: approvalPending,
       label: t('transcript.promptHistoryChat'),
       onClick: () => onPageChange('chat')
+    },
+    {
+      id: 'search',
+      icon: { active: Search, inactive: Search },
+      label: t('globalSearch.title'),
+      onClick: onOpenSearch
     },
     {
       id: 'subscriptions',

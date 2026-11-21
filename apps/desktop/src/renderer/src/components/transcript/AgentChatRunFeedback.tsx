@@ -36,6 +36,7 @@ export function AgentChatRunFeedback({
   }
   if (run?.status === 'error') {
     const error = run.error || t('error.unknownError')
+    const usingCloud = run.model === 'vidbee-cloud'
     return (
       <div
         className="w-full rounded-lg border border-destructive/30 p-3"
@@ -44,9 +45,9 @@ export function AgentChatRunFeedback({
       >
         <TranscriptPromptGuidance
           error={error}
-          errorCode={classifyAiPromptError(error)}
+          errorCode={classifyAiPromptError(error, false, usingCloud)}
           onRetry={busy ? undefined : onRetry}
-          usingCloud={run.model === 'vidbee-cloud'}
+          usingCloud={usingCloud}
         />
       </div>
     )

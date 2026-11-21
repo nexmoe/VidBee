@@ -18,6 +18,7 @@ import {
   deleteTranscriptSegments,
   getTranscriptionModelStatus,
   getTranscriptStatusMap,
+  getTranscriptStore,
   importLocalMediaForTranscription,
   insertTranscriptSegment,
   readTranscriptDetail,
@@ -116,8 +117,9 @@ export function createMcpTranscriptTools() {
     ),
     defineMcpTool(
       'get_transcript',
-      'Read paginated selected caption/ASR segments, speakers, source choices and timestamps. Optional query/time range filters and word timestamps. Follow nextOffset to read all text.',
+      'Read paginated caption/ASR segments, speakers, source choices and timestamps. Defaults to the selected source; transcriptId reads an exact saved search hit without changing the selected source. Optional query/time range filters and word timestamps. Follow nextOffset to read all text.',
       downloadIdSchema.extend({
+        transcriptId: mcpId.optional(),
         offset: mcpOffset,
         limit: mcpLimit,
         query: z.string().max(200).optional(),
@@ -125,10 +127,14 @@ export function createMcpTranscriptTools() {
         endMs: z.number().nonnegative().optional(),
         includeWords: z.boolean().default(false)
       }),
-      ({ downloadId, query, startMs, endMs, offset, limit, includeWords }) => {
+      ({ downloadId, transcriptId, query, startMs, endMs, offset, limit, includeWords }) => {
         const snapshot = readTranscriptDetail(downloadId)
+        const record = transcriptId ? getTranscriptStore().getById(transcriptId) : snapshot.record
+        if (transcriptId && record?.downloadTaskId !== downloadId) {
+          throw new Error('Transcript not found for this media')
+        }
         const needle = query?.toLocaleLowerCase() ?? ''
-        const segments = (snapshot.record?.segments ?? []).filter(
+        const segments = (record?.segments ?? []).filter(
           (segment) =>
             segment.text.toLocaleLowerCase().includes(needle) &&
             (startMs === undefined || segment.endMs >= startMs) &&
@@ -136,8 +142,15 @@ export function createMcpTranscriptTools() {
         )
         const page = mcpPage(segments, offset, limit)
         return {
-          ...transcriptStatus(snapshot),
-          speakers: snapshot.record?.speakers ?? [],
+          ...transcriptStatus({ ...snapshot, record }),
+          ...(transcriptId && record
+            ? {
+                transcriptId: record.id,
+                transcriptionTaskId: record.transcriptionTaskId,
+                sourceKind: record.sourceKind
+              }
+            : {}),
+          speakers: record?.speakers ?? [],
           ...page,
           items: page.items.map(({ words, ...segment }) =>
             includeWords ? { ...segment, words } : segment

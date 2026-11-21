@@ -95,6 +95,7 @@ import {
   observeCaptionListRect
 } from '@renderer/lib/transcript-virtual'
 import { cn } from '@renderer/lib/utils'
+import { searchTargetAtom } from '@renderer/store/search-target'
 import {
   type TranscriptBilingualPreference,
   transcriptBilingualPreferencesAtom
@@ -285,6 +286,7 @@ export function TranscriptCaptionsPane({
   sources = EMPTY_SOURCES
 }: TranscriptCaptionsPaneProps) {
   const { t, i18n } = useTranslation()
+  const [searchTarget, setSearchTarget] = useAtom(searchTargetAtom)
   const [bilingualPreferences, setBilingualPreferences] = useAtom(
     transcriptBilingualPreferencesAtom
   )
@@ -849,6 +851,19 @@ export function TranscriptCaptionsPane({
     setActiveMatch(0)
     setQuery('')
   }, [])
+
+  useEffect(() => {
+    if (
+      searchTarget?.kind !== 'transcript' ||
+      searchTarget.downloadId !== downloadId ||
+      !segments.some((segment) => segment.id === searchTarget.segmentId)
+    ) {
+      return
+    }
+    jumpToSearchMatch(searchTarget.segmentId)
+    scrollToSegment(searchTarget.segmentId, 'auto')
+    setSearchTarget(null)
+  }, [downloadId, jumpToSearchMatch, scrollToSegment, searchTarget, segments, setSearchTarget])
 
   const canSelectCaptions = showLines && !hasQuery && !streamLive && !editingId
   const canEditCaptions = Boolean(downloadId) && ready && !running && !streamLive && !hasQuery

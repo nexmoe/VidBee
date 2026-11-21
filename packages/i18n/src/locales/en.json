@@ -1244,7 +1244,8 @@
         "export_caption_share_image": "Export selected captions as share images",
         "summarize_media": "Summarize media with timestamp evidence",
         "download_and_transcribe": "Download media and create a local transcript",
-        "diagnose_task": "Diagnose a failed task and suggest recovery"
+        "diagnose_task": "Diagnose a failed task and suggest recovery",
+        "search": "Search media, subtitles and chat messages"
       }
     }
   },
@@ -2141,5 +2142,24 @@
     "storageDownloadDir": "Download directory",
     "storageDataDir": "Data directory",
     "storageDbFile": "SQLite database"
+  },
+  "globalSearch": {
+    "title": "Search",
+    "description": "Search local media, subtitle text, and chat messages, or jump to a page.",
+    "placeholder": "Search media, subtitles, chats, and settings…",
+    "noResults": "No results found.",
+    "media": "Media",
+    "recentMedia": "Recent media",
+    "navigation": "Go to",
+    "navigate": "Navigate",
+    "open": "Open",
+    "close": "Close",
+    "limitHint": "Showing the first {{count}} media results. Refine your search to find more.",
+    "subtitles": "Subtitle text",
+    "chats": "Chat messages",
+    "searching": "Searching local content…",
+    "searchFailed": "Could not search local content. Try typing again.",
+    "openFailed": "Could not open this result. It may have changed, or its conversation is busy.",
+    "contentLimitHint": "Showing the first {{count}} matches per content type. Refine your search for more."
   }
 }

@@ -9,6 +9,7 @@ import { FileSystemService } from './services/file-system-service'
 import { HistoryService } from './services/history-service'
 import { McpService } from './services/mcp-service'
 import { PlayerService } from './services/player-service'
+import { SearchService } from './services/search-service'
 import { SettingsService } from './services/settings-service'
 import { SubscriptionService } from './services/subscription-service'
 import { ThumbnailService } from './services/thumbnail-service'
@@ -41,6 +42,7 @@ export const services = createServices([
   McpService,
   PlayerService,
   SettingsService,
+  SearchService,
   SubscriptionService,
   ThumbnailService,
   TranscriptService,
