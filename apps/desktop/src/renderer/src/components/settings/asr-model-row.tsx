@@ -150,7 +150,7 @@ export const AsrModelRow = ({
                 <a
                   className="underline"
                   href="https://huggingface.co/oruk/oruk-fourier-2b"
-                  rel="noreferrer"
+                  rel="noopener noreferrer"
                   target="_blank"
                 >
                   oruk/oruk-fourier-2b
