@@ -28,6 +28,7 @@ export type AiModelIconId =
   | 'ollama'
   | 'openrouter'
   | 'azure'
+  | 'atlascloud'
   | 'fireworks'
   | 'together'
   | 'huggingface'
@@ -40,6 +41,7 @@ export type AiModelIconId =
 const PRESET_ICON_ID: Partial<Record<string, AiModelIconId>> = {
   alibaba: 'qwen',
   anthropic: 'anthropic',
+  atlascloud: 'atlascloud',
   azure: 'azure',
   deepseek: 'deepseek',
   fireworks: 'fireworks',

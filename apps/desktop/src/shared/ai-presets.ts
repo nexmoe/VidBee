@@ -28,6 +28,14 @@ export const AI_PROVIDER_PRESETS: readonly AiProviderPreset[] = [
     website: 'anthropic.com'
   },
   {
+    id: 'atlascloud',
+    defaultModel: 'deepseek-ai/deepseek-v4-flash',
+    needsApiKey: true,
+    requiresBaseUrl: false,
+    baseUrl: 'https://api.atlascloud.ai/v1',
+    website: 'atlascloud.ai'
+  },
+  {
     id: 'azure',
     defaultModel: 'gpt-4o-mini',
     needsApiKey: true,

@@ -969,6 +969,7 @@
       "restorePresets": "Восстановить по умолчанию",
       "presets": {
         "anthropic": "Anthropic",
+        "atlascloud": "Atlas Cloud",
         "azure": "Azure",
         "custom": "Custom",
         "deepseek": "Deepseek",
