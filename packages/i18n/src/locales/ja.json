@@ -804,6 +804,11 @@
         "tag": "中国語の精度が最も高い。高性能PC向け",
         "size": "約 840 MB"
       },
+      "fourier-en": {
+        "title": "Fourier 2B",
+        "tag": "英語 · ローカルでの非営利利用のみ · CC BY-NC 4.0",
+        "size": "約2.4 GB"
+      },
       "qwen3-1.7b": {
         "title": "Qwen3-ASR 1.7B",
         "tag": "より大きなQwen3モデル。より多くのメモリが必要",
@@ -855,7 +860,7 @@
     "asrFamily": {
       "whisper": "Whisper — 多言語",
       "sense-voice": "SenseVoice — 中国語・日本語・韓国語・英語",
-      "qwen3": "Qwen3-ASR — 中国語の精度が最も高い",
+      "qwen3": "Qwen3-ASR",
       "parakeet": "Parakeet",
       "fire-red-asr": "FireRedASR — 中国語・英語・中国語の方言"
     },

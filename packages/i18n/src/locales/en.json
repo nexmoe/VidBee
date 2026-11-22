@@ -1087,7 +1087,7 @@
       "parakeet": "Parakeet",
       "sense-voice": "SenseVoice — Chinese, Japanese, Korean, English",
       "fire-red-asr": "FireRedASR — Chinese, English, and Chinese dialects",
-      "qwen3": "Qwen3-ASR — highest Chinese accuracy"
+      "qwen3": "Qwen3-ASR"
     },
     "asrLanguages": {
       "multi": "multilingual"
@@ -1152,6 +1152,11 @@
         "title": "Qwen3-ASR 0.6B",
         "tag": "Best Chinese accuracy. Needs a powerful PC",
         "size": "~840 MB"
+      },
+      "fourier-en": {
+        "title": "Fourier 2B",
+        "tag": "English · Local noncommercial use only · CC BY-NC 4.0",
+        "size": "~2.4 GB"
       },
       "qwen3-1.7b": {
         "title": "Qwen3-ASR 1.7B",

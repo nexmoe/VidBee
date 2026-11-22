@@ -804,6 +804,11 @@
         "tag": "Akurasi Tionghoa terbaik. Butuh PC bertenaga",
         "size": "~840 MB"
       },
+      "fourier-en": {
+        "title": "Fourier 2B",
+        "tag": "Bahasa Inggris · Hanya untuk penggunaan lokal nonkomersial · CC BY-NC 4.0",
+        "size": "~2,4 GB"
+      },
       "qwen3-1.7b": {
         "title": "Qwen3-ASR 1.7B",
         "tag": "Model Qwen3 lebih besar. Memerlukan lebih banyak RAM",
@@ -855,7 +860,7 @@
     "asrFamily": {
       "whisper": "Whisper — multibahasa",
       "sense-voice": "SenseVoice — Tionghoa, Jepang, Korea, Inggris",
-      "qwen3": "Qwen3-ASR — akurasi Tionghoa tertinggi",
+      "qwen3": "Qwen3-ASR",
       "parakeet": "Parakeet",
       "fire-red-asr": "FireRedASR — bahasa Mandarin, Inggris, dan dialek Tionghoa"
     },

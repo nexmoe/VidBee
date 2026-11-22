@@ -804,6 +804,11 @@
         "tag": "Melhor precisão em chinês. Precisa de um PC potente",
         "size": "~840 MB"
       },
+      "fourier-en": {
+        "title": "Fourier 2B",
+        "tag": "Inglês · Apenas para uso local não comercial · CC BY-NC 4.0",
+        "size": "~2,4 GB"
+      },
       "qwen3-1.7b": {
         "title": "Qwen3-ASR 1.7B",
         "tag": "Modelo Qwen3 maior. Requer mais RAM",
@@ -855,7 +860,7 @@
     "asrFamily": {
       "whisper": "Whisper — multilíngue",
       "sense-voice": "SenseVoice — chinês, japonês, coreano, inglês",
-      "qwen3": "Qwen3-ASR — melhor precisão em chinês",
+      "qwen3": "Qwen3-ASR",
       "parakeet": "Parakeet",
       "fire-red-asr": "FireRedASR — chinês, inglês e dialetos chineses"
     },
