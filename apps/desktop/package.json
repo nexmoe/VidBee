@@ -95,7 +95,7 @@
     "electron-log": "^5.4.3",
     "electron-store": "^11.0.2",
     "electron-updater": "^6.3.9",
-    "i18next": "^25.5.3",
+    "i18next": "^26.3.4",
     "jiti": "2.7.0",
     "jotai": "^2.15.0",
     "katex": "^0.16.47",
