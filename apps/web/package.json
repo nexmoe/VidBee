@@ -30,7 +30,7 @@
     "@vidbee/subscriptions-core": "workspace:*",
     "@vidbee/logger": "workspace:*",
     "@vidbee/ui": "workspace:*",
-    "i18next": "^25.5.3",
+    "i18next": "^26.3.4",
     "lucide-react": "^0.545.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
