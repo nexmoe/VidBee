@@ -3,7 +3,7 @@
   "private": true,
   "packageManager": "pnpm@11.1.2",
   "scripts": {
-    "check": "pnpm --filter ./apps/desktop run check && pnpm --filter @vidbee/transcription test",
+    "check": "pnpm --filter ./apps/desktop run check && pnpm --filter @vidbee/transcription run typecheck && pnpm --filter @vidbee/transcription test",
     "check:i18n": "pnpm --filter ./apps/desktop run check:i18n",
     "typecheck": "pnpm --filter ./apps/desktop run typecheck",
     "dev": "pnpm --filter ./apps/desktop run dev",

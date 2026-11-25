@@ -290,7 +290,7 @@ export const ASR_TIERS: readonly AsrTierInfo[] = [
     family: 'qwen3',
     modelId: 'fourier-en-int8',
     archiveName: FOURIER_DIR,
-    bytesHint: 2_409_908_809,
+    bytesHint: 2_409_911_288,
     minRamGB: 24,
     qualityRank: 0,
     languages: ['en'],

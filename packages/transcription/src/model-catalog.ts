@@ -50,8 +50,9 @@ const ORUKEET_BASE_URL =
   'https://huggingface.co/oruk/orukeet/resolve/debfb0d5423d4b0446361e0ea024e6891e23a249/onnx/sherpa-v0.1.0-int8'
 const ORUKEET_MANIFEST = `${ORUKEET_DIR}/manifest.json`
 // Immutable publisher revision and independent checksums for the noncommercial desktop model.
-const FOURIER_BASE =
-  'https://huggingface.co/oruk/oruk-fourier-2b/resolve/3fda023e157ce7986f137f76fcf326ed6e08fa73/onnx/sherpa-int8'
+const FOURIER_REVISION = '3fda023e157ce7986f137f76fcf326ed6e08fa73'
+const FOURIER_REPO_BASE = `https://huggingface.co/oruk/oruk-fourier-2b/resolve/${FOURIER_REVISION}`
+const FOURIER_BASE = `${FOURIER_REPO_BASE}/onnx/sherpa-int8`
 
 /** Pinned 1.7B export linked by the official sherpa-onnx Qwen3-ASR documentation. */
 const QWEN3_ASR_1_7B_BASE_URL =
@@ -580,7 +581,7 @@ export const MODEL_CATALOG: readonly ModelFileSpec[] = [
     directoryMembers: [
       {
         name: 'config.json',
-        minBytes: 2_072,
+        minBytes: 2072,
         sha256: '9306077f32e1989f6128d12a0e471a3bd612389dbd5bff81305b8f558fee9901',
         json: true
       },
@@ -608,6 +609,16 @@ export const MODEL_CATALOG: readonly ModelFileSpec[] = [
         json: true
       }
     ],
+    required: true
+  },
+  {
+    id: 'fourier-en-config-json',
+    role: 'asr-extra',
+    tier: 'fourier-en',
+    group: 'asr',
+    fileName: `${FOURIER_DIR}/config.json`,
+    url: `${FOURIER_REPO_BASE}/config.json`,
+    sha256: '5bc1d99c141fc866b61efca97dcbc6412a38db25ff0934c38bf7b46fa09485a2',
     required: true
   },
   {

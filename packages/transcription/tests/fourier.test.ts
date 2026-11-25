@@ -7,12 +7,16 @@ import test from 'node:test'
 import type { ExecutorFinishEvent } from '@vidbee/task-queue'
 import { recommendAsrModels } from '../src/asr-recommend'
 import { asrTierInfo, DEFAULT_ASR_TIER, parseAsrTier } from '../src/asr-tiers'
+import { modelDownloadUrls } from '../src/download-mirrors'
 import { TranscriptionExecutor } from '../src/executor'
 import { MemoryTranscriptStore } from '../src/memory-store'
 import { catalogFor } from '../src/model-catalog'
 import { ModelManager } from '../src/model-manager'
 
-test('Fourier is an opt-in English model with checksums for both ONNX external-data files and its own tokenizer', () => {
+const FOURIER_RESOLVE_PREFIX =
+  '/oruk/oruk-fourier-2b/resolve/3fda023e157ce7986f137f76fcf326ed6e08fa73/'
+
+test('Fourier is an opt-in English model with checksums for both ONNX external-data files, root config, and its own tokenizer', () => {
   const tier = 'fourier-en'
   const model = asrTierInfo(tier)
   assert.deepEqual(model.languages, ['en'])
@@ -28,13 +32,19 @@ test('Fourier is an opt-in English model with checksums for both ONNX external-d
       .filter((s) => s.role === 'asr-extra')
       .map((s) => s.fileName)
       .sort(),
-    ['fourier-en-int8/decoder.int8.onnx.data', 'fourier-en-int8/encoder.int8.onnx.data']
+    [
+      'fourier-en-int8/config.json',
+      'fourier-en-int8/decoder.int8.onnx.data',
+      'fourier-en-int8/encoder.int8.onnx.data'
+    ]
   )
   assert.ok(
     specs
       .filter((s) => s.role !== 'asr-tokenizer')
       .every((s) => /^[a-f0-9]{64}$/.test(s.sha256 ?? ''))
   )
+  const rootConfig = specs.find((s) => s.id === 'fourier-en-config-json')
+  assert.equal(rootConfig?.url, `https://huggingface.co${FOURIER_RESOLVE_PREFIX}config.json`)
   const tokenizer = specs.find((s) => s.role === 'asr-tokenizer')
   assert.deepEqual(tokenizer?.directoryMembers?.map((s) => s.name).sort(), [
     'config.json',
@@ -44,8 +54,12 @@ test('Fourier is an opt-in English model with checksums for both ONNX external-d
     'vocab.json'
   ])
   assert.ok(tokenizer?.directoryMembers?.every((s) => /^[a-f0-9]{64}$/.test(s.sha256)))
+  assert.ok(specs.every((s) => s.url.startsWith(`https://huggingface.co${FOURIER_RESOLVE_PREFIX}`)))
   assert.ok(
-    specs.every((s) => s.url.startsWith('https://huggingface.co/oruk/oruk-fourier-2b/resolve/'))
+    specs.every((s) => {
+      const urls = modelDownloadUrls(s, true)
+      return urls.length === 1 && urls[0] === s.url
+    })
   )
 })
 
@@ -82,7 +96,7 @@ test('the hosted executor rejects Fourier before starting model work', async () 
   }
 })
 
-test('the model manager downloads the ten catalog paths and rejects a corrupt decoder sidecar', async (t) => {
+test('the model manager downloads all eleven catalog paths including root config.json and rejects a corrupt decoder sidecar', async (t) => {
   const tier = 'fourier-en'
   const options = { groups: ['asr'], tiers: [tier] } as const
   const directory = await mkdtemp(join(tmpdir(), 'vidbee-fourier-'))
@@ -112,15 +126,34 @@ test('the model manager downloads the ten catalog paths and rejects a corrupt de
     fetchImpl: async (input) => {
       const uri = new URL(input.toString())
       assert.equal(uri.origin, 'https://huggingface.co')
-      const name = uri.pathname.split('/onnx/sherpa-int8/')[1]
-      assert.ok(name)
-      requested.push(name)
-      return new Response(damaged ? 'corrupt' : contents(name))
+      assert.ok(uri.pathname.startsWith(FOURIER_RESOLVE_PREFIX))
+      const repoPath = uri.pathname.slice(FOURIER_RESOLVE_PREFIX.length)
+      assert.ok(repoPath)
+      requested.push(repoPath)
+      const localName = repoPath.startsWith('onnx/sherpa-int8/')
+        ? repoPath.slice('onnx/sherpa-int8/'.length)
+        : repoPath
+      return new Response(damaged ? 'corrupt' : contents(localName))
     }
   })
   assert.equal(manager.status(options.groups, options.tiers).ready, false)
   assert.equal((await manager.ensureReady(options)).ready, true)
-  const exactPaths = [
+  const expectedRepoPaths = [
+    'config.json',
+    'onnx/sherpa-int8/conv_frontend.onnx',
+    'onnx/sherpa-int8/encoder.int8.onnx',
+    'onnx/sherpa-int8/decoder.int8.onnx',
+    'onnx/sherpa-int8/encoder.int8.onnx.data',
+    'onnx/sherpa-int8/decoder.int8.onnx.data',
+    'onnx/sherpa-int8/tokenizer/config.json',
+    'onnx/sherpa-int8/tokenizer/merges.txt',
+    'onnx/sherpa-int8/tokenizer/tokenizer.json',
+    'onnx/sherpa-int8/tokenizer/tokenizer_config.json',
+    'onnx/sherpa-int8/tokenizer/vocab.json'
+  ]
+  assert.deepEqual([...requested].sort(), expectedRepoPaths.sort())
+  const expectedLocalPaths = [
+    'config.json',
     'conv_frontend.onnx',
     'encoder.int8.onnx',
     'decoder.int8.onnx',
@@ -132,8 +165,7 @@ test('the model manager downloads the ten catalog paths and rejects a corrupt de
     'tokenizer/tokenizer_config.json',
     'tokenizer/vocab.json'
   ]
-  assert.deepEqual([...requested].sort(), exactPaths.sort())
-  for (const name of exactPaths) {
+  for (const name of expectedLocalPaths) {
     assert.equal(await readFile(join(directory, 'fourier-en-int8', name), 'utf8'), contents(name))
   }
   damaged = true

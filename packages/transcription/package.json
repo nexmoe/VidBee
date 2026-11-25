@@ -15,7 +15,7 @@
   "types": "./src/index.ts",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test tests/*.test.ts"
+    "test": "tsx --test \"tests/*.test.ts\""
   },
   "dependencies": {
     "@vidbee/db": "workspace:*",
