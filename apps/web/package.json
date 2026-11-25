@@ -23,7 +23,7 @@
     "@tanstack/react-router": "^1.170.29",
     "@tanstack/react-router-devtools": "^1.167.1",
     "@tanstack/react-router-ssr-query": "^1.167.1",
-    "@tanstack/react-start": "^1.168.46",
+    "@tanstack/react-start": "^1.168.60",
     "@tanstack/router-plugin": "^1.168.32",
     "@vidbee/downloader-core": "workspace:*",
     "@vidbee/i18n": "workspace:*",
