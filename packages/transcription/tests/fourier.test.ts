@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
-import { mkdtemp, readFile, rm } from 'node:fs/promises'
+import { mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
+import { fileURLToPath } from 'node:url'
 import type { ExecutorFinishEvent } from '@vidbee/task-queue'
 import { recommendAsrModels } from '../src/asr-recommend'
 import { asrTierInfo, DEFAULT_ASR_TIER, parseAsrTier } from '../src/asr-tiers'
@@ -12,9 +13,52 @@ import { TranscriptionExecutor } from '../src/executor'
 import { MemoryTranscriptStore } from '../src/memory-store'
 import { catalogFor } from '../src/model-catalog'
 import { ModelManager } from '../src/model-manager'
+import type { PipelineResult } from '../src/types'
 
 const FOURIER_RESOLVE_PREFIX =
   '/oruk/oruk-fourier-2b/resolve/3fda023e157ce7986f137f76fcf326ed6e08fa73/'
+
+const runExecutorTask = (
+  executor: TranscriptionExecutor,
+  options: Record<string, unknown>,
+  sourceFilePath = 'file.wav'
+): Promise<ExecutorFinishEvent> =>
+  new Promise<ExecutorFinishEvent>((resolve) => {
+    executor.run(
+      {
+        taskId: 'test',
+        attemptId: 'test-1',
+        attemptNumber: 1,
+        input: {
+          kind: 'transcription',
+          url: sourceFilePath,
+          options: {
+            downloadTaskId: 'test-parent',
+            sourceFilePath,
+            ...options
+          }
+        }
+      },
+      { onSpawn: () => {}, onProgress: () => {}, onStd: () => {}, onFinish: resolve }
+    )
+  })
+
+const stubPipelineResult = (asrTier: string): PipelineResult => ({
+  resultKind: 'transcript',
+  language: 'en',
+  modelVersion: 'test',
+  asrTier,
+  speakers: [],
+  segments: [
+    {
+      speakerKey: null,
+      startMs: 0,
+      endMs: 1000,
+      text: 'hello',
+      confidence: null
+    }
+  ]
+})
 
 test('Fourier is an opt-in English model with checksums for both ONNX external-data files, root config, and its own tokenizer', () => {
   const tier = 'fourier-en'
@@ -70,30 +114,110 @@ test('the hosted executor rejects Fourier before starting model work', async () 
     modelsDir: '',
     resolveFfmpegPath: () => assert.fail('hosted transcription reached audio processing')
   })
-  const finished = await new Promise<ExecutorFinishEvent>((resolve) => {
-    executor.run(
-      {
-        taskId: 'test',
-        attemptId: 'test-1',
-        attemptNumber: 1,
-        input: {
-          kind: 'transcription',
-          url: 'file.wav',
-          options: {
-            downloadTaskId: 'test-parent',
-            sourceFilePath: 'file.wav',
-            asrTier: 'fourier-en'
-          }
-        }
-      },
-      { onSpawn: () => {}, onProgress: () => {}, onStd: () => {}, onFinish: resolve }
-    )
-  })
+  const finished = await runExecutorTask(executor, { asrTier: 'fourier-en' })
   assert.equal(finished.result.type, 'error')
   if (finished.result.type === 'error') {
     assert.equal(finished.result.error.category, 'permission-denied')
     assert.match(finished.result.error.rawMessage, /Oruk Fourier/)
   }
+})
+
+test('the hosted executor rejects Fourier on cloud re-diarization before touching worker or model dirs', async (t) => {
+  const workDir = await mkdtemp(join(tmpdir(), 'vidbee-fourier-work-'))
+  const modelsDir = await mkdtemp(join(tmpdir(), 'vidbee-fourier-models-'))
+  const audioDir = await mkdtemp(join(tmpdir(), 'vidbee-fourier-audio-'))
+  t.after(() =>
+    Promise.all([
+      rm(workDir, { recursive: true, force: true }),
+      rm(modelsDir, { recursive: true, force: true }),
+      rm(audioDir, { recursive: true, force: true })
+    ])
+  )
+  const sourceFilePath = join(audioDir, 'clip.wav')
+  await writeFile(sourceFilePath, 'stub')
+
+  const workerExecutor = new TranscriptionExecutor({
+    store: new MemoryTranscriptStore(),
+    workerScript: fileURLToPath(new URL('../src/worker/entry.ts', import.meta.url)),
+    execArgv: ['--import', 'tsx'],
+    modelsDir,
+    workDir,
+    resolveFfmpegPath: () => assert.fail('hosted rediarize reached audio processing'),
+    runCloud: async () => assert.fail('hosted rediarize should not invoke cloud runner')
+  })
+  const workerFinished = await runExecutorTask(
+    workerExecutor,
+    { asrTier: 'fourier-en', provider: 'cloud', rediarize: true },
+    sourceFilePath
+  )
+  assert.equal(workerFinished.result.type, 'error')
+  if (workerFinished.result.type === 'error') {
+    assert.equal(workerFinished.result.error.category, 'permission-denied')
+    assert.match(workerFinished.result.error.rawMessage, /Oruk Fourier/)
+  }
+  assert.deepEqual(await readdir(workDir), [])
+  assert.deepEqual(await readdir(modelsDir), [])
+
+  const inProcessExecutor = new TranscriptionExecutor({
+    store: new MemoryTranscriptStore(),
+    workerScript: '',
+    modelsDir,
+    resolveFfmpegPath: () => assert.fail('hosted rediarize reached audio processing'),
+    runCloud: async () => assert.fail('hosted rediarize should not invoke cloud runner'),
+    runInProcess: async () => assert.fail('hosted rediarize reached in-process local runner')
+  })
+  const inProcessFinished = await runExecutorTask(
+    inProcessExecutor,
+    { asrTier: 'fourier-en', provider: 'cloud', rediarize: true },
+    sourceFilePath
+  )
+  assert.equal(inProcessFinished.result.type, 'error')
+  if (inProcessFinished.result.type === 'error') {
+    assert.equal(inProcessFinished.result.error.category, 'permission-denied')
+    assert.match(inProcessFinished.result.error.rawMessage, /Oruk Fourier/)
+  }
+})
+
+test('cloud transcription without rediarize and desktop-opted-in cloud rediarize route to their expected runners', async () => {
+  let cloudCalls = 0
+  const hostedCloudExecutor = new TranscriptionExecutor({
+    store: new MemoryTranscriptStore(),
+    workerScript: '',
+    modelsDir: '',
+    resolveFfmpegPath: () => assert.fail('cloud transcription reached local audio processing'),
+    runInProcess: async () => assert.fail('cloud transcription reached local in-process runner'),
+    runCloud: async () => {
+      cloudCalls += 1
+      return { result: stubPipelineResult('cloud:default'), durationMs: 10 }
+    }
+  })
+  const cloudFinished = await runExecutorTask(hostedCloudExecutor, {
+    asrTier: 'fourier-en',
+    provider: 'cloud'
+  })
+  assert.equal(cloudFinished.result.type, 'success')
+  assert.equal(cloudCalls, 1)
+
+  const seenLocalTiers: string[] = []
+  const desktopExecutor = new TranscriptionExecutor({
+    allowNoncommercialDesktopModels: true,
+    store: new MemoryTranscriptStore(),
+    workerScript: '',
+    modelsDir: '',
+    resolveFfmpegPath: () => assert.fail('in-process stub should not resolve ffmpeg'),
+    runCloud: async () => assert.fail('rediarize should not invoke cloud runner'),
+    runInProcess: async (input) => {
+      seenLocalTiers.push(input.asrTier)
+      return { result: stubPipelineResult(input.asrTier), durationMs: 10 }
+    }
+  })
+  const desktopFinished = await runExecutorTask(desktopExecutor, {
+    asrTier: 'fourier-en',
+    provider: 'cloud',
+    rediarize: true
+  })
+  assert.equal(desktopFinished.result.type, 'success')
+  assert.deepEqual(seenLocalTiers, ['fourier-en'])
 })
 
 test('the model manager downloads all eleven catalog paths including root config.json and rejects a corrupt decoder sidecar', async (t) => {
