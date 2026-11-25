@@ -848,6 +848,9 @@ importers:
       better-sqlite3:
         specifier: '>=13.0.3 <14'
         version: 13.0.3
+      tsx:
+        specifier: ^4.21.0
+        version: 4.22.4
       typescript:
         specifier: ^7.0.2
         version: 7.0.2

@@ -144,6 +144,19 @@ export const AsrModelRow = ({
           <ItemDescription className="line-clamp-none">
             {t(`settings.asrTier.${tier}.tag`)} · {t(`settings.asrTier.${tier}.size`)} · {state}
             {status?.bytes ? ` (${formatBytes(status.bytes)})` : ''}
+            {tier === 'fourier-en' ? (
+              <>
+                {' · '}
+                <a
+                  className="underline"
+                  href="https://huggingface.co/oruk/oruk-fourier-2b"
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  oruk/oruk-fourier-2b
+                </a>
+              </>
+            ) : null}
           </ItemDescription>
         </ItemContent>
         <ItemActions>

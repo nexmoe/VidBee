@@ -14,7 +14,8 @@
   },
   "types": "./src/index.ts",
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test \"tests/*.test.ts\""
   },
   "dependencies": {
     "@vidbee/db": "workspace:*",
@@ -28,6 +29,7 @@
     "@types/better-sqlite3": "^9.6.0",
     "@types/node": "^22.18.6",
     "better-sqlite3": "^13.0.3",
+    "tsx": "^4.21.0",
     "typescript": "^7.0.2"
   }
 }

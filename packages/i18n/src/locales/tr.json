@@ -804,6 +804,11 @@
         "tag": "En iyi Çince doğruluk. Güçlü bir PC ister",
         "size": "~840 MB"
       },
+      "fourier-en": {
+        "title": "Fourier 2B",
+        "tag": "İngilizce · Yalnızca yerel, ticari olmayan kullanım için · CC BY-NC 4.0",
+        "size": "~2,4 GB"
+      },
       "qwen3-1.7b": {
         "title": "Qwen3-ASR 1.7B",
         "tag": "Daha büyük Qwen3 modeli. Daha fazla RAM gerektirir",
@@ -855,7 +860,7 @@
     "asrFamily": {
       "whisper": "Whisper — çok dilli",
       "sense-voice": "SenseVoice — Çince, Japonca, Korece, İngilizce",
-      "qwen3": "Qwen3-ASR — en yüksek Çince doğruluk",
+      "qwen3": "Qwen3-ASR",
       "parakeet": "Parakeet",
       "fire-red-asr": "FireRedASR — Çince, İngilizce ve Çin lehçeleri"
     },

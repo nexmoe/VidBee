@@ -11,7 +11,8 @@ export const ASR_TIER_IDS = [
   'parakeet-v3',
   'orukeet',
   'quality',
-  'qwen3-1.7b'
+  'qwen3-1.7b',
+  'fourier-en'
 ] as const
 
 export type AsrTierId = (typeof ASR_TIER_IDS)[number]
@@ -81,6 +82,7 @@ export const PARAKEET_V2_DIR = 'sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8'
 export const PARAKEET_V3_ARCHIVE =
   'https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8.tar.bz2'
 export const PARAKEET_V3_DIR = 'sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8'
+export const FOURIER_DIR = 'fourier-en-int8'
 export const ORUKEET_DIR = 'sherpa-onnx-orukeet-v0.1.0-int8'
 export const QWEN3_ASR_ARCHIVE =
   'https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-qwen3-asr-0.6B-int8-2026-03-25.tar.bz2'
@@ -281,6 +283,21 @@ export const ASR_TIERS: readonly AsrTierInfo[] = [
       machine: 'high-end',
       speed: 'slow',
       quality: 'best-zh'
+    }
+  },
+  {
+    id: 'fourier-en',
+    family: 'qwen3',
+    modelId: 'fourier-en-int8',
+    archiveName: FOURIER_DIR,
+    bytesHint: 2_409_911_288,
+    minRamGB: 24,
+    qualityRank: 0,
+    languages: ['en'],
+    performance: {
+      machine: 'high-end',
+      speed: 'slow',
+      quality: 'good'
     }
   }
 ]

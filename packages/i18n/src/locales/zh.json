@@ -890,7 +890,7 @@
       "whisper": "Whisper — 多语种",
       "parakeet": "Parakeet",
       "sense-voice": "SenseVoice — 中日韩英",
-      "qwen3": "Qwen3-ASR — 中文精度最高",
+      "qwen3": "Qwen3-ASR",
       "fire-red-asr": "FireRedASR — 中文、英文及中文方言"
     },
     "asrLanguages": {
@@ -951,6 +951,11 @@
         "title": "Qwen3-ASR 0.6B",
         "tag": "中文精度最高，需要高性能电脑",
         "size": "约 840 MB"
+      },
+      "fourier-en": {
+        "title": "Fourier 2B",
+        "tag": "英语 · 仅限本地非商业用途 · CC BY-NC 4.0",
+        "size": "约 2.4 GB"
       },
       "qwen3-1.7b": {
         "title": "Qwen3-ASR 1.7B",

@@ -2,6 +2,7 @@ import {
   type AsrTierId,
   FIRE_RED_ASR_ARCHIVE,
   FIRE_RED_ASR_DIR,
+  FOURIER_DIR,
   ORUKEET_DIR,
   PARAKEET_V2_ARCHIVE,
   PARAKEET_V2_DIR,
@@ -48,6 +49,11 @@ const PUNCT_CT_DIR = 'sherpa-onnx-punct-ct-transformer-zh-en-vocab272727-2024-04
 const ORUKEET_BASE_URL =
   'https://huggingface.co/oruk/orukeet/resolve/debfb0d5423d4b0446361e0ea024e6891e23a249/onnx/sherpa-v0.1.0-int8'
 const ORUKEET_MANIFEST = `${ORUKEET_DIR}/manifest.json`
+// Immutable publisher revision and independent checksums for the noncommercial desktop model.
+const FOURIER_REVISION = '3fda023e157ce7986f137f76fcf326ed6e08fa73'
+const FOURIER_REPO_BASE = `https://huggingface.co/oruk/oruk-fourier-2b/resolve/${FOURIER_REVISION}`
+const FOURIER_BASE = `${FOURIER_REPO_BASE}/onnx/sherpa-int8`
+
 /** Pinned 1.7B export linked by the official sherpa-onnx Qwen3-ASR documentation. */
 const QWEN3_ASR_1_7B_BASE_URL =
   'https://modelscope.cn/models/zengshuishui/Qwen3-ASR-onnx/resolve/cb045ad80b8970c9d411d463e5b78991a566596c'
@@ -513,6 +519,106 @@ export const MODEL_CATALOG: readonly ModelFileSpec[] = [
     fileName: `${QWEN3_ASR_1_7B_DIR}/tokenizer`,
     url: `${QWEN3_ASR_1_7B_BASE_URL}/tokenizer`,
     directoryMembers: QWEN3_ASR_TOKENIZER_FILES,
+    required: true
+  },
+  {
+    id: 'fourier-en-conv-frontend-onnx',
+    role: 'asr-frontend',
+    tier: 'fourier-en',
+    group: 'asr',
+    fileName: `${FOURIER_DIR}/conv_frontend.onnx`,
+    url: `${FOURIER_BASE}/conv_frontend.onnx`,
+    sha256: '19ddcb711237bba84f7aa385ce7c63320bcb736ce8888299064036d57a774bd9',
+    required: true
+  },
+  {
+    id: 'fourier-en-decoder-int8-onnx',
+    role: 'asr-decoder',
+    tier: 'fourier-en',
+    group: 'asr',
+    fileName: `${FOURIER_DIR}/decoder.int8.onnx`,
+    url: `${FOURIER_BASE}/decoder.int8.onnx`,
+    sha256: 'd252adc96e55aa858876896e20783a357fda4c38e216d5be1c7b42bf73c86e8b',
+    required: true
+  },
+  {
+    id: 'fourier-en-decoder-int8-onnx-data',
+    role: 'asr-extra',
+    tier: 'fourier-en',
+    group: 'asr',
+    fileName: `${FOURIER_DIR}/decoder.int8.onnx.data`,
+    url: `${FOURIER_BASE}/decoder.int8.onnx.data`,
+    sha256: '4625b41d68653f974af294b6ef5539c36e32d0477d0a2262a9157e275a09433f',
+    required: true
+  },
+  {
+    id: 'fourier-en-encoder-int8-onnx',
+    role: 'asr-encoder',
+    tier: 'fourier-en',
+    group: 'asr',
+    fileName: `${FOURIER_DIR}/encoder.int8.onnx`,
+    url: `${FOURIER_BASE}/encoder.int8.onnx`,
+    sha256: '61255ca9e30a52c0d1da59ade9327792f08e32849cb1570da19be9ed6760cef9',
+    required: true
+  },
+  {
+    id: 'fourier-en-encoder-int8-onnx-data',
+    role: 'asr-extra',
+    tier: 'fourier-en',
+    group: 'asr',
+    fileName: `${FOURIER_DIR}/encoder.int8.onnx.data`,
+    url: `${FOURIER_BASE}/encoder.int8.onnx.data`,
+    sha256: 'a11a260308504627190fbf662478eec9ff95cb36b3387f257892f6fb8886e8a1',
+    required: true
+  },
+  {
+    id: 'fourier-en-tokenizer',
+    role: 'asr-tokenizer',
+    tier: 'fourier-en',
+    group: 'asr',
+    fileName: `${FOURIER_DIR}/tokenizer`,
+    url: `${FOURIER_BASE}/tokenizer`,
+    directoryMembers: [
+      {
+        name: 'config.json',
+        minBytes: 2072,
+        sha256: '9306077f32e1989f6128d12a0e471a3bd612389dbd5bff81305b8f558fee9901',
+        json: true
+      },
+      {
+        name: 'merges.txt',
+        minBytes: 1_671_853,
+        sha256: '8831e4f1a044471340f7c0a83d7bd71306a5b867e95fd870f74d0c5308a904d5'
+      },
+      {
+        name: 'tokenizer.json',
+        minBytes: 11_429_377,
+        sha256: 'bd2a97b55c8f7f9c328c73ee9b9178771037e9f566dfca8e238a063d41cbac92',
+        json: true
+      },
+      {
+        name: 'tokenizer_config.json',
+        minBytes: 10_386,
+        sha256: 'e8f0641c46b7c259b8d4a34097471dab636bd5d5062f480ed7c97a3d3b3981ee',
+        json: true
+      },
+      {
+        name: 'vocab.json',
+        minBytes: 3_080_118,
+        sha256: '97dfe4fe392c23cda68fe01c60babe50a57c894fc0cf44d02c4048ad283499c3',
+        json: true
+      }
+    ],
+    required: true
+  },
+  {
+    id: 'fourier-en-config-json',
+    role: 'asr-extra',
+    tier: 'fourier-en',
+    group: 'asr',
+    fileName: `${FOURIER_DIR}/config.json`,
+    url: `${FOURIER_REPO_BASE}/config.json`,
+    sha256: '5bc1d99c141fc866b61efca97dcbc6412a38db25ff0934c38bf7b46fa09485a2',
     required: true
   },
   {

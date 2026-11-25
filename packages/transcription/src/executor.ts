@@ -82,6 +82,8 @@ export interface TranscriptionExecutorOptions {
   store: TranscriptStore | MemoryTranscriptStore
   workerScript: string
   modelsDir: string
+  /** Set only by the desktop host, where the model license is visible before selection. */
+  allowNoncommercialDesktopModels?: boolean
   resolveFfmpegPath: () => string
   backend?: TranscriptionBackend
   execPath?: string
@@ -284,6 +286,12 @@ export class TranscriptionExecutor implements Executor {
     const tails = { stdout: '', stderr: '' }
 
     const asrTier = parseAsrTier(parsed.asrTier, DEFAULT_ASR_TIER)
+    const runViaCloud = parsed.provider === 'cloud' && !parsed.rediarize
+    if (asrTier === 'fourier-en' && !runViaCloud && !this.opts.allowNoncommercialDesktopModels) {
+      throw new Error(
+        'Permission denied: Oruk Fourier is for local, noncommercial use in VidBee Desktop.'
+      )
+    }
     const speakerCount = parseSpeakerCount(parsed.speakerCount, DEFAULT_SPEAKER_COUNT)
     const existingTranscript = parsed.rediarize
       ? latestTranscriptSeed(this.opts.store, parsed.downloadTaskId)
@@ -297,7 +305,7 @@ export class TranscriptionExecutor implements Executor {
       })
     }
 
-    if (parsed.provider === 'cloud' && !parsed.rediarize) {
+    if (runViaCloud) {
       transcriptionPartials.clear(ctx.taskId)
       if (!this.opts.runCloud) {
         throw new Error('Cloud transcription is unavailable in this application')

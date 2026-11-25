@@ -153,6 +153,7 @@ const buildTranscriptionExecutor = (): TranscriptionExecutor => {
   const nodeName = nodeBinaryName()
   const resourcesDir = resolveBundledResourcesPath([`node/${nodeName}`])
   return new TranscriptionExecutor({
+    allowNoncommercialDesktopModels: true,
     store: getTranscriptStore(),
     workerScript: resolveTranscriptionWorkerScript(),
     modelsDir: getModelManager().modelsDir,
