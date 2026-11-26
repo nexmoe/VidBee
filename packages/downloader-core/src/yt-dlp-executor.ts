@@ -44,6 +44,7 @@ import { resolveYtDlpWrapCtor } from './yt-dlp-wrap'
 interface YtDlpExecProcess {
   ytDlpProcess?: {
     pid?: number
+    exitCode?: number | null
     stdout?: NodeJS.ReadableStream
     stderr?: NodeJS.ReadableStream
     kill: (signal?: NodeJS.Signals | number) => boolean
@@ -267,8 +268,9 @@ export class YtDlpExecutor implements Executor {
 
     /** Preserve complete path signals even after the persisted log tail rolls over. */
     const captureOutputPath = (text: string): void => {
-      outputPathProbe = `${outputPathProbe}${text}`.slice(-OUTPUT_PATH_SCAN_BYTES)
-      const filePath = extractSavedFilePath(outputPathProbe)
+      const output = `${outputPathProbe}${text}`
+      const filePath = extractSavedFilePath(output)
+      outputPathProbe = output.slice(-OUTPUT_PATH_SCAN_BYTES)
       if (filePath) {
         filePathSeen = filePath
       }
@@ -410,10 +412,10 @@ export class YtDlpExecutor implements Executor {
       }
 
       /** Finish a successful child after verifying the output file on disk. */
-      const finishSuccessfulProcess = (closedAt: number): void => {
+      const finishSuccessfulProcess = (closedAt: number, processOutput: string): void => {
         const stdout = stdoutTail.read()
         const stderr = stderrTail.read()
-        const filePath = filePathSeen ?? extractSavedFilePath(`${stdout}\n${stderr}`) ?? ''
+        const filePath = filePathSeen ?? extractSavedFilePath(processOutput) ?? ''
         // Stat the produced file so the kernel's processing→completed guard
         // (size > 0) sees real bytes and downstream projections (history UI,
         // SSE events, CLI envelope) report the correct file size. statSync
@@ -437,7 +439,7 @@ export class YtDlpExecutor implements Executor {
           // Prefer the streaming sniff (captures even if pushed out of the
           // tail buffer); fall back to a tail re-scan when running with
           // tiny test fixtures whose entire run fits in 8KB.
-          formatId: formatIdSeen ?? extractFormatId(stdout) ?? null
+          formatId: formatIdSeen ?? extractFormatId(processOutput) ?? null
         }
         const subtitleOutcome = resolveSubtitleOutcome({
           downloadedLanguages: [...subtitleLanguagesSeen],
@@ -504,12 +506,61 @@ export class YtDlpExecutor implements Executor {
 
       /** Bind one process, transparently replacing subtitle-only failures once. */
       const bindProcess = (target: YtDlpExecProcess, processArgs: string[]): void => {
+        const processStdout = createTailBuffer(STDOUT_TAIL_BYTES)
         let processStderr = ''
 
+        /** Keep recovery bounded for both wrapper error and close events. */
+        const retryWithoutSubtitles = (): boolean => {
+          if (
+            cancelRequested ||
+            settled ||
+            subtitleFallbackAttempted ||
+            !canRetryWithoutSubtitles ||
+            !hasSubtitleDownloadArgs(processArgs) ||
+            !SUBTITLE_DOWNLOAD_ERROR.test(processStderr)
+          ) {
+            return false
+          }
+          subtitleFallbackAttempted = true
+          stderrTail.append(`${SUBTITLE_FALLBACK_LOG}\n`)
+          events.onStd({
+            taskId: ctx.taskId,
+            attemptId: ctx.attemptId,
+            stream: 'stderr',
+            line: SUBTITLE_FALLBACK_LOG
+          })
+          // A host may cancel synchronously when it receives the fallback log.
+          if (cancelRequested) {
+            finishProcessError(new Error('Download cancelled'))
+            return true
+          }
+          progressAggregator = new DownloadProgressAggregator()
+          postprocessSeen = false
+          processingLines.stdout = ''
+          processingLines.stderr = ''
+          filePathSeen = undefined
+          outputPathProbe = ''
+          formatIdSeen = undefined
+          subtitleSignalProbe = ''
+          subtitleUnavailableSeen = false
+          subtitleLanguagesSeen.clear()
+          mediaDurationMs = null
+          subtitleVisibility = undefined
+          try {
+            const fallbackArgs = withoutSubtitleDownloadArgs(processArgs)
+            proc = spawnProcess(fallbackArgs)
+            bindProcess(proc, fallbackArgs)
+          } catch (err) {
+            finishProcessError(err instanceof Error ? err : new Error(String(err)))
+          }
+          return true
+        }
+
         target.ytDlpProcess?.stdout?.on('data', (chunk: Buffer) => {
-          if (target !== proc) {
+          if (target !== proc || settled) {
             return
           }
+          processStdout.append(chunk.toString())
           pumpStdoutPostprocess(chunk)
           events.onStd({
             taskId: ctx.taskId,
@@ -520,14 +571,14 @@ export class YtDlpExecutor implements Executor {
         })
 
         target.ytDlpProcess?.stderr?.on('data', (chunk: Buffer) => {
-          if (target === proc) {
+          if (target === proc && !settled) {
             processStderr = `${processStderr}${chunk.toString()}`.slice(-STDERR_TAIL_BYTES)
             pumpStderrPostprocess(chunk)
           }
         })
 
         target.on('progress', (payload: YtDlpProgressPayload) => {
-          if (target !== proc) {
+          if (target !== proc || settled) {
             return
           }
           const progress = progressAggregator.apply(payload)
@@ -561,10 +612,11 @@ export class YtDlpExecutor implements Executor {
             return
           }
           if (code === 0) {
-            finishSuccessfulProcess(closedAt)
+            finishSuccessfulProcess(closedAt, `${processStdout.read()}\n${processStderr}`)
             return
           }
-          const savedPath = filePathSeen ?? extractSavedFilePath(`${stdout}\n${stderr}`)
+          const savedPath =
+            filePathSeen ?? extractSavedFilePath(`${processStdout.read()}\n${processStderr}`)
           // GitHub issue #467: cover embedding can fail after a valid WebM
           // (or other unsupported container) is already on disk. Keep that
           // media file instead of reporting the download as failed.
@@ -573,34 +625,10 @@ export class YtDlpExecutor implements Executor {
             isUnsupportedThumbnailEmbedOnlyFailure(processStderr || stderr)
           ) {
             stderrTail.append(`\n${THUMBNAIL_EMBED_UNSUPPORTED_LOG}\n`)
-            finishSuccessfulProcess(closedAt)
+            finishSuccessfulProcess(closedAt, `${processStdout.read()}\n${processStderr}`)
             return
           }
-          if (
-            !subtitleFallbackAttempted &&
-            canRetryWithoutSubtitles &&
-            hasSubtitleDownloadArgs(processArgs) &&
-            SUBTITLE_DOWNLOAD_ERROR.test(processStderr)
-          ) {
-            subtitleFallbackAttempted = true
-            stderrTail.append(`${SUBTITLE_FALLBACK_LOG}\n`)
-            events.onStd({
-              taskId: ctx.taskId,
-              attemptId: ctx.attemptId,
-              stream: 'stderr',
-              line: SUBTITLE_FALLBACK_LOG
-            })
-            progressAggregator = new DownloadProgressAggregator()
-            postprocessSeen = false
-            processingLines.stdout = ''
-            processingLines.stderr = ''
-            try {
-              const fallbackArgs = withoutSubtitleDownloadArgs(processArgs)
-              proc = spawnProcess(fallbackArgs)
-              bindProcess(proc, fallbackArgs)
-            } catch (err) {
-              finishProcessError(err instanceof Error ? err : new Error(String(err)))
-            }
+          if (retryWithoutSubtitles()) {
             return
           }
           const error = classifyYtDlpExit(code, processStderr || stderr)
@@ -615,9 +643,16 @@ export class YtDlpExecutor implements Executor {
         })
 
         target.on('error', (err: Error) => {
-          if (target === proc) {
-            finishProcessError(err)
+          if (target !== proc || settled) {
+            return
           }
+          // yt-dlp-wrap-plus emits error, not close, for a nonzero child exit.
+          // A launch failure has no completed child and must not enter recovery.
+          const exitCode = target.ytDlpProcess?.exitCode
+          if (exitCode != null && exitCode > 0 && retryWithoutSubtitles()) {
+            return
+          }
+          finishProcessError(err)
         })
       }
 

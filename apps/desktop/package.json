@@ -8,6 +8,7 @@
   "scripts": {
     "check": "ultracite check && pnpm run check:i18n && pnpm run typecheck",
     "check:i18n": "node scripts/check-locales.js",
+    "test:downloader": "node tests/subtitle-fallback/run.mjs",
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",
     "typecheck": "pnpm run typecheck:node && pnpm run typecheck:web",
