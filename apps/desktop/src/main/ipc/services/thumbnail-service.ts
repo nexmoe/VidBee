@@ -1,5 +1,6 @@
 import { type IpcContext, IpcMethod, IpcService } from 'electron-ipc-decorator'
 import { thumbnailCache } from '../../lib/thumbnail-cache'
+import { settingsManager } from '../../settings'
 
 class ThumbnailService extends IpcService {
   static readonly groupName = 'thumbnail'
@@ -13,7 +14,7 @@ class ThumbnailService extends IpcService {
       return null
     }
 
-    return thumbnailCache.getThumbnailUrl(url)
+    return thumbnailCache.getThumbnailUrl(url, settingsManager.get('proxy'))
   }
 }
 
