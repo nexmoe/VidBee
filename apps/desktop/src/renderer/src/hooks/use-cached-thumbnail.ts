@@ -1,6 +1,6 @@
 import { APP_PROTOCOL_SCHEME } from '@shared/constants'
 import { useEffect, useState } from 'react'
-import { ipcServices } from '../lib/ipc'
+import { ipcEvents, ipcServices } from '../lib/ipc'
 import { logger } from '../lib/logger'
 
 /** True when the renderer can load this URL without fetching a remote host. */
@@ -16,6 +16,7 @@ export const useCachedThumbnail = (url?: string | null): string | undefined => {
 
   useEffect(() => {
     let isActive = true
+    let requestSequence = 0
 
     if (!url) {
       setCachedUrl(undefined)
@@ -32,18 +33,18 @@ export const useCachedThumbnail = (url?: string | null): string | undefined => {
       return
     }
 
-    setCachedUrl(undefined)
-
     const loadThumbnail = async () => {
+      const request = ++requestSequence
+      setCachedUrl(undefined)
       try {
         const localUrl = await ipcServices.thumbnail.getThumbnailPath(url)
-        if (!isActive) {
+        if (!isActive || request !== requestSequence) {
           return
         }
         setCachedUrl(localUrl ?? undefined)
       } catch (error) {
         logger.error('Failed to load cached thumbnail:', error)
-        if (!isActive) {
+        if (!isActive || request !== requestSequence) {
           return
         }
         setCachedUrl(undefined)
@@ -51,9 +52,11 @@ export const useCachedThumbnail = (url?: string | null): string | undefined => {
     }
 
     void loadThumbnail()
+    const listener = ipcEvents.on('settings:changed', () => void loadThumbnail())
 
     return () => {
       isActive = false
+      ipcEvents.removeListener('settings:changed', listener)
     }
   }, [url])
 
